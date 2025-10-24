@@ -14,16 +14,16 @@ import xacro
 def generate_launch_description():
     package_name = 'rm_gazebo'
 
-    robot_name_in_model = 'rm_65_description'
+    robot_name_in_model = 'rm_75_description'
 
     pkg_share = FindPackageShare(package=package_name).find(package_name) 
-    urdf_model_path = os.path.join(pkg_share, f'config/gazebo_65_6fb_description.urdf.xacro')
+    urdf_model_path = os.path.join(pkg_share, f'config/gazebo_75_6fb_description.urdf.xacro')
 
     
     print("---", urdf_model_path)
 
     doc = xacro.parse(open(urdf_model_path))
-    xacro.process_doc(doc,mappings={"link6_type": "Link6_6f"})
+    xacro.process_doc(doc,mappings={"link7_type": "link7_6fb"})
     params = {'robot_description': doc.toxml()}
 
     print("urdf", doc.toxml())
@@ -47,7 +47,7 @@ def generate_launch_description():
                                    '-entity', f'{robot_name_in_model}'], 
                         output='screen')
 
-    # gazebo在加载urdf时，根据urdf的设定，会启动一个joint_states节点?
+    # gazebo在加载urdf时，根据urdf的设定，会启动一个joint_states节点
     # 关节状态发布器
     load_joint_state_controller = ExecuteProcess(
         cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
@@ -55,7 +55,7 @@ def generate_launch_description():
         output='screen'
     )
 
-    # 路径执行控制器，也就是那个action？
+    # 路径执行控制器，也就是那个action
     # 这个rm_group_controller需要根据urdf文件里面引用的ros2_controllers.yaml里面的名字确定
     load_joint_trajectory_controller = ExecuteProcess(
         cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
@@ -72,7 +72,6 @@ def generate_launch_description():
             )
     )
     # 监听 load_joint_state_controller，当其退出（完全启动）时，启动load_joint_trajectory_controller
-    # moveit是怎么和gazebo这里提供的action连接起来的
     close_evt2 = RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=load_joint_state_controller,

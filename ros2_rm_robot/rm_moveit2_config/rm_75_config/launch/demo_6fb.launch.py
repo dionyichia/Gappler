@@ -30,7 +30,7 @@ def generate_launch_description():
 
     moveit_config = (
         MoveItConfigsBuilder("rm_75_description", package_name="rm_75_config")
-        .robot_description(file_path="config/rm_75_6fb_description.urdf.xacro", mappings={"link7_type": "Link7_6fb"})
+        .robot_description(file_path="config/rm_75_6fb_description.urdf.xacro", mappings={"link7_type": "link7_6fb"})
         .to_moveit_configs()
     )
     ld = LaunchDescription()

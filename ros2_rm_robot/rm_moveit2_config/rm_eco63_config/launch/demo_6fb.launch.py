@@ -30,7 +30,7 @@ def generate_launch_description():
 
     moveit_config = (
         MoveItConfigsBuilder("rm_eco63_description", package_name="rm_eco63_config")
-        .robot_description(file_path="config/rm_eco63_6fb_description.urdf.xacro", mappings={"link6_type": "Link6_6fb"})
+        .robot_description(file_path="config/rm_eco63_6fb_description.urdf.xacro", mappings={"link6_type": "link6_6fb"})
         .to_moveit_configs()
     )
     ld = LaunchDescription()

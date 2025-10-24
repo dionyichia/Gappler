@@ -1,10 +1,8 @@
 from moveit_configs_utils import MoveItConfigsBuilder
-from moveit_configs_utils.launches import generate_moveit_rviz_launch
 
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
-    IncludeLaunchDescription,
 )
 from moveit_configs_utils.launch_utils import (
     add_debuggable_node,

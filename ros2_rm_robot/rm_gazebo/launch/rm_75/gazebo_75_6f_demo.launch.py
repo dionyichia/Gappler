@@ -23,7 +23,7 @@ def generate_launch_description():
     print("---", urdf_model_path)
 
     doc = xacro.parse(open(urdf_model_path))
-    xacro.process_doc(doc,mappings={"link7_type": "Link7_6fb"})
+    xacro.process_doc(doc,mappings={"link7_type": "link7_6f"})
     params = {'robot_description': doc.toxml()}
 
     print("urdf", doc.toxml())

@@ -14,16 +14,16 @@ import xacro
 def generate_launch_description():
     package_name = 'rm_gazebo'
 
-    robot_name_in_model = 'rm_eco63_description'
+    robot_name_in_model = 'rm_eco65_description'
 
     pkg_share = FindPackageShare(package=package_name).find(package_name) 
-    urdf_model_path = os.path.join(pkg_share, f'config/gazebo_eco63_6fb_description.urdf.xacro')
+    urdf_model_path = os.path.join(pkg_share, f'config/gazebo_eco65_6fb_description.urdf.xacro')
 
     
     print("---", urdf_model_path)
 
     doc = xacro.parse(open(urdf_model_path))
-    xacro.process_doc(doc,mappings={"link6_type": "Link6_6fb"})
+    xacro.process_doc(doc, mappings={"link6_type": "link6_6f"})
     params = {'robot_description': doc.toxml()}
 
     print("urdf", doc.toxml())
