@@ -4,7 +4,7 @@
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot name="rml_63_description" xmlns:xacro="http://www.ros.org/wiki/xacro">
 <!-- arg link6_type -->
-<xacro:arg name="link6_type" default="Link6" />
+<xacro:arg name="link6_type" default="link6" />
   <!-- arg->property -->
 <xacro:property name="link6_type" value="$(arg link6_type)" />
 <xacro:include filename="$(find rm_description)/urdf/RML63/rml_63.transmission.xacro"/>

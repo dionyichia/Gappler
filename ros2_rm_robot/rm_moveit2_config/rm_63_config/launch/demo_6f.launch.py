@@ -30,7 +30,7 @@ def generate_launch_description():
 
     moveit_config = (
         MoveItConfigsBuilder("rml_63_description", package_name="rm_63_config")
-        .robot_description(file_path="config/rml_63_6fb_description.urdf.xacro", mappings={"link6_type": "Link6_6f"})
+        .robot_description(file_path="config/rml_63_6fb_description.urdf.xacro", mappings={"link6_type": "link6_6f"})
         # .robot_description_semantic(file_path="config/rm_65_description.srdf")
         # .trajectory_execution(file_path="config/moveit_controllers.yaml")
         .to_moveit_configs()

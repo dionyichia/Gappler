@@ -14,16 +14,16 @@ import xacro
 def generate_launch_description():
     package_name = 'rm_gazebo'
 
-    robot_name_in_model = 'rm_75_description'
+    robot_name_in_model = 'rml_63_description'
 
     pkg_share = FindPackageShare(package=package_name).find(package_name) 
-    urdf_model_path = os.path.join(pkg_share, f'config/gazebo_75_6fb_description.urdf.xacro')
+    urdf_model_path = os.path.join(pkg_share, f'config/gazebo_63_6fb_description.urdf.xacro')
 
     
     print("---", urdf_model_path)
 
     doc = xacro.parse(open(urdf_model_path))
-    xacro.process_doc(doc,mappings={"link7_type": "Link7_6f"})
+    xacro.process_doc(doc,mappings={"link6_type": "link6_6f"})
     params = {'robot_description': doc.toxml()}
 
     print("urdf", doc.toxml())
@@ -32,6 +32,11 @@ def generate_launch_description():
     gazebo =  ExecuteProcess(
         cmd=['gazebo', '--verbose','-s', 'libgazebo_ros_init.so', '-s', 'libgazebo_ros_factory.so'],
         output='screen')
+    
+    # gazebo = IncludeLaunchDescription(
+    #             PythonLaunchDescriptionSource([os.path.join(
+    #                 get_package_share_directory('gazebo_ros'), 'launch'), '/gazebo.launch.py']),
+    #          )
 
     # 启动了robot_state_publisher节点后，该节点会发布 robot_description 话题，话题内容是模型文件urdf的内容
     # 并且会订阅 /joint_states 话题，获取关节的数据，然后发布tf和tf_static话题.
@@ -47,7 +52,7 @@ def generate_launch_description():
                                    '-entity', f'{robot_name_in_model}'], 
                         output='screen')
 
-    # gazebo在加载urdf时，根据urdf的设定，会启动一个joint_states节点
+
     # 关节状态发布器
     load_joint_state_controller = ExecuteProcess(
         cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
@@ -55,7 +60,7 @@ def generate_launch_description():
         output='screen'
     )
 
-    # 路径执行控制器，也就是那个action
+    # 路径执行控制器，也就是那个action？
     # 这个rm_group_controller需要根据urdf文件里面引用的ros2_controllers.yaml里面的名字确定
     load_joint_trajectory_controller = ExecuteProcess(
         cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',

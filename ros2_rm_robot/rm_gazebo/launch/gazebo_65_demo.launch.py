@@ -1,15 +1,12 @@
 import os
+import xacro
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, IncludeLaunchDescription, RegisterEventHandler
+from launch.actions import ExecuteProcess, RegisterEventHandler
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-
 from launch.event_handlers import OnProcessExit
-
+from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
 
-import xacro
 
 def generate_launch_description():
     package_name = 'rm_gazebo'
@@ -17,6 +14,7 @@ def generate_launch_description():
     robot_name_in_model = 'rm_65_description'
 
     pkg_share = FindPackageShare(package=package_name).find(package_name) 
+    print(pkg_share)    
     urdf_model_path = os.path.join(pkg_share, f'config/gazebo_65_description.urdf.xacro')
 
     

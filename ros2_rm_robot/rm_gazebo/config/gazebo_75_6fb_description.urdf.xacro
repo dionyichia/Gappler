@@ -20,32 +20,32 @@
         <self_collide>false</self_collide>
         <gravity>false</gravity>
     </gazebo>
-    <gazebo reference="Link1">
+    <gazebo reference="link1">
         <material>Gazebo/White</material>
         <self_collide>false</self_collide>
         <gravity>false</gravity>
     </gazebo>
-    <gazebo reference="Link2">
+    <gazebo reference="link2">
         <material>Gazebo/White</material>
         <gravity>false</gravity>
     </gazebo>
-    <gazebo reference="Link3">
+    <gazebo reference="link3">
         <material>Gazebo/White</material>
         <gravity>false</gravity>
     </gazebo>
-    <gazebo reference="Link4">
+    <gazebo reference="link4">
         <material>Gazebo/White</material>
         <gravity>false</gravity>
     </gazebo>
-    <gazebo reference="Link5">
+    <gazebo reference="link5">
         <material>Gazebo/White</material>
         <gravity>false</gravity>
     </gazebo>
-    <gazebo reference="Link6">
+    <gazebo reference="link6">
         <material>Gazebo/White</material>
         <gravity>false</gravity>
     </gazebo>
-    <gazebo reference="Link7">
+    <gazebo reference="link7">
         <material>Gazebo/White</material>
         <gravity>false</gravity>
     </gazebo>
