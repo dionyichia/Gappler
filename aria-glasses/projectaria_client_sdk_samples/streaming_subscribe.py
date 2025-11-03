@@ -66,7 +66,7 @@ def main():
     # @note we need to specify the use of ephemeral certs as this sample app assumes
     # aria-cli was started using the --use-ephemeral-certs flag
     options = aria.StreamingSecurityOptions()
-    options.use_ephemeral_certs = True
+    options.use_ephemeral_certs = False
     config.security_options = options
     streaming_client.subscription_config = config
 
