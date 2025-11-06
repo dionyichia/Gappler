@@ -23,4 +23,4 @@ class TerminalRawMode:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         termios.tcsetattr(self.fd, termios.TCSADRAIN, self.old_settings)
-        print("\nTerminal zurückgesetzt.")
+        print("\nTerminal closed.")
