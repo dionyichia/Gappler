@@ -1,7 +1,10 @@
 from ipaddress import IPv4Address
+import logging
 from typing import Optional
 
 import aria.sdk as aria
+
+logger = logging.getLogger(__name__)
 
 
 class AriaDeviceController:
@@ -128,7 +131,7 @@ class AriaDeviceController:
 
         # Check if already streaming
         if streaming_manager.streaming_state == aria.StreamingState.Streaming:
-            print("⚠ Device is already streaming")
+            logger.warning("⚠ Device is already streaming")
             return
 
         streaming_config = self._create_streaming_config(
@@ -137,10 +140,14 @@ class AriaDeviceController:
         streaming_manager.streaming_config = streaming_config
 
         streaming_manager.start_streaming()
-        print(f"✓ Streaming started")
-        print(f"  State: {streaming_manager.streaming_state}")
-        print(f"  Profile: {profile}")
-        print(f"  Interface: {interface or 'wifi (default)'}")
+
+        while streaming_manager.streaming_state != aria.StreamingState.Streaming:
+            pass  # Wait until streaming starts
+
+        logger.info(f"✓ Streaming started")
+        logger.info(f"  State: {streaming_manager.streaming_state}")
+        logger.info(f"  Profile: {profile}")
+        logger.info(f"  Interface: {interface or 'wifi (default)'}")
 
     def stop_streaming(self) -> None:
         """
@@ -154,9 +161,9 @@ class AriaDeviceController:
 
         try:
             self._device.streaming_manager.stop_streaming()
-            print("✓ Streaming stopped")
+            logger.info("✓ Streaming stopped")
         except Exception as e:
-            print(f"✗ Error stopping streaming: {e}")
+            logger.error(f"✗ Error stopping streaming: {e}")
             raise
 
     def disconnect(self) -> None:
@@ -166,7 +173,7 @@ class AriaDeviceController:
         Automatically stops streaming if active.
         """
         if not self._device:
-            print("No active device connection")
+            logger.warning("No active device connection")
             return
 
         try:
@@ -178,9 +185,9 @@ class AriaDeviceController:
                 self.stop_streaming()
 
             self.device_client.disconnect(self._device)
-            print("✓ Disconnected from device")
+            logger.info("✓ Disconnected from device")
         except Exception as e:
-            print(f"✗ Error during disconnect: {e}")
+            logger.error(f"✗ Error during disconnect: {e}")
         finally:
             self._device = None
 
@@ -217,11 +224,12 @@ class AriaDeviceController:
             device: Connected Aria device.
         """
         status = device.status
-        print("✓ Device connected")
-        print(f"  Battery level: {status.battery_level}%")
-        print(f"  WiFi SSID: {status.wifi_ssid}")
-        print(f"  WiFi IP: {status.wifi_ip_address}")
-        print(f"  Device mode: {status.device_mode}")
+        logger.info("✓ Device connected")
+        logger.info(f"  Battery level: {status.battery_level}%")
+        if status.wifi_ssid:
+            logger.info(f"  WiFi SSID: {status.wifi_ssid}")
+        if status.wifi_ip_address:
+            logger.info(f"  WiFi IP: {status.wifi_ip_address}")
 
     @property
     def device(self) -> Optional[aria.Device]:

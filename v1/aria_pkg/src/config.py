@@ -6,14 +6,28 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 import torch
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+
+@dataclass(frozen=True)
+class Settings:
+    """General application settings."""
+
+    APP_NAME: str = "Renaissance Capstone Project"
+
+    LOG_DIR: str = "logs"
+    LOG_LEVEL: str = "DEBUG"
+
+    DEBUG: bool = False
+
+    SAVE_IMAGE_FLAG: bool = False
+
 
 @dataclass(frozen=True)
 class AriaConfig:
-    # "Profile to be used for streaming."
-    PROFILE_NAME: str = "profile18"
-    # "IP address to connect to the aria device over wifi"
-    DEVICE_IP: Optional[ipaddress.IPv4Address] = None
-    # DEVICE_IP: ipaddress = ipaddress.IPv4Address("")
+    ARIA_STREAMING_PROFILE_NAME: str = "profile18"
+    ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = None
+    # ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = ipaddress.IPv4Address("")
 
 
 @dataclass(frozen=True)
@@ -70,16 +84,15 @@ class ModelConfig:
     grounding_model: str = "IDEA-Research/grounding-dino-tiny"
     sam2_checkpoint: Path = Path("/checkpoints/sam2.1_hiera_large.pt")
     sam2_model_config: str = "configs/sam2.1/sam2.1_hiera_l.yaml"
-    device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
     def __post_init__(self):
         # Enable optimizations for Ampere GPUs
-        if self.device == "cuda" and torch.cuda.get_device_properties(0).major >= 8:
+        if DEVICE == "cuda" and torch.cuda.get_device_properties(0).major >= 8:
             torch.backends.cuda.matmul.allow_tf32 = True
             torch.backends.cudnn.allow_tf32 = True
 
         # Enable bfloat16 autocast
-        torch.autocast(device_type=self.device, dtype=torch.bfloat16).__enter__()
+        torch.autocast(device_type=DEVICE, dtype=torch.bfloat16).__enter__()
 
 
 @dataclass

@@ -9,6 +9,7 @@ This module provides functions to:
 
 from dataclasses import dataclass
 from pathlib import Path
+from time import sleep
 from typing import Dict, List, Optional, Tuple
 from PIL import Image, ImageDraw
 
@@ -31,7 +32,7 @@ DEFAULT_DEPTH_M = 0.5
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
 MODEL_BASE_PATH = (
-    SCRIPT_DIR
+    PROJECT_ROOT
     / "src/models/aria_eyetracking/projectaria_eyetracking/inference/model/pretrained_weights/social_eyes_uncertainty_v1"
 )
 
@@ -197,6 +198,7 @@ def real_time_eyetracking(
 ):
     if eye_tracking_camera_id not in images_observer:
         print("No eye-tracking data found in images_observer")
+        sleep(0.1)
         return None, None
 
     eye_image = images_observer[eye_tracking_camera_id]
