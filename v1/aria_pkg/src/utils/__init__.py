@@ -17,6 +17,7 @@ from .keyboard import (
     exit_keypress,
 )
 from .terminal import TerminalRawMode
+from .log import setup_logging
 
 __all__ = [
     # CSV Writer
@@ -37,4 +38,6 @@ __all__ = [
     "exit_keypress",
     # Terminal
     "TerminalRawMode",
+    # Logging
+    "setup_logging",
 ]

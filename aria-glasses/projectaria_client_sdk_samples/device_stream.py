@@ -84,7 +84,7 @@ def main():
         streaming_config.streaming_interface = aria.StreamingInterface.Usb
 
     #    Use ephemeral streaming certificates
-    streaming_config.security_options.use_ephemeral_certs = True
+    streaming_config.security_options.use_ephemeral_certs = False
     streaming_manager.streaming_config = streaming_config
 
     # 5. Start streaming

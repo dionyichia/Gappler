@@ -1,17 +1,25 @@
 import argparse
+import logging
 import multiprocessing
 from pathlib import Path
 import sys
 
+import torch
+
 from aria_device import AriaDeviceController
 from config import AriaConfig
-from utils import exit_keypress, safe_update_iptables, TerminalRawMode
+from utils import safe_update_iptables, TerminalRawMode, setup_logging
 from services.image_stream_processor import stream_image
 from services.audio_stream_processor import stream_audio
-from services.feature_matching import match_features
+from services.feature_matching import dual_stream_matcher
+
+torch.set_grad_enabled(False)
+setup_logging()
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
+
+logger = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,36 +39,31 @@ def main():
 
     if args.update_iptables:
         if not safe_update_iptables():
-            print("Warning: Failed to update iptables", file=sys.stderr)
+            logger.warning("Warning: Failed to update iptables", file=sys.stderr)
 
     with AriaDeviceController.get_instance() as aria_controller:
-        aria_controller.connect(device_ip=AriaConfig.DEVICE_IP)
-        interface = None if AriaConfig.DEVICE_IP else "usb"
+        aria_controller.connect(device_ip=AriaConfig.ARIA_DEVICE_IP_ADDRESS)
+        interface = None if AriaConfig.ARIA_DEVICE_IP_ADDRESS else "usb"
         aria_controller.start_streaming(
-            profile=AriaConfig.PROFILE_NAME, interface=interface
+            profile=AriaConfig.ARIA_STREAMING_PROFILE_NAME, interface=interface
         )
 
-        # Press ESC or q to exit
-        while not exit_keypress():
-            print("Starting execution loop...")
-            ctx = multiprocessing.get_context("spawn")
-            audio_proc = ctx.Process(target=stream_audio, args=(PROJECT_ROOT,))
-            img_proc = ctx.Process(target=stream_image, args=(PROJECT_ROOT,))
-            # matcher_proc = ctx.Process(target=match_features)
+        ctx = multiprocessing.get_context("spawn")
+        audio_process, image_process, matcher_process = None, None, None
+        audio_process = ctx.Process(target=stream_audio, args=(PROJECT_ROOT,))
+        image_process = ctx.Process(target=stream_image, args=(PROJECT_ROOT,))
+        matcher_process = ctx.Process(target=dual_stream_matcher, args=(PROJECT_ROOT,))
 
-            img_proc.start()
-            audio_proc.start()
+        # image_process.start()
+        # audio_process.start()
+        matcher_process.start()
 
-            img_proc.join()
-            print("Image streaming process finished.")
-
-            # matcher_proc.start()
-
-            audio_proc.join()
-            # print("Audio streaming process finished.")
-
-            # matcher_proc.join()
-            # print("Feature matching process finished.")
+        if image_process and image_process.is_alive():
+            image_process.join()
+        if audio_process and audio_process.is_alive():
+            audio_process.join()
+        if matcher_process and matcher_process.is_alive():
+            matcher_process.join()
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ Provides separate managers for device control and data subscription
 for Meta Aria glasses.
 """
 
+import logging
 import operator
 from functools import reduce
 from typing import List, Optional
@@ -12,6 +13,8 @@ from typing import List, Optional
 import aria.sdk as aria
 
 from .streaming_client_observer import BaseStreamingClientObserver
+
+logger = logging.getLogger(__name__)
 
 
 class AriaStreamClient:
@@ -79,9 +82,9 @@ class AriaStreamClient:
         self._observer = observer
         self._subscribed = True
 
-        print(f"✓ Subscribed to {len(data_channels)} data channel(s)")
-        print(f"  Channels: {[dt.name for dt in data_channels]}")
-        print(f"  Queue size: {message_queue_size}")
+        logger.info(f"✓ Subscribed to {len(data_channels)} data channel(s)")
+        logger.info(f"  Channels: {[dt.name for dt in data_channels]}")
+        logger.info(f"  Queue size: {message_queue_size}")
 
         return observer
 
@@ -92,14 +95,14 @@ class AriaStreamClient:
         Stops receiving data and cleans up resources.
         """
         if not self._subscribed:
-            print("Not currently subscribed")
+            logger.warning("Not currently subscribed")
             return
 
         try:
             self.streaming_client.unsubscribe()
-            print("✓ Unsubscribed from data stream")
+            logger.info("✓ Unsubscribed from data stream")
         except Exception as e:
-            print(f"✗ Error during unsubscribe: {e}")
+            logger.error(f"✗ Error during unsubscribe: {e}")
         finally:
             self._observer = None
             self._subscribed = False

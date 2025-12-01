@@ -1,403 +1,592 @@
-from collections import Counter, defaultdict
+"""
+Dual Stream Feature Matcher with integrated visualization
+Matches features between Aria glasses and ROS2 camera streams using LightGlue.
+"""
+
+import logging
+import time
+from pathlib import Path
+from queue import Queue
+from threading import Lock, Thread
+from typing import Optional, Dict
+import base64
+
 import cv2
-import json
-import math
-import matplotlib.cm as cm
 import numpy as np
-import os
-import pandas as pd
-import sys
+import roslibpy
 import torch
-from ultralytics import YOLO
-import zmq
 
-# import SuperGlue from local
-superglue_path = "/home/jruopp/thesis_ws/src/superglue_pkg/SuperGluePretrainedNetwork/"
-if superglue_path not in sys.path:
-    sys.path.append(superglue_path)
-from models.superglue.matching import Matching
-from models.superglue.utils import (
-    make_matching_plot,
-    AverageTimer,
-    frame2tensor,
-)
+import aria.sdk as aria
 
-# disable gradient calculation globally
+from models.LightGlue.lightglue import LightGlue, SuperPoint
+from models.LightGlue.lightglue.utils import numpy_image_to_torch, rbd
+
+import config
+import services.eye_tracking
+from aria_device.aria_stream_client import AriaStreamClient
+from aria_device.streaming_client_observer import ImageObserver
+from utils.keyboard import quit_keypress
+
+# Configuration
 torch.set_grad_enabled(False)
+logger = logging.getLogger(__name__)
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Model initialization
+EXTRACTOR = SuperPoint(max_num_keypoints=2048).eval().to(DEVICE)
+MATCHER = LightGlue(features="superpoint").eval().to(DEVICE)
 
 
-def superglue_matching_init():
-    device = "cuda"
-    config = {
-        "superpoint": {
-            "nms_radius": 2,
-            "keypoint_threshold": 0.0,
-            "max_keypoints": 10000,
-        },
-        "superglue": {
-            "weights": "indoor",
-            "sinkhorn_iterations": 20,
-            "match_threshold": 0.00001,
-        },
-    }
-    matching = Matching(config).eval().to(device)
-    timer = AverageTimer(newline=True)
-    return matching
+def draw_matches_opencv(image0, image1, kpts0, kpts1, matches, max_matches=100):
+    """
+    Draw feature matches on two images using OpenCV.
+    Args:
+        image0, image1: Input images (numpy arrays)
+        kpts0, kpts1: Keypoints (torch tensors or numpy arrays)
+        matches: Match indices (torch tensor or numpy array)
+        max_matches: Maximum number of matches to draw for clarity
+    Returns:
+        Combined image with matches drawn
+    """
+    # Convert tensors to numpy if needed
+    if isinstance(kpts0, torch.Tensor):
+        kpts0 = kpts0.cpu().numpy()
+    if isinstance(kpts1, torch.Tensor):
+        kpts1 = kpts1.cpu().numpy()
+    if isinstance(matches, torch.Tensor):
+        matches = matches.cpu().numpy()
 
+    # Get matched keypoints
+    if len(matches) > 0:
+        matched_kpts0 = kpts0[matches[:, 0]].copy()
+        matched_kpts1 = kpts1[matches[:, 1]].copy()
 
-def superglue(matching, aria_img, robo_img, bboxaria, filepath):
-    viz_path = os.path.join(filepath, "superglue/matchresult.png")
-
-    # compute tensor of images
-    device = "cuda"
-    aria_inp = frame2tensor(aria_img, device)
-    robo_inp = frame2tensor(robo_img, device)
-
-    # match both pictures and convert to numpy arrays
-    pred = matching({"image0": aria_inp, "image1": robo_inp})
-    pred = {k: v[0].cpu().numpy() for k, v in pred.items()}
-    ariakpts, robokpts = pred["keypoints0"], pred["keypoints1"]
-    matches, conf = pred["matches0"], pred["matching_scores0"]
-    print("Raw matches:", np.sum(matches > -1))
-
-    # write matches to dictionary and filter by bbox
-    out_matches = {
-        "keypoints0": ariakpts,
-        "keypoints1": robokpts,
-        "matches": matches,
-        "match_confidence": conf,
-    }
-    ariakpts, matches, conf, valid_bbox = filter_points_by_bbox(
-        ariakpts, matches, conf, bboxaria
-    )
-
-    # keep valid matched keypoints
-    valid = matches > -1
-    aria_matched = ariakpts[valid]
-    robo_matched = robokpts[matches[valid]]
-    mconf = conf[valid & valid_bbox]
-
-    # visualize matches
-    color = cm.jet(mconf)
-    text = []
-    make_matching_plot(
-        aria_img,
-        robo_img,
-        ariakpts,
-        robokpts,
-        aria_matched,
-        robo_matched,
-        color,
-        text,
-        viz_path,
-    )
-    return aria_matched, robo_matched, mconf
-
-
-def filter_points_by_bbox(keypoints, matches, conf, bbox):
-    x_min, y_min, x_max, y_max = bbox
-    tolerance = 30
-    x_min -= tolerance
-    y_min -= tolerance
-    x_max += tolerance
-    y_max += tolerance
-
-    valid = (
-        (keypoints[:, 0] >= x_min)
-        & (keypoints[:, 0] <= x_max)
-        & (keypoints[:, 1] >= y_min)
-        & (keypoints[:, 1] <= y_max)
-    )
-    print(f"Valid keypoints in bbox: {np.sum(valid)}")
-    print(f"Valid matches in bbox: {np.sum(matches[valid] > -1)}")
-    return keypoints[valid], matches[valid], conf[valid], valid[valid]
-
-
-def calculate_matching_points_in_box(mkpts1, boxes):
-    points_per_bbox = []
-    tolerance = 15
-    for box in boxes:
-        bbox_tensor = box.xyxy[0]  # bbox coordinates as tensor
-        x_min, y_min, x_max, y_max = bbox_tensor.tolist()
-        # check which mkpt is in box
-        valid = (
-            (mkpts1[:, 0] >= x_min - tolerance)
-            & (mkpts1[:, 0] <= x_max + tolerance)
-            & (mkpts1[:, 1] >= y_min - tolerance)
-            & (mkpts1[:, 1] <= y_max + tolerance)
-        )
-        # calculate sum
-        points_per_bbox.append(np.sum(valid))
-
-    max_bbox_index = np.argmax(points_per_bbox)
-    return max_bbox_index, points_per_bbox
-
-
-def get_robo_img_bbox(context, maskModel, ip):
-    socket = context.socket(zmq.REQ)
-    socket.connect(ip + ":5560")
-    print("ZMQ socket connected to Panda3 PC")
-
-    # request image from IntelRealSense camera (roboter)
-    socket.send(b"send_image")
-    print("Request sent to Panda3 PC for image...")
-
-    # receive image in bytes, decode to NumPy array and convert to grayscale
-    img_bytes = socket.recv()
-    nparr = np.frombuffer(img_bytes, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)  # BGR format
-    if img is not None:
-        print(f"Received image from robot")
-    rot_img = np.rot90(img, -2)
-    gray_img = cv2.cvtColor(rot_img, cv2.COLOR_BGR2GRAY)
-
-    # get bounding boxes from YOLO
-    registered_bricks = get_brick_poses(rot_img, maskModel)
-    annotated_frame = registered_bricks.plot()
-
-    # # visualize images if needed
-    # cv2.imshow("Robo Image", rot_img)
-    # cv2.imshow("Gray Image", gray_img)
-    # cv2.imshow("BBoxes", annotated_frame)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-
-    bboxesrobo = []
-    for brick in registered_bricks.boxes:
-        bbox_tensor = brick.xyxy[0]  # bbox coordinates as tensor
-        x1, y1, x2, y2 = bbox_tensor.tolist()
-        bboxesrobo.append([x1, y1, x2, y2])
-    socket.close()
-    return gray_img, registered_bricks.boxes
-
-
-def get_aria_img_bbox(context, maskModel, filepath, ip):
-    socket = context.socket(zmq.PULL)
-    socket.bind("tcp://*:5557")
-    print("ZMQ socket bound to port 5557")
-
-    et_csv_file_path = os.path.join(filepath, "eyetracking/general_eye_gaze.csv")
-    rgb_csv_file_path = os.path.join(filepath, "rgbcam/data.csv")
-    rgb_path = os.path.join(filepath, "undistorted_imgs/")
-
-    # receive tool call from voice_controller
-    print("Waiting for message from voice_controller script...\n")
-    tool_string = socket.recv_string()
-    if tool_string is None:
-        print("No response received, return None")
-        return None
+        # Limit number of matches for visual clarity
+        if len(matched_kpts0) > max_matches:
+            indices = np.random.choice(len(matched_kpts0), max_matches, replace=False)
+            matched_kpts0 = matched_kpts0[indices]
+            matched_kpts1 = matched_kpts1[indices]
     else:
-        print(f"Received String object as response: {tool_string}")
+        matched_kpts0 = np.array([])
+        matched_kpts1 = np.array([])
 
-    tool_json = json.loads(tool_string)
-    tool_call = tool_json["function_name"][0]
+    # Ensure images are same height and scale keypoints accordingly
+    h0, w0 = image0.shape[:2]
+    h1, w1 = image1.shape[:2]
 
-    # check if feature matching is needed or different function is called
-    if tool_call == "grab_brick":
-        gpt_json = tool_json["arguments"][0]
-    else:
-        publish_bbox(context, tool_string, None, None, ip)
-        sys.exit()
+    scale0 = 1.0
+    scale1 = 1.0
 
-    # extract timestamps and calculate gaze_points from pitch and yaw
-    first_timestamp = gpt_json.get("startTime_ns", [])
-    last_timestamp = gpt_json.get("endTime_ns", [])
-    et_data = extract_yaw_pitch(et_csv_file_path, first_timestamp, last_timestamp)
-    filename = extract_timestamp(rgb_csv_file_path, first_timestamp)
-    gaze_points = et_data[["gaze_point_x", "gaze_point_y"]].to_numpy()
+    if h0 != h1:
+        target_h = max(h0, h1)
+        if h0 < target_h:
+            scale0 = target_h / h0
+            image0 = cv2.resize(image0, (int(w0 * scale0), target_h))
+            if len(matched_kpts0) > 0:
+                matched_kpts0 *= scale0
+        if h1 < target_h:
+            scale1 = target_h / h1
+            image1 = cv2.resize(image1, (int(w1 * scale1), target_h))
+            if len(matched_kpts1) > 0:
+                matched_kpts1 *= scale1
 
-    # open RGB img from first timestamp and convert to grayscale
-    rgb_file = rgb_path + filename
-    rgb_img = np.load(rgb_file)
-    rot_img = np.rot90(rgb_img, -1)
-    color_img = cv2.cvtColor(rot_img, cv2.COLOR_BGR2RGB)
-    gray_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2GRAY)
-    registered_bricks = get_brick_poses(color_img, maskModel)
-    annotated_frame = registered_bricks.plot()
+    # Create side-by-side image
+    h, w0 = image0.shape[:2]
+    _, w1 = image1.shape[:2]
+    combined = np.zeros((h, w0 + w1, 3), dtype=np.uint8)
+    combined[:, :w0] = image0
+    combined[:, w0:] = image1
 
-    # # visualize images if needed
-    # cv2.imshow("Aria Image", color_img)
-    # cv2.imshow("Gray Image", gray_img)
-    # cv2.imshow("BBoxes", annotated_frame)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    # Draw matches
+    if len(matched_kpts0) > 0:
+        for i in range(len(matched_kpts0)):
+            pt0 = tuple(matched_kpts0[i].astype(int))
+            pt1 = tuple((matched_kpts1[i] + [w0, 0]).astype(int))
 
-    # get bounding boxes from YOLO
-    if registered_bricks is None:
-        print("No bricks detected, returning original image")
-        return gray_img, None
-    foc_box = find_most_focused_bbox(gaze_points, registered_bricks.boxes)
-    print(f"Most focused bbox: {foc_box}")
+            # Generate color based on position (gradient effect)
+            color_val = i / max(len(matched_kpts0) - 1, 1)
+            color = (
+                int(255 * (1 - color_val)),  # B
+                int(255 * color_val * 0.5),  # G
+                int(255 * color_val),  # R
+            )
 
-    socket.close()
-    return gray_img, foc_box["coordinates"]
+            # Draw line
+            cv2.line(combined, pt0, pt1, color, 1, cv2.LINE_AA)
+            # Draw keypoints
+            cv2.circle(combined, pt0, 3, color, -1, cv2.LINE_AA)
+            cv2.circle(combined, pt1, 3, color, -1, cv2.LINE_AA)
 
-
-def extract_timestamp(csv_file, first_timestamp):
-    df = pd.read_csv(csv_file)
-    df = df.sort_values(by="#timestamp [ns]")
-    start_row = df.iloc[(df["#timestamp [ns]"] - first_timestamp).abs().idxmin()]
-    start_idx = start_row.name
-    filename = df.loc[start_idx, "filename"]
-    return filename
+    return combined
 
 
-def extract_yaw_pitch(csv_file, first_timestamp, last_timestamp):
-    # load CSV and sort by timestamps
-    df = pd.read_csv(csv_file)
-    df = df.sort_values(by="tracking_timestamp_ns")
+class FeatureMatcher:
+    """Handles feature extraction and matching between two images using LightGlue."""
 
-    # Find closest rows to first_timestamp and last_timestamp
-    start_row = df.iloc[(df["tracking_timestamp_ns"] - first_timestamp).abs().idxmin()]
-    end_row = df.iloc[(df["tracking_timestamp_ns"] - last_timestamp).abs().idxmin()]
+    def __init__(self):
+        self.extractor = EXTRACTOR
+        self.matcher = MATCHER
+        logger.info("Feature matcher initialized")
 
-    # get indices and slice and save data inbetween timestamps
-    start_idx = start_row.name
-    end_idx = end_row.name
-    print(f"slice data between timestamps {start_idx} and {end_idx}")
-    if start_idx > end_idx:
-        start_idx, end_idx = end_idx, start_idx
-    result = df.loc[
-        start_idx:end_idx, ["tracking_timestamp_ns", "gaze_point_x", "gaze_point_y"]
-    ]
-    return result
+    def match_frames(
+        self, image0: np.ndarray, image1: np.ndarray
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Match features between two frames.
 
+        Args:
+            image0: First image (numpy array)
+            image1: Second image (numpy array)
 
-def get_brick_poses(color_image, maskModel):
-    registered_bricks = maskModel(color_image, iou=0.9, verbose=False)[0]
-    if not registered_bricks or registered_bricks[0] is None:
-        print("Warnung: Keine Erkennung")
-        return color_image  # original as fallback
-    return registered_bricks
+        Returns:
+            Dictionary containing keypoints and matches
+        """
+        # Extract features
+        feats0 = self.extractor.extract(numpy_image_to_torch(image0).to(DEVICE))
+        feats1 = self.extractor.extract(numpy_image_to_torch(image1).to(DEVICE))
 
+        # Match features
+        matches01 = self.matcher({"image0": feats0, "image1": feats1})
 
-def find_most_focused_bbox(gaze_points, result_boxes):
-    focus_counter = Counter()
-    bbox_lookup = {}
-    distances_per_bbox = defaultdict(list)
+        # Remove batch dimension
+        feats0, feats1, matches01 = [rbd(x) for x in [feats0, feats1, matches01]]
 
-    for gaze_point in gaze_points:
-        focused = find_focused_bbox(gaze_point, result_boxes)
-        if focused:
-            key = focused["bbox_index"]
-            focus_counter[key] += 1
-            distances_per_bbox[key].append(focused["distance"])
-            if key not in bbox_lookup:
-                bbox_lookup[key] = focused
-
-    if not focus_counter:
-        return None
-
-    most_common_key, count = focus_counter.most_common(1)[0]
-    avg_distance = sum(distances_per_bbox[most_common_key]) / len(
-        distances_per_bbox[most_common_key]
-    )
-    result = bbox_lookup[most_common_key].copy()
-    result["focus_count"] = count
-    result["distance"] = avg_distance
-    return result
-
-
-def find_focused_bbox(gaze_point, result_boxes):
-    x, y = gaze_point
-    closest_bbox = None
-    min_dist = float("inf")
-    i = 0
-    threshold = 150
-
-    # find focused bbox
-    for brick in result_boxes:
-        bbox_tensor = brick.xyxy[0]  # bbox coordinates as tensor
-        x1, y1, x2, y2 = bbox_tensor.tolist()
-
-        center_x = (x1 + x2) / 2
-        center_y = (y1 + y2) / 2
-        distance = math.hypot(center_x - x, center_y - y)
-        i += 1
-        if distance < min_dist and distance < threshold:
-            min_dist = distance
-            closest_bbox = {
-                "confidence": brick.conf[0],
-                "class": brick.cls[0],
-                "bbox_index": i,
-                "coordinates": (x1, y1, x2, y2),
-                "center": (center_x, center_y),
-                "distance": distance,
-            }
-    return closest_bbox
-
-
-def publish_bbox(context, tool_call, bbox, image_shape, ip, grab=False):
-    # extract most important values from bbox into dictionary
-    if grab:
-        bbox_tensor = bbox.xyxy[0]
-        x1, y1, x2, y2 = bbox_tensor.tolist()
-        center_x = (x1 + x2) / 2
-        center_y = (y1 + y2) / 2
-        height, width = image_shape[:2]
-        flipped_center = (width - center_x, height - center_y)
-        bbox_dict = {
-            "confidence": bbox.conf[0],
-            "class": bbox.cls[0],
-            "coordinates": (x1, y1, x2, y2),
-            "center": flipped_center,
+        return {
+            "keypoints0": feats0["keypoints"],
+            "keypoints1": feats1["keypoints"],
+            "matches": matches01["matches"],
+            "stop_layer": matches01["stop"],
+            "prune0": matches01["prune0"],
+            "prune1": matches01["prune1"],
         }
 
-    socket = context.socket(zmq.REQ)
-    socket.connect(ip + ":5559")
-    print("ZMQ socket connected to Panda3 PC")
 
-    # distinguish between greb_brick tool call (append coords) and others
-    if grab:
-        msg = {"function_name": ["grab_brick"], "arguments": [bbox_dict["center"]]}
-        socket.send_json(msg)
-        print("Bounding box of brick to grab sent to Panda3 PC...")
-    else:
-        socket.send_string(tool_call)
-        print(f"Command {tool_call['function_name'][0]} sent to Panda3 PC...")
+class FrameBuffer:
+    """Thread-safe frame buffer with timestamp tracking."""
 
-    # receive answer, whether tool call was succesfull
-    success = socket.recv_json()
-    if success:
-        print("Function successfully executed by Panda")
-    else:
-        print("Error: Function not successfully executed by Panda")
-    socket.close()
+    def __init__(self, name: str):
+        self.name = name
+        self._lock = Lock()
+        self._frame: Optional[np.ndarray] = None
+        self._frame_count = 0
+        self._fps = 0.0
+        self._last_fps_time = time.time()
+
+    def update(self, frame: np.ndarray) -> None:
+        """Update buffer with new frame."""
+        with self._lock:
+            self._frame = frame.copy()
+            self._frame_count += 1
+
+    def get(self) -> Optional[np.ndarray]:
+        """Get current frame."""
+        with self._lock:
+            if self._frame is None:
+                return None
+            return self._frame.copy()
+
+    def is_ready(self) -> bool:
+        """Check if buffer has a frame."""
+        with self._lock:
+            return self._frame is not None
+
+    def update_fps(self) -> None:
+        """Update FPS calculation."""
+        current_time = time.time()
+        with self._lock:
+            elapsed = current_time - self._last_fps_time
+            if elapsed >= 1.0:
+                self._fps = self._frame_count / elapsed
+                self._frame_count = 0
+                self._last_fps_time = current_time
+
+    @property
+    def fps(self) -> float:
+        """Get current FPS."""
+        with self._lock:
+            return self._fps
+
+    def reset_stats(self) -> None:
+        """Reset frame counter and FPS."""
+        with self._lock:
+            self._frame_count = 0
+            self._last_fps_time = time.time()
+            self._fps = 0.0
 
 
-def match_features():
-    srcpath = os.path.dirname(os.path.abspath(__file__))
-    filepath = srcpath[:-4]  # Adjust path to project root
-    data_path = os.path.join(filepath, "data")
-    robot_pkg_ip = "tcp://10.159.6.33"
-    context = zmq.Context()
-    maskModel = YOLO(os.path.join(srcpath, "best.pt"))
+class ROSCameraSubscriber:
+    """Subscribes to ROS2 camera feed via rosbridge."""
 
-    # 1. Initialize SuperGlue
-    print("Initializing SuperGlue")
-    matching = superglue_matching_init()
+    def __init__(
+        self, topic: str, host: str = "localhost", port: int = 9090, callback=None
+    ):
+        self.topic = topic
+        self.callback = callback
 
-    # 2. get images and bounding boxes from Aria and Robo
-    robo_img, bboxesrobo = get_robo_img_bbox(context, maskModel, robot_pkg_ip)
-    print(f"Panda Intel: Image and coordinates of Bounding Boxes found: {bboxesrobo}")
-    aria_img, bboxaria = get_aria_img_bbox(context, maskModel, data_path, robot_pkg_ip)
-    print(
-        f"Meta Aria glasses: Image and coordinates of focussed Bounding Box found: {bboxaria}"
+        # Connect to rosbridge
+        self.client = roslibpy.Ros(host=host, port=port)
+        self.client.run()
+        logger.info(f"Connected to rosbridge at {host}:{port}")
+
+        # Subscribe to image topic
+        self.subscriber = roslibpy.Topic(self.client, topic, "sensor_msgs/Image")
+        self.subscriber.subscribe(self._image_callback)
+        logger.info(f"Subscribed to {topic}")
+
+    def _image_callback(self, message: Dict) -> None:
+        """Internal callback for ROS image messages."""
+        try:
+            cv_image = self._decode_ros_image(message)
+            if cv_image is not None and self.callback:
+                self.callback(cv_image)
+        except Exception as e:
+            logger.error(f"Error processing ROS image: {e}")
+
+    def _decode_ros_image(self, message: Dict) -> Optional[np.ndarray]:
+        """Decode ROS image message to OpenCV format."""
+        width = message["width"]
+        height = message["height"]
+        encoding = message["encoding"]
+        data = message["data"]
+
+        # Decode base64 if necessary
+        if isinstance(data, str):
+            image_data = base64.b64decode(data)
+        else:
+            image_data = bytes(data)
+
+        # Convert based on encoding
+        if encoding == "rgb8":
+            image_array = np.frombuffer(image_data, dtype=np.uint8)
+            image_array = image_array.reshape((height, width, 3))
+            return cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
+        elif encoding == "bgr8":
+            image_array = np.frombuffer(image_data, dtype=np.uint8)
+            return image_array.reshape((height, width, 3))
+        else:
+            logger.warning(f"Unsupported encoding: {encoding}")
+            return None
+
+    def cleanup(self) -> None:
+        """Cleanup ROS connection."""
+        self.subscriber.unsubscribe()
+        self.client.terminate()
+
+
+class MatchingWorker:
+    """Background worker thread for feature matching."""
+
+    def __init__(self, matcher: FeatureMatcher):
+        self.matcher = matcher
+        self._queue = Queue(maxsize=1)
+        self._result_lock = Lock()
+        self._result: Optional[Dict] = None
+        self._active = True
+
+        # Start worker thread
+        self._thread = Thread(target=self._worker_loop, daemon=True)
+        self._thread.start()
+
+    def submit(self, frame0: np.ndarray, frame1: np.ndarray) -> bool:
+        """
+        Submit frames for matching.
+
+        Returns:
+            True if submitted, False if queue is full
+        """
+        if self._queue.empty():
+            try:
+                self._queue.put_nowait((frame0.copy(), frame1.copy()))
+                return True
+            except:
+                return False
+        return False
+
+    def get_result(self) -> Optional[Dict]:
+        """Get latest matching result."""
+        with self._result_lock:
+            return self._result
+
+    def _worker_loop(self) -> None:
+        """Main worker loop."""
+        while self._active:
+            if not self._queue.empty():
+                try:
+                    frame0, frame1 = self._queue.get()
+                    result = self.matcher.match_frames(frame0, frame1)
+
+                    with self._result_lock:
+                        self._result = result
+                except Exception as e:
+                    logger.error(f"Matching error: {e}", exc_info=True)
+            else:
+                time.sleep(0.01)
+
+    def stop(self) -> None:
+        """Stop worker thread."""
+        self._active = False
+
+
+class DualStreamMatcher:
+    """Main coordinator for dual stream feature matching."""
+
+    def __init__(
+        self,
+        ros_topic: str = "/camera/color/image_raw",
+        ros_host: str = "localhost",
+        ros_port: int = 9090,
+    ):
+        # Components
+        self.matcher = FeatureMatcher()
+        self.aria_buffer = FrameBuffer("Aria")
+        self.ros_buffer = FrameBuffer("ROS")
+        self.matching_worker = MatchingWorker(self.matcher)
+
+        # ROS subscriber
+        self.ros_subscriber = ROSCameraSubscriber(
+            topic=ros_topic, host=ros_host, port=ros_port, callback=self._on_ros_frame
+        )
+
+        # State
+        self.matching_enabled = True
+        self.show_matches = True  # Toggle for match visualization
+
+        logger.info("Dual stream matcher initialized")
+
+    def _on_ros_frame(self, frame: np.ndarray) -> None:
+        """Callback for ROS frames."""
+        self.ros_buffer.update(frame)
+        self._trigger_matching()
+
+    def on_aria_frame(self, frame: np.ndarray) -> None:
+        """Callback for Aria frames."""
+        # Rotate and convert Aria frame
+        rotated = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+        bgr_frame = cv2.cvtColor(rotated, cv2.COLOR_RGB2BGR)
+
+        self.aria_buffer.update(bgr_frame)
+        self._trigger_matching()
+
+    def _trigger_matching(self) -> None:
+        """Trigger matching if both frames are available."""
+        if not self.matching_enabled:
+            return
+
+        if self.aria_buffer.is_ready() and self.ros_buffer.is_ready():
+            aria_frame = self.aria_buffer.get()
+            ros_frame = self.ros_buffer.get()
+
+            if aria_frame is not None and ros_frame is not None:
+                self.matching_worker.submit(aria_frame, ros_frame)
+
+    def create_visualization(self) -> np.ndarray:
+        """Create visualization with or without matches."""
+        aria_frame = self.aria_buffer.get()
+        ros_frame = self.ros_buffer.get()
+
+        # Check if frames available
+        if aria_frame is None or ros_frame is None:
+            return self._create_placeholder()
+
+        # Get match result
+        match_result = self.matching_worker.get_result()
+
+        # Update FPS
+        self.aria_buffer.update_fps()
+        self.ros_buffer.update_fps()
+
+        if self.show_matches and match_result is not None:
+            # Create match visualization
+            visualization = draw_matches_opencv(
+                aria_frame,
+                ros_frame,
+                match_result["keypoints0"],
+                match_result["keypoints1"],
+                match_result["matches"],
+                max_matches=50,
+            )
+
+            # Add info overlay
+            num_matches = len(match_result["matches"])
+            info_text = [
+                f"Aria: {self.aria_buffer.fps:.1f} FPS",
+                f"ROS: {self.ros_buffer.fps:.1f} FPS",
+                f"Matches: {num_matches}",
+                f"Layer: {match_result['stop_layer']}",
+            ]
+
+            y_offset = 30
+            for text in info_text:
+                cv2.putText(
+                    visualization,
+                    text,
+                    (10, y_offset),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (0, 255, 0),
+                    2,
+                )
+                y_offset += 30
+
+            return visualization
+        else:
+            # Simple side-by-side view
+            target_height = 480
+            aria_resized = self._resize_frame(aria_frame, target_height)
+            ros_resized = self._resize_frame(ros_frame, target_height)
+
+            # Add labels
+            self._add_label(aria_resized, f"Aria ({self.aria_buffer.fps:.1f} FPS)")
+            self._add_label(ros_resized, f"ROS ({self.ros_buffer.fps:.1f} FPS)")
+
+            # Add match count if available
+            if match_result:
+                num_matches = len(match_result["matches"])
+                cv2.putText(
+                    aria_resized,
+                    f"Matches: {num_matches}",
+                    (10, 60),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    (255, 255, 0),
+                    2,
+                )
+
+            return np.hstack([aria_resized, ros_resized])
+
+    def _create_placeholder(self) -> np.ndarray:
+        """Create placeholder image when frames not available."""
+        placeholder = np.zeros((480, 640, 3), dtype=np.uint8)
+        cv2.putText(
+            placeholder,
+            "Waiting for frames...",
+            (150, 240),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (255, 255, 255),
+            2,
+        )
+        return placeholder
+
+    def _resize_frame(self, frame: np.ndarray, target_height: int) -> np.ndarray:
+        """Resize frame to target height maintaining aspect ratio."""
+        h, w = frame.shape[:2]
+        scale = target_height / h
+        return cv2.resize(frame, (int(w * scale), target_height))
+
+    def _add_label(self, frame: np.ndarray, text: str) -> None:
+        """Add label text to frame."""
+        cv2.putText(
+            frame, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2
+        )
+
+    def toggle_matching(self) -> None:
+        """Toggle matching on/off."""
+        self.matching_enabled = not self.matching_enabled
+        status = "enabled" if self.matching_enabled else "disabled"
+        logger.info(f"Matching {status}")
+
+    def toggle_match_visualization(self) -> None:
+        """Toggle match line visualization."""
+        self.show_matches = not self.show_matches
+        status = "enabled" if self.show_matches else "disabled"
+        logger.info(f"Match visualization {status}")
+
+    def reset_stats(self) -> None:
+        """Reset statistics."""
+        self.aria_buffer.reset_stats()
+        self.ros_buffer.reset_stats()
+        logger.info("Statistics reset")
+
+    def cleanup(self) -> None:
+        """Cleanup resources."""
+        logger.info("Cleaning up...")
+        self.matching_worker.stop()
+        self.ros_subscriber.cleanup()
+        cv2.destroyAllWindows()
+        logger.info("Cleanup complete")
+
+
+def dual_stream_matcher(project_root: Path) -> None:
+    """Main execution function."""
+    logger.info("\n=== Dual Stream Feature Matcher ===")
+    logger.info("Controls:")
+    logger.info("  'q' - Quit")
+    logger.info("  'm' - Toggle matching on/off")
+    logger.info("  'v' - Toggle match visualization")
+    logger.info("  's' - Save current frame")
+    logger.info("  'r' - Reset statistics")
+    logger.info("=" * 30 + "\n")
+
+    # Initialize matcher
+    matcher = DualStreamMatcher(
+        ros_topic="/camera/color/image_raw", ros_host="localhost", ros_port=9090
     )
 
-    # 3. Start matching features and compute bbox with gaze
-    print("Start matching features...")
-    aria_matched, robo_matched, mconf = superglue(
-        matching, aria_img, robo_img, bboxaria, data_path
-    )
-    print(f"matched Aria points: {aria_matched}")
-    matched_bbox, points_per_bbox = calculate_matching_points_in_box(
-        robo_matched, bboxesrobo
-    )
-    targeted_bbox = bboxesrobo[matched_bbox]
-    print(f"Matched bounding box index: {matched_bbox} with {points_per_bbox} points.")
+    # Initialize eye tracking
+    save_path = project_root / "output"
+    system = services.eye_tracking.initialize_eye_tracking(config.DEVICE)
 
-    # 4. publish the Bbox to Panda3 PC for grasping
-    publish_bbox(
-        context, "grab_brick", targeted_bbox, robo_img.shape, robot_pkg_ip, grab=True
-    )
+    # Create window
+    cv2.namedWindow("Aria + ROS2 Camera Matching", cv2.WINDOW_NORMAL)
+
+    try:
+        with AriaStreamClient() as aria_stream_client:
+            # Subscribe to Aria RGB stream
+            data_channels = [aria.StreamingDataType.Rgb]
+            observer: ImageObserver = aria_stream_client.subscribe(
+                data_channels,
+                ImageObserver(
+                    system.rgb_camera_calibration,
+                    system.rgb_linear_camera_calibration,
+                    str(save_path),
+                    config.ImageStreamProcessorConfig().CAMERA_ID_MAP,
+                ),
+                message_queue_size=1,
+            )
+            logger.info("Aria streaming started")
+
+            # Main loop
+            while not quit_keypress():
+                try:
+                    # Get Aria frame
+                    aria_frame = observer.get_undistorted_rgb_image()
+                    if aria_frame is not None:
+                        matcher.on_aria_frame(aria_frame)
+
+                    # Create and show visualization
+                    display = matcher.create_visualization()
+                    cv2.imshow("Aria + ROS2 Camera Matching", display)
+
+                    # Handle key presses
+                    key = cv2.waitKey(1) & 0xFF
+                    if key == ord("q"):
+                        break
+                    elif key == ord("m"):
+                        matcher.toggle_matching()
+                    elif key == ord("v"):
+                        matcher.toggle_match_visualization()
+                    elif key == ord("s"):
+                        timestamp = time.strftime("%Y%m%d_%H%M%S")
+                        filename = f"dual_stream_match_{timestamp}.png"
+                        cv2.imwrite(filename, display)
+                        logger.info(f"Saved frame to {filename}")
+                    elif key == ord("r"):
+                        matcher.reset_stats()
+
+                    # Small delay to prevent CPU spinning
+                    time.sleep(0.5)
+
+                except KeyError as e:
+                    logger.debug(f"Frame not yet available: {e}")
+                    time.sleep(0.1)
+                except Exception as e:
+                    logger.error(f"Error during visualization: {e}", exc_info=True)
+                    break
+
+    except KeyboardInterrupt:
+        logger.info("Interrupted by user")
+    except Exception as e:
+        logger.error(f"Fatal error: {e}", exc_info=True)
+    finally:
+        matcher.cleanup()

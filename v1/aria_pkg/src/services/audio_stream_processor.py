@@ -5,15 +5,27 @@ This module handles real-time audio capture, speech-to-text transcription using 
 and integration with a GPT-based inference system for intent recognition and tool calling.
 """
 
+from datetime import datetime
 import json
 import os
 from pathlib import Path
 import re
 import string
 import sys
+import time
 
 import aria.sdk as aria
 import pandas as pd
+import torch
+
+cudnn_path = os.path.join(
+    os.path.dirname(torch.__file__), "..", "nvidia", "cudnn", "lib"
+)
+cudnn_path = os.path.abspath(cudnn_path)  # Resolve to absolute path
+
+# Add to LD_LIBRARY_PATH
+os.environ["LD_LIBRARY_PATH"] = f"{cudnn_path}:{os.environ.get('LD_LIBRARY_PATH', '')}"
+
 from faster_whisper import WhisperModel
 
 from aria_device import AriaStreamClient, AudioObserver
@@ -98,7 +110,7 @@ def stream_audio(project_root: Path) -> None:
     with AriaStreamClient() as audio_streamer:
         data_channels = [aria.StreamingDataType.Audio]
         message_size = 100
-        observer = audio_streamer.subscribe(
+        observer: AudioObserver = audio_streamer.subscribe(
             data_channels, AudioObserver(), message_size
         )
 
@@ -108,6 +120,7 @@ def stream_audio(project_root: Path) -> None:
         command = "WAIT"
         # Speak "START" to start the recording, speak "FINISH" to save the command and start LLM Inference
         while not quit_flag:
+            start_iter_time = time.time()
             data = [["startTime_ns", "endTime_ns", "written", "confidence"]]
             if observer.received:
                 audios_16k, starttime_ns = observer.resample_audio()
@@ -124,34 +137,76 @@ def stream_audio(project_root: Path) -> None:
                     print("No segments detected, continue listening...")
                     continue
 
-                for segment in segments:
-                    for word in segment.words:
-                        normalized_word = re.sub(r"[^\w]", "", word.word.lower())
-                        if normalized_word == "start":  # start detected
-                            print("START DETECTED!\n")
-                            start_time = word.start
-                            save_flag = True
-                            command = "START"
-                        elif normalized_word == "finish" and save_flag:  # end detected
-                            print("FINISH DETECTED!\n")
-                            quit_flag = True
-                            save_flag = False
-                            command = "END"
+                """Save transcription results to text file"""
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-                        # save spoken words
-                        if save_flag:
-                            if word.start >= start_time:
-                                begin = int(
-                                    word.start * NANOSECONDS_PER_SECOND + starttime_ns
-                                )
-                                end = int(
-                                    word.end * NANOSECONDS_PER_SECOND + starttime_ns
-                                )
-                                print(f"[{begin}ns, -> {end}ns] {word.word}")
-                                data.append([begin, end, word.word, word.probability])
+                with open(
+                    "v1/aria_pkg/output/transcription.txt", "a", encoding="utf-8"
+                ) as f:
+                    f.write(f"\n{'='*60}\n")
+                    f.write(f"Transcription Time: {timestamp}\n")
+                    f.write(f"{'='*60}\n\n")
+
+                    for segment in segments:
+                        # Write segment with timestamp
+                        if not hasattr(segment, "words") or not segment.words:
+                            continue
+
+                        start_time = segment.start
+                        end_time = segment.end
+                        text = segment.text.strip()
+
+                        f.write(f"[{start_time:.2f}s - {end_time:.2f}s] {text}\n")
+
+                        # Write word-level timestamps if available
+                        if hasattr(segment, "words") and segment.words:
+                            for word in segment.words:
+                                f.write(f"  {word.start:.2f}s: {word.word}\n")
+                            f.write("\n")
+
+                        f.write("\n")
+
+                        print(f"Segment: {segment.text}")
+                        print(segment.words)
+                        for word in segment.words:
+                            normalized_word = re.sub(r"[^\w]", "", word.word.lower())
+                            if normalized_word == "start":  # start detected
+                                print("START DETECTED!\n")
+                                start_time = word.start
+                                save_flag = True
+                                command = "START"
+                            elif (
+                                normalized_word == "finish" and save_flag
+                            ):  # end detected
+                                print("FINISH DETECTED!\n")
+                                quit_flag = True
+                                save_flag = False
+                                command = "END"
+
+                            # save spoken words
+                            if save_flag:
+                                if word.start >= start_time:
+                                    begin = int(
+                                        word.start * NANOSECONDS_PER_SECOND
+                                        + starttime_ns
+                                    )
+                                    end = int(
+                                        word.end * NANOSECONDS_PER_SECOND + starttime_ns
+                                    )
+                                    print(f"[{begin}ns, -> {end}ns] {word.word}")
+                                    data.append(
+                                        [begin, end, word.word, word.probability]
+                                    )
 
             # Send command with a topic prefix "command" via ZMQ
             zmq_manager.send_command(command)
+
+            # Calculate elapsed time for this iteration
+            elapsed_time = time.time() - start_iter_time
+
+            # Sleep for the remaining time to ensure a 1-second interval per iteration
+            if elapsed_time < 1:
+                time.sleep(1 - elapsed_time)
 
         # 5. Unsubscribe to clean up resources
         print("Stop listening to audio data")

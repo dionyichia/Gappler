@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from enum import Enum
 
@@ -13,6 +14,10 @@ from aria_device import AriaStreamClient, ImageObserver
 from utils import DirectoryManager, quit_keypress, CSVWriter
 from config import ImageStreamProcessorConfig, ZMQConfig
 import services.eye_tracking
+import config
+
+logger = logging.getLogger(__name__)
+
 
 ZMQ_PORT = "tcp://localhost:5556"
 ZMQ_TOPIC = "command"
@@ -31,7 +36,6 @@ class CommandListener:
     def __init__(self):
         self.saving_state = SavingState.WAIT
         self._last_print_time = 0
-        self._running = False
 
     def start_listening(self) -> None:
         """Start listening thread for control commands."""
@@ -46,14 +50,10 @@ class CommandListener:
         socket.setsockopt_string(zmq.SUBSCRIBE, ZMQ_TOPIC)
         print(f"ZMQ socket connected to {ZMQ_PORT} for commands")
 
-        self._running = True
         try:
-            while self._running:
+            while not self.saving_state == SavingState.END:
                 _, command = socket.recv_string().split(" ", 1)
                 self._handle_command(command)
-
-                if self.saving_state == SavingState.END:
-                    break
         finally:
             socket.close()
 
@@ -79,10 +79,7 @@ class CommandListener:
             print(f"Error: Invalid command '{command}' received")
 
 
-def stream_image(project_root: Path) -> None:
-    # Setup directories and CSV writer
-    save_path = os.path.join(project_root, "data")
-
+def setup_directories(save_path: str) -> None:
     directories = [
         os.path.join(save_path, "rgbcam"),
         os.path.join(save_path, "eyetrack"),
@@ -94,16 +91,28 @@ def stream_image(project_root: Path) -> None:
     for directory in directories:
         DirectoryManager.create_or_reset(directory)
 
-    csv_writer = CSVWriter(
-        os.path.join(save_path, "eyetracking", "general_eye_gaze.csv"),
-        ImageStreamProcessorConfig.EYE_GAZE_CSV_HEADERS,
-    )
 
-    # 1. Initialize eye-tracking inference model
-    system = services.eye_tracking.initialize_eye_tracking("cuda")
+def stream_image(project_root: Path) -> None:
+    # Setup directories and CSV writer
+    save_path = os.path.join(project_root, "output")
+    setup_directories(save_path)
 
-    # 2. Setup Aria data streaming
-    with AriaStreamClient() as aria_stream_client:
+    aria_stream_client = None
+    aria_window = "Meta Aria image"
+
+    try:
+        csv_writer = CSVWriter(
+            os.path.join(save_path, "eyetracking", "general_eye_gaze.csv"),
+            ImageStreamProcessorConfig.EYE_GAZE_CSV_HEADERS,
+        )
+
+        # 1. Initialize eye-tracking inference model
+        system = services.eye_tracking.initialize_eye_tracking(config.DEVICE)
+
+        # 2. Setup Aria data streaming
+        aria_stream_client = AriaStreamClient()
+        aria_stream_client.__enter__()
+
         data_channels = [aria.StreamingDataType.Rgb, aria.StreamingDataType.EyeTrack]
         message_size = 1  # 1 is usually sufficient for real-time applications
         observer = aria_stream_client.subscribe(
@@ -112,7 +121,7 @@ def stream_image(project_root: Path) -> None:
                 system.rgb_camera_calibration,
                 system.rgb_linear_camera_calibration,
                 save_path,
-                ImageStreamProcessorConfig.CAMERA_ID_MAP,
+                ImageStreamProcessorConfig().CAMERA_ID_MAP,
             ),
             message_size,
         )
@@ -122,7 +131,6 @@ def stream_image(project_root: Path) -> None:
         command_listener.start_listening()
 
         # 4. Setup OpenCV window
-        aria_window = "Meta Aria image"
         cv2.namedWindow(aria_window, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(aria_window, 1024, 1024)
         cv2.setWindowProperty(aria_window, cv2.WND_PROP_TOPMOST, 1)
@@ -130,46 +138,70 @@ def stream_image(project_root: Path) -> None:
 
         # 5. Visualize data stream
         while not quit_keypress():
-            value_mapping, eye_gaze_inference_result = (
-                services.eye_tracking.real_time_eyetracking(
-                    system.inference_model,
-                    observer.images,
-                    aria.CameraId.EyeTrack,
-                    observer.timestamp,
-                )
-            )
-            gaze_point, image_with_gaze = (
-                services.eye_tracking.eye_tracking_visualization(
-                    system.device_calibration,
-                    system.rgb_camera_calibration,
-                    system.rgb_stream_label,
-                    aria.CameraId.Rgb,
-                    observer.images,
-                    value_mapping,
-                )
-            )  # , T_device_CPF)
-
-            # visualize streaming and save when START command is detected
-            if command_listener.saving_state == SavingState.START:
-                observer.save_flag = True
-                if image_with_gaze is not None:
-                    image_with_gaze = np.array(image_with_gaze)
-                    rotated_image = np.rot90(image_with_gaze, -1)
-                    color_img = cv2.cvtColor(rotated_image, cv2.COLOR_RGB2BGR)
-                    cv2.imshow(aria_window, color_img)
-                    gaze_point_rotated = np.array(
-                        [image_with_gaze.shape[0] - gaze_point[1] - 1, gaze_point[0]]
+            try:
+                value_mapping, eye_gaze_inference_result = (
+                    services.eye_tracking.real_time_eyetracking(
+                        system.inference_model,
+                        observer.images,
+                        aria.CameraId.EyeTrack,
+                        observer.timestamp,
                     )
-                    eye_gaze_inference_result.extend(
-                        gaze_point_rotated.tolist()
-                    )  # extend with coordinates of ET
-                    csv_writer.write_row(
-                        eye_gaze_inference_result,
-                    )
-            elif command_listener.saving_state == SavingState.END:
-                print("Stop listening to image data")
-                break
+                )
 
-        # 6. free resources
-        cv2.destroyAllWindows()
+                gaze_point, image_with_gaze = (
+                    services.eye_tracking.eye_tracking_visualization(
+                        system.device_calibration,
+                        system.rgb_camera_calibration,
+                        system.rgb_stream_label,
+                        aria.CameraId.Rgb,
+                        observer.images,
+                        value_mapping,
+                    )
+                )
+
+                # visualize streaming and save when START command is detected
+                if command_listener.saving_state == SavingState.START or True:
+                    observer.save_flag = True
+                    if image_with_gaze is not None:
+                        image_with_gaze = np.array(image_with_gaze)
+                        rotated_image = np.rot90(image_with_gaze, -1)
+                        color_img = cv2.cvtColor(rotated_image, cv2.COLOR_RGB2BGR)
+                        cv2.imshow(aria_window, color_img)
+
+                        gaze_point_rotated = np.array(
+                            [
+                                image_with_gaze.shape[0] - gaze_point[1] - 1,
+                                gaze_point[0],
+                            ]
+                        )
+                        eye_gaze_inference_result.extend(gaze_point_rotated.tolist())
+                        csv_writer.write_row(eye_gaze_inference_result)
+
+                elif command_listener.saving_state == SavingState.END:
+                    print("Stop listening to image data")
+                    break
+
+            except Exception as e:
+                print(f"Error processing frame: {e}")
+                continue
+
+    except KeyboardInterrupt:
+        print("\nStreaming interrupted by user")
+    except Exception as e:
+        print(f"Error during streaming: {e}")
+        raise
+    finally:
+        print("Cleaning up resources...")
+
+        try:
+            cv2.destroyAllWindows()
+        except Exception as e:
+            print(f"Error closing OpenCV windows: {e}")
+
+        if aria_stream_client is not None:
+            try:
+                aria_stream_client.__exit__(None, None, None)
+            except Exception as e:
+                print(f"Error closing Aria stream: {e}")
+
         print("Streaming terminated, resources cleaned up")

@@ -201,7 +201,7 @@ def load_checkpoint(
 ):
     map_location = "cpu"
 
-    model_buffer = torch.load(chkpt_path, map_location=map_location)
+    model_buffer = torch.load(chkpt_path, map_location=map_location, weights_only=False)
 
     state_dict = model_buffer["model"]
     any_key = next(iter(state_dict.keys()))
