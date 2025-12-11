@@ -4,4 +4,13 @@ __pycache__/
 # MAC OS
 .DS_Store
 
+.venv
+
 sam3
+
+output/*
+logs
+recordings
+assets/aria/mps_init_vrs
+assets/aria/mps_Eye_Gaze_Calibration__vrs
+assets/aria/Eye_Gaze_Calibration_.vrs
