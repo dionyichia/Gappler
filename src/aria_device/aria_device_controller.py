@@ -4,9 +4,9 @@ from typing import Optional
 
 import aria.sdk as aria
 from projectaria_tools.core.calibration import (
+    CameraCalibration,
+    DeviceCalibration,
     device_calibration_from_json_string,
-    distort_by_calibration,
-    get_linear_camera_calibration,
 )
 
 from config import AriaConfig
@@ -235,7 +235,24 @@ class AriaDeviceController:
         if status.wifi_ip_address:
             logger.info(f"  WiFi IP: {status.wifi_ip_address}")
 
-    def get_rgb_camera_calibration(self) -> Optional[aria.CameraCalibration]:
+    def get_device_calibration(self) -> Optional[DeviceCalibration]:
+        """
+        Get device calibration from the connected device.
+
+        Returns:
+            DeviceCalibration instance, or None if not connected.
+        """
+        if not self._device:
+            logger.warning("Device not connected")
+            return None
+
+        streaming_manager = self._device.streaming_manager
+        sensors_calib_json_str = streaming_manager.sensors_calibration()
+        device_calib = device_calibration_from_json_string(sensors_calib_json_str)
+
+        return device_calib
+
+    def get_rgb_camera_calibration(self) -> Optional[CameraCalibration]:
         """
         Get RGB camera calibration from the connected device.
 
@@ -247,11 +264,10 @@ class AriaDeviceController:
             return None
 
         streaming_manager = self._device.streaming_manager
-        sensors_calib_json = streaming_manager.sensors_calibration()
-        sensors_calib = device_calibration_from_json_string(sensors_calib_json)
-        rgb_calib = sensors_calib.get_camera_calib("camera-rgb")
+        sensors_calib_json_str = streaming_manager.sensors_calibration()
+        sensors_calib = device_calibration_from_json_string(sensors_calib_json_str)
+        rgb_calib = sensors_calib.get_camera_calib(AriaConfig.RGB_STREAM_LABEL)
 
-        dst_calib = get_linear_camera_calibration(512, 512, 150, "camera-rgb")
         return rgb_calib
 
     @property

@@ -1,21 +1,25 @@
-import aria.sdk as aria
 import csv
-import numpy as np
 import os
+import time
+import wave
+from datetime import datetime
+from pathlib import Path
+from typing import Callable, Dict, List, Optional, Sequence
+
+import aria.sdk as aria
+import numpy as np
 from projectaria_tools.core import calibration
+from projectaria_tools.core.calibration import (
+    get_linear_camera_calibration,
+)
 from projectaria_tools.core.sensor_data import (
+    AudioData,
+    AudioDataRecord,
     BarometerData,
     ImageDataRecord,
     MotionData,
-    AudioDataRecord,
-    AudioData,
 )
 from scipy.signal import resample
-from typing import Callable, Dict, List, Optional, Sequence
-import wave
-from pathlib import Path
-from datetime import datetime
-import time
 
 import config
 
@@ -47,12 +51,13 @@ class ImageObserver(BaseStreamingClientObserver):
 
     def __init__(
         self,
-        rgb_camera_calibration: calibration.CameraCalibration,
-        rgb_linear_camera_calibration: calibration.CameraCalibration,
+        source_calibration: calibration.CameraCalibration,
         save_path: str,
     ):
-        self.rgb_camera_calibration = rgb_camera_calibration
-        self.rgb_linear_camera_calibration = rgb_linear_camera_calibration
+        self.source_calibration = source_calibration
+        self.dest_calibration = get_linear_camera_calibration(
+            512, 512, 150, "camera-rgb"
+        )
         self.save_path = save_path
 
         self.images: dict[str, np.ndarray] = {}
@@ -205,8 +210,8 @@ class ImageObserver(BaseStreamingClientObserver):
         # Undistort image
         undistort_image = calibration.distort_by_calibration(
             image,
-            self.rgb_linear_camera_calibration,
-            self.rgb_camera_calibration,
+            self.dest_calibration,
+            self.source_calibration,
         )
 
         # Save undistorted image
@@ -231,8 +236,8 @@ class ImageObserver(BaseStreamingClientObserver):
         if aria.CameraId.Rgb in self.images:
             undistort_image = calibration.distort_by_calibration(
                 self.images[aria.CameraId.Rgb],
-                self.rgb_linear_camera_calibration,
-                self.rgb_camera_calibration,
+                self.dest_calibration,
+                self.source_calibration,
             )
             return undistort_image
         else:

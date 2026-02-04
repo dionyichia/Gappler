@@ -3,31 +3,29 @@ Dual Stream Feature Matcher with integrated visualization and timestamp recordin
 Matches features between Aria glasses and ROS2 camera streams using LightGlue.
 """
 
+import base64
 import csv
-from dataclasses import dataclass
 import logging
 import os
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from queue import Queue
 from threading import Lock, Thread
-from typing import Optional, Dict
-import base64
+from typing import Dict, Optional
 
+import aria.sdk as aria
 import cv2
 import numpy as np
 import roslibpy
 import torch
 
-import aria.sdk as aria
-
-from models.LightGlue.lightglue import LightGlue, SuperPoint
-from models.LightGlue.lightglue.utils import numpy_image_to_torch, rbd
-
 import config
 import services.eye_tracking
 from aria_device.aria_stream_client import AriaStreamClient
 from aria_device.streaming_client_observer import ImageObserver
+from models.LightGlue.lightglue import LightGlue, SuperPoint
+from models.LightGlue.lightglue.utils import numpy_image_to_torch, rbd
 from utils.keyboard import quit_keypress
 
 # Configuration
@@ -757,7 +755,7 @@ def dual_stream_matcher(project_root: Path, enable_recording: bool = True) -> No
     )
 
     # Initialize eye tracking
-    system = services.eye_tracking.initialize_eye_tracking(config.DEVICE)
+    system = services.eye_tracking.initialize_eye_tracking_model(config.DEVICE)
 
     value_mapping, eye_gaze_inference_result = (
         services.eye_tracking.real_time_eyetracking(

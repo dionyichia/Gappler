@@ -20,8 +20,6 @@ class Settings:
     LOG_DIR: str = "logs"
     LOG_LEVEL: str = "DEBUG"
 
-    DEBUG: bool = False
-
     SAVE_IMAGE_FLAG: bool = True
 
 
@@ -29,6 +27,7 @@ class Settings:
 class AriaConfig:
     ARIA_LOG_LEVEL: aria.Level = aria.Level.Info
     ARIA_STREAMING_PROFILE_NAME: str = "profile18"
+    RGB_STREAM_LABEL: str = "camera-rgb"
     ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = None
     # ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = ipaddress.IPv4Address("")
 

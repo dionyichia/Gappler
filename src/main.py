@@ -16,8 +16,7 @@ from config import AriaConfig
 from services.audio_stream_processor import stream_audio
 from services.feature_matching import dual_stream_matcher
 from services.image_stream_processor import stream_image
-
-# from services.playback import playback_recording
+from services.playback import playback_recording
 from utils import TerminalRawMode, safe_update_iptables, setup_logging
 
 torch.set_grad_enabled(False)
@@ -77,14 +76,6 @@ def main():
                 profile=AriaConfig.ARIA_STREAMING_PROFILE_NAME, interface=interface
             )
 
-            # import threading
-
-            # image_thread = threading.Thread(target=stream_image, args=(PROJECT_ROOT,))
-            # image_thread.start()
-
-            # if image_thread and image_thread.is_alive():
-            #     image_thread.join()
-
             ctx = multiprocessing.get_context("forkserver")
             audio_process, image_process, matcher_process = None, None, None
             # audio_process = ctx.Process(target=stream_audio, args=(PROJECT_ROOT,))
@@ -101,6 +92,14 @@ def main():
             #     audio_process.join()
             # if matcher_process and matcher_process.is_alive():
             #     matcher_process.join()
+
+            # import threading
+
+            # image_thread = threading.Thread(target=stream_image, args=(PROJECT_ROOT,))
+            # image_thread.start()
+
+            # if image_thread and image_thread.is_alive():
+            #     image_thread.join()
 
 
 if __name__ == "__main__":
