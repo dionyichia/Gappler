@@ -5,247 +5,242 @@ This module handles real-time audio capture, speech-to-text transcription using 
 and integration with a GPT-based inference system for intent recognition and tool calling.
 """
 
-from datetime import datetime
-import json
+import logging
 import os
-from pathlib import Path
-import re
 import string
-import sys
 import time
+from dataclasses import dataclass
+from typing import List, Tuple
 
 import aria.sdk as aria
-import pandas as pd
 import torch
-
-cudnn_path = os.path.join(
-    os.path.dirname(torch.__file__), "..", "nvidia", "cudnn", "lib"
-)
-cudnn_path = os.path.abspath(cudnn_path)  # Resolve to absolute path
-
-# Add to LD_LIBRARY_PATH
-os.environ["LD_LIBRARY_PATH"] = f"{cudnn_path}:{os.environ.get('LD_LIBRARY_PATH', '')}"
-
+import zmq
 from faster_whisper import WhisperModel
 
+import config
 from aria_device import AriaStreamClient, AudioObserver
-from config import AudioStreamProcessorConfig
-from utils import CSVWriter
-from services.zmq_manager import ZMQManager
+from services.prompt_extractor import LLMPromptExtractor
 
 # Constants
 WHISPER_MODEL = "small.en"
 NANOSECONDS_PER_SECOND = int(1e9)
-TRIGGER_WORD_START = "start"
-TRIGGER_WORD_FINISH = "finish"
+ITERATION_INTERVAL_SECONDS = 1
 
 
-def normalize_word(word: str) -> str:
-    """Remove punctuation and convert to lowercase."""
-    return word.translate(str.maketrans("", "", string.punctuation)).strip().lower()
+@dataclass
+class TranscriptionWord:
+    """Represents a single transcribed word with timing and confidence."""
+
+    start_ns: int
+    end_ns: int
+    text: str
+    confidence: float
 
 
-def find_timestamps(csv_file, question, gpt_output):
-    """
-    Match GPT output words with timestamps from CSV transcription.
+class CUDNNPathConfigurator:
+    """Configures CUDNN library path for PyTorch."""
 
-    Args:
-        csv_file: Path to CSV containing transcribed words with timestamps
-        question: Original question text
-        gpt_output: GPT response containing words to match
-
-    Returns:
-        Updated GPT output with timestamp information
-    """
-    gpt_words = gpt_output.get("word", [])
-    timestamp_result = {"startTime_ns": [], "endTime_ns": []}
-
-    df = pd.read_csv(csv_file)
-
-    for gpt_word in gpt_words:
-        gpt_word_cleaned = normalize_word(gpt_word)
-
-        for index, row in df.iterrows():
-            csv_word_cleaned = normalize_word(row["written"])
-
-            if gpt_word_cleaned == csv_word_cleaned:
-                timestamp_result["startTime_ns"].append(row["startTime_ns"])
-                timestamp_result["endTime_ns"].append(row["endTime_ns"])
-                df = df.drop(index)
-                break
-
-    gpt_output.update(timestamp_result)
-    gpt_output["question"] = [question]
-    return gpt_output
-
-
-# loads question from transcribed speech saved in CSV
-def combine_written_to_string(csv_file):
-    """
-    Combine all transcribed words into a single cleaned string.
-
-    Args:
-        csv_file: Path to CSV containing transcribed words
-
-    Returns:
-        Combined and cleaned transcription text
-    """
-    df = pd.read_csv(csv_file)
-    words = []
-    for _, row in df.iterrows():
-        cleaned = normalize_word(row["written"])
-        words.append(cleaned)
-    return " ".join(words).strip()
-
-
-def stream_audio(project_root: Path) -> None:
-    csv_filepath = os.path.join(project_root, AudioStreamProcessorConfig.CSV_FILEPATH)
-    csv_writer = CSVWriter(csv_filepath)
-
-    model = WhisperModel(WHISPER_MODEL, device="auto", compute_type="int8")
-
-    zmq_manager = ZMQManager()
-    zmq_manager.setup_sockets()
-
-    with AriaStreamClient() as audio_streamer:
-        data_channels = [aria.StreamingDataType.Audio]
-        message_size = 100
-        observer: AudioObserver = audio_streamer.subscribe(
-            data_channels, AudioObserver(), message_size
+    @staticmethod
+    def configure():
+        """Add CUDNN path to LD_LIBRARY_PATH environment variable."""
+        cudnn_path = os.path.join(
+            os.path.dirname(torch.__file__), "..", "nvidia", "cudnn", "lib"
         )
+        cudnn_path = os.path.abspath(cudnn_path)
+        current_ld_path = os.environ.get("LD_LIBRARY_PATH", "")
+        os.environ["LD_LIBRARY_PATH"] = f"{cudnn_path}:{current_ld_path}"
 
-        quit_flag = False
-        save_flag = False
-        start_time = 0
-        command = "WAIT"
-        # Speak "START" to start the recording, speak "FINISH" to save the command and start LLM Inference
-        while not quit_flag:
-            start_iter_time = time.time()
-            data = [["startTime_ns", "endTime_ns", "written", "confidence"]]
-            if observer.received:
-                audios_16k, starttime_ns = observer.resample_audio()
-                segments, _ = model.transcribe(
-                    audios_16k,
-                    language="en",
-                    word_timestamps=True,
-                    vad_filter=True,
-                    beam_size=5,
-                    condition_on_previous_text=False,
+
+class ZMQManager:
+    """Manages ZeroMQ socket connections for command publishing."""
+
+    def __init__(self, command_address: str = config.ZMQConfig.AUDIO_COMMAND_ADDRESS):
+        """
+        Initialize ZMQ manager.
+
+        Args:
+            command_address: ZMQ address to bind command socket to
+        """
+        self.context = zmq.Context()
+        self.command_socket = None
+        self.command_address = command_address
+
+    def setup_sockets(self):
+        """Initialize and configure all ZMQ sockets."""
+        self.command_socket = self.context.socket(zmq.PUB)
+        self.command_socket.bind(self.command_address)
+        logging.info(f"Command socket bound to {self.command_address}")
+
+    def send_command(self, command: str):
+        """
+        Send command via command socket.
+
+        Args:
+            command: Command string to send
+        """
+        if self.command_socket:
+            self.command_socket.send_string(command)
+            logging.debug(f"Sent command: {command}")
+        else:
+            logging.warning("Command socket not initialized")
+
+    def close_all(self):
+        """Close all sockets and cleanup context."""
+        if self.command_socket:
+            self.command_socket.close()
+            logging.info("Command socket closed")
+        self.context.term()
+
+
+def normalize_phrase(phrase: str) -> str:
+    """Remove punctuation and convert to lowercase."""
+    return phrase.translate(str.maketrans("", "", string.punctuation)).strip().lower()
+
+
+class AudioTranscriptionPipeline:
+    """Main pipeline for audio streaming and transcription."""
+
+    def __init__(
+        self,
+        whisper_model: str = WHISPER_MODEL,
+        llm_model: str = "Qwen/Qwen2.5-0.5B-Instruct",
+    ):
+        """
+        Initialize the audio transcription pipeline.
+
+        Args:
+            whisper_model: Whisper model identifier
+            llm_model: LLM model identifier for prompt extraction
+            output_dir: Directory for output files
+        """
+        # Configure logging
+        logging.getLogger("faster_whisper").setLevel(logging.WARNING)
+
+        # Initialize components
+        self.whisper_model = WhisperModel(
+            whisper_model, device=config.Settings.DEVICE, compute_type="int8"
+        )
+        self.llm_extractor = LLMPromptExtractor(llm_model)
+        self.zmq_manager = ZMQManager()
+
+        logging.info("Audio transcription pipeline initialized")
+
+    def _process_segments(
+        self, segments, starttime_ns: int
+    ) -> Tuple[bool, List[TranscriptionWord]]:
+        """
+        Process transcription segments and detect trigger words.
+
+        Args:
+            segments: Iterable of transcription segments
+            starttime_ns: Start time in nanoseconds
+
+        Returns:
+            Tuple of (should_quit, recorded_words)
+        """
+        should_quit = False
+        recorded_words = []
+
+        for segment in segments:
+            if not hasattr(segment, "words") or not segment.words:
+                continue
+
+            logging.info(f"Segment: {segment.text}")
+
+            # Process each word for trigger detection
+            for word in segment.words:
+                # Convert to nanoseconds
+                start_ns = int(word.start * NANOSECONDS_PER_SECOND + starttime_ns)
+                end_ns = int(word.end * NANOSECONDS_PER_SECOND + starttime_ns)
+
+                recorded_words.append(
+                    TranscriptionWord(
+                        start_ns=start_ns,
+                        end_ns=end_ns,
+                        text=word.word,
+                        confidence=word.probability,
+                    )
                 )
 
-                if segments is None:
-                    print("No segments detected, continue listening...")
-                    continue
+                logging.info(f"[{start_ns}ns -> {end_ns}ns] {word.word}")
 
-                """Save transcription results to text file"""
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Send segment to LLM for intent extraction
+            if hasattr(segment, "text") and segment.text:
+                command = self.llm_extractor.extract_object(segment.text)
+                self.zmq_manager.send_command(command)
 
-                with open(
-                    "v1/aria_pkg/output/transcription.txt", "a", encoding="utf-8"
-                ) as f:
-                    f.write(f"\n{'='*60}\n")
-                    f.write(f"Transcription Time: {timestamp}\n")
-                    f.write(f"{'='*60}\n\n")
+        return should_quit, recorded_words
 
-                    for segment in segments:
-                        # Write segment with timestamp
-                        if not hasattr(segment, "words") or not segment.words:
+    def run(self):
+        """Execute the main audio streaming and transcription loop."""
+        self.zmq_manager.setup_sockets()
+
+        try:
+            with AriaStreamClient() as audio_streamer:
+                # Subscribe to audio data
+                data_channels = [aria.StreamingDataType.Audio]
+                message_size = 100
+                observer: AudioObserver = audio_streamer.subscribe(
+                    data_channels, AudioObserver(), message_size
+                )
+
+                logging.info("Started audio streaming")
+
+                while True:
+                    start_time = time.time()
+
+                    if observer.received:
+                        # Resample audio and transcribe
+                        audios_16k, starttime_ns = observer.resample_audio()
+                        segments, _ = self.whisper_model.transcribe(
+                            audios_16k,
+                            language="en",
+                            word_timestamps=True,
+                            vad_filter=True,
+                            beam_size=5,
+                            condition_on_previous_text=False,
+                        )
+
+                        if segments is None:
+                            logging.debug("No segments detected, continuing...")
                             continue
 
-                        start_time = segment.start
-                        end_time = segment.end
-                        text = segment.text.strip()
+                        # Convert to list to allow multiple iterations
+                        segments_list = list(segments)
 
-                        f.write(f"[{start_time:.2f}s - {end_time:.2f}s] {text}\n")
+                        # Process segments for trigger words and recording
+                        should_quit, recorded_words = self._process_segments(
+                            segments_list, starttime_ns
+                        )
 
-                        # Write word-level timestamps if available
-                        if hasattr(segment, "words") and segment.words:
-                            for word in segment.words:
-                                f.write(f"  {word.start:.2f}s: {word.word}\n")
-                            f.write("\n")
+                        if should_quit:
+                            logging.info("Quit signal received, stopping pipeline")
+                            break
 
-                        f.write("\n")
+                    # Maintain consistent iteration interval
+                    elapsed = time.time() - start_time
+                    if elapsed < ITERATION_INTERVAL_SECONDS:
+                        time.sleep(ITERATION_INTERVAL_SECONDS - elapsed)
 
-                        print(f"Segment: {segment.text}")
-                        print(segment.words)
-                        for word in segment.words:
-                            normalized_word = re.sub(r"[^\w]", "", word.word.lower())
-                            if normalized_word == "start":  # start detected
-                                print("START DETECTED!\n")
-                                start_time = word.start
-                                save_flag = True
-                                command = "START"
-                            elif (
-                                normalized_word == "finish" and save_flag
-                            ):  # end detected
-                                print("FINISH DETECTED!\n")
-                                quit_flag = True
-                                save_flag = False
-                                command = "END"
+                audio_streamer.streaming_client.unsubscribe()
+                logging.info("Unsubscribed from audio stream")
 
-                            # save spoken words
-                            if save_flag:
-                                if word.start >= start_time:
-                                    begin = int(
-                                        word.start * NANOSECONDS_PER_SECOND
-                                        + starttime_ns
-                                    )
-                                    end = int(
-                                        word.end * NANOSECONDS_PER_SECOND + starttime_ns
-                                    )
-                                    print(f"[{begin}ns, -> {end}ns] {word.word}")
-                                    data.append(
-                                        [begin, end, word.word, word.probability]
-                                    )
+        except Exception as e:
+            logging.error(f"Error in audio pipeline: {e}", exc_info=True)
+        finally:
+            self.zmq_manager.close_all()
+            logging.info("Pipeline shutdown complete")
 
-            # Send command with a topic prefix "command" via ZMQ
-            zmq_manager.send_command(command)
 
-            # Calculate elapsed time for this iteration
-            elapsed_time = time.time() - start_iter_time
+def stream_audio():
+    """Entry point for the audio transcription pipeline."""
+    # Configure CUDNN path
+    CUDNNPathConfigurator.configure()
 
-            # Sleep for the remaining time to ensure a 1-second interval per iteration
-            if elapsed_time < 1:
-                time.sleep(1 - elapsed_time)
+    # Create and run pipeline
+    pipeline = AudioTranscriptionPipeline()
+    pipeline.run()
 
-        # 5. Unsubscribe to clean up resources
-        print("Stop listening to audio data")
-        audio_streamer.streaming_client.unsubscribe()
 
-        # 6. save data/word list
-        print("Saving word list to CSV file...")
-        del data[1]  # delete first row "start"
-        csv_writer.write_rows(data)
-
-        # 7. initialize GPT inference (LLama) via ZMQ
-        # question = combine_written_to_string(csv_filepath)
-        # response = zmq_manager.request_gpt_inference(question)
-
-        # process tool call
-        # tool_response = json.loads(response.get("tool"))
-        # if tool_response is not None:
-        #     print(f"Tool response received: <{tool_response}\n")
-        #     tool_call = tool_response["function_name"][0]
-        #     print(f"Tool call: {tool_call}")
-        #     if tool_call == "grab_brick":
-        #         pass
-        #     else:
-        #         # publish directly, grab_brick not called, no intention alignment needed
-        #         zmq_manager.publish_tool_call(tool_response)
-        #         sys.exit()
-        # else:
-        #     print("No tool response received from Avalon server, check if it is running")
-
-        # # process intention alignment
-        # intent_response = json.loads(response.get("intent"))
-        # if intent_response is not None:
-        #     print(f"Intent response received: {intent_response}\n")
-        #     intent_json = find_timestamps(csv_filepath, question, intent_response)
-        #     tool_response["arguments"] = [intent_json]
-        #     zmq_manager.publish_tool_call(tool_response)
-        #     print(f"tool_call {tool_response} published to ZMQ, ending GPT inference...")
-        # else:
-        #     print("No intent response received from Avalon server, check if it is running")
-
-        # close ZMQ sockets
-        zmq_manager.close_all()
+if __name__ == "__main__":
+    stream_audio()

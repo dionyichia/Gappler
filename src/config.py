@@ -1,14 +1,14 @@
 """Configuration constants for Aria streaming application."""
 
 import ipaddress
+import logging
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 import aria.sdk as aria
 import torch
-
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 @dataclass(frozen=True)
@@ -17,10 +17,13 @@ class Settings:
 
     APP_NAME: str = "Renaissance Capstone Project"
 
-    LOG_DIR: str = "logs"
-    LOG_LEVEL: str = "DEBUG"
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-    DEBUG: bool = False
+    LOG_DIR: str = "logs"
+    LOG_LEVEL: str = logging.INFO
+
+    SCRIPT_DIR = Path(__file__).resolve().parent
+    PROJECT_ROOT = SCRIPT_DIR.parent
 
     SAVE_IMAGE_FLAG: bool = True
 
@@ -29,8 +32,12 @@ class Settings:
 class AriaConfig:
     ARIA_LOG_LEVEL: aria.Level = aria.Level.Info
     ARIA_STREAMING_PROFILE_NAME: str = "profile18"
+    RGB_STREAM_LABEL: str = "camera-rgb"
+    DEST_CALIBRATION_HEIGHT_PX: int = 1408
+    DEST_CALIBRATION_WIDTH_PX: int = 1408
+    DEST_CALIBRATION_FOCAL_LENGTH: int = 609
     ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = None
-    # ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = ipaddress.IPv4Address("")
+    # ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = ipaddress.IPv4Address()
 
 
 @dataclass(frozen=True)
@@ -67,62 +74,43 @@ class ImageStreamProcessorConfig:
             )
 
 
-@dataclass(frozen=True)
-class AudioStreamProcessorConfig:
-    CSV_FILEPATH: str = "output/audio/word_list.csv"
+class ZMQTopics(Enum):
+    """Available ZMQ topic types."""
+
+    RGB_CAMERA_RAW = "0"
+    RGB_CAMERA_UNDISTORTED = "1"
+    RGB_CAMERA_WITH_GAZE_DETECTION = "2"
+    EYE_TRACKING = "3"
+    RGB_WITH_OBJECT_MASKS = "4"
+    ALL = ""  # Empty string subscribes to all topics
 
 
 @dataclass(frozen=True)
 class ZMQConfig:
     """ZMQ communication configuration."""
 
-    PORT: str = "tcp://localhost:5556"
-    TOPIC: str = "command"
+    VISUAL_FEED_ADDRESS: str = "tcp://localhost:5556"
+    AUDIO_COMMAND_ADDRESS: str = "tcp://localhost:5557"
+    TOPICS = ZMQTopics
 
 
-@dataclass
-class ModelConfig:
-    """Configuration for AI models"""
+class ModelPaths:
+    """Paths to model checkpoints and configurations."""
 
-    grounding_model: str = "IDEA-Research/grounding-dino-tiny"
-    sam2_checkpoint: Path = Path("/checkpoints/sam2.1_hiera_large.pt")
-    sam2_model_config: str = "configs/sam2.1/sam2.1_hiera_l.yaml"
-
-    def __post_init__(self):
-        # Enable optimizations for Ampere GPUs
-        if DEVICE == "cuda" and torch.cuda.get_device_properties(0).major >= 8:
-            torch.backends.cuda.matmul.allow_tf32 = True
-            torch.backends.cudnn.allow_tf32 = True
-
-        # Enable bfloat16 autocast
-        torch.autocast(device_type=DEVICE, dtype=torch.bfloat16).__enter__()
+    SAM3_PATH: str = Settings.PROJECT_ROOT / "src/models/sam3/sam3.pt"
+    MODEL_BASE_PATH = (
+        Settings.PROJECT_ROOT
+        / "src/models/projectaria_eyetracking/projectaria_eyetracking/inference/model/pretrained_weights/social_eyes_uncertainty_v1"
+    )
 
 
-@dataclass
-class PathConfig:
-    """Configuration for file paths"""
-
-    output_dir: Path = Path("outputs/detection_results")
-
-    def __post_init__(self):
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+class EyeTrackingParams:
+    DEFAULT_DEPTH_M = 0.5
 
 
-@dataclass
-class ROSConfig:
-    """Configuration for ROS topics"""
+# Constants
+class VisualizationConfig:
+    """Configuration for gaze visualization."""
 
-    color_image_topic: str = "/camera/color/image_raw"
-    modified_response_topic: str = "/modifiedresponse"
-    action_topic: str = "/actions"
-    node_name: str = "aria_object_detection"
-
-
-@dataclass
-class DetectionConfig:
-    """Configuration for detection parameters"""
-
-    box_threshold: float = 0.3
-    text_threshold: float = 0.3
-    eye_tracking_box_size: int = 150
-    dump_json: bool = True
+    GAZE_POINT_RADIUS = 20
+    GAZE_POINT_COLOR = (0, 0, 255)  # Red in BGR

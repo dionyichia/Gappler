@@ -1,26 +1,24 @@
 import warnings
 
 warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
-
 import argparse
 import logging
 import multiprocessing
 import os
 import sys
+import threading
 from pathlib import Path
-
-import torch
 
 from aria_device import AriaDeviceController
 from config import AriaConfig
 from services.audio_stream_processor import stream_audio
 from services.feature_matching import dual_stream_matcher
 from services.image_stream_processor import stream_image
+from services.object_recognition import generate_mask
 
 # from services.playback import playback_recording
 from utils import TerminalRawMode, safe_update_iptables, setup_logging
 
-torch.set_grad_enabled(False)
 os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"  # Point to system fonts
 os.environ["QT_QUICK_BACKEND"] = "software"
 setup_logging()
@@ -77,30 +75,39 @@ def main():
                 profile=AriaConfig.ARIA_STREAMING_PROFILE_NAME, interface=interface
             )
 
-            # import threading
+            audio_process, image_thread, object_recognition_process, matcher_process = (
+                None,
+                None,
+                None,
+                None,
+            )
 
-            # image_thread = threading.Thread(target=stream_image, args=(PROJECT_ROOT,))
-            # image_thread.start()
+            multiprocessing.set_start_method("spawn", force=True)
+            audio_process = multiprocessing.Process(target=stream_audio, daemon=True)
+            image_thread = threading.Thread(
+                target=stream_image, args=(PROJECT_ROOT,), daemon=True
+            )
+            object_recognition_process = multiprocessing.Process(
+                target=generate_mask, daemon=True
+            )
+            matcher_process = multiprocessing.Process(
+                target=dual_stream_matcher, args=(PROJECT_ROOT,), daemon=True
+            )
 
-            # if image_thread and image_thread.is_alive():
-            #     image_thread.join()
+            image_thread.start()
+            audio_process.start()
+            object_recognition_process.start()
 
-            ctx = multiprocessing.get_context("forkserver")
-            audio_process, image_process, matcher_process = None, None, None
-            # audio_process = ctx.Process(target=stream_audio, args=(PROJECT_ROOT,))
-            image_process = ctx.Process(target=stream_image, args=(PROJECT_ROOT,))
-            # matcher_process = ctx.Process(target=dual_stream_matcher, args=(PROJECT_ROOT,))
-
-            image_process.start()
-            # audio_process.start()
             # matcher_process.start()
 
-            if image_process and image_process.is_alive():
-                image_process.join()
-            # if audio_process and audio_process.is_alive():
-            #     audio_process.join()
-            # if matcher_process and matcher_process.is_alive():
-            #     matcher_process.join()
+            if image_thread and image_thread.is_alive():
+                image_thread.join()
+            if audio_process and audio_process.is_alive():
+                audio_process.join()
+            if object_recognition_process and object_recognition_process.is_alive():
+                object_recognition_process.join()
+            if matcher_process and matcher_process.is_alive():
+                matcher_process.join()
 
 
 if __name__ == "__main__":

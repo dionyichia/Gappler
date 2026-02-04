@@ -116,7 +116,6 @@ def main():
     device_calibration = provider.get_device_calibration()
     T_device_CPF = device_calibration.get_transform_device_cpf()
     rgb_camera_calibration = device_calibration.get_camera_calib(rgb_stream_label)
-    # eye_camera_calibration = device_calibration.get_aria_et_camera_calib()
 
     # Configure the loop for data replay
     deliver_option = provider.get_default_deliver_queued_options()

@@ -3,9 +3,9 @@ Logging configuration with timestamped files
 """
 
 import logging
+from datetime import datetime
 from logging import FileHandler, StreamHandler
 from pathlib import Path
-from datetime import datetime
 
 from config import Settings
 
@@ -42,7 +42,7 @@ def setup_logging(
 
     # Setup root logger
     root_logger = logging.getLogger()
-    root_logger.setLevel(getattr(logging, settings.LOG_LEVEL.upper()))
+    root_logger.setLevel(settings.LOG_LEVEL)
 
     # Clear existing handlers
     root_logger.handlers.clear()
@@ -51,14 +51,14 @@ def setup_logging(
         log_filename,
         encoding="utf-8",
     )
-    file_handler.setLevel(getattr(logging, settings.LOG_LEVEL.upper()))
+    file_handler.setLevel(settings.LOG_LEVEL)
     file_handler.setFormatter(detailed_formatter)
     root_logger.addHandler(file_handler)
 
     # Console handler
     if console_output:
         console_handler = StreamHandler()
-        console_handler.setLevel(getattr(logging, settings.LOG_LEVEL.upper()))
+        console_handler.setLevel(settings.LOG_LEVEL)
         console_handler.setFormatter(console_formatter)
         root_logger.addHandler(console_handler)
 
