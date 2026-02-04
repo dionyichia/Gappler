@@ -69,7 +69,7 @@ def main():
     # Note: by default streaming uses Wifi
     if args.streaming_interface == "usb":
         streaming_config.streaming_interface = aria.StreamingInterface.Usb
-    streaming_config.security_options.use_ephemeral_certs = False
+    streaming_config.security_options.use_ephemeral_certs = True
 
     streaming_manager.streaming_config = streaming_config
 

@@ -13,18 +13,16 @@
 # limitations under the License.
 
 import argparse
-import sys
 import os
+import sys
 
 # Add this FIRST before importing aria
 os.environ["PYBIND11_DETAILED_ERROR_MESSAGES"] = "1"
 
 import aria.sdk as aria
-
 import cv2
 import numpy as np
 from common import quit_keypress, update_iptables
-
 from projectaria_tools.core.sensor_data import ImageDataRecord
 
 
@@ -66,7 +64,7 @@ def main():
     # @note we need to specify the use of ephemeral certs as this sample app assumes
     # aria-cli was started using the --use-ephemeral-certs flag
     options = aria.StreamingSecurityOptions()
-    options.use_ephemeral_certs = False
+    options.use_ephemeral_certs = True
     config.security_options = options
     streaming_client.subscription_config = config
 
@@ -76,6 +74,7 @@ def main():
             self.images = {}
 
         def on_image_received(self, image, record):
+            print(f"Received image from camera ID: {record.camera_id}")
             try:
                 # Add defensive check
                 if image is None or record is None:

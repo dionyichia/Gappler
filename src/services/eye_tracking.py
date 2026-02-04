@@ -7,194 +7,174 @@ This module provides functions to:
 - Visualize gaze projections on RGB images
 """
 
-from dataclasses import dataclass
+import logging
 from pathlib import Path
 from time import sleep
 from typing import Dict, List, Optional, Tuple
 
+import aria.sdk as aria
 import cv2
 import numpy as np
 import torch
 from PIL import Image, ImageDraw
+from projectaria_tools.core.calibration import CameraCalibration, DeviceCalibration
 from projectaria_tools.core.mps import EyeGaze
 from projectaria_tools.core.mps.utils import get_gaze_vector_reprojection
 
+from config import AriaConfig, EyeTrackingParams, ModelPaths, VisualizationConfig
 from models.projectaria_eyetracking.projectaria_eyetracking.inference import infer
+from schemas.gaze_estimate import GazeEstimate
 
-GAZE_POINT_RADIUS = 20
-GAZE_POINT_COLOR = (0, 0, 255)  # Red in BGR
-DEFAULT_DEPTH_M = 0.5
-
-SCRIPT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = SCRIPT_DIR.parent.parent
-MODEL_BASE_PATH = (
-    PROJECT_ROOT
-    / "src/models/projectaria_eyetracking/projectaria_eyetracking/inference/model/pretrained_weights/social_eyes_uncertainty_v1"
-)
+logger = logging.getLogger(__name__)
 
 
-@dataclass
-class GazeEstimate:
-    """Container for gaze estimation results with uncertainty bounds."""
+class EyeTrackingModelLoader:
+    """Handles loading and validation of eye-tracking model files."""
 
-    yaw: float
-    pitch: float
-    yaw_lower: float
-    pitch_lower: float
-    yaw_upper: float
-    pitch_upper: float
-    timestamp_ms: int
-    depth_m: str = ""
+    @staticmethod
+    def validate_model_files() -> Tuple[Path, Path]:
+        """
+        Validate that required model files exist.
 
-    def to_csv_row(self) -> List:
-        """Convert to CSV row format compatible with MPS eye gaze format."""
-        return [
-            self.timestamp_ms,
-            self.yaw,
-            self.pitch,
-            self.depth_m,
-            self.yaw_lower,
-            self.pitch_lower,
-            self.yaw_upper,
-            self.pitch_upper,
-        ]
+        Returns:
+            Tuple of (checkpoint_path, config_path)
 
-    def to_dict(self) -> Dict[str, float]:
-        """Convert to dictionary for easy access."""
-        return {
-            "yaw": self.yaw,
-            "pitch": self.pitch,
-            "yaw_lower": self.yaw_lower,
-            "pitch_lower": self.pitch_lower,
-            "yaw_upper": self.yaw_upper,
-            "pitch_upper": self.pitch_upper,
-        }
+        Raises:
+            FileNotFoundError: If required files are missing
+        """
+        checkpoint_path = ModelPaths.MODEL_BASE_PATH / "weights.pth"
+        config_path = ModelPaths.MODEL_BASE_PATH / "config.yaml"
 
+        if not checkpoint_path.exists():
+            raise FileNotFoundError(f"Model weights not found: {checkpoint_path}")
+        if not config_path.exists():
+            raise FileNotFoundError(f"Model config not found: {config_path}")
 
-def initialize_eye_tracking(device: str = "cuda") -> infer.EyeGazeInference:
-    """
-    Initialize eye-tracking inference model and camera calibrations.
+        return checkpoint_path, config_path
 
-    Args:
-        device: Device to run inference on ('cuda' or 'cpu')
+    @staticmethod
+    def load_model(device: str = "cuda") -> infer.EyeGazeInference:
+        """
+        Load the eye-tracking inference model.
 
-    Returns:
-        EyeTrackingSystem containing model and calibration data
+        Args:
+            device: Device to run inference on ('cuda' or 'cpu')
 
-    Raises:
-        FileNotFoundError: If model weights or config files are missing
-        RuntimeError: If VRS calibration file cannot be loaded
-    """
-    # Load eye-tracking model
-    model_checkpoint_path = MODEL_BASE_PATH / "weights.pth"
-    model_config_path = MODEL_BASE_PATH / "config.yaml"
+        Returns:
+            Initialized EyeGazeInference model
 
-    if not model_checkpoint_path.exists():
-        raise FileNotFoundError(f"Model weights not found: {model_checkpoint_path}")
-    if not model_config_path.exists():
-        raise FileNotFoundError(f"Model config not found: {model_config_path}")
+        Raises:
+            FileNotFoundError: If model files are missing
+            RuntimeError: If model loading fails
+        """
+        checkpoint_path, config_path = EyeTrackingModelLoader.validate_model_files()
 
-    inference_model = infer.EyeGazeInference(
-        str(model_checkpoint_path), str(model_config_path), device
-    )
-
-    return inference_model
+        logger.info("Loading eye-tracking model...")
+        try:
+            model = infer.EyeGazeInference(
+                str(checkpoint_path), str(config_path), device
+            )
+            logger.info("Eye-tracking model loaded successfully")
+            return model
+        except Exception as e:
+            logger.error(f"Failed to load eye-tracking model: {e}")
+            raise RuntimeError(f"Model loading failed: {e}") from e
 
 
-def predict_gaze(
-    inference_model: infer.EyeGazeInference,
-    eye_image: np.ndarray,
-    timestamp_ms: int,
-    device: str = "cuda",
-) -> Optional[GazeEstimate]:
-    """
-    Predict eye gaze from eye-tracking camera image.
+class GazePredictor:
+    """Handles gaze prediction from eye images."""
 
-    Args:
-        inference_model: Trained eye gaze inference model
-        eye_image: Eye camera image as numpy array
-        timestamp_ms: Timestamp in milliseconds
-        device: Device for inference ('cuda' or 'cpu')
+    def __init__(self, model: infer.EyeGazeInference, device: str = "cuda"):
+        """
+        Initialize gaze predictor.
 
-    Returns:
-        GazeEstimate with predictions and uncertainty, or None if prediction fails
-    """
-    if eye_image is None:
-        return None
+        Args:
+            model: Trained eye gaze inference model
+            device: Device for inference ('cuda' or 'cpu')
+        """
+        self.model = model
+        self.device = device
 
-    try:
-        # Convert to tensor and predict
-        img_tensor = torch.tensor(eye_image, device=device)
-        preds, lower, upper = inference_model.predict(img_tensor)
+    def predict(
+        self, eye_image: np.ndarray, timestamp_ms: int
+    ) -> Optional[GazeEstimate]:
+        """
+        Predict eye gaze from eye-tracking camera image.
 
-        # Convert to numpy
-        preds = preds.detach().cpu().numpy()
-        lower = lower.detach().cpu().numpy()
-        upper = upper.detach().cpu().numpy()
+        Args:
+            eye_image: Eye camera image as numpy array
+            timestamp_ms: Timestamp in milliseconds
 
-        return GazeEstimate(
-            yaw=float(preds[0][0]),
-            pitch=float(preds[0][1]),
-            yaw_lower=float(lower[0][0]),
-            pitch_lower=float(lower[0][1]),
-            yaw_upper=float(upper[0][0]),
-            pitch_upper=float(upper[0][1]),
-            timestamp_ms=timestamp_ms,
-        )
-    except Exception as e:
-        print(f"Gaze prediction failed: {e}")
-        return None
+        Returns:
+            GazeEstimate with predictions and uncertainty, or None if prediction fails
+        """
+        if eye_image is None:
+            logger.warning("No eye image provided for prediction")
+            return None
 
+        try:
+            # Convert to tensor and predict
+            img_tensor = torch.tensor(eye_image, device=self.device)
+            preds, lower, upper = self.model.predict(img_tensor)
 
-def real_time_eyetracking(
-    inference_model,
-    images_observer: Dict[str, np.ndarray],
-    eye_tracking_camera_id: str,
-    timestamp_observer: int,
-    device: str = "cuda",
-):
-    print(images_observer.keys())
-    if eye_tracking_camera_id not in images_observer:
-        print("No eye-tracking data found in images_observer")
-        sleep(1)
-        return None, None
+            # Convert to numpy
+            preds_np = preds.detach().cpu().numpy()
+            lower_np = lower.detach().cpu().numpy()
+            upper_np = upper.detach().cpu().numpy()
 
-    eye_image = images_observer[eye_tracking_camera_id]
-    gaze_estimate = predict_gaze(inference_model, eye_image, timestamp_observer, device)
-
-    if gaze_estimate is None:
-        return None, None
-
-    return gaze_estimate.to_dict(), gaze_estimate.to_csv_row()
+            return GazeEstimate(
+                yaw=float(preds_np[0][0]),
+                pitch=float(preds_np[0][1]),
+                yaw_lower=float(lower_np[0][0]),
+                pitch_lower=float(lower_np[0][1]),
+                yaw_upper=float(upper_np[0][0]),
+                pitch_upper=float(upper_np[0][1]),
+                timestamp_ms=timestamp_ms,
+            )
+        except Exception as e:
+            logger.error(f"Gaze prediction failed: {e}")
+            return None
 
 
-def draw_gaze_point(
-    image: np.ndarray,
-    gaze_point: Tuple[float, float],
-    radius: int = GAZE_POINT_RADIUS,
-    color: Tuple[int, int, int] = GAZE_POINT_COLOR,
-    use_pillow: bool = False,
-) -> np.ndarray:
-    """
-    Draw gaze point on image.
+class GazeVisualizer:
+    """Handles gaze point visualization on images."""
 
-    Args:
-        image: Input image (numpy array or PIL Image)
-        gaze_point: (x, y) pixel coordinates
-        radius: Circle radius in pixels
-        color: RGB color tuple (for PIL) or BGR (for OpenCV)
-        use_pillow: If True, use PIL; otherwise use OpenCV
+    @staticmethod
+    def draw_gaze_point(
+        image: np.ndarray,
+        gaze_point: Tuple[float, float],
+        radius: int = VisualizationConfig.GAZE_POINT_RADIUS,
+        color: Tuple[int, int, int] = VisualizationConfig.GAZE_POINT_COLOR,
+        use_pillow: bool = False,
+    ) -> np.ndarray:
+        """
+        Draw gaze point on image.
 
-    Returns:
-        Image with gaze point drawn
-    """
-    if gaze_point is None:
-        return image
+        Args:
+            image: Input image (numpy array or PIL Image)
+            gaze_point: (x, y) pixel coordinates
+            radius: Circle radius in pixels
+            color: RGB color tuple (for PIL) or BGR (for OpenCV)
+            use_pillow: If True, use PIL; otherwise use OpenCV
 
-    x, y = int(gaze_point[0]), int(gaze_point[1])
+        Returns:
+            Image with gaze point drawn
+        """
+        if gaze_point is None:
+            return image
 
-    if use_pillow:
-        # Convert to PIL if necessary
+        x, y = int(gaze_point[0]), int(gaze_point[1])
+
+        if use_pillow:
+            return GazeVisualizer._draw_with_pillow(image, x, y, radius, color)
+        else:
+            return GazeVisualizer._draw_with_opencv(image, x, y, radius, color)
+
+    @staticmethod
+    def _draw_with_pillow(
+        image: np.ndarray, x: int, y: int, radius: int, color: Tuple[int, int, int]
+    ) -> Image.Image:
+        """Draw gaze point using PIL."""
         if isinstance(image, np.ndarray):
             image = Image.fromarray(image)
 
@@ -204,43 +184,155 @@ def draw_gaze_point(
             fill=color if len(color) == 3 else color[:3],
         )
         return image
-    else:
-        # Use OpenCV (faster for real-time applications)
+
+    @staticmethod
+    def _draw_with_opencv(
+        image: np.ndarray, x: int, y: int, radius: int, color: Tuple[int, int, int]
+    ) -> np.ndarray:
+        """Draw gaze point using OpenCV (faster for real-time)."""
         image_with_gaze = image.copy()
         cv2.circle(image_with_gaze, (x, y), radius, color, -1)
         return image_with_gaze
 
 
-def eye_tracking_visualization(
-    device_calibration,
-    rgb_camera_calibration,
-    rgb_stream_label,
-    rgb_camera_id,
-    images_observer,
-    value_mapping,
-):
-    if rgb_camera_id not in images_observer or not value_mapping:
-        return None, None
+class GazeProjector:
+    """Handles projection of gaze vectors onto camera images."""
 
-    rgb_image = images_observer[rgb_camera_id]
+    def __init__(
+        self,
+        device_calibration: DeviceCalibration,
+        rgb_camera_calibration: CameraCalibration,
+    ):
+        """
+        Initialize gaze projector.
 
-    try:
-        # Create EyeGaze object for projection
-        eye_gaze = EyeGaze
-        eye_gaze.yaw = value_mapping["yaw"]
-        eye_gaze.pitch = value_mapping["pitch"]
+        Args:
+            device_calibration: Device calibration data
+            rgb_camera_calibration: RGB camera calibration data
+        """
+        self.device_calibration = device_calibration
+        self.rgb_camera_calibration = rgb_camera_calibration
 
-        # Project to RGB image
-        gaze_projection = get_gaze_vector_reprojection(
-            eye_gaze,
-            rgb_stream_label,
-            device_calibration,
-            rgb_camera_calibration,
-            depth_m=DEFAULT_DEPTH_M,
-        )
+    def project_gaze(
+        self,
+        gaze_dict: Dict[str, float],
+        depth_m: float = EyeTrackingParams.DEFAULT_DEPTH_M,
+    ) -> Optional[Tuple[float, float]]:
+        """
+        Project gaze vector to RGB image coordinates.
 
-        image_with_gaze = draw_gaze_point(rgb_image, gaze_projection)
+        Args:
+            gaze_dict: Dictionary with 'yaw' and 'pitch' keys
+            depth_m: Assumed depth for projection in meters
+
+        Returns:
+            (x, y) pixel coordinates or None if projection fails
+        """
+        if not gaze_dict or "yaw" not in gaze_dict or "pitch" not in gaze_dict:
+            logger.warning("Invalid gaze data for projection")
+            return None
+
+        try:
+            # Create EyeGaze object
+            eye_gaze = EyeGaze
+            eye_gaze.yaw = gaze_dict["yaw"]
+            eye_gaze.pitch = gaze_dict["pitch"]
+
+            # Project to RGB image
+            gaze_projection = get_gaze_vector_reprojection(
+                eye_gaze=eye_gaze,
+                stream_id_label=AriaConfig.RGB_STREAM_LABEL,
+                device_calibration=self.device_calibration,
+                camera_calibration=self.rgb_camera_calibration,
+                depth_m=depth_m,
+            )
+
+            return gaze_projection
+        except Exception as e:
+            logger.error(f"Gaze projection failed: {e}")
+            return None
+
+
+class EyeTrackingPipeline:
+    """Main pipeline for real-time eye tracking and visualization."""
+
+    def __init__(self, device: str = "cuda"):
+        """
+        Initialize eye-tracking pipeline.
+
+        Args:
+            device: Device for inference ('cuda' or 'cpu')
+        """
+        self.device = device
+        self.model = EyeTrackingModelLoader.load_model(device)
+        self.predictor = GazePredictor(self.model, device)
+        self.visualizer = GazeVisualizer()
+
+    def process_frame(
+        self,
+        images_observer: Dict[str, np.ndarray],
+        eye_tracking_camera_id: aria.CameraId,
+        timestamp_observer: int,
+    ) -> Tuple[Optional[Dict], Optional[List]]:
+        """
+        Process a single frame for eye tracking.
+
+        Args:
+            images_observer: Dictionary of camera images
+            eye_tracking_camera_id: ID of eye-tracking camera
+            timestamp_observer: Current timestamp in milliseconds
+
+        Returns:
+            Tuple of (gaze_dict, csv_row) or (None, None) if processing fails
+        """
+        if eye_tracking_camera_id not in images_observer:
+            logger.warning("No eye-tracking data found in images_observer")
+            sleep(1)
+            return None, None
+
+        eye_image = images_observer[eye_tracking_camera_id]
+        gaze_estimate = self.predictor.predict(eye_image, timestamp_observer)
+
+        if gaze_estimate is None:
+            return None, None
+
+        return gaze_estimate.to_dict(), gaze_estimate.to_csv_row()
+
+    def visualize_gaze(
+        self,
+        device_calibration: DeviceCalibration,
+        rgb_camera_calibration: CameraCalibration,
+        images_observer: Dict[str, np.ndarray],
+        gaze_dict: Dict[str, float],
+    ) -> Tuple[Optional[Tuple[float, float]], Optional[np.ndarray]]:
+        """
+        Visualize gaze on RGB image.
+
+        Args:
+            device_calibration: Device calibration data
+            rgb_camera_calibration: RGB camera calibration data
+            images_observer: Dictionary of camera images
+            gaze_dict: Dictionary with gaze predictions
+
+        Returns:
+            Tuple of (gaze_projection, image_with_gaze) or (None, None) if fails
+        """
+        rgb_camera_id = aria.CameraId.Rgb
+
+        if rgb_camera_id not in images_observer or not gaze_dict:
+            logger.warning("Missing RGB image or gaze data for visualization")
+            return None, None
+
+        rgb_image = images_observer[rgb_camera_id]
+
+        # Project gaze
+        projector = GazeProjector(device_calibration, rgb_camera_calibration)
+        gaze_projection = projector.project_gaze(gaze_dict)
+
+        if gaze_projection is None:
+            return None, None
+
+        # Draw gaze point
+        image_with_gaze = self.visualizer.draw_gaze_point(rgb_image, gaze_projection)
+
         return gaze_projection, image_with_gaze
-    except Exception as e:
-        print(f"Gaze projection failed: {e}")
-        return None, None

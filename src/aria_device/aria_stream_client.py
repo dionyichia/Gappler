@@ -12,7 +12,7 @@ from typing import List, Optional
 
 import aria.sdk as aria
 
-from .streaming_client_observer import BaseStreamingClientObserver
+from .image_streaming_client_observer import BaseStreamingClientObserver
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class AriaStreamClient:
         data_channels: List[aria.StreamingDataType],
         observer: BaseStreamingClientObserver,
         message_queue_size: int = 1,
-        use_ephemeral_certs: bool = False,
+        use_ephemeral_certs: bool = True,
     ) -> BaseStreamingClientObserver:
         """
         Subscribe to streaming data from any available Aria device.
