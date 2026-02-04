@@ -12,13 +12,16 @@ from pathlib import Path
 from time import sleep
 from typing import Dict, List, Optional, Tuple
 
+import aria
 import cv2
 import numpy as np
 import torch
 from PIL import Image, ImageDraw
+from projectaria_tools.core.calibration import CameraCalibration, DeviceCalibration
 from projectaria_tools.core.mps import EyeGaze
 from projectaria_tools.core.mps.utils import get_gaze_vector_reprojection
 
+from config import AriaConfig
 from models.projectaria_eyetracking.projectaria_eyetracking.inference import infer
 
 GAZE_POINT_RADIUS = 20
@@ -71,7 +74,7 @@ class GazeEstimate:
         }
 
 
-def initialize_eye_tracking(device: str = "cuda") -> infer.EyeGazeInference:
+def initialize_eye_tracking_model(device: str = "cuda") -> infer.EyeGazeInference:
     """
     Initialize eye-tracking inference model and camera calibrations.
 
@@ -212,13 +215,12 @@ def draw_gaze_point(
 
 
 def eye_tracking_visualization(
-    device_calibration,
-    rgb_camera_calibration,
-    rgb_stream_label,
-    rgb_camera_id,
-    images_observer,
-    value_mapping,
+    device_calibration: DeviceCalibration,
+    rgb_camera_calibration: CameraCalibration,
+    images_observer: Dict[str, np.ndarray],
+    value_mapping: Dict[str, float],
 ):
+    rgb_camera_id = aria.CameraId.Rgb
     if rgb_camera_id not in images_observer or not value_mapping:
         return None, None
 
@@ -232,10 +234,10 @@ def eye_tracking_visualization(
 
         # Project to RGB image
         gaze_projection = get_gaze_vector_reprojection(
-            eye_gaze,
-            rgb_stream_label,
-            device_calibration,
-            rgb_camera_calibration,
+            eye_gaze=eye_gaze,
+            stream_id_label=AriaConfig.RGB_STREAM_LABEL,
+            device_calibration=device_calibration,
+            camera_calibration=rgb_camera_calibration,
             depth_m=DEFAULT_DEPTH_M,
         )
 

@@ -1,6 +1,5 @@
 import logging
 import os
-import sys
 import threading
 import time
 from enum import Enum
@@ -8,10 +7,11 @@ from pathlib import Path
 
 import aria.sdk as aria
 import cv2
+
+cv2.setNumThreads(1)
 import numpy as np
 import zmq
 
-# from services.mask_predictor import generate_mask
 import config
 import services.eye_tracking
 from aria_device import AriaStreamClient, ImageObserver
@@ -21,8 +21,6 @@ from utils import CSVWriter, DirectoryManager, quit_keypress
 logger = logging.getLogger(__name__)
 
 
-ZMQ_PORT = "tcp://localhost:5556"
-ZMQ_TOPIC = "command"
 STATUS_PRINT_INTERVAL = 2  # seconds
 
 
@@ -48,9 +46,9 @@ class CommandListener:
         """Main listening loop for ZMQ commands."""
         context = zmq.Context()
         socket = context.socket(zmq.SUB)
-        socket.connect(ZMQ_PORT)
-        socket.setsockopt_string(zmq.SUBSCRIBE, ZMQ_TOPIC)
-        print(f"ZMQ socket connected to {ZMQ_PORT} for commands")
+        socket.connect(ZMQConfig.PORT)
+        socket.setsockopt_string(zmq.SUBSCRIBE, ZMQConfig.TOPIC)
+        print(f"ZMQ socket connected to {ZMQConfig.PORT} for commands")
 
         try:
             while not self.saving_state == SavingState.END:
@@ -94,7 +92,10 @@ def setup_directories(save_path: str) -> None:
         DirectoryManager.create_or_reset(directory)
 
 
-def stream_image(project_root: Path) -> None:
+def stream_image(
+    project_root: Path,
+    shared_data: dict,
+) -> None:
     # Setup directories and CSV writer
     save_path = os.path.join(project_root, "output")
     setup_directories(save_path)
@@ -109,7 +110,9 @@ def stream_image(project_root: Path) -> None:
         )
 
         # 1. Initialize eye-tracking inference model
-        inference_model = services.eye_tracking.initialize_eye_tracking(config.DEVICE)
+        inference_model = services.eye_tracking.initialize_eye_tracking_model(
+            config.DEVICE
+        )
 
         # 2. Setup Aria data streaming
         aria_stream_client = AriaStreamClient()
@@ -120,9 +123,8 @@ def stream_image(project_root: Path) -> None:
         observer: ImageObserver = aria_stream_client.subscribe(
             data_channels,
             ImageObserver(
-                system.rgb_camera_calibration,
-                system.rgb_linear_camera_calibration,
-                save_path,
+                source_calibration=shared_data["aria_rgb_calibration"],
+                save_path=save_path,
             ),
             message_size,
         )
@@ -139,6 +141,7 @@ def stream_image(project_root: Path) -> None:
 
         # 5. Visualize data stream
         while not quit_keypress():
+            print("Here")
             try:
                 value_mapping, eye_gaze_inference_result = (
                     services.eye_tracking.real_time_eyetracking(
@@ -151,19 +154,12 @@ def stream_image(project_root: Path) -> None:
 
                 gaze_point, image_with_gaze = (
                     services.eye_tracking.eye_tracking_visualization(
-                        system.device_calibration,
-                        system.rgb_camera_calibration,
-                        system.rgb_stream_label,
-                        aria.CameraId.Rgb,
-                        observer.images,
-                        value_mapping,
+                        device_calibration=shared_data["aria_device_calibration"],
+                        camera_calibration=shared_data["aria_rgb_calibration"],
+                        images=observer.images,
+                        value_mapping=value_mapping,
                     )
                 )
-
-                # generate_mask(
-                #     image=image_with_gaze,
-                #     prompt="person",
-                # )
 
                 # visualize streaming and save when START command is detected
                 if command_listener.saving_state == SavingState.START or True:
