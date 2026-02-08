@@ -1,155 +1,15 @@
-import os
+from pathlib import Path
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
-import sam3
-import torch
 from matplotlib.colors import to_rgb
 from PIL import Image
-from sam3 import build_sam3_image_model
-from sam3.model.box_ops import box_xywh_to_cxcywh
-from sam3.model.sam3_image_processor import Sam3Processor
-from sam3.visualization_utils import draw_box_on_image, normalize_bbox, plot_results
 
-sam3_root = os.path.join(os.path.dirname(sam3.__file__), "..")
+recording_folder_path = "/home/iot22/GitHub/Renaissance-Capstone-Project/v1/aria_pkg/recordings/dual_stream_20251211_114812/aria/frames"
 
 
-# turn on tfloat32 for Ampere GPUs
-# https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices
-torch.backends.cuda.matmul.allow_tf32 = True
-torch.backends.cudnn.allow_tf32 = True
-
-# use bfloat16 for the entire notebook
-torch.autocast("cuda", dtype=torch.bfloat16).__enter__()
-import os
-import cv2
-
-
-def playback_recording(save_path: str, source: str = "aria", playback_fps: int = 30):
-    """
-    Playback recorded frames with timestamps
-    Args:
-        save_path: Root save path
-        source: 'ros', 'aria', or 'synchronized'
-        playback_fps: Playback frame rate
-    """
-    import pandas as pd
-
-    # Determine CSV path based on source
-    if source == "synchronized":
-        csv_path = os.path.join(save_path, source, "sync_data.csv")
-        frame_dir = os.path.join(save_path, source, "frames")
-    else:
-        csv_path = os.path.join(save_path, source, "timestamps.csv")
-        frame_dir = os.path.join(save_path, source, "frames")
-
-    if not os.path.exists(csv_path):
-        print(f"No data found at {csv_path}")
-        return
-
-    df = pd.read_csv(csv_path)
-    print(f"Found {len(df)} frames for {source}")
-    print(f"Timestamp range: {df.iloc[0, 0]} to {df.iloc[-1, 0]}")
-
-    window_name = f"Playback - {source}"
-    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(window_name, 1280, 720)
-
-    frame_delay = 1.0 / playback_fps
-    paused = False
-
-    for idx, row in df.iterrows():
-        if source == "synchronized":
-            timestamp = row["aria_timestamp [ns]"]
-            filename = row["filename"]
-            time_diff = row["time_diff [ms]"]
-            num_matches = row["num_matches"]
-        else:
-            timestamp = row["#timestamp [ns]"]
-            filename = row["filename"]
-
-        img_path = os.path.join(frame_dir, filename)
-        if not os.path.exists(img_path):
-            print(f"Image not found: {img_path}")
-            continue
-
-        img = cv2.imread(img_path)
-
-        # Add playback info overlay
-        info_y = img.shape[0] - 60
-        cv2.rectangle(img, (0, info_y), (img.shape[1], img.shape[0]), (0, 0, 0), -1)
-
-        cv2.putText(
-            img,
-            f"Frame: {idx + 1}/{len(df)}",
-            (10, info_y + 25),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            (255, 255, 255),
-            2,
-        )
-
-        if source == "synchronized":
-            cv2.putText(
-                img,
-                f"Time Diff: {time_diff:.2f}ms | Matches: {num_matches}",
-                (10, info_y + 50),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                (255, 255, 255),
-                2,
-            )
-
-        status = "PAUSED" if paused else "PLAYING"
-        cv2.putText(
-            img,
-            status,
-            (img.shape[1] - 150, info_y + 25),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            (0, 255, 255) if paused else (0, 255, 0),
-            2,
-        )
-
-        cv2.imshow(window_name, img)
-
-        # Handle key presses
-        wait_time = 0 if paused else int(frame_delay * 1000)
-        key = cv2.waitKey(wait_time) & 0xFF
-
-        if key == ord("q") or key == 27:  # 'q' or ESC to quit
-            break
-        elif key == ord(" "):  # Space to pause/resume
-            paused = not paused
-        elif key == ord("n") and paused:  # 'n' for next frame when paused
-            continue
-        elif key == ord("b") and paused and idx > 0:  # 'b' for previous frame
-            # This is a simple implementation; more complex nav would need loop restructure
-            pass
-
-    cv2.destroyAllWindows()
-    print("Playback complete")
-
-
-if __name__ == "__main__":
-    # Example: Run with recording enabled
-    from pathlib import Path
-
-    project_root = Path(__file__).parent.parent
-    # dual_stream_matcher(project_root, enable_recording=True)
-    # Example: Playback recorded data
-    playback_recording(
-        "/home/iot22/GitHub/Renaissance-Capstone-Project/v1/aria_pkg/recordings/dual_stream_20251211_102346",
-        source="aria",
-        playback_fps=15,
-    )
-    playback_recording(
-        "/path/to/recordings/dual_stream_20251211_102346",
-        source="synchronized",
-        playback_fps=15,
-    )
-
+directory_path = Path(recording_folder_path)
+files_list = sorted([p for p in directory_path.iterdir() if p.is_file()])
 
 COLORS = ["red", "blue", "green", "yellow", "cyan", "magenta", "orange", "purple"]
 
@@ -295,35 +155,125 @@ def plot_results_cv2(img, results):
     return img_cv
 
 
-# Updated main code
+def playback_recording(save_path: str, source: str = "aria", playback_fps: int = 30):
+    """
+    Playback recorded frames with timestamps
+    Args:
+        save_path: Root save path
+        source: 'ros', 'aria', or 'synchronized'
+        playback_fps: Playback frame rate
+    """
+    import pandas as pd
+
+    # Determine CSV path based on source
+    if source == "synchronized":
+        csv_path = os.path.join(save_path, source, "sync_data.csv")
+        frame_dir = os.path.join(save_path, source, "frames")
+    else:
+        csv_path = os.path.join(save_path, source, "timestamps.csv")
+        frame_dir = os.path.join(save_path, source, "frames")
+
+    if not os.path.exists(csv_path):
+        print(f"No data found at {csv_path}")
+        return
+
+    df = pd.read_csv(csv_path)
+    print(f"Found {len(df)} frames for {source}")
+    print(f"Timestamp range: {df.iloc[0, 0]} to {df.iloc[-1, 0]}")
+
+    window_name = f"Playback - {source}"
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(window_name, 1280, 720)
+
+    frame_delay = 1.0 / playback_fps
+    paused = False
+
+    for idx, row in df.iterrows():
+        if source == "synchronized":
+            timestamp = row["aria_timestamp [ns]"]
+            filename = row["filename"]
+            time_diff = row["time_diff [ms]"]
+            num_matches = row["num_matches"]
+        else:
+            timestamp = row["#timestamp [ns]"]
+            filename = row["filename"]
+
+        img_path = os.path.join(frame_dir, filename)
+        if not os.path.exists(img_path):
+            print(f"Image not found: {img_path}")
+            continue
+
+        img = cv2.imread(img_path)
+
+        # Add playback info overlay
+        info_y = img.shape[0] - 60
+        cv2.rectangle(img, (0, info_y), (img.shape[1], img.shape[0]), (0, 0, 0), -1)
+
+        cv2.putText(
+            img,
+            f"Frame: {idx + 1}/{len(df)}",
+            (10, info_y + 25),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (255, 255, 255),
+            2,
+        )
+
+        if source == "synchronized":
+            cv2.putText(
+                img,
+                f"Time Diff: {time_diff:.2f}ms | Matches: {num_matches}",
+                (10, info_y + 50),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (255, 255, 255),
+                2,
+            )
+
+        status = "PAUSED" if paused else "PLAYING"
+        cv2.putText(
+            img,
+            status,
+            (img.shape[1] - 150, info_y + 25),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (0, 255, 255) if paused else (0, 255, 0),
+            2,
+        )
+
+        cv2.imshow(window_name, img)
+
+        # Handle key presses
+        wait_time = 0 if paused else int(frame_delay * 1000)
+        key = cv2.waitKey(wait_time) & 0xFF
+
+        if key == ord("q") or key == 27:  # 'q' or ESC to quit
+            break
+        elif key == ord(" "):  # Space to pause/resume
+            paused = not paused
+        elif key == ord("n") and paused:  # 'n' for next frame when paused
+            continue
+        elif key == ord("b") and paused and idx > 0:  # 'b' for previous frame
+            # This is a simple implementation; more complex nav would need loop restructure
+            pass
+
+    cv2.destroyAllWindows()
+    print("Playback complete")
+
+
 if __name__ == "__main__":
-    import cv2
-
-    bpe_path = f"{sam3_root}/assets/bpe_simple_vocab_16e6.txt.gz"
-    model = build_sam3_image_model(
-        bpe_path=bpe_path,
-        load_from_HF=False,
-        checkpoint_path="/home/iot22/GitHub/Renaissance-Capstone-Project/sam3/sam3.pt",
-    )
-    recording_folder_path = "/home/iot22/GitHub/Renaissance-Capstone-Project/v1/aria_pkg/recordings/dual_stream_20251211_114812/aria/frames"
-
-    from pathlib import Path
-
-    directory_path = Path(recording_folder_path)
-    files_list = sorted([p for p in directory_path.iterdir() if p.is_file()])
-
     window_name = "SAM3 Detection"
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
     for frame_num, file_path in enumerate(files_list, start=1):
-        image = Image.open(file_path)
-        width, height = image.size
-        processor = Sam3Processor(model, confidence_threshold=0.5)
-        inference_state = processor.set_image(image)
-        processor.reset_all_prompts(inference_state)
-        inference_state = processor.set_text_prompt(
-            state=inference_state, prompt="robot"
-        )
+        # image = Image.open(file_path)
+        # width, height = image.size
+        # processor = Sam3Processor(model, confidence_threshold=0.5)
+        # inference_state = processor.set_image(image)
+        # processor.reset_all_prompts(inference_state)
+        # inference_state = processor.set_text_prompt(
+        #     state=inference_state, prompt="robot"
+        # )
 
         # Use cv2 implementation
         img_cv = plot_results_cv2(image, inference_state)
@@ -347,3 +297,9 @@ if __name__ == "__main__":
             break
 
     cv2.destroyAllWindows()
+
+    playback_recording(
+        "/path/to/recordings/dual_stream_20251211_102346",
+        source="synchronized",
+        playback_fps=15,
+    )

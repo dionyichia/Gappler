@@ -1,19 +1,11 @@
 import warnings
-
-import numpy as np
-
 warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
-
 import argparse
 import logging
-import multiprocessing
+import threading
 import os
 import sys
-from multiprocessing import Manager
 from pathlib import Path
-
-import torch
-
 from aria_device import AriaDeviceController
 from config import AriaConfig
 from services.audio_stream_processor import stream_audio
@@ -22,7 +14,6 @@ from services.image_stream_processor import stream_image
 from services.playback import playback_recording
 from utils import TerminalRawMode, safe_update_iptables, setup_logging
 
-torch.set_grad_enabled(False)
 os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"  # Point to system fonts
 os.environ["QT_QUICK_BACKEND"] = "software"
 setup_logging()
@@ -60,60 +51,6 @@ def parse_args() -> argparse.Namespace:
     return args
 
 
-def extract_aria_calibration(calibration):
-    """
-    Extract all necessary data from DeviceCalibration object.
-    This returns a plain dictionary that can be pickled.
-    """
-    available_methods = [m for m in dir(calibration) if not m.startswith("_")]
-
-    calib_data = {}
-    print(available_methods)
-    required_methods = [
-        "get_aria_et_camera_calib",
-        "get_aria_microphone_calib",
-    ]
-
-    try:
-        if hasattr(calibration, "__str__"):
-            calib_data["string_repr"] = str(calibration)
-
-        for method in available_methods:
-            if hasattr(calibration, method):
-                try:
-                    value = getattr(calibration, method)()
-
-                    # Convert to serializable format
-                    if isinstance(value, np.ndarray):
-                        calib_data[method] = value.tolist()
-                    elif isinstance(value, (list, tuple)):
-                        calib_data[method] = list(value)
-                    elif hasattr(value, "to_matrix"):  # Transform objects
-                        calib_data[method] = value.to_matrix().tolist()
-                    elif hasattr(value, "__dict__"):  # Complex objects
-                        calib_data[method] = str(value)
-                    else:
-                        calib_data[method] = value
-                        # Verify it's serializable
-                    try:
-                        import pickle
-
-                        pickle.dumps(value)  # Test if it can be pickled
-                    except Exception as e:
-                        print(f"✗ Method: {method}")
-                        print(f"Data: {value}")
-
-                    print(f"Extracted {method}: {calib_data[method]}")
-
-                except Exception as e:
-                    print(f"Could not extract {method}: {e}")
-
-    except Exception as e:
-        print(f"Error during extraction: {e}")
-
-    return calib_data
-
-
 def main():
     args = parse_args()
 
@@ -126,10 +63,6 @@ def main():
             if not safe_update_iptables():
                 logger.warning("Warning: Failed to update iptables", file=sys.stderr)
 
-        ctx = multiprocessing.get_context("forkserver")
-        manager = Manager()
-        shared_data = manager.dict()
-
         with AriaDeviceController.get_instance() as aria_controller:
             aria_controller.connect(device_ip=AriaConfig.ARIA_DEVICE_IP_ADDRESS)
             interface = None if AriaConfig.ARIA_DEVICE_IP_ADDRESS else "usb"
@@ -138,80 +71,35 @@ def main():
             )
 
             aria_device_calibration = aria_controller.get_device_calibration()
-            aria_device_calibration = extract_aria_calibration(aria_device_calibration)
-
             aria_rgb_calibration = aria_controller.get_rgb_camera_calibration()
-            aria_rgb_calibration = extract_aria_calibration(aria_rgb_calibration)
 
             if not aria_device_calibration or not aria_rgb_calibration:
                 logger.error("Error: Failed to retrieve device calibration data")
                 return
 
-            shared_data["aria_device_calibration"] = aria_device_calibration
-            shared_data["aria_rgb_calibration"] = aria_rgb_calibration
+            # shared_data["aria_device_calibration"] = aria_device_calibration
+            # shared_data["aria_rgb_calibration"] = aria_rgb_calibration
 
-            audio_process, image_process, matcher_process = None, None, None
-            # audio_process = ctx.Process(target=stream_audio, args=(PROJECT_ROOT,))
-            image_process = ctx.Process(
-                target=stream_image,
-                args=(PROJECT_ROOT, shared_data),
+            audio_thread, image_thread, matcher_thread = None, None, None
+
+            # audio_thread = threading.Thread(target=stream_audio, args=(PROJECT_ROOT,), daemon=True)
+            image_thread = threading.Thread(
+                target=stream_image, args=(PROJECT_ROOT), daemon=True
             )
-            # matcher_process = ctx.Process(target=dual_stream_matcher, args=(PROJECT_ROOT,))
+            # matcher_thread = threading.Thread(target=dual_stream_matcher, args=(PROJECT_ROOT,), daemon=True)
 
-            image_process.start()
-            # audio_process.start()
-            # matcher_process.start()
+            image_thread.start()
+            # audio_thread.start()
+            # matcher_thread.start()
 
-            if image_process and image_process.is_alive():
-                image_process.join()
-            # if audio_process and audio_process.is_alive():
-            #     audio_process.join()
-            # if matcher_process and matcher_process.is_alive():
-            #     matcher_process.join()
+            if image_thread and image_thread.is_alive():
+                image_thread.join()
+            # if audio_thread and audio_thread.is_alive():
+            #     audio_thread.join()
+            # if matcher_thread and matcher_thread.is_alive():
+            #     matcher_thread.join()
 
 
 if __name__ == "__main__":
     with TerminalRawMode():
         main()
-
-
-def main():
-    args = parse_args()
-    if args.mode == "recording":
-        pass
-    else:
-        if args.update_iptables:
-            if not safe_update_iptables():
-                logger.warning("Warning: Failed to update iptables", file=sys.stderr)
-
-        ctx = multiprocessing.get_context("forkserver")
-        manager = Manager()
-        shared_data = manager.dict()
-        shared_data["ready"] = False
-
-        # Start process first
-        image_process = ctx.Process(
-            target=stream_image, args=(PROJECT_ROOT, shared_data)
-        )
-        image_process.start()
-
-        # Now get calibration
-        with AriaDeviceController.get_instance() as aria_controller:
-            aria_controller.connect(device_ip=AriaConfig.ARIA_DEVICE_IP_ADDRESS)
-            interface = None if AriaConfig.ARIA_DEVICE_IP_ADDRESS else "usb"
-            aria_controller.start_streaming(
-                profile=AriaConfig.ARIA_STREAMING_PROFILE_NAME, interface=interface
-            )
-
-            # Get the calibration object
-            rgb_calibration = aria_controller.get_rgb_camera_calibration()
-
-            # IMPORTANT: Extract data BEFORE storing in shared dict
-            calibration_data = extract_aria_calibration(rgb_calibration)
-
-            # Now it's safe to store
-            shared_data["aria_device_calibration"] = calibration_data
-            shared_data["ready"] = True
-
-        if image_process and image_process.is_alive():
-            image_process.join()
