@@ -19,7 +19,6 @@ import aria.sdk as aria
 import fastplotlib as fpl
 import numpy as np
 from common import ctrl_c_handler
-
 from projectaria_tools.core.sensor_data import (
     BarometerData,
     ImageDataRecord,
@@ -137,7 +136,6 @@ class AriaVisualizer:
         }
 
     def render_loop(self):
-
         # Show the plots
         self.plots.show()
 
@@ -182,6 +180,7 @@ class AriaVisualizerStreamingClientObserver(BaseStreamingClientObserver):
         self.visualizer = visualizer
 
     def on_image_received(self, image: np.array, record: ImageDataRecord) -> None:
+        print("Here!")
         # Rotate images to match the orientation of the camera
         if record.camera_id != aria.CameraId.EyeTrack:
             image = np.rot90(image)

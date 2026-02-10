@@ -101,6 +101,7 @@ class ImageObserver(BaseStreamingClientObserver):
 
             observer.subscribe(my_callback, aria.CameraId.Rgb)
         """
+        print("L" * 1000)
         print("Subscriber added")
         if camera_id is None:
             # Subscribe to all cameras

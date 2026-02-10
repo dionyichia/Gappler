@@ -16,9 +16,7 @@ import argparse
 import sys
 
 import aria.sdk as aria
-
 from common import update_iptables
-
 from visualizer import AriaVisualizer, AriaVisualizerStreamingClientObserver
 
 
@@ -84,7 +82,7 @@ def main():
         streaming_config.streaming_interface = aria.StreamingInterface.Usb
 
     #    Use ephemeral streaming certificates
-    streaming_config.security_options.use_ephemeral_certs = False
+    streaming_config.security_options.use_ephemeral_certs = True
     streaming_manager.streaming_config = streaming_config
 
     # 5. Start streaming

@@ -1,15 +1,11 @@
+import os
 from pathlib import Path
 
 import cv2
 import numpy as np
+import pandas as pd
 from matplotlib.colors import to_rgb
 from PIL import Image
-
-recording_folder_path = "/home/iot22/GitHub/Renaissance-Capstone-Project/v1/aria_pkg/recordings/dual_stream_20251211_114812/aria/frames"
-
-
-directory_path = Path(recording_folder_path)
-files_list = sorted([p for p in directory_path.iterdir() if p.is_file()])
 
 COLORS = ["red", "blue", "green", "yellow", "cyan", "magenta", "orange", "purple"]
 
@@ -163,7 +159,8 @@ def playback_recording(save_path: str, source: str = "aria", playback_fps: int =
         source: 'ros', 'aria', or 'synchronized'
         playback_fps: Playback frame rate
     """
-    import pandas as pd
+    directory_path = Path(save_path)
+    files_list = sorted([p for p in directory_path.iterdir() if p.is_file()])
 
     # Determine CSV path based on source
     if source == "synchronized":
@@ -276,21 +273,21 @@ if __name__ == "__main__":
         # )
 
         # Use cv2 implementation
-        img_cv = plot_results_cv2(image, inference_state)
+        # img_cv = plot_results_cv2(image, inference_state)
 
         # Add frame label
-        cv2.putText(
-            img_cv,
-            f"Frame {frame_num}",
-            (10, 30),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1,
-            (0, 255, 0),
-            2,
-        )
+        # cv2.putText(
+        #     img_cv,
+        #     f"Frame {frame_num}",
+        #     (10, 30),
+        #     cv2.FONT_HERSHEY_SIMPLEX,
+        #     1,
+        #     (0, 255, 0),
+        #     2,
+        # )
 
-        # Display the image
-        cv2.imshow(window_name, img_cv)
+        # # Display the image
+        # cv2.imshow(window_name, img_cv)
 
         # Wait for 1ms (press 'q' to quit)
         if cv2.waitKey(1) & 0xFF == ord("q"):

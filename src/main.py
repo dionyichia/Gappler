@@ -1,11 +1,13 @@
 import warnings
+
 warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
 import argparse
 import logging
-import threading
 import os
 import sys
+import threading
 from pathlib import Path
+
 from aria_device import AriaDeviceController
 from config import AriaConfig
 from services.audio_stream_processor import stream_audio
@@ -70,21 +72,11 @@ def main():
                 profile=AriaConfig.ARIA_STREAMING_PROFILE_NAME, interface=interface
             )
 
-            aria_device_calibration = aria_controller.get_device_calibration()
-            aria_rgb_calibration = aria_controller.get_rgb_camera_calibration()
-
-            if not aria_device_calibration or not aria_rgb_calibration:
-                logger.error("Error: Failed to retrieve device calibration data")
-                return
-
-            # shared_data["aria_device_calibration"] = aria_device_calibration
-            # shared_data["aria_rgb_calibration"] = aria_rgb_calibration
-
             audio_thread, image_thread, matcher_thread = None, None, None
 
             # audio_thread = threading.Thread(target=stream_audio, args=(PROJECT_ROOT,), daemon=True)
             image_thread = threading.Thread(
-                target=stream_image, args=(PROJECT_ROOT), daemon=True
+                target=stream_image, args=(PROJECT_ROOT,), daemon=True
             )
             # matcher_thread = threading.Thread(target=dual_stream_matcher, args=(PROJECT_ROOT,), daemon=True)
 
