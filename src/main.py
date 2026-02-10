@@ -1,11 +1,11 @@
 import warnings
 
+
 import numpy as np
 
 warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
 import argparse
 import logging
-import threading
 import os
 import subprocess
 import sys
