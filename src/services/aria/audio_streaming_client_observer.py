@@ -10,7 +10,7 @@ from projectaria_tools.core.sensor_data import (
 )
 from scipy.signal import resample
 
-from aria_device.base_streaming_client_observer import BaseStreamingClientObserver
+from services.aria.base_streaming_client_observer import BaseStreamingClientObserver
 
 
 class AudioObserver(BaseStreamingClientObserver):

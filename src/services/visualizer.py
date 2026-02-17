@@ -1,5 +1,5 @@
 """
-Aria Image Visualizer - Refactored
+Aria Image Visualizer
 
 A modular visualizer for Meta Aria camera images via ZMQ with SAM object detection support.
 """
@@ -9,26 +9,51 @@ import pickle
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
+
+# Delete if unused
+# os.environ["QT_QUICK_BACKEND"] = "software"
+# os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
+# os.environ["MESA_GL_VERSION_OVERRIDE"] = "3.3"
+# os.environ["DISPLAY"] = ":0"
+os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"
+# os.environ["QT_QPA_PLATFORM"] = "xcb"
+
+
+from multiprocessing.synchronize import Event
 
 import cv2
 import numpy as np
 import zmq
-from matplotlib.colors import to_rgb
+from PIL import Image, ImageDraw
+
+from config import (
+    VisualizationConfig,
+    ZMQConfig,
+    ZMQTopics,
+)
 
 # Add src directory to path
 src_path = Path(__file__).parent.parent
 sys.path.insert(0, str(src_path))
 
-from config import ZMQConfig, ZMQTopics
-
-os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"
 
 # Constants
 STATUS_PRINT_INTERVAL = 2  # seconds
 DEFAULT_WINDOW_SIZE = (1024, 1024)
 DEFAULT_WINDOW_POSITION = (50, 50)
-SAM_COLORS = ["red", "blue", "green", "yellow", "cyan", "magenta", "orange", "purple"]
+
+# Color definitions (BGR format for OpenCV)
+SAM_COLORS_BGR = [
+    (0, 0, 255),  # red
+    (255, 0, 0),  # blue
+    (0, 255, 0),  # green
+    (0, 255, 255),  # yellow
+    (255, 255, 0),  # cyan
+    (255, 0, 255),  # magenta
+    (0, 165, 255),  # orange
+    (128, 0, 128),  # purple
+]
 
 
 @dataclass
@@ -43,17 +68,62 @@ class VisualizerConfig:
     filter_topic: Optional[ZMQTopics] = None
 
 
+class ColorConverter:
+    """Simple color converter without matplotlib dependency."""
+
+    # Color name to BGR mapping
+    COLOR_MAP = {
+        "red": (0, 0, 255),
+        "r": (0, 0, 255),
+        "blue": (255, 0, 0),
+        "b": (255, 0, 0),
+        "green": (0, 255, 0),
+        "g": (0, 255, 0),
+        "yellow": (0, 255, 255),
+        "y": (0, 255, 255),
+        "cyan": (255, 255, 0),
+        "c": (255, 255, 0),
+        "magenta": (255, 0, 255),
+        "m": (255, 0, 255),
+        "orange": (0, 165, 255),
+        "purple": (128, 0, 128),
+        "white": (255, 255, 255),
+        "w": (255, 255, 255),
+        "black": (0, 0, 0),
+        "k": (0, 0, 0),
+    }
+
+    @staticmethod
+    def to_bgr(color: str) -> Tuple[int, int, int]:
+        """
+        Convert color name to BGR tuple.
+
+        Args:
+            color: Color name (e.g., 'red', 'blue', 'green')
+
+        Returns:
+            BGR tuple (B, G, R)
+        """
+        color_lower = color.lower()
+        if color_lower in ColorConverter.COLOR_MAP:
+            return ColorConverter.COLOR_MAP[color_lower]
+
+        # Default to white if color not found
+        print(f"Warning: Unknown color '{color}', defaulting to white")
+        return (255, 255, 255)
+
+
 class SAMVisualizer:
     """Handles visualization of SAM (Segment Anything Model) detection results."""
 
-    def __init__(self, colors: list[str] = None):
+    def __init__(self, colors: list[Tuple[int, int, int]] = None):
         """
         Initialize SAM visualizer.
 
         Args:
-            colors: List of color names for different objects
+            colors: List of BGR color tuples for different objects
         """
-        self.colors = colors or SAM_COLORS
+        self.colors = colors or SAM_COLORS_BGR
 
     def plot_results(self, img: np.ndarray, results: dict) -> np.ndarray:
         """
@@ -66,7 +136,6 @@ class SAMVisualizer:
         Returns:
             Image with plotted results
         """
-
         img_cv = img.copy()
         h, w = img_cv.shape[:2]
 
@@ -77,6 +146,7 @@ class SAMVisualizer:
         if ("scores" not in results) or (len(results["scores"]) == 0):
             print("No objects detected to plot")
             return img_cv
+
         nb_objects = len(results["scores"])
         print(f"Found {nb_objects} object(s)")
 
@@ -97,7 +167,11 @@ class SAMVisualizer:
         return img_cv
 
     def _plot_mask(
-        self, img: np.ndarray, mask: np.ndarray, color: str = "r", alpha: float = 0.5
+        self,
+        img: np.ndarray,
+        mask: np.ndarray,
+        color: Tuple[int, int, int],
+        alpha: float = 0.5,
     ) -> np.ndarray:
         """
         Apply colored mask overlay to image.
@@ -105,23 +179,17 @@ class SAMVisualizer:
         Args:
             img: Input image
             mask: Binary mask
-            color: Color name (matplotlib compatible)
+            color: BGR color tuple (B, G, R)
             alpha: Transparency factor
 
         Returns:
             Image with mask overlay
         """
         im_h, im_w = mask.shape
-        rgb_color = to_rgb(color)
-        bgr_color = (
-            int(rgb_color[2] * 255),
-            int(rgb_color[1] * 255),
-            int(rgb_color[0] * 255),
-        )
 
         # Create colored mask
         colored_mask = np.zeros((im_h, im_w, 3), dtype=np.uint8)
-        colored_mask[mask > 0] = bgr_color
+        colored_mask[mask > 0] = color
 
         # Blend mask with original image
         mask_binary = (mask > 0).astype(np.uint8)
@@ -142,7 +210,7 @@ class SAMVisualizer:
         box: np.ndarray,
         box_format: str = "XYXY",
         relative_coords: bool = False,
-        color: str = "r",
+        color: Tuple[int, int, int] = (0, 0, 255),
         text: Optional[str] = None,
         thickness: int = 2,
     ) -> np.ndarray:
@@ -156,7 +224,7 @@ class SAMVisualizer:
             box: Bounding box coordinates
             box_format: Format of box coordinates (XYXY, XYWH, or CxCyWH)
             relative_coords: Whether coordinates are relative (0-1)
-            color: Box color
+            color: BGR color tuple
             text: Optional text label
             thickness: Line thickness
 
@@ -186,20 +254,12 @@ class SAMVisualizer:
 
         x, y, w, h = int(x), int(y), int(w), int(h)
 
-        # Convert color to BGR
-        rgb_color = to_rgb(color)
-        bgr_color = (
-            int(rgb_color[2] * 255),
-            int(rgb_color[1] * 255),
-            int(rgb_color[0] * 255),
-        )
-
         # Draw rectangle
-        cv2.rectangle(img, (x, y), (x + w, y + h), bgr_color, thickness)
+        cv2.rectangle(img, (x, y), (x + w, y + h), color, thickness)
 
         # Draw text label if provided
         if text is not None:
-            self._draw_text_with_background(img, text, (x, y), bgr_color)
+            self._draw_text_with_background(img, text, (x, y), color)
 
         return img
 
@@ -217,7 +277,7 @@ class SAMVisualizer:
             img: Image to draw on
             text: Text to draw
             position: (x, y) position
-            bg_color: Background color
+            bg_color: Background color (BGR tuple)
         """
         x, y = position
         (text_width, text_height), baseline = cv2.getTextSize(
@@ -233,7 +293,7 @@ class SAMVisualizer:
             -1,
         )
 
-        # Draw text
+        # Draw text in white
         cv2.putText(
             img, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1
         )
@@ -570,7 +630,8 @@ class AriaImageVisualizer:
         Returns:
             False if should quit, True otherwise
         """
-        if key == ord("q"):
+        ESC_KEY = 27
+        if key == ESC_KEY or key == ord("q"):
             return False
         elif key == ord("m"):
             self.show_menu = not self.show_menu
@@ -644,7 +705,7 @@ class AriaImageVisualizer:
             print(f"Error during cleanup: {e}")
 
 
-def main():
+def visualize_feed(quit_event: Event):
     """Entry point for the visualizer."""
     config = VisualizerConfig(filter_topic=ZMQConfig.TOPICS.RGB_CAMERA_RAW)
     visualizer = AriaImageVisualizer(config)
@@ -652,4 +713,96 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    visualize_feed()
+
+
+def visualize_gaze(
+    self,
+    rgb_image: np.ndarray,
+    gaze_dict: Dict[str, float],
+) -> Tuple[Optional[Tuple[float, float]], Optional[np.ndarray]]:
+    """
+    Visualize gaze on RGB image.
+
+    Args:
+        device_calibration: Device calibration data
+        rgb_camera_calibration: RGB camera calibration data
+        rgb_image: RGB Image
+        gaze_dict: Dictionary with gaze predictions
+
+    Returns:
+        Tuple of (gaze_projection, image_with_gaze) or (None, None) if fails
+    """
+
+    if len(rgb_image) == 0 or not gaze_dict:
+        return None, None
+
+    # Project gaze
+    gaze_projection = self.project_gaze(gaze_dict)
+
+    if gaze_projection is None:
+        return None, None
+
+    # Draw gaze point
+    image_with_gaze = self.visualizer.draw_gaze_point(rgb_image, gaze_projection)
+
+    return gaze_projection, image_with_gaze
+
+
+class GazeVisualizer:
+    """Handles gaze point visualization on images."""
+
+    @staticmethod
+    def draw_gaze_point(
+        image: np.ndarray,
+        gaze_point: Tuple[float, float],
+        radius: int = VisualizationConfig.GAZE_POINT_RADIUS,
+        color: Tuple[int, int, int] = VisualizationConfig.GAZE_POINT_COLOR,
+        use_pillow: bool = False,
+    ) -> np.ndarray:
+        """
+        Draw gaze point on image.
+
+        Args:
+            image: Input image (numpy array or PIL Image)
+            gaze_point: (x, y) pixel coordinates
+            radius: Circle radius in pixels
+            color: RGB color tuple (for PIL) or BGR (for OpenCV)
+            use_pillow: If True, use PIL; otherwise use OpenCV
+
+        Returns:
+            Image with gaze point drawn
+        """
+        if gaze_point is None:
+            return image
+
+        x, y = int(gaze_point[0]), int(gaze_point[1])
+
+        if use_pillow:
+            return GazeVisualizer._draw_with_pillow(image, x, y, radius, color)
+        else:
+            return GazeVisualizer._draw_with_opencv(image, x, y, radius, color)
+
+    @staticmethod
+    def _draw_with_pillow(
+        image: np.ndarray, x: int, y: int, radius: int, color: Tuple[int, int, int]
+    ) -> Image.Image:
+        """Draw gaze point using PIL."""
+        if isinstance(image, np.ndarray):
+            image = Image.fromarray(image)
+
+        draw = ImageDraw.Draw(image)
+        draw.ellipse(
+            (x - radius, y - radius, x + radius, y + radius),
+            fill=color if len(color) == 3 else color[:3],
+        )
+        return image
+
+    @staticmethod
+    def _draw_with_opencv(
+        image: np.ndarray, x: int, y: int, radius: int, color: Tuple[int, int, int]
+    ) -> np.ndarray:
+        """Draw gaze point using OpenCV (faster for real-time)."""
+        image_with_gaze = image.copy()
+        cv2.circle(image_with_gaze, (x, y), radius, color, -1)
+        return image_with_gaze

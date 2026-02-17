@@ -1,5 +1,6 @@
 import logging
 from ipaddress import IPv4Address
+from time import sleep
 from typing import Optional
 
 import aria.sdk as aria
@@ -107,7 +108,7 @@ class AriaDeviceController:
 
         # Connect to device
         self._device = self.device_client.connect()
-        self._print_device_status(self._device)
+        self._print_device_status()
 
         return self._device
 
@@ -115,7 +116,7 @@ class AriaDeviceController:
         self,
         profile: str = "profile18",
         interface: Optional[str] = None,
-        use_ephemeral_certs: bool = True,
+        use_ephemeral_certs: bool = AriaConfig.USE_EPHEMERAL_CERTS,
     ) -> None:
         """
         Start streaming on the connected device.
@@ -146,7 +147,7 @@ class AriaDeviceController:
         streaming_manager.start_streaming()
 
         while streaming_manager.streaming_state != aria.StreamingState.Streaming:
-            pass  # Wait until streaming starts
+            sleep(0.1)  # Wait until streaming starts
 
         logger.info("✓ Streaming started")
         logger.info(f"  State: {streaming_manager.streaming_state}")
@@ -220,14 +221,14 @@ class AriaDeviceController:
 
         return config
 
-    def _print_device_status(self, device: aria.Device) -> None:
+    def _print_device_status(self) -> None:
         """
         Print device status information.
 
         Args:
             device: Connected Aria device.
         """
-        status = device.status
+        status = self._device.status
         logger.info("✓ Device connected")
         logger.info(f"  Battery level: {status.battery_level}%")
         if status.wifi_ssid:

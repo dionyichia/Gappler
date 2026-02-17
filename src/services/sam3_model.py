@@ -1,7 +1,6 @@
 import os
 from typing import Optional
 
-import cv2
 import numpy as np
 import sam3
 import torch
@@ -88,6 +87,8 @@ class SAM3Segmenter:
 
 # Usage example
 if __name__ == "__main__":
+    import cv2
+
     # Initialize segmenter
     segmenter = SAM3Segmenter(
         checkpoint_path="/home/iot22/GitHub/Renaissance-Capstone-Project/src/models/sam3/sam3.pt",

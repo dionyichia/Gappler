@@ -16,21 +16,25 @@ from typing import Dict, Optional
 import cv2
 import numpy as np
 import torch
+from lightglue import LightGlue, SuperPoint
+from lightglue.utils import numpy_image_to_torch, rbd
 
-import config
-from models.LightGlue.lightglue import LightGlue, SuperPoint
-from models.LightGlue.lightglue.utils import numpy_image_to_torch, rbd
+from archive.ros_camera_subscriber import ROSCameraSubscriber
+from config import Settings
 from services.frame_recorder import FrameRecorder
-from services.ros_camera_subscriber import ROSCameraSubscriber
-from utils.keyboard import quit_keypress
+
+
+def quit_keypress():
+    pass
+
 
 # Configuration
 torch.set_grad_enabled(False)
 logger = logging.getLogger(__name__)
 
 # Model initialization
-EXTRACTOR = SuperPoint(max_num_keypoints=2048).eval().to(config.Settings.DEVICE)
-MATCHER = LightGlue(features="superpoint").eval().to(config.Settings.DEVICE)
+EXTRACTOR = SuperPoint(max_num_keypoints=2048).eval().to(Settings.DEVICE)
+MATCHER = LightGlue(features="superpoint").eval().to(Settings.DEVICE)
 
 
 @dataclass
@@ -148,10 +152,10 @@ class FeatureMatcher:
         """
         # Extract features
         feats0 = self.extractor.extract(
-            numpy_image_to_torch(image0).to(config.Settings.DEVICE)
+            numpy_image_to_torch(image0).to(Settings.DEVICE)
         )
         feats1 = self.extractor.extract(
-            numpy_image_to_torch(image1).to(config.Settings.DEVICE)
+            numpy_image_to_torch(image1).to(Settings.DEVICE)
         )
 
         # Match features
