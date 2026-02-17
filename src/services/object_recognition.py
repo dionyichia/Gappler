@@ -6,13 +6,16 @@ import numpy as np
 import zmq
 
 from config import ModelPaths, ZMQConfig, ZMQTopics
-from services.sam3_model import SAM3Segmenter
 
 
 class ImageProcessor:
     """Handles image processing with mask generation."""
 
     def __init__(self):
+        from services.sam3_model import (
+            SAM3Segmenter,  # Lazy import to prevent SAM3 from disrupting the initialization of cv2
+        )
+
         self.current_prompt: Optional[str] = None
         self.is_processing = False
         self.model = SAM3Segmenter(

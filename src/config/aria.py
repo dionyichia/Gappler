@@ -1,0 +1,25 @@
+"""Aria device and streaming configuration."""
+
+import ipaddress
+from dataclasses import dataclass
+from typing import Optional
+
+import aria.sdk as aria
+
+
+@dataclass(frozen=True)
+class AriaConfig:
+    ARIA_LOG_LEVEL: aria.Level = aria.Level.Info
+    ARIA_STREAMING_PROFILE_NAME: str = "profile18"
+    USE_EPHEMERAL_CERTS: bool = True
+
+    EYE_STREAM_ID: str = "211-1"
+    RGB_STREAM_ID: str = "214-1"
+    RGB_STREAM_LABEL: str = "camera-rgb"
+
+    DEST_CALIBRATION_HEIGHT_PX: int = 1408
+    DEST_CALIBRATION_WIDTH_PX: int = 1408
+    DEST_CALIBRATION_FOCAL_LENGTH: int = 609
+
+    ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = None
+    # ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = ipaddress.IPv4Address()

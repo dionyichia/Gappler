@@ -5,8 +5,9 @@ from typing import Dict, Optional
 
 import cv2
 import numpy as np
-import roslibpy
 
+# Delete if unused
+# import roslibpy
 from services.frame_recorder import FrameRecorder
 
 logger = logging.getLogger(__name__)
@@ -28,12 +29,12 @@ class ROSCameraSubscriber:
         self.recorder = None
 
         # Connect to rosbridge
-        self.client = roslibpy.Ros(host=host, port=port)
+        # self.client = roslibpy.Ros(host=host, port=port)
         self.client.run()
         logger.info(f"Connected to rosbridge at {host}:{port}")
 
         # Subscribe to image topic
-        self.subscriber = roslibpy.Topic(self.client, topic, "sensor_msgs/Image")
+        # self.subscriber = roslibpy.Topic(self.client, topic, "sensor_msgs/Image")
         self.subscriber.subscribe(self._image_callback)
 
         if save_path:

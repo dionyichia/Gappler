@@ -17,8 +17,8 @@ import torch
 import zmq
 from faster_whisper import WhisperModel
 
-import config
-from aria_device import AriaStreamClient, AudioObserver
+from config import Settings, ZMQConfig
+from services.aria import AriaStreamClient, AudioObserver
 from services.prompt_extractor import LLMPromptExtractor
 
 # Constants
@@ -54,7 +54,7 @@ class CUDNNPathConfigurator:
 class ZMQManager:
     """Manages ZeroMQ socket connections for command publishing."""
 
-    def __init__(self, command_address: str = config.ZMQConfig.AUDIO_COMMAND_ADDRESS):
+    def __init__(self, command_address: str = ZMQConfig.AUDIO_COMMAND_ADDRESS):
         """
         Initialize ZMQ manager.
 
@@ -118,7 +118,9 @@ class AudioTranscriptionPipeline:
 
         # Initialize components
         self.whisper_model = WhisperModel(
-            whisper_model, device=config.Settings.DEVICE, compute_type="int8"
+            whisper_model,
+            device=Settings.DEVICE,
+            compute_type="int8",
         )
         self.llm_extractor = LLMPromptExtractor(llm_model)
         self.zmq_manager = ZMQManager()

@@ -1,7 +1,7 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-import config
+from config import Settings
 
 
 class LLMPromptExtractor:
@@ -19,7 +19,7 @@ class LLMPromptExtractor:
         print(f"Loading model: {model_name}...")
 
         # Determine device
-        self.device = config.Settings.DEVICE
+        self.device = Settings.DEVICE
         print(f"Using device: {self.device}")
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)

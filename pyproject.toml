@@ -3,35 +3,24 @@ name = "renaissance-capstone-project"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = "==3.10.*"
 dependencies = [
-    "accelerate>=1.12.0",
-    "decord>=0.6.0",
-    "easydict>=1.13",
-    "einops>=0.8.2",
     "faster-whisper>=1.2.1",
-    "fastplotlib==0.1.0a13",
-    "glfw==2.6.2",
-    "kornia>=0.8.2",
-    "matplotlib>=3.10.7",
-    "opencv-python>=4.12.0.88",
-    "pandas>=2.3.3",
+    "lightglue",
+    "numpy>=2.2.6",
+    "opencv-python>=4.13.0.92",
     "projectaria-client-sdk==1.1.0",
-    "projectaria-tools[all]>=1.5.2a1",
-    "pycocotools>=2.0.11",
-    "pygfx==0.1.14",
-    "pyyaml>=6.0.3",
+    "projectaria-eyetracking",
     "pyzmq>=27.1.0",
-    "roslibpy>=2.0.0",
-    "scikit-image>=0.26.0",
-    "scikit-learn>=1.8.0",
-    "scipy>=1.16.3",
-    "sidecar>=0.8.0",
-    "torch>=2.9.0",
-    "torchvision>=0.24.0",
-    "transformers>=5.1.0",
-    "ultralytics>=8.3.225",
+    "sam3",
+    "scipy>=1.15.3",
+    "transformers>=5.2.0",
 ]
+
+[tool.uv.sources]
+lightglue = { git = "https://github.com/Axemortal/rcp-LightGlue.git", branch = "main" }
+projectaria-eyetracking = { git = "https://github.com/Axemortal/rcp-projectaria_eyetracking.git", branch = "main" }
+sam3 = { git = "https://github.com/Axemortal/rcp-sam3.git", branch = "main" }
 
 [tool.ruff]
 lint.ignore = ["E402"]
