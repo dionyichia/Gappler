@@ -1,21 +1,26 @@
 import warnings
-from time import sleep
 
 warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
+
+import os
+
+# Environment Configuration
+os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"
 
 import argparse
 import logging
 import multiprocessing
 import sys
 from ipaddress import IPv4Address
+from time import sleep
 from typing import Optional
+
+import cv2  # DO NOT DELETE! We import cv2 to initialize it to prevent crashing in spawned processes due to conflicts with torch
 
 from config import Settings
 from schemas.application import ApplicationConfig
 from services.aria import AriaDeviceController
-from services.playback_controller import playback
 from services.process_manager import ProcessManager
-from services.visualizer import visualize_feed
 from utils import TerminalRawMode, exit_keypress, safe_update_iptables, setup_logging
 
 # Logging setup
@@ -85,6 +90,8 @@ class ProcessPipelineBuilder:
 
     def add_visualization(self) -> "ProcessPipelineBuilder":
         """Add visualization process to the pipeline."""
+        from services.visualizer import visualize_feed
+
         self.process_manager.add_process(target=visualize_feed)
         return self
 
@@ -139,6 +146,8 @@ class RecordingModeRunner:
         Args:
             recording_path: Path to the recording directory.
         """
+        from services.playback_controller import playback
+
         logger.info(f"Starting playback mode with recording: {recording_path}")
 
         # Setup processing pipeline

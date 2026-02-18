@@ -5,22 +5,22 @@ A modular visualizer for Meta Aria camera images via ZMQ with SAM object detecti
 """
 
 import os
-import pickle
-import sys
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, Optional, Tuple
+
+os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"
 
 # Delete if unused
 # os.environ["QT_QUICK_BACKEND"] = "software"
 # os.environ["LIBGL_ALWAYS_SOFTWARE"] = "1"
 # os.environ["MESA_GL_VERSION_OVERRIDE"] = "3.3"
 # os.environ["DISPLAY"] = ":0"
-os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"
 # os.environ["QT_QPA_PLATFORM"] = "xcb"
 
-
+import pickle
+import sys
+from dataclasses import dataclass
 from multiprocessing.synchronize import Event
+from pathlib import Path
+from typing import Dict, Optional, Tuple
 
 import cv2
 import numpy as np
