@@ -13,6 +13,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 import torch
+from projectaria_eyetracking.inference import infer
 from projectaria_tools.core.calibration import CameraCalibration, DeviceCalibration
 from projectaria_tools.core.mps import EyeGaze
 from projectaria_tools.core.mps.utils import get_gaze_vector_reprojection
@@ -67,7 +68,6 @@ class EyeTrackingModelLoader:
             FileNotFoundError: If model files are missing
             RuntimeError: If model loading fails
         """
-        from projectaria_eyetracking.inference import infer
 
         checkpoint_path, config_path = EyeTrackingModelLoader.validate_model_files()
 
