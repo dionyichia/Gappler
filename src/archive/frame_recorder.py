@@ -25,12 +25,12 @@ class FrameRecorder:
         """Initialize CSV file with header"""
         with open(self.csv_path, mode="w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["#timestamp [ms]", "frame_id", "filename"])
+            writer.writerow(["#frame_id", "filename"])
 
-    def save_frame(self, frame: np.ndarray, timestamp_ms: int) -> str:
-        """Save frame and timestamp, return filename"""
+    def save_frame(self, frame: np.ndarray) -> str:
+        """Save frame, return filename"""
         # Generate filename
-        filename = f"{timestamp_ms}.png"
+        filename = f"{self.frame_count}.png"
         filepath = os.path.join(self.frame_dir, filename)
 
         # Save image
@@ -39,7 +39,7 @@ class FrameRecorder:
         # Append to CSV
         with open(self.csv_path, mode="a", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow([timestamp_ms, self.frame_count, filename])
+            writer.writerow([self.frame_count, filename])
 
         self.frame_count += 1
 

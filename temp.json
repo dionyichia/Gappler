@@ -1,0 +1,10 @@
+{
+  "original_height": "0.0 KB",
+  "original_width": "0.0 KB",
+  "backbone_out": "109011.1 KB",
+  "geometric_prompt": "2.6 KB",
+  "masks_logits": "7744.4 KB",
+  "masks": "1936.4 KB",
+  "boxes": "0.4 KB",
+  "scores": "0.4 KB"
+}
