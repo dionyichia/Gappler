@@ -15,11 +15,10 @@ from ipaddress import IPv4Address
 from time import sleep
 from typing import Optional
 
-import cv2  # DO NOT DELETE! We import cv2 to initialize it to prevent crashing in spawned processes due to conflicts with torch
+import cv2  # DO NOT DELETE! We import cv2 to initialize it to prevent crashing in spawned processes due to conflicts with torch # noqa
 
-from config import Settings
 from schemas.application import ApplicationConfig
-from services.aria import AriaDeviceController
+from services.aria_device import AriaDeviceController
 from services.process_manager import ProcessManager
 from utils import TerminalRawMode, exit_keypress, safe_update_iptables, setup_logging
 
@@ -97,32 +96,30 @@ class ProcessPipelineBuilder:
 
     def add_object_recognition(self) -> "ProcessPipelineBuilder":
         """Add object recognition process to the pipeline."""
-        from services.object_recognition import generate_mask
+        from services.object_recognition_pipeline import generate_mask
 
-        # self.process_manager.add_process(target=generate_mask)
+        self.process_manager.add_process(target=generate_mask)
         return self
 
     def add_feature_matching(self) -> "ProcessPipelineBuilder":
         """Add feature matching process to the pipeline."""
-        from services.feature_matching import dual_stream_matcher
+        from services.feature_matching import feature_matching
 
-        # self.process_manager.add_process(
-        #     target=dual_stream_matcher, args=(Settings.PROJECT_ROOT,)
-        # )
+        self.process_manager.add_process(target=feature_matching)
         return self
 
     def add_audio_streaming(self) -> "ProcessPipelineBuilder":
         """Add audio streaming process to the pipeline."""
-        from services.audio_stream_processor import stream_audio
+        from services.audio_streaming_pipeline import stream_audio
 
-        # self.process_manager.add_process(target=stream_audio)
+        self.process_manager.add_process(target=stream_audio)
         return self
 
     def add_image_streaming(self) -> "ProcessPipelineBuilder":
         """Add image streaming thread to the pipeline."""
-        from services.image_stream_processor import stream_visual_feed
+        from services.image_streaming_pipeline import stream_visual_feed
 
-        # self.process_manager.add_thread(target=stream_visual_feed)
+        self.process_manager.add_thread(target=stream_visual_feed)
         return self
 
     def build_common_pipeline(self) -> "ProcessPipelineBuilder":

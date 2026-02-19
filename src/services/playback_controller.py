@@ -1,10 +1,8 @@
-import pickle
 import time
 from collections import deque
 from typing import Optional, Tuple
 
 import numpy as np
-import zmq
 from projectaria_tools.core import calibration
 from projectaria_tools.core.calibration import get_linear_camera_calibration
 from projectaria_tools.core.data_provider import (
@@ -15,8 +13,8 @@ from projectaria_tools.core.sensor_data import SensorDataType, TimeDomain
 from projectaria_tools.core.stream_id import StreamId
 from tqdm import tqdm
 
-from config import AriaConfig, PlaybackControllerConfig, ZMQConfig, ZMQTopics
-from services.aria.eye_tracking import EyeTrackingPipeline
+from config import AriaConfig, PlaybackControllerConfig, ROS2Config, ROS2Topics
+from services.aria_device.eye_tracking import EyeTrackingPipeline
 
 
 class PlaybackController:
@@ -24,7 +22,6 @@ class PlaybackController:
         self,
         vrs_filepath: str,
     ):
-
         self.vrs_filepath = vrs_filepath
         self.playback_speed = PlaybackControllerConfig.PLAYBACK_SPEED
         self.vrs_data_provider: VrsDataProvider = create_vrs_data_provider(vrs_filepath)
@@ -51,11 +48,6 @@ class PlaybackController:
             "camera-rgb",
         )
 
-        # Setup ZMQ
-        context = zmq.Context()
-        self.socket = context.socket(zmq.PUB)
-        self.socket.bind(ZMQConfig.VISUAL_FEED_ADDRESS)
-
         self.eye_tracking = EyeTrackingPipeline(
             self.device_calibration, self.rgb_camera_calibration
         )
@@ -72,12 +64,9 @@ class PlaybackController:
         self.playback_start_time: Optional[float] = None
 
     def _publish_image(self, image: np.ndarray, topic: str) -> None:
-        """Publish image via ZMQ."""
+        """Publish image."""
         if len(image) == 0:
             return
-        metadata = {"shape": image.shape, "dtype": str(image.dtype)}
-        message = pickle.dumps({"topic": topic, "metadata": metadata, "image": image})
-        self.socket.send(message)
 
     def _undistort_image(self, image: np.ndarray) -> np.ndarray:
         """Undistort RGB image."""
@@ -105,17 +94,13 @@ class PlaybackController:
 
         if stream_id == self.rgb_stream_id:
             image = np.rot90(image, -1)
-            self._publish_image(image, ZMQTopics.RGB_CAMERA_RAW)
+            self._publish_image(image, ROS2Topics.RGB_CAMERA_RAW)
             undistorted_image = self._undistort_image(image.copy())
-            self._publish_image(undistorted_image, ZMQTopics.RGB_CAMERA_UNDISTORTED)
+            self._publish_image(undistorted_image, ROS2Topics.RGB_CAMERA_UNDISTORTED)
 
         elif stream_id == self.eye_stream_id:
             eye_gaze_position = self._track_eye_gaze_position(image.copy())
-            message = pickle.dumps(
-                {"topic": "eye_gaze_position", "position": eye_gaze_position}
-            )
-            self.socket.send(message)
-            self._publish_image(image, ZMQTopics.EYE_TRACKING)
+            self._publish_image(image, ROS2Topics.EYE_TRACKING_RAW)
 
     def _get_playback_time_sec(self) -> float:
         """Get the current playback time in seconds since start."""

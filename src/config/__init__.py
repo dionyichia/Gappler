@@ -1,7 +1,7 @@
 """Configuration package for Aria streaming application.
 
 Usage:
-    from config import Settings, AriaConfig, ZMQConfig
+    from config import Settings, AriaConfig, ROS2Config
 
     settings = Settings()
     aria_config = AriaConfig()
@@ -13,26 +13,22 @@ warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
 
 
 from .aria import AriaConfig
+from .audio_streaming_pipeline_config import AudioStreamingPipelineConfig
 from .base import Settings
 from .eye_tracking import EyeTrackingConfig
 from .models import ModelPaths
 from .playback_controller_config import PlaybackControllerConfig
-from .visualization import VisualizationConfig
-from .zmq import ZMQConfig, ZMQTopics
+from .ros2 import ROS2Config, ROS2Topics
+from .visualizer_config import VisualizerConfig
 
 __all__ = [
-    # Base configuration
-    "Settings",
-    # Device configuration
     "AriaConfig",
-    # Processing configuration
-    "VisualizationConfig",
-    # Communication configuration
-    "ZMQConfig",
-    "ZMQTopics",
-    # Eye tracking
+    "AudioStreamingPipelineConfig",
+    "Settings",
     "EyeTrackingConfig",
-    # Models
     "ModelPaths",
     "PlaybackControllerConfig",
+    "ROS2Config",
+    "ROS2Topics",
+    "VisualizerConfig",
 ]

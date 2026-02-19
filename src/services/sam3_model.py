@@ -7,15 +7,17 @@ import torch
 from sam3 import build_sam3_image_model
 from sam3.model.sam3_image_processor import Sam3Processor
 
+from config import Settings
 
-class SAM3Segmenter:
+
+class SAM3Model:
     def __init__(
         self,
         checkpoint_path: str,
         bpe_path: Optional[str] = None,
         confidence_threshold: float = 0.5,
         load_from_hf: bool = False,
-        device: str = "cuda",
+        device: str = Settings.DEVICE,
     ):
         """
         Initialize SAM3 segmentation model.
@@ -31,7 +33,7 @@ class SAM3Segmenter:
         self.confidence_threshold = confidence_threshold
 
         # Setup paths
-        sam3_root = os.path.join(os.path.dirname(sam3.__file__), "..")
+        sam3_root = os.path.join(os.path.dirname(sam3.__file__))
         self.bpe_path = bpe_path or f"{sam3_root}/assets/bpe_simple_vocab_16e6.txt.gz"
 
         # Configure CUDA settings
@@ -65,12 +67,12 @@ class SAM3Segmenter:
         )
         return model
 
-    def process_text_prompt(self, image: np.ndarray, prompt: str):
+    def process_text_prompt(self, image: np.ndarray, prompt: str) -> dict:
         """
         Process image with text prompt for segmentation.
 
         Args:
-            image: PIL Image to process
+            image: Numpy array Image to process
             prompt: Text prompt describing what to segment
 
         Returns:
@@ -90,7 +92,7 @@ if __name__ == "__main__":
     import cv2
 
     # Initialize segmenter
-    segmenter = SAM3Segmenter(
+    segmenter = SAM3Model(
         checkpoint_path="/home/iot22/GitHub/Renaissance-Capstone-Project/src/models/sam3/sam3.pt",
         confidence_threshold=0.5,
     )
