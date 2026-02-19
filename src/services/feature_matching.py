@@ -13,6 +13,7 @@ from threading import Lock, Thread
 from typing import Dict, Optional
 
 import numpy as np
+import roslibpy
 import torch
 from lightglue import LightGlue, SuperPoint
 from lightglue.utils import numpy_image_to_torch, rbd
@@ -31,6 +32,7 @@ from services.ros import (
 # Configuration
 torch.set_grad_enabled(False)
 logger = logging.getLogger(__name__)
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 _EXTRACTOR = SuperPoint(max_num_keypoints=2048).eval().to(Settings.DEVICE)
 _MATCHER = LightGlue(features="superpoint").eval().to(Settings.DEVICE)

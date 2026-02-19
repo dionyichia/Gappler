@@ -18,8 +18,13 @@ from schemas.application import ApplicationConfig
 from services.process_manager import ProcessManager
 from utils import TerminalRawMode, exit_keypress, safe_update_iptables, setup_logging
 
-# Logging setup
+os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"  # Point to system fonts
+os.environ["QT_QUICK_BACKEND"] = "software"
 setup_logging()
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+
 logger = logging.getLogger(__name__)
 
 if not rclpy.ok():
