@@ -3,6 +3,7 @@ Dual Stream Feature Matcher with integrated visualization and timestamp recordin
 Matches features between Aria glasses and ROS2 camera streams using LightGlue.
 """
 
+import base64
 import csv
 import logging
 import os
@@ -13,28 +14,28 @@ from queue import Queue
 from threading import Lock, Thread
 from typing import Dict, Optional
 
+import aria.sdk as aria
 import cv2
 import numpy as np
+import roslibpy
 import torch
-from lightglue import LightGlue, SuperPoint
-from lightglue.utils import numpy_image_to_torch, rbd
 
-from archive.ros_camera_subscriber import ROSCameraSubscriber
-from config import Settings
-from services.frame_recorder import FrameRecorder
-
-
-def quit_keypress():
-    pass
-
+import config
+import services.eye_tracking
+from aria_device.aria_stream_client import AriaStreamClient
+from aria_device.streaming_client_observer import ImageObserver
+from models.LightGlue.lightglue import LightGlue, SuperPoint
+from models.LightGlue.lightglue.utils import numpy_image_to_torch, rbd
+from utils.keyboard import quit_keypress
 
 # Configuration
 torch.set_grad_enabled(False)
 logger = logging.getLogger(__name__)
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Model initialization
-EXTRACTOR = SuperPoint(max_num_keypoints=2048).eval().to(Settings.DEVICE)
-MATCHER = LightGlue(features="superpoint").eval().to(Settings.DEVICE)
+EXTRACTOR = SuperPoint(max_num_keypoints=2048).eval().to(DEVICE)
+MATCHER = LightGlue(features="superpoint").eval().to(DEVICE)
 
 
 @dataclass
@@ -129,6 +130,50 @@ def draw_matches_opencv(image0, image1, kpts0, kpts1, matches, max_matches=100):
     return combined
 
 
+class FrameRecorder:
+    """Handles saving frames and timestamps to disk"""
+
+    def __init__(self, save_path: str, source_name: str):
+        self.save_path = save_path
+        self.source_name = source_name
+        self.frame_count = 0
+
+        # Create directories
+        self.frame_dir = os.path.join(save_path, source_name, "frames")
+        os.makedirs(self.frame_dir, exist_ok=True)
+
+        # Initialize CSV
+        self.csv_path = os.path.join(save_path, source_name, "timestamps.csv")
+        self._init_csv()
+
+    def _init_csv(self):
+        """Initialize CSV file with header"""
+        with open(self.csv_path, mode="w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["#timestamp [ms]", "frame_id", "filename"])
+
+    def save_frame(self, frame: np.ndarray, timestamp_ms: int) -> str:
+        """Save frame and timestamp, return filename"""
+        # Generate filename
+        filename = f"{timestamp_ms}.png"
+        filepath = os.path.join(self.frame_dir, filename)
+
+        # Save image
+        cv2.imwrite(filepath, frame)
+
+        # Append to CSV
+        with open(self.csv_path, mode="a", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([timestamp_ms, self.frame_count, filename])
+
+        self.frame_count += 1
+
+        if self.frame_count % 100 == 0:
+            print(f"Saved {self.frame_count} {self.source_name} frames")
+
+        return filename
+
+
 class FeatureMatcher:
     """Handles feature extraction and matching between two images using LightGlue."""
 
@@ -151,12 +196,8 @@ class FeatureMatcher:
             Dictionary containing keypoints and matches
         """
         # Extract features
-        feats0 = self.extractor.extract(
-            numpy_image_to_torch(image0).to(Settings.DEVICE)
-        )
-        feats1 = self.extractor.extract(
-            numpy_image_to_torch(image1).to(Settings.DEVICE)
-        )
+        feats0 = self.extractor.extract(numpy_image_to_torch(image0).to(DEVICE))
+        feats1 = self.extractor.extract(numpy_image_to_torch(image1).to(DEVICE))
 
         # Match features
         matches01 = self.matcher({"image0": feats0, "image1": feats1})
@@ -243,6 +284,80 @@ class FrameBuffer:
             self._frame_count = 0
             self._last_fps_time = time.time()
             self._fps = 0.0
+
+
+class ROSCameraSubscriber:
+    """Subscribes to ROS2 camera feed via rosbridge."""
+
+    def __init__(
+        self,
+        topic: str,
+        host: str = "localhost",
+        port: int = 9090,
+        callback=None,
+        save_path: Optional[str] = None,
+    ):
+        self.topic = topic
+        self.callback = callback
+        self.recorder = None
+
+        # Connect to rosbridge
+        self.client = roslibpy.Ros(host=host, port=port)
+        self.client.run()
+        logger.info(f"Connected to rosbridge at {host}:{port}")
+
+        # Subscribe to image topic
+        self.subscriber = roslibpy.Topic(self.client, topic, "sensor_msgs/Image")
+        self.subscriber.subscribe(self._image_callback)
+
+        if save_path:
+            self.recorder = FrameRecorder(save_path, "ros")
+
+        logger.info(f"Subscribed to {topic}")
+
+    def _image_callback(self, message: Dict) -> None:
+        """Internal callback for ROS image messages."""
+        try:
+            cv_image, timestamp_ms = self._decode_ros_image(message)
+            if cv_image is not None:
+                # Save with timestamp if recorder enabled
+                if self.recorder:
+                    self.recorder.save_frame(cv_image, timestamp_ms)
+
+                # Call user callback with timestamp
+                if self.callback:
+                    self.callback(cv_image, timestamp_ms)
+        except Exception as e:
+            logger.error(f"Error processing ROS image: {e}")
+
+    def _decode_ros_image(self, message: Dict) -> tuple[Optional[np.ndarray], int]:
+        """Decode ROS image message to OpenCV format with timestamp."""
+        width = message["width"]
+        height = message["height"]
+        encoding = message["encoding"]
+        data = message["data"]
+        timestamp_ms = int(time.time_ns() / 1e6)
+
+        if not encoding in ["rgb8"]:
+            logger.warning(f"Unsupported encoding: {encoding}")
+            return None, int(time.time_ns() / 1e6)
+
+        # Decode base64 if necessary
+        if isinstance(data, str):
+            image_data = base64.b64decode(data)
+        else:
+            image_data = bytes(data)
+
+        # Convert based on encoding
+        image_array = np.frombuffer(image_data, dtype=np.uint8)
+        image_array = image_array.reshape((height, width, 3))
+        cv_image = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
+        return cv_image, timestamp_ms
+
+    def cleanup(self) -> None:
+        """Cleanup ROS connection."""
+        self.subscriber.unsubscribe()
+        self.client.terminate()
 
 
 class MatchingWorker:
@@ -639,53 +754,89 @@ def dual_stream_matcher(project_root: Path, enable_recording: bool = True) -> No
         save_path=save_path,
     )
 
+    # Initialize eye tracking
+    system = services.eye_tracking.initialize_eye_tracking_model(config.DEVICE)
+
+    value_mapping, eye_gaze_inference_result = (
+        services.eye_tracking.real_time_eyetracking(
+            system.inference_model,
+            observer.images,
+            aria.CameraId.EyeTrack,
+            observer.timestamp_ms,
+        )
+    )
+
+    gaze_point, image_with_gaze = services.eye_tracking.eye_tracking_visualization(
+        system.device_calibration,
+        system.rgb_camera_calibration,
+        system.rgb_stream_label,
+        aria.CameraId.Rgb,
+        observer.images,
+        value_mapping,
+    )
+
+    image_with_gaze = np.array(image_with_gaze)
+    rotated_image = np.rot90(image_with_gaze, -1)
+    color_img = cv2.cvtColor(rotated_image, cv2.COLOR_RGB2BGR)
+    cv2.imshow("Meta Aria image", color_img)
+
     # Create window
     cv2.namedWindow("Aria + ROS2 Camera Matching", cv2.WINDOW_NORMAL)
 
     try:
-        # Subscribe to Aria RGB stream
-        observer = None
-        logger.info("Aria streaming started")
+        with AriaStreamClient() as aria_stream_client:
+            # Subscribe to Aria RGB stream
+            data_channels = [aria.StreamingDataType.Rgb]
+            observer: ImageObserver = aria_stream_client.subscribe(
+                data_channels,
+                ImageObserver(
+                    system.rgb_camera_calibration,
+                    system.rgb_linear_camera_calibration,
+                    str(save_path) if save_path else str(project_root / "output"),
+                ),
+                message_queue_size=1,
+            )
+            logger.info("Aria streaming started")
 
-        # Main loop
-        while not quit_keypress():
-            try:
-                # Get Aria frame with timestamp
-                aria_frame = observer.get_undistorted_rgb_image()
-                aria_timestamp = observer.timestamp_ms
+            # Main loop
+            while not quit_keypress():
+                try:
+                    # Get Aria frame with timestamp
+                    aria_frame = observer.get_undistorted_rgb_image()
+                    aria_timestamp = observer.timestamp_ms
 
-                if aria_frame is not None and aria_timestamp > 0:
-                    matcher.on_aria_frame(aria_frame, aria_timestamp)
+                    if aria_frame is not None and aria_timestamp > 0:
+                        matcher.on_aria_frame(aria_frame, aria_timestamp)
 
-                # Create and show visualization
-                display = matcher.create_visualization()
-                cv2.imshow("Aria + ROS2 Camera Matching", display)
+                    # Create and show visualization
+                    display = matcher.create_visualization()
+                    cv2.imshow("Aria + ROS2 Camera Matching", display)
 
-                # Handle key presses
-                key = cv2.waitKey(1) & 0xFF
-                if key == ord("q"):
+                    # Handle key presses
+                    key = cv2.waitKey(1) & 0xFF
+                    if key == ord("q"):
+                        break
+                    elif key == ord("m"):
+                        matcher.toggle_matching()
+                    elif key == ord("v"):
+                        matcher.toggle_match_visualization()
+                    elif key == ord("s"):
+                        timestamp = time.strftime("%Y%m%d_%H%M%S")
+                        filename = f"dual_stream_match_{timestamp}.png"
+                        cv2.imwrite(filename, display)
+                        logger.info(f"Saved frame to {filename}")
+                    elif key == ord("r"):
+                        matcher.reset_stats()
+
+                    # Small delay to prevent CPU spinning
+                    time.sleep(0.5)
+
+                except KeyError as e:
+                    logger.debug(f"Frame not yet available: {e}")
+                    time.sleep(0.1)
+                except Exception as e:
+                    logger.error(f"Error during visualization: {e}", exc_info=True)
                     break
-                elif key == ord("m"):
-                    matcher.toggle_matching()
-                elif key == ord("v"):
-                    matcher.toggle_match_visualization()
-                elif key == ord("s"):
-                    timestamp = time.strftime("%Y%m%d_%H%M%S")
-                    filename = f"dual_stream_match_{timestamp}.png"
-                    cv2.imwrite(filename, display)
-                    logger.info(f"Saved frame to {filename}")
-                elif key == ord("r"):
-                    matcher.reset_stats()
-
-                # Small delay to prevent CPU spinning
-                time.sleep(0.5)
-
-            except KeyError as e:
-                logger.debug(f"Frame not yet available: {e}")
-                time.sleep(0.1)
-            except Exception as e:
-                logger.error(f"Error during visualization: {e}", exc_info=True)
-                break
 
     except KeyboardInterrupt:
         logger.info("Interrupted by user")
