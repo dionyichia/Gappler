@@ -45,7 +45,7 @@
     </collision>
   </link>
   <link
-    name="link1">
+    name="Link1">
     <inertial>
       <origin
         xyz="-2.1376E-07 0.025186 -0.021108"
@@ -93,7 +93,7 @@
     <parent
       link="base_link" />
     <child
-      link="link1" />
+      link="Link1" />
     <axis
       xyz="0 -1 0" />
     <limit
@@ -103,7 +103,7 @@
       velocity="1" />
   </joint>
   <link
-    name="link2">
+    name="Link2">
     <inertial>
       <origin
         xyz="4.1111E-07 0.011078 0.076129"
@@ -149,9 +149,9 @@
       xyz="0 0 0"
       rpy="1.5708 0 0" />
     <parent
-      link="link1" />
+      link="Link1" />
     <child
-      link="link2" />
+      link="Link2" />
     <axis
       xyz="0 1 0" />
     <limit
@@ -161,7 +161,7 @@
       velocity="1" />
   </joint>
   <link
-    name="link3">
+    name="Link3">
     <inertial>
       <origin
         xyz="-4.7932E-07 0.027347 -0.023544"
@@ -207,9 +207,9 @@
       xyz="0 0 0.256"
       rpy="-1.5708 0 0" />
     <parent
-      link="link2" />
+      link="Link2" />
     <child
-      link="link3" />
+      link="Link3" />
     <axis
       xyz="0 -1 0" />
     <limit
@@ -219,7 +219,7 @@
       velocity="1" />
   </joint>
   <link
-    name="link4">
+    name="Link4">
     <inertial>
       <origin
         xyz="5.0444E-06 0.010569 0.059593"
@@ -265,9 +265,9 @@
       xyz="0 0 0"
       rpy="1.5708 0 0" />
     <parent
-      link="link3" />
+      link="Link3" />
     <child
-      link="link4" />
+      link="Link4" />
     <axis
       xyz="0 1 0" />
     <limit
@@ -277,7 +277,7 @@
       velocity="1" />
   </joint>
   <link
-    name="link5">
+    name="Link5">
     <inertial>
       <origin
         xyz="1.1466E-06 0.021541 -0.018041"
@@ -323,9 +323,9 @@
       xyz="0 0 0.21"
       rpy="-1.5708 0 0" />
     <parent
-      link="link4" />
+      link="Link4" />
     <child
-      link="link5" />
+      link="Link5" />
     <axis
       xyz="0 -1 0" />
     <limit
@@ -335,7 +335,7 @@
       velocity="1" />
   </joint>
   <link
-    name="link6">
+    name="Link6">
     <inertial>
       <origin
         xyz="4.5754E-06 0.0073681 0.059382"
@@ -381,9 +381,9 @@
       xyz="0 0 0"
       rpy="1.5708 0 0" />
     <parent
-      link="link5" />
+      link="Link5" />
     <child
-      link="link6" />
+      link="Link6" />
     <axis
       xyz="0 1 0" />
     <limit
@@ -393,7 +393,7 @@
       velocity="1" />
   </joint>
   <link
-    name="link7">
+    name="Link7">
     <inertial>
       <origin
         xyz="0.00032231 -0.0001782 -0.028676"
@@ -439,9 +439,9 @@
       xyz="0 0 0.1725"
       rpy="0 0 0" />
     <parent
-      link="link6" />
+      link="Link6" />
     <child
-      link="link7" />
+      link="Link7" />
     <axis
       xyz="0 0 1" />
     <limit
