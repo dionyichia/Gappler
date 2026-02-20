@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rm_65_description">
     <xacro:arg name="initial_positions_file" default="initial_positions.yaml" />
-    <xacro:arg name="link6_type" default="link6" />
+    <xacro:arg name="link6_type" default="Link6" />
     <!-- arg->property -->
     <xacro:property name="link6_type" value="$(arg link6_type)" />
     <!-- Import rm_65_description urdf file -->
