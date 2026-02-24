@@ -1,0 +1,252 @@
+{
+    "CommonCmdSendData": [
+        {
+            "A_ExtNumberID": 1,
+            "B_ExtHex": 0,
+            "C_ExtSendString": "",
+            "D_ExtKeyName": "ExtKey1"
+        },
+        {
+            "A_ExtNumberID": 2,
+            "B_ExtHex": 0,
+            "C_ExtSendString": "",
+            "D_ExtKeyName": "ExtKey2"
+        },
+        {
+            "A_ExtNumberID": 3,
+            "B_ExtHex": 0,
+            "C_ExtSendString": "",
+            "D_ExtKeyName": "ExtKey3"
+        },
+        {
+            "A_ExtNumberID": 4,
+            "B_ExtHex": 0,
+            "C_ExtSendString": "",
+            "D_ExtKeyName": "ExtKey4"
+        },
+        {
+            "A_ExtNumberID": 5,
+            "B_ExtHex": 0,
+            "C_ExtSendString": "",
+            "D_ExtKeyName": "ExtKey5"
+        },
+        {
+            "A_ExtNumberID": 6,
+            "B_ExtHex": 0,
+            "C_ExtSendString": "",
+            "D_ExtKeyName": "ExtKey6"
+        },
+        {
+            "A_ExtNumberID": 7,
+            "B_ExtHex": 0,
+            "C_ExtSendString": "",
+            "D_ExtKeyName": "ExtKey7"
+        },
+        {
+            "A_ExtNumberID": 8,
+            "B_ExtHex": 0,
+            "C_ExtSendString": "",
+            "D_ExtKeyName": "ExtKey8"
+        },
+        {
+            "A_ReadNumberID": 1,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey1"
+        },
+        {
+            "A_ReadNumberID": 2,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey2"
+        },
+        {
+            "A_ReadNumberID": 3,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey3"
+        },
+        {
+            "A_ReadNumberID": 4,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey4"
+        },
+        {
+            "A_ReadNumberID": 5,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey5"
+        },
+        {
+            "A_ReadNumberID": 6,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey6"
+        },
+        {
+            "A_ReadNumberID": 7,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey7"
+        },
+        {
+            "A_ReadNumberID": 8,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey8"
+        },
+        {
+            "A_ReadNumberID": 9,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey9"
+        },
+        {
+            "A_ReadNumberID": 10,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey10"
+        },
+        {
+            "A_ReadNumberID": 11,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey11"
+        },
+        {
+            "A_ReadNumberID": 12,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey12"
+        },
+        {
+            "A_ReadNumberID": 13,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey13"
+        },
+        {
+            "A_ReadNumberID": 14,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey14"
+        },
+        {
+            "A_ReadNumberID": 15,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey15"
+        },
+        {
+            "A_ReadNumberID": 16,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey16"
+        },
+        {
+            "A_ReadNumberID": 17,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey17"
+        },
+        {
+            "A_ReadNumberID": 18,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey18"
+        },
+        {
+            "A_ReadNumberID": 19,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey19"
+        },
+        {
+            "A_ReadNumberID": 20,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey20"
+        },
+        {
+            "A_ReadNumberID": 21,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey21"
+        },
+        {
+            "A_ReadNumberID": 22,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey22"
+        },
+        {
+            "A_ReadNumberID": 23,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey23"
+        },
+        {
+            "A_ReadNumberID": 24,
+            "B_ReadHex": 0,
+            "C_ReadSendString": "",
+            "D_ReadKeyName": "ReadKey24"
+        },
+        {
+            "A_WriteNumberID": 1,
+            "B_WriteHex": 0,
+            "C_WriteSendString": "",
+            "D_WriteSendSuffix": "",
+            "E_WriteKeyName": "WriteKey1"
+        },
+        {
+            "A_WriteNumberID": 2,
+            "B_WriteHex": 0,
+            "C_WriteSendString": "",
+            "D_WriteSendSuffix": "",
+            "E_WriteKeyName": "WriteKey2"
+        },
+        {
+            "A_WriteNumberID": 3,
+            "B_WriteHex": 0,
+            "C_WriteSendString": "",
+            "D_WriteSendSuffix": "",
+            "E_WriteKeyName": "WriteKey3"
+        },
+        {
+            "A_WriteNumberID": 4,
+            "B_WriteHex": 0,
+            "C_WriteSendString": "",
+            "D_WriteSendSuffix": "",
+            "E_WriteKeyName": "WriteKey4"
+        },
+        {
+            "A_WriteNumberID": 5,
+            "B_WriteHex": 0,
+            "C_WriteSendString": "",
+            "D_WriteSendSuffix": "",
+            "E_WriteKeyName": "WriteKey5"
+        },
+        {
+            "A_WriteNumberID": 6,
+            "B_WriteHex": 0,
+            "C_WriteSendString": "",
+            "D_WriteSendSuffix": "",
+            "E_WriteKeyName": "WriteKey6"
+        },
+        {
+            "A_WriteNumberID": 7,
+            "B_WriteHex": 0,
+            "C_WriteSendString": "",
+            "D_WriteSendSuffix": "",
+            "E_WriteKeyName": "WriteKey7"
+        },
+        {
+            "A_WriteNumberID": 8,
+            "B_WriteHex": 0,
+            "C_WriteSendString": "",
+            "D_WriteSendSuffix": "",
+            "E_WriteKeyName": "WriteKey8"
+        }
+    ]
+}
