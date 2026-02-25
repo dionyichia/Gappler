@@ -27,5 +27,5 @@ class ImageHelper:
 
             return frame
         except Exception as e:
-            logger.error(f"Failed to decode image: {e}")
+            logger.error(f"Failed to decode image: {e}", exc_info=True)
             return None

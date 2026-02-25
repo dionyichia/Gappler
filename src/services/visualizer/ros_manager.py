@@ -59,6 +59,7 @@ class ROSManager:
         self._undistorted_rgb_subscriber: Optional[ROSSubscriber] = None
         self._gaze_position_subscriber: Optional[ROSSubscriber] = None
         self._object_detection_inference_subscriber: Optional[ROSSubscriber] = None
+        self._feature_matching_subscriber: Optional[ROSSubscriber] = None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -77,7 +78,7 @@ class ROSManager:
         self._object_detection_inference_subscriber = ROSSubscriber(
             "object_detection_inference_subscriber"
         )
-        self._feature_matching_subscriber = ROSSubscriber("match_publisher")
+        self._feature_matching_subscriber = ROSSubscriber("match_subscriber")
 
         self._rgb_subscriber.subscribe(
             CompressedImage,
