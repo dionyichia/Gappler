@@ -96,7 +96,9 @@ class ProcessPipelineBuilder:
 
     def add_object_recognition(self) -> "ProcessPipelineBuilder":
         """Add object recognition process to the pipeline."""
-        from services.object_recognition_pipeline import generate_mask
+        from services.object_recognition.object_recognition_pipeline import (
+            generate_mask,
+        )
 
         self.process_manager.add_process(target=generate_mask)
         return self

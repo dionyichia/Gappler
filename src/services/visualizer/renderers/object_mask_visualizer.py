@@ -18,8 +18,7 @@ class ObjectMaskVisualizer:
     Renders SAM detection results (masks + bounding boxes) onto images.
 
     Usage:
-        viz = ObjectMaskVisualizer()
-        annotated = viz.plot_results(image, results)
+        annotated = ObjectMaskVisualizer.plot_results(image, results)
     """
 
     def __init__(self, colors: Optional[List[Tuple[int, int, int]]] = None):
@@ -34,7 +33,8 @@ class ObjectMaskVisualizer:
     # Public API
     # ------------------------------------------------------------------
 
-    def plot_results(self, img: np.ndarray, results: Optional[dict]) -> np.ndarray:
+    @staticmethod
+    def plot_results(img: np.ndarray, results: Optional[dict]) -> np.ndarray:
         """
         Overlay masks and bounding boxes for all detected objects.
 
@@ -60,13 +60,15 @@ class ObjectMaskVisualizer:
         logger.debug(f"Plotting {nb_objects} object(s)")
 
         for i in range(nb_objects):
-            color = self.colors[i % len(self.colors)]
+            color = VisualizerConfig.CV2_COLORS[i % len(VisualizerConfig.CV2_COLORS)]
             mask = results["masks"][i].squeeze(0).cpu().numpy()
             prob = results["scores"][i].item()
             box = results["boxes"][i].cpu().numpy()
 
-            img_cv = self._plot_mask(img_cv, mask, color=color, alpha=0.5)
-            img_cv = self._plot_bbox(
+            img_cv = ObjectMaskVisualizer._plot_mask(
+                img_cv, mask, color=color, alpha=0.5
+            )
+            img_cv = ObjectMaskVisualizer._plot_bbox(
                 img_cv,
                 h,
                 w,
@@ -81,8 +83,8 @@ class ObjectMaskVisualizer:
     # Private helpers
     # ------------------------------------------------------------------
 
+    @staticmethod
     def _plot_mask(
-        self,
         img: np.ndarray,
         mask: np.ndarray,
         color: Tuple[int, int, int],
@@ -113,8 +115,8 @@ class ObjectMaskVisualizer:
             )
         return img
 
+    @staticmethod
     def _plot_bbox(
-        self,
         img: np.ndarray,
         img_height: int,
         img_width: int,
@@ -161,12 +163,12 @@ class ObjectMaskVisualizer:
         cv2.rectangle(img, (x, y), (x + w, y + h), color, thickness)
 
         if text is not None:
-            self._draw_text_with_background(img, text, (x, y), color)
+            ObjectMaskVisualizer._draw_text_with_background(img, text, (x, y), color)
 
         return img
 
+    @staticmethod
     def _draw_text_with_background(
-        self,
         img: np.ndarray,
         text: str,
         position: Tuple[int, int],

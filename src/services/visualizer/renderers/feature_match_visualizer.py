@@ -10,13 +10,6 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-try:
-    import torch
-
-    _TORCH_AVAILABLE = True
-except ImportError:
-    _TORCH_AVAILABLE = False
-
 
 class FeatureMatchVisualizer:
     """
@@ -75,8 +68,10 @@ class FeatureMatchVisualizer:
         Returns:
             Combined image with match lines drawn.
         """
+        image0 = cv2.cvtColor(image0.copy(), cv2.COLOR_RGB2BGR)
+        image1 = cv2.cvtColor(image1.copy(), cv2.COLOR_RGB2BGR)
         num_matches = len(matches)
-        kpts0, kpts1, matches = self._to_numpy(kpts0, kpts1, matches)
+
         image0, image1, kpts0, kpts1 = self._normalize_heights(
             image0, image1, kpts0, kpts1
         )
@@ -138,17 +133,6 @@ class FeatureMatchVisualizer:
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
-
-    @staticmethod
-    def _to_numpy(kpts0, kpts1, matches):
-        """Convert torch tensors to numpy arrays if needed."""
-
-        def _maybe_numpy(x):
-            if _TORCH_AVAILABLE and isinstance(x, torch.Tensor):
-                return x.cpu().numpy()
-            return x
-
-        return _maybe_numpy(kpts0), _maybe_numpy(kpts1), _maybe_numpy(matches)
 
     def _normalize_heights(self, image0, image1, kpts0, kpts1):
         """Resize images to the same height and scale keypoints accordingly."""

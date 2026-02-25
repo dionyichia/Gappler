@@ -54,6 +54,7 @@ class Visualizer:
     ):
         self._quit_event = quit_event
         self.current_topic = filter_topic
+        self._camera_source: str = "aria"
 
         # UI state
         self.show_menu = False
@@ -62,7 +63,6 @@ class Visualizer:
 
         # Renderers
         self._gaze_viz = GazeVisualizer()
-        self._mask_viz = ObjectMaskVisualizer()
         self._match_viz = FeatureMatchVisualizer()
         self._menu = MenuOverlay()
 
@@ -179,15 +179,22 @@ class Visualizer:
 
     def _on_mask_bundle(self, bundle: dict) -> None:
         """Handle a deserialized image + inference_state bundle."""
-        if self.current_topic == ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS:
-            image = ImageHelper.uncompress_image(bundle.get("image", b""))
-            if image is None:
-                logger.warning("Mask bundle missing 'image'")
-                return
+        if self.current_topic != ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS:
+            return
 
-            inference_state = bundle.get("inference_state")
-            annotated = self._mask_viz.plot_results(image, inference_state)
-            self._display_frame = annotated
+        source_bundle = bundle.get(self._camera_source, {})
+        image = ImageHelper.uncompress_image(source_bundle.get("image", b""))
+
+        if image is None:
+            logger.warning(
+                f"Mask bundle missing image for source '{self._camera_source}'"
+            )
+            return
+
+        annotated = ObjectMaskVisualizer.plot_results(
+            image, source_bundle.get("inference_state")
+        )
+        self._display_frame = annotated
 
     def _on_feature_match(self, bundle: dict) -> None:
         if self.current_topic != ROS2Topics.FEATURE_MATCH_RESULTS:
@@ -230,6 +237,7 @@ class Visualizer:
             on_topic_change=self._on_topic_change,
             on_menu_toggle=self._on_menu_toggle,
             on_save_frame=self._on_save_frame,
+            toggle_camera_source=self._toggle_camera_source,
         )
 
     def _on_topic_change(self, topic: ROS2Topics) -> None:
@@ -250,6 +258,11 @@ class Visualizer:
         logger.info(f"Saved frame to {filename}")
         print(f"Saved frame to {filename}")
 
+    def _toggle_camera_source(self) -> None:
+        """Switch between aria/ros object recognition views."""
+        self._camera_source = "ros" if self._camera_source == "aria" else "aria"
+        logger.info(f"Switched object recognition source to: {self._camera_source}")
+
     # ------------------------------------------------------------------
     # Rendering
     # ------------------------------------------------------------------
@@ -264,6 +277,18 @@ class Visualizer:
 
         if self.show_menu:
             display = self._menu.draw(display, self.current_topic)
+
+        if self.current_topic == ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS:
+            label = f"Source: {self._camera_source.upper()}  [TAB to switch]"
+            cv2.putText(
+                display,
+                label,
+                (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (0, 255, 255),
+                2,
+            )
 
         cv2.imshow(VisualizerConfig.DEFAULT_WINDOW_NAME, display)
 

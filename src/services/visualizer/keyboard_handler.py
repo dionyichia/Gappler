@@ -3,13 +3,14 @@ Keyboard input handler for the Visualizer main loop.
 """
 
 import logging
-from typing import Callable, Optional
+from typing import Callable
 
 from config import ROS2Topics
 
 logger = logging.getLogger(__name__)
 
 ESC_KEY = 27
+TAB = 9
 
 
 class KeyboardHandler:
@@ -31,11 +32,13 @@ class KeyboardHandler:
         self,
         on_topic_change: Callable[[ROS2Topics], None],
         on_menu_toggle: Callable[[], None],
-        on_save_frame: Optional[Callable[[], None]] = None,
+        on_save_frame: Callable[[], None] = None,
+        toggle_camera_source: Callable[[], None] = None,
     ):
         self._on_topic_change = on_topic_change
         self._on_menu_toggle = on_menu_toggle
         self._on_save_frame = on_save_frame
+        self._toggle_camera_source = toggle_camera_source
 
         self._topic_keys = {
             ord("1"): ROS2Topics.RGB_CAMERA_RAW,
@@ -61,6 +64,10 @@ class KeyboardHandler:
 
         if key == ord("m"):
             self._on_menu_toggle()
+            return True
+
+        if key == TAB:
+            self._toggle_camera_source()
             return True
 
         if key in self._topic_keys:
