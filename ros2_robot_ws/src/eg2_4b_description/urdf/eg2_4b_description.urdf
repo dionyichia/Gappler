@@ -5,7 +5,7 @@
 <robot
   name="eg2_4b_description">
   <link
-    name="base_link">
+    name="gripper_base_link">
     <inertial>
       <origin
         xyz="-2.6792E-06 1.4343E-05 0.040955"
@@ -26,7 +26,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/base_link.STL" />
+          filename="package://eg2_4b_description/meshes/gripper_base_link.STL" />
       </geometry>
       <material
         name="">
@@ -40,12 +40,12 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/base_link.STL" />
+          filename="package://eg2_4b_description/meshes/gripper_base_link.STL" />
       </geometry>
     </collision>
   </link>
   <link
-    name="Link1">
+    name="gripper_Link1">
     <inertial>
       <origin
         xyz="0.0001 0.0085832 0.013664"
@@ -66,7 +66,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/Link1.STL" />
+          filename="package://eg2_4b_description/meshes/gripper_Link1.STL" />
       </geometry>
       <material
         name="">
@@ -80,20 +80,20 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/Link1.STL" />
+          filename="package://eg2_4b_description/meshes/gripper_Link1.STL" />
       </geometry>
     </collision>
   </link>
   <joint
-    name="joint1"
+    name="gripper_joint1"
     type="revolute">
     <origin
       xyz="0 -0.04 0.09"
       rpy="0 0 0" />
     <parent
-      link="base_link" />
+      link="gripper_base_link" />
     <child
-      link="Link1" />
+      link="gripper_Link1" />
     <axis
       xyz="1 0 0" />
     <limit
@@ -103,7 +103,7 @@
       velocity="0" />
   </joint>
   <link
-    name="Link2">
+    name="gripper_Link2">
     <inertial>
       <origin
         xyz="9.9997E-05 0.011846 0.011367"
@@ -124,7 +124,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/Link2.STL" />
+          filename="package://eg2_4b_description/meshes/gripper_Link2.STL" />
       </geometry>
       <material
         name="">
@@ -138,20 +138,20 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/Link2.STL" />
+          filename="package://eg2_4b_description/meshes/gripper_Link2.STL" />
       </geometry>
     </collision>
   </link>
   <joint
-    name="joint2"
+    name="gripper_joint2"
     type="revolute">
     <origin
       xyz="0 0.022341 0.035565"
       rpy="0 0 0" />
     <parent
-      link="Link1" />
+      link="gripper_Link1" />
     <child
-      link="Link2" />
+      link="gripper_Link2" />
     <axis
       xyz="-1 0 0" />
     <limit
@@ -161,7 +161,7 @@
       velocity="0" />
   </joint>
   <link
-    name="Link3">
+    name="gripper_Link3">
     <inertial>
       <origin
         xyz="0.0001 -0.0085832 0.013664"
@@ -182,7 +182,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/Link3.STL" />
+          filename="package://eg2_4b_description/meshes/gripper_Link3.STL" />
       </geometry>
       <material
         name="">
@@ -196,20 +196,20 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/Link3.STL" />
+          filename="package://eg2_4b_description/meshes/gripper_Link3.STL" />
       </geometry>
     </collision>
   </link>
   <joint
-    name="joint3"
+    name="gripper_joint3"
     type="revolute">
     <origin
       xyz="0 0.04 0.09"
       rpy="0 0 0" />
     <parent
-      link="base_link" />
+      link="gripper_base_link" />
     <child
-      link="Link3" />
+      link="gripper_Link3" />
     <axis
       xyz="-1 0 0" />
     <limit
@@ -219,7 +219,7 @@
       velocity="0" />
   </joint>
   <link
-    name="Link4">
+    name="gripper_Link4">
     <inertial>
       <origin
         xyz="9.9999E-05 -0.011846 0.011367"
@@ -240,7 +240,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/Link4.STL" />
+          filename="package://eg2_4b_description/meshes/gripper_Link4.STL" />
       </geometry>
       <material
         name="">
@@ -254,20 +254,20 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/Link4.STL" />
+          filename="package://eg2_4b_description/meshes/gripper_Link4.STL" />
       </geometry>
     </collision>
   </link>
   <joint
-    name="joint4"
+    name="gripper_joint4"
     type="revolute">
     <origin
       xyz="0 -0.022341 0.035565"
       rpy="0 0 0" />
     <parent
-      link="Link3" />
+      link="gripper_Link3" />
     <child
-      link="Link4" />
+      link="gripper_Link4" />
     <axis
       xyz="1 0 0" />
     <limit
