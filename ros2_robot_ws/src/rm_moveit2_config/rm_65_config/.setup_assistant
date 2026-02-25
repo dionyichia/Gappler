@@ -1,7 +1,7 @@
 moveit_setup_assistant_config:
   urdf:
     package: rm_description
-    relative_path: urdf/rm_65.urdf
+    relative_path: urdf/rm_65_w_gripper.urdf.xacro
   srdf:
     relative_path: config/rm_65_description.srdf
   package_settings:

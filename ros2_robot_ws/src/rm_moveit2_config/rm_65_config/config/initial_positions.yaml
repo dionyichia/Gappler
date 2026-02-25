@@ -7,3 +7,7 @@ initial_positions:
   joint4: 0
   joint5: 0
   joint6: 0
+  gripper_joint1: 0
+  gripper_joint2: 0
+  gripper_joint3: 0
+  gripper_joint4: 0
