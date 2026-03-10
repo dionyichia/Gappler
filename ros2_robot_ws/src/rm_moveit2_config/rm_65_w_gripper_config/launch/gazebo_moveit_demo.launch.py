@@ -15,7 +15,7 @@ from moveit_configs_utils.launches import generate_moveit_rviz_launch
 
 def generate_launch_description():
     moveit_config = MoveItConfigsBuilder(
-        "rm_65_description", package_name="rm_65_config"
+        "rm_65_description", package_name="rm_65_w_gripper_config"
     ).to_moveit_configs()
 
     ld = LaunchDescription()
