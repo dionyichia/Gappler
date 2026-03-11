@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by
+Stephen Brawner (brawner@gmail.com) 
      Commit Version: 1.6.0-1-g15f4949  Build Version: 1.6.7594.29634
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
@@ -26,7 +27,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/gripper_base_link.STL" />
+          filename="file://$(find eg2_4b_description)/meshes/gripper_base_link.STL" />
       </geometry>
       <material
         name="">
@@ -40,7 +41,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/gripper_base_link.STL" />
+          filename="file://$(find eg2_4b_description)/meshes/gripper_base_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -66,7 +67,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/gripper_Link1.STL" />
+          filename="file://$(find eg2_4b_description)/meshes/gripper_Link1.STL" />
       </geometry>
       <material
         name="">
@@ -80,7 +81,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/gripper_Link1.STL" />
+          filename="file://$(find eg2_4b_description)/meshes/gripper_Link1.STL" />
       </geometry>
     </collision>
   </link>
@@ -99,8 +100,8 @@
     <limit
       lower="0"
       upper="0.872"
-      effort="0"
-      velocity="0" />
+      effort="1.0"
+      velocity="1.0" />
   </joint>
   <link
     name="gripper_Link2">
@@ -124,7 +125,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/gripper_Link2.STL" />
+          filename="file://$(find eg2_4b_description)/meshes/gripper_Link2.STL" />
       </geometry>
       <material
         name="">
@@ -138,7 +139,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/gripper_Link2.STL" />
+          filename="file://$(find eg2_4b_description)/meshes/gripper_Link2.STL" />
       </geometry>
     </collision>
   </link>
@@ -157,8 +158,8 @@
     <limit
       lower="0"
       upper="0.849"
-      effort="0"
-      velocity="0" />
+      effort="1.0"
+      velocity="1.0" />
   </joint>
   <link
     name="gripper_Link3">
@@ -182,7 +183,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/gripper_Link3.STL" />
+          filename="file://$(find eg2_4b_description)/meshes/gripper_Link3.STL" />
       </geometry>
       <material
         name="">
@@ -196,7 +197,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/gripper_Link3.STL" />
+          filename="file://$(find eg2_4b_description)/meshes/gripper_Link3.STL" />
       </geometry>
     </collision>
   </link>
@@ -215,8 +216,8 @@
     <limit
       lower="0"
       upper="0.872"
-      effort="0"
-      velocity="0" />
+      effort="1.0"
+      velocity="1.0" />
   </joint>
   <link
     name="gripper_Link4">
@@ -240,7 +241,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/gripper_Link4.STL" />
+          filename="file://$(find eg2_4b_description)/meshes/gripper_Link4.STL" />
       </geometry>
       <material
         name="">
@@ -254,7 +255,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://eg2_4b_description/meshes/gripper_Link4.STL" />
+          filename="file://$(find eg2_4b_description)/meshes/gripper_Link4.STL" />
       </geometry>
     </collision>
   </link>
@@ -273,7 +274,7 @@
     <limit
       lower="0"
       upper="0.849"
-      effort="0"
-      velocity="0" />
+      effort="1.0"
+      velocity="1.0" />
   </joint>
 </robot>

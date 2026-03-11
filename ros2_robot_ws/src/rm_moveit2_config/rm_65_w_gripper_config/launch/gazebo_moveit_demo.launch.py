@@ -51,9 +51,7 @@ def my_generate_move_group_launch(ld, moveit_config):
         "publish_robot_description_semantic": True,
         "allow_trajectory_execution": LaunchConfiguration("allow_trajectory_execution"),
         # Note: Wrapping the following values is necessary so that the parameter value can be the empty string
-        "capabilities": ParameterValue(
-            LaunchConfiguration("capabilities"), value_type=str
-        ),
+        "capabilities": "move_group/ExecuteTaskSolutionCapability",
         "disable_capabilities": ParameterValue(
             LaunchConfiguration("disable_capabilities"), value_type=str
         ),
