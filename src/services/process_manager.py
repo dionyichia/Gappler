@@ -8,12 +8,15 @@ class ProcessManager:
     def __init__(self):
         self.processes = []
         self.threads = []
+        self.aria_streaming_started = multiprocessing.Event()
         self.quit_event = multiprocessing.Event()
 
     def add_process(self, target, args=(), daemon=True) -> multiprocessing.Process:
         """Create and track a new process."""
         process = multiprocessing.Process(
-            target=target, args=(self.quit_event, *args), daemon=daemon
+            target=target,
+            args=(self.aria_streaming_started, self.quit_event, *args),
+            daemon=daemon,
         )
         self.processes.append(process)
         return process
@@ -21,7 +24,9 @@ class ProcessManager:
     def add_thread(self, target, args=(), daemon=True) -> threading.Thread:
         """Create and track a new thread."""
         thread = threading.Thread(
-            target=target, args=(self.quit_event, *args), daemon=daemon
+            target=target,
+            args=(self.aria_streaming_started, self.quit_event, *args),
+            daemon=daemon,
         )
         self.threads.append(thread)
         return thread

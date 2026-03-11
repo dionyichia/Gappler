@@ -252,7 +252,7 @@ class Listener:
         logger.info("Cleanup complete")
 
 
-def generate_mask(quit_event: Event):
+def generate_mask(aria_streaming_started: Event, quit_event: Event):
     logger.info("Starting Listener for image processing...")
     listener = Listener(quit_event=quit_event)
     listener.run()
@@ -261,5 +261,6 @@ def generate_mask(quit_event: Event):
 if __name__ == "__main__":
     import multiprocessing
 
+    aria_streaming_started = multiprocessing.Event()
     quit_event = multiprocessing.Event()
-    generate_mask(quit_event)
+    generate_mask(aria_streaming_started, quit_event)

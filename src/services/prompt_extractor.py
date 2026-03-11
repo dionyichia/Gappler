@@ -5,10 +5,15 @@ from pathlib import Path
 src_path = Path(__file__).parent.parent
 sys.path.insert(0, str(src_path))
 
+import logging
+
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from config import AudioStreamingPipelineConfig, Settings
+
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("huggingface_hub").setLevel(logging.WARNING)
 
 
 class LLMPromptExtractor:
