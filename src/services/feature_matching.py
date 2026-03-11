@@ -366,5 +366,5 @@ class FeatureMatchingPipeline:
 # ---------------------------------------------------------------------------
 
 
-def feature_matching(quit_event: Event) -> None:
+def feature_matching(aria_streaming_started: Event, quit_event: Event) -> None:
     FeatureMatchingPipeline(quit_event=quit_event).run()

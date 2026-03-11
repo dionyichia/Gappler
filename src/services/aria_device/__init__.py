@@ -6,6 +6,6 @@ from .image_streaming_client_observer import ImageObserver
 __all__ = [
     "AriaDeviceController",
     "AriaStreamClient",
-    "ImageObserver",
     "AudioObserver",
+    "ImageObserver",
 ]

@@ -142,9 +142,11 @@ class AudioStreamingPipeline:
             logging.info("Pipeline shutdown complete")
 
 
-def stream_audio(quit_event: Event) -> None:
+def stream_audio(aria_streaming_started: Event, quit_event: Event) -> None:
     _configure_cudnn_path()
-    AudioStreamingPipeline(quit_event).run()
+    pipeline = AudioStreamingPipeline(quit_event)
+    aria_streaming_started.wait()
+    pipeline.run()
 
 
 if __name__ == "__main__":

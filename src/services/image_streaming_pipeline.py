@@ -8,8 +8,9 @@ from services.aria_device import AriaDeviceController, AriaStreamClient, ImageOb
 logger = logging.getLogger(__name__)
 
 
-def stream_visual_feed(quit_event: Event) -> None:
+def stream_visual_feed(aria_streaming_started: Event, quit_event: Event) -> None:
     aria_stream_client = None
+    aria_streaming_started.wait()
 
     try:
         with AriaStreamClient() as aria_stream_client:

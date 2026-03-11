@@ -298,8 +298,9 @@ class Visualizer:
 # ---------------------------------------------------------------------------
 
 
-def visualize_feed(quit_event: Event) -> None:
+def visualize_feed(aria_streaming_started: Event, quit_event: Event) -> None:
     """Entry point for the visualizer process."""
+    aria_streaming_started.wait()
     Visualizer(quit_event).run()
 
 
