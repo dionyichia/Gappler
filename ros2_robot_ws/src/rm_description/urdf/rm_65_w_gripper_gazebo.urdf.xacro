@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot name="rm_65_with_gripper" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find rm_description)/urdf/rm_65_gazebo.urdf.xacro" />
+  <xacro:include filename="$(find eg2_4b_description)/urdf/eg2_4b_description.urdf" />
+
+  <joint name="gripper_attach" type="fixed">
+    <parent link="Link6" />
+    <child link="gripper_base_link" />
+    <origin xyz="0 0 0.004" rpy="0 0 0" />
+  </joint>
+
+</robot>
