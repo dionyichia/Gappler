@@ -179,22 +179,27 @@ class Visualizer:
 
     def _on_mask_bundle(self, bundle: dict) -> None:
         """Handle a deserialized image + inference_state bundle."""
-        if self.current_topic != ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS:
+
+        valid = (
+            self.current_topic == ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS
+            and self._camera_source == "aria"
+        ) or (
+            self.current_topic == ROS2Topics.ROS_CAMERA_WITH_OBJECT_MASKS
+            and self._camera_source == "ros"
+        )
+        if not valid:
             return
 
-        source_bundle = bundle.get(self._camera_source, {})
-        image = ImageHelper.uncompress_image(source_bundle.get("image", b""))
-
+        image = ImageHelper.uncompress_image(bundle.get("image", b""))
         if image is None:
             logger.warning(
                 f"Mask bundle missing image for source '{self._camera_source}'"
             )
             return
 
-        annotated = ObjectMaskVisualizer.plot_results(
-            image, source_bundle.get("inference_state")
+        self._display_frame = ObjectMaskVisualizer.plot_results(
+            image, bundle.get("inference_state")
         )
-        self._display_frame = annotated
 
     def _on_feature_match(self, bundle: dict) -> None:
         if self.current_topic != ROS2Topics.FEATURE_MATCH_RESULTS:

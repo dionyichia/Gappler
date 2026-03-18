@@ -40,7 +40,11 @@ class SAM3Model:
         self._configure_cuda()
 
         # Load model
-        self.model = self._load_model(checkpoint_path, load_from_hf)
+        self.model = build_sam3_image_model(
+            bpe_path=self.bpe_path,
+            load_from_HF=load_from_hf,
+            checkpoint_path=checkpoint_path,
+        )
 
         # Initialize processor
         self.processor = Sam3Processor(
@@ -57,15 +61,6 @@ class SAM3Model:
             torch.backends.cudnn.allow_tf32 = True
             # Enable bfloat16 autocast
             torch.autocast("cuda", dtype=torch.bfloat16).__enter__()
-
-    def _load_model(self, checkpoint_path: str, load_from_hf: bool):
-        """Load SAM3 model from checkpoint."""
-        model = build_sam3_image_model(
-            bpe_path=self.bpe_path,
-            load_from_HF=load_from_hf,
-            checkpoint_path=checkpoint_path,
-        )
-        return model
 
     def process_text_prompt(self, image: np.ndarray, prompt: str) -> dict:
         """

@@ -1,0 +1,29 @@
+%YAML:1.0
+
+cam0:
+  T_imu_cam:
+    - [ -0.99971948,  -0.01736924,  -0.01610188,   0.00041892]
+    - [ -0.01588117,   0.99596387,  -0.08833894,  -0.00115173]
+    - [  0.01757128,  -0.08805844,  -0.99596032,  -0.00660755]
+    - [  0.00000000,   0.00000000,   0.00000000,   1.00000000]
+  camera_model: pinhole
+  distortion_coeffs: [0.0, 0.0, 0.0, 0.0]        # zero — images are pre-undistorted
+  distortion_model: radtan
+  intrinsics: [241.513, 241.513, 239.5, 319.5]  # fx fy cx cy — from get_linear_camera_calibration
+  resolution: [480, 640]
+  # must match VIOPipeline._TOPIC_SLAM_LEFT
+  rostopic: /aria/slam_left/raw
+
+cam1:
+  T_imu_cam:
+    - [ -0.21312212,   0.03640956,  -0.97634692,  -0.10957194]
+    - [  0.11766363,   0.99298869,   0.01134592,   0.00921808]
+    - [  0.96991455,  -0.11246245,  -0.21591193,   0.08290256]
+    - [  0.00000000,   0.00000000,   0.00000000,   1.00000000]
+  camera_model: pinhole
+  distortion_coeffs: [0.0, 0.0, 0.0, 0.0]
+  distortion_model: radtan
+  intrinsics: [241.411, 241.411, 239.5, 319.5]   # slam-right values
+  resolution: [480, 640]
+  # must match VIOPipeline._TOPIC_SLAM_RIGHT
+  rostopic: /aria/slam_right/raw

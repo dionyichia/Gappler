@@ -2,25 +2,17 @@ import warnings
 
 warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
 
-import os
-
-# Environment Configuration
-os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"
-
 import argparse
 import logging
 import multiprocessing
+import os
 import subprocess
 import sys
 from ipaddress import IPv4Address
-from multiprocessing.synchronize import Event
 from time import sleep
 from typing import Optional
 
-import cv2  # DO NOT DELETE! We import cv2 to initialize it to prevent crashing in spawned processes due to conflicts with torch # noqa
-
 from schemas.application import ApplicationConfig
-from services.aria_device import AriaDeviceController
 from services.process_manager import ProcessManager
 from utils import TerminalRawMode, exit_keypress, safe_update_iptables, setup_logging
 
@@ -29,52 +21,57 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
-def _aria_network_setup_worker(
-    aria_streaming_started: Event, quit_event: Event
-) -> None:
-    """Wait for Aria USB interface and configure network."""
-    try:
-        while not os.path.exists("/sys/class/net/aria"):
-            sleep(0.1)
-        subprocess.run(["sudo", "ip", "link", "set", "aria", "up"], check=True)
-        subprocess.run(
-            ["sudo", "ip", "addr", "add", "192.168.42.1/24", "dev", "aria"],
-            check=True,
-        )
-        logger.info("Aria network configured successfully")
-    except Exception as e:
-        logger.error(f"Aria network setup error: {e}", exc_info=True)
-
-
 class ProcessPipelineBuilder:
     """Builder for constructing the processing pipeline."""
 
     def __init__(self, process_manager: ProcessManager):
-        self.process_manager = process_manager
+        self._process_manager = process_manager
+        self.config_queue = multiprocessing.Queue()
 
-    def add_streaming(self) -> "ProcessPipelineBuilder":
-        """Wait for Aria USB interface and configure network."""
+    def add_streaming(
+        self, device_ip: Optional[IPv4Address], profile_name: str
+    ) -> "ProcessPipelineBuilder":
+        from services.aria_device import start_aria_stream
 
-        def is_virtual_machine() -> bool:
-            """Check if running inside a virtual machine."""
-            try:
-                result = subprocess.run(
-                    ["systemd-detect-virt"], capture_output=True, text=True
-                )
-                return result.stdout.strip() != "none"
-            except FileNotFoundError:
-                return False
+        self._process_manager.add_process(
+            target=start_aria_stream, args=(device_ip, profile_name, self.config_queue)
+        )
+        return self
 
-        if is_virtual_machine():
-            self.process_manager.add_process(target=_aria_network_setup_worker)
+    def add_audio_streaming(self) -> "ProcessPipelineBuilder":
+        """Add audio streaming process to the pipeline."""
+        from services.aria_device import stream_audio
 
+        self._process_manager.add_thread(target=stream_audio)
+
+        return self
+
+    def add_image_streaming(
+        self, sensors_calib_json_str: str
+    ) -> "ProcessPipelineBuilder":
+        """Add image streaming thread to the pipeline."""
+        from services.aria_device import stream_visual_feed
+
+        self._process_manager.add_thread(
+            target=stream_visual_feed, args=(sensors_calib_json_str,)
+        )
+        return self
+
+    def add_pose_streaming(
+        self, sensors_calib_json_str: str
+    ) -> "ProcessPipelineBuilder":
+        from services.aria_device import stream_pose
+
+        self._process_manager.add_thread(
+            target=stream_pose, args=(sensors_calib_json_str,)
+        )
         return self
 
     def add_visualization(self) -> "ProcessPipelineBuilder":
         """Add visualization process to the pipeline."""
         from services.visualizer import visualize_feed
 
-        self.process_manager.add_process(target=visualize_feed)
+        self._process_manager.add_process(target=visualize_feed)
         return self
 
     def add_object_recognition(self) -> "ProcessPipelineBuilder":
@@ -83,49 +80,39 @@ class ProcessPipelineBuilder:
             generate_mask,
         )
 
-        self.process_manager.add_process(target=generate_mask)
+        self._process_manager.add_process(target=generate_mask)
         return self
 
     def add_feature_matching(self) -> "ProcessPipelineBuilder":
         """Add feature matching process to the pipeline."""
         from services.feature_matching import feature_matching
 
-        self.process_manager.add_process(target=feature_matching)
-        return self
-
-    def add_audio_streaming(self) -> "ProcessPipelineBuilder":
-        """Add audio streaming process to the pipeline."""
-        from services.audio_streaming_pipeline import stream_audio
-
-        self.process_manager.add_process(target=stream_audio)
-        return self
-
-    def add_image_streaming(self) -> "ProcessPipelineBuilder":
-        """Add image streaming thread to the pipeline."""
-        from services.image_streaming_pipeline import stream_visual_feed
-
-        self.process_manager.add_thread(target=stream_visual_feed)
+        self._process_manager.add_process(target=feature_matching)
         return self
 
     def build_common_pipeline(self) -> "ProcessPipelineBuilder":
         """Build the common processing pipeline used by both modes."""
         return self.add_visualization().add_object_recognition().add_feature_matching()
 
-    def build_streaming_pipeline(self) -> "ProcessPipelineBuilder":
+    def build_streaming_pipeline(
+        self, device_ip: Optional[IPv4Address], profile_name: str
+    ) -> "ProcessPipelineBuilder":
         """Build the complete pipeline for live streaming mode."""
-        return (
-            self.add_streaming()
-            .add_audio_streaming()
-            .add_image_streaming()
-            .build_common_pipeline()
+        self.add_streaming(
+            device_ip, profile_name
+        ).add_audio_streaming().build_common_pipeline()
+        sensors_calib_json_str = self.config_queue.get()
+        return self.add_image_streaming(sensors_calib_json_str).add_pose_streaming(
+            sensors_calib_json_str
         )
 
 
+# TODO: Fix Recording Mode
 class RecordingModeRunner:
     """Handler for recording playback mode."""
 
-    def __init__(self, process_manager: ProcessManager):
-        self.process_manager = process_manager
+    def __init__(self):
+        self.process_manager = ProcessManager()
 
     def run(self, recording_path: str) -> None:
         """Execute the application in recording playback mode.
@@ -133,28 +120,33 @@ class RecordingModeRunner:
         Args:
             recording_path: Path to the recording directory.
         """
-        from services.playback_controller import playback
+        try:
+            from services.playback_controller import playback
 
-        logger.info(f"Starting playback mode with recording: {recording_path}")
+            logger.info(f"Starting playback mode with recording: {recording_path}")
 
-        # Setup processing pipeline
-        self.process_manager.aria_streaming_started.set()
-        ProcessPipelineBuilder(self.process_manager).build_common_pipeline()
-        self.process_manager.start_all()
-        logger.info("All processes started successfully")
+            # Setup processing pipeline
+            self.process_manager.aria_streaming_started.set()
+            ProcessPipelineBuilder(self.process_manager).build_common_pipeline()
+            logger.info("All processes started successfully")
 
-        # Start playback
-        playback(recording_path)
-
-        self.process_manager.quit()
-        self.process_manager.join_all()
+            # Start playback
+            playback(recording_path)
+        except KeyboardInterrupt:
+            logger.info("Received interrupt signal, shutting down...")
+        except Exception as e:
+            logger.error(f"Error in recording playback mode: {e}", exc_info=True)
+            raise
+        finally:
+            self.process_manager.cleanup()
+            logger.info("Cleanup completed")
 
 
 class LiveModeRunner:
     """Handler for live streaming mode."""
 
-    def __init__(self, process_manager: ProcessManager):
-        self.process_manager = process_manager
+    def __init__(self):
+        self.process_manager = ProcessManager()
 
     def run(self, device_ip: Optional[IPv4Address], profile_name: str) -> None:
         """Execute the application in live streaming mode.
@@ -187,24 +179,48 @@ class LiveModeRunner:
         """
 
         # Setup and start processing pipeline
-        ProcessPipelineBuilder(self.process_manager).build_streaming_pipeline()
-        self.process_manager.start_all()
+        ProcessPipelineBuilder(self.process_manager).build_streaming_pipeline(
+            device_ip=device_ip, profile_name=profile_name
+        )
         logger.info("All processes started successfully")
 
-        with AriaDeviceController.get_instance() as aria_controller:
-            aria_controller.connect(device_ip=device_ip)
-            interface = None if device_ip else "usb"
-            logger.info(f"Connected to Aria device at {interface}")
+        # In VMs, the Aria USB network interface isn't available at boot — it only appears
+        # once the device starts streaming. Block here until the user starts streaming,
+        # then configure the interface before proceeding.
+        if self._is_virtual_machine():
+            self._setup_aria_network()
 
-            aria_controller.start_streaming(profile=profile_name, interface=interface)
-            self.process_manager.aria_streaming_started.set()
-            logger.info(f"Streaming started with profile: {profile_name}")
+        while not exit_keypress():
+            sleep(1.0)
 
-            while not exit_keypress():
+    def _is_virtual_machine(self) -> bool:
+        """Check if running inside a virtual machine."""
+        try:
+            result = subprocess.run(
+                ["systemd-detect-virt"], capture_output=True, text=True
+            )
+            return result.stdout.strip() != "none"
+        except FileNotFoundError:
+            return False
+
+    def _setup_aria_network(self):
+        """Wait for Aria USB interface and configure network."""
+        try:
+            while not os.path.exists("/sys/class/net/aria"):
                 sleep(0.1)
-
-        self.process_manager.quit()
-        self.process_manager.join_all()
+            subprocess.run(["sudo", "ip", "link", "set", "aria", "up"], check=True)
+            subprocess.run(
+                ["sudo", "ip", "addr", "add", "192.168.42.1/24", "dev", "aria"],
+                check=True,
+                capture_output=True,
+            )
+            logger.info("Aria network configured successfully")
+        except subprocess.CalledProcessError as e:
+            # Check if the error is just that the file exists
+            if "File exists" in e.stderr.decode():
+                logger.info("Network interface already configured, continuing...")
+            else:
+                logger.error(f"Aria network setup error: {e}", exc_info=True)
 
 
 class AriaApplication:
@@ -212,7 +228,6 @@ class AriaApplication:
 
     def __init__(self, config: ApplicationConfig):
         self.config = config
-        self.process_manager = ProcessManager()
 
     def run(self) -> None:
         """Run the application based on configuration.
@@ -238,11 +253,9 @@ class AriaApplication:
     def _execute_mode(self) -> None:
         """Execute the appropriate mode based on configuration."""
         if self.config.mode == "recording":
-            RecordingModeRunner(self.process_manager).run(self.config.recording_path)
+            RecordingModeRunner().run(self.config.recording_path)
         else:
-            LiveModeRunner(self.process_manager).run(
-                self.config.device_ip, self.config.profile_name
-            )
+            LiveModeRunner().run(self.config.device_ip, self.config.profile_name)
 
 
 # ---------------------------------------------------------------------------

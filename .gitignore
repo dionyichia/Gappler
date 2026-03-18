@@ -11,5 +11,6 @@ assets/aria
 output/*
 logs
 recordings
+tmp
 
 src/models/sam3/sam3.pt
