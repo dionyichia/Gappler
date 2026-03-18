@@ -11,7 +11,7 @@ from projectaria_tools.core.sensor_data import (
 from scipy.signal import resample
 
 from config import AriaConfig, AudioStreamingPipelineConfig
-from services.aria_device.base_streaming_client_observer import (
+from services.aria_device.stream.base_streaming_client_observer import (
     BaseStreamingClientObserver,
 )
 

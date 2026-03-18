@@ -52,14 +52,9 @@ class ROSManager:
         self._on_mask_bundle = on_mask_bundle
         self._on_feature_match = on_feature_match
 
+        self._subscriber: Optional[ROSSubscriber] = None
         self._executor: Optional[MultiThreadedExecutor] = None
         self._spin_thread: Optional[threading.Thread] = None
-
-        self._rgb_subscriber: Optional[ROSSubscriber] = None
-        self._undistorted_rgb_subscriber: Optional[ROSSubscriber] = None
-        self._gaze_position_subscriber: Optional[ROSSubscriber] = None
-        self._object_detection_inference_subscriber: Optional[ROSSubscriber] = None
-        self._feature_matching_subscriber: Optional[ROSSubscriber] = None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -70,51 +65,41 @@ class ROSManager:
         if not rclpy.ok():
             rclpy.init()
 
-        self._rgb_subscriber = ROSSubscriber("Aria_RGB_camera_subscriber")
-        self._undistorted_rgb_subscriber = ROSSubscriber(
-            "Aria_RGB_camera_undistorted_subscriber"
-        )
-        self._gaze_position_subscriber = ROSSubscriber("gaze_position_subscriber")
-        self._object_detection_inference_subscriber = ROSSubscriber(
-            "object_detection_inference_subscriber"
-        )
-        self._feature_matching_subscriber = ROSSubscriber("match_subscriber")
+        self._subscriber = ROSSubscriber("visualizer_subscriber")
 
-        self._rgb_subscriber.subscribe(
+        self._subscriber.subscribe(
             CompressedImage,
             ROS2Topics.RGB_CAMERA_RAW.value,
             self._on_raw_image,
         )
-        self._undistorted_rgb_subscriber.subscribe(
+        self._subscriber.subscribe(
             CompressedImage,
             ROS2Topics.RGB_CAMERA_UNDISTORTED.value,
             self._on_undistorted_image,
         )
-        self._gaze_position_subscriber.subscribe(
+        self._subscriber.subscribe(
             Point,
             ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value,
             self._on_gaze_position,
         )
-        self._object_detection_inference_subscriber.subscribe(
+        self._subscriber.subscribe(
             UInt8MultiArray,
             ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS.value,
             lambda msg: self._unpickle_and_forward(msg, self._on_mask_bundle),
         )
-        self._feature_matching_subscriber.subscribe(
+        self._subscriber.subscribe(
+            UInt8MultiArray,
+            ROS2Topics.ROS_CAMERA_WITH_OBJECT_MASKS.value,
+            lambda msg: self._unpickle_and_forward(msg, self._on_mask_bundle),
+        )
+        self._subscriber.subscribe(
             UInt8MultiArray,
             ROS2Topics.FEATURE_MATCH_RESULTS.value,
             lambda msg: self._unpickle_and_forward(msg, self._on_feature_match),
         )
 
         self._executor = MultiThreadedExecutor()
-        for node in (
-            self._rgb_subscriber,
-            self._undistorted_rgb_subscriber,
-            self._gaze_position_subscriber,
-            self._object_detection_inference_subscriber,
-            self._feature_matching_subscriber,
-        ):
-            self._executor.add_node(node)
+        self._executor.add_node(self._subscriber)
 
         self._spin_thread = threading.Thread(target=self._executor.spin, daemon=True)
         self._spin_thread.start()
@@ -122,16 +107,9 @@ class ROSManager:
 
     def stop(self) -> None:
         """Destroy subscriber nodes gracefully."""
-        for node in (
-            self._rgb_subscriber,
-            self._undistorted_rgb_subscriber,
-            self._gaze_position_subscriber,
-            self._object_detection_inference_subscriber,
-        ):
-            if node is None:
-                continue
+        if self._subscriber is not None:
             try:
-                node.destroy_node()
+                self._subscriber.destroy_node()
             except Exception as e:
                 logger.warning(f"Error destroying node: {e}")
         logger.info("ROS2 subscribers stopped")

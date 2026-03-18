@@ -247,21 +247,18 @@ class FeatureMatchingPipeline:
             aria_bundle = bundle.get("aria", {})
             ros_bundle = bundle.get("ros", {})
 
-            aria_image = ImageHelper.uncompress_image(aria_bundle.get("image", b""))
-            ros_image = ImageHelper.uncompress_image(ros_bundle.get("image", b""))
+            # if aria_image is None or ros_image is None:
+            #     logger.debug("Mask bundle missing image(s), ignoring bundle")
+            #     return
 
-            if aria_image is None or ros_image is None:
-                logger.debug("Mask bundle missing image(s), ignoring bundle")
-                return
-
-            with self._frame_lock:
-                self._bundle = FrameBundle(
-                    aria_frame=aria_image,
-                    ros_frame=ros_image,
-                    aria_inference=aria_bundle.get("inference_state"),
-                    ros_inference=ros_bundle.get("inference_state"),
-                )
-            self._trigger_matching()
+            # with self._frame_lock:
+            #     self._bundle = FrameBundle(
+            #         aria_frame=aria_image,
+            #         ros_frame=ros_image,
+            #         aria_inference=aria_bundle.get("inference_state"),
+            #         ros_inference=ros_bundle.get("inference_state"),
+            #     )
+            # self._trigger_matching()
 
         except Exception as e:
             logger.error(f"Failed to deserialize mask bundle: {e}", exc_info=True)

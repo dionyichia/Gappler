@@ -6,32 +6,24 @@ via Whisper, and intent extraction via an LLM, publishing results over ROS2.
 """
 
 import logging
-import os
 import time
 from multiprocessing.synchronize import Event
 
 import aria.sdk as aria
 import numpy as np
-import torch
 from faster_whisper import WhisperModel
 from faster_whisper.transcribe import Segment
 from std_msgs.msg import String
+from torch.profiler import ProfilerActivity, profile
 
 from config import AudioStreamingPipelineConfig, ROS2Topics, Settings
 from services.aria_device import AriaStreamClient, AudioObserver
 from services.prompt_extractor import LLMPromptExtractor
-from services.ros.ros_publisher import ROSPublisher
+from services.ros import ROSPublisher
 
+# Configure logging
 logger = logging.getLogger(__name__)
-
-
-def _configure_cudnn_path() -> None:
-    """Prepend the PyTorch-bundled CUDNN library directory to LD_LIBRARY_PATH."""
-    cudnn_path = os.path.abspath(
-        os.path.join(os.path.dirname(torch.__file__), "..", "nvidia", "cudnn", "lib")
-    )
-    current_ld_path = os.environ.get("LD_LIBRARY_PATH", "")
-    os.environ["LD_LIBRARY_PATH"] = f"{cudnn_path}:{current_ld_path}"
+logging.getLogger("faster_whisper").setLevel(logging.WARNING)
 
 
 class AudioStreamingPipeline:
@@ -50,8 +42,6 @@ class AudioStreamingPipeline:
             whisper_model: Whisper model identifier
             llm_model: LLM model identifier for prompt extraction
         """
-        # Configure logging
-        logging.getLogger("faster_whisper").setLevel(logging.WARNING)
 
         # Initialize components
         self.whisper_model = WhisperModel(
@@ -97,9 +87,16 @@ class AudioStreamingPipeline:
         if transcription == self._previous_transcription:
             prompt = self._previous_prompt
         else:
-            self._previous_transcription == transcription
+            self._previous_transcription = transcription
             logging.info(f"Transcription: {transcription}")
-            prompt = self.llm_extractor.extract_object(transcription)
+            with profile(
+                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]
+            ) as prof:
+                prompt = self.llm_extractor.extract_object(transcription)
+
+                print(
+                    prof.key_averages().table(sort_by="cuda_time_total", row_limit=20)
+                )
 
         msg = String()
         msg.data = prompt
@@ -111,10 +108,9 @@ class AudioStreamingPipeline:
         try:
             with AriaStreamClient() as aria_stream_client:
                 # Subscribe to audio data
-                data_channels = [aria.StreamingDataType.Audio]
-                message_size = 100
+                data_channels = [(aria.StreamingDataType.Audio, 100)]
                 observer: AudioObserver = aria_stream_client.subscribe(
-                    data_channels, AudioObserver(), message_size
+                    data_channels, AudioObserver()
                 )
 
                 logging.info("Started audio streaming")
@@ -124,7 +120,18 @@ class AudioStreamingPipeline:
 
                     if observer.received:
                         audio_16k = observer.get_resampled_audio()
-                        segments = self._transcribe(audio_16k)
+
+                        with profile(
+                            activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]
+                        ) as prof:
+                            segments = self._transcribe(audio_16k)
+
+                        # print(
+                        #     prof.key_averages().table(
+                        #         sort_by="cuda_time_total", row_limit=20
+                        #     )
+                        # )
+                        # segments = self._transcribe(audio_16k)
                         self._process_segments(segments)
 
                     # Pace the loop to a consistent iteration interval.
@@ -143,7 +150,6 @@ class AudioStreamingPipeline:
 
 
 def stream_audio(aria_streaming_started: Event, quit_event: Event) -> None:
-    _configure_cudnn_path()
     pipeline = AudioStreamingPipeline(quit_event)
     aria_streaming_started.wait()
     pipeline.run()

@@ -10,12 +10,14 @@ import aria.sdk as aria
 @dataclass(frozen=True)
 class AriaConfig:
     ARIA_LOG_LEVEL: aria.Level = aria.Level.Info
-    ARIA_STREAMING_PROFILE_NAME: str = "profile18"
+    ARIA_STREAMING_PROFILE_NAME: str = "profile15"
     USE_EPHEMERAL_CERTS: bool = True
 
     EYE_STREAM_ID: str = "211-1"
     RGB_STREAM_ID: str = "214-1"
     RGB_STREAM_LABEL: str = "camera-rgb"
+    SLAM_LEFT_STREAM_LABEL: str = "camera-slam-left"
+    SLAM_RIGHT_STREAM_LABEL: str = "camera-slam-right"
 
     DEST_CALIBRATION_HEIGHT_PX: int = 1408
     DEST_CALIBRATION_WIDTH_PX: int = 1408
@@ -25,4 +27,6 @@ class AriaConfig:
     AUDIO_SAMPLE_RATE: int = 48_000
 
     ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = None
-    # ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = ipaddress.IPv4Address()
+    # ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = ipaddress.IPv4Address(
+    #     "172.20.10.4"
+    # )
