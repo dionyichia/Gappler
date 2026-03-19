@@ -5,13 +5,18 @@ import open3d as o3d
 from PIL import Image
 from graspnetAPI import GraspGroup
 
-from tracker import AnyGraspTracker
+from tracker import AnyGraspTracker # Compiled binary model file
 
+
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
 parser = argparse.ArgumentParser()
 parser.add_argument('--checkpoint_path', required=True, help='Model checkpoint path')
 parser.add_argument('--filter', type=str, default='oneeuro', help='Filter to smooth grasp parameters(rotation, width, depth). [oneeuro/kalman/none]')
 parser.add_argument('--debug', action='store_true', help='Enable visualization')
 cfgs = parser.parse_args()
+
 
 class CameraInfo:
     def __init__(self, width, height, fx, fy, cx, cy, scale):
