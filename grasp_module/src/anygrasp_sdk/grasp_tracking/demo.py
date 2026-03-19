@@ -1,20 +1,24 @@
-import os
 import argparse
+import os
+
 import numpy as np
 import open3d as o3d
-from PIL import Image
 from graspnetAPI import GraspGroup
-
-from tracker import AnyGraspTracker # Compiled binary model file
-
+from PIL import Image
+from tracker import AnyGraspTracker  # Compiled binary model file
 
 # ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
 parser = argparse.ArgumentParser()
-parser.add_argument('--checkpoint_path', required=True, help='Model checkpoint path')
-parser.add_argument('--filter', type=str, default='oneeuro', help='Filter to smooth grasp parameters(rotation, width, depth). [oneeuro/kalman/none]')
-parser.add_argument('--debug', action='store_true', help='Enable visualization')
+parser.add_argument("--checkpoint_path", required=True, help="Model checkpoint path")
+parser.add_argument(
+    "--filter",
+    type=str,
+    default="oneeuro",
+    help="Filter to smooth grasp parameters(rotation, width, depth). [oneeuro/kalman/none]",
+)
+parser.add_argument("--debug", action="store_true", help="Enable visualization")
 cfgs = parser.parse_args()
 
 
@@ -28,8 +32,9 @@ class CameraInfo:
         self.cy = cy
         self.scale = scale
 
+
 def create_point_cloud_from_depth_image(depth, camera, organized=True):
-    assert(depth.shape[0] == camera.height and depth.shape[1] == camera.width)
+    assert depth.shape[0] == camera.height and depth.shape[1] == camera.width
     xmap = np.arange(camera.width)
     ymap = np.arange(camera.height)
     xmap, ymap = np.meshgrid(xmap, ymap)
@@ -41,10 +46,20 @@ def create_point_cloud_from_depth_image(depth, camera, organized=True):
         points = points.reshape([-1, 3])
     return points
 
+
+# Get data from static images
 def get_data(data_dir, index):
     # load image
-    colors = np.array(Image.open(os.path.join(data_dir, 'color_%03d.png'%index)), dtype=np.float32) / 255.0
-    depths = np.load(os.path.join(data_dir, 'depth_%03d.npy'%index))
+    # Colour images stored as png
+    # Depth images stored as numpy binary files
+    colors = (
+        np.array(
+            Image.open(os.path.join(data_dir, "color_%03d.png" % index)),
+            dtype=np.float32,
+        )
+        / 255.0
+    )
+    depths = np.load(os.path.join(data_dir, "depth_%03d.npy" % index))
 
     # set camera intrinsics
     width, height = depths.shape[1], depths.shape[0]
@@ -55,31 +70,56 @@ def get_data(data_dir, index):
 
     # get point cloud
     points = create_point_cloud_from_depth_image(depths, camera)
-    mask = (points[:,:,2] > 0) & (points[:,:,2] < 1.5)
+    # Create mask for all points within 1.5m of camera
+    mask = (points[:, :, 2] > 0) & (points[:, :, 2] < 1.5)
+    # Apply mask to both point cloud and colour image
+    # Get list of pixels with real-world distance values (x,y,z)
     points = points[mask]
+    # Get list of pixels with normalised colour values
     colors = colors[mask]
 
     return points, colors
+
 
 def demo(data_dir_list, indices):
     # intialization
     anygrasp_tracker = AnyGraspTracker(cfgs)
     anygrasp_tracker.load_net()
 
+    # print(anygrasp_tracker)
+
     grasp_ids = [0]
     vis = o3d.visualization.Visualizer()
     vis.create_window(height=720, width=1280)
     for i in range(len(indices)):
-        # get prediction
+        # get colour image and real-world distance values for pixels of interest
         points, colors = get_data(data_dir_list, indices[i])
-        target_gg, curr_gg, target_grasp_ids, corres_preds = anygrasp_tracker.update(points, colors, grasp_ids)
+
+        target_gg, curr_gg, target_grasp_ids, corres_preds = anygrasp_tracker.update(
+            points, colors, grasp_ids
+        )
+
+        print(curr_gg)
 
         if i == 0:
             # select grasps on objects to track for the 1st frame
-            grasp_mask_x = ((curr_gg.translations[:,0]>-0.18) & (curr_gg.translations[:,0]<0.18))
-            grasp_mask_y = ((curr_gg.translations[:,1]>-0.12) & (curr_gg.translations[:,1]<0.12))
-            grasp_mask_z = ((curr_gg.translations[:,2]>0.35) & (curr_gg.translations[:,2]<0.55))
+            # Splits every potential grasp object into x, y, z frames
+            # Only get grasps sitting between +- 18cm on the x axis
+            # +- 12cm on the y axis, and betweeen 35 to 55 cm away on the z axis
+            grasp_mask_x = (curr_gg.translations[:, 0] > -0.18) & (
+                curr_gg.translations[:, 0] < 0.18
+            )
+            grasp_mask_y = (curr_gg.translations[:, 1] > -0.12) & (
+                curr_gg.translations[:, 1] < 0.12
+            )
+            grasp_mask_z = (curr_gg.translations[:, 2] > 0.35) & (
+                curr_gg.translations[:, 2] < 0.55
+            )
+            # Apply these masks to all potential grasps
+            # Pick the first 30 valid grasps, picks every 6th grasp
+            # So as to spread out the 5 potential grasps selected
             grasp_ids = np.where(grasp_mask_x & grasp_mask_y & grasp_mask_z)[0][:30:6]
+            # Reassign the selected 5 grasps to target_gg to be used in the viz section
             target_gg = curr_gg[grasp_ids]
         else:
             grasp_ids = target_grasp_ids
@@ -87,7 +127,9 @@ def demo(data_dir_list, indices):
 
         # visualization
         if cfgs.debug:
-            trans_mat = np.array([[1,0,0,0],[0,1,0,0],[0,0,-1,0],[0,0,0,1]])
+            trans_mat = np.array(
+                [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]
+            )
             cloud = o3d.geometry.PointCloud()
             cloud.points = o3d.utility.Vector3dVector(points)
             cloud.colors = o3d.utility.Vector3dVector(colors)
@@ -102,6 +144,7 @@ def demo(data_dir_list, indices):
             vis.remove_geometry(cloud)
             for gripper in grippers:
                 vis.remove_geometry(gripper)
+
 
 if __name__ == "__main__":
     data_dir = "example_data"
