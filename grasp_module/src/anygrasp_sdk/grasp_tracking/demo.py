@@ -89,9 +89,10 @@ def demo(data_dir_list, indices):
     # print(anygrasp_tracker)
 
     grasp_ids = [0]
-    vis = o3d.visualization.Visualizer()
-    vis.create_window(height=720, width=1280)
-    for i in range(len(indices)):
+    # vis = o3d.visualization.Visualizer()
+    # vis.create_window(height=720, width=1280)
+    for i in range(3):
+        # for i in range(len(indices)):
         # get colour image and real-world distance values for pixels of interest
         points, colors = get_data(data_dir_list, indices[i])
 
@@ -99,7 +100,7 @@ def demo(data_dir_list, indices):
             points, colors, grasp_ids
         )
 
-        print(curr_gg)
+        print(curr_gg[0])
 
         if i == 0:
             # select grasps on objects to track for the 1st frame
@@ -123,7 +124,7 @@ def demo(data_dir_list, indices):
             target_gg = curr_gg[grasp_ids]
         else:
             grasp_ids = target_grasp_ids
-        print(i, target_grasp_ids)
+        # print(i, target_grasp_ids)
 
         # visualization
         if cfgs.debug:

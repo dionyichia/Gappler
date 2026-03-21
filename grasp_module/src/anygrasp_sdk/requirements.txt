@@ -1,6 +1,9 @@
-numpy
-Pillow
-scipy
-tqdm
+scikit-learn==1.3.2
+# export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True
+# Use this command w the requirements.txt
 graspnetAPI
-open3d
+open3d==0.18.0
+numpy==1.21.2
+Pillow>=9.5.0,<11.0.0
+scipy==1.10.1
+tqdm==4.66.1
