@@ -13,6 +13,7 @@ from moveit_configs_utils.launch_utils import (
 from moveit_configs_utils.launches import generate_moveit_rviz_launch
 
 
+# Generate move_group node
 def generate_launch_description():
     moveit_config = MoveItConfigsBuilder(
         "rm_65_description", package_name="rm_65_w_gripper_config"

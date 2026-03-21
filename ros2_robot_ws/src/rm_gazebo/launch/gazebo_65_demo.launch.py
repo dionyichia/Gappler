@@ -56,6 +56,7 @@ def generate_launch_description():
         output="screen",
     )
 
+    # Puts the robot into the simulation
     spawn_entity = Node(
         package="gazebo_ros",
         executable="spawn_entity.py",
