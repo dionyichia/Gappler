@@ -100,7 +100,7 @@ def demo(data_dir_list, indices):
             points, colors, grasp_ids
         )
 
-        print(curr_gg[0])
+        print(curr_gg)
 
         if i == 0:
             # select grasps on objects to track for the 1st frame
