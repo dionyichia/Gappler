@@ -36,6 +36,8 @@ set(msg_files
   # msg/Jointpos75.msg
   msg/Cartepos.msg
   msg/Jointerrclear.msg
+  msg/GraspCandidate.msg
+  msg/GraspCandidateArray.msg
   msg/Gripperpick.msg
   msg/Gripperset.msg
   msg/Handangle.msg
