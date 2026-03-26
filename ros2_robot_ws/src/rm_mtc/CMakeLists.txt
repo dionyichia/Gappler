@@ -16,6 +16,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(rm_ros_interfaces REQUIRED)
+find_package(std_msgs REQUIRED)
 
 add_executable(grasp_state_machine
   src/grasp_state_machine.cpp
@@ -32,6 +33,7 @@ ament_target_dependencies(grasp_state_machine
   tf2_ros
   tf2_geometry_msgs
   rm_ros_interfaces
+  std_msgs
 )
 
 install(TARGETS grasp_state_machine
