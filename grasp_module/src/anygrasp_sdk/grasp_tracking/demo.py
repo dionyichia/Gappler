@@ -122,9 +122,9 @@ def demo(data_dir_list, indices):
             grasp_ids = np.where(grasp_mask_x & grasp_mask_y & grasp_mask_z)[0][:30:6]
             # Reassign the selected 5 grasps to target_gg to be used in the viz section
             target_gg = curr_gg[grasp_ids]
+            # print("grasp_ids: ", grasp_ids)
         else:
             grasp_ids = target_grasp_ids
-        # print(i, target_grasp_ids)
 
         # visualization
         if cfgs.debug:
