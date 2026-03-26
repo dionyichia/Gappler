@@ -5,14 +5,14 @@ MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr& node)
 : node_(node)
 {}
 
-bool MtcPlanner::executeGrasp(const geometry_msgs::msg::Pose& target_pose)
+// *** CHANGED: replaces executeGrasp(), handles arm motion to target pose only ***
+bool MtcPlanner::moveToPose(const geometry_msgs::msg::Pose& target_pose)
 {
   Task task;
-  task.stages()->setName("grasp_task");
+  task.stages()->setName("move_to_pose");
   task.loadRobotModel(node_);
 
-  auto arm_planner     = std::make_shared<solvers::JointInterpolationPlanner>();
-  auto gripper_planner = std::make_shared<solvers::JointInterpolationPlanner>();
+  auto arm_planner = std::make_shared<solvers::JointInterpolationPlanner>();
 
   // ---- Stage 0: Current state ----
   {
@@ -20,15 +20,7 @@ bool MtcPlanner::executeGrasp(const geometry_msgs::msg::Pose& target_pose)
     task.add(std::move(stage));
   }
 
-  // ---- Stage 1: Open gripper ----
-  {
-    auto stage = std::make_unique<stages::MoveTo>("open gripper", gripper_planner);
-    stage->setGroup(GRIPPER_GROUP);
-    stage->setGoal("open");
-    task.add(std::move(stage));
-  }
-
-  // ---- Stage 2: Move to grasp pose ----
+  // ---- Stage 1: Move to grasp pose ----
   {
     auto stage = std::make_unique<stages::MoveTo>("move to grasp pose", arm_planner);
     stage->setGroup(ARM_GROUP);
@@ -39,15 +31,43 @@ bool MtcPlanner::executeGrasp(const geometry_msgs::msg::Pose& target_pose)
     task.add(std::move(stage));
   }
 
-  // ---- Stage 3: Close gripper ----
+  try
   {
-    auto stage = std::make_unique<stages::MoveTo>("close gripper", gripper_planner);
-    stage->setGroup(GRIPPER_GROUP);
-    stage->setGoal("close");
+    task.enableIntrospection(true);
+    task.init();
+    if (!task.plan(5))
+    {
+      RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] moveToPose: planning failed");
+      return false;
+    }
+    RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] moveToPose: executing...");
+    task.execute(*task.solutions().front());
+    return true;
+  }
+  catch (const InitStageException& e)
+  {
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "[MtcPlanner] moveToPose: stage init failed: " << e);
+    return false;
+  }
+}
+
+
+// Handles arm retreat to home only ***
+bool MtcPlanner::moveToHome()
+{
+  Task task;
+  task.stages()->setName("move_to_home");
+  task.loadRobotModel(node_);
+
+  auto arm_planner = std::make_shared<solvers::JointInterpolationPlanner>();
+
+  // ---- Stage 0: Current state ----
+  {
+    auto stage = std::make_unique<stages::CurrentState>("current state");
     task.add(std::move(stage));
   }
 
-  // ---- Stage 4: Retreat to home ----
+  // ---- Stage 1: Retreat to home ----
   {
     auto stage = std::make_unique<stages::MoveTo>("retreat to home", arm_planner);
     stage->setGroup(ARM_GROUP);
@@ -55,23 +75,22 @@ bool MtcPlanner::executeGrasp(const geometry_msgs::msg::Pose& target_pose)
     task.add(std::move(stage));
   }
 
-  // ---- Plan and execute ----
   try
   {
     task.enableIntrospection(true);
     task.init();
     if (!task.plan(5))
     {
-      RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] Planning failed");
+      RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] moveToHome: planning failed");
       return false;
     }
-    RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] Planning succeeded, executing...");
+    RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] moveToHome: executing...");
     task.execute(*task.solutions().front());
     return true;
   }
   catch (const InitStageException& e)
   {
-    RCLCPP_ERROR_STREAM(node_->get_logger(), "[MtcPlanner] Stage init failed: " << e);
+    RCLCPP_ERROR_STREAM(node_->get_logger(), "[MtcPlanner] moveToHome: stage init failed: " << e);
     return false;
   }
 }
