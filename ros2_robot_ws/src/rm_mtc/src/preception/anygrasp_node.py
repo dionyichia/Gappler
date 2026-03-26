@@ -170,8 +170,8 @@ class AnyGraspNode(Node):
                 return
 
             # Select top NUM_CANDIDATES from detected grasps spread across object
-            n = min(NUM_CANDIDATES * 6, len(curr_gg))
-            self.grasp_ids = np.arange(n)[: NUM_CANDIDATES * 6 : 6]
+            n = min(30, len(curr_gg))
+            self.grasp_ids = np.arange(n)[:30:6]
             target_gg = curr_gg[self.grasp_ids]
             self.tracking_stable = True
             self.get_logger().info(
