@@ -11,15 +11,18 @@ class MtcPlanner
 public:
   MtcPlanner(const rclcpp::Node::SharedPtr& node);
 
-  // Plans and executes a grasp at target_pose, then retreats to home.
+  // Moves arm to the given target_pose (in base_link frame).
   // Returns true on success, false on planning or execution failure.
-  bool executeGrasp(const geometry_msgs::msg::Pose& target_pose);
+  bool moveToPose(const geometry_msgs::msg::Pose& target_pose);
+
+  // Moves arm back to the defined home joint configuration.
+  // Returns true on success, false on planning or execution failure.
+  bool moveToHome();
 
 private:
   rclcpp::Node::SharedPtr node_;
 
   const std::string ARM_GROUP    = "rm_group";
-  const std::string GRIPPER_GROUP = "gripper";
 
   // Home pose joint values (radians)
   const std::map<std::string, double> HOME_JOINTS = {

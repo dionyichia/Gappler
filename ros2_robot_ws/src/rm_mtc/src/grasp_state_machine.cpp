@@ -18,19 +18,21 @@ enum class State { IDLE, SELECTING, EXECUTING };
 class GraspStateMachine : public rclcpp::Node
 {
 public:
-
-
+  static std::shared_ptr<GraspStateMachine> create()
+  {
+    auto node = std::shared_ptr<GraspStateMachine>(new GraspStateMachine());
+    // Create State Machine instance and shared pointer for MTC planner
+    node->mtc_planner_ = std::make_shared<MtcPlanner>(node);
+    return node;
+  }
 private:
   GraspStateMachine()
   : Node("grasp_state_machine",
-         rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true)),
+          rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true)),
     state_(State::IDLE),
     tf_buffer_(this->get_clock()),
     tf_listener_(tf_buffer_)
   {
-    // MTC planner shares this node
-    mtc_planner_ = std::make_shared<MtcPlanner>(shared_from_this());
-
     // Subscriber: top 5 pre-sorted grasp candidates
     grasp_sub_ = this->create_subscription<rm_ros_interfaces::msg::GraspCandidateArray>(
       "/grasp_candidates", 10,
@@ -136,25 +138,24 @@ private:
       RCLCPP_INFO(this->get_logger(), "SELECTING → EXECUTING");
 
       openGripper();
-
-      //TODO: Implement check for Gripper open success before proceeding with MTC
-    
-      // Blocking call, only proceeds if MTC plan and execution succeed
-      bool success = mtc_planner_->executeGrasp(pose_base);
-
-      if (success)
+      
+      if (!mtc_planner_->moveToPose(pose_base))
       {
-        closeGripper();
-        //TODO: Implement check for Gripper open success before proceeding with MTC
-        RCLCPP_INFO(this->get_logger(), "Grasp succeeded. EXECUTING → IDLE");
-      }
-      else
-      {
-        RCLCPP_WARN(this->get_logger(), "MTC failed for this candidate, trying next");
+        RCLCPP_WARN(this->get_logger(), "moveToPose failed, trying next candidate");
         state_ = State::SELECTING;
         continue;
       }
+      //TODO: Implement check for Gripper open success before proceeding with MTC
+      closeGripper();
 
+      if (!mtc_planner_->moveToHome())
+      {
+        RCLCPP_ERROR(this->get_logger(), "moveToHome failed. EXECUTING → IDLE");
+        state_ = State::IDLE;
+        return;
+      }
+
+      RCLCPP_INFO(this->get_logger(), "Grasp succeeded. EXECUTING → IDLE");
       state_ = State::IDLE;
       return;
     }
@@ -181,7 +182,7 @@ private:
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<GraspStateMachine>();
+  auto node = GraspStateMachine::create();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;

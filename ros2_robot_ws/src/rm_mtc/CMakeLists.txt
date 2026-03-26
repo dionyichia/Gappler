@@ -13,21 +13,28 @@ find_package(moveit_ros_planning_interface REQUIRED)
 find_package(geometry_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(rm_ros_interfaces REQUIRED)
 
-add_executable(mtc_sim_test src/rm_mtc.cpp)
-target_include_directories(mtc_sim_test PUBLIC
+add_executable(grasp_state_machine
+  src/grasp_state_machine.cpp
+  src/mtc_planner.cpp)
+target_include_directories(grasp_state_machine PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
-target_compile_features(mtc_sim_test PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-ament_target_dependencies(mtc_sim_test
+target_compile_features(grasp_state_machine PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+ament_target_dependencies(grasp_state_machine
   rclcpp
   moveit_task_constructor_core
   moveit_ros_planning_interface
   geometry_msgs
+  tf2_ros
+  tf2_geometry_msgs
+  rm_ros_interfaces
 )
 
-install(TARGETS mtc_sim_test
+install(TARGETS grasp_state_machine
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch
