@@ -153,7 +153,7 @@ class AnyGraspNode(Node):
         points_full = self.build_point_cloud(depth)
 
         # Depth validity mask (0 < z < 1.5m)
-        depth_mask = (points_full[:, :, 2] > 0) & (points_full[:, :, 2] < 1.5)
+        depth_mask = (points_full[:, :, 2] > 0) & (points_full[:, :, 2] < 0.5)
 
         if self.frame_idx == 0:
             # Frame 0: use SAM mask to select initial grasps
