@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Dummy mask publisher for testing without SAM.
 Subscribes to depth topic to match resolution and timestamp,
@@ -11,7 +10,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 
 # Match these to the placeholders in anygrasp_node.py
-TOPIC_DEPTH = "/PLACEHOLDER/depth/image_rect_raw"
+TOPIC_DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
 TOPIC_MASK = "/PLACEHOLDER/sam/mask"
 
 
@@ -33,6 +32,8 @@ class DummyMaskPublisher(Node):
         mask_msg.header = depth_msg.header
         mask_msg.height = depth_msg.height
         mask_msg.width = depth_msg.width
+        # print(depth_msg.height, depth_msg.width)
+
         mask_msg.encoding = "mono8"
         mask_msg.step = depth_msg.width
         # All-True mask: every pixel is part of the "object"

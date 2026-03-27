@@ -24,8 +24,8 @@ import time
 # Placeholders — fill in before running
 # ---------------------------------------------------------------------------
 ANYGRASP_CONDA_ENV = "anygrasp"
-ANYGRASP_DIR = "PLACEHOLDER_absolute_path_to_anygrasp_dir"
-ANYGRASP_CHECKPOINT = "log/PLACEHOLDER_checkpoint_filename"
+ANYGRASP_DIR = "/home/iot22/GitHub/Renaissance-Capstone-Project/ros2_robot_ws/src/rm_mtc/src/perception"
+ANYGRASP_CHECKPOINT = "log/checkpoint_tracking.tar"
 
 
 ANYGRASP_NODE_PATH = os.path.join(
@@ -35,7 +35,7 @@ DUMMY_MASK_NODE_PATH = os.path.join(
     os.path.dirname(__file__), "rm_mtc/src/perception/dummy_mask_publisher.py"
 )
 GRASP_VIZ_NODE_PATH = os.path.join(
-    os.path.dirname(__file__), "rm_mtc/src/perception/grasp_visualizer.py"
+    os.path.dirname(__file__), "rm_mtc/src/perception/grasp_viz.py"
 )
 
 # ---------------------------------------------------------------------------
@@ -79,6 +79,20 @@ signal.signal(signal.SIGTERM, shutdown)
 # Launch sequence
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
+    # 0. RealSense camera driver
+    launch(
+        [
+            "ros2",
+            "launch",
+            "realsense2_camera",
+            "rs_launch.py",
+            "align_depth.enable:=true",
+            "pointcloud.enable:=true",
+        ],
+        label="realsense_camera",
+        delay=0.0,
+    )
+
     # 1. ROS2 bringup — allow time for move_group to fully initialise
     launch(
         ["ros2", "launch", "rm_mtc", "background.launch.py"],
@@ -87,39 +101,39 @@ if __name__ == "__main__":
     )
 
     # 2. [TEMPORARY] Dummy mask publisher — replace with SAM node when ready
-    launch(
-        ["python3", DUMMY_MASK_NODE_PATH],
-        label="dummy_mask_publisher [TEMPORARY]",
-        delay=10.0,
-    )
+    # launch(
+    #     ["python3", DUMMY_MASK_NODE_PATH],
+    #     label="dummy_mask_publisher [TEMPORARY]",
+    #     delay=0.0,  # Edit delay back to 10s later on
+    # )
 
     # 3. AnyGrasp node — runs in conda env
     # PLACEHOLDER: replace ANYGRASP_CONDA_ENV and ANYGRASP_CHECKPOINT
-    launch(
-        [
-            "conda",
-            "run",
-            "-n",
-            ANYGRASP_CONDA_ENV,
-            "python",
-            ANYGRASP_NODE_PATH,
-            "--checkpoint_path",
-            ANYGRASP_CHECKPOINT,
-        ],
-        label="anygrasp_node",
-        delay=2.0,
-        cwd=ANYGRASP_DIR,
-    )
+    # launch(
+    #     [
+    #         "conda",
+    #         "run",
+    #         "-n",
+    #         ANYGRASP_CONDA_ENV,
+    #         "python",
+    #         ANYGRASP_NODE_PATH,
+    #         "--checkpoint_path",
+    #         ANYGRASP_CHECKPOINT,
+    #     ],
+    #     label="anygrasp_node",
+    #     delay=2.0,
+    #     cwd=ANYGRASP_DIR,
+    # )
 
     # 4. Grasp visualizer — runs in normal ROS2 env
-    launch(["python3", GRASP_VIZ_NODE_PATH], label="grasp_visualizer", delay=2.0)
+    # launch(["python3", GRASP_VIZ_NODE_PATH], label="grasp_viz", delay=2.0)
 
     # 5. Grasp state machine — launched last, after all sources are ready
-    launch(
-        ["ros2", "run", "rm_mtc", "grasp_state_machine"],
-        label="grasp_state_machine",
-        delay=5.0,
-    )
+    # launch(
+    #     ["ros2", "run", "rm_mtc", "grasp_state_machine"],
+    #     label="grasp_state_machine",
+    #     delay=5.0,
+    # )
 
     print("[main] All processes launched. Press Ctrl+C to shut down.")
 

@@ -2,7 +2,8 @@
 <robot name="rm_65_with_gripper" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <xacro:include filename="$(find rm_description)/urdf/rm_65.urdf.xacro" />
-  <xacro:include filename="$(find eg2_4b_description)/urdf/eg2_4b_description.urdf" />
+  <xacro:include filename="$(find rm_description)/urdf/eg2_4b_description_patch.urdf" />
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" />
 
   <joint name="gripper_attach" type="fixed">
     <parent link="Link6" />
@@ -10,11 +11,9 @@
     <origin xyz="0 0 0.004" rpy="0 0 0" />
   </joint>
 
-  <link name="camera_bottom_screw_frame" />
-  <joint name="camera_joint" type="fixed">
-    <parent link="Link6" />
-    <child link="camera_bottom_screw_frame" />
+  <!-- Link to camera tf_tree -->
+  <xacro:sensor_d435 parent="Link6" name="camera" use_nominal_extrinsics="false">
     <origin xyz="0.014 -0.0125 0.0475" rpy="0 0 0" />
-  </joint>
+  </xacro:sensor_d435>
 
 </robot>

@@ -7,15 +7,14 @@ Publishes top 5 grasp candidates to /grasp_candidates.
 """
 
 import argparse
+
 import numpy as np
-from scipy.spatial.transform import Rotation
-
 import rclpy
-from rclpy.node import Node
-from sensor_msgs.msg import Image
 from message_filters import ApproximateTimeSynchronizer, Subscriber
-
+from rclpy.node import Node
 from rm_ros_interfaces.msg import GraspCandidate, GraspCandidateArray
+from scipy.spatial.transform import Rotation
+from sensor_msgs.msg import Image
 from tracker import AnyGraspTracker  # Compiled binary, must be in conda env
 
 # ---------------------------------------------------------------------------
@@ -30,13 +29,13 @@ cfgs, _ = parser.parse_known_args()
 # ---------------------------------------------------------------------------
 # Constants — replace placeholders with actual topic names
 # ---------------------------------------------------------------------------
-TOPIC_RGB = "/PLACEHOLDER/rgb/image_raw"
-TOPIC_DEPTH = "/PLACEHOLDER/depth/image_rect_raw"
+TOPIC_RGB = "/camera/camera/color/image_raw"
+TOPIC_DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
 TOPIC_MASK = "/PLACEHOLDER/sam/mask"
 
-# Camera intrinsics — replace with actual D435i values or read from camera_info
-FX, FY = 927.17, 927.37
-CX, CY = 651.32, 349.62
+# Camera intrinsics — read in from camera_info for D435i
+FX, FY = 910.7627, 910.3762
+CX, CY = 657.9279, 375.1953
 DEPTH_SCALE = 0.001  # metres per depth unit (1mm for D435i z16)
 
 NUM_CANDIDATES = 5
@@ -92,6 +91,7 @@ class AnyGraspNode(Node):
     # -----------------------------------------------------------------------
     def build_point_cloud(self, depth: np.ndarray):
         h, w = depth.shape
+        print(f"Depth resol: {h}, {w}")  # debug
         xmap, ymap = np.meshgrid(np.arange(w), np.arange(h))
         points_z = depth * DEPTH_SCALE
         points_x = (xmap - CX) * points_z / FX
