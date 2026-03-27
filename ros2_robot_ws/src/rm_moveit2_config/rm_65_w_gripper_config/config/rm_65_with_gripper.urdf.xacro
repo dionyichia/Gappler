@@ -8,7 +8,9 @@
     <!-- Import control_xacro -->
     <xacro:include filename="rm_65_with_gripper.ros2_control.xacro" />
 
-
-    <xacro:rm_65_with_gripper_ros2_control name="FakeSystem" initial_positions_file="$(arg initial_positions_file)"/>
+    <!-- 
+    <xacro:rm_65_with_gripper_ros2_control name="FakeSystem"
+        initial_positions_file="$(arg initial_positions_file)" />
+    -->
 
 </robot>
