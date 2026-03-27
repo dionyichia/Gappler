@@ -3,7 +3,13 @@ from moveit_configs_utils.launches import generate_move_group_launch
 
 
 def generate_launch_description():
-    moveit_config = MoveItConfigsBuilder(
-        "rm_65_with_gripper", package_name="rm_65_w_gripper_config"
-    ).to_moveit_configs()
+    moveit_config = (
+        MoveItConfigsBuilder(
+            "rm_65_with_gripper", package_name="rm_65_w_gripper_config"
+        )
+        .move_group_capabilities(
+            capabilities="moveit_task_constructor_visualization/ExecuteTaskSolutionCapability"
+        )
+        .to_moveit_configs()
+    )
     return generate_move_group_launch(moveit_config)
