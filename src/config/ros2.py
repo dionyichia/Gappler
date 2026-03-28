@@ -24,6 +24,8 @@ class ROS2Topics(Enum):
 
     ARUCO_POSE = "/aria/aruco_pose"
     VIO_POSE = "/aria/vio_pose"
+    FUSED_POSE = "/aria/fused_pose"
+    IS_STATIONARY = "/aria/is_stationary"
 
 
 class ROS2Config:

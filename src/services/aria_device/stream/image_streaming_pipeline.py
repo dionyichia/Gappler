@@ -11,7 +11,9 @@ from projectaria_tools.core.calibration import (
     device_calibration_from_json_string,
     get_linear_camera_calibration,
 )
+from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import Header
 
 from config import AriaConfig, ROS2Topics
 from services.arcuo import detect_aruco
@@ -35,7 +37,41 @@ def _put_latest(queue: Queue, item) -> None:
         pass
 
 
-# TODO Implement ARUCO Pose Tracking
+def _publish_aruco_detections(
+    result: list,
+    publisher: ROSPublisher,
+) -> None:
+    """Publish the first detected ArUco marker as a PoseStamped in camera frame.
+
+    The message encodes T_camera_marker — the marker's pose expressed in the
+    RGB camera frame.  The pose fusion node converts this into the SLAM map
+    frame using the known marker position in the map.
+    """
+    if not result:
+        return
+
+    # Use only the first detected marker (lowest index by appearance order)
+    detection = result[0]
+    T = detection["T_camera_tag"]  # 4×4 homogeneous, camera → marker
+
+    msg = PoseStamped()
+    msg.header = Header()
+    msg.header.stamp = publisher.get_clock().now().to_msg()
+    msg.header.frame_id = "camera_rgb"
+
+    msg.pose.position.x = float(T[0, 3])
+    msg.pose.position.y = float(T[1, 3])
+    msg.pose.position.z = float(T[2, 3])
+
+    q = Rotation.from_matrix(T[:3, :3]).as_quat()  # [x, y, z, w]
+    msg.pose.orientation.x = float(q[0])
+    msg.pose.orientation.y = float(q[1])
+    msg.pose.orientation.z = float(q[2])
+    msg.pose.orientation.w = float(q[3])
+
+    publisher.publish(msg)
+
+
 def rgb_worker(
     rgb_queue: Queue,
     quit_event: Event,
@@ -97,6 +133,7 @@ def rgb_worker(
         result, frame = detect_aruco(
             undistorted_image.copy(), camera_matrix, dist_coeffs
         )
+        _publish_aruco_detections(result, aruco_pose_publisher)
 
 
 def et_worker(
