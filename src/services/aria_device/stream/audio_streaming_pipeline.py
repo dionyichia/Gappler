@@ -16,10 +16,10 @@ import aria.sdk as aria
 import numpy as np
 from faster_whisper import WhisperModel
 from faster_whisper.transcribe import Segment
+from scipy.signal import resample
 from std_msgs.msg import String
-from torch.profiler import ProfilerActivity, profile
 
-from config import AudioStreamingPipelineConfig, ROS2Topics, Settings
+from config import AriaConfig, AudioStreamingPipelineConfig, ROS2Topics, Settings
 from services.aria_device import AriaStreamClient, AudioObserver
 from services.prompt_extractor import LLMPromptExtractor
 from services.ros import ROSPublisher
@@ -42,7 +42,7 @@ def _put_latest(q: Queue, item) -> None:
 
 
 def audio_worker(
-    resampled_audio_queue: Queue,
+    raw_audio_queue: Queue,
     quit_event: Event,
 ) -> None:
     prompt_publisher = ROSPublisher(
@@ -58,6 +58,32 @@ def audio_worker(
     llm_extractor = LLMPromptExtractor(AudioStreamingPipelineConfig.LLM_MODEL)
     previous_transcription = ""
     previous_prompt = ""
+
+    def _get_resampled_audio(channel_buffers: list) -> np.ndarray:
+        """Mix, downsample and normalise raw channel buffers into a 16 kHz mono array."""
+        if not channel_buffers or not channel_buffers[0]:
+            return np.array([], dtype=np.float32)
+
+        # Mix to mono
+        min_length = min(len(c) for c in channel_buffers)
+        trimmed = [
+            np.array(list(c)[:min_length], dtype=np.float32) for c in channel_buffers
+        ]
+        mono = np.mean(trimmed, axis=0)
+
+        # Downsample
+        target_length = int(
+            len(mono)
+            * AudioStreamingPipelineConfig.WHISPER_SAMPLE_RATE
+            / AriaConfig.AUDIO_SAMPLE_RATE
+        )
+        resampled = resample(mono, target_length)
+
+        # Normalise
+        peak = np.max(np.abs(resampled))
+        if peak > 0:
+            resampled = resampled / peak
+        return resampled.astype(np.float32)
 
     def _transcribe(audio: np.ndarray) -> list:
         """Return Whisper segments for the given 16 kHz mono audio array."""
@@ -88,15 +114,11 @@ def audio_worker(
             prompt = previous_prompt
         else:
             previous_transcription = transcription
-            logger.info("Transcription: %s", transcription)
-            with profile(
-                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]
-            ) as prof:
-                prompt = llm_extractor.extract_object(transcription)
-
             logger.info(
-                prof.key_averages().table(sort_by="cuda_time_total", row_limit=20)
+                f"Transcription: {transcription}",
             )
+
+            prompt = llm_extractor.extract_object(transcription)
             previous_prompt = prompt
 
         msg = String()
@@ -105,20 +127,18 @@ def audio_worker(
 
     while not quit_event.is_set():
         try:
-            audio_16k = resampled_audio_queue.get(timeout=0.1)
-            with profile(
-                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]
-            ) as prof:
-                segments = _transcribe(audio_16k)
-                _process_segments(segments)
-            logger.info(
-                prof.key_averages().table(sort_by="cuda_time_total", row_limit=20)
-            )
+            channel_buffers = raw_audio_queue.get(timeout=0.1)
+            audio_16k = _get_resampled_audio(channel_buffers)
+            if len(audio_16k) == 0:
+                continue
+
+            segments = _transcribe(audio_16k)
+            _process_segments(segments)
 
         except queue.Empty:
             pass
         except Exception as e:
-            logger.error("Audio worker error: %s", e, exc_info=True)
+            logger.error(f"Audio worker error: {e}", exc_info=True)
 
 
 class AudioStreamingPipeline:
@@ -127,10 +147,10 @@ class AudioStreamingPipeline:
     def __init__(self, quit_event: Event):
         self.quit_event = quit_event
 
-        self.resampled_audio_queue = multiprocessing.Queue(maxsize=1)
+        self.raw_audio_queue = multiprocessing.Queue(maxsize=1)
         self.audio_process = multiprocessing.Process(
             target=audio_worker,
-            args=(self.resampled_audio_queue, self.quit_event),
+            args=(self.raw_audio_queue, self.quit_event),
             daemon=True,
         )
         self.audio_process.start()
@@ -152,8 +172,9 @@ class AudioStreamingPipeline:
                     iteration_start = time.time()
 
                     if observer.received:
-                        audio_16k = observer.get_resampled_audio()
-                        _put_latest(self.resampled_audio_queue, audio_16k)
+                        _put_latest(
+                            self.raw_audio_queue, list(observer.channel_buffers)
+                        )
 
                     # Pace the loop to a consistent iteration interval.
                     elapsed = time.time() - iteration_start

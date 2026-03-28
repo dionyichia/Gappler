@@ -9,7 +9,7 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, ReliabilityPolicy, qos_profile_sensor_data
+from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image, Imu
 
 RESET = "\033[0m"
@@ -89,16 +89,14 @@ class RateMonitor(Node):
             "slam_right": TopicStats("/aria/slam_right/raw"),
         }
 
-        reliable_qos = QoSProfile(reliability=ReliabilityPolicy.RELIABLE, depth=10)
-
         self.create_subscription(
             Imu, "/aria/imu", self._imu_cb, qos_profile_sensor_data
         )
         self.create_subscription(
-            Image, "/aria/slam_left/raw", self._left_cb, reliable_qos
+            Image, "/aria/slam_left/raw", self._left_cb, qos_profile_sensor_data
         )
         self.create_subscription(
-            Image, "/aria/slam_right/raw", self._right_cb, reliable_qos
+            Image, "/aria/slam_right/raw", self._right_cb, qos_profile_sensor_data
         )
 
         self._start = time.time()

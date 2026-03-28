@@ -14,13 +14,13 @@ from multiprocessing.synchronize import Event
 from typing import Sequence
 
 import aria.sdk as aria
+import cv2
 import numpy as np
 from builtin_interfaces.msg import Time
 from projectaria_tools.core.calibration import (
     CameraCalibration,
     DeviceCalibration,
     device_calibration_from_json_string,
-    distort_by_calibration,
     get_linear_camera_calibration,
 )
 from projectaria_tools.core.sensor_data import ImageDataRecord, MotionData
@@ -32,6 +32,7 @@ from services.aria_device import (
     AriaStreamClient,
     AriaVIOObserver,
 )
+from services.aria_device.stream.undistortion_helper import build_remap_maps
 from services.ros import ROSPublisher
 
 logger = logging.getLogger(__name__)
@@ -171,6 +172,11 @@ def slam_worker(
         ),
     }
 
+    _remap_maps = {
+        cam_id: build_remap_maps(_src_calibs[cam_id], _dst_calibs[cam_id])
+        for cam_id in (aria.CameraId.Slam1, aria.CameraId.Slam2)
+    }
+
     _queues = {
         aria.CameraId.Slam1: slam_left_queue,
         aria.CameraId.Slam2: slam_right_queue,
@@ -204,11 +210,8 @@ def slam_worker(
         for camera_id, q in _queues.items():
             try:
                 image, timestamp_ns = q.get(timeout=0.05)
-                undistorted = distort_by_calibration(
-                    image,
-                    _dst_calibs[camera_id],
-                    _src_calibs[camera_id],
-                )
+                map_x, map_y = _remap_maps[camera_id]
+                undistorted = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
                 undistorted = np.rot90(undistorted, k=3)
 
                 msg = _cv2_to_imgmsg_mono8(undistorted)
