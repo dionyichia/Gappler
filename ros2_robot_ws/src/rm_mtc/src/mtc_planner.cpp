@@ -11,6 +11,7 @@ MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr &node)
   mtc_executor_->add_node(mtc_node_);
   mtc_spin_thread_ = std::thread([this]()
                                  { mtc_executor_->spin(); });
+  move_group_ = std::make_shared<moveit::planning_interface::MoveGroupInterface>(mtc_node_, "rm_group");
 }
 
 // *** CHANGED: replaces executeGrasp(), handles arm motion to target pose only ***
@@ -21,6 +22,8 @@ bool MtcPlanner::moveToPose(const geometry_msgs::msg::Pose &target_pose)
   task.loadRobotModel(mtc_node_);
 
   auto arm_planner = std::make_shared<solvers::JointInterpolationPlanner>();
+  arm_planner->setMaxVelocityScalingFactor(0.1);
+  arm_planner->setMaxAccelerationScalingFactor(0.1);
 
   // ---- Stage 0: Current state ----
   {
@@ -32,7 +35,7 @@ bool MtcPlanner::moveToPose(const geometry_msgs::msg::Pose &target_pose)
   {
     auto stage = std::make_unique<stages::MoveTo>("move to grasp pose", arm_planner);
     stage->setGroup(ARM_GROUP);
-    stage->setIKFrame("Link6");
+    stage->setIKFrame("grasp_frame");
     geometry_msgs::msg::PoseStamped ps;
     ps.header.frame_id = "base_link";
     ps.pose = target_pose;
@@ -44,6 +47,8 @@ bool MtcPlanner::moveToPose(const geometry_msgs::msg::Pose &target_pose)
   {
     task.enableIntrospection(true);
     task.init();
+    RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] Planning to pose: x=%.3f y=%.3f z=%.3f",
+                target_pose.position.x, target_pose.position.y, target_pose.position.z);
     if (!task.plan(5))
     {
       RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] moveToPose: planning failed");
@@ -60,45 +65,18 @@ bool MtcPlanner::moveToPose(const geometry_msgs::msg::Pose &target_pose)
   }
 }
 
-// Handles arm retreat to home only ***
+// Handles arm retreat back to home pose
 bool MtcPlanner::moveToHome()
 {
-  Task task;
-  task.stages()->setName("move_to_home");
-  task.loadRobotModel(mtc_node_);
-
-  auto arm_planner = std::make_shared<solvers::JointInterpolationPlanner>();
-
-  // ---- Stage 0: Current state ----
+  move_group_->setJointValueTarget(HOME_JOINTS);
+  move_group_->setMaxVelocityScalingFactor(0.1);
+  move_group_->setMaxAccelerationScalingFactor(0.1);
+  moveit::planning_interface::MoveGroupInterface::Plan plan;
+  if (move_group_->plan(plan) != moveit::core::MoveItErrorCode::SUCCESS)
   {
-    auto stage = std::make_unique<stages::CurrentState>("current state");
-    task.add(std::move(stage));
-  }
-
-  // ---- Stage 1: Retreat to home ----
-  {
-    auto stage = std::make_unique<stages::MoveTo>("retreat to home", arm_planner);
-    stage->setGroup(ARM_GROUP);
-    stage->setGoal(HOME_JOINTS);
-    task.add(std::move(stage));
-  }
-
-  try
-  {
-    task.enableIntrospection(true);
-    task.init();
-    if (!task.plan(5))
-    {
-      RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] moveToHome: planning failed");
-      return false;
-    }
-    RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] moveToHome: executing...");
-    task.execute(*task.solutions().front());
-    return true;
-  }
-  catch (const InitStageException &e)
-  {
-    RCLCPP_ERROR_STREAM(node_->get_logger(), "[MtcPlanner] moveToHome: stage init failed: " << e);
+    RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] moveToHome: planning failed");
     return false;
   }
+  move_group_->execute(plan);
+  return true;
 }
