@@ -91,7 +91,6 @@ class AnyGraspNode(Node):
     # -----------------------------------------------------------------------
     def build_point_cloud(self, depth: np.ndarray):
         h, w = depth.shape
-        print(f"Depth resol: {h}, {w}")  # debug
         xmap, ymap = np.meshgrid(np.arange(w), np.arange(h))
         points_z = depth * DEPTH_SCALE
         points_x = (xmap - CX) * points_z / FX
