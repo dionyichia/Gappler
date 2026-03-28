@@ -1,0 +1,12 @@
+# Ignore colcon build folders
+build/
+install/
+log/
+
+# Ignore Python bytecode and cache
+**/__pycache__/
+*.pyc
+
+# Ignore C++ / ROS 2 generated files
+test_results/
+.catkin/
