@@ -4,9 +4,9 @@ from multiprocessing import Queue
 from multiprocessing.synchronize import Event
 
 import aria.sdk as aria
+import cv2
 import numpy as np
 from geometry_msgs.msg import Point, PoseStamped
-from projectaria_tools.core import calibration
 from projectaria_tools.core.calibration import (
     device_calibration_from_json_string,
     get_linear_camera_calibration,
@@ -17,6 +17,7 @@ from config import AriaConfig, ROS2Topics
 from services.arcuo import detect_aruco
 from services.aria_device import AriaStreamClient, ImageObserver
 from services.aria_device.eye_tracking import EyeTrackingPipeline
+from services.aria_device.stream.undistortion_helper import build_remap_maps
 from services.ros import ROSPublisher
 
 logger = logging.getLogger(__name__)
@@ -73,6 +74,8 @@ def rgb_worker(
         logger.error("Failed to retrieve RGB camera calibration data")
         return
 
+    map_x, map_y = build_remap_maps(source_calibration, dest_calibration)
+
     fx = fy = AriaConfig.DEST_CALIBRATION_FOCAL_LENGTH
     cx = AriaConfig.DEST_CALIBRATION_WIDTH_PX / 2.0
     cy = AriaConfig.DEST_CALIBRATION_HEIGHT_PX / 2.0
@@ -88,9 +91,7 @@ def rgb_worker(
         image = np.rot90(image, -1)
         rgb_publisher.publish_image(image)
 
-        undistorted_image = calibration.distort_by_calibration(
-            image.copy(), dest_calibration, source_calibration
-        )
+        undistorted_image = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
         undistorted_rgb_publisher.publish_image(undistorted_image)
 
         result, frame = detect_aruco(

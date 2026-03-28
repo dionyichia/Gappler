@@ -1,5 +1,7 @@
+import logging
 import time
 import wave
+from collections import deque
 from datetime import datetime
 from pathlib import Path
 
@@ -19,6 +21,8 @@ MAX_BUFFER_SAMPLES = (
     AriaConfig.AUDIO_SAMPLE_RATE * AudioStreamingPipelineConfig.MAX_BUFFER_SECONDS
 )
 
+logger = logging.getLogger(__name__)
+
 
 class AudioObserver(BaseStreamingClientObserver):
     """
@@ -33,8 +37,9 @@ class AudioObserver(BaseStreamingClientObserver):
         self.save_interval = save_interval  # seconds between WAV exports
 
         # Per-channel sample buffers (7 channels, samples as integers).
-        self.channel_buffers: list[list] = [
-            [] for _ in range(AriaConfig.NUM_AUDIO_CHANNELS)
+        self.channel_buffers: list[deque] = [
+            deque(maxlen=MAX_BUFFER_SAMPLES)
+            for _ in range(AriaConfig.NUM_AUDIO_CHANNELS)
         ]
 
         # Tracks how many samples have already been written to disk.
@@ -51,26 +56,25 @@ class AudioObserver(BaseStreamingClientObserver):
 
         # Demultiplex interleaved channels: sample layout is [ch0, ch1, …, ch6, ch0, …]
         for ch in range(AriaConfig.NUM_AUDIO_CHANNELS):
-            self.channel_buffers[ch] += raw_samples[ch :: AriaConfig.NUM_AUDIO_CHANNELS]
-
-        # Trim the buffers to the rolling window so memory stays bounded.
-        self._trim_buffers()
+            self.channel_buffers[ch].extend(
+                raw_samples[ch :: AriaConfig.NUM_AUDIO_CHANNELS]
+            )
 
         self.received = True
 
         # Periodically export a WAV chunk.
-        now = time.time()
-        if now - self._last_save_time >= self.save_interval:
-            resampled = self._resample_new_samples()
-            if resampled is not None:
-                try:
-                    save_path = self._save_wav_chunk(
-                        resampled, AudioStreamingPipelineConfig.WHISPER_SAMPLE_RATE
-                    )
-                    print(f"Audio saved: {save_path}")
-                except Exception as e:
-                    print(f"Error saving audio: {e}")
-            self._last_save_time = now
+        # now = time.time()
+        # if now - self._last_save_time >= self.save_interval:
+        #     resampled = self._resample_new_samples()
+        #     if resampled is not None:
+        #         try:
+        #             save_path = self._save_wav_chunk(
+        #                 resampled, AudioStreamingPipelineConfig.WHISPER_SAMPLE_RATE
+        #             )
+        #             print(f"Audio saved: {save_path}")
+        #         except Exception as e:
+        #             print(f"Error saving audio: {e}")
+        #     self._last_save_time = now
 
     def get_resampled_audio(self) -> np.ndarray:
         """
@@ -84,18 +88,6 @@ class AudioObserver(BaseStreamingClientObserver):
         resampled = self._downsample(mono, len(mono))
         return self._normalise(resampled)
 
-    def _trim_buffers(self) -> None:
-        """Drop the oldest samples that fall outside the rolling window."""
-        # Trim per-channel sample buffers.
-        for ch in range(AriaConfig.NUM_AUDIO_CHANNELS):
-            excess = len(self.channel_buffers[ch]) - MAX_BUFFER_SAMPLES
-            if excess > 0:
-                del self.channel_buffers[ch][:excess]
-
-        self._saved_sample_count = min(
-            self._saved_sample_count, len(self.channel_buffers[0])
-        )
-
     def _mix_to_mono(self, channels: list[list]) -> np.ndarray:
         """Average all channels into a single mono signal."""
         if not channels:
@@ -103,7 +95,7 @@ class AudioObserver(BaseStreamingClientObserver):
 
         # Truncate all channels to the length of the shortest one
         min_length = min(len(c) for c in channels)
-        trimmed = [np.array(c[:min_length], dtype=np.float32) for c in channels]
+        trimmed = [np.array(list(c)[:min_length], dtype=np.float32) for c in channels]
 
         return np.mean(trimmed, axis=0)
 
@@ -132,7 +124,9 @@ class AudioObserver(BaseStreamingClientObserver):
         if current_length <= self._saved_sample_count:
             return None
 
-        new_samples = [ch[self._saved_sample_count :] for ch in self.channel_buffers]
+        new_samples = [
+            list(ch)[self._saved_sample_count :] for ch in self.channel_buffers
+        ]
         self._saved_sample_count = current_length
 
         mono = self._mix_to_mono(new_samples)

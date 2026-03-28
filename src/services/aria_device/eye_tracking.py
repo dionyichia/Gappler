@@ -124,7 +124,7 @@ class EyeTrackingPipeline:
 
         try:
             # Convert to tensor and predict
-            img_tensor = torch.tensor(eye_image, device=self.device)
+            img_tensor = torch.as_tensor(eye_image, device=self.device)
             preds, lower, upper = self.model.predict(img_tensor)
 
             # Convert to numpy
