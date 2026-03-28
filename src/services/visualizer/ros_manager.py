@@ -31,7 +31,9 @@ class ROSManager:
             on_raw_image=...,
             on_undistorted_image=...,
             on_gaze_position=...,
-            on_mask_bundle=...,
+            on_aria_mask_bundle=...,
+            on_ros_mask_bundle=...,
+            on_feature_match=...,
         )
         manager.start()
         # ... run loop ...
@@ -43,13 +45,15 @@ class ROSManager:
         on_raw_image: Callable[[CompressedImage], None],
         on_undistorted_image: Callable[[CompressedImage], None],
         on_gaze_position: Callable[[Point], None],
-        on_mask_bundle: Callable[[dict], None],
+        on_aria_mask_bundle: Callable[[dict], None],
+        on_ros_mask_bundle: Callable[[dict], None],
         on_feature_match: Callable[[dict], None],
     ):
         self._on_raw_image = on_raw_image
         self._on_undistorted_image = on_undistorted_image
         self._on_gaze_position = on_gaze_position
-        self._on_mask_bundle = on_mask_bundle
+        self._on_aria_mask_bundle = on_aria_mask_bundle
+        self._on_ros_mask_bundle = on_ros_mask_bundle
         self._on_feature_match = on_feature_match
 
         self._subscriber: Optional[ROSSubscriber] = None
@@ -85,12 +89,12 @@ class ROSManager:
         self._subscriber.subscribe(
             UInt8MultiArray,
             ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS.value,
-            lambda msg: self._unpickle_and_forward(msg, self._on_mask_bundle),
+            lambda msg: self._unpickle_and_forward(msg, self._on_aria_mask_bundle),
         )
         self._subscriber.subscribe(
             UInt8MultiArray,
             ROS2Topics.ROS_CAMERA_WITH_OBJECT_MASKS.value,
-            lambda msg: self._unpickle_and_forward(msg, self._on_mask_bundle),
+            lambda msg: self._unpickle_and_forward(msg, self._on_ros_mask_bundle),
         )
         self._subscriber.subscribe(
             UInt8MultiArray,

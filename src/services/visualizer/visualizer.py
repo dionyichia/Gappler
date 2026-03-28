@@ -135,7 +135,8 @@ class Visualizer:
             on_raw_image=self._on_raw_image,
             on_undistorted_image=self._on_undistorted_image,
             on_gaze_position=self._on_gaze_position,
-            on_mask_bundle=self._on_mask_bundle,
+            on_aria_mask_bundle=lambda b: self._on_mask_bundle(b, "aria"),
+            on_ros_mask_bundle=lambda b: self._on_mask_bundle(b, "ros"),
             on_feature_match=self._on_feature_match,
         )
         self._ros_manager.start()
@@ -177,24 +178,25 @@ class Visualizer:
         h, w = image_shape[:2]
         return (h - y, x)
 
-    def _on_mask_bundle(self, bundle: dict) -> None:
-        """Handle a deserialized image + inference_state bundle."""
+    def _on_mask_bundle(self, bundle: dict, source: str) -> None:
+        """Handle a deserialized image + inference_state bundle.
 
-        valid = (
-            self.current_topic == ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS
-            and self._camera_source == "aria"
-        ) or (
-            self.current_topic == ROS2Topics.ROS_CAMERA_WITH_OBJECT_MASKS
-            and self._camera_source == "ros"
+        Args:
+            bundle: The mask bundle containing image and inference state.
+            source: 'aria' for RGB_CAMERA_WITH_OBJECT_MASKS,
+                    'ros' for ROS_CAMERA_WITH_OBJECT_MASKS.
+        """
+        expected_topic = (
+            ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS
+            if source == "aria"
+            else ROS2Topics.ROS_CAMERA_WITH_OBJECT_MASKS
         )
-        if not valid:
+        if self.current_topic != expected_topic:
             return
 
         image = ImageHelper.uncompress_image(bundle.get("image", b""))
         if image is None:
-            logger.warning(
-                f"Mask bundle missing image for source '{self._camera_source}'"
-            )
+            logger.warning(f"Mask bundle missing image for source '{source}'")
             return
 
         self._display_frame = ObjectMaskVisualizer.plot_results(
@@ -264,8 +266,20 @@ class Visualizer:
         print(f"Saved frame to {filename}")
 
     def _toggle_camera_source(self) -> None:
-        """Switch between aria/ros object recognition views."""
-        self._camera_source = "ros" if self._camera_source == "aria" else "aria"
+        """Toggle between aria/ros object recognition views, only when on a mask topic."""
+        if self.current_topic not in [
+            ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS,
+            ROS2Topics.ROS_CAMERA_WITH_OBJECT_MASKS,
+        ]:
+            return
+
+        if self.current_topic == ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS:
+            self.current_topic = ROS2Topics.ROS_CAMERA_WITH_OBJECT_MASKS
+            self._camera_source = "ros"
+        else:
+            self.current_topic = ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS
+            self._camera_source = "aria"
+
         logger.info(f"Switched object recognition source to: {self._camera_source}")
 
     # ------------------------------------------------------------------
@@ -283,7 +297,10 @@ class Visualizer:
         if self.show_menu:
             display = self._menu.draw(display, self.current_topic)
 
-        if self.current_topic == ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS:
+        if self.current_topic in [
+            ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS,
+            ROS2Topics.ROS_CAMERA_WITH_OBJECT_MASKS,
+        ]:
             label = f"Source: {self._camera_source.upper()}  [TAB to switch]"
             cv2.putText(
                 display,
