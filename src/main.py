@@ -385,15 +385,13 @@ def parse_arguments() -> ApplicationConfig:
         "--mode",
         choices=["live", "recording"],
         default="live",
-        help="Mode to run the application in (default: %(default)s)",
+        help="Mode to run the package in (default: %(default)s)",
     )
-
     parser.add_argument(
         "--recording-path",
         type=str,
         help="Path to recording folder (required when mode is 'recording')",
     )
-
     parser.add_argument(
         "--track-pose",
         action="store_true",
@@ -407,13 +405,8 @@ def parse_arguments() -> ApplicationConfig:
         help="Update iptables to enable receiving the data stream (Linux only)",
     )
 
-    parser.add_argument("--device_ip", type=str, help="IP Address of Aria Glasses")
-
-    parser.add_argument("--profile_name", type=str, help="Profile used for streaming")
-
     args = parser.parse_args()
-
-    # Validate recording mode requirements
+    # Validate that recording-path is provided when mode is 'recording'
     if args.mode == "recording" and not args.recording_path:
         parser.error("--recording-path is required when --mode is 'recording'")
 
