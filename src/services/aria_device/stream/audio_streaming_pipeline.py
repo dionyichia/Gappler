@@ -6,7 +6,10 @@ via Whisper, and intent extraction via an LLM, publishing results over ROS2.
 """
 
 import logging
+import multiprocessing
+import queue
 import time
+from multiprocessing import Queue
 from multiprocessing.synchronize import Event
 
 import aria.sdk as aria
@@ -26,44 +29,39 @@ logger = logging.getLogger(__name__)
 logging.getLogger("faster_whisper").setLevel(logging.WARNING)
 
 
-class AudioStreamingPipeline:
-    """Real-time pipeline: Aria audio → Whisper transcription → LLM intent → ROS2."""
+def _put_latest(q: Queue, item) -> None:
+    """Discard stale item and put the latest one."""
+    try:
+        q.get_nowait()
+    except Exception:
+        pass
+    try:
+        q.put_nowait(item)
+    except Exception:
+        pass
 
-    def __init__(
-        self,
-        quit_event: Event,
-        whisper_model: str = AudioStreamingPipelineConfig.TRANSCRIPTION_MODEL,
-        llm_model: str = AudioStreamingPipelineConfig.LLM_MODEL,
-    ):
-        """
-        Initialize the audio streaming pipeline.
 
-        Args:
-            whisper_model: Whisper model identifier
-            llm_model: LLM model identifier for prompt extraction
-        """
+def audio_worker(
+    resampled_audio_queue: Queue,
+    quit_event: Event,
+) -> None:
+    prompt_publisher = ROSPublisher(
+        "Aria_audio_prompt_publisher",
+        String,
+        ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value,
+    )
+    whisper_model = WhisperModel(
+        AudioStreamingPipelineConfig.TRANSCRIPTION_MODEL,
+        device=Settings.DEVICE,
+        compute_type="int8",
+    )
+    llm_extractor = LLMPromptExtractor(AudioStreamingPipelineConfig.LLM_MODEL)
+    previous_transcription = ""
+    previous_prompt = ""
 
-        # Initialize components
-        self.whisper_model = WhisperModel(
-            whisper_model,
-            device=Settings.DEVICE,
-            compute_type="int8",
-        )
-        self.llm_extractor = LLMPromptExtractor(llm_model)
-        self.prompt_publisher = ROSPublisher(
-            "Aria_audio_prompt_publisher",
-            String,
-            ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value,
-        )
-        self._previous_transcription = ""
-        self._previous_prompt = ""
-        self._quit_event = quit_event
-
-        logging.info("Audio streaming pipeline initialised")
-
-    def _transcribe(self, audio: np.ndarray) -> list:
+    def _transcribe(audio: np.ndarray) -> list:
         """Return Whisper segments for the given 16 kHz mono audio array."""
-        segments, _ = self.whisper_model.transcribe(
+        segments, _ = whisper_model.transcribe(
             audio,
             language="en",
             word_timestamps=True,
@@ -74,34 +72,70 @@ class AudioStreamingPipeline:
         # Materialise the generator so segments can be reused.
         return list(segments)
 
-    def _process_segments(self, segments: list[Segment]) -> None:
+    def _process_segments(segments: list[Segment]) -> None:
         """
         Join all segment texts, log the full transcription, extract intent via
         the LLM, and publish the resulting prompt over ROS2.
         """
+        nonlocal previous_transcription, previous_prompt
+
         if not segments:
             return
 
         transcription = "\n".join(seg.text for seg in segments)
 
-        if transcription == self._previous_transcription:
-            prompt = self._previous_prompt
+        if transcription == previous_transcription:
+            prompt = previous_prompt
         else:
-            self._previous_transcription = transcription
-            logging.info(f"Transcription: {transcription}")
+            previous_transcription = transcription
+            logger.info("Transcription: %s", transcription)
             with profile(
                 activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]
             ) as prof:
-                prompt = self.llm_extractor.extract_object(transcription)
+                prompt = llm_extractor.extract_object(transcription)
 
-                print(
-                    prof.key_averages().table(sort_by="cuda_time_total", row_limit=20)
-                )
+            logger.info(
+                prof.key_averages().table(sort_by="cuda_time_total", row_limit=20)
+            )
+            previous_prompt = prompt
 
         msg = String()
         msg.data = prompt
-        self._previous_prompt = prompt
-        self.prompt_publisher.publish(msg)
+        prompt_publisher.publish(msg)
+
+    while not quit_event.is_set():
+        try:
+            audio_16k = resampled_audio_queue.get(timeout=0.1)
+            with profile(
+                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]
+            ) as prof:
+                segments = _transcribe(audio_16k)
+                _process_segments(segments)
+            logger.info(
+                prof.key_averages().table(sort_by="cuda_time_total", row_limit=20)
+            )
+
+        except queue.Empty:
+            pass
+        except Exception as e:
+            logger.error("Audio worker error: %s", e, exc_info=True)
+
+
+class AudioStreamingPipeline:
+    """Real-time pipeline: Aria audio → Whisper transcription → LLM intent → ROS2."""
+
+    def __init__(self, quit_event: Event):
+        self.quit_event = quit_event
+
+        self.resampled_audio_queue = multiprocessing.Queue(maxsize=1)
+        self.audio_process = multiprocessing.Process(
+            target=audio_worker,
+            args=(self.resampled_audio_queue, self.quit_event),
+            daemon=True,
+        )
+        self.audio_process.start()
+
+        logger.info("Audio streaming pipeline initialised")
 
     def run(self) -> None:
         """Stream audio from the Aria device and run the transcription loop."""
@@ -109,30 +143,17 @@ class AudioStreamingPipeline:
             with AriaStreamClient() as aria_stream_client:
                 # Subscribe to audio data
                 data_channels = [(aria.StreamingDataType.Audio, 100)]
-                observer: AudioObserver = aria_stream_client.subscribe(
-                    data_channels, AudioObserver()
-                )
+                observer = AudioObserver()
+                aria_stream_client.subscribe(data_channels, observer)
 
-                logging.info("Started audio streaming")
+                logger.info("Started audio streaming")
 
-                while not self._quit_event.is_set():
+                while not self.quit_event.is_set():
                     iteration_start = time.time()
 
                     if observer.received:
                         audio_16k = observer.get_resampled_audio()
-
-                        with profile(
-                            activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]
-                        ) as prof:
-                            segments = self._transcribe(audio_16k)
-
-                        # print(
-                        #     prof.key_averages().table(
-                        #         sort_by="cuda_time_total", row_limit=20
-                        #     )
-                        # )
-                        # segments = self._transcribe(audio_16k)
-                        self._process_segments(segments)
+                        _put_latest(self.resampled_audio_queue, audio_16k)
 
                     # Pace the loop to a consistent iteration interval.
                     elapsed = time.time() - iteration_start
@@ -143,17 +164,16 @@ class AudioStreamingPipeline:
                     if remaining > 0:
                         time.sleep(remaining)
 
+        except KeyboardInterrupt:
+            logger.warning("Audio streaming pipeline interrupted by user")
         except Exception as e:
-            logging.error(f"Error in audio pipeline: {e}", exc_info=True)
+            logger.error(f"Error in audio pipeline: {e}", exc_info=True)
         finally:
-            logging.info("Pipeline shutdown complete")
+            self.audio_process.join(timeout=5)
+            logger.info("Pipeline shutdown complete")
 
 
 def stream_audio(aria_streaming_started: Event, quit_event: Event) -> None:
     pipeline = AudioStreamingPipeline(quit_event)
     aria_streaming_started.wait()
     pipeline.run()
-
-
-if __name__ == "__main__":
-    stream_audio()

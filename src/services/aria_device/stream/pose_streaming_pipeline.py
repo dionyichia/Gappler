@@ -229,14 +229,14 @@ def slam_worker(
 
 class PoseStreamingPipeline:
     def __init__(self, quit_event: Event, sensors_calib_json_str: str):
+        self.quit_event = quit_event
+
         self.imu_publisher = ROSPublisher(
             "Aria_IMU_publisher",
             Imu,
             ROS2Topics.IMU.value,
             qos_profile_sensor_data,
         )
-
-        self.quit_event = quit_event
 
         self.slam_left_queue = multiprocessing.Queue(maxsize=1)
         self.slam_right_queue = multiprocessing.Queue(maxsize=1)
