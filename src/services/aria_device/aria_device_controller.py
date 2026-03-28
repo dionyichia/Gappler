@@ -4,11 +4,6 @@ from time import sleep
 from typing import Optional
 
 import aria.sdk as aria
-from projectaria_tools.core.calibration import (
-    CameraCalibration,
-    DeviceCalibration,
-    device_calibration_from_json_string,
-)
 
 from config import AriaConfig
 
@@ -236,50 +231,19 @@ class AriaDeviceController:
         if status.wifi_ip_address:
             logger.info(f"  WiFi IP: {status.wifi_ip_address}")
 
-    def get_device_calibration(self) -> Optional[DeviceCalibration]:
-        """
-        Get device calibration from the connected device.
-
-        Returns:
-            DeviceCalibration instance, or None if not connected.
-        """
+    def get_sensors_calibration_json_str(self) -> str:
         if not self._device:
             logger.warning("Device not connected")
             return None
 
         streaming_manager = self._device.streaming_manager
         sensors_calib_json_str = streaming_manager.sensors_calibration()
-        device_calib = device_calibration_from_json_string(sensors_calib_json_str)
-
-        return device_calib
-
-    def get_rgb_camera_calibration(self) -> Optional[CameraCalibration]:
-        """
-        Get RGB camera calibration from the connected device.
-
-        Returns:
-            CameraCalibration instance for RGB camera, or None if not connected.
-        """
-        if not self._device:
-            logger.warning("Device not connected")
-            return None
-
-        streaming_manager = self._device.streaming_manager
-        sensors_calib_json_str = streaming_manager.sensors_calibration()
-        sensors_calib = device_calibration_from_json_string(sensors_calib_json_str)
-        rgb_calib = sensors_calib.get_camera_calib(AriaConfig.RGB_STREAM_LABEL)
-
-        return rgb_calib
+        return sensors_calib_json_str
 
     @property
     def device(self) -> Optional[aria.Device]:
         """Get the connected device instance."""
         return self._device
-
-    @property
-    def is_connected(self) -> bool:
-        """Check if device is currently connected."""
-        return self._device is not None
 
     @property
     def is_streaming(self) -> bool:

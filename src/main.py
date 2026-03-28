@@ -1,20 +1,20 @@
 import warnings
 
 warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
+
 import argparse
 import logging
+import multiprocessing
 import os
+import subprocess
 import sys
-import threading
-from pathlib import Path
+from ipaddress import IPv4Address
+from time import sleep
+from typing import Optional
 
-from aria_device import AriaDeviceController
-from config import AriaConfig
-from services.audio_stream_processor import stream_audio
-from services.feature_matching import dual_stream_matcher
-from services.image_stream_processor import stream_image
-from services.playback import playback_recording
-from utils import TerminalRawMode, safe_update_iptables, setup_logging
+from schemas.application import ApplicationConfig
+from services.process_manager import ProcessManager
+from utils import TerminalRawMode, exit_keypress, safe_update_iptables, setup_logging
 
 os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"  # Point to system fonts
 os.environ["QT_QUICK_BACKEND"] = "software"
@@ -26,8 +26,261 @@ PROJECT_ROOT = SCRIPT_DIR.parent
 logger = logging.getLogger(__name__)
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
+class ProcessPipelineBuilder:
+    """Builder for constructing the processing pipeline."""
+
+    def __init__(self, process_manager: ProcessManager):
+        self._process_manager = process_manager
+        self.config_queue = multiprocessing.Queue()
+
+    def add_streaming(
+        self, device_ip: Optional[IPv4Address], profile_name: str
+    ) -> "ProcessPipelineBuilder":
+        from services.aria_device import start_aria_stream
+
+        self._process_manager.add_process(
+            target=start_aria_stream, args=(device_ip, profile_name, self.config_queue)
+        )
+        return self
+
+    def add_audio_streaming(self) -> "ProcessPipelineBuilder":
+        """Add audio streaming process to the pipeline."""
+        from services.aria_device import stream_audio
+
+        self._process_manager.add_thread(target=stream_audio)
+
+        return self
+
+    def add_image_streaming(
+        self, sensors_calib_json_str: str
+    ) -> "ProcessPipelineBuilder":
+        """Add image streaming thread to the pipeline."""
+        from services.aria_device import stream_visual_feed
+
+        self._process_manager.add_thread(
+            target=stream_visual_feed, args=(sensors_calib_json_str,)
+        )
+        return self
+
+    def add_pose_streaming(
+        self, sensors_calib_json_str: str
+    ) -> "ProcessPipelineBuilder":
+        from services.aria_device import stream_pose
+
+        self._process_manager.add_thread(
+            target=stream_pose, args=(sensors_calib_json_str,)
+        )
+        return self
+
+    def add_visualization(self) -> "ProcessPipelineBuilder":
+        """Add visualization process to the pipeline."""
+        from services.visualizer import visualize_feed
+
+        self._process_manager.add_process(target=visualize_feed)
+        return self
+
+    def add_object_recognition(self) -> "ProcessPipelineBuilder":
+        """Add object recognition process to the pipeline."""
+        from services.object_recognition.object_recognition_pipeline import (
+            generate_mask,
+        )
+
+        self._process_manager.add_process(target=generate_mask)
+        return self
+
+    def add_feature_matching(self) -> "ProcessPipelineBuilder":
+        """Add feature matching process to the pipeline."""
+        from services.feature_matching import feature_matching
+
+        self._process_manager.add_process(target=feature_matching)
+        return self
+
+    def build_common_pipeline(self) -> "ProcessPipelineBuilder":
+        """Build the common processing pipeline used by both modes."""
+        return self.add_visualization().add_object_recognition().add_feature_matching()
+
+    def build_streaming_pipeline(
+        self, device_ip: Optional[IPv4Address], profile_name: str
+    ) -> "ProcessPipelineBuilder":
+        """Build the complete pipeline for live streaming mode."""
+        self.add_streaming(
+            device_ip, profile_name
+        ).add_audio_streaming().build_common_pipeline()
+        sensors_calib_json_str = self.config_queue.get()
+        return self.add_image_streaming(sensors_calib_json_str).add_pose_streaming(
+            sensors_calib_json_str
+        )
+
+
+# TODO: Fix Recording Mode
+class RecordingModeRunner:
+    """Handler for recording playback mode."""
+
+    def __init__(self):
+        self.process_manager = ProcessManager()
+
+    def run(self, recording_path: str) -> None:
+        """Execute the application in recording playback mode.
+
+        Args:
+            recording_path: Path to the recording directory.
+        """
+        try:
+            from services.playback_controller import playback
+
+            logger.info(f"Starting playback mode with recording: {recording_path}")
+
+            # Setup processing pipeline
+            self.process_manager.aria_streaming_started.set()
+            ProcessPipelineBuilder(self.process_manager).build_common_pipeline()
+            logger.info("All processes started successfully")
+
+            # Start playback
+            playback(recording_path)
+        except KeyboardInterrupt:
+            logger.info("Received interrupt signal, shutting down...")
+        except Exception as e:
+            logger.error(f"Error in recording playback mode: {e}", exc_info=True)
+            raise
+        finally:
+            self.process_manager.cleanup()
+            logger.info("Cleanup completed")
+
+
+class LiveModeRunner:
+    """Handler for live streaming mode."""
+
+    def __init__(self):
+        self.process_manager = ProcessManager()
+
+    def run(self, device_ip: Optional[IPv4Address], profile_name: str) -> None:
+        """Execute the application in live streaming mode.
+
+        Args:
+            device_ip: IP address of the Aria device (None for USB).
+            profile_name: Name of the streaming profile to use.
+        """
+        logger.info("Starting live streaming mode")
+
+        try:
+            self._run_streaming_session(device_ip, profile_name)
+        except KeyboardInterrupt:
+            logger.info("Received interrupt signal, shutting down...")
+        except Exception as e:
+            logger.error(f"Error in live streaming mode: {e}", exc_info=True)
+            raise
+        finally:
+            self.process_manager.cleanup()
+            logger.info("Cleanup completed")
+
+    def _run_streaming_session(
+        self, device_ip: Optional[IPv4Address], profile_name: str
+    ) -> None:
+        """Run a single streaming session.
+
+        Args:
+            device_ip: IP address of the Aria device.
+            profile_name: Name of the streaming profile to use.
+        """
+
+        # Setup and start processing pipeline
+        ProcessPipelineBuilder(self.process_manager).build_streaming_pipeline(
+            device_ip=device_ip, profile_name=profile_name
+        )
+        logger.info("All processes started successfully")
+
+        # In VMs, the Aria USB network interface isn't available at boot — it only appears
+        # once the device starts streaming. Block here until the user starts streaming,
+        # then configure the interface before proceeding.
+        if self._is_virtual_machine():
+            self._setup_aria_network()
+
+        while not exit_keypress():
+            sleep(1.0)
+
+    def _is_virtual_machine(self) -> bool:
+        """Check if running inside a virtual machine."""
+        try:
+            result = subprocess.run(
+                ["systemd-detect-virt"], capture_output=True, text=True
+            )
+            return result.stdout.strip() != "none"
+        except FileNotFoundError:
+            return False
+
+    def _setup_aria_network(self):
+        """Wait for Aria USB interface and configure network."""
+        try:
+            while not os.path.exists("/sys/class/net/aria"):
+                sleep(0.1)
+            subprocess.run(["sudo", "ip", "link", "set", "aria", "up"], check=True)
+            subprocess.run(
+                ["sudo", "ip", "addr", "add", "192.168.42.1/24", "dev", "aria"],
+                check=True,
+                capture_output=True,
+            )
+            logger.info("Aria network configured successfully")
+        except subprocess.CalledProcessError as e:
+            # Check if the error is just that the file exists
+            if "File exists" in e.stderr.decode():
+                logger.info("Network interface already configured, continuing...")
+            else:
+                logger.error(f"Aria network setup error: {e}", exc_info=True)
+
+
+class AriaApplication:
+    """Main application orchestrator."""
+
+    def __init__(self, config: ApplicationConfig):
+        self.config = config
+
+    def run(self) -> None:
+        """Run the application based on configuration.
+
+        Raises:
+            SystemExit: If application encounters a fatal error.
+        """
+        try:
+            self.config.validate()
+            self._setup_environment()
+            self._execute_mode()
+        except Exception as e:
+            logger.error(f"Application error: {e}", exc_info=True)
+            sys.exit(1)
+
+    def _setup_environment(self) -> None:
+        """Setup the execution environment."""
+        if self.config.update_iptables:
+            logger.info("Attempting to update iptables...")
+            if not safe_update_iptables():
+                logger.warning("Failed to update iptables.")
+
+    def _execute_mode(self) -> None:
+        """Execute the appropriate mode based on configuration."""
+        if self.config.mode == "recording":
+            RecordingModeRunner().run(self.config.recording_path)
+        else:
+            LiveModeRunner().run(self.config.device_ip, self.config.profile_name)
+
+
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
+
+
+def parse_arguments() -> ApplicationConfig:
+    """Parse and validate command line arguments.
+
+    Returns:
+        Application configuration object.
+
+    Raises:
+        SystemExit: If required arguments are missing or invalid.
+    """
+    parser = argparse.ArgumentParser(
+        description="Aria streaming application for live and recorded data processing"
+    )
+
     parser.add_argument(
         "--mode",
         choices=["live", "recording"],
@@ -50,46 +303,27 @@ def parse_args() -> argparse.Namespace:
     if args.mode == "recording" and not args.recording_path:
         parser.error("--recording-path is required when --mode is 'recording'")
 
-    return args
+    # Convert device_ip to IPv4Address if provided
+    device_ip = IPv4Address(args.device_ip) if args.device_ip else None
+
+    return ApplicationConfig(
+        mode=args.mode,
+        recording_path=args.recording_path,
+        device_ip=device_ip,
+        profile_name=args.profile_name,
+        update_iptables=args.update_iptables,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
 
 def main():
-    args = parse_args()
-
-    if args.mode == "recording":
-        # playback_recording()
-        pass
-
-    else:
-        if args.update_iptables:
-            if not safe_update_iptables():
-                logger.warning("Warning: Failed to update iptables", file=sys.stderr)
-
-        with AriaDeviceController.get_instance() as aria_controller:
-            aria_controller.connect(device_ip=AriaConfig.ARIA_DEVICE_IP_ADDRESS)
-            interface = None if AriaConfig.ARIA_DEVICE_IP_ADDRESS else "usb"
-            aria_controller.start_streaming(
-                profile=AriaConfig.ARIA_STREAMING_PROFILE_NAME, interface=interface
-            )
-
-            audio_thread, image_thread, matcher_thread = None, None, None
-
-            # audio_thread = threading.Thread(target=stream_audio, args=(PROJECT_ROOT,), daemon=True)
-            image_thread = threading.Thread(
-                target=stream_image, args=(PROJECT_ROOT,), daemon=True
-            )
-            # matcher_thread = threading.Thread(target=dual_stream_matcher, args=(PROJECT_ROOT,), daemon=True)
-
-            image_thread.start()
-            # audio_thread.start()
-            # matcher_thread.start()
-
-            if image_thread and image_thread.is_alive():
-                image_thread.join()
-            # if audio_thread and audio_thread.is_alive():
-            #     audio_thread.join()
-            # if matcher_thread and matcher_thread.is_alive():
-            #     matcher_thread.join()
+    multiprocessing.set_start_method("spawn", force=True)
+    config = parse_arguments()
+    AriaApplication(config).run()
 
 
 if __name__ == "__main__":

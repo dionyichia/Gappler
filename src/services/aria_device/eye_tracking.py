@@ -22,8 +22,8 @@ from config import (
     AriaConfig,
     EyeTrackingConfig,
     ModelPaths,
+    Settings,
 )
-from config.base import Settings
 from schemas.gaze_estimate import GazeEstimate
 
 logger = logging.getLogger(__name__)
@@ -153,7 +153,7 @@ class EyeTrackingPipeline:
         Project gaze vector to RGB image coordinates.
 
         Args:
-            gaze_dict: Dictionary with 'yaw' and 'pitch' keys
+            gaze_dict: GazeEstimate with yaw and pitch attributes
             depth_m: Assumed depth for projection in meters
 
         Returns:

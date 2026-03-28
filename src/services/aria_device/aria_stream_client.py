@@ -8,13 +8,13 @@ for Meta Aria glasses.
 import logging
 import operator
 from functools import reduce
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import aria.sdk as aria
 
 from config import AriaConfig
 
-from .image_streaming_client_observer import BaseStreamingClientObserver
+from .stream.base_streaming_client_observer import BaseStreamingClientObserver
 
 logger = logging.getLogger(__name__)
 
@@ -40,19 +40,17 @@ class AriaStreamClient:
 
     def subscribe(
         self,
-        data_channels: List[aria.StreamingDataType],
+        data_channels: List[Tuple[aria.StreamingDataType, int]],
         observer: BaseStreamingClientObserver,
-        message_queue_size: int = 1,
         use_ephemeral_certs: bool = AriaConfig.USE_EPHEMERAL_CERTS,
     ) -> BaseStreamingClientObserver:
         """
         Subscribe to streaming data from any available Aria device.
 
         Args:
-            data_channels: List of data types to subscribe to
-                          (e.g., [aria.StreamingDataType.Rgb, aria.StreamingDataType.Slam]).
+            data_channels: List of data types and their respective message queue size to subscribe to
+                          (e.g., [(aria.StreamingDataType.Rgb, 1), (aria.StreamingDataType.Slam,2)]).
             observer: Observer to handle incoming data.
-            message_queue_size: Number of messages to buffer per data type.
             use_ephemeral_certs: Whether to use ephemeral certificates.
 
         Returns:
@@ -66,11 +64,13 @@ class AriaStreamClient:
 
         # Configure subscription
         config = self.streaming_client.subscription_config
-        config.subscriber_data_type = reduce(operator.or_, data_channels)
+        config.subscriber_data_type = reduce(
+            operator.or_, [dt for dt, _ in data_channels]
+        )
 
         # Set queue size for each data type
-        for data_type in data_channels:
-            config.message_queue_size[data_type] = message_queue_size
+        for data_type, queue_size in data_channels:
+            config.message_queue_size[data_type] = queue_size
 
         # Configure security
         config.security_options = self._create_security_options(use_ephemeral_certs)
@@ -79,13 +79,12 @@ class AriaStreamClient:
         # Attach observer and subscribe
         self.streaming_client.set_streaming_client_observer(observer)
         self.streaming_client.subscribe()
-
         self._observer = observer
         self._subscribed = True
 
         logger.info(f"✓ Subscribed to {len(data_channels)} data channel(s)")
-        logger.info(f"  Channels: {[dt.name for dt in data_channels]}")
-        logger.info(f"  Queue size: {message_queue_size}")
+        for data_type, queue_size in data_channels:
+            logger.info(f"  {data_type.name} — queue size: {queue_size}")
 
         return observer
 
