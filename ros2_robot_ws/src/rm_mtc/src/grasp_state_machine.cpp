@@ -107,6 +107,9 @@ private:
   // ---------------------------------------------------------------------------
   void workerLoop()
   {
+    // Move to home position on startup
+    mtc_planner_->moveToHome();
+
     while (true)
     {
       rm_ros_interfaces::msg::GraspCandidateArray::SharedPtr msg;
@@ -155,12 +158,16 @@ private:
           return;
         }
 
+        // Move back to home when in IDLE state
         RCLCPP_INFO(this->get_logger(), "Grasp succeeded. EXECUTING → IDLE");
+        mtc_planner_->moveToHome();
         state_ = State::IDLE;
         return;
       }
 
+      // Move back to home when in IDLE state
       RCLCPP_ERROR(this->get_logger(), "All candidates failed. SELECTING → IDLE");
+      mtc_planner_->moveToHome();
       state_ = State::IDLE;
     }
   }

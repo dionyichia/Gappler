@@ -4,6 +4,7 @@
 #include <moveit/task_constructor/task.h>
 #include <moveit/task_constructor/stages.h>
 #include <moveit/task_constructor/solvers.h>
+#include <moveit/move_group_interface/move_group_interface.h>
 
 using namespace moveit::task_constructor;
 
@@ -30,6 +31,7 @@ private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Node::SharedPtr mtc_node_;
   std::shared_ptr<rclcpp::executors::SingleThreadedExecutor> mtc_executor_;
+  std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_;
   std::thread mtc_spin_thread_;
 
   const std::string ARM_GROUP = "rm_group";
@@ -37,10 +39,10 @@ private:
   // Home pose joint values (radians)
   const std::map<std::string, double> HOME_JOINTS = {
       {"joint1", -0.0175},
-      {"joint2", 0.0873},
-      {"joint3", 0.9774},
+      {"joint2", -0.1745},
+      {"joint3", 0.7854},
       {"joint4", -3.0718},
-      {"joint5", -0.4712},
-      {"joint6", -3.2289},
+      {"joint5", -1.6930},
+      {"joint6", -1.6057},
   };
 };

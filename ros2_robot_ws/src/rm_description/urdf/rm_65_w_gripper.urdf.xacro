@@ -11,6 +11,14 @@
     <origin xyz="0 0 0.004" rpy="0 0 1.5708" />
   </joint>
 
+  <link name="grasp_frame" />
+  <joint name="grasp_frame_joint" type="fixed">
+    <parent link="Link6" />
+    <child link="grasp_frame" />
+    <origin xyz="0 0 0" rpy="0 0 3.1416" />
+  </joint>
+
+
   <!-- Link to camera tf_tree, past offset <origin xyz="0.014 -0.0125 0.0475" rpy="0 0 0" />-->
   <xacro:sensor_d435 parent="Link6" name="camera" use_nominal_extrinsics="false">
     <origin xyz="-0.0125 0.0475 0.014" rpy="0 -1.5708 -1.5708" />
