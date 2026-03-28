@@ -17,8 +17,13 @@ from schemas.application import ApplicationConfig
 from services.process_manager import ProcessManager
 from utils import TerminalRawMode, exit_keypress, safe_update_iptables, setup_logging
 
-# Logging setup
+os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"  # Point to system fonts
+os.environ["QT_QUICK_BACKEND"] = "software"
 setup_logging()
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+
 logger = logging.getLogger(__name__)
 
 
@@ -281,28 +286,21 @@ def parse_arguments() -> ApplicationConfig:
         "--mode",
         choices=["live", "recording"],
         default="live",
-        help="Mode to run the application in (default: %(default)s)",
+        help="Mode to run the package in (default: %(default)s)",
     )
-
     parser.add_argument(
         "--recording-path",
         type=str,
         help="Path to recording folder (required when mode is 'recording')",
     )
-
     parser.add_argument(
         "--update-iptables",
         action="store_true",
         help="Update iptables to enable receiving the data stream (Linux only)",
     )
 
-    parser.add_argument("--device_ip", type=str, help="IP Address of Aria Glasses")
-
-    parser.add_argument("--profile_name", type=str, help="Profile used for streaming")
-
     args = parser.parse_args()
-
-    # Validate recording mode requirements
+    # Validate that recording-path is provided when mode is 'recording'
     if args.mode == "recording" and not args.recording_path:
         parser.error("--recording-path is required when --mode is 'recording'")
 
