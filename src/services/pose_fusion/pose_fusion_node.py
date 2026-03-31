@@ -11,7 +11,6 @@ node that subscribes to three topics and publishes one corrected pose:
   /aria/imu         (Imu)         ← raw IMU, used for ZUPT detection
 
   /aria/fused_pose  (PoseStamped) → corrected pose expressed in SLAM map frame
-  /aria/is_stationary (Bool)      → ZUPT flag (high when device is still)
 
 Frame conventions
 -----------------
@@ -36,16 +35,12 @@ OpenVINS accumulates velocity and gyro-bias drift when the glasses stop
 moving, because the filter still integrates noisy IMU samples.  This node
 detects stillness via a sliding IMU window and freezes the published pose
 until motion resumes, preventing the fused output from drifting while
-stationary.  The /aria/is_stationary flag can also be used externally to
-trigger a VIO reinitialisation if desired.
+stationary. 
 
 ROS parameters
 --------------
   marker_pos_{x,y,z}           — ArUco marker translation in SLAM map (m)
   marker_quat_{x,y,z,w}        — ArUco marker orientation in SLAM map
-  zupt_gyro_threshold  (rad/s) — max gyro magnitude to count as still
-  zupt_accel_threshold (m/s²)  — max deviation from |g| to count as still
-  zupt_window_s        (s)     — duration of stillness before ZUPT triggers
 
 Usage
 -----
@@ -55,32 +50,42 @@ Usage
       -p marker_quat_w:=1.0
 """
 
-import collections
 import logging
 from typing import Optional
 
 import numpy as np
 import rclpy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, TransformStamped
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from scipy.spatial.transform import Rotation
-from sensor_msgs.msg import Imu
-from std_msgs.msg import Bool, Header
+from std_msgs.msg import Header
+from tf2_ros import StaticTransformBroadcaster, TransformBroadcaster
 
 logger = logging.getLogger(__name__)
 
-GRAVITY = 9.81  # m/s²
-_ZUPT_MIN_SAMPLES = 5  # discard windows with too few IMU samples
-
+VIDEO_QOS = QoSProfile(
+    reliability=ReliabilityPolicy.BEST_EFFORT,
+    history=HistoryPolicy.KEEP_LAST,
+    depth=1,
+)
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
 
-def _pose_stamped_to_T(msg: PoseStamped) -> np.ndarray:
+def _pose_to_T(msg: PoseStamped) -> np.ndarray:
     """Convert a PoseStamped to a 4×4 homogeneous transform (float64)."""
     p = msg.pose.position
     q = msg.pose.orientation
+    T = np.eye(4, dtype=np.float64)
+    T[:3, :3] = Rotation.from_quat([q.x, q.y, q.z, q.w]).as_matrix()
+    T[:3, 3] = [p.x, p.y, p.z]
+    return T
+
+
+def _pwcs_to_T(msg: PoseWithCovarianceStamped) -> np.ndarray:
+    p = msg.pose.pose.position
+    q = msg.pose.pose.orientation
     T = np.eye(4, dtype=np.float64)
     T[:3, :3] = Rotation.from_quat([q.x, q.y, q.z, q.w]).as_matrix()
     T[:3, 3] = [p.x, p.y, p.z]
@@ -120,6 +125,14 @@ class PoseFusionNode(Node):
     def __init__(self) -> None:
         super().__init__("aria_pose_fusion")
 
+        self._static_broadcaster = StaticTransformBroadcaster(self)
+        t = TransformStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = "global"
+        t.child_frame_id = "map"
+        t.transform.rotation.w = 1.0  # identity — adjust once you know the real offset
+        self._static_broadcaster.sendTransform(t)
+
         # ── parameters ────────────────────────────────────────────────────────
         # Marker pose in SLAM map frame.  Set these to match the known ArUco
         # position in your map before running.  Defaults = map origin.
@@ -131,55 +144,31 @@ class PoseFusionNode(Node):
         self.declare_parameter("marker_quat_z", 0.0)
         self.declare_parameter("marker_quat_w", 1.0)
 
-        # ZUPT thresholds — tune to your environment
-        self.declare_parameter("zupt_gyro_threshold", 0.05)  # rad/s
-        self.declare_parameter("zupt_accel_threshold", 0.15)  # m/s²
-        self.declare_parameter("zupt_window_s", 0.5)  # seconds
-
         # ── subscribers ───────────────────────────────────────────────────────
         self.create_subscription(
-            PoseStamped,
-            "/aria/vio_pose",
+            PoseWithCovarianceStamped,
+            "/ov_msckf/poseimu",
             self._on_vio_pose,
-            10,
+            VIDEO_QOS,
         )
         self.create_subscription(
             PoseStamped,
             "/aria/aruco_pose",
             self._on_aruco_pose,
-            10,
-        )
-        self.create_subscription(
-            Imu,
-            "/aria/imu",
-            self._on_imu,
-            qos_profile_sensor_data,
+            VIDEO_QOS,
         )
 
-        # ── publishers ────────────────────────────────────────────────────────
-        self._fused_pub = self.create_publisher(PoseStamped, "/aria/fused_pose", 10)
-        self._stationary_pub = self.create_publisher(Bool, "/aria/is_stationary", 10)
+        self._pub = self.create_publisher(PoseStamped, "/aria/fused_pose", 10)
+        self._tf_broadcaster = TransformBroadcaster(self)
 
-        # ── state ─────────────────────────────────────────────────────────────
-        # T_correction transforms VIO world → SLAM map:
-        #   T_map_glasses = T_correction @ T_vio_glasses
-        # None until the first ArUco fix arrives (VIO passes through raw).
-        self._T_correction: Optional[np.ndarray] = None
+        # T_map_glasses at the moment of the last ArUco fix
+        self._T_anchor: Optional[np.ndarray] = None
+        # T_vio at the moment of the last ArUco fix
+        self._T_vio_at_anchor: Optional[np.ndarray] = None
+        # Latest raw VIO pose
+        self._T_vio_current: Optional[np.ndarray] = None
 
-        # Latest fused 4×4 — used as the frozen output while stationary.
-        self._last_fused_T: Optional[np.ndarray] = None
-
-        # Latest raw VIO 4×4 — needed to compute T_correction on ArUco update.
-        self._last_vio_T: Optional[np.ndarray] = None
-
-        self._is_stationary: bool = False
-
-        # ZUPT window: deque of (timestamp_s, accel_deviation, gyro_magnitude)
-        self._imu_window: collections.deque = collections.deque()
-
-        self.get_logger().info(
-            "PoseFusionNode started.  Waiting for /aria/vio_pose and /aria/aruco_pose."
-        )
+        print("PoseFusionNode started.")
 
     # ── parameter helpers ─────────────────────────────────────────────────────
 
@@ -198,133 +187,61 @@ class PoseFusionNode(Node):
         T[:3, 3] = [px, py, pz]
         return T
 
-    # ── ZUPT detection ────────────────────────────────────────────────────────
-
-    def _update_zupt(
-        self, timestamp_s: float, accel_dev: float, gyro_mag: float
-    ) -> bool:
-        """
-        Add a sample to the sliding window and return True if the device has
-        been stationary for the full zupt_window_s duration.
-        """
-        window_s = self.get_parameter("zupt_window_s").value
-        gyro_thresh = self.get_parameter("zupt_gyro_threshold").value
-        accel_thresh = self.get_parameter("zupt_accel_threshold").value
-
-        self._imu_window.append((timestamp_s, accel_dev, gyro_mag))
-
-        # Evict samples older than the window
-        while self._imu_window and (timestamp_s - self._imu_window[0][0]) > window_s:
-            self._imu_window.popleft()
-
-        if len(self._imu_window) < _ZUPT_MIN_SAMPLES:
-            return False
-
-        return all(a < accel_thresh and g < gyro_thresh for _, a, g in self._imu_window)
-
-    # ── callbacks ─────────────────────────────────────────────────────────────
-
-    def _on_imu(self, msg: Imu) -> None:
-        """
-        Detect zero-velocity transitions.
-
-        When the device transitions from moving → stationary the fused pose
-        is frozen to prevent VIO drift from accumulating in the output.
-        On stationary → moving the last fused pose is used as the starting
-        point; the next ArUco sighting will re-anchor if needed.
-        """
-        ts = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
-
-        ax = msg.linear_acceleration.x
-        ay = msg.linear_acceleration.y
-        az = msg.linear_acceleration.z
-        gx = msg.angular_velocity.x
-        gy = msg.angular_velocity.y
-        gz = msg.angular_velocity.z
-
-        accel_mag = np.sqrt(ax**2 + ay**2 + az**2)
-        gyro_mag = np.sqrt(gx**2 + gy**2 + gz**2)
-        accel_dev = abs(accel_mag - GRAVITY)
-
-        was_stationary = self._is_stationary
-        self._is_stationary = self._update_zupt(ts, accel_dev, gyro_mag)
-
-        if self._is_stationary != was_stationary:
-            state_str = (
-                "STATIONARY — pose frozen"
-                if self._is_stationary
-                else "MOVING — resuming VIO"
-            )
-            self.get_logger().info(f"Motion state changed: {state_str}")
-            self._stationary_pub.publish(Bool(data=self._is_stationary))
-
     def _on_aruco_pose(self, msg: PoseStamped) -> None:
-        """
-        ArUco detection fires: recompute T_correction.
-
-        The message holds T_camera_marker (marker in camera frame).
-        We invert that to get T_marker_camera, then chain with T_map_marker
-        to place the camera (= glasses, approximately) in the SLAM map.
-
-        T_map_glasses_aruco = T_map_marker @ T_marker_camera
-        T_correction        = T_map_glasses_aruco @ inv(T_vio_glasses_current)
-        """
-        T_camera_marker = _pose_stamped_to_T(msg)
+        T_camera_marker = _pose_to_T(msg)
         T_map_marker = self._T_map_marker()
+        T_map_glasses = T_map_marker @ np.linalg.inv(T_camera_marker)
 
-        # camera expressed in map frame
-        T_map_camera = T_map_marker @ np.linalg.inv(T_camera_marker)
+        self._T_anchor = T_map_glasses
+        self._T_vio_at_anchor = (
+            self._T_vio_current.copy() if self._T_vio_current is not None else None
+        )
 
-        # Barebones assumption: glasses IMU ≈ RGB camera centre.
-        # For a more accurate result add T_camera_glasses extrinsics here:
-        #   T_map_glasses = T_map_camera @ T_camera_glasses
-        T_map_glasses_aruco = T_map_camera
+        t = TransformStamped()
+        t.header.stamp = msg.header.stamp
+        t.header.frame_id = "map"
+        t.child_frame_id = "aria_glasses"
+        t.transform.translation.x = float(T_map_glasses[0, 3])
+        t.transform.translation.y = float(T_map_glasses[1, 3])
+        t.transform.translation.z = float(T_map_glasses[2, 3])
+        q = Rotation.from_matrix(T_map_glasses[:3, :3]).as_quat()
+        t.transform.rotation.x = float(q[0])
+        t.transform.rotation.y = float(q[1])
+        t.transform.rotation.z = float(q[2])
+        t.transform.rotation.w = float(q[3])
+        self._tf_broadcaster.sendTransform(t)
 
-        if self._last_vio_T is not None:
-            # Re-anchor: align the VIO frame so the current VIO pose maps
-            # onto the ArUco-derived pose in the SLAM map frame.
-            self._T_correction = T_map_glasses_aruco @ np.linalg.inv(self._last_vio_T)
-            offset = self._T_correction[:3, 3]
-            self.get_logger().info(
-                f"ArUco correction updated. "
-                f"Translation offset [x={offset[0]:.3f} y={offset[1]:.3f} z={offset[2]:.3f}] m"
-            )
-        else:
-            # No VIO data yet — store ArUco fix directly as the correction.
-            # VIO is treated as starting from identity, so T_correction = T_map_glasses.
-            self._T_correction = T_map_glasses_aruco
-            self.get_logger().info(
-                "ArUco: first fix received before any VIO — stored directly."
-            )
-
-        # Freeze at the corrected ArUco pose (highest accuracy anchor)
-        self._last_fused_T = T_map_glasses_aruco
+        print(
+            f"ArUco anchor reset. "
+            f"pos=[{T_map_glasses[0, 3]:.3f}, {T_map_glasses[1, 3]:.3f}, {T_map_glasses[2, 3]:.3f}]"
+        )
 
     def _on_vio_pose(self, msg: PoseStamped) -> None:
-        """
-        Apply accumulated correction and publish the fused pose.
+        self._T_vio_current = _pwcs_to_T(msg)
 
-        Behaviour:
-          - Stationary  → publish the frozen pose (ZUPT, no drift)
-          - Moving, correction known  → T_fused = T_correction @ T_vio
-          - Moving, no correction yet → pass VIO through unchanged
-        """
-        T_vio = _pose_stamped_to_T(msg)
-        self._last_vio_T = T_vio  # always track, needed by _on_aruco_pose
+        if self._T_anchor is None or self._T_vio_at_anchor is None:
+            self._T_vio_at_anchor = self._T_vio_current.copy()
+            return
 
-        if self._is_stationary and self._last_fused_T is not None:
-            # Hold position — do not let drifting VIO move the output
-            T_fused = self._last_fused_T
-        elif self._T_correction is not None:
-            T_fused = self._T_correction @ T_vio
-            self._last_fused_T = T_fused
-        else:
-            # No ArUco fix yet — publish raw VIO (in VIO world frame)
-            T_fused = T_vio
-            self._last_fused_T = T_vio
-
+        T_delta = np.linalg.inv(self._T_vio_at_anchor) @ self._T_vio_current
+        T_fused = self._T_anchor @ T_delta
         fused_msg = _T_to_pose_stamped(T_fused, "map", msg.header.stamp)
-        self._fused_pub.publish(fused_msg)
+        self._pub.publish(fused_msg)
+
+        t = TransformStamped()
+        t.header.stamp = msg.header.stamp
+        t.header.frame_id = "map"
+        t.child_frame_id = "glasses"
+        t.transform.translation.x = float(T_fused[0, 3])
+        t.transform.translation.y = float(T_fused[1, 3])
+        t.transform.translation.z = float(T_fused[2, 3])
+        q = Rotation.from_matrix(T_fused[:3, :3]).as_quat()
+        t.transform.rotation.x = float(q[0])
+        t.transform.rotation.y = float(q[1])
+        t.transform.rotation.z = float(q[2])
+        t.transform.rotation.w = float(q[3])
+        self._tf_broadcaster.sendTransform(t)
+        print("VIO Published")
 
 
 # ── entry point ───────────────────────────────────────────────────────────────
