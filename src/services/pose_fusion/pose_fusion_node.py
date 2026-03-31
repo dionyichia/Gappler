@@ -157,6 +157,12 @@ class PoseFusionNode(Node):
             self._on_aruco_pose,
             VIDEO_QOS,
         )
+        self.create_subscription(
+            PoseStamped,
+            "/robot_pose",
+            self._on_robot_pose,
+            10,
+        )
 
         self._pub = self.create_publisher(PoseStamped, "/aria/fused_pose", 10)
         self._tf_broadcaster = TransformBroadcaster(self)
@@ -167,6 +173,8 @@ class PoseFusionNode(Node):
         self._T_vio_at_anchor: Optional[np.ndarray] = None
         # Latest raw VIO pose
         self._T_vio_current: Optional[np.ndarray] = None
+        # Latest robot pose in map frame — None if robot is not running
+        self._T_robot: Optional[np.ndarray] = None
 
         print("PoseFusionNode started.")
 
@@ -187,9 +195,19 @@ class PoseFusionNode(Node):
         T[:3, 3] = [px, py, pz]
         return T
 
+    def _on_robot_pose(self, msg: PoseStamped) -> None:
+        self._T_robot = _pose_to_T(msg)
+
     def _on_aruco_pose(self, msg: PoseStamped) -> None:
         T_camera_marker = _pose_to_T(msg)
-        T_map_marker = self._T_map_marker()
+
+        if self._T_robot is not None:
+            # Robot is running — use its live map pose as the marker position
+            T_map_marker = self._T_robot
+        else:
+            # Robot not running — fall back to static params (QR code = origin)
+            T_map_marker = self._T_map_marker()
+
         T_map_glasses = T_map_marker @ np.linalg.inv(T_camera_marker)
 
         self._T_anchor = T_map_glasses
@@ -224,6 +242,13 @@ class PoseFusionNode(Node):
             return
 
         T_delta = np.linalg.inv(self._T_vio_at_anchor) @ self._T_vio_current
+
+        # Reject VIO poses that have drifted too far from the anchor — these
+        # are caused by OpenVINS losing track and produce the wild jumps.
+        delta_dist = np.linalg.norm(T_delta[:3, 3])
+        if delta_dist > 2.0:
+            return
+
         T_fused = self._T_anchor @ T_delta
         fused_msg = _T_to_pose_stamped(T_fused, "map", msg.header.stamp)
         self._pub.publish(fused_msg)
