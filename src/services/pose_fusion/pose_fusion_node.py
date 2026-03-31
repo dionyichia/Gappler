@@ -8,7 +8,7 @@ node that subscribes to three topics and publishes one corrected pose:
 
   /aria/vio_pose    (PoseStamped) ← OpenVINS output, arbitrary VIO world frame
   /aria/aruco_pose  (PoseStamped) ← T_camera_marker published by image pipeline
-  /aria/imu         (Imu)         ← raw IMU, used for ZUPT detection
+  /aria/imu         (Imu)         ← raw IMU
 
   /aria/fused_pose  (PoseStamped) → corrected pose expressed in SLAM map frame
 
@@ -29,13 +29,6 @@ Correction update (fires on every ArUco detection)
   T_correction     = T_map_glasses_aruco @ inv(T_vio_at_detection_time)
   Fused pose       = T_correction @ T_vio_current
 
-ZUPT (zero-velocity) handling
-------------------------------
-OpenVINS accumulates velocity and gyro-bias drift when the glasses stop
-moving, because the filter still integrates noisy IMU samples.  This node
-detects stillness via a sliding IMU window and freezes the published pose
-until motion resumes, preventing the fused output from drifting while
-stationary. 
 
 ROS parameters
 --------------
@@ -167,14 +160,17 @@ class PoseFusionNode(Node):
         self._pub = self.create_publisher(PoseStamped, "/aria/fused_pose", 10)
         self._tf_broadcaster = TransformBroadcaster(self)
 
-        # T_map_glasses at the moment of the last ArUco fix
-        self._T_anchor: Optional[np.ndarray] = None
+        # T_map_glasses at the moment of the last ArUco fix.
+        # Defaults to identity so VIO broadcasts immediately; ArUco corrects position later.
+        self._T_anchor: np.ndarray = np.eye(4)
         # T_vio at the moment of the last ArUco fix
         self._T_vio_at_anchor: Optional[np.ndarray] = None
         # Latest raw VIO pose
         self._T_vio_current: Optional[np.ndarray] = None
         # Latest robot pose in map frame — None if robot is not running
         self._T_robot: Optional[np.ndarray] = None
+        # Guard: only publish /aria/fused_pose after at least one real ArUco fix
+        self._aruco_seen: bool = False
 
         print("PoseFusionNode started.")
 
@@ -214,6 +210,7 @@ class PoseFusionNode(Node):
         self._T_vio_at_anchor = (
             self._T_vio_current.copy() if self._T_vio_current is not None else None
         )
+        self._aruco_seen = True
 
         t = TransformStamped()
         t.header.stamp = msg.header.stamp
@@ -237,21 +234,23 @@ class PoseFusionNode(Node):
     def _on_vio_pose(self, msg: PoseStamped) -> None:
         self._T_vio_current = _pwcs_to_T(msg)
 
-        if self._T_anchor is None or self._T_vio_at_anchor is None:
+        if self._T_vio_at_anchor is None:
             self._T_vio_at_anchor = self._T_vio_current.copy()
             return
 
         T_delta = np.linalg.inv(self._T_vio_at_anchor) @ self._T_vio_current
 
-        # Reject VIO poses that have drifted too far from the anchor — these
-        # are caused by OpenVINS losing track and produce the wild jumps.
         delta_dist = np.linalg.norm(T_delta[:3, 3])
         if delta_dist > 2.0:
-            return
+            self.get_logger().warning(
+                f"VIO drift {delta_dist:.2f}m from anchor — consider scanning ArUco marker"
+            )
 
         T_fused = self._T_anchor @ T_delta
-        fused_msg = _T_to_pose_stamped(T_fused, "map", msg.header.stamp)
-        self._pub.publish(fused_msg)
+
+        if self._aruco_seen:
+            fused_msg = _T_to_pose_stamped(T_fused, "map", msg.header.stamp)
+            self._pub.publish(fused_msg)
 
         t = TransformStamped()
         t.header.stamp = msg.header.stamp

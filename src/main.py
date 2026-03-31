@@ -8,10 +8,14 @@ import multiprocessing
 import os
 import subprocess
 import sys
+import time
 from ipaddress import IPv4Address
 from time import sleep
 from typing import Optional
 
+import rclpy
+
+from config import Settings
 from schemas.application import ApplicationConfig
 from services.process_manager import ProcessManager
 from utils import TerminalRawMode, exit_keypress, safe_update_iptables, setup_logging
@@ -19,6 +23,9 @@ from utils import TerminalRawMode, exit_keypress, safe_update_iptables, setup_lo
 # Logging setup
 setup_logging()
 logger = logging.getLogger(__name__)
+
+if not rclpy.ok():
+    rclpy.init()
 
 
 class ProcessPipelineBuilder:
@@ -98,9 +105,7 @@ class ProcessPipelineBuilder:
         self, device_ip: Optional[IPv4Address], profile_name: str
     ) -> "ProcessPipelineBuilder":
         """Build the complete pipeline for live streaming mode."""
-        self.add_streaming(
-            device_ip, profile_name
-        ).add_audio_streaming().build_common_pipeline()
+        self.add_streaming(device_ip, profile_name).build_common_pipeline()
         sensors_calib_json_str = self.config_queue.get()
         return self.add_image_streaming(sensors_calib_json_str).add_pose_streaming(
             sensors_calib_json_str
@@ -228,6 +233,7 @@ class AriaApplication:
 
     def __init__(self, config: ApplicationConfig):
         self.config = config
+        self._realsense_process: Optional[subprocess.Popen] = None
 
     def run(self) -> None:
         """Run the application based on configuration.
@@ -242,6 +248,8 @@ class AriaApplication:
         except Exception as e:
             logger.error(f"Application error: {e}", exc_info=True)
             sys.exit(1)
+        finally:
+            self._stop_realsense()
 
     def _setup_environment(self) -> None:
         """Setup the execution environment."""
@@ -249,6 +257,54 @@ class AriaApplication:
             logger.info("Attempting to update iptables...")
             if not safe_update_iptables():
                 logger.warning("Failed to update iptables.")
+        self._start_realsense()
+
+    def _start_realsense(self) -> None:
+        """Launch the RealSense camera ROS2 node."""
+        logger.info("Launching RealSense camera node...")
+        try:
+            self._realsense_process = subprocess.Popen(
+                [
+                    "ros2",
+                    "launch",
+                    "realsense2_camera",
+                    "rs_launch.py",
+                    "align_depth.enable:=true",
+                    "pointcloud.enable:=true",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+            )
+            logger.info(
+                f"RealSense node started (PID {self._realsense_process.pid}), "
+                f"waiting {Settings.REALSENSE_INIT_DELAY}s for initialization..."
+            )
+            time.sleep(Settings.REALSENSE_INIT_DELAY)
+
+            # Check the process didn't immediately crash
+            if self._realsense_process.poll() is not None:
+                stderr = self._realsense_process.stderr.read().decode()
+                raise RuntimeError(f"RealSense node failed to start:\n{stderr}")
+
+            logger.info("RealSense camera node is ready.")
+        except FileNotFoundError:
+            raise RuntimeError(
+                "ros2 command not found. Ensure ROS2 is installed and sourced."
+            )
+
+    def _stop_realsense(self) -> None:
+        """Terminate the RealSense camera ROS2 node if running."""
+        if self._realsense_process and self._realsense_process.poll() is None:
+            logger.info("Shutting down RealSense camera node...")
+            self._realsense_process.terminate()
+            try:
+                self._realsense_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                logger.warning(
+                    "RealSense node did not terminate in time, force killing..."
+                )
+                self._realsense_process.kill()
+            logger.info("RealSense camera node stopped.")
 
     def _execute_mode(self) -> None:
         """Execute the appropriate mode based on configuration."""

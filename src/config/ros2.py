@@ -28,10 +28,8 @@ class ROS2Topics(Enum):
     IS_STATIONARY = "/aria/is_stationary"
 
 
-class ROS2Config:
-    TOPICS = ROS2Topics
-    VIDEO_QOS = QoSProfile(
-        reliability=ReliabilityPolicy.BEST_EFFORT,
-        history=HistoryPolicy.KEEP_LAST,
-        depth=1,
-    )
+VIDEO_QOS = QoSProfile(
+    reliability=ReliabilityPolicy.BEST_EFFORT,
+    history=HistoryPolicy.KEEP_LAST,
+    depth=1,
+)

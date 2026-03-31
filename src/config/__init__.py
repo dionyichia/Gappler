@@ -1,7 +1,7 @@
 """Configuration package for Aria streaming application.
 
 Usage:
-    from config import Settings, AriaConfig, ROS2Config
+    from config import Settings, AriaConfig
 
     settings = Settings()
     aria_config = AriaConfig()
@@ -18,7 +18,7 @@ from .base import Settings
 from .eye_tracking import EyeTrackingConfig
 from .models import ModelPaths
 from .playback_controller_config import PlaybackControllerConfig
-from .ros2 import ROS2Config, ROS2Topics
+from .ros2 import VIDEO_QOS, ROS2Topics
 from .visualizer_config import VisualizerConfig
 
 __all__ = [
@@ -28,7 +28,7 @@ __all__ = [
     "EyeTrackingConfig",
     "ModelPaths",
     "PlaybackControllerConfig",
-    "ROS2Config",
+    "VIDEO_QOS",
     "ROS2Topics",
     "VisualizerConfig",
 ]

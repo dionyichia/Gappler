@@ -10,11 +10,11 @@ from typing import Callable, Optional
 import rclpy
 from geometry_msgs.msg import Point
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import UInt8MultiArray
 
-from config import ROS2Topics
-from services.ros.ros_subscriber import ROSSubscriber
+from config import VIDEO_QOS, ROS2Topics
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class ROSManager:
         self._on_ros_mask_bundle = on_ros_mask_bundle
         self._on_feature_match = on_feature_match
 
-        self._subscriber: Optional[ROSSubscriber] = None
+        self._subscriber: Optional[Node] = None
         self._executor: Optional[MultiThreadedExecutor] = None
         self._spin_thread: Optional[threading.Thread] = None
 
@@ -69,37 +69,43 @@ class ROSManager:
         if not rclpy.ok():
             rclpy.init()
 
-        self._subscriber = ROSSubscriber("visualizer_subscriber")
+        self._subscriber = Node("visualizer_subscriber")
 
-        self._subscriber.subscribe(
+        self._subscriber.create_subscription(
             CompressedImage,
             ROS2Topics.RGB_CAMERA_RAW.value,
             self._on_raw_image,
+            VIDEO_QOS,
         )
-        self._subscriber.subscribe(
+        self._subscriber.create_subscription(
             CompressedImage,
             ROS2Topics.RGB_CAMERA_UNDISTORTED.value,
             self._on_undistorted_image,
+            VIDEO_QOS,
         )
-        self._subscriber.subscribe(
+        self._subscriber.create_subscription(
             Point,
             ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value,
             self._on_gaze_position,
+            VIDEO_QOS,
         )
-        self._subscriber.subscribe(
+        self._subscriber.create_subscription(
             UInt8MultiArray,
             ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS.value,
             lambda msg: self._unpickle_and_forward(msg, self._on_aria_mask_bundle),
+            VIDEO_QOS,
         )
-        self._subscriber.subscribe(
+        self._subscriber.create_subscription(
             UInt8MultiArray,
             ROS2Topics.ROS_CAMERA_WITH_OBJECT_MASKS.value,
             lambda msg: self._unpickle_and_forward(msg, self._on_ros_mask_bundle),
+            VIDEO_QOS,
         )
-        self._subscriber.subscribe(
+        self._subscriber.create_subscription(
             UInt8MultiArray,
             ROS2Topics.FEATURE_MATCH_RESULTS.value,
             lambda msg: self._unpickle_and_forward(msg, self._on_feature_match),
+            VIDEO_QOS,
         )
 
         self._executor = MultiThreadedExecutor()

@@ -6,7 +6,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 
-from config import ROS2Config
+from config import VIDEO_QOS
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class ROSPublisher(Node):
         node_name: str,
         msg_type: type,
         topic: str,
-        qos_profile=ROS2Config.VIDEO_QOS,
+        qos_profile=VIDEO_QOS,
     ):
         if not rclpy.ok():
             rclpy.init()
