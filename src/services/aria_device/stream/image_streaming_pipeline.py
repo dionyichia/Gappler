@@ -2,6 +2,7 @@ import logging
 import multiprocessing
 from multiprocessing import Queue
 from multiprocessing.synchronize import Event
+from typing import Any
 
 import aria.sdk as aria
 import cv2
@@ -38,7 +39,7 @@ def _put_latest(queue: Queue, item) -> None:
 
 
 def _publish_aruco_detections(
-    result: list,
+    detection: Any,
     publisher: ROSPublisher,
 ) -> None:
     """Publish the first detected ArUco marker as a PoseStamped in camera frame.
@@ -47,11 +48,9 @@ def _publish_aruco_detections(
     RGB camera frame.  The pose fusion node converts this into the SLAM map
     frame using the known marker position in the map.
     """
-    if not result:
+    if not detection:
         return
 
-    # Use only the first detected marker (lowest index by appearance order)
-    detection = result[0]
     T = detection["T_camera_tag"]  # 4×4 homogeneous, camera → marker
 
     msg = PoseStamped()

@@ -76,6 +76,7 @@ _ZUPT_MIN_SAMPLES = 5  # discard windows with too few IMU samples
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
+
 def _pose_stamped_to_T(msg: PoseStamped) -> np.ndarray:
     """Convert a PoseStamped to a 4×4 homogeneous transform (float64)."""
     p = msg.pose.position
@@ -91,7 +92,7 @@ def _T_to_pose_stamped(
     frame_id: str,
     stamp,
 ) -> PoseStamped:
-    """Convert a 4×4 homogeneous transform to a PoseStamped."""
+    """Convert a 4x4 homogeneous transform to a PoseStamped."""
     msg = PoseStamped()
     msg.header = Header()
     msg.header.stamp = stamp
@@ -112,6 +113,7 @@ def _T_to_pose_stamped(
 
 # ── node ─────────────────────────────────────────────────────────────────────
 
+
 class PoseFusionNode(Node):
     """Fuses OpenVINS VIO with periodic ArUco pose corrections."""
 
@@ -130,9 +132,9 @@ class PoseFusionNode(Node):
         self.declare_parameter("marker_quat_w", 1.0)
 
         # ZUPT thresholds — tune to your environment
-        self.declare_parameter("zupt_gyro_threshold", 0.05)   # rad/s
+        self.declare_parameter("zupt_gyro_threshold", 0.05)  # rad/s
         self.declare_parameter("zupt_accel_threshold", 0.15)  # m/s²
-        self.declare_parameter("zupt_window_s", 0.5)          # seconds
+        self.declare_parameter("zupt_window_s", 0.5)  # seconds
 
         # ── subscribers ───────────────────────────────────────────────────────
         self.create_subscription(
@@ -198,7 +200,9 @@ class PoseFusionNode(Node):
 
     # ── ZUPT detection ────────────────────────────────────────────────────────
 
-    def _update_zupt(self, timestamp_s: float, accel_dev: float, gyro_mag: float) -> bool:
+    def _update_zupt(
+        self, timestamp_s: float, accel_dev: float, gyro_mag: float
+    ) -> bool:
         """
         Add a sample to the sliding window and return True if the device has
         been stationary for the full zupt_window_s duration.
@@ -216,10 +220,7 @@ class PoseFusionNode(Node):
         if len(self._imu_window) < _ZUPT_MIN_SAMPLES:
             return False
 
-        return all(
-            a < accel_thresh and g < gyro_thresh
-            for _, a, g in self._imu_window
-        )
+        return all(a < accel_thresh and g < gyro_thresh for _, a, g in self._imu_window)
 
     # ── callbacks ─────────────────────────────────────────────────────────────
 
@@ -249,7 +250,11 @@ class PoseFusionNode(Node):
         self._is_stationary = self._update_zupt(ts, accel_dev, gyro_mag)
 
         if self._is_stationary != was_stationary:
-            state_str = "STATIONARY — pose frozen" if self._is_stationary else "MOVING — resuming VIO"
+            state_str = (
+                "STATIONARY — pose frozen"
+                if self._is_stationary
+                else "MOVING — resuming VIO"
+            )
             self.get_logger().info(f"Motion state changed: {state_str}")
             self._stationary_pub.publish(Bool(data=self._is_stationary))
 
@@ -288,7 +293,9 @@ class PoseFusionNode(Node):
             # No VIO data yet — store ArUco fix directly as the correction.
             # VIO is treated as starting from identity, so T_correction = T_map_glasses.
             self._T_correction = T_map_glasses_aruco
-            self.get_logger().info("ArUco: first fix received before any VIO — stored directly.")
+            self.get_logger().info(
+                "ArUco: first fix received before any VIO — stored directly."
+            )
 
         # Freeze at the corrected ArUco pose (highest accuracy anchor)
         self._last_fused_T = T_map_glasses_aruco
@@ -321,6 +328,7 @@ class PoseFusionNode(Node):
 
 
 # ── entry point ───────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     rclpy.init()

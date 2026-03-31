@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from cv2 import aruco
+from cv2.typing import MatLike
 
 # dictionary = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
 
@@ -29,40 +30,56 @@ TAG_CORNERS_3D = np.array(
 
 def detect_aruco(frame, camera_matrix, dist_coeffs):
     corners, ids, _ = detector.detectMarkers(frame)
+    if ids is None:
+        return None, frame
 
-    results = []
-    if ids is not None:
-        for i, marker_id in enumerate(ids.flatten()):
-            img_pts = corners[i][0].astype(np.float32)  # shape (4, 2)
+    best = None
+    best_area = -1
 
-            success, rvec, tvec = cv2.solvePnP(
-                TAG_CORNERS_3D,
-                img_pts,
-                camera_matrix,
-                dist_coeffs,
-                flags=cv2.SOLVEPNP_IPPE_SQUARE,  # best flag for square markers
-            )
+    for i, marker_id in enumerate(ids.flatten()):
+        img_pts = corners[i][0].astype(np.float32)  # shape (4, 2)
 
-            if not success:
-                continue
+        # Compute marker area as a quality proxy
+        area = cv2.contourArea(img_pts)
+        if area <= best_area:
+            continue
 
-            frame = draw_tag_pose(
-                frame, corners[i], rvec, tvec, camera_matrix, dist_coeffs, marker_id
-            )
+        success, rvec, tvec = cv2.solvePnP(
+            TAG_CORNERS_3D,
+            img_pts,
+            camera_matrix,
+            dist_coeffs,
+            flags=cv2.SOLVEPNP_IPPE_SQUARE,
+        )
+        if not success:
+            continue
 
-            R, _ = cv2.Rodrigues(rvec)
-            T_camera_tag = np.eye(4)
-            T_camera_tag[:3, :3] = R
-            T_camera_tag[:3, 3] = tvec.flatten()
+        R, _ = cv2.Rodrigues(rvec)
+        T_camera_tag = np.eye(4)
+        T_camera_tag[:3, :3] = R
+        T_camera_tag[:3, 3] = tvec.flatten()
 
-            results.append(
-                {"id": marker_id, "T_camera_tag": T_camera_tag, "corners": corners[i]}
-            )
+        best_area = area
+        best = {"id": marker_id, "T_camera_tag": T_camera_tag, "corners": corners[i]}
+        best_rvec, best_tvec = rvec, tvec
 
-    return results, frame
+    if best:
+        frame = draw_tag_pose(
+            frame,
+            best["corners"],
+            best_rvec,
+            best_tvec,
+            camera_matrix,
+            dist_coeffs,
+            best["id"],
+        )
+
+    return best, frame
 
 
-def draw_tag_pose(frame, corners, rvec, tvec, camera_matrix, dist_coeffs, marker_id):
+def draw_tag_pose(
+    frame, corners, rvec, tvec: MatLike, camera_matrix, dist_coeffs, marker_id
+):
     # Draw the tag border
     aruco.drawDetectedMarkers(frame, [corners])
 
