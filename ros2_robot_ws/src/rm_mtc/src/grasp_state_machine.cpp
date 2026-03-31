@@ -283,6 +283,8 @@ private:
           {
             // If no centroid, return to IDLE state
             RCLCPP_WARN(this->get_logger(), "No centroid available — object lost, aborting SELECTING");
+            has_centroid_ = false;
+            mtc_planner_->moveToHome();
             break;
           }
         }
@@ -321,6 +323,7 @@ private:
         if (msg->grasps.empty())
         {
           RCLCPP_WARN(this->get_logger(), "Tracking lost during SELECTING — returning to IDLE");
+          mtc_planner_->moveToHome();
           break;
         }
 
@@ -370,7 +373,8 @@ private:
         
         if (!mtc_planner_->moveToHome())
         {
-          RCLCPP_ERROR(this->get_logger(), "moveToHome failed");
+          RCLCPP_ERROR(this->get_logger(), "moveToHome failed but grasp succeeded — manual intervention may be required");
+          grasped = true;
           break;
         }
 
@@ -380,9 +384,11 @@ private:
       }
 
       if (!grasped)
+      { 
         RCLCPP_ERROR(this->get_logger(), "All candidates failed");
-
-      publishState(State::IDLE);
+        mtc_planner_->moveToHome();
+        publishState(State::IDLE);
+      }
     }
   }
 
