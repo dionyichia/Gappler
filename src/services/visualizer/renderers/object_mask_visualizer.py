@@ -200,12 +200,6 @@ class ObjectMaskVisualizer:
 
     @staticmethod
     def get_best_mask(results: Optional[dict]) -> Optional[np.ndarray]:
-        # if results is None or "scores" not in results or len(results["scores"]) == 0:
-        #     return None
-        # best_idx = int(np.argmax([s.item() for s in results["scores"]]))
-        # mask = results["masks"][best_idx].squeeze(0).cpu().numpy()
-        # return mask > 0
-
         if results is None or "scores" not in results or len(results["scores"]) == 0:
             return None, None
 
@@ -219,4 +213,8 @@ class ObjectMaskVisualizer:
         mask_data = results["masks"][best_idx].squeeze(0).cpu().numpy()
         mask_boolean = mask_data > 0
 
-        return mask_boolean, best_score
+        # 4. Get centroid
+        ys, xs = np.where(mask_boolean)
+        centroid = (int(np.mean(xs)), int(np.mean(ys))) if len(xs) > 0 else None
+
+        return mask_boolean, best_score, centroid

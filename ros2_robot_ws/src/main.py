@@ -98,11 +98,11 @@ if __name__ == "__main__":
     )
 
     # 1. ROS2 bringup — allow time for move_group to fully initialise
-    # launch(
-    #     ["ros2", "launch", "rm_mtc", "background.launch.py"],
-    #     label="rm_bringup",
-    #     delay=0.0,
-    # )
+    launch(
+        ["ros2", "launch", "rm_mtc", "background.launch.py"],
+        label="rm_bringup",
+        delay=0.0,
+    )
 
     # 2. Local SAM3 Node publisher
     launch(
@@ -118,32 +118,31 @@ if __name__ == "__main__":
     )
 
     # 3. AnyGrasp node — runs in conda env
-    # PLACEHOLDER: replace ANYGRASP_CONDA_ENV and ANYGRASP_CHECKPOINT
-    # launch(
-    #     [
-    #         "conda",
-    #         "run",
-    #         "-n",
-    #         ANYGRASP_CONDA_ENV,
-    #         "python",
-    #         ANYGRASP_NODE_PATH,
-    #         "--checkpoint_path",
-    #         ANYGRASP_CHECKPOINT,
-    #     ],
-    #     label="anygrasp_node",
-    #     delay=2.0,
-    #     cwd=ANYGRASP_DIR,
-    # )
+    launch(
+        [
+            "conda",
+            "run",
+            "-n",
+            ANYGRASP_CONDA_ENV,
+            "python",
+            ANYGRASP_NODE_PATH,
+            "--checkpoint_path",
+            ANYGRASP_CHECKPOINT,
+        ],
+        label="anygrasp_node",
+        delay=2.0,
+        cwd=ANYGRASP_DIR,
+    )
 
     # 4. Grasp visualizer — runs in normal ROS2 env
-    # launch(["python3", GRASP_VIZ_NODE_PATH], label="grasp_viz", delay=2.0)
+    launch(["python3", GRASP_VIZ_NODE_PATH], label="grasp_viz", delay=2.0)
 
     # 5. Grasp state machine — launched last, after all sources are ready
-    # launch(
-    #     ["ros2", "launch", "rm_mtc", "grasp_state_machine.launch.py"],
-    #     label="grasp_state_machine",
-    #     delay=5.0,
-    # )
+    launch(
+        ["ros2", "launch", "rm_mtc", "grasp_state_machine.launch.py"],
+        label="grasp_state_machine",
+        delay=5.0,
+    )
 
     print("[main] All processes launched. Press Ctrl+C to shut down.")
 

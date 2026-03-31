@@ -16,6 +16,7 @@ from rm_ros_interfaces.msg import GraspCandidate, GraspCandidateArray
 from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import Image
 from tracker import AnyGraspTracker  # Compiled binary, must be in conda env
+from std_msgs.msg import String
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -44,6 +45,12 @@ NUM_CANDIDATES = 5
 class AnyGraspNode(Node):
     def __init__(self):
         super().__init__("anygrasp_node")
+
+        # State tracker
+        self.pipeline_state = "IDLE"
+        self.state_sub = self.create_subscription(
+            String, "/pipeline_state", self.state_callback, 10
+        )
 
         # AnyGrasp tracker
         self.tracker = AnyGraspTracker(cfgs)
@@ -74,6 +81,18 @@ class AnyGraspNode(Node):
         self.get_logger().info(
             "AnyGrasp node ready, waiting for synchronized frames..."
         )
+
+    # -----------------------------------------------------------------------
+    # Callback for pipeline state updates
+    # -----------------------------------------------------------------------
+    def state_callback(self, msg: String):
+        prev = self.pipeline_state
+        self.pipeline_state = msg.data
+        if msg.data == "IDLE" and prev != "IDLE":
+            self.frame_idx = 0
+            self.grasp_ids = [0]
+            self.tracking_stable = False
+            self.get_logger().info("Pipeline IDLE: AnyGrasp reset")
 
     # -----------------------------------------------------------------------
     # Convert raw ROS Image message to numpy array
@@ -143,6 +162,8 @@ class AnyGraspNode(Node):
     # Synchronized callback
     # -----------------------------------------------------------------------
     def synced_callback(self, rgb_msg: Image, depth_msg: Image, mask_msg: Image):
+        if self.pipeline_state == "IDLE":
+            return
         # Convert messages to numpy
         colors = self.image_to_numpy(rgb_msg, normalize=True)
         depth = self.image_to_numpy(depth_msg)

@@ -1,6 +1,7 @@
 #include <thread>
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <moveit/task_constructor/task.h>
 #include <moveit/task_constructor/stages.h>
 #include <moveit/task_constructor/solvers.h>
@@ -26,6 +27,10 @@ public:
   // Moves arm back to the defined home joint configuration.
   // Returns true on success, false on planning or execution failure.
   bool moveToHome();
+
+  geometry_msgs::msg::PoseStamped getCurrentPose();
+
+  bool moveCartesianStep(const geometry_msgs::msg::Pose &goal_pose_base);
 
 private:
   rclcpp::Node::SharedPtr node_;

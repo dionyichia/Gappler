@@ -80,3 +80,23 @@ bool MtcPlanner::moveToHome()
   move_group_->execute(plan);
   return true;
 }
+
+geometry_msgs::msg::PoseStamped MtcPlanner::getCurrentPose()
+{
+  return move_group_->getCurrentPose();
+}
+
+bool MtcPlanner::moveCartesianStep(const geometry_msgs::msg::Pose &goal_pose_base)
+{
+  std::vector<geometry_msgs::msg::Pose> waypoints = {goal_pose_base};
+  moveit_msgs::msg::RobotTrajectory trajectory;
+  double fraction = move_group_->computeCartesianPath(waypoints, 0.01, 0.0, trajectory);
+  if (fraction < 0.9)
+  {
+    RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] Cartesian path only %.0f%% complete", fraction * 100);
+    return false;
+  }
+  moveit::planning_interface::MoveGroupInterface::Plan plan;
+  plan.trajectory_ = trajectory;
+  return (move_group_->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS);
+}
