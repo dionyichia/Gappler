@@ -31,8 +31,12 @@ ANYGRASP_CHECKPOINT = "log/checkpoint_tracking.tar"
 ANYGRASP_NODE_PATH = os.path.join(
     os.path.dirname(__file__), "rm_mtc/src/perception/anygrasp_node.py"
 )
-DUMMY_MASK_NODE_PATH = os.path.join(
-    os.path.dirname(__file__), "rm_mtc/src/perception/dummy_mask_publisher.py"
+SAM3_PROJECT_ROOT = "/home/iot22/GitHub/Renaissance-Capstone-Project"
+SAM3_NODE_PATH = os.path.join(
+    os.path.dirname(__file__), "rm_mtc/src/perception/sam3_ros_node.py"
+)
+SAM3_WORK_DIR = (
+    "/home/iot22/GitHub/Renaissance-Capstone-Project/src/services/object_recognition"
 )
 GRASP_VIZ_NODE_PATH = os.path.join(
     os.path.dirname(__file__), "rm_mtc/src/perception/grasp_viz.py"
@@ -45,13 +49,13 @@ processes = []
 
 
 def launch(
-    cmd: list, label: str, delay: float = 0.0, cwd: str = None
+    cmd: list, label: str, delay: float = 0.0, cwd: str = None, env: dict = None
 ) -> subprocess.Popen:
     if delay > 0:
         print(f"[main] Waiting {delay}s before launching {label}...")
         time.sleep(delay)
     print(f"[main] Launching: {label}")
-    p = subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stderr, cwd=cwd)
+    p = subprocess.Popen(cmd, stdout=sys.stdout, stderr=sys.stderr, cwd=cwd, env=env)
     processes.append((label, p))
     return p
 
@@ -94,46 +98,52 @@ if __name__ == "__main__":
     )
 
     # 1. ROS2 bringup — allow time for move_group to fully initialise
-    launch(
-        ["ros2", "launch", "rm_mtc", "background.launch.py"],
-        label="rm_bringup",
-        delay=0.0,
-    )
+    # launch(
+    #     ["ros2", "launch", "rm_mtc", "background.launch.py"],
+    #     label="rm_bringup",
+    #     delay=0.0,
+    # )
 
-    # 2. [TEMPORARY] Dummy mask publisher — replace with SAM node when ready
+    # 2. Local SAM3 Node publisher
     launch(
-        ["python3", DUMMY_MASK_NODE_PATH],
-        label="dummy_mask_publisher [TEMPORARY]",
-        delay=0.0,  # Edit delay back to 10s later on
+        ["uv", "run", "--project", SAM3_PROJECT_ROOT, "python", SAM3_NODE_PATH],
+        label="sam3_ros_node",
+        delay=0.0,
+        cwd=SAM3_WORK_DIR,
+        env={
+            **os.environ,
+            "PYTHONPATH": "/home/iot22/GitHub/Renaissance-Capstone-Project/src:"
+            + os.environ.get("PYTHONPATH", ""),
+        },
     )
 
     # 3. AnyGrasp node — runs in conda env
     # PLACEHOLDER: replace ANYGRASP_CONDA_ENV and ANYGRASP_CHECKPOINT
-    launch(
-        [
-            "conda",
-            "run",
-            "-n",
-            ANYGRASP_CONDA_ENV,
-            "python",
-            ANYGRASP_NODE_PATH,
-            "--checkpoint_path",
-            ANYGRASP_CHECKPOINT,
-        ],
-        label="anygrasp_node",
-        delay=2.0,
-        cwd=ANYGRASP_DIR,
-    )
+    # launch(
+    #     [
+    #         "conda",
+    #         "run",
+    #         "-n",
+    #         ANYGRASP_CONDA_ENV,
+    #         "python",
+    #         ANYGRASP_NODE_PATH,
+    #         "--checkpoint_path",
+    #         ANYGRASP_CHECKPOINT,
+    #     ],
+    #     label="anygrasp_node",
+    #     delay=2.0,
+    #     cwd=ANYGRASP_DIR,
+    # )
 
     # 4. Grasp visualizer — runs in normal ROS2 env
-    launch(["python3", GRASP_VIZ_NODE_PATH], label="grasp_viz", delay=2.0)
+    # launch(["python3", GRASP_VIZ_NODE_PATH], label="grasp_viz", delay=2.0)
 
     # 5. Grasp state machine — launched last, after all sources are ready
-    launch(
-        ["ros2", "launch", "rm_mtc", "grasp_state_machine.launch.py"],
-        label="grasp_state_machine",
-        delay=5.0,
-    )
+    # launch(
+    #     ["ros2", "launch", "rm_mtc", "grasp_state_machine.launch.py"],
+    #     label="grasp_state_machine",
+    #     delay=5.0,
+    # )
 
     print("[main] All processes launched. Press Ctrl+C to shut down.")
 

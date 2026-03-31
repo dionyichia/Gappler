@@ -31,7 +31,7 @@ cfgs, _ = parser.parse_known_args()
 # ---------------------------------------------------------------------------
 TOPIC_RGB = "/camera/camera/color/image_raw"
 TOPIC_DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
-TOPIC_MASK = "/PLACEHOLDER/sam/mask"
+TOPIC_MASK = "/camera/sam/mask"
 
 # Camera intrinsics — read in from camera_info for D435i
 FX, FY = 910.7627, 910.3762

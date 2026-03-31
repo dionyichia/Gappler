@@ -197,3 +197,26 @@ class ObjectMaskVisualizer:
         cv2.putText(
             img, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1
         )
+
+    @staticmethod
+    def get_best_mask(results: Optional[dict]) -> Optional[np.ndarray]:
+        # if results is None or "scores" not in results or len(results["scores"]) == 0:
+        #     return None
+        # best_idx = int(np.argmax([s.item() for s in results["scores"]]))
+        # mask = results["masks"][best_idx].squeeze(0).cpu().numpy()
+        # return mask > 0
+
+        if results is None or "scores" not in results or len(results["scores"]) == 0:
+            return None, None
+
+        # 1. Find the index of the highest score
+        best_idx = int(np.argmax([s.item() for s in results["scores"]]))
+
+        # 2. Extract the actual score value
+        best_score = results["scores"][best_idx].item()
+
+        # 3. Extract and process the mask
+        mask_data = results["masks"][best_idx].squeeze(0).cpu().numpy()
+        mask_boolean = mask_data > 0
+
+        return mask_boolean, best_score
