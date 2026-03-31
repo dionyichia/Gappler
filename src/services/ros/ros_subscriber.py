@@ -19,3 +19,9 @@ class ROSSubscriber(Node):
     ):
         self.create_subscription(msg_type, topic, callback, qos_profile)
         logger.info(f"Subscribed to {topic}")
+
+
+def subscribe(
+    node: Node, msg_type: type, topic: str, callback, qos_profile=ROS2Config.VIDEO_QOS
+):
+    node.create_subscription(msg_type, topic, callback, qos_profile)

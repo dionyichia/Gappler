@@ -6,6 +6,8 @@ from multiprocessing.synchronize import Event
 from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
+import torch
+from geometry_msgs.msg import Point
 from rclpy.executors import MultiThreadedExecutor
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String, UInt8MultiArray
@@ -58,25 +60,28 @@ class ObjectRecognitionPipeline:
 
         self._aria_feed = CameraFeed()
         self._ros_feed = CameraFeed()
+        self._gaze_point = None
 
-        self._aria_camera_subscriber = ROSSubscriber("Aria_RGB_camera_subscriber")
+        self._object_recognition_node = ROSSubscriber("object_recognition_node")
         self._ros_camera_subscriber = RealmanCameraSubscriber("RGB_camera_subscriber")
-        self._prompt_subscriber = ROSSubscriber("Aria_audio_prompt_subscriber")
 
-        self._aria_camera_subscriber.subscribe(
+        self._ros_camera_subscriber.subscribe_color_feed(self._on_ros_image)
+
+        self._object_recognition_node.subscribe(
             CompressedImage,
             ROS2Topics.RGB_CAMERA_UNDISTORTED.value,
             self._on_aria_image,
         )
-        self._ros_camera_subscriber.subscribe_color_feed(self._on_ros_image)
-        self._prompt_subscriber.subscribe(
+        self._object_recognition_node.subscribe(
             String, ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value, self._on_prompt
+        )
+        self._object_recognition_node.subscribe(
+            Point, ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value, self._on_gaze
         )
 
         self._executor = MultiThreadedExecutor()
-        self._executor.add_node(self._aria_camera_subscriber)
+        self._executor.add_node(self._object_recognition_node)
         self._executor.add_node(self._ros_camera_subscriber)
-        self._executor.add_node(self._prompt_subscriber)
 
         self._spin_thread = threading.Thread(target=self._executor.spin, daemon=True)
         self._spin_thread.start()
@@ -108,6 +113,9 @@ class ObjectRecognitionPipeline:
             logger.warning("Received empty ROS camera frame, skipping")
             return
         self._ros_feed.update(frame)
+
+    def _on_gaze(self, msg: Point) -> None:
+        self._gaze_point = (msg.x, msg.y)
 
     def _on_prompt(self, msg: String) -> None:
         """Handle an incoming audio prompt from ROS."""
@@ -142,6 +150,45 @@ class ObjectRecognitionPipeline:
         logger.debug(f"Found {len(masks)} object(s)")
         return inference_state
 
+    def _find_closest_mask(
+        self, masks: list, gaze_point: Optional[Tuple[float, float]]
+    ) -> Optional[int]:
+        """
+        Return the index of the mask closest to the gaze point.
+
+        - If gaze_point is None, return index 0 (first mask).
+        - If gaze_point falls inside a mask, return that mask immediately.
+        - Otherwise return the mask whose edge is closest to the gaze point,
+        measured as the minimum distance from the point to any True pixel
+        on the mask boundary.
+        """
+        if gaze_point is None or len(masks) == 0:
+            return 0
+
+        gx, gy = int(round(gaze_point[0])), int(round(gaze_point[1]))
+
+        for i, mask in enumerate(masks):
+            m = mask.bool().squeeze()
+            if 0 <= gy < m.shape[0] and 0 <= gx < m.shape[1]:
+                if m[gy, gx].item():
+                    return i
+
+        best_idx = 0
+        best_dist = float("inf")
+
+        for i, mask in enumerate(masks):
+            m = mask.bool().squeeze()
+            ys, xs = torch.where(m)
+            if len(ys) == 0:
+                continue
+            dists = (xs - gx).float() ** 2 + (ys - gy).float() ** 2
+            min_dist = dists.min().item()
+            if min_dist < best_dist:
+                best_dist = min_dist
+                best_idx = i
+
+        return best_idx
+
     def run(self):
         logger.info("Object recognition pipeline started. Waiting for command...")
 
@@ -171,9 +218,15 @@ class ObjectRecognitionPipeline:
                     if aria_inference_state is not None:
                         masks = aria_inference_state.get("masks")
                         if len(masks) > 1:
-                            # TODO: Find the closest mask to the gaze point
-                            pass
-                        self._aria_inference_state = aria_inference_state
+                            best = self._find_closest_mask(masks, self._gaze_point)
+                            aria_inference_state["masks"] = [masks[best]]
+                            aria_inference_state["scores"] = [
+                                aria_inference_state["scores"][best]
+                            ]
+                            aria_inference_state["boxes"] = [
+                                aria_inference_state["boxes"][best]
+                            ]
+                            self._aria_inference_state = aria_inference_state
                         self._publish_inference(
                             self.aria_inference_publisher,
                             aria_image,
