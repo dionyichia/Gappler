@@ -4,9 +4,12 @@ SAM3 ROS2 mask publisher node.
 Runs inside the uv venv rooted at /home/iot22/GitHub/Renaissance-Capstone-Project.
 Working directory: .../src/services/object_recognition/
 
-Subscribes to RGB image topic.
+Subscribes to RGB + depth image topics.
 Runs SAM3 inference with a fixed text prompt.
-Publishes the highest-scoring boolean mask as mono8 Image on the SAM mask topic.
+Publishes:
+  - Highest-scoring boolean mask as mono8 Image on /camera/sam/mask
+  - 2D centroid + depth as PointStamped on /object_centroid_2d
+      x = pixel column, y = pixel row, z = depth in metres at centroid pixel
 """
 
 import numpy as np
@@ -25,10 +28,10 @@ from services.visualizer.renderers.object_mask_visualizer import ObjectMaskVisua
 TOPIC_RGB = "/camera/camera/color/image_raw"
 TOPIC_DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
 TOPIC_MASK = "/camera/sam/mask"
+TOPIC_CENTROID_2D = "/object_centroid_2d"
+TOPIC_CAMERA_INFO = "/camera/camera/color/camera_info"
 
-# FX, FY = 910.7627, 910.3762
-# CX, CY = 657.9279, 375.1953
-DEPTH_SCALE = 0.001
+DEPTH_SCALE = 0.001  # metres per depth unit
 
 SAM3_CHECKPOINT = (
     "/home/iot22/GitHub/Renaissance-Capstone-Project/src/models/sam3/sam3.pt"
@@ -41,6 +44,13 @@ class Sam3RosNode(Node):
     def __init__(self):
         super().__init__("sam3_ros_node")
 
+        # Intrinsics — gated until received
+        self.image_cx = self.image_cy = None
+        self.intrinsics_received = False
+        self.camera_info_sub = self.create_subscription(
+            CameraInfo, TOPIC_CAMERA_INFO, self.camera_info_callback, 1
+        )
+
         # Initialise model
         self.get_logger().info("Loading SAM3 model...")
         self.model = SAM3Model(
@@ -49,18 +59,11 @@ class Sam3RosNode(Node):
         )
         self.get_logger().info("SAM3 model loaded")
 
-        self.fx = self.fy = self.cx = self.cy = None
-
-        self.create_subscription(
-            CameraInfo, "/camera/camera/color/camera_info", self.camera_info_callback, 1
-        )
-
-        # Publisher
+        # Publishers
         self.mask_pub = self.create_publisher(Image, TOPIC_MASK, 10)
+        self.centroid_pub = self.create_publisher(PointStamped, TOPIC_CENTROID_2D, 10)
 
-        # Publisher
-        self.centroid_pub = self.create_publisher(PointStamped, "/object_centroid", 10)
-
+        # Synchronized RGB + depth subscribers
         self.rgb_sub = Subscriber(self, Image, TOPIC_RGB)
         self.depth_sub = Subscriber(self, Image, TOPIC_DEPTH)
         self.sync = ApproximateTimeSynchronizer(
@@ -69,21 +72,31 @@ class Sam3RosNode(Node):
         self.sync.registerCallback(self.rgb_depth_callback)
 
         self.get_logger().info(
-            f"SAM3 node ready — subscribing to {TOPIC_RGB}, publishing to {TOPIC_MASK}"
+            f"SAM3 node ready — subscribing to {TOPIC_RGB}, publishing to {TOPIC_MASK} and {TOPIC_CENTROID_2D}"
         )
 
     # -----------------------------------------------------------------------
-    # Callback
+    # CameraInfo callback — one-time latch for image center
     # -----------------------------------------------------------------------
-
     def camera_info_callback(self, msg: CameraInfo):
-        self.fx = msg.k[0]
-        self.fy = msg.k[4]
-        self.cx = msg.k[2]
-        self.cy = msg.k[5]
+        if self.intrinsics_received:
+            return
+        self.image_cx = msg.k[2]
+        self.image_cy = msg.k[5]
+        self.intrinsics_received = True
+        self.get_logger().info(
+            f"Intrinsics received: image_cx={self.image_cx:.2f} image_cy={self.image_cy:.2f}"
+        )
+        self.destroy_subscription(self.camera_info_sub)
 
+    # -----------------------------------------------------------------------
+    # Synchronized callback
+    # -----------------------------------------------------------------------
     def rgb_depth_callback(self, rgb_msg: Image, depth_msg: Image):
-        # Convert ROS Image (rgb8) to numpy array (H, W, 3) uint8
+        if not self.intrinsics_received:
+            return
+
+        # Convert RGB to numpy
         img = np.frombuffer(rgb_msg.data, dtype=np.uint8).reshape(
             rgb_msg.height, rgb_msg.width, -1
         )
@@ -95,8 +108,8 @@ class Sam3RosNode(Node):
             self.get_logger().warn(f"SAM3 inference failed: {e}")
             return
 
-        # Extract best mask
-        best_mask, best_score, centroid = ObjectMaskVisualizer.get_best_mask(
+        # Extract best mask and 2D centroid
+        best_mask, best_score, centroid_px = ObjectMaskVisualizer.get_best_mask(
             inference_state
         )
 
@@ -104,43 +117,43 @@ class Sam3RosNode(Node):
             self.get_logger().info("No detection above threshold")
             return
 
-        # Publish as mono8
+        # Publish mask as mono8
         mask_msg = Image()
-        mask_msg.header = (
-            rgb_msg.header
-        )  # match timestamp for ApproximateTimeSynchronizer
+        mask_msg.header = rgb_msg.header
         mask_msg.height = rgb_msg.height
         mask_msg.width = rgb_msg.width
         mask_msg.encoding = "mono8"
         mask_msg.step = rgb_msg.width
         mask_msg.data = bytes(best_mask.astype(np.uint8).flatten())
         self.mask_pub.publish(mask_msg)
-        self.get_logger().debug(f"Mask published with score: {best_score}")
+        self.get_logger().debug(f"Mask published with score: {best_score:.3f}")
 
-        # Publish centroid
-        if centroid is None:
+        # Publish 2D centroid + depth
+        if centroid_px is None:
             self.get_logger().info("No centroid detected")
             return
-        cx, cy = centroid
+
+        cx_px, cy_px = centroid_px
+
+        # Read depth at centroid pixel
         depth = np.frombuffer(depth_msg.data, dtype=np.uint16).reshape(
             depth_msg.height, depth_msg.width
         )
-        z = depth[cy, cx] * DEPTH_SCALE
+        z = depth[cy_px, cx_px] * DEPTH_SCALE
         if z <= 0:
+            self.get_logger().warn("Invalid depth at centroid, skipping")
             return
+
         pt = PointStamped()
         pt.header = rgb_msg.header
         pt.header.frame_id = "camera_color_optical_frame"
-
-        if self.fx is None:
-            return
-
-        z = depth[cy, cx] * DEPTH_SCALE
-        pt.point.x = (cx - self.cx) * z / self.fx
-        pt.point.y = (cy - self.cy) * z / self.fy
-        pt.point.z = z
-
+        pt.point.x = float(cx_px)  # pixel column
+        pt.point.y = float(cy_px)  # pixel row
+        pt.point.z = z  # depth in metres
         self.centroid_pub.publish(pt)
+        self.get_logger().debug(
+            f"Centroid published: px=({cx_px}, {cy_px}) depth={z:.3f}m"
+        )
 
 
 # ---------------------------------------------------------------------------

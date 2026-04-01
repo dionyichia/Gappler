@@ -5,6 +5,7 @@
 #include <queue>
 #include <thread>
 
+#include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
@@ -19,15 +20,17 @@
 #include <rm_ros_interfaces/msg/gripperset.hpp>
 #include <rm_ros_interfaces/msg/grasp_candidate_array.hpp>
 #include "rm_mtc/mtc_planner.hpp"
+
 // ---------------------------------------------------------------------------
 // Tuning constants
 // ---------------------------------------------------------------------------
-static constexpr double APPROACH_STEP_M = 0.03;       // forward step size (metres)
-static constexpr int MAX_APPROACH_STEPS = 30;         // abort threshold
-static constexpr double EXECUTE_DEPTH_THRESH_M = 0.2; // transition to EXECUTING (metres)
-static constexpr double CENTROID_GAIN = 0.001;        // pixels → metres lateral correction
-static constexpr double IMAGE_CX = 657.9279;
-static constexpr double IMAGE_CY = 375.1953;
+static constexpr double APPROACH_STEP_M = 0.03;
+static constexpr int MAX_APPROACH_STEPS = 30;
+static constexpr double EXECUTE_DEPTH_THRESH_M = 0.20;
+// Pixel offset below image centre to align object with gripper approach axis.
+// Camera is offset 47.5mm from Link6 in Y — tune empirically from this starting point.
+static constexpr double CENTROID_TARGET_OFFSET_X = 20.0; // Harcoded for current camera mounting, may need adjustment
+static constexpr double CENTROID_TARGET_OFFSET_Y = 40.0; // Harcoded for current camera mounting, may need adjustment
 
 // ---------------------------------------------------------------------------
 // State definitions
@@ -36,7 +39,7 @@ enum class State
 {
   IDLE,
   SELECTING,
-  EXECUTING
+  EXECUTING // unused in debug phase
 };
 
 static std::string stateToString(State s)
@@ -87,17 +90,18 @@ private:
         tf_listener_(tf_buffer_),
         shutdown_(false)
   {
-    // Subscribers
+    camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
+        "/camera/camera/color/camera_info", 1,
+        std::bind(&GraspStateMachine::cameraInfoCallback, this, std::placeholders::_1));
 
     grasp_sub_ = this->create_subscription<rm_ros_interfaces::msg::GraspCandidateArray>(
         "/grasp_candidates", 10,
         std::bind(&GraspStateMachine::graspCallback, this, std::placeholders::_1));
 
     centroid_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
-        "/object_centroid", 10,
+        "/object_centroid_2d", 10,
         std::bind(&GraspStateMachine::centroidCallback, this, std::placeholders::_1));
 
-    // Publishers
     gripper_position_pub_ = this->create_publisher<rm_ros_interfaces::msg::Gripperset>(
         "/rm_driver/set_gripper_position_cmd", 10);
 
@@ -108,6 +112,24 @@ private:
         "/pipeline_state", 10);
 
     RCLCPP_INFO(this->get_logger(), "Grasp state machine ready. State: IDLE");
+  }
+
+  // ---------------------------------------------------------------------------
+  // CameraInfo callback — one-time latch
+  // ---------------------------------------------------------------------------
+  void cameraInfoCallback(const sensor_msgs::msg::CameraInfo::SharedPtr msg)
+  {
+    if (intrinsics_received_)
+      return;
+    fx_ = msg->k[0];
+    fy_ = msg->k[4];
+    image_cx_ = msg->k[2];
+    image_cy_ = msg->k[5];
+    intrinsics_received_ = true;
+    RCLCPP_INFO(this->get_logger(),
+                "Intrinsics received: fx=%.2f fy=%.2f cx=%.2f cy=%.2f",
+                fx_, fy_, image_cx_, image_cy_);
+    camera_info_sub_.reset();
   }
 
   // ---------------------------------------------------------------------------
@@ -123,13 +145,14 @@ private:
   }
 
   // ---------------------------------------------------------------------------
-  // Callbacks — spin thread only, never block
+  // Callbacks
   // ---------------------------------------------------------------------------
   void graspCallback(const rm_ros_interfaces::msg::GraspCandidateArray::SharedPtr msg)
   {
+    // Gate changed: was state_ == State::EXECUTING, now accept during SELECTING only
     if (state_ != State::SELECTING)
     {
-      RCLCPP_DEBUG(this->get_logger(), "Busy, ignoring new candidates");
+      RCLCPP_DEBUG(this->get_logger(), "Not SELECTING, ignoring candidates");
       return;
     }
     if (msg->grasps.empty())
@@ -153,7 +176,7 @@ private:
   }
 
   // ---------------------------------------------------------------------------
-  // Worker loop — all blocking work here
+  // Worker loop
   // ---------------------------------------------------------------------------
   void workerLoop()
   {
@@ -176,7 +199,6 @@ private:
       // ---- SELECTING phase ----
       publishState(State::SELECTING);
 
-      // Wait for first candidates from AnyGrasp (now unblocked by SELECTING state)
       rm_ros_interfaces::msg::GraspCandidateArray::SharedPtr msg;
       {
         std::unique_lock<std::mutex> lock(queue_mutex_);
@@ -187,13 +209,7 @@ private:
           return;
         if (!got_candidates || candidate_queue_.empty())
         {
-          if (has_centroid_)
-          {
-            has_centroid_ = false;
-            RCLCPP_WARN(this->get_logger(), "No candidates yet but centroid available — retrying SELECTING");
-            continue;
-          }
-          RCLCPP_WARN(this->get_logger(), "No candidates and no centroid — returning to IDLE");
+          RCLCPP_WARN(this->get_logger(), "No candidates received — returning to IDLE");
           mtc_planner_->moveToHome();
           publishState(State::IDLE);
           continue;
@@ -202,25 +218,25 @@ private:
         candidate_queue_.pop();
       }
 
-      // bool transitioned = false;
       int steps = 0;
-
       while (steps < MAX_APPROACH_STEPS)
       {
-        // Get best candidate depth in camera frame
-        float best_z = msg->grasps[0].pose.position.z;
-
-        if (best_z < EXECUTE_DEPTH_THRESH_M)
-        // {
-        //   RCLCPP_INFO(this->get_logger(),
-        //               "Object at %.3fm — transitioning to EXECUTING", best_z);
-        //   transitioned = true;
-        //   break;
-        // }
+        // Use depth from SAM3 centroid (metres) as threshold
+        double object_depth;
         {
-          // Transition to executing
+          std::lock_guard<std::mutex> lock(centroid_mutex_);
+          if (!has_centroid_)
+          {
+            RCLCPP_WARN(this->get_logger(), "No centroid available — object lost, aborting SELECTING");
+            break;
+          }
+          object_depth = latest_centroid_.point.z;
+        }
+
+        if (object_depth < EXECUTE_DEPTH_THRESH_M)
+        {
           RCLCPP_INFO(this->get_logger(),
-                      "Object at %.3fm — transitioning to EXECUTING", best_z);
+                      "Object at %.3fm — transitioning to EXECUTING", object_depth);
 
           publishState(State::EXECUTING);
 
@@ -263,10 +279,17 @@ private:
           break;
         }
 
-        // 1. Get current EEF pose in base_link
+        if (!intrinsics_received_)
+        {
+          RCLCPP_WARN(this->get_logger(), "Intrinsics not yet received, waiting...");
+          std::this_thread::sleep_for(std::chrono::milliseconds(100));
+          continue;
+        }
+
+        // Get current EEF pose in base_link
         auto current_pose_stamped = mtc_planner_->getCurrentPose();
 
-        // 2. Transform to camera_color_optical_frame
+        // Transform to camera frame
         geometry_msgs::msg::PoseStamped current_pose_cam;
         try
         {
@@ -279,35 +302,35 @@ private:
           break;
         }
 
-        // 3. Compute step vector toward centroid in camera frame, scaled to APPROACH_STEP_M
+        // Compute combined lateral + forward step in camera frame
         geometry_msgs::msg::PoseStamped goal_pose_cam = current_pose_cam;
         {
           std::lock_guard<std::mutex> lock(centroid_mutex_);
-          if (has_centroid_)
-          {
-            double dx = latest_centroid_.point.x - current_pose_cam.pose.position.x;
-            double dy = latest_centroid_.point.y - current_pose_cam.pose.position.y;
-            double dz = latest_centroid_.point.z - current_pose_cam.pose.position.z;
-            double dist = std::sqrt(dx * dx + dy * dy + dz * dz);
-            if (dist > 0)
-            {
-              double scale = APPROACH_STEP_M / dist;
-              goal_pose_cam.pose.position.x += dx * scale;
-              goal_pose_cam.pose.position.y += dy * scale;
-              goal_pose_cam.pose.position.z += dz * scale;
-            }
-          }
-          else
-          {
-            // If no centroid, return to IDLE state
-            RCLCPP_WARN(this->get_logger(), "No centroid available — object lost, aborting SELECTING");
-            has_centroid_ = false;
-            mtc_planner_->moveToHome();
-            break;
-          }
+
+          // Pixel error from gripper-aligned target (slightly below image centre)
+          double px_err_x = latest_centroid_.point.x - (image_cx_ + CENTROID_TARGET_OFFSET_X);
+          double px_err_y = latest_centroid_.point.y - (image_cy_ + CENTROID_TARGET_OFFSET_Y);
+          double depth = latest_centroid_.point.z;
+
+          // Convert pixel error to metres using pinhole model
+          double lateral_x = (px_err_x / fx_) * depth;
+          double lateral_y = (px_err_y / fy_) * depth;
+
+          // Combined step vector: lateral correction + fixed forward step along camera Z
+          double dx = lateral_x;
+          double dy = lateral_y;
+          double dz = APPROACH_STEP_M;
+
+          // Normalise to APPROACH_STEP_M magnitude
+          double magnitude = std::sqrt(dx * dx + dy * dy + dz * dz);
+          double scale = APPROACH_STEP_M / magnitude;
+
+          goal_pose_cam.pose.position.x += dx * scale;
+          goal_pose_cam.pose.position.y += dy * scale;
+          goal_pose_cam.pose.position.z += dz * scale;
         }
 
-        // 4. Transform goal pose back to base_link
+        // Transform goal back to base_link
         geometry_msgs::msg::PoseStamped goal_pose_base;
         try
         {
@@ -320,20 +343,18 @@ private:
           break;
         }
 
-        // 5. Execute step
         if (!mtc_planner_->moveCartesianStep(goal_pose_base.pose))
         {
           RCLCPP_WARN(this->get_logger(), "Cartesian step failed — aborting SELECTING");
           break;
         }
 
-        // Check for updated candidates (tracking still valid)
+        // Drain stale candidates
         {
           std::lock_guard<std::mutex> lock(queue_mutex_);
           if (!candidate_queue_.empty())
           {
             msg = candidate_queue_.back();
-            // Drain stale candidates
             while (!candidate_queue_.empty())
               candidate_queue_.pop();
           }
@@ -342,7 +363,6 @@ private:
         if (msg->grasps.empty())
         {
           RCLCPP_WARN(this->get_logger(), "Tracking lost during SELECTING — returning to IDLE");
-          mtc_planner_->moveToHome();
           break;
         }
 
@@ -354,72 +374,15 @@ private:
       mtc_planner_->moveToHome();
       publishState(State::IDLE);
 
-      //       if (!transitioned)
-      // {
-      //   RCLCPP_ERROR(this->get_logger(), "SELECTING failed — returning to IDLE");
-      //   mtc_planner_->moveToHome();
-      //   publishState(State::IDLE);
-      //   continue;
-      // }
-
-      // // ---- EXECUTING phase ----
+      // ---- EXECUTING phase — commented out for debug phase ----
       // publishState(State::EXECUTING);
-
-      // bool grasped = false;
-      // for (const auto &candidate : msg->grasps)
-      // {
-      //   RCLCPP_INFO(this->get_logger(), "Trying candidate score: %.4f", candidate.score);
-
-      //   geometry_msgs::msg::Pose pose_base;
-      //   if (!transformToBase(candidate.pose, pose_base))
-      //   {
-      //     RCLCPP_WARN(this->get_logger(), "Transform failed, skipping");
-      //     continue;
-      //   }
-
-      //   if (!openGripper())
-      //   {
-      //     RCLCPP_WARN(this->get_logger(), "Gripper open failed, trying next candidate");
-      //     continue;
-      //   }
-
-      //   if (!mtc_planner_->moveToPose(pose_base))
-      //   {
-      //     RCLCPP_WARN(this->get_logger(), "moveToPose failed, trying next candidate");
-      //     continue;
-      //   }
-
-      //   if (!closeGripper())
-      //   {
-      //     RCLCPP_WARN(this->get_logger(), "Gripper close failed, trying next candidate");
-      //     continue;
-      //   }
-
-      //   if (!mtc_planner_->moveToHome())
-      //   {
-      //     RCLCPP_ERROR(this->get_logger(), "moveToHome failed but grasp succeeded — manual intervention may be required");
-      //     grasped = true;
-      //     break;
-      //   }
-
-      //   RCLCPP_INFO(this->get_logger(), "Grasp succeeded");
-      //   grasped = true;
-      //   break;
-      // }
-
-      // if (!grasped)
-      // {
-      //   RCLCPP_ERROR(this->get_logger(), "All candidates failed");
-      //   mtc_planner_->moveToHome();
-      //   publishState(State::IDLE);
-      // }
+      // ... grasp execution logic ...
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Gripper helpers
+  // Gripper helpers — kept but unused in debug phase
   // ---------------------------------------------------------------------------
-
   bool openGripper()
   {
     rm_ros_interfaces::msg::Gripperset msg;
@@ -431,7 +394,6 @@ private:
     return true;
   }
 
-  // ---- Replace closeGripper() ----
   bool closeGripper()
   {
     rm_ros_interfaces::msg::Gripperpick msg;
@@ -443,8 +405,9 @@ private:
     RCLCPP_INFO(this->get_logger(), "Gripper closed");
     return true;
   }
+
   // ---------------------------------------------------------------------------
-  // TF2 helper
+  // TF2 helper — kept for future EXECUTING phase
   // ---------------------------------------------------------------------------
   bool transformToBase(const geometry_msgs::msg::Pose &pose_in,
                        geometry_msgs::msg::Pose &pose_out)
@@ -465,29 +428,31 @@ private:
       return false;
     }
   }
+
   // ---------------------------------------------------------------------------
-  // Members - essential variables outside of helper functions
+  // Members
   // ---------------------------------------------------------------------------
+  // Intrinsics
+  double fx_ = 0.0, fy_ = 0.0, image_cx_ = 0.0, image_cy_ = 0.0;
+  bool intrinsics_received_ = false;
+  rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_sub_;
+
   State state_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
   std::shared_ptr<MtcPlanner> mtc_planner_;
 
-  // Centroid
   geometry_msgs::msg::PointStamped latest_centroid_;
   bool has_centroid_ = false;
   std::mutex centroid_mutex_;
 
-  // Subscriptions
   rclcpp::Subscription<rm_ros_interfaces::msg::GraspCandidateArray>::SharedPtr grasp_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr centroid_sub_;
 
-  // Publishers
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperset>::SharedPtr gripper_position_pub_;
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperpick>::SharedPtr gripper_pick_on_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pipeline_state_pub_;
 
-  // Worker thread
   std::thread worker_thread_;
   std::queue<rm_ros_interfaces::msg::GraspCandidateArray::SharedPtr> candidate_queue_;
   std::mutex queue_mutex_;

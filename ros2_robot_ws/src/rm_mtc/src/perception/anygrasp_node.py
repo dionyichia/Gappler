@@ -28,16 +28,13 @@ parser.add_argument("--debug", action="store_true")
 cfgs, _ = parser.parse_known_args()
 
 # ---------------------------------------------------------------------------
-# Constants — replace placeholders with actual topic names
+# Constants
 # ---------------------------------------------------------------------------
 TOPIC_RGB = "/camera/camera/color/image_raw"
 TOPIC_DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
 TOPIC_MASK = "/camera/sam/mask"
 TOPIC_CAMERA_INFO = "/camera/camera/color/camera_info"
 
-# Camera intrinsics — read in from camera_info for D435i
-# FX, FY = 910.7627, 910.3762
-# CX, CY = 657.9279, 375.1953
 DEPTH_SCALE = 0.001  # metres per depth unit (1mm for D435i z16)
 NUM_CANDIDATES = 5
 
@@ -53,7 +50,7 @@ class AnyGraspNode(Node):
             CameraInfo, TOPIC_CAMERA_INFO, self.camera_info_callback, 1
         )
 
-        # State tracker
+        # Pipeline state
         self.pipeline_state = "IDLE"
         self.state_sub = self.create_subscription(
             String, "/pipeline_state", self.state_callback, 10
@@ -86,11 +83,11 @@ class AnyGraspNode(Node):
         self.sync = ApproximateTimeSynchronizer(
             [self.rgb_sub, self.depth_sub],
             queue_size=10,
-            slop=0.05,  # 50ms tolerance for time diff between frames
+            slop=0.05,
         )
         self.sync.registerCallback(self.synced_callback)
         self.get_logger().info(
-            "AnyGrasp node ready, waiting for synchronized frames..."
+            "AnyGrasp node ready, waiting for intrinsics and synchronized frames..."
         )
 
     # -----------------------------------------------------------------------
@@ -111,13 +108,13 @@ class AnyGraspNode(Node):
         self.destroy_subscription(self.camera_info_sub)
 
     # -----------------------------------------------------------------------
-    # Mask callback — just cache the latest mask
+    # Mask callback — cache latest mask
     # -----------------------------------------------------------------------
     def mask_callback(self, msg: Image):
         self.latest_mask = msg
 
     # -----------------------------------------------------------------------
-    # Callback for pipeline state updates
+    # Pipeline state callback
     # -----------------------------------------------------------------------
     def state_callback(self, msg: String):
         prev = self.pipeline_state
@@ -126,6 +123,7 @@ class AnyGraspNode(Node):
             self.frame_idx = 0
             self.grasp_ids = [0]
             self.tracking_stable = False
+            self.latest_mask = None
             self.get_logger().info("Pipeline IDLE: AnyGrasp reset")
 
     # -----------------------------------------------------------------------
@@ -155,7 +153,7 @@ class AnyGraspNode(Node):
     # -----------------------------------------------------------------------
     def rotation_to_quaternion(self, rot_matrix: np.ndarray):
         r = Rotation.from_matrix(rot_matrix)
-        return r.as_quat()  # returns [x, y, z, w]
+        return r.as_quat()
 
     # -----------------------------------------------------------------------
     # Build GraspCandidateArray from a GraspGroup
@@ -192,6 +190,9 @@ class AnyGraspNode(Node):
 
         return msg
 
+    # -----------------------------------------------------------------------
+    # Synchronized callback
+    # -----------------------------------------------------------------------
     def synced_callback(self, rgb_msg: Image, depth_msg: Image):
         if not self.intrinsics_received:
             return
