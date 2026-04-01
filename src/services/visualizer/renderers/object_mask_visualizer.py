@@ -201,7 +201,7 @@ class ObjectMaskVisualizer:
     @staticmethod
     def get_best_mask(results: Optional[dict]) -> Optional[np.ndarray]:
         if results is None or "scores" not in results or len(results["scores"]) == 0:
-            return None, None
+            return None, None, None
 
         # 1. Find the index of the highest score
         best_idx = int(np.argmax([s.item() for s in results["scores"]]))

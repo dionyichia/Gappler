@@ -14,9 +14,9 @@ from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.node import Node
 from rm_ros_interfaces.msg import GraspCandidate, GraspCandidateArray
 from scipy.spatial.transform import Rotation
-from sensor_msgs.msg import Image
-from tracker import AnyGraspTracker  # Compiled binary, must be in conda env
+from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import String
+from tracker import AnyGraspTracker  # Compiled binary, must be in conda env
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -33,18 +33,25 @@ cfgs, _ = parser.parse_known_args()
 TOPIC_RGB = "/camera/camera/color/image_raw"
 TOPIC_DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
 TOPIC_MASK = "/camera/sam/mask"
+TOPIC_CAMERA_INFO = "/camera/camera/color/camera_info"
 
 # Camera intrinsics — read in from camera_info for D435i
-FX, FY = 910.7627, 910.3762
-CX, CY = 657.9279, 375.1953
+# FX, FY = 910.7627, 910.3762
+# CX, CY = 657.9279, 375.1953
 DEPTH_SCALE = 0.001  # metres per depth unit (1mm for D435i z16)
-
 NUM_CANDIDATES = 5
 
 
 class AnyGraspNode(Node):
     def __init__(self):
         super().__init__("anygrasp_node")
+
+        # Intrinsics — gated until received
+        self.fx = self.fy = self.cx = self.cy = None
+        self.intrinsics_received = False
+        self.camera_info_sub = self.create_subscription(
+            CameraInfo, TOPIC_CAMERA_INFO, self.camera_info_callback, 1
+        )
 
         # State tracker
         self.pipeline_state = "IDLE"
@@ -61,19 +68,23 @@ class AnyGraspNode(Node):
         self.frame_idx = 0
         self.grasp_ids = [0]
         self.tracking_stable = False
+        self.latest_mask = None
 
         # Publisher
         self.grasp_pub = self.create_publisher(
             GraspCandidateArray, "/grasp_candidates", 10
         )
 
-        # Synchronized subscribers: RGB + depth + SAM mask
+        # Standalone mask subscriber — decoupled from RGB/depth sync
+        self.mask_sub = self.create_subscription(
+            Image, TOPIC_MASK, self.mask_callback, 10
+        )
+
+        # Synchronized subscribers: RGB + depth ONLY
         self.rgb_sub = Subscriber(self, Image, TOPIC_RGB)
         self.depth_sub = Subscriber(self, Image, TOPIC_DEPTH)
-        self.mask_sub = Subscriber(self, Image, TOPIC_MASK)
-
         self.sync = ApproximateTimeSynchronizer(
-            [self.rgb_sub, self.depth_sub, self.mask_sub],
+            [self.rgb_sub, self.depth_sub],
             queue_size=10,
             slop=0.05,  # 50ms tolerance for time diff between frames
         )
@@ -81,6 +92,29 @@ class AnyGraspNode(Node):
         self.get_logger().info(
             "AnyGrasp node ready, waiting for synchronized frames..."
         )
+
+    # -----------------------------------------------------------------------
+    # CameraInfo callback — one-time latch
+    # -----------------------------------------------------------------------
+    def camera_info_callback(self, msg: CameraInfo):
+        if self.intrinsics_received:
+            return
+        self.fx = msg.k[0]
+        self.fy = msg.k[4]
+        self.cx = msg.k[2]
+        self.cy = msg.k[5]
+        self.intrinsics_received = True
+        self.get_logger().info(
+            f"Intrinsics received: fx={self.fx:.2f} fy={self.fy:.2f} "
+            f"cx={self.cx:.2f} cy={self.cy:.2f}"
+        )
+        self.destroy_subscription(self.camera_info_sub)
+
+    # -----------------------------------------------------------------------
+    # Mask callback — just cache the latest mask
+    # -----------------------------------------------------------------------
+    def mask_callback(self, msg: Image):
+        self.latest_mask = msg
 
     # -----------------------------------------------------------------------
     # Callback for pipeline state updates
@@ -112,8 +146,8 @@ class AnyGraspNode(Node):
         h, w = depth.shape
         xmap, ymap = np.meshgrid(np.arange(w), np.arange(h))
         points_z = depth * DEPTH_SCALE
-        points_x = (xmap - CX) * points_z / FX
-        points_y = (ymap - CY) * points_z / FY
+        points_x = (xmap - self.cx) * points_z / self.fx
+        points_y = (ymap - self.cy) * points_z / self.fy
         return np.stack([points_x, points_y, points_z], axis=-1)
 
     # -----------------------------------------------------------------------
@@ -158,38 +192,43 @@ class AnyGraspNode(Node):
 
         return msg
 
-    # -----------------------------------------------------------------------
-    # Synchronized callback
-    # -----------------------------------------------------------------------
-    def synced_callback(self, rgb_msg: Image, depth_msg: Image, mask_msg: Image):
+    def synced_callback(self, rgb_msg: Image, depth_msg: Image):
+        if not self.intrinsics_received:
+            return
         if self.pipeline_state == "IDLE":
             return
-        # Convert messages to numpy
+        if self.latest_mask is None:
+            self.get_logger().warn("No SAM mask received yet, skipping frame")
+            return
+
         colors = self.image_to_numpy(rgb_msg, normalize=True)
         depth = self.image_to_numpy(depth_msg)
-        mask = self.image_to_numpy(mask_msg).astype(bool)
 
-        # Build full point cloud
         points_full = self.build_point_cloud(depth)
 
         # Depth validity mask (0 < z < 1.5m)
-        depth_mask = (points_full[:, :, 2] > 0) & (points_full[:, :, 2] < 0.5)
+        depth_mask = (points_full[:, :, 2] > 0) & (points_full[:, :, 2] < 1.5)
+
+        # SAM mask applied on every frame
+        sam_mask = self.image_to_numpy(self.latest_mask).astype(bool)
+        combined_mask = depth_mask & sam_mask
+
+        if combined_mask.sum() == 0:
+            self.get_logger().warn("Combined mask is empty, skipping frame")
+            return
+
+        points = points_full[combined_mask]
+        colors_masked = colors[combined_mask]
 
         if self.frame_idx == 0:
-            # Frame 0: use SAM mask to select initial grasps
-            combined_mask = depth_mask & mask
-            points = points_full[combined_mask]
-            colors_masked = colors[combined_mask]
-
             target_gg, curr_gg, target_grasp_ids, _ = self.tracker.update(
                 points, colors_masked, self.grasp_ids
             )
 
             if curr_gg is None or len(curr_gg) == 0:
-                self.get_logger().warn("Frame 0: no grasps detected in SAM mask region")
+                self.get_logger().warn("Frame 0: no grasps detected in masked region")
                 return
 
-            # Select top NUM_CANDIDATES from detected grasps spread across object
             n = min(30, len(curr_gg))
             self.grasp_ids = np.arange(n)[:30:6]
             target_gg = curr_gg[self.grasp_ids]
@@ -199,10 +238,6 @@ class AnyGraspNode(Node):
             )
 
         else:
-            # Subsequent frames: use full point cloud for tracking
-            points = points_full[depth_mask]
-            colors_masked = colors[depth_mask]
-
             target_gg, curr_gg, target_grasp_ids, _ = self.tracker.update(
                 points, colors_masked, self.grasp_ids
             )
@@ -216,7 +251,6 @@ class AnyGraspNode(Node):
 
             self.grasp_ids = target_grasp_ids
 
-        # Only publish when tracking is stable
         if self.tracking_stable and target_gg is not None and len(target_gg) > 0:
             msg = self.build_grasp_msg(target_gg)
             self.grasp_pub.publish(msg)

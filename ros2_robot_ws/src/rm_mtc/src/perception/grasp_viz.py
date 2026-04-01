@@ -17,9 +17,10 @@ import subprocess
 import numpy as np
 import psutil
 import rclpy
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PointStamped
 from rclpy.node import Node
 from rm_ros_interfaces.msg import GraspCandidateArray
+from sensor_msgs.msg import Image
 from visualization_msgs.msg import Marker, MarkerArray
 
 RVIZ_CONFIG = os.path.join(os.path.dirname(__file__), "rviz_config.rviz")
@@ -29,11 +30,23 @@ class GraspVisualizer(Node):
     def __init__(self):
         super().__init__("grasp_visualizer")
 
+        # Grasp candidates
         self.sub = self.create_subscription(
-            GraspCandidateArray, "/grasp_candidates", self.callback, 10
+            GraspCandidateArray, "/grasp_candidates", self.grasp_callback, 10
         )
-
         self.pub = self.create_publisher(MarkerArray, "/grasp_candidate_markers", 10)
+
+        # SAM mask — republish as rgb8 so RViz Image display can show it
+        self.mask_sub = self.create_subscription(
+            Image, "/camera/sam/mask", self.mask_callback, 10
+        )
+        self.mask_pub = self.create_publisher(Image, "/debug/sam_mask", 10)
+
+        # Centroid sphere marker
+        self.centroid_sub = self.create_subscription(
+            PointStamped, "/object_centroid", self.centroid_callback, 10
+        )
+        self.centroid_pub = self.create_publisher(Marker, "/debug/centroid_marker", 10)
 
         rviz_running = any("rviz2" in p.name() for p in psutil.process_iter())
         if not rviz_running:
@@ -43,6 +56,46 @@ class GraspVisualizer(Node):
 
         self.get_logger().info("Grasp visualizer ready")
 
+    # ------------------------------------------------------------------
+    # SAM mask callback — convert mono8 to rgb8 for RViz Image display
+    # ------------------------------------------------------------------
+    def mask_callback(self, msg: Image):
+        mono = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width)
+        # White where mask is active, black elsewhere
+        rgb = np.stack([mono * 255, mono * 255, mono * 255], axis=-1).astype(np.uint8)
+
+        out = Image()
+        out.header = msg.header
+        out.height = msg.height
+        out.width = msg.width
+        out.encoding = "rgb8"
+        out.step = msg.width * 3
+        out.data = rgb.tobytes()
+        self.mask_pub.publish(out)
+
+    # ------------------------------------------------------------------
+    # Centroid callback — publish sphere marker in camera frame
+    # ------------------------------------------------------------------
+    def centroid_callback(self, msg: PointStamped):
+        m = Marker()
+        m.header = msg.header
+        m.ns = "centroid"
+        m.id = 0
+        m.type = Marker.SPHERE
+        m.action = Marker.ADD
+        m.pose.position = msg.point
+        m.pose.orientation.w = 1.0
+        m.scale.x = m.scale.y = m.scale.z = 0.03  # 3cm sphere
+        m.color.r = 1.0
+        m.color.g = 0.0
+        m.color.b = 0.0
+        m.color.a = 1.0
+        m.lifetime.sec = 1
+        self.centroid_pub.publish(m)
+
+    # ------------------------------------------------------------------
+    # Grasp candidates callback
+    # ------------------------------------------------------------------
     def _make_marker(
         self, msg, ns, id_, type_, pose, scale, color, text="", lifetime=1
     ):
@@ -60,10 +113,9 @@ class GraspVisualizer(Node):
             m.text = text
         return m
 
-    def callback(self, msg: GraspCandidateArray):
+    def grasp_callback(self, msg: GraspCandidateArray):
         marker_array = MarkerArray()
 
-        # Clear previous markers
         clear = Marker()
         clear.action = Marker.DELETEALL
         marker_array.markers.append(clear)
@@ -79,7 +131,6 @@ class GraspVisualizer(Node):
         for i, grasp in enumerate(msg.grasps):
             t = (grasp.score - min_s) / (max_s - min_s)
 
-            # ---- Approach arrow: blue, length = depth ----
             approach = self._make_marker(
                 msg,
                 ns="approach",
@@ -91,13 +142,8 @@ class GraspVisualizer(Node):
             )
             marker_array.markers.append(approach)
 
-            # ---- Width bar: perpendicular line in grasp x-axis ----
-            # Compute endpoints in the grasp frame x-axis (gripper opening direction)
             q = grasp.pose.orientation
-            # Rotate [1,0,0] by quaternion to get gripper x-axis in world frame
-            # Using quaternion rotation: v' = q * v * q^-1
             qx, qy, qz, qw = q.x, q.y, q.z, q.w
-            # x-axis of grasp frame expressed in camera frame
             gx = np.array(
                 [
                     1 - 2 * (qy**2 + qz**2),
@@ -106,9 +152,11 @@ class GraspVisualizer(Node):
                 ]
             )
             half_w = float(grasp.width) / 2.0
-            cx = grasp.pose.position.x
-            cy = grasp.pose.position.y
-            cz = grasp.pose.position.z
+            cx, cy, cz = (
+                grasp.pose.position.x,
+                grasp.pose.position.y,
+                grasp.pose.position.z,
+            )
 
             p1, p2 = Point(), Point()
             p1.x = cx - half_w * gx[0]
@@ -124,7 +172,7 @@ class GraspVisualizer(Node):
             width_bar.id = i
             width_bar.type = Marker.LINE_STRIP
             width_bar.action = Marker.ADD
-            width_bar.scale.x = 0.005  # line width
+            width_bar.scale.x = 0.005
             width_bar.color.r = 0.0
             width_bar.color.g = 1.0
             width_bar.color.b = 0.0
@@ -133,7 +181,6 @@ class GraspVisualizer(Node):
             width_bar.lifetime.sec = 1
             marker_array.markers.append(width_bar)
 
-            # ---- Score text ----
             text_pose = grasp.pose
             text_pose.position.z += 0.04
             score_text = self._make_marker(
@@ -162,7 +209,6 @@ def main():
     finally:
         if hasattr(node, "rviz_proc"):
             node.rviz_proc.terminate()
-        node.destroy_node()
         node.destroy_node()
         rclpy.shutdown()
 

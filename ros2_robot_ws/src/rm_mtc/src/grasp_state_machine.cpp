@@ -22,25 +22,33 @@
 // ---------------------------------------------------------------------------
 // Tuning constants
 // ---------------------------------------------------------------------------
-static constexpr double APPROACH_STEP_M       = 0.03;   // forward step size (metres)
-static constexpr int    MAX_APPROACH_STEPS     = 30;     // abort threshold
-static constexpr double EXECUTE_DEPTH_THRESH_M = 0.30;  // transition to EXECUTING (metres)
-static constexpr double CENTROID_GAIN          = 0.001; // pixels → metres lateral correction
-static constexpr double IMAGE_CX               = 657.9279;
-static constexpr double IMAGE_CY               = 375.1953;
+static constexpr double APPROACH_STEP_M = 0.03;       // forward step size (metres)
+static constexpr int MAX_APPROACH_STEPS = 30;         // abort threshold
+static constexpr double EXECUTE_DEPTH_THRESH_M = 0.2; // transition to EXECUTING (metres)
+static constexpr double CENTROID_GAIN = 0.001;        // pixels → metres lateral correction
+static constexpr double IMAGE_CX = 657.9279;
+static constexpr double IMAGE_CY = 375.1953;
 
 // ---------------------------------------------------------------------------
 // State definitions
 // ---------------------------------------------------------------------------
-enum class State { IDLE, SELECTING, EXECUTING };
+enum class State
+{
+  IDLE,
+  SELECTING,
+  EXECUTING
+};
 
 static std::string stateToString(State s)
 {
   switch (s)
   {
-    case State::IDLE:      return "IDLE";
-    case State::SELECTING: return "SELECTING";
-    case State::EXECUTING: return "EXECUTING";
+  case State::IDLE:
+    return "IDLE";
+  case State::SELECTING:
+    return "SELECTING";
+  case State::EXECUTING:
+    return "EXECUTING";
   }
   return "UNKNOWN";
 }
@@ -80,9 +88,6 @@ private:
         shutdown_(false)
   {
     // Subscribers
-    mask_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-    "/camera/sam/mask", 10,
-    std::bind(&GraspStateMachine::maskCallback, this, std::placeholders::_1));
 
     grasp_sub_ = this->create_subscription<rm_ros_interfaces::msg::GraspCandidateArray>(
         "/grasp_candidates", 10,
@@ -91,14 +96,6 @@ private:
     centroid_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
         "/object_centroid", 10,
         std::bind(&GraspStateMachine::centroidCallback, this, std::placeholders::_1));
-
-    gripper_position_result_sub_ = this->create_subscription<std_msgs::msg::Bool>(
-        "/rm_driver/set_gripper_position_result", 10,
-        std::bind(&GraspStateMachine::gripperPositionResultCallback, this, std::placeholders::_1));
-
-    gripper_pick_on_result_sub_ = this->create_subscription<std_msgs::msg::Bool>(
-        "/rm_driver/set_gripper_pick_on_result", 10,
-        std::bind(&GraspStateMachine::gripperPickOnResultCallback, this, std::placeholders::_1));
 
     // Publishers
     gripper_position_pub_ = this->create_publisher<rm_ros_interfaces::msg::Gripperset>(
@@ -125,13 +122,12 @@ private:
     RCLCPP_INFO(this->get_logger(), "State → %s", msg.data.c_str());
   }
 
-
   // ---------------------------------------------------------------------------
   // Callbacks — spin thread only, never block
   // ---------------------------------------------------------------------------
   void graspCallback(const rm_ros_interfaces::msg::GraspCandidateArray::SharedPtr msg)
   {
-    if (state_ != State::IDLE)
+    if (state_ != State::SELECTING)
     {
       RCLCPP_DEBUG(this->get_logger(), "Busy, ignoring new candidates");
       return;
@@ -153,73 +149,51 @@ private:
     std::lock_guard<std::mutex> lock(centroid_mutex_);
     latest_centroid_ = *msg;
     has_centroid_ = true;
-  }
-
-  void gripperPositionResultCallback(const std_msgs::msg::Bool::SharedPtr msg)
-  {
-    if (gripper_position_promise_)
-    {
-      gripper_position_promise_->set_value(msg->data);
-      gripper_position_promise_.reset();
-    }
-  }
-
-  void gripperPickOnResultCallback(const std_msgs::msg::Bool::SharedPtr msg)
-  {
-    if (gripper_pick_on_promise_)
-    {
-      gripper_pick_on_promise_->set_value(msg->data);
-      gripper_pick_on_promise_.reset();
-    }
-  }
-
-  void maskCallback(const sensor_msgs::msg::Image::SharedPtr msg)
-{
-    if (state_ != State::IDLE) return;
-    std::lock_guard<std::mutex> lock(queue_mutex_);
-    mask_received_ = true;
     queue_cv_.notify_one();
-}
+  }
 
   // ---------------------------------------------------------------------------
   // Worker loop — all blocking work here
   // ---------------------------------------------------------------------------
   void workerLoop()
   {
+    std::this_thread::sleep_for(std::chrono::seconds(2));
     mtc_planner_->moveToHome();
     publishState(State::IDLE);
 
     while (true)
     {
-      // ---- Wait for mask (object detected) ----
+      // ---- Wait for centroid (object detected) ----
       {
         std::unique_lock<std::mutex> lock(queue_mutex_);
-        queue_cv_.wait(lock, [this] { return mask_received_ || shutdown_; });
-        if (shutdown_) return;
-        mask_received_ = false;
+        queue_cv_.wait(lock, [this]
+                       { return has_centroid_ || shutdown_; });
+        if (shutdown_)
+          return;
+        has_centroid_ = false;
       }
-
 
       // ---- SELECTING phase ----
       publishState(State::SELECTING);
-
 
       // Wait for first candidates from AnyGrasp (now unblocked by SELECTING state)
       rm_ros_interfaces::msg::GraspCandidateArray::SharedPtr msg;
       {
         std::unique_lock<std::mutex> lock(queue_mutex_);
         bool got_candidates = queue_cv_.wait_for(lock, std::chrono::seconds(5),
-            [this] { return !candidate_queue_.empty() || shutdown_; });
-        if (shutdown_) return;
+                                                 [this]
+                                                 { return !candidate_queue_.empty() || shutdown_; });
+        if (shutdown_)
+          return;
         if (!got_candidates || candidate_queue_.empty())
         {
-          if (mask_received_)
+          if (has_centroid_)
           {
-            mask_received_ = false;
-            RCLCPP_WARN(this->get_logger(), "No candidates yet but mask active — retrying SELECTING");
+            has_centroid_ = false;
+            RCLCPP_WARN(this->get_logger(), "No candidates yet but centroid available — retrying SELECTING");
             continue;
           }
-          RCLCPP_WARN(this->get_logger(), "No candidates and no mask — returning to IDLE");
+          RCLCPP_WARN(this->get_logger(), "No candidates and no centroid — returning to IDLE");
           mtc_planner_->moveToHome();
           publishState(State::IDLE);
           continue;
@@ -228,8 +202,7 @@ private:
         candidate_queue_.pop();
       }
 
-
-      bool transitioned = false;
+      // bool transitioned = false;
       int steps = 0;
 
       while (steps < MAX_APPROACH_STEPS)
@@ -238,10 +211,55 @@ private:
         float best_z = msg->grasps[0].pose.position.z;
 
         if (best_z < EXECUTE_DEPTH_THRESH_M)
+        // {
+        //   RCLCPP_INFO(this->get_logger(),
+        //               "Object at %.3fm — transitioning to EXECUTING", best_z);
+        //   transitioned = true;
+        //   break;
+        // }
         {
+          // Transition to executing
           RCLCPP_INFO(this->get_logger(),
                       "Object at %.3fm — transitioning to EXECUTING", best_z);
-          transitioned = true;
+
+          publishState(State::EXECUTING);
+
+          bool grasped = false;
+          for (const auto &candidate : msg->grasps)
+          {
+            geometry_msgs::msg::Pose pose_base;
+            if (!transformToBase(candidate.pose, pose_base))
+            {
+              RCLCPP_WARN(this->get_logger(), "Transform failed, skipping candidate");
+              continue;
+            }
+
+            if (!openGripper())
+            {
+              RCLCPP_WARN(this->get_logger(), "Gripper open failed, skipping candidate");
+              continue;
+            }
+
+            if (!mtc_planner_->moveCartesianStep(pose_base))
+            {
+              RCLCPP_WARN(this->get_logger(), "Cartesian move to grasp pose failed, skipping candidate");
+              continue;
+            }
+
+            if (!closeGripper())
+            {
+              RCLCPP_WARN(this->get_logger(), "Gripper close failed, skipping candidate");
+              continue;
+            }
+
+            RCLCPP_INFO(this->get_logger(), "Grasp succeeded");
+            grasped = true;
+            break;
+          }
+
+          if (!grasped)
+            RCLCPP_ERROR(this->get_logger(), "All candidates failed");
+
           break;
         }
 
@@ -253,7 +271,7 @@ private:
         try
         {
           tf_buffer_.transform(current_pose_stamped, current_pose_cam,
-                              "camera_color_optical_frame", tf2::durationFromSec(0.1));
+                               "camera_color_optical_frame", tf2::durationFromSec(0.1));
         }
         catch (const tf2::TransformException &ex)
         {
@@ -270,7 +288,7 @@ private:
             double dx = latest_centroid_.point.x - current_pose_cam.pose.position.x;
             double dy = latest_centroid_.point.y - current_pose_cam.pose.position.y;
             double dz = latest_centroid_.point.z - current_pose_cam.pose.position.z;
-            double dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+            double dist = std::sqrt(dx * dx + dy * dy + dz * dz);
             if (dist > 0)
             {
               double scale = APPROACH_STEP_M / dist;
@@ -294,7 +312,7 @@ private:
         try
         {
           tf_buffer_.transform(goal_pose_cam, goal_pose_base, "base_link",
-                              tf2::durationFromSec(0.1));
+                               tf2::durationFromSec(0.1));
         }
         catch (const tf2::TransformException &ex)
         {
@@ -316,7 +334,8 @@ private:
           {
             msg = candidate_queue_.back();
             // Drain stale candidates
-            while (!candidate_queue_.empty()) candidate_queue_.pop();
+            while (!candidate_queue_.empty())
+              candidate_queue_.pop();
           }
         }
 
@@ -330,114 +349,99 @@ private:
         steps++;
       }
 
-      if (!transitioned)
-      {
-        RCLCPP_ERROR(this->get_logger(), "SELECTING failed — returning to IDLE");
-        mtc_planner_->moveToHome();
-        publishState(State::IDLE);
-        continue;
-      }
+      // All paths return to IDLE in debug phase
+      RCLCPP_INFO(this->get_logger(), "SELECTING complete — returning to IDLE");
+      mtc_planner_->moveToHome();
+      publishState(State::IDLE);
 
-      // ---- EXECUTING phase ----
-      publishState(State::EXECUTING);
+      //       if (!transitioned)
+      // {
+      //   RCLCPP_ERROR(this->get_logger(), "SELECTING failed — returning to IDLE");
+      //   mtc_planner_->moveToHome();
+      //   publishState(State::IDLE);
+      //   continue;
+      // }
 
-      bool grasped = false;
-      for (const auto &candidate : msg->grasps)
-      {
-        RCLCPP_INFO(this->get_logger(), "Trying candidate score: %.4f", candidate.score);
+      // // ---- EXECUTING phase ----
+      // publishState(State::EXECUTING);
 
-        geometry_msgs::msg::Pose pose_base;
-        if (!transformToBase(candidate.pose, pose_base))
-        {
-          RCLCPP_WARN(this->get_logger(), "Transform failed, skipping");
-          continue;
-        }
+      // bool grasped = false;
+      // for (const auto &candidate : msg->grasps)
+      // {
+      //   RCLCPP_INFO(this->get_logger(), "Trying candidate score: %.4f", candidate.score);
 
-        if (!openGripper())
-        {
-          RCLCPP_WARN(this->get_logger(), "Gripper open failed, trying next candidate");
-          continue;
-        }
+      //   geometry_msgs::msg::Pose pose_base;
+      //   if (!transformToBase(candidate.pose, pose_base))
+      //   {
+      //     RCLCPP_WARN(this->get_logger(), "Transform failed, skipping");
+      //     continue;
+      //   }
 
-        if (!mtc_planner_->moveToPose(pose_base))
-        {
-          RCLCPP_WARN(this->get_logger(), "moveToPose failed, trying next candidate");
-          continue;
-        }
+      //   if (!openGripper())
+      //   {
+      //     RCLCPP_WARN(this->get_logger(), "Gripper open failed, trying next candidate");
+      //     continue;
+      //   }
 
-        if (!closeGripper())
-        {
-          RCLCPP_WARN(this->get_logger(), "Gripper close failed, trying next candidate");
-          continue;
-        }
-        
-        if (!mtc_planner_->moveToHome())
-        {
-          RCLCPP_ERROR(this->get_logger(), "moveToHome failed but grasp succeeded — manual intervention may be required");
-          grasped = true;
-          break;
-        }
+      //   if (!mtc_planner_->moveToPose(pose_base))
+      //   {
+      //     RCLCPP_WARN(this->get_logger(), "moveToPose failed, trying next candidate");
+      //     continue;
+      //   }
 
-        RCLCPP_INFO(this->get_logger(), "Grasp succeeded");
-        grasped = true;
-        break;
-      }
+      //   if (!closeGripper())
+      //   {
+      //     RCLCPP_WARN(this->get_logger(), "Gripper close failed, trying next candidate");
+      //     continue;
+      //   }
 
-      if (!grasped)
-      { 
-        RCLCPP_ERROR(this->get_logger(), "All candidates failed");
-        mtc_planner_->moveToHome();
-        publishState(State::IDLE);
-      }
+      //   if (!mtc_planner_->moveToHome())
+      //   {
+      //     RCLCPP_ERROR(this->get_logger(), "moveToHome failed but grasp succeeded — manual intervention may be required");
+      //     grasped = true;
+      //     break;
+      //   }
+
+      //   RCLCPP_INFO(this->get_logger(), "Grasp succeeded");
+      //   grasped = true;
+      //   break;
+      // }
+
+      // if (!grasped)
+      // {
+      //   RCLCPP_ERROR(this->get_logger(), "All candidates failed");
+      //   mtc_planner_->moveToHome();
+      //   publishState(State::IDLE);
+      // }
     }
   }
-
-
 
   // ---------------------------------------------------------------------------
   // Gripper helpers
   // ---------------------------------------------------------------------------
-  void openGripper()
+
+  bool openGripper()
   {
-    gripper_position_promise_ = std::make_shared<std::promise<bool>>();
-    auto future = gripper_position_promise_->get_future();
     rm_ros_interfaces::msg::Gripperset msg;
     msg.position = 1000;
-    msg.block = true;
+    msg.block = false;
     gripper_position_pub_->publish(msg);
-    if (future.wait_for(std::chrono::seconds(5)) == std::future_status::timeout)
-    { 
-      RCLCPP_WARN(this->get_logger(), "openGripper timed out");
-      return false;
-    }
-    bool result = future.get();
-    if (result)
-      RCLCPP_INFO(this->get_logger(), "Gripper opened");
-    else
-      RCLCPP_WARN(this->get_logger(), "Gripper open reported failure");
-    return result;
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    RCLCPP_INFO(this->get_logger(), "Gripper opened");
+    return true;
   }
 
+  // ---- Replace closeGripper() ----
   bool closeGripper()
   {
-    gripper_pick_on_promise_ = std::make_shared<std::promise<bool>>();
-    auto future = gripper_pick_on_promise_->get_future();
     rm_ros_interfaces::msg::Gripperpick msg;
     msg.speed = 200;
     msg.force = 200;
-    msg.block = true;
+    msg.block = false;
     gripper_pick_on_pub_->publish(msg);
-    if (future.wait_for(std::chrono::seconds(5)) == std::future_status::timeout)
-    {
-      RCLCPP_WARN(this->get_logger(), "closeGripper timed out");
-      return false;
-    }
-    bool result = future.get();
-    if (result)
-      RCLCPP_INFO(this->get_logger(), "Gripper closed");
-    else
-      RCLCPP_WARN(this->get_logger(), "Gripper close reported failure");
-    return result;
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    RCLCPP_INFO(this->get_logger(), "Gripper closed");
+    return true;
   }
   // ---------------------------------------------------------------------------
   // TF2 helper
@@ -468,7 +472,6 @@ private:
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
   std::shared_ptr<MtcPlanner> mtc_planner_;
-  bool mask_received_ = false;
 
   // Centroid
   geometry_msgs::msg::PointStamped latest_centroid_;
@@ -478,8 +481,6 @@ private:
   // Subscriptions
   rclcpp::Subscription<rm_ros_interfaces::msg::GraspCandidateArray>::SharedPtr grasp_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr centroid_sub_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr gripper_position_result_sub_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr gripper_pick_on_result_sub_;
 
   // Publishers
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperset>::SharedPtr gripper_position_pub_;
@@ -492,12 +493,7 @@ private:
   std::mutex queue_mutex_;
   std::condition_variable queue_cv_;
   bool shutdown_;
-
-  // Gripper promises
-  std::shared_ptr<std::promise<bool>> gripper_position_promise_;
-  std::shared_ptr<std::promise<bool>> gripper_pick_on_promise_;
 };
-
 
 // ---------------------------------------------------------------------------
 // Main
