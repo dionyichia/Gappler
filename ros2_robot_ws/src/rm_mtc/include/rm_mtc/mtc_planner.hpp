@@ -43,11 +43,11 @@ private:
 
   // Home pose joint values (radians)
   const std::map<std::string, double> HOME_JOINTS = {
-      {"joint1", -0.0175},
-      {"joint2", -0.1745},
-      {"joint3", 0.7854},
-      {"joint4", -3.0718},
-      {"joint5", -1.6930},
-      {"joint6", -1.6057},
+      {"joint1", 0.0},    // 0 degrees
+      {"joint2", 0.0},    // 0 degrees
+      {"joint3", 0.7854}, // 45 degrees
+      {"joint4", 0.0},    // 0 degrees
+      {"joint5", 1.5708}, // 90 degrees
+      {"joint6", 1.5708}, // 90 degrees
   };
 };

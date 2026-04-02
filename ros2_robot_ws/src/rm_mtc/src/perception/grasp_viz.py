@@ -21,6 +21,7 @@ from geometry_msgs.msg import Point, PointStamped
 from rclpy.node import Node
 from rm_ros_interfaces.msg import GraspCandidateArray
 from sensor_msgs.msg import Image
+from std_msgs.msg import String
 from visualization_msgs.msg import Marker, MarkerArray
 
 RVIZ_CONFIG = os.path.join(os.path.dirname(__file__), "rviz_config.rviz")
@@ -47,6 +48,12 @@ class GraspVisualizer(Node):
             PointStamped, "/object_centroid", self.centroid_callback, 10
         )
         self.centroid_pub = self.create_publisher(Marker, "/debug/centroid_marker", 10)
+
+        self.state_sub = self.create_subscription(
+            String, "/pipeline_state", self.state_callback, 10
+        )
+        self.state_marker_pub = self.create_publisher(Marker, "/debug/state_marker", 10)
+        self.current_state = "IDLE"
 
         rviz_running = any("rviz2" in p.name() for p in psutil.process_iter())
         if not rviz_running:
@@ -92,6 +99,31 @@ class GraspVisualizer(Node):
         m.color.a = 1.0
         m.lifetime.sec = 1
         self.centroid_pub.publish(m)
+
+    # ------------------------------------------------------------------
+    # State callback — publish current SM state in camera frame
+    # ------------------------------------------------------------------
+    def state_callback(self, msg: String):
+        self.current_state = msg.data
+        m = Marker()
+        m.header.frame_id = "color_camera_optical_frame"
+        m.header.stamp = self.get_clock().now().to_msg()
+        m.ns = "state"
+        m.id = 0
+        m.type = Marker.TEXT_VIEW_FACING
+        m.action = Marker.ADD
+        m.pose.position.x = 0.0
+        m.pose.position.y = 0.0
+        m.pose.position.z = 0.8  # above the robot
+        m.pose.orientation.w = 1.0
+        m.scale.z = 0.1  # text height in metres
+        m.color.r = 1.0
+        m.color.g = 1.0
+        m.color.b = 1.0
+        m.color.a = 1.0
+        m.text = f"State: {msg.data}"
+        m.lifetime.sec = 3
+        self.state_marker_pub.publish(m)
 
     # ------------------------------------------------------------------
     # Grasp candidates callback

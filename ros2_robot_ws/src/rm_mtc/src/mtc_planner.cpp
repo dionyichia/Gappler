@@ -1,4 +1,6 @@
 #include "rm_mtc/mtc_planner.hpp"
+#include <moveit/robot_trajectory/robot_trajectory.h>
+#include <moveit/trajectory_processing/time_optimal_trajectory_generation.h>
 
 // Stores pointer to state machine node from which it originated
 MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr &node)
@@ -88,14 +90,27 @@ geometry_msgs::msg::PoseStamped MtcPlanner::getCurrentPose()
 
 bool MtcPlanner::moveCartesianStep(const geometry_msgs::msg::Pose &goal_pose_base)
 {
+  move_group_->setMaxVelocityScalingFactor(0.1);
+  move_group_->setMaxAccelerationScalingFactor(0.1);
   std::vector<geometry_msgs::msg::Pose> waypoints = {goal_pose_base};
   moveit_msgs::msg::RobotTrajectory trajectory;
-  double fraction = move_group_->computeCartesianPath(waypoints, 0.01, 0.0, trajectory);
-  if (fraction < 0.9)
+  double fraction = move_group_->computeCartesianPath(waypoints, 0.01, 5.0, trajectory);
+  if (fraction < 0.8)
   {
     RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] Cartesian path only %.0f%% complete", fraction * 100);
     return false;
   }
+  robot_trajectory::RobotTrajectory rt(move_group_->getRobotModel(), move_group_->getName());
+  rt.setRobotTrajectoryMsg(*move_group_->getCurrentState(), trajectory);
+
+  trajectory_processing::TimeOptimalTrajectoryGeneration totg;
+  if (!totg.computeTimeStamps(rt, 0.1, 0.1))
+  {
+    RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] Time parameterization failed");
+    return false;
+  }
+  rt.getRobotTrajectoryMsg(trajectory);
+
   moveit::planning_interface::MoveGroupInterface::Plan plan;
   plan.trajectory_ = trajectory;
   return (move_group_->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS);

@@ -25,11 +25,11 @@ import time
 # ---------------------------------------------------------------------------
 ANYGRASP_CONDA_ENV = "anygrasp"
 ANYGRASP_DIR = "/home/iot22/GitHub/Renaissance-Capstone-Project/ros2_robot_ws/src/rm_mtc/src/perception"
-ANYGRASP_CHECKPOINT = "log/checkpoint_tracking.tar"
+ANYGRASP_CHECKPOINT = "log/checkpoint_detection.tar"
 
 
 ANYGRASP_NODE_PATH = os.path.join(
-    os.path.dirname(__file__), "rm_mtc/src/perception/anygrasp_node.py"
+    os.path.dirname(__file__), "rm_mtc/src/perception/anygrasp_detection_node.py"
 )
 SAM3_PROJECT_ROOT = "/home/iot22/GitHub/Renaissance-Capstone-Project"
 SAM3_NODE_PATH = os.path.join(
@@ -129,7 +129,7 @@ if __name__ == "__main__":
             "--checkpoint_path",
             ANYGRASP_CHECKPOINT,
         ],
-        label="anygrasp_node",
+        label="anygrasp_detection_node",
         delay=2.0,
         cwd=ANYGRASP_DIR,
     )

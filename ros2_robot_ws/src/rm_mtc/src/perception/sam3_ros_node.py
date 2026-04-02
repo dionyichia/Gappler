@@ -28,6 +28,7 @@ from services.visualizer.renderers.object_mask_visualizer import ObjectMaskVisua
 TOPIC_RGB = "/camera/camera/color/image_raw"
 TOPIC_DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
 TOPIC_MASK = "/camera/sam/mask"
+TOPIC_CENTROID_VIZ = "/object_centroid"
 TOPIC_CENTROID_2D = "/object_centroid_2d"
 TOPIC_CAMERA_INFO = "/camera/camera/color/camera_info"
 
@@ -46,6 +47,7 @@ class Sam3RosNode(Node):
 
         # Intrinsics — gated until received
         self.image_cx = self.image_cy = None
+        self.fx = self.fy = None
         self.intrinsics_received = False
         self.camera_info_sub = self.create_subscription(
             CameraInfo, TOPIC_CAMERA_INFO, self.camera_info_callback, 1
@@ -62,6 +64,9 @@ class Sam3RosNode(Node):
         # Publishers
         self.mask_pub = self.create_publisher(Image, TOPIC_MASK, 10)
         self.centroid_pub = self.create_publisher(PointStamped, TOPIC_CENTROID_2D, 10)
+        self.centroid_viz_pub = self.create_publisher(
+            PointStamped, TOPIC_CENTROID_VIZ, 10
+        )
 
         # Synchronized RGB + depth subscribers
         self.rgb_sub = Subscriber(self, Image, TOPIC_RGB)
@@ -81,11 +86,14 @@ class Sam3RosNode(Node):
     def camera_info_callback(self, msg: CameraInfo):
         if self.intrinsics_received:
             return
+        self.fx = msg.k[0]
+        self.fy = msg.k[4]
         self.image_cx = msg.k[2]
         self.image_cy = msg.k[5]
         self.intrinsics_received = True
         self.get_logger().info(
-            f"Intrinsics received: image_cx={self.image_cx:.2f} image_cy={self.image_cy:.2f}"
+            f"Intrinsics received: fx={self.fx:.2f} fy={self.fy:.2f} "
+            f"image_cx={self.image_cx:.2f} image_cy={self.image_cy:.2f}"
         )
         self.destroy_subscription(self.camera_info_sub)
 
@@ -139,11 +147,14 @@ class Sam3RosNode(Node):
         depth = np.frombuffer(depth_msg.data, dtype=np.uint16).reshape(
             depth_msg.height, depth_msg.width
         )
-        z = depth[cy_px, cx_px] * DEPTH_SCALE
-        if z <= 0:
-            self.get_logger().warn("Invalid depth at centroid, skipping")
+        depth_vals = depth[best_mask]
+        depth_vals = depth_vals[depth_vals > 0]
+        if len(depth_vals) == 0:
+            self.get_logger().warn("No valid depth in mask region, skipping")
             return
+        z = float(np.median(depth_vals)) * DEPTH_SCALE
 
+        # Publish 2D centroid for arm calibration
         pt = PointStamped()
         pt.header = rgb_msg.header
         pt.header.frame_id = "camera_color_optical_frame"
@@ -151,6 +162,17 @@ class Sam3RosNode(Node):
         pt.point.y = float(cy_px)  # pixel row
         pt.point.z = z  # depth in metres
         self.centroid_pub.publish(pt)
+
+        # Publish 3D centroid for viz
+        viz_pt = PointStamped()
+        viz_pt.header = rgb_msg.header
+        viz_pt.header.frame_id = "camera_color_optical_frame"
+        # Back-project pixel coords to 3D metres using live intrinsics
+        viz_pt.point.x = (float(cx_px) - self.image_cx) * z / self.fx
+        viz_pt.point.y = (float(cy_px) - self.image_cy) * z / self.fy
+        viz_pt.point.z = z
+        self.centroid_viz_pub.publish(viz_pt)
+
         self.get_logger().debug(
             f"Centroid published: px=({cx_px}, {cy_px}) depth={z:.3f}m"
         )

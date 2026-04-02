@@ -15,7 +15,7 @@
   <joint name="grasp_frame_joint" type="fixed">
     <parent link="Link6" />
     <child link="grasp_frame" />
-    <origin xyz="0 0 0.1475" rpy="0 0 3.1416" />
+    <origin xyz="0 0 0.1475" rpy="3.1416 0 1.5708 " />
   </joint>
 
 
