@@ -10,17 +10,16 @@ import torch
 from geometry_msgs.msg import Point
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
-from sensor_msgs.msg import CompressedImage
+from rclpy.node import Node
+from sensor_msgs.msg import CompressedImage, Image
 from std_msgs.msg import String, UInt8MultiArray
 
-from config import AudioStreamingPipelineConfig, ModelPaths, ROS2Topics
+from config import VIDEO_QOS, AudioStreamingPipelineConfig, ModelPaths, ROS2Topics
 from services.feature_matching import FeatureMatcher
 from services.object_recognition import SAM3Model
 from services.ros import (
     ImageHelper,
     ROSPublisher,
-    ROSSubscriber,
-    subscribe_realsense_color_feed,
 )
 
 logger = logging.getLogger(__name__)
@@ -53,6 +52,7 @@ class ObjectRecognitionPipeline:
         self._quit_event = quit_event
 
         self.prompt = PROMPT
+
         self.model = SAM3Model(
             checkpoint_path=ModelPaths.SAM3_PATH,
             confidence_threshold=0.5,
@@ -76,32 +76,38 @@ class ObjectRecognitionPipeline:
 
     def _setup_ros_node(self) -> None:
         """Initialise the ROS node, subscriptions, executor, and publishers."""
-        self._object_recognition_node = ROSSubscriber("object_recognition_node")
+        self._object_recognition_node = Node("object_recognition_node")
 
         image_cb_group = ReentrantCallbackGroup()
         state_cb_group = MutuallyExclusiveCallbackGroup()
 
-        subscribe_realsense_color_feed(
-            self._object_recognition_node,
+        self._object_recognition_node.create_subscription(
+            Image,
+            "/camera/camera/color/image_raw",
             self._on_realsense_image,
+            VIDEO_QOS,
             callback_group=image_cb_group,
         )
-        self._object_recognition_node.subscribe(
+
+        self._object_recognition_node.create_subscription(
             CompressedImage,
             ROS2Topics.RGB_CAMERA_UNDISTORTED.value,
             self._on_aria_image,
+            VIDEO_QOS,
             callback_group=image_cb_group,
         )
-        self._object_recognition_node.subscribe(
+        self._object_recognition_node.create_subscription(
             String,
             ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value,
             self._on_prompt,
+            VIDEO_QOS,
             callback_group=state_cb_group,
         )
-        self._object_recognition_node.subscribe(
+        self._object_recognition_node.create_subscription(
             Point,
             ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value,
             self._on_gaze,
+            VIDEO_QOS,
             callback_group=state_cb_group,
         )
 
@@ -136,7 +142,10 @@ class ObjectRecognitionPipeline:
         except Exception as e:
             logger.error(f"Error decoding Aria image: {e}", exc_info=True)
 
-    def _on_realsense_image(self, frame: np.ndarray) -> None:
+    def _on_realsense_image(self, msg: Image) -> None:
+        frame = np.frombuffer(msg.data, dtype=np.uint8).reshape(
+            msg.height, msg.width, -1
+        )
         if frame is None:
             logger.warning("Received empty RealSense frame, skipping")
             return
@@ -159,20 +168,137 @@ class ObjectRecognitionPipeline:
                 self.prompt = command
                 self._aria_inference_state = None
 
+    # ---------------------------------------------------------------------------
+    # Main loop
+    # ---------------------------------------------------------------------------
+
+    def run(self) -> None:
+        logger.info("Object recognition pipeline started. Waiting for command...")
+
+        last_aria_id = -1
+        last_ros_id = -1
+
+        try:
+            while not self._quit_event.is_set():
+                with self._state_lock:
+                    prompt = self.prompt
+                    gaze_point = self._gaze_point
+                    aria_inference_state = self._aria_inference_state
+                    aria_locked_image = self._aria_locked_image
+
+                if not prompt:
+                    time.sleep(0.1)
+                    continue
+
+                aria_image, aria_id = self._aria_feed.get()
+                ros_image, ros_id = self._ros_feed.get()
+
+                if aria_id != last_aria_id:
+                    last_aria_id = aria_id
+                    self._process_aria_frame(
+                        aria_image, prompt, gaze_point, aria_inference_state
+                    )
+
+                if ros_id != last_ros_id:
+                    last_ros_id = ros_id
+                    self._process_ros_frame(
+                        ros_image, prompt, aria_locked_image, aria_inference_state
+                    )
+
+        except KeyboardInterrupt:
+            logger.info("Shutting down...")
+        except Exception as e:
+            logger.error(f"Error during mask generation: {e}", exc_info=True)
+        finally:
+            self.cleanup()
+
+    # ---------------------------------------------------------------------------
+    # Frame processing
+    # ---------------------------------------------------------------------------
+
+    def _process_aria_frame(
+        self,
+        aria_image: Optional[np.ndarray],
+        prompt: str,
+        gaze_point: Optional[Tuple[float, float]],
+        aria_inference_state: Optional[Dict[str, Any]],
+    ) -> None:
+        """Run inference on a new Aria frame and publish the result."""
+        if aria_image is None or aria_inference_state is not None:
+            return
+
+        inference_state = self._generate_mask(aria_image, prompt)
+        if inference_state is None:
+            return
+
+        masks = inference_state.get("masks")
+        if len(masks) > 1:
+            best = self._find_closest_mask(masks, gaze_point)
+            inference_state["masks"] = [masks[best]]
+            inference_state["scores"] = [inference_state["scores"][best]]
+            inference_state["boxes"] = [inference_state["boxes"][best]]
+
+        # Discard result if the prompt changed during inference
+        with self._state_lock:
+            if self.prompt != prompt:
+                logger.debug("Prompt changed during Aria inference, discarding result")
+                return
+            self._aria_inference_state = inference_state
+            self._aria_locked_image = aria_image
+
+        self._publish_inference(
+            self.aria_inference_publisher, aria_image, inference_state
+        )
+
+    def _process_ros_frame(
+        self,
+        ros_image: Optional[np.ndarray],
+        prompt: str,
+        aria_locked_image: Optional[np.ndarray],
+        aria_inference_state: Optional[Dict[str, Any]],
+    ) -> None:
+        """Run inference on a new ROS frame, match to Aria mask, and publish."""
+        if ros_image is None:
+            return
+
+        inference_state = self._generate_mask(ros_image, prompt)
+        if inference_state is None:
+            return
+
+        # Discard result if the prompt changed during inference
+        with self._state_lock:
+            if self.prompt != prompt:
+                logger.debug("Prompt changed during ROS inference, discarding result")
+                return
+
+        if aria_inference_state is not None and aria_locked_image is not None:
+            matched = self._find_matching_ros_mask(
+                aria_locked_image, aria_inference_state, ros_image, inference_state
+            )
+            if matched is not None:
+                inference_state = matched
+
+        self._publish_inference(
+            self.ros_inference_publisher, ros_image, inference_state
+        )
+
+    # ---------------------------------------------------------------------------
+    # Inference helpers
+    # ---------------------------------------------------------------------------
+
     def _generate_mask(
         self, image: np.ndarray, prompt: str
     ) -> Optional[Dict[str, Any]]:
         """
-        Generate segmentation mask for given image and text prompt.
+        Generate a segmentation mask for a given image and text prompt.
 
         Args:
-            image: Input image as numpy array
-            prompt: Text prompt for segmentation
+            image: Input image as numpy array.
+            prompt: Text prompt for segmentation.
 
         Returns:
-            inference_state: Dictionary containing masks, boxes, and scores, or None
+            Dictionary containing masks, boxes, and scores, or None if no objects found.
         """
-
         inference_state = self.model.process_text_prompt(image, prompt)
         masks = inference_state.get("masks")
         if masks is None or len(masks) == 0:
@@ -182,16 +308,16 @@ class ObjectRecognitionPipeline:
         return inference_state
 
     def _find_closest_mask(
-        self, masks: list, gaze_point: Optional[Tuple[float, float]]
-    ) -> Optional[int]:
+        self,
+        masks: list,
+        gaze_point: Optional[Tuple[float, float]],
+    ) -> int:
         """
         Return the index of the mask closest to the gaze point.
 
-        - If gaze_point is None, return index 0 (first mask).
-        - If gaze_point falls inside a mask, return that mask immediately.
-        - Otherwise return the mask whose edge is closest to the gaze point,
-        measured as the minimum distance from the point to any True pixel
-        on the mask boundary.
+        - If gaze_point is None or masks is empty, returns 0.
+        - If gaze_point falls inside a mask, returns that mask's index immediately.
+        - Otherwise returns the mask whose nearest edge pixel is closest to the gaze point.
         """
         if gaze_point is None or len(masks) == 0:
             return 0
@@ -212,8 +338,7 @@ class ObjectRecognitionPipeline:
             ys, xs = torch.where(m)
             if len(ys) == 0:
                 continue
-            dists = (xs - gx).float() ** 2 + (ys - gy).float() ** 2
-            min_dist = dists.min().item()
+            min_dist = ((xs - gx).float() ** 2 + (ys - gy).float() ** 2).min().item()
             if min_dist < best_dist:
                 best_dist = min_dist
                 best_idx = i
@@ -233,10 +358,9 @@ class ObjectRecognitionPipeline:
         Steps:
           1. Find all matched keypoint pairs between the Aria and ROS frames.
           2. Keep only the Aria-side keypoints that fall inside the Aria mask.
-          3. For each ROS mask, count how many of the corresponding ROS-side
-             keypoints land inside it.
-          4. Return a copy of ros_inference_state filtered to the best-matching
-             mask, or None if no mask receives any hits.
+          3. For each ROS mask, count how many corresponding ROS-side keypoints land inside it.
+          4. Return a copy of ros_inference_state filtered to the best-matching mask,
+             or None if no mask receives any hits.
 
         Args:
             aria_image: The Aria frame used when the Aria mask was computed.
@@ -249,11 +373,11 @@ class ObjectRecognitionPipeline:
         """
         aria_masks = aria_inference_state.get("masks", [])
         ros_masks = ros_inference_state.get("masks", [])
+        print(len(aria_masks), len(ros_masks))
 
         if not len(aria_masks) or not len(ros_masks):
             return None
 
-        # Binary aria mask (H x W)
         aria_mask_np = aria_masks[0].squeeze(0).cpu().numpy() > 0
         aria_h, aria_w = aria_mask_np.shape
 
@@ -263,26 +387,23 @@ class ObjectRecognitionPipeline:
             logger.error(f"Feature matching failed: {e}", exc_info=True)
             return None
 
-        kp0 = match_result["keypoints0"]  # (N, 2) — aria keypoints
-        kp1 = match_result["keypoints1"]  # (M, 2) — ros keypoints
+        kp0 = match_result["keypoints0"]  # (N, 2) — Aria keypoints
+        kp1 = match_result["keypoints1"]  # (M, 2) — RealSense keypoints
         matches = match_result["matches"]  # (K, 2) — index pairs
 
         if len(matches) == 0:
             logger.debug("No feature matches found between Aria and ROS frames")
             return None
 
-        # Matched keypoints in each frame
         matched_kp0 = kp0[matches[:, 0]].round().astype(int)  # (K, 2)
         matched_kp1 = kp1[matches[:, 1]].round().astype(int)  # (K, 2)
 
-        # Retain only pairs whose Aria keypoint falls inside the Aria mask
+        # Keep only pairs whose Aria keypoint falls inside the Aria mask
         xs0, ys0 = matched_kp0[:, 0], matched_kp0[:, 1]
         valid = (ys0 >= 0) & (ys0 < aria_h) & (xs0 >= 0) & (xs0 < aria_w)
         valid[valid] = aria_mask_np[ys0[valid], xs0[valid]]
 
-        filtered_kp1 = matched_kp1[
-            valid
-        ]  # ROS keypoints that correspond to the aria mask
+        filtered_kp1 = matched_kp1[valid]
 
         if len(filtered_kp1) == 0:
             logger.debug("No feature matches fall within the Aria mask")
@@ -312,7 +433,7 @@ class ObjectRecognitionPipeline:
             logger.debug("No ROS mask matched the Aria mask via feature matching")
             return None
 
-        logger.debug(
+        logger.info(
             f"Matched ROS mask idx={best_idx} with {best_count}/{len(filtered_kp1)} hits"
         )
 
@@ -323,89 +444,21 @@ class ObjectRecognitionPipeline:
             "boxes": [ros_inference_state["boxes"][best_idx]],
         }
 
-    def run(self):
-        logger.info("Object recognition pipeline started. Waiting for command...")
-
-        last_aria_id = -1
-        last_ros_id = -1
-
-        try:
-            while not self._quit_event.is_set():
-                prompt = self.prompt
-                if not prompt:
-                    time.sleep(0.1)
-                    continue
-
-                aria_image, aria_id = self._aria_feed.get()
-                ros_image, ros_id = self._ros_feed.get()
-
-                with self._state_lock:
-                    prompt = self.prompt
-
-                if (
-                    aria_id != last_aria_id
-                    and aria_image is not None
-                    and not self._aria_inference_state
-                ):
-                    aria_inference_state = self._generate_mask(aria_image, self.prompt)
-                    if aria_inference_state is not None:
-                        masks = aria_inference_state.get("masks")
-                        if len(masks) > 1:
-                            best = self._find_closest_mask(masks, self._gaze_point)
-                            aria_inference_state["masks"] = [masks[best]]
-                            aria_inference_state["scores"] = [
-                                aria_inference_state["scores"][best]
-                            ]
-                            aria_inference_state["boxes"] = [
-                                aria_inference_state["boxes"][best]
-                            ]
-                            self._aria_inference_state = aria_inference_state
-                        self._aria_locked_image = aria_image
-                        self._publish_inference(
-                            self.aria_inference_publisher,
-                            aria_image,
-                            aria_inference_state,
-                        )
-                    last_aria_id = aria_id
-
-                if ros_id != last_ros_id and ros_image is not None:
-                    ros_inference_state = self._generate_mask(ros_image, self.prompt)
-                    if ros_inference_state is not None:
-                        if (
-                            self._aria_inference_state is not None
-                            and self._aria_locked_image is not None
-                        ):
-                            matched = self._find_matching_ros_mask(
-                                self._aria_locked_image,
-                                self._aria_inference_state,
-                                ros_image,
-                                ros_inference_state,
-                            )
-                            if matched is not None:
-                                ros_inference_state = matched
-                        self._publish_inference(
-                            self.ros_inference_publisher, ros_image, ros_inference_state
-                        )
-                    last_ros_id = ros_id
-
-        except KeyboardInterrupt:
-            logger.info("Shutting down...")
-        except Exception as e:
-            logger.error(f"Error during mask generation: {e}", exc_info=True)
-        finally:
-            self.cleanup()
+    # ---------------------------------------------------------------------------
+    # Publishing
+    # ---------------------------------------------------------------------------
 
     def _publish_inference(
         self,
         ros_publisher: ROSPublisher,
         image: np.ndarray,
         inference_state: Dict[str, Any],
-    ):
-        """Compress and publish aria image + inference state."""
+    ) -> None:
+        """Compress and publish an image alongside its inference state."""
         try:
             success, compressed = ImageHelper.compress_image(image=image)
             if not success:
-                logger.warning("Failed to encode Aria image for publishing")
+                logger.warning("Failed to encode image for publishing")
                 compressed = None
 
             state_to_publish = {
@@ -417,30 +470,39 @@ class ObjectRecognitionPipeline:
             payload = pickle.dumps(
                 {"image": compressed, "inference_state": state_to_publish}
             )
+
             msg = UInt8MultiArray()
             msg.data = payload
-
             logger.debug(f"Payload size: {len(payload) / 1024:.1f} KB")
 
             ros_publisher.publish(msg)
         except Exception as e:
-            logger.error(f"Error publishing results: {e}")
+            logger.error(f"Error publishing results: {e}", exc_info=True)
 
-    def cleanup(self):
+    # ---------------------------------------------------------------------------
+    # Cleanup
+    # ---------------------------------------------------------------------------
+
+    def cleanup(self) -> None:
         self._executor.shutdown()
         self._spin_thread.join(timeout=2.0)
         logger.info("Cleanup complete")
 
 
-def generate_mask(aria_streaming_started: Event, quit_event: Event):
-    listener = ObjectRecognitionPipeline(quit_event=quit_event)
+# ---------------------------------------------------------------------------
+# Entry points
+# ---------------------------------------------------------------------------
+
+
+def generate_mask(aria_streaming_started: Event, quit_event: Event) -> None:
+    pipeline = ObjectRecognitionPipeline(quit_event=quit_event)
     aria_streaming_started.wait()
-    listener.run()
+    pipeline.run()
 
 
 if __name__ == "__main__":
     import multiprocessing
 
     quit_event = multiprocessing.Event()
-    listener = ObjectRecognitionPipeline(quit_event=quit_event)
-    listener.run()
+    pipeline = ObjectRecognitionPipeline(quit_event=quit_event)
+    pipeline.run()
