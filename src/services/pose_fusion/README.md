@@ -4,7 +4,7 @@ Fuses OpenVINS VIO pose with periodic ArUco marker corrections to produce a stab
 
 ## Architecture
 
-This is an **external fusion layer (Option 3)** — it does not modify OpenVINS internals. It runs alongside OpenVINS as a separate ROS 2 node and corrects its output using ArUco detections as loop-closure anchors.
+It runs alongside OpenVINS as a separate ROS 2 node and corrects its output using ArUco detections as loop-closure anchors.
 
 ```
 /aria/imu         ──┐
@@ -32,29 +32,14 @@ Each new ArUco sighting resets accumulated drift. The more frequently the marker
 
 > **Simplification:** The node currently treats the RGB camera centre as equal to the glasses IMU origin. For sub-centimetre accuracy, chain in the `T_camera_glasses` extrinsic from `kalibr_imucam_chain.yaml` at the marked comment in `_on_aruco_pose`.
 
-### ZUPT — zero-velocity freeze
-
-OpenVINS accumulates velocity and gyro-bias drift when the glasses stop moving, because the filter continues integrating noisy IMU samples. The drift is especially visible on a moving → stationary transition.
-
-This node detects stillness via a sliding IMU window:
-
-- `|gyro|` below `zupt_gyro_threshold`
-- `| |accel| − g |` below `zupt_accel_threshold`
-- sustained for `zupt_window_s` seconds
-
-While the device is stationary, the **fused pose is frozen** — VIO drift does not propagate to the output. On motion resume, the node continues from the frozen pose and re-applies `T_correction`.
-
-The `/aria/is_stationary` topic publishes a `Bool` on every state transition. This flag can also be used externally to trigger a VIO reinitialisation if needed.
-
 ## Topics
 
 | Direction | Topic | Type | Description |
 |-----------|-------|------|-------------|
 | Subscribed | `/aria/vio_pose` | `PoseStamped` | OpenVINS output |
 | Subscribed | `/aria/aruco_pose` | `PoseStamped` | ArUco T_camera_marker in camera frame |
-| Subscribed | `/aria/imu` | `Imu` | Raw IMU for ZUPT detection |
+| Subscribed | `/aria/imu` | `Imu` | Raw IMU |
 | Published | `/aria/fused_pose` | `PoseStamped` | Corrected pose in `map` frame |
-| Published | `/aria/is_stationary` | `Bool` | High when ZUPT is active |
 
 ## Parameters
 
@@ -67,9 +52,6 @@ The `/aria/is_stationary` topic publishes a `Bool` on every state transition. Th
 | `marker_quat_y` | `0.0` | |
 | `marker_quat_z` | `0.0` | |
 | `marker_quat_w` | `1.0` | |
-| `zupt_gyro_threshold` | `0.05` | Max gyro magnitude to count as stationary (rad/s) |
-| `zupt_accel_threshold` | `0.15` | Max deviation from \|g\| to count as stationary (m/s²) |
-| `zupt_window_s` | `0.5` | Duration of stillness before ZUPT triggers (s) |
 
 ## Usage
 
@@ -84,7 +66,7 @@ ros2 run <your_package> pose_fusion_node \
     -p marker_quat_w:=1.0
 ```
 
-The node will log each ArUco correction with its translation offset and each ZUPT state transition, so you can verify it is working without needing RViz.
+The node will log each ArUco correction with its translation offset, so you can verify it is working without needing RViz.
 
 ## Frame Convention
 

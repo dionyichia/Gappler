@@ -21,7 +21,7 @@ from services.ros.ros_subscriber import ROSSubscriber
 
 logger = logging.getLogger(__name__)
 
-PROMPT = "phone"
+PROMPT = "mouse"
 
 
 class CameraFeed:
@@ -223,7 +223,7 @@ class ObjectRecognitionPipeline:
         aria_masks = aria_inference_state.get("masks", [])
         ros_masks = ros_inference_state.get("masks", [])
 
-        if not aria_masks or not ros_masks:
+        if not len(aria_masks) or not len(ros_masks):
             return None
 
         # Binary aria mask (H x W)
@@ -236,8 +236,8 @@ class ObjectRecognitionPipeline:
             logger.error(f"Feature matching failed: {e}", exc_info=True)
             return None
 
-        kp0 = match_result["keypoints0"]   # (N, 2) — aria keypoints
-        kp1 = match_result["keypoints1"]   # (M, 2) — ros keypoints
+        kp0 = match_result["keypoints0"]  # (N, 2) — aria keypoints
+        kp1 = match_result["keypoints1"]  # (M, 2) — ros keypoints
         matches = match_result["matches"]  # (K, 2) — index pairs
 
         if len(matches) == 0:
@@ -250,13 +250,12 @@ class ObjectRecognitionPipeline:
 
         # Retain only pairs whose Aria keypoint falls inside the Aria mask
         xs0, ys0 = matched_kp0[:, 0], matched_kp0[:, 1]
-        valid = (
-            (ys0 >= 0) & (ys0 < aria_h) &
-            (xs0 >= 0) & (xs0 < aria_w)
-        )
+        valid = (ys0 >= 0) & (ys0 < aria_h) & (xs0 >= 0) & (xs0 < aria_w)
         valid[valid] = aria_mask_np[ys0[valid], xs0[valid]]
 
-        filtered_kp1 = matched_kp1[valid]  # ROS keypoints that correspond to the aria mask
+        filtered_kp1 = matched_kp1[
+            valid
+        ]  # ROS keypoints that correspond to the aria mask
 
         if len(filtered_kp1) == 0:
             logger.debug("No feature matches fall within the Aria mask")
@@ -275,10 +274,7 @@ class ObjectRecognitionPipeline:
             ros_h, ros_w = ros_mask_np.shape
 
             xs1, ys1 = filtered_kp1[:, 0], filtered_kp1[:, 1]
-            in_bounds = (
-                (ys1 >= 0) & (ys1 < ros_h) &
-                (xs1 >= 0) & (xs1 < ros_w)
-            )
+            in_bounds = (ys1 >= 0) & (ys1 < ros_h) & (xs1 >= 0) & (xs1 < ros_w)
             count = int(ros_mask_np[ys1[in_bounds], xs1[in_bounds]].sum())
 
             if count > best_count:

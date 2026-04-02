@@ -256,13 +256,6 @@ class PoseStreamingPipeline:
         )
         self.slam_process.start()
 
-        self._imu_msg = Imu()
-        self._imu_msg.header.frame_id = "imu"
-        # Covariance unknown — set diagonal to -1 per REP-145
-        self._imu_msg.linear_acceleration_covariance[0] = -1.0
-        self._imu_msg.angular_velocity_covariance[0] = -1.0
-        self._imu_msg.orientation_covariance[0] = -1.0
-
     # --- Callbacks registered with the observer ---
     def _on_imu_received(self, samples: Sequence[MotionData], imu_idx: int) -> None:
         """Handle incoming IMU samples."""
@@ -272,18 +265,24 @@ class PoseStreamingPipeline:
             gyro = sample.gyro_radsec
             ts = sample.capture_timestamp_ns
 
-            self._imu_msg.header.stamp.sec = int(ts // 1_000_000_000)
-            self._imu_msg.header.stamp.nanosec = int(ts % 1_000_000_000)
+            msg = Imu()
+            msg.header.frame_id = "imu"
+            msg.header.stamp.sec = int(ts // 1_000_000_000)
+            msg.header.stamp.nanosec = int(ts % 1_000_000_000)
+            # Covariance unknown — set diagonal to -1 per REP-145
+            msg.linear_acceleration_covariance[0] = -1.0
+            msg.angular_velocity_covariance[0] = -1.0
+            msg.orientation_covariance[0] = -1.0
 
-            self._imu_msg.linear_acceleration.x = float(accel[0])
-            self._imu_msg.linear_acceleration.y = float(accel[1])
-            self._imu_msg.linear_acceleration.z = float(accel[2])
+            msg.linear_acceleration.x = float(accel[0])
+            msg.linear_acceleration.y = float(accel[1])
+            msg.linear_acceleration.z = float(accel[2])
 
-            self._imu_msg.angular_velocity.x = float(gyro[0])
-            self._imu_msg.angular_velocity.y = float(gyro[1])
-            self._imu_msg.angular_velocity.z = float(gyro[2])
+            msg.angular_velocity.x = float(gyro[0])
+            msg.angular_velocity.y = float(gyro[1])
+            msg.angular_velocity.z = float(gyro[2])
 
-            self.imu_publisher.publish(self._imu_msg)
+            self.imu_publisher.publish(msg)
 
     def _on_slam_frame(self, image: np.ndarray, record: ImageDataRecord) -> None:
         """Handle incoming SLAM frames."""
