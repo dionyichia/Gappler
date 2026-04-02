@@ -17,13 +17,16 @@ import torch
 from lightglue import LightGlue, SuperPoint
 from lightglue.utils import numpy_image_to_torch, rbd
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import UInt8MultiArray
 
-from config import ROS2Topics, Settings
-from services.ros import RealmanCameraSubscriber, ROSSubscriber
-from services.ros.image_helper import ImageHelper
-from services.ros.ros_publisher import ROSPublisher
+from config import VIDEO_QOS, ROS2Topics, Settings
+from services.ros import (
+    ImageHelper,
+    ROSPublisher,
+    subscribe_realsense_color_feed,
+)
 
 # Configuration
 torch.set_grad_enabled(False)
@@ -175,17 +178,15 @@ class FeatureMatchingPipeline:
     # ------------------------------------------------------------------
 
     def _setup_ros(self) -> None:
-        self._aria_camera_subscriber = ROSSubscriber("Aria_RGB_camera_subscriber")
-        self._ros_camera_subscriber = RealmanCameraSubscriber(
-            "realman_camera_subscriber"
-        )
+        self._aria_camera_subscriber = Node("Aria_RGB_camera_subscriber")
 
-        self._aria_camera_subscriber.subscribe(
+        self._aria_camera_subscriber.create_subscription(
             CompressedImage,
             ROS2Topics.RGB_CAMERA_UNDISTORTED.value,
             self._on_aria_frame,
+            VIDEO_QOS,
         )
-        self._ros_camera_subscriber.subscribe_color_feed(self._on_ros_frame)
+        subscribe_realsense_color_feed(self._aria_camera_subscriber, self._on_ros_frame)
 
         self._match_publisher = ROSPublisher(
             "match_publisher", UInt8MultiArray, ROS2Topics.FEATURE_MATCH_RESULTS.value
@@ -193,7 +194,6 @@ class FeatureMatchingPipeline:
 
         self._executor = MultiThreadedExecutor()
         self._executor.add_node(self._aria_camera_subscriber)
-        self._executor.add_node(self._ros_camera_subscriber)
 
         self._spin_thread = threading.Thread(target=self._executor.spin, daemon=True)
         self._spin_thread.start()

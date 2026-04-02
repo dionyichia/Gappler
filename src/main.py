@@ -13,6 +13,8 @@ from ipaddress import IPv4Address
 from time import sleep
 from typing import Optional
 
+import rclpy
+
 from config import Settings
 from schemas.application import ApplicationConfig
 from services.process_manager import ProcessManager
@@ -21,6 +23,9 @@ from utils import TerminalRawMode, exit_keypress, safe_update_iptables, setup_lo
 # Logging setup
 setup_logging()
 logger = logging.getLogger(__name__)
+
+if not rclpy.ok():
+    rclpy.init()
 
 
 class ProcessPipelineBuilder:

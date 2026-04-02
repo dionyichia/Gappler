@@ -13,7 +13,7 @@ from projectaria_tools.core.sensor_data import SensorDataType, TimeDomain
 from projectaria_tools.core.stream_id import StreamId
 from tqdm import tqdm
 
-from config import AriaConfig, PlaybackControllerConfig, ROS2Config, ROS2Topics
+from config import AriaConfig, PlaybackControllerConfig, ROS2Topics
 from services.aria_device.eye_tracking import EyeTrackingPipeline
 
 

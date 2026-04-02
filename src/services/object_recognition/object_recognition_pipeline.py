@@ -8,16 +8,20 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 import torch
 from geometry_msgs.msg import Point
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String, UInt8MultiArray
 
 from config import AudioStreamingPipelineConfig, ModelPaths, ROS2Topics
 from services.feature_matching import FeatureMatcher
-from services.ros.image_helper import ImageHelper
-from services.ros.realman_camera_subscriber import RealmanCameraSubscriber
-from services.ros.ros_publisher import ROSPublisher
-from services.ros.ros_subscriber import ROSSubscriber
+from services.object_recognition import SAM3Model
+from services.ros import (
+    ImageHelper,
+    ROSPublisher,
+    ROSSubscriber,
+    subscribe_realsense_color_feed,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +36,7 @@ class CameraFeed:
         self._image_id: int = 0
         self._lock = threading.Lock()
 
-    def update(self, frame: np.ndarray):
+    def update(self, frame: np.ndarray) -> None:
         with self._lock:
             self._image = frame
             self._image_id += 1
@@ -48,14 +52,11 @@ class ObjectRecognitionPipeline:
     def __init__(self, quit_event: Event):
         self._quit_event = quit_event
 
-        # Lazy import to prevent SAM3 from disrupting the initialization of cv2
-        from services.object_recognition.sam3_model import SAM3Model
-
+        self.prompt = PROMPT
         self.model = SAM3Model(
             checkpoint_path=ModelPaths.SAM3_PATH,
             confidence_threshold=0.5,
         )
-        self.prompt = PROMPT
 
         self._aria_inference_state: Optional[Dict[str, Any]] = None
         self._aria_locked_image: Optional[np.ndarray] = None
@@ -64,29 +65,48 @@ class ObjectRecognitionPipeline:
 
         self._aria_feed = CameraFeed()
         self._ros_feed = CameraFeed()
-        self._gaze_point = None
+        self._gaze_point: Optional[Tuple[float, float]] = None
+        self._state_lock = threading.Lock()
 
+        self._setup_ros_node()
+
+    # ---------------------------------------------------------------------------
+    # ROS setup
+    # ---------------------------------------------------------------------------
+
+    def _setup_ros_node(self) -> None:
+        """Initialise the ROS node, subscriptions, executor, and publishers."""
         self._object_recognition_node = ROSSubscriber("object_recognition_node")
-        self._ros_camera_subscriber = RealmanCameraSubscriber("RGB_camera_subscriber")
 
-        self._ros_camera_subscriber.subscribe_color_feed(self._on_ros_image)
+        image_cb_group = ReentrantCallbackGroup()
+        state_cb_group = MutuallyExclusiveCallbackGroup()
 
+        subscribe_realsense_color_feed(
+            self._object_recognition_node,
+            self._on_realsense_image,
+            callback_group=image_cb_group,
+        )
         self._object_recognition_node.subscribe(
             CompressedImage,
             ROS2Topics.RGB_CAMERA_UNDISTORTED.value,
             self._on_aria_image,
+            callback_group=image_cb_group,
         )
         self._object_recognition_node.subscribe(
-            String, ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value, self._on_prompt
+            String,
+            ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value,
+            self._on_prompt,
+            callback_group=state_cb_group,
         )
         self._object_recognition_node.subscribe(
-            Point, ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value, self._on_gaze
+            Point,
+            ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value,
+            self._on_gaze,
+            callback_group=state_cb_group,
         )
 
         self._executor = MultiThreadedExecutor()
         self._executor.add_node(self._object_recognition_node)
-        self._executor.add_node(self._ros_camera_subscriber)
-
         self._spin_thread = threading.Thread(target=self._executor.spin, daemon=True)
         self._spin_thread.start()
 
@@ -101,6 +121,10 @@ class ObjectRecognitionPipeline:
             ROS2Topics.ROS_CAMERA_WITH_OBJECT_MASKS.value,
         )
 
+    # ---------------------------------------------------------------------------
+    # ROS callbacks
+    # ---------------------------------------------------------------------------
+
     def _on_aria_image(self, msg: CompressedImage) -> None:
         try:
             frame = ImageHelper.uncompress_image(msg.data)
@@ -110,27 +134,30 @@ class ObjectRecognitionPipeline:
                 return
             self._aria_feed.update(frame)
         except Exception as e:
-            print(f"Error decoding image: {e}")
+            logger.error(f"Error decoding Aria image: {e}", exc_info=True)
 
-    def _on_ros_image(self, frame: np.ndarray) -> None:
+    def _on_realsense_image(self, frame: np.ndarray) -> None:
         if frame is None:
-            logger.warning("Received empty ROS camera frame, skipping")
+            logger.warning("Received empty RealSense frame, skipping")
             return
         self._ros_feed.update(frame)
 
     def _on_gaze(self, msg: Point) -> None:
-        self._gaze_point = (msg.x, msg.y)
+        with self._state_lock:
+            self._gaze_point = (msg.x, msg.y)
 
     def _on_prompt(self, msg: String) -> None:
-        """Handle an incoming audio prompt from ROS."""
+        """Handle an incoming audio transcription prompt from ROS."""
         command = msg.data.strip().lower()
-        if command == AudioStreamingPipelineConfig.STOP_KEYWORD:
-            self.prompt = ""
-            self._aria_inference_state = None
-        elif command:
-            if command != self.prompt:
+        if not command:
+            return
+        with self._state_lock:
+            if command == AudioStreamingPipelineConfig.STOP_KEYWORD:
+                self.prompt = ""
                 self._aria_inference_state = None
-            self.prompt = command
+            elif command != self.prompt:
+                self.prompt = command
+                self._aria_inference_state = None
 
     def _generate_mask(
         self, image: np.ndarray, prompt: str
@@ -304,22 +331,21 @@ class ObjectRecognitionPipeline:
 
         try:
             while not self._quit_event.is_set():
-                if not self.prompt:
+                prompt = self.prompt
+                if not prompt:
                     time.sleep(0.1)
                     continue
 
                 aria_image, aria_id = self._aria_feed.get()
                 ros_image, ros_id = self._ros_feed.get()
 
-                aria_locked = (
-                    self._aria_inference_state is not None
-                    and len(self._aria_inference_state.get("masks", [])) == 1
-                )
+                with self._state_lock:
+                    prompt = self.prompt
 
                 if (
                     aria_id != last_aria_id
                     and aria_image is not None
-                    and not aria_locked
+                    and not self._aria_inference_state
                 ):
                     aria_inference_state = self._generate_mask(aria_image, self.prompt)
                     if aria_inference_state is not None:
@@ -407,8 +433,8 @@ class ObjectRecognitionPipeline:
 
 
 def generate_mask(aria_streaming_started: Event, quit_event: Event):
-    logger.info("Starting Listener for image processing...")
     listener = ObjectRecognitionPipeline(quit_event=quit_event)
+    aria_streaming_started.wait()
     listener.run()
 
 

@@ -100,7 +100,7 @@ class AriaStreamClient:
 
         try:
             self.streaming_client.unsubscribe()
-            logger.info("✓ Unsubscribed from data stream")
+            logger.debug("✓ Unsubscribed from data stream")
         except Exception as e:
             logger.error(f"✗ Error during unsubscribe: {e}")
         finally:

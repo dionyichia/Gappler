@@ -1,11 +1,13 @@
 from .image_helper import ImageHelper
-from .realman_camera_subscriber import RealmanCameraSubscriber
+from .realsense_helper import (
+    subscribe_realsense_color_feed,
+    subscribe_realsense_depth_feed,
+)
 from .ros_publisher import ROSPublisher
-from .ros_subscriber import ROSSubscriber
 
 __all__ = [
     "ImageHelper",
-    "RealmanCameraSubscriber",
+    "subscribe_realsense_color_feed",
+    "subscribe_realsense_depth_feed",
     "ROSPublisher",
-    "ROSSubscriber",
 ]
