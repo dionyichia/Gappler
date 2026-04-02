@@ -7,11 +7,10 @@ import logging
 import pickle
 import threading
 import time
-from dataclasses import dataclass, field
 from multiprocessing.synchronize import Event
 from queue import Queue
 from threading import Lock, Thread
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
 import numpy as np
 import torch
@@ -25,7 +24,6 @@ from config import ROS2Topics, Settings
 from services.ros import RealmanCameraSubscriber, ROSSubscriber
 from services.ros.image_helper import ImageHelper
 from services.ros.ros_publisher import ROSPublisher
-from services.visualizer.renderers.object_mask_visualizer import ObjectMaskVisualizer
 
 # Configuration
 torch.set_grad_enabled(False)
@@ -33,21 +31,6 @@ logger = logging.getLogger(__name__)
 
 _EXTRACTOR = SuperPoint(max_num_keypoints=2048).eval().to(Settings.DEVICE)
 _MATCHER = LightGlue(features="superpoint").eval().to(Settings.DEVICE)
-
-
-# ---------------------------------------------------------------------------
-# Data
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class FrameBundle:
-    """Paired frames and optional inference results from the object detection pipeline."""
-
-    aria_frame: np.ndarray
-    ros_frame: np.ndarray
-    aria_inference: Optional[dict] = field(default=None)
-    ros_inference: Optional[dict] = field(default=None)
 
 
 # ---------------------------------------------------------------------------
@@ -104,8 +87,8 @@ class MatchingWorker:
     most recently submitted frame pair, discarding stale submissions.
     """
 
-    def __init__(self, matcher: FeatureMatcher):
-        self._matcher = matcher
+    def __init__(self):
+        self._matcher = FeatureMatcher()
         self._queue = Queue(maxsize=1)
         self._result_lock = Lock()
         self._result: Optional[Dict] = None
@@ -138,12 +121,6 @@ class MatchingWorker:
             logger.error(f"Failed to submit frames: {e}")
             return False
 
-    def consume_result(self) -> Optional[Dict]:
-        """Return and clear the latest result to prevent duplicate publishing."""
-        with self._result_lock:
-            result, self._result = self._result, None
-            return result
-
     def stop(self) -> None:
         self._active = False
 
@@ -160,6 +137,11 @@ class MatchingWorker:
             except Exception as e:
                 logger.error(f"Matching error: {e}", exc_info=True)
 
+    def get_result(self) -> Optional[Dict]:
+        with self._result_lock:
+            result, self._result = self._result, None
+            return result
+
 
 # ---------------------------------------------------------------------------
 # Pipeline
@@ -171,22 +153,19 @@ class FeatureMatchingPipeline:
     Coordinates feature matching between Aria and ROS2 camera streams.
 
     Frame flow:
-        ROS callbacks → raw frames / bundle (protected by _frame_lock)
+        ROS callbacks → raw frames (protected by _frame_lock)
             → MatchingWorker (background thread)
                 → _publish_results() (main loop)
     """
 
     def __init__(self, quit_event: Event):
         self._quit_event = quit_event
-        self._matching_enabled = True
         self._frame_lock = Lock()
 
         self._aria_frame: Optional[np.ndarray] = None
         self._ros_frame: Optional[np.ndarray] = None
-        self._bundle: Optional[FrameBundle] = None
 
-        self._matcher = FeatureMatcher()
-        self._matching_worker = MatchingWorker(self._matcher)
+        self._matching_worker = MatchingWorker()
 
         self._setup_ros()
         logger.info("Feature Matching Pipeline initialised")
@@ -200,7 +179,6 @@ class FeatureMatchingPipeline:
         self._ros_camera_subscriber = RealmanCameraSubscriber(
             "realman_camera_subscriber"
         )
-        self._mask_subscriber = ROSSubscriber("object_detection_inference_subscriber")
 
         self._aria_camera_subscriber.subscribe(
             CompressedImage,
@@ -208,11 +186,6 @@ class FeatureMatchingPipeline:
             self._on_aria_frame,
         )
         self._ros_camera_subscriber.subscribe_color_feed(self._on_ros_frame)
-        self._mask_subscriber.subscribe(
-            UInt8MultiArray,
-            ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS.value,
-            self._on_mask_bundle,
-        )
 
         self._match_publisher = ROSPublisher(
             "match_publisher", UInt8MultiArray, ROS2Topics.FEATURE_MATCH_RESULTS.value
@@ -221,7 +194,6 @@ class FeatureMatchingPipeline:
         self._executor = MultiThreadedExecutor()
         self._executor.add_node(self._aria_camera_subscriber)
         self._executor.add_node(self._ros_camera_subscriber)
-        self._executor.add_node(self._mask_subscriber)
 
         self._spin_thread = threading.Thread(target=self._executor.spin, daemon=True)
         self._spin_thread.start()
@@ -241,85 +213,22 @@ class FeatureMatchingPipeline:
             self._ros_frame = frame
         self._trigger_matching()
 
-    def _on_mask_bundle(self, msg: UInt8MultiArray) -> None:
-        try:
-            bundle = pickle.loads(bytes(msg.data))
-            aria_bundle = bundle.get("aria", {})
-            ros_bundle = bundle.get("ros", {})
-
-            # if aria_image is None or ros_image is None:
-            #     logger.debug("Mask bundle missing image(s), ignoring bundle")
-            #     return
-
-            # with self._frame_lock:
-            #     self._bundle = FrameBundle(
-            #         aria_frame=aria_image,
-            #         ros_frame=ros_image,
-            #         aria_inference=aria_bundle.get("inference_state"),
-            #         ros_inference=ros_bundle.get("inference_state"),
-            #     )
-            # self._trigger_matching()
-
-        except Exception as e:
-            logger.error(f"Failed to deserialize mask bundle: {e}", exc_info=True)
-
     # ------------------------------------------------------------------
     # Matching
     # ------------------------------------------------------------------
 
-    def _get_best_frame_pair(self) -> Optional[Tuple[np.ndarray, np.ndarray]]:
-        """
-        Return the best available frame pair.
-        Bundle frames are preferred (temporally synced); raw feeds are the fallback.
-        Must be called with _frame_lock held.
-        """
-        if self._bundle is not None:
-            logger.debug("Using bundle frames")
-            return self._bundle.aria_frame, self._bundle.ros_frame
-
-        if self._aria_frame is not None and self._ros_frame is not None:
-            logger.debug("Using raw camera frames")
-            return self._aria_frame, self._ros_frame
-
-        return None
-
     def _trigger_matching(self) -> None:
-        if not self._matching_enabled:
-            return
         with self._frame_lock:
-            pair = self._get_best_frame_pair()
-            if pair is not None:
-                self._matching_worker.submit(*pair)
-
-    def toggle_matching(self) -> None:
-        self._matching_enabled = not self._matching_enabled
-        logger.info(f"Matching {'enabled' if self._matching_enabled else 'disabled'}")
+            if self._aria_frame is None or self._ros_frame is None:
+                return
+            self._matching_worker.submit(self._aria_frame, self._ros_frame)
 
     # ------------------------------------------------------------------
     # Publishing
     # ------------------------------------------------------------------
 
-    def _annotate_frame(self, compressed: bytes, inference: Optional[dict]) -> bytes:
-        """Overlay masks onto a compressed frame if inference results are available."""
-        if inference is None:
-            return compressed
-        image = ImageHelper.uncompress_image(compressed)
-        annotated = ObjectMaskVisualizer.plot_results(img=image, results=inference)
-        return ImageHelper.compress_image(annotated)[1]
-
     def _publish_results(self, results: Dict) -> None:
         try:
-            with self._frame_lock:
-                bundle = self._bundle
-
-            if bundle is not None:
-                results["frame0"] = self._annotate_frame(
-                    results["frame0"], bundle.aria_inference
-                )
-                results["frame1"] = self._annotate_frame(
-                    results["frame1"], bundle.ros_inference
-                )
-
             payload = pickle.dumps(results)
             msg = UInt8MultiArray()
             msg.data = payload
@@ -337,11 +246,11 @@ class FeatureMatchingPipeline:
         logger.info("Feature Matching Pipeline running")
         try:
             while not self._quit_event.is_set():
-                results = self._matching_worker.consume_result()
-                if results is not None:
-                    self._publish_results(results)
-                else:
-                    time.sleep(0.01)
+                result = self._matching_worker.get_result()
+                if result:
+                    self._publish_results(result)
+                time.sleep(0.01)
+
         except KeyboardInterrupt:
             logger.info("Interrupted by user")
         except Exception as e:

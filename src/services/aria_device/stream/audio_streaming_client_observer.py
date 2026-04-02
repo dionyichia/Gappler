@@ -71,9 +71,9 @@ class AudioObserver(BaseStreamingClientObserver):
         #             save_path = self._save_wav_chunk(
         #                 resampled, AudioStreamingPipelineConfig.WHISPER_SAMPLE_RATE
         #             )
-        #             print(f"Audio saved: {save_path}")
+        #             logger.debug(f"Audio saved: {save_path}")
         #         except Exception as e:
-        #             print(f"Error saving audio: {e}")
+        #             logger.error(f"Error saving audio: {e}")
         #     self._last_save_time = now
 
     def get_resampled_audio(self) -> np.ndarray:

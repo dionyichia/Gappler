@@ -52,7 +52,7 @@ class AriaVIOObserver(BaseStreamingClientObserver):
         # now = time.time()
         # if now - self._last_callback_time >= 1.0:
         #     # This is the RAW rate from the hardware
-        #     print(f"[Hardware Rate] {self._total_samples_received} samples/sec")
+        #     logger.info(f"[Hardware Rate] {self._total_samples_received} samples/sec")
         #     self._total_samples_received = 0
         #     self._last_callback_time = now
         # ------------------------

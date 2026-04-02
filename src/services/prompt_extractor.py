@@ -12,6 +12,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from config import AudioStreamingPipelineConfig, Settings
 
+logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("huggingface_hub").setLevel(logging.WARNING)
 
@@ -21,11 +22,11 @@ class LLMPromptExtractor:
 
     def __init__(self, model_name: str):
         """Initialize with a lightweight LLM."""
-        print(f"Loading model: {model_name}...")
+        logger.debug(f"Loading model: {model_name}...")
 
         # Determine device
         self.device = Settings.DEVICE
-        print(f"Using device: {self.device}")
+        logger.debug(f"Using device: {self.device}")
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(
@@ -33,7 +34,7 @@ class LLMPromptExtractor:
         )
         self.model.to(self.device)
         self.model.eval()
-        print("Model loaded successfully")
+        logger.debug("Model loaded successfully")
 
     def extract_object(self, phrase: str) -> str:
         """
@@ -144,4 +145,4 @@ if __name__ == "__main__":
 
     for phrase in test_phrases:
         result = extractor.extract_object(phrase)
-        print(f'"{phrase}" -> {result}')
+        logger.info(f'"{phrase}" -> {result}')

@@ -13,6 +13,7 @@ from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import String, UInt8MultiArray
 
 from config import AudioStreamingPipelineConfig, ModelPaths, ROS2Topics
+from services.feature_matching import FeatureMatcher
 from services.ros.image_helper import ImageHelper
 from services.ros.realman_camera_subscriber import RealmanCameraSubscriber
 from services.ros.ros_publisher import ROSPublisher
@@ -57,6 +58,9 @@ class ObjectRecognitionPipeline:
         self.prompt = PROMPT
 
         self._aria_inference_state: Optional[Dict[str, Any]] = None
+        self._aria_locked_image: Optional[np.ndarray] = None
+
+        self._feature_matcher = FeatureMatcher()
 
         self._aria_feed = CameraFeed()
         self._ros_feed = CameraFeed()
@@ -189,6 +193,113 @@ class ObjectRecognitionPipeline:
 
         return best_idx
 
+    def _find_matching_ros_mask(
+        self,
+        aria_image: np.ndarray,
+        aria_inference_state: Dict[str, Any],
+        ros_image: np.ndarray,
+        ros_inference_state: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Use feature matching to identify which ROS mask corresponds to the Aria mask.
+
+        Steps:
+          1. Find all matched keypoint pairs between the Aria and ROS frames.
+          2. Keep only the Aria-side keypoints that fall inside the Aria mask.
+          3. For each ROS mask, count how many of the corresponding ROS-side
+             keypoints land inside it.
+          4. Return a copy of ros_inference_state filtered to the best-matching
+             mask, or None if no mask receives any hits.
+
+        Args:
+            aria_image: The Aria frame used when the Aria mask was computed.
+            aria_inference_state: Locked Aria inference state (single mask).
+            ros_image: Current ROS camera frame.
+            ros_inference_state: ROS inference state with one or more masks.
+
+        Returns:
+            Filtered ros_inference_state with only the best mask, or None.
+        """
+        aria_masks = aria_inference_state.get("masks", [])
+        ros_masks = ros_inference_state.get("masks", [])
+
+        if not aria_masks or not ros_masks:
+            return None
+
+        # Binary aria mask (H x W)
+        aria_mask_np = aria_masks[0].squeeze(0).cpu().numpy() > 0
+        aria_h, aria_w = aria_mask_np.shape
+
+        try:
+            match_result = self._feature_matcher.match_frames(aria_image, ros_image)
+        except Exception as e:
+            logger.error(f"Feature matching failed: {e}", exc_info=True)
+            return None
+
+        kp0 = match_result["keypoints0"]   # (N, 2) — aria keypoints
+        kp1 = match_result["keypoints1"]   # (M, 2) — ros keypoints
+        matches = match_result["matches"]  # (K, 2) — index pairs
+
+        if len(matches) == 0:
+            logger.debug("No feature matches found between Aria and ROS frames")
+            return None
+
+        # Matched keypoints in each frame
+        matched_kp0 = kp0[matches[:, 0]].round().astype(int)  # (K, 2)
+        matched_kp1 = kp1[matches[:, 1]].round().astype(int)  # (K, 2)
+
+        # Retain only pairs whose Aria keypoint falls inside the Aria mask
+        xs0, ys0 = matched_kp0[:, 0], matched_kp0[:, 1]
+        valid = (
+            (ys0 >= 0) & (ys0 < aria_h) &
+            (xs0 >= 0) & (xs0 < aria_w)
+        )
+        valid[valid] = aria_mask_np[ys0[valid], xs0[valid]]
+
+        filtered_kp1 = matched_kp1[valid]  # ROS keypoints that correspond to the aria mask
+
+        if len(filtered_kp1) == 0:
+            logger.debug("No feature matches fall within the Aria mask")
+            return None
+
+        logger.debug(
+            f"Feature matching: {len(filtered_kp1)}/{len(matches)} matches inside Aria mask"
+        )
+
+        # Count how many filtered ROS keypoints land in each ROS mask
+        best_idx = None
+        best_count = 0
+
+        for i, ros_mask in enumerate(ros_masks):
+            ros_mask_np = ros_mask.squeeze(0).cpu().numpy() > 0
+            ros_h, ros_w = ros_mask_np.shape
+
+            xs1, ys1 = filtered_kp1[:, 0], filtered_kp1[:, 1]
+            in_bounds = (
+                (ys1 >= 0) & (ys1 < ros_h) &
+                (xs1 >= 0) & (xs1 < ros_w)
+            )
+            count = int(ros_mask_np[ys1[in_bounds], xs1[in_bounds]].sum())
+
+            if count > best_count:
+                best_count = count
+                best_idx = i
+
+        if best_idx is None or best_count == 0:
+            logger.debug("No ROS mask matched the Aria mask via feature matching")
+            return None
+
+        logger.debug(
+            f"Matched ROS mask idx={best_idx} with {best_count}/{len(filtered_kp1)} hits"
+        )
+
+        return {
+            **ros_inference_state,
+            "masks": [ros_masks[best_idx]],
+            "scores": [ros_inference_state["scores"][best_idx]],
+            "boxes": [ros_inference_state["boxes"][best_idx]],
+        }
+
     def run(self):
         logger.info("Object recognition pipeline started. Waiting for command...")
 
@@ -227,6 +338,7 @@ class ObjectRecognitionPipeline:
                                 aria_inference_state["boxes"][best]
                             ]
                             self._aria_inference_state = aria_inference_state
+                        self._aria_locked_image = aria_image
                         self._publish_inference(
                             self.aria_inference_publisher,
                             aria_image,
@@ -237,8 +349,18 @@ class ObjectRecognitionPipeline:
                 if ros_id != last_ros_id and ros_image is not None:
                     ros_inference_state = self._generate_mask(ros_image, self.prompt)
                     if ros_inference_state is not None:
-                        masks = ros_inference_state.get("masks")
-                        # TODO: Perform feature matching to see if it there is a valid pair compared to the original aria mask
+                        if (
+                            self._aria_inference_state is not None
+                            and self._aria_locked_image is not None
+                        ):
+                            matched = self._find_matching_ros_mask(
+                                self._aria_locked_image,
+                                self._aria_inference_state,
+                                ros_image,
+                                ros_inference_state,
+                            )
+                            if matched is not None:
+                                ros_inference_state = matched
                         self._publish_inference(
                             self.ros_inference_publisher, ros_image, ros_inference_state
                         )
