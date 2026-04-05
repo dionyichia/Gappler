@@ -15,6 +15,7 @@ class ROS2Topics(Enum):
 
     RGB_CAMERA_WITH_OBJECT_MASKS = "/aria/rgb_camera/object_masks"
     ROS_CAMERA_WITH_OBJECT_MASKS = "/realman/rgb_camera/object_masks"
+    COMBINED_VISUALIZATION = "/combined/object_masks"
 
     FEATURE_MATCH_RESULTS = "/aria/rgb_camera/feature_match"
 

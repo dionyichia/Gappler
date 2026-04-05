@@ -10,7 +10,7 @@ import sys
 import time
 from multiprocessing.synchronize import Event
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -29,11 +29,13 @@ from services.visualizer.utils import create_placeholder
 
 os.environ["QT_QPA_FONTDIR"] = "/usr/share/fonts"
 
-# Add src directory to path
 src_path = Path(__file__).parent.parent
 sys.path.insert(0, str(src_path))
 
 logger = logging.getLogger(__name__)
+
+# How long (seconds) to hold the last received frame before showing a placeholder.
+_FRAME_STALE_TIMEOUT = 2.0
 
 
 class Visualizer:
@@ -58,8 +60,15 @@ class Visualizer:
 
         # UI state
         self.show_menu = False
-        self._reference_frame: Optional[np.ndarray] = None
+
+        # Per-topic frame cache: topic → (frame, received_at_timestamp)
+        self._frame_cache: Dict[ROS2Topics, Tuple[np.ndarray, float]] = {}
+
+        # The frame to composite in the current render tick.
         self._display_frame: Optional[np.ndarray] = None
+
+        # Reference frame used when overlaying gaze on the raw image.
+        self._reference_frame: Optional[np.ndarray] = None
 
         # Renderers
         self._gaze_viz = GazeVisualizer()
@@ -94,13 +103,11 @@ class Visualizer:
             self._cleanup()
 
     def _setup(self) -> None:
-        """Initialise window, ROS manager, and keyboard handler."""
         self._setup_window()
         self._setup_ros()
         self._setup_keyboard()
 
     def _cleanup(self) -> None:
-        """Release all resources."""
         logger.info("Cleaning up resources…")
         if self._ros_manager:
             self._ros_manager.stop()
@@ -138,6 +145,7 @@ class Visualizer:
             on_aria_mask_bundle=lambda b: self._on_mask_bundle(b, "aria"),
             on_ros_mask_bundle=lambda b: self._on_mask_bundle(b, "ros"),
             on_feature_match=self._on_feature_match,
+            on_combined_bundle=self._on_combined_bundle,
         )
         self._ros_manager.start()
 
@@ -150,17 +158,15 @@ class Visualizer:
         ]:
             frame = self._ingest_compressed_image(msg)
             if self.current_topic == ROS2Topics.RGB_CAMERA_RAW:
-                self._display_frame = frame
+                self._set_display_frame(frame)
             elif self.current_topic == ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE:
                 self._reference_frame = frame
 
     def _on_undistorted_image(self, msg: CompressedImage) -> None:
         if self.current_topic == ROS2Topics.RGB_CAMERA_UNDISTORTED:
-            frame = self._ingest_compressed_image(msg)
-            self._display_frame = frame
+            self._set_display_frame(self._ingest_compressed_image(msg))
 
     def _on_gaze_position(self, msg: Point) -> None:
-        # If gaze topic is active, draw the gaze point over the reference frame
         if self.current_topic == ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE:
             if self._reference_frame is not None:
                 gaze_point = self._rotate_gaze_point_90_cw(
@@ -168,7 +174,7 @@ class Visualizer:
                 )
                 annotated = self._gaze_viz.visualize(self._reference_frame, gaze_point)
                 if annotated is not None:
-                    self._display_frame = annotated
+                    self._set_display_frame(annotated)
 
     def _rotate_gaze_point_90_cw(
         self, point: Tuple[float, float], image_shape: Tuple[int, ...]
@@ -199,9 +205,8 @@ class Visualizer:
             logger.warning(f"Mask bundle missing image for source '{source}'")
             return
 
-        self._display_frame = ObjectMaskVisualizer.plot_results(
-            image, bundle.get("inference_state")
-        )
+        frame = ObjectMaskVisualizer.plot_results(image, bundle.get("inference_state"))
+        self._set_display_frame(frame)
 
     def _on_feature_match(self, bundle: dict) -> None:
         if self.current_topic != ROS2Topics.FEATURE_MATCH_RESULTS:
@@ -214,26 +219,104 @@ class Visualizer:
             logger.warning("Feature match bundle missing frame(s)")
             return
 
-        self._display_frame = self._match_viz.draw_matches(
+        frame = self._match_viz.draw_matches(
             frame0,
             frame1,
             bundle.get("keypoints0", {}),
             bundle.get("keypoints1", {}),
             bundle.get("matches"),
         )
+        self._set_display_frame(frame)
 
-    def _ingest_compressed_image(self, msg: CompressedImage) -> None:
-        """Decode a CompressedImage message and store as the latest frame."""
+    def _ingest_compressed_image(self, msg: CompressedImage) -> Optional[np.ndarray]:
+        """Decode a CompressedImage message into a BGR frame."""
         try:
             frame = ImageHelper.uncompress_image(msg.data)
-
             if frame is None:
-                print("Received empty or all-black frame, skipping")
-                return
-
+                logger.debug("Received empty or all-black frame, skipping")
+                return None
             return cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         except Exception as e:
             logger.error(f"Error processing received image: {e}")
+            return None
+
+    def _on_combined_bundle(self, bundle: dict) -> None:
+        if self.current_topic != ROS2Topics.COMBINED_VISUALIZATION:
+            return
+
+        ros_image = ImageHelper.uncompress_image(bundle.get("image", b""))
+        if ros_image is None:
+            logger.warning("Combined bundle missing ROS image")
+            return
+
+        # 1. Render mask onto the ROS frame.
+        frame = ObjectMaskVisualizer.plot_results(
+            ros_image, bundle.get("inference_state")
+        )
+        frame = cv2.cvtColor(frame.copy(), cv2.COLOR_RGB2BGR)
+
+        # 2. Render mask onto the Aria reference frame.
+        ref_raw = ImageHelper.uncompress_image(bundle.get("reference_image", b""))
+        if ref_raw is not None:
+            ref_frame = ObjectMaskVisualizer.plot_results(
+                ref_raw, bundle.get("aria_inference_state")
+            )
+            ref_frame = cv2.cvtColor(ref_frame.copy(), cv2.COLOR_RGB2BGR)
+        else:
+            ref_frame = None
+
+        # 3. Side-by-side with match lines between Aria reference and ROS frame.
+        kp0 = bundle.get("keypoints0")  # Aria-side, (K, 2)
+        kp1 = bundle.get("keypoints1")  # ROS-side,  (K, 2)
+
+        if ref_frame is not None and kp0 is not None and kp1 is not None and len(kp0):
+            identity_matches = np.column_stack(
+                [np.arange(len(kp0)), np.arange(len(kp0))]
+            )
+            combined = self._match_viz.draw_matches(
+                ref_frame, frame, kp0, kp1, identity_matches
+            )
+        elif ref_frame is not None:
+            combined = self._match_viz.draw_side_by_side(ref_frame, frame)
+        else:
+            combined = frame
+
+        self._set_display_frame(combined)
+
+    # ------------------------------------------------------------------
+    # Frame cache
+    # ------------------------------------------------------------------
+
+    def _set_display_frame(self, frame: Optional[np.ndarray]) -> None:
+        """
+        Update both the live display frame and the per-topic cache.
+
+        Caching allows _resolve_frame() to keep showing the last good
+        frame for up to _FRAME_STALE_TIMEOUT seconds before falling back
+        to a placeholder.
+        """
+        if frame is None:
+            return
+        self._display_frame = frame
+        self._frame_cache[self.current_topic] = (frame, time.monotonic())
+
+    def _resolve_frame(self) -> np.ndarray:
+        """
+        Return the best available frame for the current topic:
+          1. The live frame if it has been set this tick.
+          2. The cached frame if it arrived within _FRAME_STALE_TIMEOUT.
+          3. A blank placeholder.
+        """
+        if self._display_frame is not None:
+            return self._display_frame
+
+        cached = self._frame_cache.get(self.current_topic)
+        if cached is not None:
+            frame, received_at = cached
+            if time.monotonic() - received_at < _FRAME_STALE_TIMEOUT:
+                return frame
+
+        return create_placeholder(*VisualizerConfig.DEFAULT_WINDOW_SIZE)
 
     # ------------------------------------------------------------------
     # Keyboard
@@ -248,6 +331,8 @@ class Visualizer:
         )
 
     def _on_topic_change(self, topic: ROS2Topics) -> None:
+        # Clear the live frame so we don't flash stale data from the old topic.
+        self._display_frame = None
         self.current_topic = topic
         self.show_menu = False
         print(f"Switched to topic: {topic.name}")
@@ -257,16 +342,15 @@ class Visualizer:
         print(f"Menu {'opened' if self.show_menu else 'closed'}")
 
     def _on_save_frame(self) -> None:
-        if self._display_frame is None:
-            return
+        frame = self._resolve_frame()
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         filename = f"frame_{timestamp}.png"
-        cv2.imwrite(filename, self._display_frame)
+        cv2.imwrite(filename, frame)
         logger.info(f"Saved frame to {filename}")
         print(f"Saved frame to {filename}")
 
     def _toggle_camera_source(self) -> None:
-        """Toggle between aria/ros object recognition views, only when on a mask topic."""
+        """Toggle between aria/ros object recognition views."""
         if self.current_topic not in [
             ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS,
             ROS2Topics.ROS_CAMERA_WITH_OBJECT_MASKS,
@@ -280,6 +364,7 @@ class Visualizer:
             self.current_topic = ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS
             self._camera_source = "aria"
 
+        self._display_frame = None  # force cache lookup on next tick
         logger.info(f"Switched object recognition source to: {self._camera_source}")
 
     # ------------------------------------------------------------------
@@ -288,11 +373,7 @@ class Visualizer:
 
     def _render_frame(self) -> None:
         """Composite the display frame and hand it to OpenCV."""
-        frame = self._display_frame
-        if frame is None:
-            frame = create_placeholder(*VisualizerConfig.DEFAULT_WINDOW_SIZE)
-
-        display = frame.copy()
+        display = self._resolve_frame().copy()
 
         if self.show_menu:
             display = self._menu.draw(display, self.current_topic)

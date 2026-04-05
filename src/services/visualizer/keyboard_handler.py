@@ -46,6 +46,7 @@ class KeyboardHandler:
             ord("3"): ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE,
             ord("4"): ROS2Topics.RGB_CAMERA_WITH_OBJECT_MASKS,
             ord("5"): ROS2Topics.FEATURE_MATCH_RESULTS,
+            ord("6"): ROS2Topics.COMBINED_VISUALIZATION,
         }
 
     def handle(self, key: int) -> bool:
