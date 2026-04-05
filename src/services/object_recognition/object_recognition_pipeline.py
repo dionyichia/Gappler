@@ -24,7 +24,7 @@ from services.ros import (
 
 logger = logging.getLogger(__name__)
 
-PROMPT = "mouse"
+PROMPT = "apple"
 
 
 class CameraFeed:
@@ -125,6 +125,11 @@ class ObjectRecognitionPipeline:
             "ROS_inference_publisher",
             UInt8MultiArray,
             ROS2Topics.ROS_CAMERA_WITH_OBJECT_MASKS.value,
+        )
+        self.combined_publisher = ROSPublisher(
+            "combined_publisher",
+            UInt8MultiArray,
+            ROS2Topics.COMBINED_VISUALIZATION.value,
         )
 
     # ---------------------------------------------------------------------------
@@ -245,6 +250,7 @@ class ObjectRecognitionPipeline:
                 return
             self._aria_inference_state = inference_state
             self._aria_locked_image = aria_image
+            print("Success")
 
         self._publish_inference(
             self.aria_inference_publisher, aria_image, inference_state
@@ -271,8 +277,11 @@ class ObjectRecognitionPipeline:
                 logger.debug("Prompt changed during ROS inference, discarding result")
                 return
 
+        filtered_kp0: Optional[np.ndarray] = None
+        filtered_kp1: Optional[np.ndarray] = None
+
         if aria_inference_state is not None and aria_locked_image is not None:
-            matched = self._find_matching_ros_mask(
+            matched, filtered_kp0, filtered_kp1 = self._find_matching_ros_mask(
                 aria_locked_image, aria_inference_state, ros_image, inference_state
             )
             if matched is not None:
@@ -281,6 +290,21 @@ class ObjectRecognitionPipeline:
         self._publish_inference(
             self.ros_inference_publisher, ros_image, inference_state
         )
+
+        # Publish combined bundle when we have keypoints and a reference frame.
+        if (
+            filtered_kp0 is not None
+            and filtered_kp1 is not None
+            and aria_locked_image is not None
+        ):
+            self._publish_combined(
+                ros_image,
+                inference_state,
+                filtered_kp0,
+                filtered_kp1,
+                aria_locked_image,
+                aria_inference_state,
+            )
 
     # ---------------------------------------------------------------------------
     # Inference helpers
@@ -351,7 +375,7 @@ class ObjectRecognitionPipeline:
         aria_inference_state: Dict[str, Any],
         ros_image: np.ndarray,
         ros_inference_state: Dict[str, Any],
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Tuple[Optional[Dict[str, Any]], Optional[np.ndarray]]:
         """
         Use feature matching to identify which ROS mask corresponds to the Aria mask.
 
@@ -373,10 +397,9 @@ class ObjectRecognitionPipeline:
         """
         aria_masks = aria_inference_state.get("masks", [])
         ros_masks = ros_inference_state.get("masks", [])
-        print(len(aria_masks), len(ros_masks))
 
         if not len(aria_masks) or not len(ros_masks):
-            return None
+            return None, None, None
 
         aria_mask_np = aria_masks[0].squeeze(0).cpu().numpy() > 0
         aria_h, aria_w = aria_mask_np.shape
@@ -385,64 +408,62 @@ class ObjectRecognitionPipeline:
             match_result = self._feature_matcher.match_frames(aria_image, ros_image)
         except Exception as e:
             logger.error(f"Feature matching failed: {e}", exc_info=True)
-            return None
+            return None, None, None
 
-        kp0 = match_result["keypoints0"]  # (N, 2) — Aria keypoints
-        kp1 = match_result["keypoints1"]  # (M, 2) — RealSense keypoints
-        matches = match_result["matches"]  # (K, 2) — index pairs
+        kp0 = match_result["keypoints0"]
+        kp1 = match_result["keypoints1"]
+        matches = match_result["matches"]
 
         if len(matches) == 0:
             logger.debug("No feature matches found between Aria and ROS frames")
-            return None
+            return None, None, None
 
-        matched_kp0 = kp0[matches[:, 0]].round().astype(int)  # (K, 2)
-        matched_kp1 = kp1[matches[:, 1]].round().astype(int)  # (K, 2)
+        matched_kp0 = kp0[matches[:, 0]].round().astype(int)
+        matched_kp1 = kp1[matches[:, 1]].round().astype(int)
 
-        # Keep only pairs whose Aria keypoint falls inside the Aria mask
         xs0, ys0 = matched_kp0[:, 0], matched_kp0[:, 1]
         valid = (ys0 >= 0) & (ys0 < aria_h) & (xs0 >= 0) & (xs0 < aria_w)
         valid[valid] = aria_mask_np[ys0[valid], xs0[valid]]
 
+        filtered_kp0 = matched_kp0[valid]
         filtered_kp1 = matched_kp1[valid]
 
         if len(filtered_kp1) == 0:
             logger.debug("No feature matches fall within the Aria mask")
-            return None
+            return None, None, None
 
         logger.debug(
             f"Feature matching: {len(filtered_kp1)}/{len(matches)} matches inside Aria mask"
         )
 
-        # Count how many filtered ROS keypoints land in each ROS mask
         best_idx = None
         best_count = 0
 
         for i, ros_mask in enumerate(ros_masks):
             ros_mask_np = ros_mask.squeeze(0).cpu().numpy() > 0
             ros_h, ros_w = ros_mask_np.shape
-
             xs1, ys1 = filtered_kp1[:, 0], filtered_kp1[:, 1]
             in_bounds = (ys1 >= 0) & (ys1 < ros_h) & (xs1 >= 0) & (xs1 < ros_w)
             count = int(ros_mask_np[ys1[in_bounds], xs1[in_bounds]].sum())
-
             if count > best_count:
                 best_count = count
                 best_idx = i
 
         if best_idx is None or best_count == 0:
             logger.debug("No ROS mask matched the Aria mask via feature matching")
-            return None
+            return None, None, None
 
         logger.info(
             f"Matched ROS mask idx={best_idx} with {best_count}/{len(filtered_kp1)} hits"
         )
 
-        return {
+        filtered_state = {
             **ros_inference_state,
             "masks": [ros_masks[best_idx]],
             "scores": [ros_inference_state["scores"][best_idx]],
             "boxes": [ros_inference_state["boxes"][best_idx]],
         }
+        return filtered_state, filtered_kp0, filtered_kp1
 
     # ---------------------------------------------------------------------------
     # Publishing
@@ -478,6 +499,56 @@ class ObjectRecognitionPipeline:
             ros_publisher.publish(msg)
         except Exception as e:
             logger.error(f"Error publishing results: {e}", exc_info=True)
+
+    def _publish_combined(
+        self,
+        ros_image: np.ndarray,
+        inference_state: Dict[str, Any],
+        keypoints0: np.ndarray,  # Aria-side
+        keypoints1: np.ndarray,  # ROS-side
+        reference_image: np.ndarray,
+        aria_inference_state: Dict[str, Any],
+    ) -> None:
+        """
+        Publish a combined bundle for the visualizer.
+
+        Bundle keys
+        -----------
+        image           : compressed ROS frame bytes
+        inference_state : filtered ROS mask state
+        keypoints       : (K, 2) int ndarray — ROS-side matched keypoints inside mask
+        reference_image : compressed Aria locked frame bytes
+        """
+        try:
+            _, compressed_ros = ImageHelper.compress_image(image=ros_image)
+            _, compressed_ref = ImageHelper.compress_image(image=reference_image)
+
+            state_to_publish = {
+                k: v
+                for k, v in inference_state.items()
+                if k not in ("backbone_out", "masks_logits")
+            }
+
+            payload = pickle.dumps(
+                {
+                    "image": compressed_ros,
+                    "inference_state": state_to_publish,
+                    "keypoints0": keypoints0,
+                    "keypoints1": keypoints1,
+                    "reference_image": compressed_ref,
+                    "aria_inference_state": {
+                        k: v
+                        for k, v in aria_inference_state.items()
+                        if k not in ("backbone_out", "masks_logits")
+                    },
+                }
+            )
+
+            msg = UInt8MultiArray()
+            msg.data = payload
+            self.combined_publisher.publish(msg)
+        except Exception as e:
+            logger.error(f"Error publishing combined bundle: {e}", exc_info=True)
 
     # ---------------------------------------------------------------------------
     # Cleanup

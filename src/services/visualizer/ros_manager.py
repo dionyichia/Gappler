@@ -25,19 +25,6 @@ class ROSManager:
 
     Callbacks are injected at construction time so this class has
     no direct dependency on Visualizer internals.
-
-    Usage:
-        manager = ROSManager(
-            on_raw_image=...,
-            on_undistorted_image=...,
-            on_gaze_position=...,
-            on_aria_mask_bundle=...,
-            on_ros_mask_bundle=...,
-            on_feature_match=...,
-        )
-        manager.start()
-        # ... run loop ...
-        manager.stop()
     """
 
     def __init__(
@@ -48,6 +35,7 @@ class ROSManager:
         on_aria_mask_bundle: Callable[[dict], None],
         on_ros_mask_bundle: Callable[[dict], None],
         on_feature_match: Callable[[dict], None],
+        on_combined_bundle: Callable[[dict], None],
     ):
         self._on_raw_image = on_raw_image
         self._on_undistorted_image = on_undistorted_image
@@ -55,6 +43,7 @@ class ROSManager:
         self._on_aria_mask_bundle = on_aria_mask_bundle
         self._on_ros_mask_bundle = on_ros_mask_bundle
         self._on_feature_match = on_feature_match
+        self._on_combined_bundle = on_combined_bundle
 
         self._subscriber: Optional[Node] = None
         self._executor: Optional[MultiThreadedExecutor] = None
@@ -105,6 +94,12 @@ class ROSManager:
             UInt8MultiArray,
             ROS2Topics.FEATURE_MATCH_RESULTS.value,
             lambda msg: self._unpickle_and_forward(msg, self._on_feature_match),
+            VIDEO_QOS,
+        )
+        self._subscriber.create_subscription(
+            UInt8MultiArray,
+            ROS2Topics.COMBINED_VISUALIZATION.value,
+            lambda msg: self._unpickle_and_forward(msg, self._on_combined_bundle),
             VIDEO_QOS,
         )
 
