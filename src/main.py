@@ -8,14 +8,12 @@ import multiprocessing
 import os
 import subprocess
 import sys
-import time
 from ipaddress import IPv4Address
 from time import sleep
 from typing import Optional
 
 import rclpy
 
-from config import Settings
 from schemas.application import ApplicationConfig
 from services.process_manager import ProcessManager
 from utils import TerminalRawMode, exit_keypress, safe_update_iptables, setup_logging
@@ -106,10 +104,11 @@ class ProcessPipelineBuilder:
     ) -> "ProcessPipelineBuilder":
         """Build the complete pipeline for live streaming mode."""
         self.add_streaming(device_ip, profile_name).build_common_pipeline()
+        self.add_audio_streaming()
         sensors_calib_json_str = self.config_queue.get()
-        return self.add_image_streaming(sensors_calib_json_str).add_pose_streaming(
-            sensors_calib_json_str
-        )
+        self.add_image_streaming(sensors_calib_json_str)
+        self.add_pose_streaming(sensors_calib_json_str)
+        return self
 
 
 # TODO: Fix Recording Mode
@@ -258,6 +257,9 @@ class AriaApplication:
             if not safe_update_iptables():
                 logger.warning("Failed to update iptables.")
         self._start_realsense()
+        if self.config.track_pose:
+            self._start_openvins()
+            self._start_rviz2()
 
     def _start_realsense(self) -> None:
         """Launch the RealSense camera ROS2 node."""
@@ -275,11 +277,7 @@ class AriaApplication:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
             )
-            logger.info(
-                f"RealSense node started (PID {self._realsense_process.pid}), "
-                f"waiting {Settings.REALSENSE_INIT_DELAY}s for initialization..."
-            )
-            time.sleep(Settings.REALSENSE_INIT_DELAY)
+            logger.info(f"RealSense node started (PID {self._realsense_process.pid}), ")
 
             # Check the process didn't immediately crash
             if self._realsense_process.poll() is not None:
@@ -291,6 +289,52 @@ class AriaApplication:
             raise RuntimeError(
                 "ros2 command not found. Ensure ROS2 is installed and sourced."
             )
+
+    def _start_openvins(self) -> None:
+        """Launch the OpenVINS MSCKF subscriber node."""
+        logger.info("Launching OpenVINS MSCKF node...")
+        try:
+            self._openvins_process = subprocess.Popen(
+                [
+                    "bash",
+                    "-c",
+                    "source ~/Ros2Workspaces/OpenVINS/install/setup.bash && "
+                    "~/Ros2Workspaces/OpenVINS/install/ov_msckf/lib/ov_msckf/run_subscribe_msckf "
+                    "--ros-args "
+                    "-p config_path:=/home/iot22/GitHub/Renaissance-Capstone-Project/src/services/aria_device/calibration/estimator_config.yaml "
+                    "-r __ns:=/ov_msckf",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+            )
+            logger.info(f"OpenVINS node started (PID {self._openvins_process.pid})")
+
+            if self._openvins_process.poll() is not None:
+                stderr = self._openvins_process.stderr.read().decode()
+                raise RuntimeError(f"OpenVINS node failed to start:\n{stderr}")
+
+            logger.info("OpenVINS node is ready.")
+        except FileNotFoundError:
+            raise RuntimeError("OpenVINS binary not found. Check the install path.")
+
+    def _start_rviz2(self) -> None:
+        """Launch rviz2 with the OpenVINS display config."""
+        logger.info("Launching rviz2...")
+        try:
+            self._rviz2_process = subprocess.Popen(
+                [
+                    "rviz2",
+                    "-d",
+                    os.path.expanduser(
+                        "~/Ros2Workspaces/OpenVINS/src/open_vins/ov_msckf/launch/display_ros2.rviz"
+                    ),
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+            )
+            logger.info(f"rviz2 started (PID {self._rviz2_process.pid})")
+        except FileNotFoundError:
+            raise RuntimeError("rviz2 not found. Ensure ROS2 is installed and sourced.")
 
     def _stop_realsense(self) -> None:
         """Terminate the RealSense camera ROS2 node if running."""
@@ -346,6 +390,13 @@ def parse_arguments() -> ApplicationConfig:
     )
 
     parser.add_argument(
+        "--track-pose",
+        action="store_true",
+        default=True,
+        help="Launch OpenVINS MSCKF and rviz2 on startup",
+    )
+
+    parser.add_argument(
         "--update-iptables",
         action="store_true",
         help="Update iptables to enable receiving the data stream (Linux only)",
@@ -369,6 +420,7 @@ def parse_arguments() -> ApplicationConfig:
         recording_path=args.recording_path,
         device_ip=device_ip,
         profile_name=args.profile_name,
+        track_pose=args.track_pose,
         update_iptables=args.update_iptables,
     )
 

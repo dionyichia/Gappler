@@ -124,7 +124,7 @@ def rgb_worker(
             continue
 
         image = np.rot90(image, -1)
-        rgb_publisher.publish_image(image)
+        # rgb_publisher.publish_image(image)
 
         undistorted_image = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
         undistorted_rgb_publisher.publish_image(undistorted_image)
@@ -132,6 +132,8 @@ def rgb_worker(
         result, frame = detect_aruco(
             undistorted_image.copy(), camera_matrix, dist_coeffs
         )
+
+        rgb_publisher.publish_image(frame)
         _publish_aruco_detections(result, aruco_pose_publisher)
 
 

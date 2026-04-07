@@ -32,5 +32,5 @@ class ROS2Topics(Enum):
 VIDEO_QOS = QoSProfile(
     reliability=ReliabilityPolicy.BEST_EFFORT,
     history=HistoryPolicy.KEEP_LAST,
-    depth=1,
+    depth=10,
 )
