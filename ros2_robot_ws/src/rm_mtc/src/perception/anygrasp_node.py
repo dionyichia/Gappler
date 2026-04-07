@@ -196,8 +196,8 @@ class AnyGraspNode(Node):
     def synced_callback(self, rgb_msg: Image, depth_msg: Image):
         if not self.intrinsics_received:
             return
-        if self.pipeline_state == "IDLE":
-            return
+        # if self.pipeline_state == "IDLE":
+        #     return
         if self.latest_mask is None:
             self.get_logger().warn("No SAM mask received yet, skipping frame")
             return
