@@ -13,12 +13,14 @@ class ApplicationConfig:
         recording_path: Optional[str] = None,
         device_ip: Optional[IPv4Address] = None,
         profile_name: Optional[str] = None,
+        track_pose: bool = True,
         update_iptables: bool = False,
     ):
         self.mode = mode
         self.recording_path = recording_path
         self.device_ip = device_ip or AriaConfig.ARIA_DEVICE_IP_ADDRESS
         self.profile_name = profile_name or AriaConfig.ARIA_STREAMING_PROFILE_NAME
+        self.track_pose = track_pose
         self.update_iptables = update_iptables
 
     def validate(self) -> None:
