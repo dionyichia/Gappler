@@ -392,7 +392,7 @@ def parse_arguments() -> ApplicationConfig:
     parser.add_argument(
         "--track-pose",
         action="store_true",
-        default=True,
+        default=False,
         help="Launch OpenVINS MSCKF and rviz2 on startup",
     )
 

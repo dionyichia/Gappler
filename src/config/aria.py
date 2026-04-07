@@ -27,7 +27,7 @@ class AriaConfig:
     NUM_AUDIO_CHANNELS: int = 7
     AUDIO_SAMPLE_RATE: int = 48_000
 
-    # ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = None
-    ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = ipaddress.IPv4Address(
-        "10.42.0.70"
-    )
+    ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = None
+    # ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = ipaddress.IPv4Address(
+    #     "10.42.0.70"
+    # )
