@@ -64,7 +64,7 @@ def setup_logging(
 
     # Log the setup
     logger = logging.getLogger(__name__)
-    logger.info(f"Logging initialized: {log_filename}")
+    logger.debug(f"Logging initialized: {log_filename}")
 
     return str(log_filename)
 

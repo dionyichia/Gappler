@@ -23,7 +23,7 @@ class ROSPublisher(Node):
             rclpy.init()
         super().__init__(node_name)
         self.publisher = self.create_publisher(msg_type, topic, qos_profile)
-        logger.info(f"Publishing to {topic}")
+        logger.debug(f"Publishing to {topic}")
 
     def publish(self, msg):
         self.publisher.publish(msg)

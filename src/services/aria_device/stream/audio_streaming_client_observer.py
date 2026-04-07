@@ -1,7 +1,7 @@
 import logging
+import threading
 import time
 import wave
-from collections import deque
 from datetime import datetime
 from pathlib import Path
 
@@ -34,37 +34,43 @@ class AudioObserver(BaseStreamingClientObserver):
     def __init__(
         self, save_dir: str = "output/audio_recordings", save_interval: int = 10
     ):
-        self.save_interval = save_interval  # seconds between WAV exports
-
-        # Per-channel sample buffers (7 channels, samples as integers).
-        self.channel_buffers: list[deque] = [
-            deque(maxlen=MAX_BUFFER_SAMPLES)
-            for _ in range(AriaConfig.NUM_AUDIO_CHANNELS)
-        ]
-
-        # Tracks how many samples have already been written to disk.
-        self._saved_sample_count: int = 0
-
         self.received: bool = False
-        self._last_save_time: float = time.time()
+        self._buffers = np.zeros(
+            (AriaConfig.NUM_AUDIO_CHANNELS, MAX_BUFFER_SAMPLES), dtype=np.int32
+        )
+        self._write_pos = 0
+        self._full = False  # True once the buffer has wrapped at least once
+        self._lock = threading.Lock()
 
         self.save_dir = Path(save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
+        self._save_interval = save_interval  # seconds between WAV exports
+        self._saved_sample_count: int = 0
+        self._last_save_time: float = time.time()
 
     def on_audio_received(self, audio_data: AudioData, record: AudioDataRecord):
-        raw_samples = audio_data.data
+        raw = np.array(audio_data.data, dtype=np.int32)
 
         # Demultiplex interleaved channels: sample layout is [ch0, ch1, …, ch6, ch0, …]
-        for ch in range(AriaConfig.NUM_AUDIO_CHANNELS):
-            self.channel_buffers[ch].extend(
-                raw_samples[ch :: AriaConfig.NUM_AUDIO_CHANNELS]
-            )
+        samples_per_channel = len(raw) // AriaConfig.NUM_AUDIO_CHANNELS
+        frame = raw.reshape(samples_per_channel, AriaConfig.NUM_AUDIO_CHANNELS).T
 
+        with self._lock:
+            end = self._write_pos + samples_per_channel
+            if end <= MAX_BUFFER_SAMPLES:
+                self._buffers[:, self._write_pos : end] = frame
+            else:
+                # Wrap around
+                first = MAX_BUFFER_SAMPLES - self._write_pos
+                self._buffers[:, self._write_pos :] = frame[:, :first]
+                self._buffers[:, : end % MAX_BUFFER_SAMPLES] = frame[:, first:]
+                self._full = True  # marked on first wrap
+            self._write_pos = end % MAX_BUFFER_SAMPLES
         self.received = True
 
         # Periodically export a WAV chunk.
         # now = time.time()
-        # if now - self._last_save_time >= self.save_interval:
+        # if now - self._last_save_time >= self._save_interval:
         #     resampled = self._resample_new_samples()
         #     if resampled is not None:
         #         try:
@@ -75,6 +81,20 @@ class AudioObserver(BaseStreamingClientObserver):
         #         except Exception as e:
         #             logger.error(f"Error saving audio: {e}")
         #     self._last_save_time = now
+
+    def snapshot(self) -> np.ndarray:
+        with self._lock:
+            if not self._full:
+                # Buffer hasn't wrapped — only the filled portion is valid
+                return self._buffers[:, : self._write_pos].copy()
+            # Reorder so oldest → newest
+            return np.concatenate(
+                [
+                    self._buffers[:, self._write_pos :],
+                    self._buffers[:, : self._write_pos],
+                ],
+                axis=1,
+            )
 
     def get_resampled_audio(self) -> np.ndarray:
         """
