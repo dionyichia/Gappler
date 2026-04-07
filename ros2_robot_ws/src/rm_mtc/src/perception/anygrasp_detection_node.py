@@ -11,6 +11,7 @@ import argparse
 
 import numpy as np
 import rclpy
+import tf2_ros
 from gsnet import AnyGrasp  # Compiled binary, must be in conda env
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.node import Node
@@ -29,7 +30,9 @@ parser.add_argument("--gripper_height", type=float, default=0.03)
 parser.add_argument("--top_down_grasp", action="store_true")
 parser.add_argument("--debug", action="store_true")
 cfgs, _ = parser.parse_known_args()
-cfgs.max_gripper_width = max(0, min(0.1, cfgs.max_gripper_width))
+cfgs.max_gripper_width = 0.07
+cfgs.gripper_height = 0.04
+cfgs.top_down_grasp = False
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -176,7 +179,7 @@ class AnyGraspDetectionNode(Node):
     def synced_callback(self, rgb_msg: Image, depth_msg: Image):
         if not self.intrinsics_received:
             return
-        if self.pipeline_state != "EXECUTING":
+        if self.pipeline_state != "IDLE":
             return
         if self.latest_mask is None:
             self.get_logger().warn("No SAM mask received yet, skipping frame")

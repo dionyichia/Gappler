@@ -1,14 +1,15 @@
 """
 Grasp candidate visualizer.
 Subscribes to /grasp_candidates and publishes a MarkerArray to RViz.
-Each candidate is visualized as:
-  - Approach arrow (blue, length scaled by depth)
-  - Width bar (green, length = gripper width, perpendicular to approach)
-  - Score text label
+
+Each candidate is visualized as a gripper geometry in base_link frame:
+  - Palm cylinder (approach axis)
+  - Left finger bar
+  - Right finger bar
+
+Poses are transformed from camera_color_optical_frame → base_link.
 
 Run in any ROS2 env (does not need conda).
-Launch with: ros2 run rm_mtc grasp_viz
-RViz config loaded automatically from perception/rviz_config.rviz
 """
 
 import os
@@ -22,14 +23,27 @@ from rclpy.node import Node
 from rm_ros_interfaces.msg import GraspCandidateArray
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
+from tf2_geometry_msgs import do_transform_pose
+from tf2_ros import Buffer, TransformListener
 from visualization_msgs.msg import Marker, MarkerArray
 
 RVIZ_CONFIG = os.path.join(os.path.dirname(__file__), "rviz_config.rviz")
+
+# Gripper geometry constants (metres)
+PALM_LENGTH = 0.04  # cylinder along approach axis
+PALM_RADIUS = 0.006
+FINGER_LENGTH = 0.04  # finger bar length along approach axis
+FINGER_RADIUS = 0.005
+FINGER_OFFSET = 0.01  # finger offset along approach axis from palm centre
 
 
 class GraspVisualizer(Node):
     def __init__(self):
         super().__init__("grasp_visualizer")
+
+        # TF
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
 
         # Grasp candidates
         self.sub = self.create_subscription(
@@ -37,7 +51,7 @@ class GraspVisualizer(Node):
         )
         self.pub = self.create_publisher(MarkerArray, "/grasp_candidate_markers", 10)
 
-        # SAM mask — republish as rgb8 so RViz Image display can show it
+        # SAM mask — republish as rgb8 for RViz Image display
         self.mask_sub = self.create_subscription(
             Image, "/camera/sam/mask", self.mask_callback, 10
         )
@@ -49,6 +63,7 @@ class GraspVisualizer(Node):
         )
         self.centroid_pub = self.create_publisher(Marker, "/debug/centroid_marker", 10)
 
+        # Pipeline state text marker
         self.state_sub = self.create_subscription(
             String, "/pipeline_state", self.state_callback, 10
         )
@@ -64,13 +79,11 @@ class GraspVisualizer(Node):
         self.get_logger().info("Grasp visualizer ready")
 
     # ------------------------------------------------------------------
-    # SAM mask callback — convert mono8 to rgb8 for RViz Image display
+    # SAM mask callback
     # ------------------------------------------------------------------
     def mask_callback(self, msg: Image):
         mono = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width)
-        # White where mask is active, black elsewhere
         rgb = np.stack([mono * 255, mono * 255, mono * 255], axis=-1).astype(np.uint8)
-
         out = Image()
         out.header = msg.header
         out.height = msg.height
@@ -81,7 +94,7 @@ class GraspVisualizer(Node):
         self.mask_pub.publish(out)
 
     # ------------------------------------------------------------------
-    # Centroid callback — publish sphere marker in camera frame
+    # Centroid callback
     # ------------------------------------------------------------------
     def centroid_callback(self, msg: PointStamped):
         m = Marker()
@@ -92,7 +105,7 @@ class GraspVisualizer(Node):
         m.action = Marker.ADD
         m.pose.position = msg.point
         m.pose.orientation.w = 1.0
-        m.scale.x = m.scale.y = m.scale.z = 0.03  # 3cm sphere
+        m.scale.x = m.scale.y = m.scale.z = 0.03
         m.color.r = 1.0
         m.color.g = 0.0
         m.color.b = 0.0
@@ -101,12 +114,12 @@ class GraspVisualizer(Node):
         self.centroid_pub.publish(m)
 
     # ------------------------------------------------------------------
-    # State callback — publish current SM state in camera frame
+    # State callback
     # ------------------------------------------------------------------
     def state_callback(self, msg: String):
         self.current_state = msg.data
         m = Marker()
-        m.header.frame_id = "color_camera_optical_frame"
+        m.header.frame_id = "base_link"
         m.header.stamp = self.get_clock().now().to_msg()
         m.ns = "state"
         m.id = 0
@@ -114,13 +127,10 @@ class GraspVisualizer(Node):
         m.action = Marker.ADD
         m.pose.position.x = 0.0
         m.pose.position.y = 0.0
-        m.pose.position.z = 0.8  # above the robot
+        m.pose.position.z = 0.8
         m.pose.orientation.w = 1.0
-        m.scale.z = 0.1  # text height in metres
-        m.color.r = 1.0
-        m.color.g = 1.0
-        m.color.b = 1.0
-        m.color.a = 1.0
+        m.scale.z = 0.1
+        m.color.r = m.color.g = m.color.b = m.color.a = 1.0
         m.text = f"State: {msg.data}"
         m.lifetime.sec = 3
         self.state_marker_pub.publish(m)
@@ -128,23 +138,6 @@ class GraspVisualizer(Node):
     # ------------------------------------------------------------------
     # Grasp candidates callback
     # ------------------------------------------------------------------
-    def _make_marker(
-        self, msg, ns, id_, type_, pose, scale, color, text="", lifetime=1
-    ):
-        m = Marker()
-        m.header = msg.header
-        m.ns = ns
-        m.id = id_
-        m.type = type_
-        m.action = Marker.ADD
-        m.pose = pose
-        m.scale.x, m.scale.y, m.scale.z = scale
-        m.color.r, m.color.g, m.color.b, m.color.a = color
-        m.lifetime.sec = lifetime
-        if text:
-            m.text = text
-        return m
-
     def grasp_callback(self, msg: GraspCandidateArray):
         marker_array = MarkerArray()
 
@@ -156,26 +149,52 @@ class GraspVisualizer(Node):
             self.pub.publish(marker_array)
             return
 
+        # Lookup transform once for this batch
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                "base_link",
+                msg.header.frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=0.1),
+            )
+        except Exception as e:
+            self.get_logger().warn(f"TF lookup failed: {e}")
+            return
+
         scores = [g.score for g in msg.grasps]
         min_s = min(scores)
         max_s = max(scores) if max(scores) != min_s else min_s + 1e-6
 
-        for i, grasp in enumerate(msg.grasps):
+        marker_id = 0
+        for i, grasp in enumerate(msg.grasps[:1]):
+            # Transform pose to base_link
+            pose_base = do_transform_pose(grasp.pose, transform)
+
             t = (grasp.score - min_s) / (max_s - min_s)
+            color = (0.0, float(t), 1.0, 0.9)  # RGBA: blue→cyan by score
 
-            approach = self._make_marker(
-                msg,
-                ns="approach",
-                id_=i,
-                type_=Marker.ARROW,
-                pose=grasp.pose,
-                scale=(float(grasp.depth), 0.008, 0.012),
-                color=(0.0, float(t), 1.0, 0.9),
-            )
-            marker_array.markers.append(approach)
+            # ---- Palm cylinder (along approach / +Z of grasp frame) ----
+            palm = Marker()
+            palm.header.frame_id = "base_link"
+            palm.header.stamp = self.get_clock().now().to_msg()
+            palm.ns = "palm"
+            palm.id = marker_id
+            marker_id += 1
+            palm.type = Marker.CYLINDER
+            palm.action = Marker.ADD
+            palm.pose = pose_base
+            palm.scale.x = PALM_RADIUS * 2
+            palm.scale.y = PALM_RADIUS * 2
+            palm.scale.z = PALM_LENGTH
+            palm.color.r, palm.color.g, palm.color.b, palm.color.a = color
+            palm.lifetime.sec = 1
+            marker_array.markers.append(palm)
 
-            q = grasp.pose.orientation
+            # ---- Derive rotation matrix from quaternion ----
+            q = pose_base.orientation
             qx, qy, qz, qw = q.x, q.y, q.z, q.w
+
+            # X axis of grasp frame (finger width direction)
             gx = np.array(
                 [
                     1 - 2 * (qy**2 + qz**2),
@@ -183,52 +202,103 @@ class GraspVisualizer(Node):
                     2 * (qx * qz - qw * qy),
                 ]
             )
+            # Z axis of grasp frame (approach direction)
+            gz = np.array(
+                [
+                    2 * (qx * qz + qw * qy),
+                    2 * (qy * qz - qw * qx),
+                    1 - 2 * (qx**2 + qy**2),
+                ]
+            )
+
+            cx = pose_base.position.x
+            cy = pose_base.position.y
+            cz = pose_base.position.z
             half_w = float(grasp.width) / 2.0
-            cx, cy, cz = (
-                grasp.pose.position.x,
-                grasp.pose.position.y,
-                grasp.pose.position.z,
+
+            # Finger tips are offset along approach axis from palm centre
+            for side, sign in [("left", -1.0), ("right", 1.0)]:
+                finger_centre = np.array(
+                    [
+                        cx + sign * half_w * gx[0] + FINGER_OFFSET * gz[0],
+                        cy + sign * half_w * gx[1] + FINGER_OFFSET * gz[1],
+                        cz + sign * half_w * gx[2] + FINGER_OFFSET * gz[2],
+                    ]
+                )
+
+                finger = Marker()
+                finger.header.frame_id = "base_link"
+                finger.header.stamp = self.get_clock().now().to_msg()
+                finger.ns = f"finger_{side}"
+                finger.id = marker_id
+                marker_id += 1
+                finger.type = Marker.CYLINDER
+                finger.action = Marker.ADD
+                finger.pose.position.x = finger_centre[0]
+                finger.pose.position.y = finger_centre[1]
+                finger.pose.position.z = finger_centre[2]
+                finger.pose.orientation = (
+                    pose_base.orientation
+                )  # same orientation as palm
+                finger.scale.x = FINGER_RADIUS * 2
+                finger.scale.y = FINGER_RADIUS * 2
+                finger.scale.z = FINGER_LENGTH
+                finger.color.r = 0.0
+                finger.color.g = 1.0
+                finger.color.b = 0.0
+                finger.color.a = 0.9
+                finger.lifetime.sec = 1
+                marker_array.markers.append(finger)
+
+            # ---- Score text ----
+            text = Marker()
+            text.header.frame_id = "base_link"
+            text.header.stamp = self.get_clock().now().to_msg()
+            text.ns = "scores"
+            text.id = marker_id
+            marker_id += 1
+            text.type = Marker.TEXT_VIEW_FACING
+            text.action = Marker.ADD
+            text.pose = pose_base
+            text.pose.position.z += 0.04
+            text.scale.z = 0.02
+            text.color.r = text.color.g = text.color.b = text.color.a = 1.0
+            text.text = f"s:{grasp.score:.2f} w:{grasp.width:.3f} d:{grasp.depth:.3f}"
+            text.lifetime.sec = 1
+            marker_array.markers.append(text)
+
+            # ---- Approach arrow (red, points along +Z of grasp frame) ----
+            arrow = Marker()
+            arrow.header.frame_id = "base_link"
+            arrow.header.stamp = self.get_clock().now().to_msg()
+            arrow.ns = "approach"
+            arrow.id = marker_id
+            marker_id += 1
+            arrow.type = Marker.ARROW
+            arrow.action = Marker.ADD
+            # Arrow defined by two points: tail at palm centre, head along gz
+            ARROW_LENGTH = 0.08
+            tail = Point(x=cx, y=cy, z=cz)
+            head = Point(
+                x=cx + ARROW_LENGTH * gz[0],
+                y=cy + ARROW_LENGTH * gz[1],
+                z=cz + ARROW_LENGTH * gz[2],
             )
-
-            p1, p2 = Point(), Point()
-            p1.x = cx - half_w * gx[0]
-            p1.y = cy - half_w * gx[1]
-            p1.z = cz - half_w * gx[2]
-            p2.x = cx + half_w * gx[0]
-            p2.y = cy + half_w * gx[1]
-            p2.z = cz + half_w * gx[2]
-
-            width_bar = Marker()
-            width_bar.header = msg.header
-            width_bar.ns = "width"
-            width_bar.id = i
-            width_bar.type = Marker.LINE_STRIP
-            width_bar.action = Marker.ADD
-            width_bar.scale.x = 0.005
-            width_bar.color.r = 0.0
-            width_bar.color.g = 1.0
-            width_bar.color.b = 0.0
-            width_bar.color.a = 0.9
-            width_bar.points = [p1, p2]
-            width_bar.lifetime.sec = 1
-            marker_array.markers.append(width_bar)
-
-            text_pose = grasp.pose
-            text_pose.position.z += 0.04
-            score_text = self._make_marker(
-                msg,
-                ns="scores",
-                id_=i,
-                type_=Marker.TEXT_VIEW_FACING,
-                pose=text_pose,
-                scale=(0.0, 0.0, 0.02),
-                color=(1.0, 1.0, 1.0, 0.9),
-                text=f"s:{grasp.score:.2f} w:{grasp.width:.3f} d:{grasp.depth:.3f}",
-            )
-            marker_array.markers.append(score_text)
+            arrow.points = [tail, head]
+            arrow.scale.x = 0.008  # shaft diameter
+            arrow.scale.y = 0.014  # head diameter
+            arrow.scale.z = 0.02  # head length
+            arrow.color.r = 1.0
+            arrow.color.g = 0.0
+            arrow.color.b = 0.0
+            arrow.color.a = 1.0
+            arrow.lifetime.sec = 1
+            marker_array.markers.append(arrow)
 
         self.pub.publish(marker_array)
-        self.get_logger().debug(f"Published {len(msg.grasps)} grasp markers")
+        self.get_logger().debug(
+            f"Published markers for {len(msg.grasps)} grasps in base_link"
+        )
 
 
 def main():

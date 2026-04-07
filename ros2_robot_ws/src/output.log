@@ -1,131 +1,135 @@
+[main] Launching: realsense_camera
+[main] Launching: rm_bringup
+[main] Launching: sam3_ros_node
+[main] Waiting 2.0s before launching anygrasp_detection_node...
 Uninstalled 1 package in 1ms
-Installed 1 package in 2ms
-[INFO] [launch]: All log files can be found below /home/iot22/.ros/log/2026-04-03-02-34-05-035440-iot22-Computer-140861
+Installed 1 package in 1ms
+[INFO] [launch]: All log files can be found below /home/iot22/.ros/log/2026-04-07-19-54-39-030602-iot22-Computer-18518
 [INFO] [launch]: Default logging verbosity is set to INFO
-[INFO] [launch]: All log files can be found below /home/iot22/.ros/log/2026-04-03-02-34-05-038456-iot22-Computer-140862
+[INFO] [launch]: All log files can be found below /home/iot22/.ros/log/2026-04-07-19-54-39-037190-iot22-Computer-18519
 [INFO] [launch]: Default logging verbosity is set to INFO
 [INFO] [launch.user]: 🚀 Launching as Normal ROS Node
-[INFO] [realsense2_camera_node-1]: process started with pid [140898]
-[realsense2_camera_node-1] [0m[INFO] [1775154845.218366254] [camera.camera]: RealSense ROS v4.56.4[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.218515079] [camera.camera]: Built with LibRealSense v2.56.4[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.218539359] [camera.camera]: Running with LibRealSense v2.56.4[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.233788129] [camera.camera]: Device with serial number 243222074878 was found.
+[INFO] [realsense2_camera_node-1]: process started with pid [18555]
+[realsense2_camera_node-1] [0m[INFO] [1775562879.293728929] [camera.camera]: RealSense ROS v4.56.4[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.293831063] [camera.camera]: Built with LibRealSense v2.56.4[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.293840124] [camera.camera]: Running with LibRealSense v2.56.4[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300008476] [camera.camera]: Device with serial number 243222074878 was found.
 [realsense2_camera_node-1] [0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.233868036] [camera.camera]: Device with physical ID /sys/devices/pci0000:00/0000:00:14.0/usb1/1-1/1-1.1/1-1.1:1.0/video4linux/video0 was found.[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.233886796] [camera.camera]: Device with name Intel RealSense D435I was found.[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.234173101] [camera.camera]: Device with port number 1-1.1 was found.[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.234220639] [camera.camera]: Device USB type: 2.1[0m
-[realsense2_camera_node-1] [33m[WARN] [1775154845.234240215] [camera.camera]: Device 243222074878 is connected using a 2.1 port. Reduced performance is expected.[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.234331800] [camera.camera]: getParameters...[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.234874181] [camera.camera]: JSON file is not provided[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.234897836] [camera.camera]: Device Name: Intel RealSense D435I[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.234906678] [camera.camera]: Device Serial No: 243222074878[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.234914377] [camera.camera]: Device physical port: /sys/devices/pci0000:00/0000:00:14.0/usb1/1-1/1-1.1/1-1.1:1.0/video4linux/video0[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.234922588] [camera.camera]: Device FW version: 5.15.1.55[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.234931608] [camera.camera]: Device Product ID: 0x0B3A[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.234938154] [camera.camera]: Sync Mode: Off[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.319964433] [camera.camera]: Set ROS param depth_module.depth_profile to default: 640x480x15[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.320215563] [camera.camera]: Set ROS param depth_module.infra_profile to default: 640x480x15[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.321801868] [camera.camera]: Set ROS param rgb_camera.color_profile to default: 640x480x15[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.322113085] [camera.camera]: Set ROS param gyro_fps to default: 200[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.322143353] [camera.camera]: Set ROS param accel_fps to default: 100[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.325474152] [camera.camera]: Stopping Sensor: Depth Module[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.325525012] [camera.camera]: Stopping Sensor: RGB Camera[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.334602419] [camera.camera]: Starting Sensor: Depth Module[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.336425068] [camera.camera]: Open profile: stream_type: Depth(0), Format: Z16, Width: 640, Height: 480, FPS: 15[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.338379965] [camera.camera]: Starting Sensor: RGB Camera[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.339912175] [camera.camera]: Open profile: stream_type: Color(0), Format: RGB8, Width: 640, Height: 480, FPS: 15[0m
-[realsense2_camera_node-1] [0m[INFO] [1775154845.344822315] [camera.camera]: RealSense Node Is Up![0m
-[INFO] [rm_driver-1]: process started with pid [140941]
-[INFO] [robot_state_publisher-2]: process started with pid [140943]
-[INFO] [rm_control-3]: process started with pid [140945]
-[INFO] [move_group-4]: process started with pid [140947]
-[robot_state_publisher-2] [WARN] [1775154845.475409303] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
-[robot_state_publisher-2] [INFO] [1775154845.475495936] [robot_state_publisher]: got segment Link1
-[robot_state_publisher-2] [INFO] [1775154845.475545652] [robot_state_publisher]: got segment Link2
-[robot_state_publisher-2] [INFO] [1775154845.475549473] [robot_state_publisher]: got segment Link3
-[robot_state_publisher-2] [INFO] [1775154845.475552128] [robot_state_publisher]: got segment Link4
-[robot_state_publisher-2] [INFO] [1775154845.475554638] [robot_state_publisher]: got segment Link5
-[robot_state_publisher-2] [INFO] [1775154845.475557080] [robot_state_publisher]: got segment Link6
-[robot_state_publisher-2] [INFO] [1775154845.475559518] [robot_state_publisher]: got segment base_link
-[robot_state_publisher-2] [INFO] [1775154845.475562054] [robot_state_publisher]: got segment camera_bottom_screw_frame
-[robot_state_publisher-2] [INFO] [1775154845.475565015] [robot_state_publisher]: got segment camera_link
-[robot_state_publisher-2] [INFO] [1775154845.475567663] [robot_state_publisher]: got segment grasp_frame
-[robot_state_publisher-2] [INFO] [1775154845.475570073] [robot_state_publisher]: got segment gripper_Link1
-[robot_state_publisher-2] [INFO] [1775154845.475572703] [robot_state_publisher]: got segment gripper_Link2
-[robot_state_publisher-2] [INFO] [1775154845.475575109] [robot_state_publisher]: got segment gripper_Link3
-[robot_state_publisher-2] [INFO] [1775154845.475577537] [robot_state_publisher]: got segment gripper_Link4
-[robot_state_publisher-2] [INFO] [1775154845.475579955] [robot_state_publisher]: got segment gripper_base_link
-[move_group-4] [INFO] [1775154845.493791191] [moveit_rdf_loader.rdf_loader]: Loaded robot model in 0.0240613 seconds
-[move_group-4] [INFO] [1775154845.493840322] [moveit_robot_model.robot_model]: Loading robot model 'rm_65_with_gripper'...
-[move_group-4] [INFO] [1775154845.493850736] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
-[move_group-4] [WARN] [1775154845.544344927] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
-[move_group-4] [INFO] [1775154845.674241830] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Publishing maintained planning scene on 'monitored_planning_scene'
-[move_group-4] [INFO] [1775154845.674409575] [moveit.ros_planning_interface.moveit_cpp]: Listening to 'joint_states' for joint states
-[move_group-4] [INFO] [1775154845.674855057] [moveit_ros.current_state_monitor]: Listening to joint states on topic 'joint_states'
-[move_group-4] [INFO] [1775154845.675096538] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/attached_collision_object' for attached collision objects
-[move_group-4] [INFO] [1775154845.675109482] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting planning scene monitor
-[move_group-4] [INFO] [1775154845.675280182] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/planning_scene'
-[move_group-4] [INFO] [1775154845.675287948] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting world geometry update monitor for collision objects, attached objects, octomap updates.
-[move_group-4] [INFO] [1775154845.675478167] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to 'collision_object'
-[move_group-4] [INFO] [1775154845.675639760] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to 'planning_scene_world' for planning scene world geometry
-[move_group-4] [WARN] [1775154845.675925650] [moveit.ros.occupancy_map_monitor.middleware_handle]: Resolution not specified for Octomap. Assuming resolution = 0.1 instead
-[move_group-4] [ERROR] [1775154845.675981503] [moveit.ros.occupancy_map_monitor.middleware_handle]: Exception while loading octomap updater 'occupancy_map_monitor/DepthImageOctomapUpdater': According to the loaded plugin descriptions the class occupancy_map_monitor/DepthImageOctomapUpdater with base class type occupancy_map_monitor::OccupancyMapUpdater does not exist. Declared types are 
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300047178] [camera.camera]: Device with physical ID /sys/devices/pci0000:00/0000:00:14.0/usb1/1-11/1-11:1.0/video4linux/video0 was found.[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300055178] [camera.camera]: Device with name Intel RealSense D435I was found.[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300178246] [camera.camera]: Device with port number 1-11 was found.[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300183959] [camera.camera]: Device USB type: 2.1[0m
+[realsense2_camera_node-1] [33m[WARN] [1775562879.300189378] [camera.camera]: Device 243222074878 is connected using a 2.1 port. Reduced performance is expected.[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300227983] [camera.camera]: getParameters...[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300345700] [camera.camera]: JSON file is not provided[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300354336] [camera.camera]: Device Name: Intel RealSense D435I[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300359065] [camera.camera]: Device Serial No: 243222074878[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300365052] [camera.camera]: Device physical port: /sys/devices/pci0000:00/0000:00:14.0/usb1/1-11/1-11:1.0/video4linux/video0[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300369772] [camera.camera]: Device FW version: 5.15.1.55[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300374133] [camera.camera]: Device Product ID: 0x0B3A[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.300379259] [camera.camera]: Sync Mode: Off[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.384831637] [camera.camera]: Set ROS param depth_module.depth_profile to default: 640x480x15[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.385071896] [camera.camera]: Set ROS param depth_module.infra_profile to default: 640x480x15[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.386473502] [camera.camera]: Set ROS param rgb_camera.color_profile to default: 640x480x15[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.386691619] [camera.camera]: Set ROS param gyro_fps to default: 200[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.386711314] [camera.camera]: Set ROS param accel_fps to default: 100[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.389080391] [camera.camera]: Stopping Sensor: Depth Module[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.389147265] [camera.camera]: Stopping Sensor: RGB Camera[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.397371359] [camera.camera]: Starting Sensor: Depth Module[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.399262515] [camera.camera]: Open profile: stream_type: Depth(0), Format: Z16, Width: 640, Height: 480, FPS: 15[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.400220932] [camera.camera]: Starting Sensor: RGB Camera[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.401779485] [camera.camera]: Open profile: stream_type: Color(0), Format: RGB8, Width: 640, Height: 480, FPS: 15[0m
+[realsense2_camera_node-1] [0m[INFO] [1775562879.404613678] [camera.camera]: RealSense Node Is Up![0m
+[INFO] [rm_driver-1]: process started with pid [18598]
+[INFO] [robot_state_publisher-2]: process started with pid [18600]
+[INFO] [rm_control-3]: process started with pid [18602]
+[INFO] [move_group-4]: process started with pid [18604]
+[robot_state_publisher-2] [WARN] [1775562879.445056283] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-2] [INFO] [1775562879.445128397] [robot_state_publisher]: got segment Link1
+[robot_state_publisher-2] [INFO] [1775562879.445163556] [robot_state_publisher]: got segment Link2
+[robot_state_publisher-2] [INFO] [1775562879.445166917] [robot_state_publisher]: got segment Link3
+[robot_state_publisher-2] [INFO] [1775562879.445169269] [robot_state_publisher]: got segment Link4
+[robot_state_publisher-2] [INFO] [1775562879.445171563] [robot_state_publisher]: got segment Link5
+[robot_state_publisher-2] [INFO] [1775562879.445173847] [robot_state_publisher]: got segment Link6
+[robot_state_publisher-2] [INFO] [1775562879.445176040] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-2] [INFO] [1775562879.445178384] [robot_state_publisher]: got segment camera_bottom_screw_frame
+[robot_state_publisher-2] [INFO] [1775562879.445181079] [robot_state_publisher]: got segment camera_link
+[robot_state_publisher-2] [INFO] [1775562879.445183605] [robot_state_publisher]: got segment grasp_frame
+[robot_state_publisher-2] [INFO] [1775562879.445185791] [robot_state_publisher]: got segment gripper_Link1
+[robot_state_publisher-2] [INFO] [1775562879.445188198] [robot_state_publisher]: got segment gripper_Link2
+[robot_state_publisher-2] [INFO] [1775562879.445190489] [robot_state_publisher]: got segment gripper_Link3
+[robot_state_publisher-2] [INFO] [1775562879.445192676] [robot_state_publisher]: got segment gripper_Link4
+[robot_state_publisher-2] [INFO] [1775562879.445194886] [robot_state_publisher]: got segment gripper_base_link
+[move_group-4] [INFO] [1775562879.466055079] [moveit_rdf_loader.rdf_loader]: Loaded robot model in 0.0222714 seconds
+[move_group-4] [INFO] [1775562879.466101835] [moveit_robot_model.robot_model]: Loading robot model 'rm_65_with_gripper'...
+[move_group-4] [INFO] [1775562879.466109868] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
+[move_group-4] [WARN] [1775562879.514995888] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[move_group-4] [INFO] [1775562879.644707453] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Publishing maintained planning scene on 'monitored_planning_scene'
+[move_group-4] [INFO] [1775562879.644891984] [moveit.ros_planning_interface.moveit_cpp]: Listening to 'joint_states' for joint states
+[move_group-4] [INFO] [1775562879.645442322] [moveit_ros.current_state_monitor]: Listening to joint states on topic 'joint_states'
+[move_group-4] [INFO] [1775562879.645733176] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/attached_collision_object' for attached collision objects
+[move_group-4] [INFO] [1775562879.645749693] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting planning scene monitor
+[move_group-4] [INFO] [1775562879.645902402] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/planning_scene'
+[move_group-4] [INFO] [1775562879.645910229] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting world geometry update monitor for collision objects, attached objects, octomap updates.
+[move_group-4] [INFO] [1775562879.646063997] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to 'collision_object'
+[move_group-4] [INFO] [1775562879.646198310] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to 'planning_scene_world' for planning scene world geometry
+[move_group-4] [WARN] [1775562879.646512354] [moveit.ros.occupancy_map_monitor.middleware_handle]: Resolution not specified for Octomap. Assuming resolution = 0.1 instead
+[move_group-4] [ERROR] [1775562879.646571976] [moveit.ros.occupancy_map_monitor.middleware_handle]: Exception while loading octomap updater 'occupancy_map_monitor/DepthImageOctomapUpdater': According to the loaded plugin descriptions the class occupancy_map_monitor/DepthImageOctomapUpdater with base class type occupancy_map_monitor::OccupancyMapUpdater does not exist. Declared types are 
 [move_group-4] 
-[move_group-4] [ERROR] [1775154845.675989484] [moveit.ros.occupancy_map_monitor]: Failed to load sensor: `default_sensor` of type: `occupancy_map_monitor/DepthImageOctomapUpdater`
-[move_group-4] [ERROR] [1775154845.675997488] [moveit.ros.occupancy_map_monitor.middleware_handle]: Exception while loading octomap updater 'occupancy_map_monitor/DepthImageOctomapUpdater': According to the loaded plugin descriptions the class occupancy_map_monitor/DepthImageOctomapUpdater with base class type occupancy_map_monitor::OccupancyMapUpdater does not exist. Declared types are 
+[move_group-4] [ERROR] [1775562879.646581796] [moveit.ros.occupancy_map_monitor]: Failed to load sensor: `default_sensor` of type: `occupancy_map_monitor/DepthImageOctomapUpdater`
+[move_group-4] [ERROR] [1775562879.646592950] [moveit.ros.occupancy_map_monitor.middleware_handle]: Exception while loading octomap updater 'occupancy_map_monitor/DepthImageOctomapUpdater': According to the loaded plugin descriptions the class occupancy_map_monitor/DepthImageOctomapUpdater with base class type occupancy_map_monitor::OccupancyMapUpdater does not exist. Declared types are 
 [move_group-4] 
-[move_group-4] [ERROR] [1775154845.676000254] [moveit.ros.occupancy_map_monitor]: Failed to load sensor: `kinect_depthimage` of type: `occupancy_map_monitor/DepthImageOctomapUpdater`
-[move_group-4] [INFO] [1775154845.721441001] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'pilz_industrial_motion_planner'
-[move_group-4] [INFO] [1775154845.723655154] [moveit.pilz_industrial_motion_planner.joint_limits_aggregator]: Reading limits from namespace robot_description_planning
-[move_group-4] [INFO] [1775154845.726313125] [moveit.pilz_industrial_motion_planner]: Available plugins: pilz_industrial_motion_planner/PlanningContextLoaderCIRC pilz_industrial_motion_planner/PlanningContextLoaderLIN pilz_industrial_motion_planner/PlanningContextLoaderPTP 
-[move_group-4] [INFO] [1775154845.726331496] [moveit.pilz_industrial_motion_planner]: About to load: pilz_industrial_motion_planner/PlanningContextLoaderCIRC
-[move_group-4] [INFO] [1775154845.727715960] [moveit.pilz_industrial_motion_planner]: Registered Algorithm [CIRC]
-[move_group-4] [INFO] [1775154845.727729294] [moveit.pilz_industrial_motion_planner]: About to load: pilz_industrial_motion_planner/PlanningContextLoaderLIN
-[move_group-4] [INFO] [1775154845.728696621] [moveit.pilz_industrial_motion_planner]: Registered Algorithm [LIN]
-[move_group-4] [INFO] [1775154845.728735590] [moveit.pilz_industrial_motion_planner]: About to load: pilz_industrial_motion_planner/PlanningContextLoaderPTP
-[move_group-4] [INFO] [1775154845.729656742] [moveit.pilz_industrial_motion_planner]: Registered Algorithm [PTP]
-[move_group-4] [INFO] [1775154845.729671493] [moveit.ros_planning.planning_pipeline]: Using planning interface 'Pilz Industrial Motion Planner'
-[move_group-4] [INFO] [1775154845.731706541] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'chomp'
-[move_group-4] [INFO] [1775154845.736402806] [moveit.ros_planning.planning_pipeline]: Using planning interface 'CHOMP'
-[move_group-4] [INFO] [1775154845.738793548] [moveit_ros.add_time_optimal_parameterization]: Param 'chomp.path_tolerance' was not set. Using default value: 0.100000
-[move_group-4] [INFO] [1775154845.738805991] [moveit_ros.add_time_optimal_parameterization]: Param 'chomp.resample_dt' was not set. Using default value: 0.100000
-[move_group-4] [INFO] [1775154845.738808947] [moveit_ros.add_time_optimal_parameterization]: Param 'chomp.min_angle_change' was not set. Using default value: 0.001000
-[move_group-4] [INFO] [1775154845.738825157] [moveit_ros.fix_workspace_bounds]: Param 'chomp.default_workspace_bounds' was not set. Using default value: 10.000000
-[move_group-4] [INFO] [1775154845.738834881] [moveit_ros.fix_start_state_bounds]: Param 'chomp.start_state_max_bounds_error' was set to 0.100000
-[move_group-4] [INFO] [1775154845.738838340] [moveit_ros.fix_start_state_bounds]: Param 'chomp.start_state_max_dt' was not set. Using default value: 0.500000
-[move_group-4] [INFO] [1775154845.738845940] [moveit_ros.fix_start_state_collision]: Param 'chomp.start_state_max_dt' was not set. Using default value: 0.500000
-[move_group-4] [INFO] [1775154845.738848980] [moveit_ros.fix_start_state_collision]: Param 'chomp.jiggle_fraction' was set to 0.050000
-[move_group-4] [INFO] [1775154845.738854596] [moveit_ros.fix_start_state_collision]: Param 'chomp.max_sampling_attempts' was not set. Using default value: 100
-[move_group-4] [INFO] [1775154845.738862160] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Add Time Optimal Parameterization'
-[move_group-4] [INFO] [1775154845.738865838] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Resolve constraint frames to robot links'
-[move_group-4] [INFO] [1775154845.738867817] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Workspace Bounds'
-[move_group-4] [INFO] [1775154845.738869730] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Bounds'
-[move_group-4] [INFO] [1775154845.738871486] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State In Collision'
-[move_group-4] [INFO] [1775154845.738873346] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Path Constraints'
-[move_group-4] [INFO] [1775154845.739452455] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'ompl'
-[move_group-4] [INFO] [1775154845.746715917] [moveit.ros_planning.planning_pipeline]: Using planning interface 'OMPL'
-[move_group-4] [INFO] [1775154845.748045027] [moveit_ros.add_time_optimal_parameterization]: Param 'ompl.path_tolerance' was not set. Using default value: 0.100000
-[move_group-4] [INFO] [1775154845.748055667] [moveit_ros.add_time_optimal_parameterization]: Param 'ompl.resample_dt' was not set. Using default value: 0.100000
-[move_group-4] [INFO] [1775154845.748059520] [moveit_ros.add_time_optimal_parameterization]: Param 'ompl.min_angle_change' was not set. Using default value: 0.001000
-[move_group-4] [INFO] [1775154845.748079827] [moveit_ros.fix_workspace_bounds]: Param 'ompl.default_workspace_bounds' was not set. Using default value: 10.000000
-[move_group-4] [INFO] [1775154845.748093031] [moveit_ros.fix_start_state_bounds]: Param 'ompl.start_state_max_bounds_error' was set to 0.100000
-[move_group-4] [INFO] [1775154845.748097161] [moveit_ros.fix_start_state_bounds]: Param 'ompl.start_state_max_dt' was not set. Using default value: 0.500000
-[move_group-4] [INFO] [1775154845.748108401] [moveit_ros.fix_start_state_collision]: Param 'ompl.start_state_max_dt' was not set. Using default value: 0.500000
-[move_group-4] [INFO] [1775154845.748112363] [moveit_ros.fix_start_state_collision]: Param 'ompl.jiggle_fraction' was set to 0.050000
-[move_group-4] [INFO] [1775154845.748116759] [moveit_ros.fix_start_state_collision]: Param 'ompl.max_sampling_attempts' was not set. Using default value: 100
-[move_group-4] [INFO] [1775154845.748144150] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Add Time Optimal Parameterization'
-[move_group-4] [INFO] [1775154845.748148253] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Resolve constraint frames to robot links'
-[move_group-4] [INFO] [1775154845.748150890] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Workspace Bounds'
-[move_group-4] [INFO] [1775154845.748153664] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Bounds'
-[move_group-4] [INFO] [1775154845.748156323] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State In Collision'
-[move_group-4] [INFO] [1775154845.748159064] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Path Constraints'
-[move_group-4] [INFO] [1775154845.768114338] [moveit.plugins.moveit_simple_controller_manager]: Added FollowJointTrajectory controller for rm_group_controller
-[move_group-4] [INFO] [1775154845.768267688] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
-[move_group-4] [INFO] [1775154845.768342369] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
-[move_group-4] [INFO] [1775154845.768623296] [moveit_ros.trajectory_execution_manager]: Trajectory execution is managing controllers
-[move_group-4] [INFO] [1775154845.768635425] [move_group.move_group]: MoveGroup debug mode is ON
-[move_group-4] [INFO] [1775154845.779477049] [move_group.move_group]: 
+[move_group-4] [ERROR] [1775562879.646597592] [moveit.ros.occupancy_map_monitor]: Failed to load sensor: `kinect_depthimage` of type: `occupancy_map_monitor/DepthImageOctomapUpdater`
+[move_group-4] [INFO] [1775562879.690163271] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'pilz_industrial_motion_planner'
+[move_group-4] [INFO] [1775562879.692379202] [moveit.pilz_industrial_motion_planner.joint_limits_aggregator]: Reading limits from namespace robot_description_planning
+[move_group-4] [INFO] [1775562879.693832686] [moveit.pilz_industrial_motion_planner]: Available plugins: pilz_industrial_motion_planner/PlanningContextLoaderCIRC pilz_industrial_motion_planner/PlanningContextLoaderLIN pilz_industrial_motion_planner/PlanningContextLoaderPTP 
+[move_group-4] [INFO] [1775562879.693842204] [moveit.pilz_industrial_motion_planner]: About to load: pilz_industrial_motion_planner/PlanningContextLoaderCIRC
+[move_group-4] [INFO] [1775562879.694728163] [moveit.pilz_industrial_motion_planner]: Registered Algorithm [CIRC]
+[move_group-4] [INFO] [1775562879.694736600] [moveit.pilz_industrial_motion_planner]: About to load: pilz_industrial_motion_planner/PlanningContextLoaderLIN
+[move_group-4] [INFO] [1775562879.695377685] [moveit.pilz_industrial_motion_planner]: Registered Algorithm [LIN]
+[move_group-4] [INFO] [1775562879.695402990] [moveit.pilz_industrial_motion_planner]: About to load: pilz_industrial_motion_planner/PlanningContextLoaderPTP
+[move_group-4] [INFO] [1775562879.695987836] [moveit.pilz_industrial_motion_planner]: Registered Algorithm [PTP]
+[move_group-4] [INFO] [1775562879.695996296] [moveit.ros_planning.planning_pipeline]: Using planning interface 'Pilz Industrial Motion Planner'
+[move_group-4] [INFO] [1775562879.697263058] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'chomp'
+[move_group-4] [INFO] [1775562879.699966497] [moveit.ros_planning.planning_pipeline]: Using planning interface 'CHOMP'
+[move_group-4] [INFO] [1775562879.701978262] [moveit_ros.add_time_optimal_parameterization]: Param 'chomp.path_tolerance' was not set. Using default value: 0.100000
+[move_group-4] [INFO] [1775562879.701987617] [moveit_ros.add_time_optimal_parameterization]: Param 'chomp.resample_dt' was not set. Using default value: 0.100000
+[move_group-4] [INFO] [1775562879.701990448] [moveit_ros.add_time_optimal_parameterization]: Param 'chomp.min_angle_change' was not set. Using default value: 0.001000
+[move_group-4] [INFO] [1775562879.702005923] [moveit_ros.fix_workspace_bounds]: Param 'chomp.default_workspace_bounds' was not set. Using default value: 10.000000
+[move_group-4] [INFO] [1775562879.702014285] [moveit_ros.fix_start_state_bounds]: Param 'chomp.start_state_max_bounds_error' was set to 0.100000
+[move_group-4] [INFO] [1775562879.702017360] [moveit_ros.fix_start_state_bounds]: Param 'chomp.start_state_max_dt' was not set. Using default value: 0.500000
+[move_group-4] [INFO] [1775562879.702024143] [moveit_ros.fix_start_state_collision]: Param 'chomp.start_state_max_dt' was not set. Using default value: 0.500000
+[move_group-4] [INFO] [1775562879.702026936] [moveit_ros.fix_start_state_collision]: Param 'chomp.jiggle_fraction' was set to 0.050000
+[move_group-4] [INFO] [1775562879.702032618] [moveit_ros.fix_start_state_collision]: Param 'chomp.max_sampling_attempts' was not set. Using default value: 100
+[move_group-4] [INFO] [1775562879.702039296] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Add Time Optimal Parameterization'
+[move_group-4] [INFO] [1775562879.702042212] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Resolve constraint frames to robot links'
+[move_group-4] [INFO] [1775562879.702043946] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Workspace Bounds'
+[move_group-4] [INFO] [1775562879.702045757] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Bounds'
+[move_group-4] [INFO] [1775562879.702047415] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State In Collision'
+[move_group-4] [INFO] [1775562879.702049170] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Path Constraints'
+[move_group-4] [INFO] [1775562879.702343352] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'ompl'
+[move_group-4] [INFO] [1775562879.709658046] [moveit.ros_planning.planning_pipeline]: Using planning interface 'OMPL'
+[move_group-4] [INFO] [1775562879.710926666] [moveit_ros.add_time_optimal_parameterization]: Param 'ompl.path_tolerance' was not set. Using default value: 0.100000
+[move_group-4] [INFO] [1775562879.710934707] [moveit_ros.add_time_optimal_parameterization]: Param 'ompl.resample_dt' was not set. Using default value: 0.100000
+[move_group-4] [INFO] [1775562879.710937525] [moveit_ros.add_time_optimal_parameterization]: Param 'ompl.min_angle_change' was not set. Using default value: 0.001000
+[move_group-4] [INFO] [1775562879.710951475] [moveit_ros.fix_workspace_bounds]: Param 'ompl.default_workspace_bounds' was not set. Using default value: 10.000000
+[move_group-4] [INFO] [1775562879.710962018] [moveit_ros.fix_start_state_bounds]: Param 'ompl.start_state_max_bounds_error' was set to 0.100000
+[move_group-4] [INFO] [1775562879.710965084] [moveit_ros.fix_start_state_bounds]: Param 'ompl.start_state_max_dt' was not set. Using default value: 0.500000
+[move_group-4] [INFO] [1775562879.710972202] [moveit_ros.fix_start_state_collision]: Param 'ompl.start_state_max_dt' was not set. Using default value: 0.500000
+[move_group-4] [INFO] [1775562879.710975264] [moveit_ros.fix_start_state_collision]: Param 'ompl.jiggle_fraction' was set to 0.050000
+[move_group-4] [INFO] [1775562879.710978423] [moveit_ros.fix_start_state_collision]: Param 'ompl.max_sampling_attempts' was not set. Using default value: 100
+[move_group-4] [INFO] [1775562879.711000098] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Add Time Optimal Parameterization'
+[move_group-4] [INFO] [1775562879.711002694] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Resolve constraint frames to robot links'
+[move_group-4] [INFO] [1775562879.711004368] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Workspace Bounds'
+[move_group-4] [INFO] [1775562879.711006107] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Bounds'
+[move_group-4] [INFO] [1775562879.711007736] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State In Collision'
+[move_group-4] [INFO] [1775562879.711009448] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Path Constraints'
+[move_group-4] [INFO] [1775562879.727376581] [moveit.plugins.moveit_simple_controller_manager]: Added FollowJointTrajectory controller for rm_group_controller
+[move_group-4] [INFO] [1775562879.727503754] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775562879.727556033] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775562879.727947256] [moveit_ros.trajectory_execution_manager]: Trajectory execution is managing controllers
+[move_group-4] [INFO] [1775562879.727957155] [move_group.move_group]: MoveGroup debug mode is ON
+[move_group-4] [INFO] [1775562879.738173955] [move_group.move_group]: 
 [move_group-4] 
 [move_group-4] ********************************************************
 [move_group-4] * MoveGroup using: 
@@ -142,8 +146,8 @@ Installed 1 package in 2ms
 [move_group-4] *     - StateValidationService
 [move_group-4] ********************************************************
 [move_group-4] 
-[move_group-4] [INFO] [1775154845.779511043] [moveit_move_group_capabilities_base.move_group_context]: MoveGroup context using planning plugin ompl_interface/OMPLPlanner
-[move_group-4] [INFO] [1775154845.779516850] [moveit_move_group_capabilities_base.move_group_context]: MoveGroup context initialization complete
+[move_group-4] [INFO] [1775562879.738205463] [moveit_move_group_capabilities_base.move_group_context]: MoveGroup context using planning plugin ompl_interface/OMPLPlanner
+[move_group-4] [INFO] [1775562879.738210602] [moveit_move_group_capabilities_base.move_group_context]: MoveGroup context initialization complete
 [move_group-4] [96mLoading 'move_group/ApplyPlanningSceneService'...
 [move_group-4] [0m[96mLoading 'move_group/ClearOctomapService'...
 [move_group-4] [0m[96mLoading 'move_group/ExecuteTaskSolutionCapability'...
@@ -158,3 +162,86 @@ Installed 1 package in 2ms
 [move_group-4] [0m[92m
 [move_group-4] You can start planning now!
 [move_group-4] 
+[main] Launching: anygrasp_detection_node
+[main] Waiting 2.0s before launching grasp_viz...
+[rm_driver-1] [INFO] [1775562881.423499396] [rm_driver]: RM_65_driver is running 
+[rm_driver-1] [INFO] [1775562881.505309416] [rm_driver]: product_version = RM65-BI
+[rm_driver-1] [INFO] [1775562881.505372317] [rm_driver]: controller version : 3
+[INFO] [1775562881.867033823] [sam3_ros_node]: Loading SAM3 model...
+[rm_driver-1] [INFO] [1775562881.959697859] [rm_driver]: UDP_Configuration is cycle:5ms,port:8089,force_coordinate:0,ip:192.168.1.10,hand:0,rm_plus_base:0,rm_plus_state:0,speed:1
+[rm_driver-1] 
+[main] Launching: grasp_viz
+[main] Waiting 5.0s before launching grasp_state_machine...
+[INFO] [1775562883.224283122] [grasp_visualizer]: Grasp visualizer ready
+[INFO] [1775562883.563442139] [rviz2]: Stereo is NOT SUPPORTED
+[INFO] [1775562883.563516509] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[INFO] [1775562883.689970608] [rviz2]: Stereo is NOT SUPPORTED
+Warning: class_loader.impl: SEVERE WARNING!!! A namespace collision has occurred with plugin factory for class rviz_default_plugins::displays::InteractiveMarkerDisplay. New factory will OVERWRITE existing one. This situation occurs when libraries containing plugins are directly linked against an executable (the one running right now generating this message). Please separate plugins out into their own library or just don't link against the library and use either class_loader::ClassLoader/MultiLibraryClassLoader to open.
+         at line 253 in /opt/ros/humble/include/class_loader/class_loader/class_loader_core.hpp
+[ERROR] [1775562886.827691394] [moveit_ros_visualization.motion_planning_frame]: Action server: /recognize_objects not available
+[INFO] [1775562886.837792303] [moveit_ros_visualization.motion_planning_frame]: MoveGroup namespace changed: / -> . Reloading params.
+[INFO] [1775562886.890028070] [rviz2]: Stereo is NOT SUPPORTED
+[INFO] [1775562886.898627604] [rviz2]: Stereo is NOT SUPPORTED
+[INFO] [1775562886.959583062] [moveit_rdf_loader.rdf_loader]: Loaded robot model in 0.058434 seconds
+[INFO] [1775562886.959612937] [moveit_robot_model.robot_model]: Loading robot model 'rm_65_with_gripper'...
+[INFO] [1775562886.959623078] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
+[WARN] [1775562887.010606141] [moveit_ros.robot_model_loader]: No kinematics plugins defined. Fill and load kinematics.yaml!
+[INFO] [1775562887.160221287] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting planning scene monitor
+[INFO] [1775562887.160965647] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/monitored_planning_scene'
+[INFO] [1775562887.651757674] [interactive_marker_display_103359653369408]: Connected on namespace: /rviz_moveit_motion_planning_display/robot_interaction_interactive_marker_topic
+[WARN] [1775562887.654820217] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[INFO] [1775562887.654978047] [moveit_ros_robot_interaction.robot_interaction]: No active joints or end effectors found for group 'rm_group'. Make sure that kinematics.yaml is loaded in this node's namespace.
+[INFO] [1775562887.659589249] [moveit_ros_visualization.motion_planning_frame]: group rm_group
+[INFO] [1775562887.659608623] [moveit_ros_visualization.motion_planning_frame]: Constructing new MoveGroup connection for group 'rm_group' in namespace ''
+[INFO] [1775562887.666075830] [move_group_interface]: Ready to take commands for planning group rm_group.
+[INFO] [1775562887.701266235] [interactive_marker_display_103359653369408]: Sending request for interactive markers
+[INFO] [1775562887.761585005] [interactive_marker_display_103359653369408]: Service response received for initialization
+[main] Launching: grasp_state_machine
+[main] All processes launched. Press Ctrl+C to shut down.
+[INFO] [launch]: All log files can be found below /home/iot22/.ros/log/2026-04-07-19-54-48-035281-iot22-Computer-18865
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [grasp_state_machine-1]: process started with pid [18866]
+[grasp_state_machine-1] [INFO] [1775562888.230870992] [grasp_state_machine]: Grasp state machine constructed
+[grasp_state_machine-1] [INFO] [1775562888.270965437] [moveit_rdf_loader.rdf_loader]: Loaded robot model in 0.0272548 seconds
+[grasp_state_machine-1] [INFO] [1775562888.271000438] [moveit_robot_model.robot_model]: Loading robot model 'rm_65_with_gripper'...
+[grasp_state_machine-1] [INFO] [1775562888.271010353] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
+[grasp_state_machine-1] [WARN] [1775562888.326870064] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[grasp_state_machine-1] [INFO] [1775562888.336408899] [move_group_interface]: Ready to take commands for planning group rm_group.
+[grasp_state_machine-1] [INFO] [1775562889.296825405] [grasp_state_machine]: Intrinsics: fx=607.18 fy=606.92 cx=331.95 cy=250.13
+[INFO] [1775562891.250955742] [sam3_ros_node]: SAM3 model loaded
+[INFO] [1775562891.255199563] [sam3_ros_node]: SAM3 node ready — subscribing to /camera/camera/color/image_raw, publishing to /camera/sam/mask and /object_centroid_2d
+[INFO] [1775562891.256038803] [sam3_ros_node]: Intrinsics received: fx=607.18 fy=606.92 image_cx=331.95 image_cy=250.13
+[grasp_state_machine-1] [INFO] [1775562893.346652773] [grasp_state_machine]: Safety walls added
+[grasp_state_machine-1] [INFO] [1775562893.350855540] [move_group_interface]: MoveGroup action client/server ready
+[grasp_state_machine-1] [INFO] [1775562893.351342568] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775562893.351219244] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[move_group-4] [INFO] [1775562893.351361076] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[move_group-4] [INFO] [1775562893.353855916] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775562893.361901433] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-4] [WARN] [1775562893.813388730] [moveit_trajectory_processing.time_optimal_trajectory_generation]: Joint acceleration limits are not defined. Using the default 1 rad/s^2. You can define acceleration limits in the URDF or joint_limits.yaml.
+[move_group-4] [INFO] [1775562893.815701819] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775562893.816091569] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775562893.816666560] [move_group_interface]: time taken to generate plan: 0.451188 seconds
+[grasp_state_machine-1] [INFO] [1775562893.817083949] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775562893.816988579] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775562893.817083310] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775562893.817114442] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775562893.817144098] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775562893.817247524] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775562893.818816215] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775562893.818852780] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775562893.818874281] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775562893.819088490] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775562893.819542887] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775562893.819559605] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775562893.819611387] [rm_control]: First Move_group give us 1 points
+[rm_control-3] [INFO] [1775562893.864514755] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775562893.864666417] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775562893.878734101] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775562893.878820998] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775562893.879071937] [move_group_interface]: Execute request success!
+[grasp_state_machine-1] [INFO] [1775562893.879265133] [grasp_state_machine]: State → IDLE
+[grasp_state_machine-1] [WARN] [1775562893.879294492] [grasp_state_machine]: debug_flag_ is set — worker loop halted
+[INFO] [1775562896.854900330] [rviz]: Message Filter dropping message: frame 'camera_depth_optical_frame' at time 1775562886.833 for reason 'the timestamp on the message is earlier than all the data in the transform cache'

@@ -29,34 +29,42 @@
 // ===========================================================================
 // Tuning constants
 // ===========================================================================
-static constexpr double APPROACH_STEP_M            = 0.04;
-static constexpr int    MAX_APPROACH_STEPS         = 50;
-static constexpr double EXECUTE_DEPTH_THRESH_M     = 0.40;
-static constexpr double FINAL_EXEC_THRESH_M        = 0.25;
-static constexpr double CENTROID_TARGET_OFFSET_X   = 25.0;
-static constexpr double CENTROID_TARGET_OFFSET_Y   = 40.0;
-static constexpr double MIN_APPROACH_ANGLE_DEG     = 40.0;
-static constexpr double MAX_ORIENT_STEP_DEG        = 5.0;
-static constexpr bool   USE_SIMPLE_EXECUTE         = false;
-static constexpr bool   USE_SLERP_EXECUTE          = false;
+static constexpr double APPROACH_STEP_M = 0.04;
+static constexpr int MAX_APPROACH_STEPS = 50;
+static constexpr double EXECUTE_DEPTH_THRESH_M = 0.40;
+static constexpr double FINAL_EXEC_THRESH_M = 0.25;
+static constexpr double CENTROID_TARGET_OFFSET_X = 25.0;
+static constexpr double CENTROID_TARGET_OFFSET_Y = 40.0;
+static constexpr double MIN_APPROACH_ANGLE_DEG = 40.0;
+static constexpr double MAX_ORIENT_STEP_DEG = 5.0;
+static constexpr bool USE_SIMPLE_EXECUTE = false;
+static constexpr bool USE_SLERP_EXECUTE = false;
 
 // Stability criterion
-static constexpr int    STABILITY_N_FRAMES         = 5;
-static constexpr double STABILITY_TRANS_MM         = 15.0;
-static constexpr double STABILITY_ROT_DEG          = 10.0;
+static constexpr int STABILITY_N_FRAMES = 5;
+static constexpr double STABILITY_TRANS_MM = 15.0;
+static constexpr double STABILITY_ROT_DEG = 10.0;
 
 // ===========================================================================
 // State definitions
 // ===========================================================================
-enum class State { IDLE, SELECTING, EXECUTING };
+enum class State
+{
+  IDLE,
+  SELECTING,
+  EXECUTING
+};
 
 static std::string stateToString(State s)
 {
   switch (s)
   {
-    case State::IDLE:      return "IDLE";
-    case State::SELECTING: return "SELECTING";
-    case State::EXECUTING: return "EXECUTING";
+  case State::IDLE:
+    return "IDLE";
+  case State::SELECTING:
+    return "SELECTING";
+  case State::EXECUTING:
+    return "EXECUTING";
   }
   return "UNKNOWN";
 }
@@ -67,7 +75,7 @@ static std::string stateToString(State s)
 static double quatDotAbs(const geometry_msgs::msg::Quaternion &a,
                          const geometry_msgs::msg::Quaternion &b)
 {
-  return std::abs(a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w);
+  return std::abs(a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
 }
 
 static double angleBetweenQuats(const geometry_msgs::msg::Quaternion &a,
@@ -79,13 +87,13 @@ static double angleBetweenQuats(const geometry_msgs::msg::Quaternion &a,
 static double transDist(const geometry_msgs::msg::Point &a,
                         const geometry_msgs::msg::Point &b)
 {
-  double dx = a.x-b.x, dy = a.y-b.y, dz = a.z-b.z;
-  return std::sqrt(dx*dx + dy*dy + dz*dz) * 1000.0; // metres → mm
+  double dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
+  return std::sqrt(dx * dx + dy * dy + dz * dz) * 1000.0; // metres → mm
 }
 
 static double approachAngleDeg(const geometry_msgs::msg::Quaternion &q)
 {
-  double az = 1 - 2*(q.x*q.x + q.y*q.y);
+  double az = 1 - 2 * (q.x * q.x + q.y * q.y);
   return std::asin(std::abs(az)) * 180.0 / M_PI;
 }
 
@@ -98,16 +106,20 @@ public:
   static std::shared_ptr<GraspStateMachine> create()
   {
     auto node = std::shared_ptr<GraspStateMachine>(new GraspStateMachine());
-    node->mtc_planner_   = std::make_shared<MtcPlanner>(node);
+    node->mtc_planner_ = std::make_shared<MtcPlanner>(node);
     node->worker_thread_ = std::thread(&GraspStateMachine::workerLoop, node.get());
     return node;
   }
 
   ~GraspStateMachine()
   {
-    { std::lock_guard<std::mutex> lock(queue_mutex_); shutdown_ = true; }
+    {
+      std::lock_guard<std::mutex> lock(queue_mutex_);
+      shutdown_ = true;
+    }
     queue_cv_.notify_all();
-    if (worker_thread_.joinable()) worker_thread_.join();
+    if (worker_thread_.joinable())
+      worker_thread_.join();
   }
 
 private:
@@ -115,33 +127,33 @@ private:
   // Constructor — ROS wiring only
   // =========================================================================
   GraspStateMachine()
-    : Node("grasp_state_machine",
-           rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true)),
-      state_(State::IDLE),
-      tf_buffer_(this->get_clock()),
-      tf_listener_(tf_buffer_),
-      shutdown_(false)
+      : Node("grasp_state_machine",
+             rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true)),
+        tf_buffer_(this->get_clock()),
+        tf_listener_(tf_buffer_),
+        state_(State::IDLE),
+        shutdown_(false)
   {
     camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
-      "/camera/camera/color/camera_info", 1,
-      std::bind(&GraspStateMachine::cameraInfoCallback, this, std::placeholders::_1));
+        "/camera/camera/color/camera_info", 1,
+        std::bind(&GraspStateMachine::cameraInfoCallback, this, std::placeholders::_1));
 
     grasp_sub_ = this->create_subscription<rm_ros_interfaces::msg::GraspCandidateArray>(
-      "/grasp_candidates", 10,
-      std::bind(&GraspStateMachine::graspCallback, this, std::placeholders::_1));
+        "/grasp_candidates", 10,
+        std::bind(&GraspStateMachine::graspCallback, this, std::placeholders::_1));
 
     centroid_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
-      "/object_centroid_2d", 10,
-      std::bind(&GraspStateMachine::centroidCallback, this, std::placeholders::_1));
+        "/object_centroid_2d", 10,
+        std::bind(&GraspStateMachine::centroidCallback, this, std::placeholders::_1));
 
     gripper_position_pub_ = this->create_publisher<rm_ros_interfaces::msg::Gripperset>(
-      "/rm_driver/set_gripper_position_cmd", 10);
+        "/rm_driver/set_gripper_position_cmd", 10);
 
     gripper_pick_on_pub_ = this->create_publisher<rm_ros_interfaces::msg::Gripperpick>(
-      "/rm_driver/set_gripper_pick_on_cmd", 10);
+        "/rm_driver/set_gripper_pick_on_cmd", 10);
 
     pipeline_state_pub_ = this->create_publisher<std_msgs::msg::String>(
-      "/pipeline_state", 10);
+        "/pipeline_state", 10);
 
     RCLCPP_INFO(this->get_logger(), "Grasp state machine constructed");
   }
@@ -151,19 +163,26 @@ private:
   // =========================================================================
   void cameraInfoCallback(const sensor_msgs::msg::CameraInfo::SharedPtr msg)
   {
-    if (intrinsics_received_) return;
-    fx_ = msg->k[0]; fy_ = msg->k[4];
-    image_cx_ = msg->k[2]; image_cy_ = msg->k[5];
+    if (intrinsics_received_)
+      return;
+    fx_ = msg->k[0];
+    fy_ = msg->k[4];
+    image_cx_ = msg->k[2];
+    image_cy_ = msg->k[5];
     intrinsics_received_ = true;
     RCLCPP_INFO(this->get_logger(),
-      "Intrinsics: fx=%.2f fy=%.2f cx=%.2f cy=%.2f", fx_, fy_, image_cx_, image_cy_);
+                "Intrinsics: fx=%.2f fy=%.2f cx=%.2f cy=%.2f", fx_, fy_, image_cx_, image_cy_);
     camera_info_sub_.reset();
   }
 
   void graspCallback(const rm_ros_interfaces::msg::GraspCandidateArray::SharedPtr msg)
   {
-    if (state_ != State::EXECUTING || msg->grasps.empty()) return;
-    { std::lock_guard<std::mutex> lock(queue_mutex_); candidate_queue_.push(msg); }
+    if (state_ != State::EXECUTING || msg->grasps.empty())
+      return;
+    {
+      std::lock_guard<std::mutex> lock(queue_mutex_);
+      candidate_queue_.push(msg);
+    }
     queue_cv_.notify_one();
   }
 
@@ -219,13 +238,16 @@ private:
   {
     geometry_msgs::msg::PoseStamped stamped_in, stamped_out;
     stamped_in.header.frame_id = "camera_color_optical_frame";
-    stamped_in.header.stamp    = this->now();
-    stamped_in.pose            = pose_in;
-    try {
+    stamped_in.header.stamp = this->now();
+    stamped_in.pose = pose_in;
+    try
+    {
       tf_buffer_.transform(stamped_in, stamped_out, "base_link", tf2::durationFromSec(1.0));
       pose_out = stamped_out.pose;
       return true;
-    } catch (const tf2::TransformException &ex) {
+    }
+    catch (const tf2::TransformException &ex)
+    {
       RCLCPP_WARN(this->get_logger(), "TF2 failed: %s", ex.what());
       return false;
     }
@@ -248,8 +270,10 @@ private:
     const auto &ref = stability_window_.front();
     for (int i = 1; i < STABILITY_N_FRAMES; ++i)
     {
-      if (transDist(stability_window_[i].position, ref.position) > STABILITY_TRANS_MM) return false;
-      if (angleBetweenQuats(stability_window_[i].orientation, ref.orientation) > STABILITY_ROT_DEG) return false;
+      if (transDist(stability_window_[i].position, ref.position) > STABILITY_TRANS_MM)
+        return false;
+      if (angleBetweenQuats(stability_window_[i].orientation, ref.orientation) > STABILITY_ROT_DEG)
+        return false;
     }
     stable_pose = stability_window_.back();
     return true;
@@ -263,13 +287,17 @@ private:
     std::this_thread::sleep_for(std::chrono::seconds(3));
     moveit::planning_interface::PlanningSceneInterface psi;
 
-    struct Wall { std::string id; double cx, cy, cz, sx, sy, sz; };
+    struct Wall
+    {
+      std::string id;
+      double cx, cy, cz, sx, sy, sz;
+    };
     const double T = 0.03;
     const std::vector<Wall> walls = {
-      {"+x_wall",  0.15+T/2,  0.0,      0.5,  T,    0.60+T, 1.0},
-      {"+y_wall",  0.0,        0.30+T/2, 0.5,  2.0,  T,      1.0},
-      {"-y_wall",  0.0,       -0.30-T/2, 0.5,  2.0,  T,      1.0},
-      {"table",   -0.425,      0.0,      0.18, 0.75, 0.75,   T  },
+        {"+x_wall", 0.15 + T / 2, 0.0, 0.5, T, 0.60 + T, 1.0},
+        {"+y_wall", 0.0, 0.30 + T / 2, 0.5, 2.0, T, 1.0},
+        {"-y_wall", 0.0, -0.30 - T / 2, 0.5, 2.0, T, 1.0},
+        {"table", -0.425, 0.0, 0.18, 0.75, 0.75, T},
     };
 
     std::vector<moveit_msgs::msg::CollisionObject> objs;
@@ -277,13 +305,15 @@ private:
     {
       moveit_msgs::msg::CollisionObject obj;
       obj.header.frame_id = "base_link";
-      obj.id        = w.id;
+      obj.id = w.id;
       obj.operation = moveit_msgs::msg::CollisionObject::ADD;
       shape_msgs::msg::SolidPrimitive box;
-      box.type       = shape_msgs::msg::SolidPrimitive::BOX;
+      box.type = shape_msgs::msg::SolidPrimitive::BOX;
       box.dimensions = {w.sx, w.sy, w.sz};
       geometry_msgs::msg::Pose pose;
-      pose.position.x   = w.cx; pose.position.y = w.cy; pose.position.z = w.cz;
+      pose.position.x = w.cx;
+      pose.position.y = w.cy;
+      pose.position.z = w.cz;
       pose.orientation.w = 1.0;
       obj.primitives.push_back(box);
       obj.primitive_poses.push_back(pose);
@@ -294,10 +324,13 @@ private:
     {
       psi.applyCollisionObjects(objs);
       auto known = psi.getKnownObjectNames();
-      bool all_added = std::all_of(walls.begin(), walls.end(), [&](const Wall &w){
-        return std::find(known.begin(), known.end(), w.id) != known.end();
-      });
-      if (all_added) { RCLCPP_INFO(this->get_logger(), "Safety walls added"); break; }
+      bool all_added = std::all_of(walls.begin(), walls.end(), [&](const Wall &w)
+                                   { return std::find(known.begin(), known.end(), w.id) != known.end(); });
+      if (all_added)
+      {
+        RCLCPP_INFO(this->get_logger(), "Safety walls added");
+        break;
+      }
       RCLCPP_WARN(this->get_logger(), "Waiting for planning scene to accept safety walls...");
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
@@ -309,14 +342,18 @@ private:
   // Returns false if the step could not be computed or executed.
   bool selectingStep()
   {
-    if (!intrinsics_received_) return true; // not ready yet, silently skip
+    if (!intrinsics_received_)
+      return true; // not ready yet, silently skip
 
     auto current_pose_stamped = mtc_planner_->getCurrentPose();
     geometry_msgs::msg::PoseStamped current_pose_cam;
-    try {
+    try
+    {
       tf_buffer_.transform(current_pose_stamped, current_pose_cam,
                            "camera_color_optical_frame", tf2::durationFromSec(0.1));
-    } catch (const tf2::TransformException &ex) {
+    }
+    catch (const tf2::TransformException &ex)
+    {
       RCLCPP_WARN(this->get_logger(), "SELECTING: EEF transform failed: %s", ex.what());
       return false;
     }
@@ -326,14 +363,14 @@ private:
       std::lock_guard<std::mutex> lock(centroid_mutex_);
       double px_err_x = latest_centroid_.point.x - (image_cx_ + CENTROID_TARGET_OFFSET_X);
       double px_err_y = latest_centroid_.point.y - (image_cy_ + CENTROID_TARGET_OFFSET_Y);
-      double depth    = latest_centroid_.point.z;
+      double depth = latest_centroid_.point.z;
 
       double lateral_x = (px_err_x / fx_) * depth;
       double lateral_y = (px_err_y / fy_) * depth;
-      double dz        = APPROACH_STEP_M;
+      double dz = APPROACH_STEP_M;
 
-      double magnitude = std::sqrt(lateral_x*lateral_x + lateral_y*lateral_y + dz*dz);
-      double scale     = APPROACH_STEP_M / magnitude;
+      double magnitude = std::sqrt(lateral_x * lateral_x + lateral_y * lateral_y + dz * dz);
+      double scale = APPROACH_STEP_M / magnitude;
 
       goal_pose_cam.pose.position.x += lateral_x * scale;
       goal_pose_cam.pose.position.y += lateral_y * scale;
@@ -341,9 +378,12 @@ private:
     }
 
     geometry_msgs::msg::PoseStamped goal_pose_base;
-    try {
+    try
+    {
       tf_buffer_.transform(goal_pose_cam, goal_pose_base, "base_link", tf2::durationFromSec(0.1));
-    } catch (const tf2::TransformException &ex) {
+    }
+    catch (const tf2::TransformException &ex)
+    {
       RCLCPP_WARN(this->get_logger(), "SELECTING: goal transform failed: %s", ex.what());
       return false;
     }
@@ -364,19 +404,27 @@ private:
       const geometry_msgs::msg::Quaternion &q1,
       double t)
   {
-    double dot = q0.x*q1.x + q0.y*q1.y + q0.z*q1.z + q0.w*q1.w;
+    double dot = q0.x * q1.x + q0.y * q1.y + q0.z * q1.z + q0.w * q1.w;
     geometry_msgs::msg::Quaternion q1s = q1;
-    if (dot < 0.0) { q1s.x=-q1.x; q1s.y=-q1.y; q1s.z=-q1.z; q1s.w=-q1.w; dot=-dot; }
+    if (dot < 0.0)
+    {
+      q1s.x = -q1.x;
+      q1s.y = -q1.y;
+      q1s.z = -q1.z;
+      q1s.w = -q1.w;
+      dot = -dot;
+    }
     dot = std::min(1.0, dot);
     double theta = std::acos(dot);
-    if (theta < 1e-6) return q0;
-    double s0 = std::sin((1-t)*theta) / std::sin(theta);
-    double s1 = std::sin(   t *theta) / std::sin(theta);
+    if (theta < 1e-6)
+      return q0;
+    double s0 = std::sin((1 - t) * theta) / std::sin(theta);
+    double s1 = std::sin(t * theta) / std::sin(theta);
     geometry_msgs::msg::Quaternion out;
-    out.x = s0*q0.x + s1*q1s.x;
-    out.y = s0*q0.y + s1*q1s.y;
-    out.z = s0*q0.z + s1*q1s.z;
-    out.w = s0*q0.w + s1*q1s.w;
+    out.x = s0 * q0.x + s1 * q1s.x;
+    out.y = s0 * q0.y + s1 * q1s.y;
+    out.z = s0 * q0.z + s1 * q1s.z;
+    out.w = s0 * q0.w + s1 * q1s.w;
     return out;
   }
 
@@ -391,15 +439,21 @@ private:
     {
       std::unique_lock<std::mutex> lock(queue_mutex_);
       bool got = queue_cv_.wait_for(lock, std::chrono::seconds(3),
-                                    [this]{ return !candidate_queue_.empty() || shutdown_; });
-      if (shutdown_) return true;
+                                    [this]
+                                    { return !candidate_queue_.empty() || shutdown_; });
+      if (shutdown_)
+        return true;
       if (!got || candidate_queue_.empty())
       {
         RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidates received — aborting");
         return true; // signal done, return to IDLE
       }
       // Drain stale candidates, keep latest
-      while (!candidate_queue_.empty()) { msg = candidate_queue_.front(); candidate_queue_.pop(); }
+      while (!candidate_queue_.empty())
+      {
+        msg = candidate_queue_.front();
+        candidate_queue_.pop();
+      }
     }
 
     // --- Pick best candidate passing approach angle check ---
@@ -409,14 +463,15 @@ private:
     for (const auto &candidate : msg->grasps)
     {
       geometry_msgs::msg::Pose pose_base;
-      if (!transformToBase(candidate.pose, pose_base)) continue;
+      if (!transformToBase(candidate.pose, pose_base))
+        continue;
       if (approachAngleDeg(pose_base.orientation) < MIN_APPROACH_ANGLE_DEG)
       {
         RCLCPP_DEBUG(this->get_logger(), "Candidate rejected: angle %.1f° < %.1f°",
                      approachAngleDeg(pose_base.orientation), MIN_APPROACH_ANGLE_DEG);
         continue;
       }
-      found_valid   = true;
+      found_valid = true;
       best_pose_base = pose_base;
       break;
     }
@@ -536,8 +591,10 @@ private:
       // =====================================================================
       {
         std::unique_lock<std::mutex> lock(centroid_mutex_);
-        queue_cv_.wait(lock, [this]{ return has_centroid_ || shutdown_; });
-        if (shutdown_) return;
+        queue_cv_.wait(lock, [this]
+                       { return has_centroid_ || shutdown_; });
+        if (shutdown_)
+          return;
         has_centroid_ = false;
       }
 
@@ -619,19 +676,16 @@ private:
   // =========================================================================
 
   // ROS interfaces
-  rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr          camera_info_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_sub_;
   rclcpp::Subscription<rm_ros_interfaces::msg::GraspCandidateArray>::SharedPtr grasp_sub_;
-  rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr      centroid_sub_;
-  rclcpp::Publisher<rm_ros_interfaces::msg::Gripperset>::SharedPtr        gripper_position_pub_;
-  rclcpp::Publisher<rm_ros_interfaces::msg::Gripperpick>::SharedPtr       gripper_pick_on_pub_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr                     pipeline_state_pub_;
+  rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr centroid_sub_;
+  rclcpp::Publisher<rm_ros_interfaces::msg::Gripperset>::SharedPtr gripper_position_pub_;
+  rclcpp::Publisher<rm_ros_interfaces::msg::Gripperpick>::SharedPtr gripper_pick_on_pub_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pipeline_state_pub_;
 
   // TF2
-  tf2_ros::Buffer           tf_buffer_;
+  tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
-
-  // Motion planner
-  std::shared_ptr<MtcPlanner> mtc_planner_;
 
   // Camera intrinsics
   double fx_ = 0.0, fy_ = 0.0, image_cx_ = 0.0, image_cy_ = 0.0;
@@ -639,6 +693,9 @@ private:
 
   // State
   State state_;
+
+  // Motion planner
+  std::shared_ptr<MtcPlanner> mtc_planner_;
 
   // Centroid (shared with callbacks)
   geometry_msgs::msg::PointStamped latest_centroid_;
@@ -658,8 +715,8 @@ private:
   std::deque<geometry_msgs::msg::Pose> stability_window_;
 
   // Flags
-  bool debug_flag_ = false;
-  bool grasped_    = false;
+  bool debug_flag_ = true;
+  bool grasped_ = false;
 };
 
 // ===========================================================================
