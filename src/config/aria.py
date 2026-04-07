@@ -10,7 +10,8 @@ import aria.sdk as aria
 @dataclass(frozen=True)
 class AriaConfig:
     ARIA_LOG_LEVEL: aria.Level = aria.Level.Info
-    ARIA_STREAMING_PROFILE_NAME: str = "profile15"
+    ARIA_STREAMING_PROFILE_NAME: str = "profile15"  # for usb
+    # ARIA_STREAMING_PROFILE_NAME: str = "profile28" #for wifi
     USE_EPHEMERAL_CERTS: bool = True
 
     EYE_STREAM_ID: str = "211-1"
@@ -26,7 +27,7 @@ class AriaConfig:
     NUM_AUDIO_CHANNELS: int = 7
     AUDIO_SAMPLE_RATE: int = 48_000
 
-    ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = None
-    # ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = ipaddress.IPv4Address(
-    #     "172.20.10.4"
-    # )
+    # ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = None
+    ARIA_DEVICE_IP_ADDRESS: Optional[ipaddress.IPv4Address] = ipaddress.IPv4Address(
+        "10.42.0.70"
+    )
