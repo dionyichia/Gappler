@@ -171,7 +171,7 @@ class FeatureMatchingPipeline:
         self._matching_worker = MatchingWorker()
 
         self._setup_ros()
-        logger.info("Feature Matching Pipeline initialised")
+        logger.debug("Feature matching pipeline initialised")
 
     # ------------------------------------------------------------------
     # Setup
@@ -243,7 +243,7 @@ class FeatureMatchingPipeline:
     # ------------------------------------------------------------------
 
     def run(self) -> None:
-        logger.info("Feature Matching Pipeline running")
+        logger.info("Feature matching pipeline running")
         try:
             while not self._quit_event.is_set():
                 result = self._matching_worker.get_result()

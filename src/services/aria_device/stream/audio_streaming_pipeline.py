@@ -59,17 +59,13 @@ def audio_worker(
     previous_transcription = ""
     previous_prompt = ""
 
-    def _get_resampled_audio(channel_buffers: list) -> np.ndarray:
+    def _get_resampled_audio(channel_buffers: np.ndarray) -> np.ndarray:
         """Mix, downsample and normalise raw channel buffers into a 16 kHz mono array."""
-        if not channel_buffers or not channel_buffers[0]:
+        if channel_buffers is None or channel_buffers.size == 0:
             return np.array([], dtype=np.float32)
 
         # Mix to mono
-        min_length = min(len(c) for c in channel_buffers)
-        trimmed = [
-            np.array(list(c)[:min_length], dtype=np.float32) for c in channel_buffers
-        ]
-        mono = np.mean(trimmed, axis=0)
+        mono = np.mean(channel_buffers.astype(np.float32), axis=0)
 
         # Downsample
         target_length = int(
@@ -82,7 +78,7 @@ def audio_worker(
         # Normalise
         peak = np.max(np.abs(resampled))
         if peak > 0:
-            resampled = resampled / peak
+            resampled /= peak
         return resampled.astype(np.float32)
 
     def _transcribe(audio: np.ndarray) -> list:
@@ -172,9 +168,8 @@ class AudioStreamingPipeline:
                     iteration_start = time.time()
 
                     if observer.received:
-                        _put_latest(
-                            self.raw_audio_queue, list(observer.channel_buffers)
-                        )
+                        observer.received = False
+                        _put_latest(self.raw_audio_queue, observer.snapshot())
 
                     # Pace the loop to a consistent iteration interval.
                     elapsed = time.time() - iteration_start
