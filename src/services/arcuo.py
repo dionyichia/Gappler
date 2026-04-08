@@ -13,7 +13,7 @@ dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
 detector_params = cv2.aruco.DetectorParameters()
 detector = cv2.aruco.ArucoDetector(dictionary, detector_params)
 
-TAG_SIZE = 0.15  # your marker's physical size in metres
+TAG_SIZE = 0.1325  # your marker's physical size in metres
 
 # 3D corners of the tag in the tag's own coordinate frame
 # Order: top-left, top-right, bottom-right, bottom-left

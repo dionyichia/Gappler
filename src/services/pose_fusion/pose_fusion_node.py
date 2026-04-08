@@ -120,13 +120,13 @@ class PoseFusionNode(Node):
     def __init__(self) -> None:
         super().__init__("aria_pose_fusion")
 
-        self._static_broadcaster = StaticTransformBroadcaster(self)
-        t = TransformStamped()
-        t.header.stamp = self.get_clock().now().to_msg()
-        t.header.frame_id = "global"
-        t.child_frame_id = "map"
-        t.transform.rotation.w = 1.0  # identity — adjust once you know the real offset
-        self._static_broadcaster.sendTransform(t)
+        # self._static_broadcaster = StaticTransformBroadcaster(self)
+        # t = TransformStamped()
+        # t.header.stamp = self.get_clock().now().to_msg()
+        # t.header.frame_id = "global"
+        # t.child_frame_id = "map"
+        # t.transform.rotation.w = 1.0  # identity — adjust once you know the real offset
+        # self._static_broadcaster.sendTransform(t)
 
         # ── parameters ────────────────────────────────────────────────────────
         # Marker pose in SLAM map frame.  Set these to match the known ArUco
@@ -137,14 +137,13 @@ class PoseFusionNode(Node):
         self.declare_parameter("marker_quat_x", 0.0)
         self.declare_parameter("marker_quat_y", 0.0)
         self.declare_parameter("marker_quat_z", 0.0)
-        self.declare_parameter("marker_quat_w", 1.0)
 
         # Fixed offset from robot SLAM origin to ArUco marker (robot frame).
         # Marker is at back-right corner of base, 1.2 m above ground:
         #   x = -0.30 (back), y = -0.31 (right), z = 1.2 (height)
-        self.declare_parameter("marker_offset_x", -0.30)
-        self.declare_parameter("marker_offset_y", -0.31)
-        self.declare_parameter("marker_offset_z",  1.20)
+        self.declare_parameter("marker_offset_x", -0.20)
+        self.declare_parameter("marker_offset_y", -0.25)
+        self.declare_parameter("marker_offset_z", 1.20)
         self.declare_parameter("marker_offset_quat_x", 0.0)
         self.declare_parameter("marker_offset_quat_y", 0.0)
         self.declare_parameter("marker_offset_quat_z", 0.0)
@@ -248,7 +247,7 @@ class PoseFusionNode(Node):
 
         t = TransformStamped()
         t.header.stamp = msg.header.stamp
-        t.header.frame_id = "map"
+        t.header.frame_id = "base_link"
         t.child_frame_id = "aria_glasses"
         t.transform.translation.x = float(T_map_glasses[0, 3])
         t.transform.translation.y = float(T_map_glasses[1, 3])
@@ -259,6 +258,13 @@ class PoseFusionNode(Node):
         t.transform.rotation.z = float(q[2])
         t.transform.rotation.w = float(q[3])
         self._tf_broadcaster.sendTransform(t)
+
+        # Publish fused pose directly from ArUco — works even without VIO running
+        aruco_fused_msg = _T_to_pose_stamped(
+            T_map_glasses, "base_link", msg.header.stamp
+        )
+        self._pub.publish(aruco_fused_msg)
+        self._publish_glasses_marker(T_map_glasses, msg.header.stamp)
 
         # Notify downstream nodes the first time a valid fix is received
         if first_fix:
@@ -298,13 +304,13 @@ class PoseFusionNode(Node):
         T_fused = self._T_anchor @ T_delta
 
         if self._aruco_seen:
-            fused_msg = _T_to_pose_stamped(T_fused, "map", msg.header.stamp)
+            fused_msg = _T_to_pose_stamped(T_fused, "base_link", msg.header.stamp)
             self._pub.publish(fused_msg)
             self._publish_glasses_marker(T_fused, msg.header.stamp)
 
         t = TransformStamped()
         t.header.stamp = msg.header.stamp
-        t.header.frame_id = "map"
+        t.header.frame_id = "base_link"
         t.child_frame_id = "glasses"
         t.transform.translation.x = float(T_fused[0, 3])
         t.transform.translation.y = float(T_fused[1, 3])
@@ -322,7 +328,7 @@ class PoseFusionNode(Node):
         x, y, z = float(T_fused[0, 3]), float(T_fused[1, 3]), float(T_fused[2, 3])
 
         label = Marker()
-        label.header.frame_id = "map"
+        label.header.frame_id = "base_link"
         label.header.stamp = stamp
         label.ns = "aria_glasses"
         label.id = 0

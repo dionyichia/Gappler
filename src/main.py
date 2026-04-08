@@ -104,9 +104,9 @@ class ProcessPipelineBuilder:
     ) -> "ProcessPipelineBuilder":
         """Build the complete pipeline for live streaming mode."""
         self.add_streaming(device_ip, profile_name).build_common_pipeline()
-        # self.add_audio_streaming()
+        self.add_audio_streaming()
         sensors_calib_json_str = self.config_queue.get()
-        # self.add_image_streaming(sensors_calib_json_str)
+        self.add_image_streaming(sensors_calib_json_str)
         self.add_pose_streaming(sensors_calib_json_str)
         return self
 
@@ -392,7 +392,7 @@ def parse_arguments() -> ApplicationConfig:
     parser.add_argument(
         "--track-pose",
         action="store_true",
-        default=False,
+        default=True,
         help="Launch OpenVINS MSCKF and rviz2 on startup",
     )
 
