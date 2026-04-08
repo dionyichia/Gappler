@@ -92,6 +92,7 @@ bool MtcPlanner::moveCartesianStep(const geometry_msgs::msg::Pose &goal_pose_bas
 {
   move_group_->setMaxVelocityScalingFactor(0.1);
   move_group_->setMaxAccelerationScalingFactor(0.1);
+  move_group_->setStartStateToCurrentState();
   std::vector<geometry_msgs::msg::Pose> waypoints = {goal_pose_base};
   moveit_msgs::msg::RobotTrajectory trajectory;
   double fraction = move_group_->computeCartesianPath(waypoints, 0.01, 5.0, trajectory);

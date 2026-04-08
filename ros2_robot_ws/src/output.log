@@ -1,135 +1,131 @@
-[main] Launching: realsense_camera
-[main] Launching: rm_bringup
-[main] Launching: sam3_ros_node
-[main] Waiting 2.0s before launching anygrasp_detection_node...
 Uninstalled 1 package in 1ms
-Installed 1 package in 1ms
-[INFO] [launch]: All log files can be found below /home/iot22/.ros/log/2026-04-07-19-54-39-030602-iot22-Computer-18518
+Installed 1 package in 2ms
+[INFO] [launch]: All log files can be found below /home/iot22/.ros/log/2026-04-08-16-24-55-306510-iot22-Computer-359637
 [INFO] [launch]: Default logging verbosity is set to INFO
-[INFO] [launch]: All log files can be found below /home/iot22/.ros/log/2026-04-07-19-54-39-037190-iot22-Computer-18519
+[INFO] [launch]: All log files can be found below /home/iot22/.ros/log/2026-04-08-16-24-55-408017-iot22-Computer-359636
 [INFO] [launch]: Default logging verbosity is set to INFO
 [INFO] [launch.user]: 🚀 Launching as Normal ROS Node
-[INFO] [realsense2_camera_node-1]: process started with pid [18555]
-[realsense2_camera_node-1] [0m[INFO] [1775562879.293728929] [camera.camera]: RealSense ROS v4.56.4[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.293831063] [camera.camera]: Built with LibRealSense v2.56.4[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.293840124] [camera.camera]: Running with LibRealSense v2.56.4[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300008476] [camera.camera]: Device with serial number 243222074878 was found.
+[INFO] [realsense2_camera_node-1]: process started with pid [359674]
+[realsense2_camera_node-1] [0m[INFO] [1775636695.650030911] [camera.camera]: RealSense ROS v4.56.4[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.650131147] [camera.camera]: Built with LibRealSense v2.56.4[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.650145108] [camera.camera]: Running with LibRealSense v2.56.4[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.665319356] [camera.camera]: Device with serial number 243222074878 was found.
 [realsense2_camera_node-1] [0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300047178] [camera.camera]: Device with physical ID /sys/devices/pci0000:00/0000:00:14.0/usb1/1-11/1-11:1.0/video4linux/video0 was found.[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300055178] [camera.camera]: Device with name Intel RealSense D435I was found.[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300178246] [camera.camera]: Device with port number 1-11 was found.[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300183959] [camera.camera]: Device USB type: 2.1[0m
-[realsense2_camera_node-1] [33m[WARN] [1775562879.300189378] [camera.camera]: Device 243222074878 is connected using a 2.1 port. Reduced performance is expected.[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300227983] [camera.camera]: getParameters...[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300345700] [camera.camera]: JSON file is not provided[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300354336] [camera.camera]: Device Name: Intel RealSense D435I[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300359065] [camera.camera]: Device Serial No: 243222074878[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300365052] [camera.camera]: Device physical port: /sys/devices/pci0000:00/0000:00:14.0/usb1/1-11/1-11:1.0/video4linux/video0[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300369772] [camera.camera]: Device FW version: 5.15.1.55[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300374133] [camera.camera]: Device Product ID: 0x0B3A[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.300379259] [camera.camera]: Sync Mode: Off[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.384831637] [camera.camera]: Set ROS param depth_module.depth_profile to default: 640x480x15[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.385071896] [camera.camera]: Set ROS param depth_module.infra_profile to default: 640x480x15[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.386473502] [camera.camera]: Set ROS param rgb_camera.color_profile to default: 640x480x15[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.386691619] [camera.camera]: Set ROS param gyro_fps to default: 200[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.386711314] [camera.camera]: Set ROS param accel_fps to default: 100[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.389080391] [camera.camera]: Stopping Sensor: Depth Module[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.389147265] [camera.camera]: Stopping Sensor: RGB Camera[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.397371359] [camera.camera]: Starting Sensor: Depth Module[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.399262515] [camera.camera]: Open profile: stream_type: Depth(0), Format: Z16, Width: 640, Height: 480, FPS: 15[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.400220932] [camera.camera]: Starting Sensor: RGB Camera[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.401779485] [camera.camera]: Open profile: stream_type: Color(0), Format: RGB8, Width: 640, Height: 480, FPS: 15[0m
-[realsense2_camera_node-1] [0m[INFO] [1775562879.404613678] [camera.camera]: RealSense Node Is Up![0m
-[INFO] [rm_driver-1]: process started with pid [18598]
-[INFO] [robot_state_publisher-2]: process started with pid [18600]
-[INFO] [rm_control-3]: process started with pid [18602]
-[INFO] [move_group-4]: process started with pid [18604]
-[robot_state_publisher-2] [WARN] [1775562879.445056283] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
-[robot_state_publisher-2] [INFO] [1775562879.445128397] [robot_state_publisher]: got segment Link1
-[robot_state_publisher-2] [INFO] [1775562879.445163556] [robot_state_publisher]: got segment Link2
-[robot_state_publisher-2] [INFO] [1775562879.445166917] [robot_state_publisher]: got segment Link3
-[robot_state_publisher-2] [INFO] [1775562879.445169269] [robot_state_publisher]: got segment Link4
-[robot_state_publisher-2] [INFO] [1775562879.445171563] [robot_state_publisher]: got segment Link5
-[robot_state_publisher-2] [INFO] [1775562879.445173847] [robot_state_publisher]: got segment Link6
-[robot_state_publisher-2] [INFO] [1775562879.445176040] [robot_state_publisher]: got segment base_link
-[robot_state_publisher-2] [INFO] [1775562879.445178384] [robot_state_publisher]: got segment camera_bottom_screw_frame
-[robot_state_publisher-2] [INFO] [1775562879.445181079] [robot_state_publisher]: got segment camera_link
-[robot_state_publisher-2] [INFO] [1775562879.445183605] [robot_state_publisher]: got segment grasp_frame
-[robot_state_publisher-2] [INFO] [1775562879.445185791] [robot_state_publisher]: got segment gripper_Link1
-[robot_state_publisher-2] [INFO] [1775562879.445188198] [robot_state_publisher]: got segment gripper_Link2
-[robot_state_publisher-2] [INFO] [1775562879.445190489] [robot_state_publisher]: got segment gripper_Link3
-[robot_state_publisher-2] [INFO] [1775562879.445192676] [robot_state_publisher]: got segment gripper_Link4
-[robot_state_publisher-2] [INFO] [1775562879.445194886] [robot_state_publisher]: got segment gripper_base_link
-[move_group-4] [INFO] [1775562879.466055079] [moveit_rdf_loader.rdf_loader]: Loaded robot model in 0.0222714 seconds
-[move_group-4] [INFO] [1775562879.466101835] [moveit_robot_model.robot_model]: Loading robot model 'rm_65_with_gripper'...
-[move_group-4] [INFO] [1775562879.466109868] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
-[move_group-4] [WARN] [1775562879.514995888] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
-[move_group-4] [INFO] [1775562879.644707453] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Publishing maintained planning scene on 'monitored_planning_scene'
-[move_group-4] [INFO] [1775562879.644891984] [moveit.ros_planning_interface.moveit_cpp]: Listening to 'joint_states' for joint states
-[move_group-4] [INFO] [1775562879.645442322] [moveit_ros.current_state_monitor]: Listening to joint states on topic 'joint_states'
-[move_group-4] [INFO] [1775562879.645733176] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/attached_collision_object' for attached collision objects
-[move_group-4] [INFO] [1775562879.645749693] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting planning scene monitor
-[move_group-4] [INFO] [1775562879.645902402] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/planning_scene'
-[move_group-4] [INFO] [1775562879.645910229] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting world geometry update monitor for collision objects, attached objects, octomap updates.
-[move_group-4] [INFO] [1775562879.646063997] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to 'collision_object'
-[move_group-4] [INFO] [1775562879.646198310] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to 'planning_scene_world' for planning scene world geometry
-[move_group-4] [WARN] [1775562879.646512354] [moveit.ros.occupancy_map_monitor.middleware_handle]: Resolution not specified for Octomap. Assuming resolution = 0.1 instead
-[move_group-4] [ERROR] [1775562879.646571976] [moveit.ros.occupancy_map_monitor.middleware_handle]: Exception while loading octomap updater 'occupancy_map_monitor/DepthImageOctomapUpdater': According to the loaded plugin descriptions the class occupancy_map_monitor/DepthImageOctomapUpdater with base class type occupancy_map_monitor::OccupancyMapUpdater does not exist. Declared types are 
+[realsense2_camera_node-1] [0m[INFO] [1775636695.665390707] [camera.camera]: Device with physical ID /sys/devices/pci0000:00/0000:00:14.0/usb1/1-11/1-11:1.0/video4linux/video0 was found.[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.665409183] [camera.camera]: Device with name Intel RealSense D435I was found.[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.665720170] [camera.camera]: Device with port number 1-11 was found.[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.665736420] [camera.camera]: Device USB type: 2.1[0m
+[realsense2_camera_node-1] [33m[WARN] [1775636695.665775269] [camera.camera]: Device 243222074878 is connected using a 2.1 port. Reduced performance is expected.[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.665840124] [camera.camera]: getParameters...[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.666063054] [camera.camera]: JSON file is not provided[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.666074874] [camera.camera]: Device Name: Intel RealSense D435I[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.666082347] [camera.camera]: Device Serial No: 243222074878[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.666095427] [camera.camera]: Device physical port: /sys/devices/pci0000:00/0000:00:14.0/usb1/1-11/1-11:1.0/video4linux/video0[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.666103383] [camera.camera]: Device FW version: 5.15.1.55[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.666111803] [camera.camera]: Device Product ID: 0x0B3A[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.666118170] [camera.camera]: Sync Mode: Off[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.753429292] [camera.camera]: Set ROS param depth_module.depth_profile to default: 640x480x15[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.753819899] [camera.camera]: Set ROS param depth_module.infra_profile to default: 640x480x15[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.756645948] [camera.camera]: Set ROS param rgb_camera.color_profile to default: 640x480x15[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.757067363] [camera.camera]: Set ROS param gyro_fps to default: 200[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.757121207] [camera.camera]: Set ROS param accel_fps to default: 100[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.761856179] [camera.camera]: Stopping Sensor: Depth Module[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.761944367] [camera.camera]: Stopping Sensor: RGB Camera[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.776528768] [camera.camera]: Starting Sensor: Depth Module[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.778859013] [camera.camera]: Open profile: stream_type: Depth(0), Format: Z16, Width: 640, Height: 480, FPS: 15[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.781199201] [camera.camera]: Starting Sensor: RGB Camera[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.783131670] [camera.camera]: Open profile: stream_type: Color(0), Format: RGB8, Width: 640, Height: 480, FPS: 15[0m
+[realsense2_camera_node-1] [0m[INFO] [1775636695.788194771] [camera.camera]: RealSense Node Is Up![0m
+[INFO] [rm_driver-1]: process started with pid [359716]
+[INFO] [robot_state_publisher-2]: process started with pid [359718]
+[INFO] [rm_control-3]: process started with pid [359720]
+[INFO] [move_group-4]: process started with pid [359722]
+[robot_state_publisher-2] [WARN] [1775636695.921605692] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-2] [INFO] [1775636695.921738840] [robot_state_publisher]: got segment Link1
+[robot_state_publisher-2] [INFO] [1775636695.921821326] [robot_state_publisher]: got segment Link2
+[robot_state_publisher-2] [INFO] [1775636695.921832790] [robot_state_publisher]: got segment Link3
+[robot_state_publisher-2] [INFO] [1775636695.921841010] [robot_state_publisher]: got segment Link4
+[robot_state_publisher-2] [INFO] [1775636695.921849246] [robot_state_publisher]: got segment Link5
+[robot_state_publisher-2] [INFO] [1775636695.921856668] [robot_state_publisher]: got segment Link6
+[robot_state_publisher-2] [INFO] [1775636695.921864054] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-2] [INFO] [1775636695.921871954] [robot_state_publisher]: got segment camera_bottom_screw_frame
+[robot_state_publisher-2] [INFO] [1775636695.921880042] [robot_state_publisher]: got segment camera_link
+[robot_state_publisher-2] [INFO] [1775636695.921887482] [robot_state_publisher]: got segment grasp_frame
+[robot_state_publisher-2] [INFO] [1775636695.921894763] [robot_state_publisher]: got segment gripper_Link1
+[robot_state_publisher-2] [INFO] [1775636695.921902326] [robot_state_publisher]: got segment gripper_Link2
+[robot_state_publisher-2] [INFO] [1775636695.921909979] [robot_state_publisher]: got segment gripper_Link3
+[robot_state_publisher-2] [INFO] [1775636695.921917078] [robot_state_publisher]: got segment gripper_Link4
+[robot_state_publisher-2] [INFO] [1775636695.921924239] [robot_state_publisher]: got segment gripper_base_link
+[move_group-4] [INFO] [1775636695.935627244] [moveit_rdf_loader.rdf_loader]: Loaded robot model in 0.0354589 seconds
+[move_group-4] [INFO] [1775636695.935709611] [moveit_robot_model.robot_model]: Loading robot model 'rm_65_with_gripper'...
+[move_group-4] [INFO] [1775636695.935728769] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
+[move_group-4] [WARN] [1775636696.019439851] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[move_group-4] [INFO] [1775636696.232661077] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Publishing maintained planning scene on 'monitored_planning_scene'
+[move_group-4] [INFO] [1775636696.232866404] [moveit.ros_planning_interface.moveit_cpp]: Listening to 'joint_states' for joint states
+[move_group-4] [INFO] [1775636696.233586465] [moveit_ros.current_state_monitor]: Listening to joint states on topic 'joint_states'
+[move_group-4] [INFO] [1775636696.233940173] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/attached_collision_object' for attached collision objects
+[move_group-4] [INFO] [1775636696.233960514] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting planning scene monitor
+[move_group-4] [INFO] [1775636696.234232889] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/planning_scene'
+[move_group-4] [INFO] [1775636696.234249155] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting world geometry update monitor for collision objects, attached objects, octomap updates.
+[move_group-4] [INFO] [1775636696.234542027] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to 'collision_object'
+[move_group-4] [INFO] [1775636696.234841586] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to 'planning_scene_world' for planning scene world geometry
+[move_group-4] [WARN] [1775636696.235394485] [moveit.ros.occupancy_map_monitor.middleware_handle]: Resolution not specified for Octomap. Assuming resolution = 0.1 instead
+[move_group-4] [ERROR] [1775636696.235486454] [moveit.ros.occupancy_map_monitor.middleware_handle]: Exception while loading octomap updater 'occupancy_map_monitor/DepthImageOctomapUpdater': According to the loaded plugin descriptions the class occupancy_map_monitor/DepthImageOctomapUpdater with base class type occupancy_map_monitor::OccupancyMapUpdater does not exist. Declared types are 
 [move_group-4] 
-[move_group-4] [ERROR] [1775562879.646581796] [moveit.ros.occupancy_map_monitor]: Failed to load sensor: `default_sensor` of type: `occupancy_map_monitor/DepthImageOctomapUpdater`
-[move_group-4] [ERROR] [1775562879.646592950] [moveit.ros.occupancy_map_monitor.middleware_handle]: Exception while loading octomap updater 'occupancy_map_monitor/DepthImageOctomapUpdater': According to the loaded plugin descriptions the class occupancy_map_monitor/DepthImageOctomapUpdater with base class type occupancy_map_monitor::OccupancyMapUpdater does not exist. Declared types are 
+[move_group-4] [ERROR] [1775636696.235506493] [moveit.ros.occupancy_map_monitor]: Failed to load sensor: `default_sensor` of type: `occupancy_map_monitor/DepthImageOctomapUpdater`
+[move_group-4] [ERROR] [1775636696.235523856] [moveit.ros.occupancy_map_monitor.middleware_handle]: Exception while loading octomap updater 'occupancy_map_monitor/DepthImageOctomapUpdater': According to the loaded plugin descriptions the class occupancy_map_monitor/DepthImageOctomapUpdater with base class type occupancy_map_monitor::OccupancyMapUpdater does not exist. Declared types are 
 [move_group-4] 
-[move_group-4] [ERROR] [1775562879.646597592] [moveit.ros.occupancy_map_monitor]: Failed to load sensor: `kinect_depthimage` of type: `occupancy_map_monitor/DepthImageOctomapUpdater`
-[move_group-4] [INFO] [1775562879.690163271] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'pilz_industrial_motion_planner'
-[move_group-4] [INFO] [1775562879.692379202] [moveit.pilz_industrial_motion_planner.joint_limits_aggregator]: Reading limits from namespace robot_description_planning
-[move_group-4] [INFO] [1775562879.693832686] [moveit.pilz_industrial_motion_planner]: Available plugins: pilz_industrial_motion_planner/PlanningContextLoaderCIRC pilz_industrial_motion_planner/PlanningContextLoaderLIN pilz_industrial_motion_planner/PlanningContextLoaderPTP 
-[move_group-4] [INFO] [1775562879.693842204] [moveit.pilz_industrial_motion_planner]: About to load: pilz_industrial_motion_planner/PlanningContextLoaderCIRC
-[move_group-4] [INFO] [1775562879.694728163] [moveit.pilz_industrial_motion_planner]: Registered Algorithm [CIRC]
-[move_group-4] [INFO] [1775562879.694736600] [moveit.pilz_industrial_motion_planner]: About to load: pilz_industrial_motion_planner/PlanningContextLoaderLIN
-[move_group-4] [INFO] [1775562879.695377685] [moveit.pilz_industrial_motion_planner]: Registered Algorithm [LIN]
-[move_group-4] [INFO] [1775562879.695402990] [moveit.pilz_industrial_motion_planner]: About to load: pilz_industrial_motion_planner/PlanningContextLoaderPTP
-[move_group-4] [INFO] [1775562879.695987836] [moveit.pilz_industrial_motion_planner]: Registered Algorithm [PTP]
-[move_group-4] [INFO] [1775562879.695996296] [moveit.ros_planning.planning_pipeline]: Using planning interface 'Pilz Industrial Motion Planner'
-[move_group-4] [INFO] [1775562879.697263058] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'chomp'
-[move_group-4] [INFO] [1775562879.699966497] [moveit.ros_planning.planning_pipeline]: Using planning interface 'CHOMP'
-[move_group-4] [INFO] [1775562879.701978262] [moveit_ros.add_time_optimal_parameterization]: Param 'chomp.path_tolerance' was not set. Using default value: 0.100000
-[move_group-4] [INFO] [1775562879.701987617] [moveit_ros.add_time_optimal_parameterization]: Param 'chomp.resample_dt' was not set. Using default value: 0.100000
-[move_group-4] [INFO] [1775562879.701990448] [moveit_ros.add_time_optimal_parameterization]: Param 'chomp.min_angle_change' was not set. Using default value: 0.001000
-[move_group-4] [INFO] [1775562879.702005923] [moveit_ros.fix_workspace_bounds]: Param 'chomp.default_workspace_bounds' was not set. Using default value: 10.000000
-[move_group-4] [INFO] [1775562879.702014285] [moveit_ros.fix_start_state_bounds]: Param 'chomp.start_state_max_bounds_error' was set to 0.100000
-[move_group-4] [INFO] [1775562879.702017360] [moveit_ros.fix_start_state_bounds]: Param 'chomp.start_state_max_dt' was not set. Using default value: 0.500000
-[move_group-4] [INFO] [1775562879.702024143] [moveit_ros.fix_start_state_collision]: Param 'chomp.start_state_max_dt' was not set. Using default value: 0.500000
-[move_group-4] [INFO] [1775562879.702026936] [moveit_ros.fix_start_state_collision]: Param 'chomp.jiggle_fraction' was set to 0.050000
-[move_group-4] [INFO] [1775562879.702032618] [moveit_ros.fix_start_state_collision]: Param 'chomp.max_sampling_attempts' was not set. Using default value: 100
-[move_group-4] [INFO] [1775562879.702039296] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Add Time Optimal Parameterization'
-[move_group-4] [INFO] [1775562879.702042212] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Resolve constraint frames to robot links'
-[move_group-4] [INFO] [1775562879.702043946] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Workspace Bounds'
-[move_group-4] [INFO] [1775562879.702045757] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Bounds'
-[move_group-4] [INFO] [1775562879.702047415] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State In Collision'
-[move_group-4] [INFO] [1775562879.702049170] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Path Constraints'
-[move_group-4] [INFO] [1775562879.702343352] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'ompl'
-[move_group-4] [INFO] [1775562879.709658046] [moveit.ros_planning.planning_pipeline]: Using planning interface 'OMPL'
-[move_group-4] [INFO] [1775562879.710926666] [moveit_ros.add_time_optimal_parameterization]: Param 'ompl.path_tolerance' was not set. Using default value: 0.100000
-[move_group-4] [INFO] [1775562879.710934707] [moveit_ros.add_time_optimal_parameterization]: Param 'ompl.resample_dt' was not set. Using default value: 0.100000
-[move_group-4] [INFO] [1775562879.710937525] [moveit_ros.add_time_optimal_parameterization]: Param 'ompl.min_angle_change' was not set. Using default value: 0.001000
-[move_group-4] [INFO] [1775562879.710951475] [moveit_ros.fix_workspace_bounds]: Param 'ompl.default_workspace_bounds' was not set. Using default value: 10.000000
-[move_group-4] [INFO] [1775562879.710962018] [moveit_ros.fix_start_state_bounds]: Param 'ompl.start_state_max_bounds_error' was set to 0.100000
-[move_group-4] [INFO] [1775562879.710965084] [moveit_ros.fix_start_state_bounds]: Param 'ompl.start_state_max_dt' was not set. Using default value: 0.500000
-[move_group-4] [INFO] [1775562879.710972202] [moveit_ros.fix_start_state_collision]: Param 'ompl.start_state_max_dt' was not set. Using default value: 0.500000
-[move_group-4] [INFO] [1775562879.710975264] [moveit_ros.fix_start_state_collision]: Param 'ompl.jiggle_fraction' was set to 0.050000
-[move_group-4] [INFO] [1775562879.710978423] [moveit_ros.fix_start_state_collision]: Param 'ompl.max_sampling_attempts' was not set. Using default value: 100
-[move_group-4] [INFO] [1775562879.711000098] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Add Time Optimal Parameterization'
-[move_group-4] [INFO] [1775562879.711002694] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Resolve constraint frames to robot links'
-[move_group-4] [INFO] [1775562879.711004368] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Workspace Bounds'
-[move_group-4] [INFO] [1775562879.711006107] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Bounds'
-[move_group-4] [INFO] [1775562879.711007736] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State In Collision'
-[move_group-4] [INFO] [1775562879.711009448] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Path Constraints'
-[move_group-4] [INFO] [1775562879.727376581] [moveit.plugins.moveit_simple_controller_manager]: Added FollowJointTrajectory controller for rm_group_controller
-[move_group-4] [INFO] [1775562879.727503754] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
-[move_group-4] [INFO] [1775562879.727556033] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
-[move_group-4] [INFO] [1775562879.727947256] [moveit_ros.trajectory_execution_manager]: Trajectory execution is managing controllers
-[move_group-4] [INFO] [1775562879.727957155] [move_group.move_group]: MoveGroup debug mode is ON
-[move_group-4] [INFO] [1775562879.738173955] [move_group.move_group]: 
+[move_group-4] [ERROR] [1775636696.235531425] [moveit.ros.occupancy_map_monitor]: Failed to load sensor: `kinect_depthimage` of type: `occupancy_map_monitor/DepthImageOctomapUpdater`
+[move_group-4] [INFO] [1775636696.286704427] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'pilz_industrial_motion_planner'
+[move_group-4] [INFO] [1775636696.289278533] [moveit.pilz_industrial_motion_planner.joint_limits_aggregator]: Reading limits from namespace robot_description_planning
+[move_group-4] [INFO] [1775636696.291506352] [moveit.pilz_industrial_motion_planner]: Available plugins: pilz_industrial_motion_planner/PlanningContextLoaderCIRC pilz_industrial_motion_planner/PlanningContextLoaderLIN pilz_industrial_motion_planner/PlanningContextLoaderPTP 
+[move_group-4] [INFO] [1775636696.291519267] [moveit.pilz_industrial_motion_planner]: About to load: pilz_industrial_motion_planner/PlanningContextLoaderCIRC
+[move_group-4] [INFO] [1775636696.292498105] [moveit.pilz_industrial_motion_planner]: Registered Algorithm [CIRC]
+[move_group-4] [INFO] [1775636696.292508055] [moveit.pilz_industrial_motion_planner]: About to load: pilz_industrial_motion_planner/PlanningContextLoaderLIN
+[move_group-4] [INFO] [1775636696.293207524] [moveit.pilz_industrial_motion_planner]: Registered Algorithm [LIN]
+[move_group-4] [INFO] [1775636696.293233699] [moveit.pilz_industrial_motion_planner]: About to load: pilz_industrial_motion_planner/PlanningContextLoaderPTP
+[move_group-4] [INFO] [1775636696.293886381] [moveit.pilz_industrial_motion_planner]: Registered Algorithm [PTP]
+[move_group-4] [INFO] [1775636696.293894544] [moveit.ros_planning.planning_pipeline]: Using planning interface 'Pilz Industrial Motion Planner'
+[move_group-4] [INFO] [1775636696.295411099] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'chomp'
+[move_group-4] [INFO] [1775636696.298677658] [moveit.ros_planning.planning_pipeline]: Using planning interface 'CHOMP'
+[move_group-4] [INFO] [1775636696.301061982] [moveit_ros.add_time_optimal_parameterization]: Param 'chomp.path_tolerance' was not set. Using default value: 0.100000
+[move_group-4] [INFO] [1775636696.301072721] [moveit_ros.add_time_optimal_parameterization]: Param 'chomp.resample_dt' was not set. Using default value: 0.100000
+[move_group-4] [INFO] [1775636696.301076468] [moveit_ros.add_time_optimal_parameterization]: Param 'chomp.min_angle_change' was not set. Using default value: 0.001000
+[move_group-4] [INFO] [1775636696.301093963] [moveit_ros.fix_workspace_bounds]: Param 'chomp.default_workspace_bounds' was not set. Using default value: 10.000000
+[move_group-4] [INFO] [1775636696.301103371] [moveit_ros.fix_start_state_bounds]: Param 'chomp.start_state_max_bounds_error' was set to 0.100000
+[move_group-4] [INFO] [1775636696.301106660] [moveit_ros.fix_start_state_bounds]: Param 'chomp.start_state_max_dt' was not set. Using default value: 0.500000
+[move_group-4] [INFO] [1775636696.301114686] [moveit_ros.fix_start_state_collision]: Param 'chomp.start_state_max_dt' was not set. Using default value: 0.500000
+[move_group-4] [INFO] [1775636696.301117991] [moveit_ros.fix_start_state_collision]: Param 'chomp.jiggle_fraction' was set to 0.050000
+[move_group-4] [INFO] [1775636696.301124186] [moveit_ros.fix_start_state_collision]: Param 'chomp.max_sampling_attempts' was not set. Using default value: 100
+[move_group-4] [INFO] [1775636696.301132091] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Add Time Optimal Parameterization'
+[move_group-4] [INFO] [1775636696.301135940] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Resolve constraint frames to robot links'
+[move_group-4] [INFO] [1775636696.301138203] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Workspace Bounds'
+[move_group-4] [INFO] [1775636696.301140336] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Bounds'
+[move_group-4] [INFO] [1775636696.301142415] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State In Collision'
+[move_group-4] [INFO] [1775636696.301144477] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Path Constraints'
+[move_group-4] [INFO] [1775636696.301539025] [moveit.ros_planning_interface.moveit_cpp]: Loading planning pipeline 'ompl'
+[move_group-4] [INFO] [1775636696.310001776] [moveit.ros_planning.planning_pipeline]: Using planning interface 'OMPL'
+[move_group-4] [INFO] [1775636696.311480750] [moveit_ros.add_time_optimal_parameterization]: Param 'ompl.path_tolerance' was not set. Using default value: 0.100000
+[move_group-4] [INFO] [1775636696.311489663] [moveit_ros.add_time_optimal_parameterization]: Param 'ompl.resample_dt' was not set. Using default value: 0.100000
+[move_group-4] [INFO] [1775636696.311493109] [moveit_ros.add_time_optimal_parameterization]: Param 'ompl.min_angle_change' was not set. Using default value: 0.001000
+[move_group-4] [INFO] [1775636696.311508713] [moveit_ros.fix_workspace_bounds]: Param 'ompl.default_workspace_bounds' was not set. Using default value: 10.000000
+[move_group-4] [INFO] [1775636696.311519936] [moveit_ros.fix_start_state_bounds]: Param 'ompl.start_state_max_bounds_error' was set to 0.100000
+[move_group-4] [INFO] [1775636696.311523195] [moveit_ros.fix_start_state_bounds]: Param 'ompl.start_state_max_dt' was not set. Using default value: 0.500000
+[move_group-4] [INFO] [1775636696.311531479] [moveit_ros.fix_start_state_collision]: Param 'ompl.start_state_max_dt' was not set. Using default value: 0.500000
+[move_group-4] [INFO] [1775636696.311534677] [moveit_ros.fix_start_state_collision]: Param 'ompl.jiggle_fraction' was set to 0.050000
+[move_group-4] [INFO] [1775636696.311539308] [moveit_ros.fix_start_state_collision]: Param 'ompl.max_sampling_attempts' was not set. Using default value: 100
+[move_group-4] [INFO] [1775636696.311561510] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Add Time Optimal Parameterization'
+[move_group-4] [INFO] [1775636696.311564689] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Resolve constraint frames to robot links'
+[move_group-4] [INFO] [1775636696.311566773] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Workspace Bounds'
+[move_group-4] [INFO] [1775636696.311568869] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Bounds'
+[move_group-4] [INFO] [1775636696.311570848] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State In Collision'
+[move_group-4] [INFO] [1775636696.311572933] [moveit.ros_planning.planning_pipeline]: Using planning request adapter 'Fix Start State Path Constraints'
+[move_group-4] [INFO] [1775636696.333967493] [moveit.plugins.moveit_simple_controller_manager]: Added FollowJointTrajectory controller for rm_group_controller
+[move_group-4] [INFO] [1775636696.334114343] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636696.334192066] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636696.334474292] [moveit_ros.trajectory_execution_manager]: Trajectory execution is managing controllers
+[move_group-4] [INFO] [1775636696.334486554] [move_group.move_group]: MoveGroup debug mode is ON
+[move_group-4] [INFO] [1775636696.349397319] [move_group.move_group]: 
 [move_group-4] 
 [move_group-4] ********************************************************
 [move_group-4] * MoveGroup using: 
@@ -146,8 +142,8 @@ Installed 1 package in 1ms
 [move_group-4] *     - StateValidationService
 [move_group-4] ********************************************************
 [move_group-4] 
-[move_group-4] [INFO] [1775562879.738205463] [moveit_move_group_capabilities_base.move_group_context]: MoveGroup context using planning plugin ompl_interface/OMPLPlanner
-[move_group-4] [INFO] [1775562879.738210602] [moveit_move_group_capabilities_base.move_group_context]: MoveGroup context initialization complete
+[move_group-4] [INFO] [1775636696.349447332] [moveit_move_group_capabilities_base.move_group_context]: MoveGroup context using planning plugin ompl_interface/OMPLPlanner
+[move_group-4] [INFO] [1775636696.349456807] [moveit_move_group_capabilities_base.move_group_context]: MoveGroup context initialization complete
 [move_group-4] [96mLoading 'move_group/ApplyPlanningSceneService'...
 [move_group-4] [0m[96mLoading 'move_group/ClearOctomapService'...
 [move_group-4] [0m[96mLoading 'move_group/ExecuteTaskSolutionCapability'...
@@ -162,86 +158,1133 @@ Installed 1 package in 1ms
 [move_group-4] [0m[92m
 [move_group-4] You can start planning now!
 [move_group-4] 
-[main] Launching: anygrasp_detection_node
-[main] Waiting 2.0s before launching grasp_viz...
-[rm_driver-1] [INFO] [1775562881.423499396] [rm_driver]: RM_65_driver is running 
-[rm_driver-1] [INFO] [1775562881.505309416] [rm_driver]: product_version = RM65-BI
-[rm_driver-1] [INFO] [1775562881.505372317] [rm_driver]: controller version : 3
-[INFO] [1775562881.867033823] [sam3_ros_node]: Loading SAM3 model...
-[rm_driver-1] [INFO] [1775562881.959697859] [rm_driver]: UDP_Configuration is cycle:5ms,port:8089,force_coordinate:0,ip:192.168.1.10,hand:0,rm_plus_base:0,rm_plus_state:0,speed:1
+[rm_driver-1] [INFO] [1775636697.873932275] [rm_driver]: RM_65_driver is running 
+[rm_driver-1] [INFO] [1775636697.944958142] [rm_driver]: product_version = RM65-BI
+[rm_driver-1] [INFO] [1775636697.945025404] [rm_driver]: controller version : 3
+[INFO] [1775636698.010533905] [sam3_ros_node]: Loading SAM3 model...
+[rm_driver-1] [INFO] [1775636698.389487776] [rm_driver]: UDP_Configuration is cycle:5ms,port:8089,force_coordinate:0,ip:192.168.1.10,hand:0,rm_plus_base:0,rm_plus_state:0,speed:1
 [rm_driver-1] 
-[main] Launching: grasp_viz
-[main] Waiting 5.0s before launching grasp_state_machine...
-[INFO] [1775562883.224283122] [grasp_visualizer]: Grasp visualizer ready
-[INFO] [1775562883.563442139] [rviz2]: Stereo is NOT SUPPORTED
-[INFO] [1775562883.563516509] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
-[INFO] [1775562883.689970608] [rviz2]: Stereo is NOT SUPPORTED
+[INFO] [1775636699.649876570] [grasp_visualizer]: Grasp visualizer ready
+[INFO] [1775636700.301006051] [rviz2]: Stereo is NOT SUPPORTED
+[INFO] [1775636700.301123103] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[INFO] [1775636700.428338080] [rviz2]: Stereo is NOT SUPPORTED
 Warning: class_loader.impl: SEVERE WARNING!!! A namespace collision has occurred with plugin factory for class rviz_default_plugins::displays::InteractiveMarkerDisplay. New factory will OVERWRITE existing one. This situation occurs when libraries containing plugins are directly linked against an executable (the one running right now generating this message). Please separate plugins out into their own library or just don't link against the library and use either class_loader::ClassLoader/MultiLibraryClassLoader to open.
          at line 253 in /opt/ros/humble/include/class_loader/class_loader/class_loader_core.hpp
-[ERROR] [1775562886.827691394] [moveit_ros_visualization.motion_planning_frame]: Action server: /recognize_objects not available
-[INFO] [1775562886.837792303] [moveit_ros_visualization.motion_planning_frame]: MoveGroup namespace changed: / -> . Reloading params.
-[INFO] [1775562886.890028070] [rviz2]: Stereo is NOT SUPPORTED
-[INFO] [1775562886.898627604] [rviz2]: Stereo is NOT SUPPORTED
-[INFO] [1775562886.959583062] [moveit_rdf_loader.rdf_loader]: Loaded robot model in 0.058434 seconds
-[INFO] [1775562886.959612937] [moveit_robot_model.robot_model]: Loading robot model 'rm_65_with_gripper'...
-[INFO] [1775562886.959623078] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
-[WARN] [1775562887.010606141] [moveit_ros.robot_model_loader]: No kinematics plugins defined. Fill and load kinematics.yaml!
-[INFO] [1775562887.160221287] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting planning scene monitor
-[INFO] [1775562887.160965647] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/monitored_planning_scene'
-[INFO] [1775562887.651757674] [interactive_marker_display_103359653369408]: Connected on namespace: /rviz_moveit_motion_planning_display/robot_interaction_interactive_marker_topic
-[WARN] [1775562887.654820217] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
-[INFO] [1775562887.654978047] [moveit_ros_robot_interaction.robot_interaction]: No active joints or end effectors found for group 'rm_group'. Make sure that kinematics.yaml is loaded in this node's namespace.
-[INFO] [1775562887.659589249] [moveit_ros_visualization.motion_planning_frame]: group rm_group
-[INFO] [1775562887.659608623] [moveit_ros_visualization.motion_planning_frame]: Constructing new MoveGroup connection for group 'rm_group' in namespace ''
-[INFO] [1775562887.666075830] [move_group_interface]: Ready to take commands for planning group rm_group.
-[INFO] [1775562887.701266235] [interactive_marker_display_103359653369408]: Sending request for interactive markers
-[INFO] [1775562887.761585005] [interactive_marker_display_103359653369408]: Service response received for initialization
-[main] Launching: grasp_state_machine
-[main] All processes launched. Press Ctrl+C to shut down.
-[INFO] [launch]: All log files can be found below /home/iot22/.ros/log/2026-04-07-19-54-48-035281-iot22-Computer-18865
+[ERROR] [1775636703.661774369] [moveit_ros_visualization.motion_planning_frame]: Action server: /recognize_objects not available
+[INFO] [1775636703.694314864] [moveit_ros_visualization.motion_planning_frame]: MoveGroup namespace changed: / -> . Reloading params.
+[INFO] [1775636703.842243937] [rviz2]: Stereo is NOT SUPPORTED
+[INFO] [1775636703.859973766] [rviz2]: Stereo is NOT SUPPORTED
+[INFO] [1775636703.943628532] [moveit_rdf_loader.rdf_loader]: Loaded robot model in 0.154908 seconds
+[INFO] [1775636703.943676379] [moveit_robot_model.robot_model]: Loading robot model 'rm_65_with_gripper'...
+[INFO] [1775636703.943697650] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
+[WARN] [1775636704.039278736] [moveit_ros.robot_model_loader]: No kinematics plugins defined. Fill and load kinematics.yaml!
+[INFO] [1775636704.384892097] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Starting planning scene monitor
+[INFO] [1775636704.386260905] [moveit_ros.planning_scene_monitor.planning_scene_monitor]: Listening to '/monitored_planning_scene'
+[INFO] [launch]: All log files can be found below /home/iot22/.ros/log/2026-04-08-16-25-04-388118-iot22-Computer-359973
 [INFO] [launch]: Default logging verbosity is set to INFO
-[INFO] [grasp_state_machine-1]: process started with pid [18866]
-[grasp_state_machine-1] [INFO] [1775562888.230870992] [grasp_state_machine]: Grasp state machine constructed
-[grasp_state_machine-1] [INFO] [1775562888.270965437] [moveit_rdf_loader.rdf_loader]: Loaded robot model in 0.0272548 seconds
-[grasp_state_machine-1] [INFO] [1775562888.271000438] [moveit_robot_model.robot_model]: Loading robot model 'rm_65_with_gripper'...
-[grasp_state_machine-1] [INFO] [1775562888.271010353] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
-[grasp_state_machine-1] [WARN] [1775562888.326870064] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
-[grasp_state_machine-1] [INFO] [1775562888.336408899] [move_group_interface]: Ready to take commands for planning group rm_group.
-[grasp_state_machine-1] [INFO] [1775562889.296825405] [grasp_state_machine]: Intrinsics: fx=607.18 fy=606.92 cx=331.95 cy=250.13
-[INFO] [1775562891.250955742] [sam3_ros_node]: SAM3 model loaded
-[INFO] [1775562891.255199563] [sam3_ros_node]: SAM3 node ready — subscribing to /camera/camera/color/image_raw, publishing to /camera/sam/mask and /object_centroid_2d
-[INFO] [1775562891.256038803] [sam3_ros_node]: Intrinsics received: fx=607.18 fy=606.92 image_cx=331.95 image_cy=250.13
-[grasp_state_machine-1] [INFO] [1775562893.346652773] [grasp_state_machine]: Safety walls added
-[grasp_state_machine-1] [INFO] [1775562893.350855540] [move_group_interface]: MoveGroup action client/server ready
-[grasp_state_machine-1] [INFO] [1775562893.351342568] [move_group_interface]: Planning request accepted
-[move_group-4] [INFO] [1775562893.351219244] [moveit_move_group_default_capabilities.move_action_capability]: Received request
-[move_group-4] [INFO] [1775562893.351361076] [moveit_move_group_default_capabilities.move_action_capability]: executing..
-[move_group-4] [INFO] [1775562893.353855916] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
-[move_group-4] [INFO] [1775562893.361901433] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
-[move_group-4] [WARN] [1775562893.813388730] [moveit_trajectory_processing.time_optimal_trajectory_generation]: Joint acceleration limits are not defined. Using the default 1 rad/s^2. You can define acceleration limits in the URDF or joint_limits.yaml.
-[move_group-4] [INFO] [1775562893.815701819] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
-[grasp_state_machine-1] [INFO] [1775562893.816091569] [move_group_interface]: Planning request complete!
-[grasp_state_machine-1] [INFO] [1775562893.816666560] [move_group_interface]: time taken to generate plan: 0.451188 seconds
-[grasp_state_machine-1] [INFO] [1775562893.817083949] [move_group_interface]: Execute request accepted
-[move_group-4] [INFO] [1775562893.816988579] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
-[move_group-4] [INFO] [1775562893.817083310] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
-[move_group-4] [INFO] [1775562893.817114442] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
-[move_group-4] [INFO] [1775562893.817144098] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
-[move_group-4] [INFO] [1775562893.817247524] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
-[move_group-4] [INFO] [1775562893.818816215] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
-[move_group-4] [INFO] [1775562893.818852780] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
-[move_group-4] [INFO] [1775562893.818874281] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
-[move_group-4] [INFO] [1775562893.819088490] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[INFO] [grasp_state_machine-1]: process started with pid [359976]
+[grasp_state_machine-1] [INFO] [1775636704.749822577] [grasp_state_machine]: Grasp state machine constructed
+[grasp_state_machine-1] [INFO] [1775636704.786550182] [moveit_rdf_loader.rdf_loader]: Loaded robot model in 0.0302465 seconds
+[grasp_state_machine-1] [INFO] [1775636704.786589027] [moveit_robot_model.robot_model]: Loading robot model 'rm_65_with_gripper'...
+[grasp_state_machine-1] [INFO] [1775636704.786600777] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
+[grasp_state_machine-1] [WARN] [1775636704.862672272] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[INFO] [1775636705.166042385] [interactive_marker_display_109960579978560]: Connected on namespace: /rviz_moveit_motion_planning_display/robot_interaction_interactive_marker_topic
+[WARN] [1775636705.173795987] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[INFO] [1775636705.174015972] [moveit_ros_robot_interaction.robot_interaction]: No active joints or end effectors found for group 'rm_group'. Make sure that kinematics.yaml is loaded in this node's namespace.
+[INFO] [1775636705.185075786] [moveit_ros_visualization.motion_planning_frame]: group rm_group
+[INFO] [1775636705.185110274] [moveit_ros_visualization.motion_planning_frame]: Constructing new MoveGroup connection for group 'rm_group' in namespace ''
+[INFO] [1775636705.227566736] [move_group_interface]: Ready to take commands for planning group rm_group.
+[INFO] [1775636705.244478044] [interactive_marker_display_109960579978560]: Sending request for interactive markers
+[INFO] [1775636705.288775200] [interactive_marker_display_109960579978560]: Service response received for initialization
+[grasp_state_machine-1] [INFO] [1775636705.558667419] [move_group_interface]: Ready to take commands for planning group rm_group.
+[grasp_state_machine-1] [INFO] [1775636705.605626827] [grasp_state_machine]: Intrinsics: fx=607.18 fy=606.92 cx=331.95 cy=250.13
+[grasp_state_machine-1] [INFO] [1775636710.633709206] [grasp_state_machine]: Safety walls added
+[grasp_state_machine-1] [INFO] [1775636710.662075607] [move_group_interface]: MoveGroup action client/server ready
+[grasp_state_machine-1] [INFO] [1775636710.663451280] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636710.663157863] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[move_group-4] [INFO] [1775636710.663502348] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[move_group-4] [INFO] [1775636710.670519541] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636710.698455200] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-4] [WARN] [1775636711.554242921] [moveit_trajectory_processing.time_optimal_trajectory_generation]: Joint acceleration limits are not defined. Using the default 1 rad/s^2. You can define acceleration limits in the URDF or joint_limits.yaml.
+[move_group-4] [INFO] [1775636711.598844952] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636711.599828877] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636711.600386608] [move_group_interface]: time taken to generate plan: 0.855078 seconds
+[grasp_state_machine-1] [INFO] [1775636711.601371738] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636711.601184679] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636711.601367895] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636711.601439514] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636711.601495607] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636711.601669357] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636711.603449423] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636711.603489824] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636711.603514159] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636711.603725500] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
 [rm_control-3] ---handle goal:6
 [rm_control-3] base_link00
-[move_group-4] [INFO] [1775562893.819542887] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
-[move_group-4] [INFO] [1775562893.819559605] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
-[rm_control-3] [INFO] [1775562893.819611387] [rm_control]: First Move_group give us 1 points
-[rm_control-3] [INFO] [1775562893.864514755] [rm_control]: Goal Succeeded
-[move_group-4] [INFO] [1775562893.864666417] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
-[move_group-4] [INFO] [1775562893.878734101] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
-[move_group-4] [INFO] [1775562893.878820998] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
-[grasp_state_machine-1] [INFO] [1775562893.879071937] [move_group_interface]: Execute request success!
-[grasp_state_machine-1] [INFO] [1775562893.879265133] [grasp_state_machine]: State → IDLE
-[grasp_state_machine-1] [WARN] [1775562893.879294492] [grasp_state_machine]: debug_flag_ is set — worker loop halted
-[INFO] [1775562896.854900330] [rviz]: Message Filter dropping message: frame 'camera_depth_optical_frame' at time 1775562886.833 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[move_group-4] [INFO] [1775636711.604292019] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636711.604314005] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636711.604422775] [rm_control]: First Move_group give us 17 points
+[rm_control-3] [INFO] [1775636711.604523348] [rm_control]: Second Move_group max_time is 1.578748
+[INFO] [1775636712.520607012] [sam3_ros_node]: SAM3 model loaded
+[INFO] [1775636712.526741454] [sam3_ros_node]: SAM3 node ready — subscribing to /camera/camera/color/image_raw, publishing to /camera/sam/mask and /object_centroid_2d
+[INFO] [1775636712.528136250] [sam3_ros_node]: Intrinsics received: fx=607.18 fy=606.92 image_cx=331.95 image_cy=250.13
+[rm_control-3] [INFO] [1775636713.234922724] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636713.235140183] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636713.248104790] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[grasp_state_machine-1] [INFO] [1775636713.248454767] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636713.248210695] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636713.249096832] [grasp_state_machine]: State → IDLE
+[grasp_state_machine-1] [INFO] [1775636713.470502924] [move_group_interface]: MoveGroup action client/server ready
+[move_group-4] [INFO] [1775636713.470812157] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[grasp_state_machine-1] [INFO] [1775636713.471250632] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636713.470980967] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[move_group-4] [INFO] [1775636713.479077519] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636713.492029947] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[INFO] [1775636713.683289341] [rviz]: Message Filter dropping message: frame 'camera_depth_optical_frame' at time 1775636703.680 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[move_group-4] [INFO] [1775636714.689590194] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636714.690332440] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636714.691097265] [move_group_interface]: time taken to generate plan: 1.18041 seconds
+[move_group-4] [INFO] [1775636714.691783782] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636714.691922196] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636714.691917650] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636714.691959230] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636714.692002679] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636714.692086448] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [ERROR] [1775636714.693854185] [moveit_ros.trajectory_execution_manager]: 
+[move_group-4] Invalid Trajectory: start point deviates from current robot state more than 0.01
+[move_group-4] joint 'joint2': expected: -0.0286355, current: -0.0015007
+[move_group-4] [INFO] [1775636714.693947318] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: ABORTED
+[grasp_state_machine-1] [INFO] [1775636714.694252005] [move_group_interface]: Execute request aborted
+[grasp_state_machine-1] [ERROR] [1775636714.694937118] [move_group_interface]: MoveGroupInterface::execute() failed or timeout reached
+[grasp_state_machine-1] [INFO] [1775636714.695069786] [grasp_state_machine]: State → SELECTING
+[grasp_state_machine-1] [INFO] [1775636714.698118426] [moveit_ros.current_state_monitor]: Listening to joint states on topic 'joint_states'
+[move_group-4] [INFO] [1775636714.740986919] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636714.741158780] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636714.765321401] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 6. Try a lower max_step.
+[move_group-4] [INFO] [1775636714.766984180] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 6 points (followed 100.000000% of requested trajectory)
+[grasp_state_machine-1] [WARN] [1775636714.774662614] [moveit_trajectory_processing.time_optimal_trajectory_generation]: Joint acceleration limits are not defined. Using the default 1 rad/s^2. You can define acceleration limits in the URDF or joint_limits.yaml.
+[grasp_state_machine-1] [INFO] [1775636714.779120520] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636714.778856319] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636714.779177902] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636714.779226439] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636714.779289371] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636714.779794170] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636714.784345316] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636714.784427686] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636714.784455631] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636714.784599051] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[move_group-4] [INFO] [1775636714.784918458] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636714.784934068] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[rm_control-3] [INFO] [1775636714.784978478] [rm_control]: First Move_group give us 15 points
+[rm_control-3] [INFO] [1775636714.785042040] [rm_control]: Second Move_group max_time is 1.336367
+[rm_control-3] [INFO] [1775636716.174788854] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636716.174865129] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636716.188160866] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[grasp_state_machine-1] [INFO] [1775636716.188463903] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636716.188245110] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[move_group-4] [INFO] [1775636716.233852513] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636716.234064615] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636716.249271262] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636716.249999228] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636716.254957424] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636716.255071061] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[grasp_state_machine-1] [INFO] [1775636716.255310642] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636716.255100735] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636716.255130122] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636716.255187700] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636716.258976539] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636716.259091505] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636716.259143507] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636716.259409061] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636716.259818776] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636716.259837689] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636716.259813337] [rm_control]: First Move_group give us 13 points
+[rm_control-3] [INFO] [1775636716.259903824] [rm_control]: Second Move_group max_time is 1.152208
+[rm_control-3] [INFO] [1775636717.474791004] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636717.474838935] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636717.488270820] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636717.488351698] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636717.488637689] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636717.555547115] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636717.555639126] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636717.570949351] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636717.571772474] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636717.574976404] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636717.575147004] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636717.575117641] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636717.575160293] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636717.575210249] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636717.575295044] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636717.578315962] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636717.578358271] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636717.578382424] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636717.578529260] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636717.578814058] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636717.578825680] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636717.578814773] [rm_control]: First Move_group give us 12 points
+[rm_control-3] [INFO] [1775636717.578874027] [rm_control]: Second Move_group max_time is 1.057038
+[rm_control-3] [INFO] [1775636718.694933257] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636718.695058861] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636718.708310178] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[grasp_state_machine-1] [INFO] [1775636718.708583993] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636718.708386421] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[move_group-4] [INFO] [1775636718.763861619] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636718.763948171] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636718.774056126] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636718.774462501] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636718.779405182] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636718.779535089] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636718.779577076] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636718.779617075] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636718.779682709] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[grasp_state_machine-1] [INFO] [1775636718.779550946] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636718.783349091] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636718.783395963] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636718.783423517] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636718.783569915] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[rm_control-3] [INFO] [1775636718.783857295] [rm_control]: First Move_group give us 11 points
+[rm_control-3] [INFO] [1775636718.783900070] [rm_control]: Second Move_group max_time is 0.990075
+[move_group-4] [INFO] [1775636718.783890960] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636718.783905179] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636719.834857928] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636719.834892401] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636719.848267468] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[grasp_state_machine-1] [INFO] [1775636719.848550068] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636719.848370648] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[move_group-4] [INFO] [1775636719.875024150] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636719.875115437] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636719.888822215] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636719.889331771] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636719.894486272] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636719.894669839] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636719.894663475] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636719.894709772] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636719.894764536] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636719.894862017] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636719.898665492] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636719.898746050] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636719.898786437] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636719.899143313] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[rm_control-3] [INFO] [1775636719.900348944] [rm_control]: First Move_group give us 11 points
+[rm_control-3] [INFO] [1775636719.900449227] [rm_control]: Second Move_group max_time is 0.924134
+[move_group-4] [INFO] [1775636719.900732889] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636719.900750827] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636720.895026198] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636720.895230901] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636720.908568514] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636720.908691403] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636720.908946214] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636720.923576827] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636720.923651691] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636720.941125225] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 6. Try a lower max_step.
+[move_group-4] [INFO] [1775636720.941766469] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 6 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636720.944288094] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636720.944372937] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636720.944368367] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636720.944388262] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636720.944413134] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636720.944469049] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [ERROR] [1775636720.948293202] [moveit_ros.trajectory_execution_manager]: 
+[move_group-4] Invalid Trajectory: start point deviates from current robot state more than 0.01
+[move_group-4] joint 'joint3': expected: 1.74385, current: 1.75446
+[move_group-4] [INFO] [1775636720.948318254] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: ABORTED
+[grasp_state_machine-1] [INFO] [1775636720.948431462] [move_group_interface]: Execute request aborted
+[move_group-4] [INFO] [1775636720.948710871] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[grasp_state_machine-1] [ERROR] [1775636720.948465832] [move_group_interface]: MoveGroupInterface::execute() failed or timeout reached
+[grasp_state_machine-1] [WARN] [1775636720.948507439] [grasp_state_machine]: SELECTING: Cartesian step failed
+[move_group-4] [INFO] [1775636720.948772031] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[grasp_state_machine-1] [WARN] [1775636720.948528263] [grasp_state_machine]: SELECTING: step failed — returning to IDLE
+[grasp_state_machine-1] [INFO] [1775636720.948534285] [grasp_state_machine]: Cycle complete — returning to IDLE
+[grasp_state_machine-1] [INFO] [1775636720.948596540] [move_group_interface]: MoveGroup action client/server ready
+[grasp_state_machine-1] [INFO] [1775636720.948772453] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636720.953457549] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636720.965026493] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-4] [INFO] [1775636721.542700729] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636721.543001645] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636721.543190850] [move_group_interface]: time taken to generate plan: 0.498784 seconds
+[move_group-4] [INFO] [1775636721.543513495] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636721.543598685] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636721.543570372] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636721.543590628] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636721.543619743] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636721.543679563] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [ERROR] [1775636721.548363886] [moveit_ros.trajectory_execution_manager]: 
+[move_group-4] Invalid Trajectory: start point deviates from current robot state more than 0.01
+[move_group-4] joint 'joint3': expected: 1.75533, current: 1.80733
+[move_group-4] [INFO] [1775636721.548389590] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: ABORTED
+[grasp_state_machine-1] [INFO] [1775636721.548537877] [move_group_interface]: Execute request aborted
+[grasp_state_machine-1] [ERROR] [1775636721.548759741] [move_group_interface]: MoveGroupInterface::execute() failed or timeout reached
+[grasp_state_machine-1] [INFO] [1775636721.548838744] [grasp_state_machine]: State → IDLE
+[move_group-4] [INFO] [1775636721.549128014] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[grasp_state_machine-1] [INFO] [1775636721.548985254] [move_group_interface]: MoveGroup action client/server ready
+[move_group-4] [INFO] [1775636721.549199781] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[grasp_state_machine-1] [INFO] [1775636721.549652185] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636721.553403687] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636721.561273600] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-4] [INFO] [1775636722.279801056] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636722.283982871] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636722.284248101] [move_group_interface]: time taken to generate plan: 0.637095 seconds
+[move_group-4] [INFO] [1775636722.286063184] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636722.286147610] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636722.286171804] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636722.286203950] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636722.286264753] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [ERROR] [1775636722.288382034] [moveit_ros.trajectory_execution_manager]: 
+[move_group-4] Invalid Trajectory: start point deviates from current robot state more than 0.01
+[move_group-4] joint 'joint3': expected: 1.80749, current: 1.8207
+[grasp_state_machine-1] [INFO] [1775636722.286195578] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636722.288722878] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: ABORTED
+[grasp_state_machine-1] [INFO] [1775636722.292134516] [move_group_interface]: Execute request aborted
+[grasp_state_machine-1] [ERROR] [1775636722.292908371] [move_group_interface]: MoveGroupInterface::execute() failed or timeout reached
+[grasp_state_machine-1] [INFO] [1775636722.292992544] [grasp_state_machine]: State → SELECTING
+[move_group-4] [INFO] [1775636722.357527929] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636722.357624646] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636722.373314453] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636722.374031638] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636722.379502604] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636722.379585097] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[grasp_state_machine-1] [INFO] [1775636722.379721438] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636722.379604559] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636722.379632467] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636722.379685769] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636722.383573801] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636722.383621376] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636722.383646938] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636722.383780575] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[rm_control-3] [INFO] [1775636722.384125692] [rm_control]: First Move_group give us 10 points
+[rm_control-3] [INFO] [1775636722.384189355] [rm_control]: Second Move_group max_time is 0.832439
+[move_group-4] [INFO] [1775636722.384149054] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636722.384166775] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636723.274966348] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636723.275025808] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636723.288294114] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636723.288364567] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636723.288559898] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636723.303962451] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636723.304137379] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636723.318018045] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636723.318357628] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636723.324158011] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636723.324249794] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636723.324253817] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636723.324275886] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636723.324332350] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636723.324385153] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636723.328373643] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636723.328399828] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636723.328415193] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636723.328537233] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636723.328808087] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636723.328817958] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636723.328843822] [rm_control]: First Move_group give us 9 points
+[rm_control-3] [INFO] [1775636723.328893022] [rm_control]: Second Move_group max_time is 0.780722
+[rm_control-3] [INFO] [1775636724.175073400] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636724.175184468] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636724.188496731] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[grasp_state_machine-1] [INFO] [1775636724.188818025] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636724.188600770] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[move_group-4] [INFO] [1775636724.203742387] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636724.203836555] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636724.222254928] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 6. Try a lower max_step.
+[move_group-4] [INFO] [1775636724.222804498] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 6 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636724.224173599] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636724.224256926] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[grasp_state_machine-1] [INFO] [1775636724.224244064] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636724.224279096] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636724.224305841] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636724.224360474] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636724.228486736] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636724.228532540] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636724.228562249] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636724.228841199] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636724.229173678] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636724.229188252] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636724.229221836] [rm_control]: First Move_group give us 9 points
+[rm_control-3] [INFO] [1775636724.229276746] [rm_control]: Second Move_group max_time is 0.778834
+[rm_control-3] [INFO] [1775636725.055072729] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636725.055097269] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636725.068520221] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636725.068630732] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636725.068917076] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636725.104176075] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636725.104403036] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636725.119035525] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636725.119499792] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636725.124397609] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636725.124482127] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636725.124490101] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636725.124514018] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636725.124543436] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636725.124598819] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636725.128697146] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636725.128743846] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636725.128772060] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636725.128906905] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636725.129178482] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636725.129184238] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636725.129218159] [rm_control]: First Move_group give us 9 points
+[rm_control-3] [INFO] [1775636725.129270490] [rm_control]: Second Move_group max_time is 0.770235
+[rm_control-3] [INFO] [1775636725.955286337] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636725.955447941] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636725.968545281] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636725.968643658] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636725.968875278] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636726.004083795] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636726.004162477] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636726.018157446] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636726.018591013] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636726.035149612] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636726.035327360] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636726.035352277] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636726.035377658] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636726.035463758] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636726.039005559] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636726.039060065] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636726.039112070] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636726.039256675] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[grasp_state_machine-1] [INFO] [1775636726.039096591] [move_group_interface]: Execute request accepted
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636726.039588120] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636726.039616902] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636726.039716556] [rm_control]: First Move_group give us 9 points
+[rm_control-3] [INFO] [1775636726.039783457] [rm_control]: Second Move_group max_time is 0.760820
+[rm_control-3] [INFO] [1775636726.875070554] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636726.875140213] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636726.888480877] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636726.888614952] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636726.888793618] [move_group_interface]: Execute request success!
+[grasp_state_machine-1] [INFO] [1775636726.889166980] [grasp_state_machine]: SELECTING: object at 0.193m — transitioning to EXECUTING
+[grasp_state_machine-1] [INFO] [1775636726.889232753] [grasp_state_machine]: State → EXECUTING
+[grasp_state_machine-1] [INFO] [1775636728.389359870] [grasp_state_machine]: Gripper opened
+[grasp_state_machine-1] [WARN] [1775636731.389478900] [grasp_state_machine]: EXECUTING: no candidates received — aborting
+[grasp_state_machine-1] [INFO] [1775636731.389543930] [grasp_state_machine]: Cycle complete — returning to IDLE
+[move_group-4] [INFO] [1775636731.389927375] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[grasp_state_machine-1] [INFO] [1775636731.389722414] [move_group_interface]: MoveGroup action client/server ready
+[move_group-4] [INFO] [1775636731.390045319] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[grasp_state_machine-1] [INFO] [1775636731.390181122] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636731.393720518] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636731.404230117] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-4] [INFO] [1775636732.082815002] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636732.083092930] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636732.083968787] [move_group_interface]: time taken to generate plan: 0.582051 seconds
+[move_group-4] [INFO] [1775636732.084234656] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636732.084355617] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636732.084305807] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636732.084323971] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636732.084347721] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636732.084403007] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636732.088865297] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636732.088907289] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636732.088932030] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636732.089071089] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636732.089406372] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636732.089422150] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636732.089461670] [rm_control]: First Move_group give us 35 points
+[rm_control-3] [INFO] [1775636732.089519355] [rm_control]: Second Move_group max_time is 3.326135
+[rm_control-3] [INFO] [1775636735.475319324] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636735.475411930] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636735.488887612] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[grasp_state_machine-1] [INFO] [1775636735.489251252] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636735.488999209] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636735.489492318] [grasp_state_machine]: State → IDLE
+[grasp_state_machine-1] [INFO] [1775636735.489709013] [move_group_interface]: MoveGroup action client/server ready
+[move_group-4] [INFO] [1775636735.489882379] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[move_group-4] [INFO] [1775636735.489956748] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[grasp_state_machine-1] [INFO] [1775636735.490702802] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636735.493846290] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636735.505051749] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[INFO] [1775636735.644909178] [sam3_ros_node]: No detection above threshold
+[INFO] [1775636736.016724990] [sam3_ros_node]: No detection above threshold
+[move_group-4] [INFO] [1775636736.093941145] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636736.094267979] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636736.094616257] [move_group_interface]: time taken to generate plan: 0.569988 seconds
+[move_group-4] [INFO] [1775636736.094855757] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636736.094974558] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636736.094926279] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636736.094949222] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636736.094976636] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636736.095026081] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [ERROR] [1775636736.098740746] [moveit_ros.trajectory_execution_manager]: 
+[move_group-4] Invalid Trajectory: start point deviates from current robot state more than 0.01
+[move_group-4] joint 'joint3': expected: 0.888327, current: 0.809191
+[move_group-4] [INFO] [1775636736.098754061] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: ABORTED
+[grasp_state_machine-1] [INFO] [1775636736.098875277] [move_group_interface]: Execute request aborted
+[grasp_state_machine-1] [ERROR] [1775636736.099047906] [move_group_interface]: MoveGroupInterface::execute() failed or timeout reached
+[grasp_state_machine-1] [INFO] [1775636736.099124073] [grasp_state_machine]: State → SELECTING
+[grasp_state_machine-1] [WARN] [1775636736.099148251] [grasp_state_machine]: SELECTING: centroid lost — returning to IDLE
+[grasp_state_machine-1] [INFO] [1775636736.099159468] [grasp_state_machine]: Cycle complete — returning to IDLE
+[grasp_state_machine-1] [INFO] [1775636736.099293683] [move_group_interface]: MoveGroup action client/server ready
+[move_group-4] [INFO] [1775636736.099402572] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[grasp_state_machine-1] [INFO] [1775636736.099535144] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636736.099462102] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[move_group-4] [INFO] [1775636736.103828330] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636736.115163855] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[INFO] [1775636736.402835543] [sam3_ros_node]: No detection above threshold
+[move_group-4] [INFO] [1775636736.761933640] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636736.762217429] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636736.763036018] [move_group_interface]: time taken to generate plan: 0.633256 seconds
+[move_group-4] [INFO] [1775636736.763244694] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636736.763311088] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636736.763329839] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636736.763362490] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[grasp_state_machine-1] [INFO] [1775636736.763483484] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636736.763401567] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [ERROR] [1775636736.763829866] [moveit_ros.trajectory_execution_manager]: 
+[move_group-4] Invalid Trajectory: start point deviates from current robot state more than 0.01
+[move_group-4] joint 'joint3': expected: 0.80865, current: 0.78963
+[move_group-4] [INFO] [1775636736.763851148] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: ABORTED
+[grasp_state_machine-1] [INFO] [1775636736.764008778] [move_group_interface]: Execute request aborted
+[grasp_state_machine-1] [ERROR] [1775636736.764258044] [move_group_interface]: MoveGroupInterface::execute() failed or timeout reached
+[grasp_state_machine-1] [INFO] [1775636736.764310767] [grasp_state_machine]: State → IDLE
+[grasp_state_machine-1] [INFO] [1775636736.805330732] [move_group_interface]: MoveGroup action client/server ready
+[move_group-4] [INFO] [1775636736.805673723] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[grasp_state_machine-1] [INFO] [1775636736.805872161] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636736.805794914] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[move_group-4] [INFO] [1775636736.813117993] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636736.822102435] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-4] [INFO] [1775636737.303709643] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636737.304078102] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636737.304291256] [move_group_interface]: time taken to generate plan: 0.473052 seconds
+[move_group-4] [INFO] [1775636737.304660384] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636737.304748866] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636737.304759944] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636737.304793857] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636737.304876116] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636737.304930406] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636737.308997311] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636737.309049997] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636737.309074534] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636737.309218493] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636737.311236978] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636737.311254053] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636737.311263155] [rm_control]: First Move_group give us 3 points
+[rm_control-3] [INFO] [1775636737.395463066] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636737.395454395] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636737.408756272] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636737.408822388] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636737.408989895] [move_group_interface]: Execute request success!
+[grasp_state_machine-1] [INFO] [1775636737.409998810] [grasp_state_machine]: State → SELECTING
+[move_group-4] [INFO] [1775636737.434014954] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636737.434080401] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636737.448464509] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636737.449285234] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636737.455520270] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636737.455610210] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[grasp_state_machine-1] [INFO] [1775636737.455717100] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636737.455641458] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636737.455684627] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636737.455730634] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636737.458878241] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636737.458915111] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636737.458932894] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636737.459076840] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636737.459324622] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636737.459338321] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636737.459356062] [rm_control]: First Move_group give us 15 points
+[rm_control-3] [INFO] [1775636737.459407568] [rm_control]: Second Move_group max_time is 1.336841
+[rm_control-3] [INFO] [1775636738.855865921] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636738.856015504] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636738.868973708] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636738.869056198] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636738.869265278] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636738.904467407] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636738.904613522] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636738.920721840] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636738.921600706] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636738.926680953] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636738.926843648] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[grasp_state_machine-1] [INFO] [1775636738.926799487] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636738.926926812] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636738.926951871] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636738.927008882] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636738.928920736] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636738.928971788] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636738.929004665] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636738.929137377] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[rm_control-3] [INFO] [1775636738.929423734] [rm_control]: First Move_group give us 13 points
+[rm_control-3] [INFO] [1775636738.929484533] [rm_control]: Second Move_group max_time is 1.158461
+[move_group-4] [INFO] [1775636738.929953154] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636738.929966606] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636740.135450680] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636740.135545360] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636740.148805737] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636740.148865297] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636740.149066931] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636740.174402147] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636740.174498050] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636740.189605158] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636740.190363102] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636740.195317488] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636740.195515778] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636740.195443591] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636740.195475126] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636740.195505360] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636740.195560755] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636740.199147172] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636740.199233395] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636740.199264707] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636740.199418809] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636740.199694679] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636740.199711681] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636740.199731213] [rm_control]: First Move_group give us 12 points
+[rm_control-3] [INFO] [1775636740.199789716] [rm_control]: Second Move_group max_time is 1.077577
+[rm_control-3] [INFO] [1775636741.335508026] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636741.336141053] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636741.348911759] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636741.348979900] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636741.349167984] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636741.394451254] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636741.394537941] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636741.409174109] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636741.409826825] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636741.414990098] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636741.415070477] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636741.415092333] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636741.415124877] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636741.415182571] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[grasp_state_machine-1] [INFO] [1775636741.415091784] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636741.418957330] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636741.418989913] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636741.419014961] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636741.419163586] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636741.419459542] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636741.419471571] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636741.419468568] [rm_control]: First Move_group give us 12 points
+[rm_control-3] [INFO] [1775636741.419518426] [rm_control]: Second Move_group max_time is 1.000736
+[rm_control-3] [INFO] [1775636742.495517717] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636742.495586229] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636742.509068351] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636742.509219748] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636742.509524977] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636742.564907625] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636742.564977548] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636742.575633387] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636742.576281667] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636742.580471516] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636742.580686422] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636742.580652091] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636742.580691389] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636742.580744565] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636742.580823998] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636742.584248865] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636742.584304612] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636742.584340622] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636742.584573418] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636742.585142861] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636742.585166551] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636742.585158775] [rm_control]: First Move_group give us 11 points
+[rm_control-3] [INFO] [1775636742.585284597] [rm_control]: Second Move_group max_time is 0.932541
+[rm_control-3] [INFO] [1775636743.575601430] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636743.575637107] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636743.589318848] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[grasp_state_machine-1] [INFO] [1775636743.589721848] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636743.589481577] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[move_group-4] [INFO] [1775636743.624617523] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636743.624698107] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636743.637075737] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636743.637546810] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636743.640090532] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636743.640186915] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636743.640171919] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636743.640193624] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636743.640232937] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636743.640289158] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636743.644424216] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636743.644473523] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636743.644496555] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636743.644637557] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[rm_control-3] [INFO] [1775636743.644987851] [rm_control]: First Move_group give us 10 points
+[rm_control-3] [INFO] [1775636743.645062660] [rm_control]: Second Move_group max_time is 0.886391
+[move_group-4] [INFO] [1775636743.645052512] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636743.645113342] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636744.595586361] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636744.595673869] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636744.609086595] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636744.609174957] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636744.609366313] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636744.666601746] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636744.666704537] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636744.681486264] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636744.682100127] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636744.689845889] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636744.689928918] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636744.689946821] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636744.689972240] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[grasp_state_machine-1] [INFO] [1775636744.690080899] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636744.690024563] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636744.694048940] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636744.694083932] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636744.694103844] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636744.694246377] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636744.694547295] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636744.694565252] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636744.694586425] [rm_control]: First Move_group give us 10 points
+[rm_control-3] [INFO] [1775636744.694632261] [rm_control]: Second Move_group max_time is 0.842749
+[rm_control-3] [INFO] [1775636745.595621173] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636745.595648413] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636745.608963000] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636745.609039257] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636745.609218907] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636745.664604994] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636745.664683380] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636745.678969711] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636745.679476867] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636745.684815505] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636745.684910036] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636745.684927066] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[grasp_state_machine-1] [INFO] [1775636745.684969511] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636745.684950070] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636745.684994103] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636745.689276153] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636745.689323696] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636745.689345995] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636745.689478848] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[rm_control-3] [INFO] [1775636745.689756904] [rm_control]: First Move_group give us 9 points
+[rm_control-3] [INFO] [1775636745.689801233] [rm_control]: Second Move_group max_time is 0.784282
+[move_group-4] [INFO] [1775636745.689780486] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636745.689796853] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636746.535680458] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636746.535719366] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636746.548978450] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636746.549054430] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636746.549230754] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636746.574534391] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636746.574633630] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636746.589507466] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636746.590035955] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636746.594960654] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636746.595098485] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636746.595045195] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636746.595069829] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636746.595098956] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636746.595142118] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636746.599107457] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636746.599140774] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636746.599159597] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636746.599295254] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[rm_control-3] [INFO] [1775636746.599564824] [rm_control]: First Move_group give us 10 points
+[rm_control-3] [INFO] [1775636746.599609160] [rm_control]: Second Move_group max_time is 0.809545
+[move_group-4] [INFO] [1775636746.599593560] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636746.599608745] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636747.475654794] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636747.475745443] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636747.489042727] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636747.489107157] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636747.489253873] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636747.514641126] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636747.514746819] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636747.530481783] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 6. Try a lower max_step.
+[move_group-4] [INFO] [1775636747.530945998] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 6 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636747.535074817] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636747.535160240] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636747.535181938] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636747.535212005] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636747.535268046] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[grasp_state_machine-1] [INFO] [1775636747.535186655] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636747.539185041] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636747.539216196] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636747.539232086] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636747.539351720] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[rm_control-3] [INFO] [1775636747.539599783] [rm_control]: First Move_group give us 10 points
+[rm_control-3] [INFO] [1775636747.539636728] [rm_control]: Second Move_group max_time is 0.808043
+[move_group-4] [INFO] [1775636747.539608265] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636747.539620314] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636748.415721576] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636748.415850785] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636748.429032503] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636748.429093959] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636748.429351241] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636748.454550388] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636748.454626398] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636748.473777406] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 4. Try a lower max_step.
+[move_group-4] [INFO] [1775636748.474202420] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 4 points (followed 75.000000% of requested trajectory)
+[grasp_state_machine-1] [WARN] [1775636748.474482531] [grasp_state_machine]: [MtcPlanner] Cartesian path only 75% complete
+[grasp_state_machine-1] [WARN] [1775636748.474564059] [grasp_state_machine]: SELECTING: Cartesian step failed
+[grasp_state_machine-1] [WARN] [1775636748.474578088] [grasp_state_machine]: SELECTING: step failed — returning to IDLE
+[grasp_state_machine-1] [INFO] [1775636748.474585787] [grasp_state_machine]: Cycle complete — returning to IDLE
+[move_group-4] [INFO] [1775636748.474904743] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[move_group-4] [INFO] [1775636748.474998048] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[grasp_state_machine-1] [INFO] [1775636748.474764741] [move_group_interface]: MoveGroup action client/server ready
+[grasp_state_machine-1] [INFO] [1775636748.475014195] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636748.479159757] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636748.489462983] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-4] [INFO] [1775636749.300299160] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636749.300638795] [move_group_interface]: Planning request complete!
+[move_group-4] [INFO] [1775636749.301091706] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636749.300732357] [move_group_interface]: time taken to generate plan: 0.730784 seconds
+[grasp_state_machine-1] [INFO] [1775636749.301179365] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636749.301184065] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636749.301201392] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636749.301228751] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636749.301281435] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [ERROR] [1775636749.304234342] [moveit_ros.trajectory_execution_manager]: 
+[move_group-4] Invalid Trajectory: start point deviates from current robot state more than 0.01
+[move_group-4] joint 'joint2': expected: -0.0169788, current: 0.0310086
+[move_group-4] [INFO] [1775636749.304255575] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: ABORTED
+[grasp_state_machine-1] [INFO] [1775636749.304486670] [move_group_interface]: Execute request aborted
+[grasp_state_machine-1] [ERROR] [1775636749.305188416] [move_group_interface]: MoveGroupInterface::execute() failed or timeout reached
+[grasp_state_machine-1] [INFO] [1775636749.305276268] [grasp_state_machine]: State → IDLE
+[grasp_state_machine-1] [INFO] [1775636749.305427294] [move_group_interface]: MoveGroup action client/server ready
+[move_group-4] [INFO] [1775636749.305596413] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[move_group-4] [INFO] [1775636749.305699827] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[grasp_state_machine-1] [INFO] [1775636749.306413916] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636749.309181351] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636749.320664459] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-4] [INFO] [1775636750.088365066] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636750.088679670] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636750.089603274] [move_group_interface]: time taken to generate plan: 0.6743 seconds
+[move_group-4] [INFO] [1775636750.090150682] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636750.090271900] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636750.090213911] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636750.090230672] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636750.090256095] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636750.090296931] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636750.094267886] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636750.094303618] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636750.094322074] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636750.094443060] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636750.094724084] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636750.094737107] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636750.094755269] [rm_control]: First Move_group give us 34 points
+[rm_control-3] [INFO] [1775636750.094808180] [rm_control]: Second Move_group max_time is 3.205549
+[rm_control-3] [INFO] [1775636753.355823546] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636753.355886703] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636753.369254503] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636753.369333877] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636753.369502117] [move_group_interface]: Execute request success!
+[grasp_state_machine-1] [INFO] [1775636753.369992620] [grasp_state_machine]: State → SELECTING
+[move_group-4] [INFO] [1775636753.404746679] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636753.404834468] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636753.421821744] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 6. Try a lower max_step.
+[move_group-4] [INFO] [1775636753.422269231] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 6 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636753.425626489] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636753.425713779] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636753.425712315] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636753.425729130] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636753.425756775] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636753.425806315] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636753.429295375] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636753.429331559] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636753.429351325] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636753.429491063] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636753.429774671] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636753.429785448] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636753.429802130] [rm_control]: First Move_group give us 14 points
+[rm_control-3] [INFO] [1775636753.429858745] [rm_control]: Second Move_group max_time is 1.257814
+[INFO] [1775636753.906917573] [sam3_ros_node]: No detection above threshold
+[INFO] [1775636754.284588328] [sam3_ros_node]: No detection above threshold
+[rm_control-3] [INFO] [1775636754.735968484] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636754.736106881] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636754.749232318] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636754.749319419] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636754.749504472] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636754.764566054] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636754.764649350] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636754.779746289] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636754.780400792] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636754.785994089] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636754.786158031] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636754.786126810] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636754.786164978] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636754.786209361] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636754.786275140] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636754.789577148] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636754.789622582] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636754.789650927] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636754.789809262] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636754.790083453] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636754.790097829] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636754.790131882] [rm_control]: First Move_group give us 13 points
+[rm_control-3] [INFO] [1775636754.790181661] [rm_control]: Second Move_group max_time is 1.137122
+[rm_control-3] [INFO] [1775636755.975914198] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636755.975930862] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636755.989537329] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[grasp_state_machine-1] [INFO] [1775636755.989969308] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636755.989688974] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[move_group-4] [INFO] [1775636756.035062515] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636756.035145429] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636756.049828508] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636756.050421502] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636756.055539079] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636756.055643652] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636756.055639360] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636756.055665547] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636756.055692464] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636756.055741902] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636756.059878687] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636756.059944124] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636756.059981794] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636756.060176453] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[rm_control-3] [INFO] [1775636756.060545193] [rm_control]: First Move_group give us 12 points
+[rm_control-3] [INFO] [1775636756.060602604] [rm_control]: Second Move_group max_time is 1.045044
+[move_group-4] [INFO] [1775636756.060542769] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636756.060568331] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636757.175927157] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636757.176015353] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636757.189428852] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636757.189521207] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636757.189786148] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636757.234861321] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636757.234937481] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636757.249286481] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636757.249859031] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636757.255657171] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636757.255755540] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[grasp_state_machine-1] [INFO] [1775636757.255829740] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636757.255782668] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636757.255813296] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636757.255961737] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [ERROR] [1775636757.259886201] [moveit_ros.trajectory_execution_manager]: 
+[move_group-4] Invalid Trajectory: start point deviates from current robot state more than 0.01
+[move_group-4] joint 'joint3': expected: 1.50735, current: 1.51782
+[move_group-4] [INFO] [1775636757.259940333] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: ABORTED
+[grasp_state_machine-1] [INFO] [1775636757.260209738] [move_group_interface]: Execute request aborted
+[grasp_state_machine-1] [ERROR] [1775636757.260880787] [move_group_interface]: MoveGroupInterface::execute() failed or timeout reached
+[grasp_state_machine-1] [WARN] [1775636757.260953814] [grasp_state_machine]: SELECTING: Cartesian step failed
+[grasp_state_machine-1] [WARN] [1775636757.260979249] [grasp_state_machine]: SELECTING: step failed — returning to IDLE
+[grasp_state_machine-1] [INFO] [1775636757.260985741] [grasp_state_machine]: Cycle complete — returning to IDLE
+[move_group-4] [INFO] [1775636757.261259085] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[grasp_state_machine-1] [INFO] [1775636757.261118091] [move_group_interface]: MoveGroup action client/server ready
+[grasp_state_machine-1] [INFO] [1775636757.261457372] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636757.261330661] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[move_group-4] [INFO] [1775636757.265155178] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636757.277030314] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-4] [INFO] [1775636758.100854180] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636758.101187128] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636758.101509721] [move_group_interface]: time taken to generate plan: 0.762788 seconds
+[move_group-4] [INFO] [1775636758.101978800] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636758.102149546] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636758.102077761] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636758.102107580] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636758.102169194] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636758.102262051] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [ERROR] [1775636758.104459667] [moveit_ros.trajectory_execution_manager]: 
+[move_group-4] Invalid Trajectory: start point deviates from current robot state more than 0.01
+[move_group-4] joint 'joint2': expected: -0.240129, current: -0.263076
+[move_group-4] [INFO] [1775636758.104488101] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: ABORTED
+[grasp_state_machine-1] [INFO] [1775636758.104653530] [move_group_interface]: Execute request aborted
+[grasp_state_machine-1] [ERROR] [1775636758.105073188] [move_group_interface]: MoveGroupInterface::execute() failed or timeout reached
+[grasp_state_machine-1] [INFO] [1775636758.105140342] [grasp_state_machine]: State → IDLE
+[grasp_state_machine-1] [INFO] [1775636758.105267200] [move_group_interface]: MoveGroup action client/server ready
+[move_group-4] [INFO] [1775636758.105433733] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[move_group-4] [INFO] [1775636758.105506783] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[grasp_state_machine-1] [INFO] [1775636758.106361908] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636758.109433784] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636758.119146404] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-4] [INFO] [1775636758.929437448] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636758.929837395] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636758.930639872] [move_group_interface]: time taken to generate plan: 0.702639 seconds
+[grasp_state_machine-1] [INFO] [1775636758.931173895] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636758.930963531] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636758.931088839] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636758.931117481] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636758.931155139] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636758.931269185] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636758.935739188] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636758.935949882] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636758.936076334] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636758.936618211] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636758.937407203] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636758.937446443] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636758.937420919] [rm_control]: First Move_group give us 26 points
+[rm_control-3] [INFO] [1775636758.937611288] [rm_control]: Second Move_group max_time is 2.418834
+[rm_control-3] [INFO] [1775636761.416193805] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636761.416330731] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636761.429429078] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636761.429505468] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636761.429690454] [move_group_interface]: Execute request success!
+[grasp_state_machine-1] [INFO] [1775636761.430287918] [grasp_state_machine]: State → SELECTING
+[move_group-4] [INFO] [1775636761.444702139] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636761.444759689] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636761.462639912] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 6. Try a lower max_step.
+[move_group-4] [INFO] [1775636761.463424894] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 6 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636761.466259495] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636761.466486832] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636761.466443176] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636761.466489492] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636761.466543780] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636761.466637077] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636761.469706727] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636761.469767000] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636761.469796481] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636761.469930862] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636761.470279643] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636761.470295120] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636761.470328437] [rm_control]: First Move_group give us 14 points
+[rm_control-3] [INFO] [1775636761.470380223] [rm_control]: Second Move_group max_time is 1.258452
+[rm_control-3] [INFO] [1775636762.776115971] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636762.776182681] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636762.789497970] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-4] [INFO] [1775636762.789626001] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[grasp_state_machine-1] [INFO] [1775636762.789845308] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636762.805401000] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636762.805510552] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636762.819520879] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 6. Try a lower max_step.
+[move_group-4] [INFO] [1775636762.819889543] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 6 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636762.825877769] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636762.825971251] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[grasp_state_machine-1] [INFO] [1775636762.826023195] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636762.825994275] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636762.826024410] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636762.826078515] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636762.829699223] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636762.829742415] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636762.829760381] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636762.829886624] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636762.830161108] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636762.830169146] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636762.830222939] [rm_control]: First Move_group give us 13 points
+[rm_control-3] [INFO] [1775636762.830271200] [rm_control]: Second Move_group max_time is 1.137060
+[rm_control-3] [INFO] [1775636764.016151700] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636764.016250675] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636764.029499388] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[grasp_state_machine-1] [INFO] [1775636764.029820633] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636764.029605275] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[move_group-4] [INFO] [1775636764.075184893] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636764.075270785] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636764.087651224] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 5. Try a lower max_step.
+[move_group-4] [INFO] [1775636764.088265019] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 5 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636764.090874032] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636764.090979748] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636764.091003684] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[grasp_state_machine-1] [INFO] [1775636764.091097927] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636764.091038637] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636764.091100723] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636764.094666160] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636764.094708391] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636764.094732815] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636764.094901887] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636764.095220829] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636764.095237728] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636764.095240810] [rm_control]: First Move_group give us 12 points
+[rm_control-3] [INFO] [1775636764.095297039] [rm_control]: Second Move_group max_time is 1.047440
+[rm_control-3] [INFO] [1775636765.196199959] [rm_control]: Goal Succeeded
+[move_group-4] [INFO] [1775636765.196237321] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'rm_group_controller' successfully finished
+[move_group-4] [INFO] [1775636765.209926571] [moveit_ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[grasp_state_machine-1] [INFO] [1775636765.210365949] [move_group_interface]: Execute request success!
+[move_group-4] [INFO] [1775636765.210100706] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: SUCCEEDED
+[move_group-4] [INFO] [1775636765.234961053] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Received request to compute Cartesian path
+[move_group-4] [INFO] [1775636765.235047047] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Attempting to follow 1 waypoints for link 'Link6' using a step of 0.010000 m and jump threshold 5.000000 (in global reference frame)
+[move_group-4] [WARN] [1775636765.253025093] [moveit_robot_state.cartesian_interpolator]: The computed trajectory is too short to detect jumps in joint-space Need at least 10 steps, only got 6. Try a lower max_step.
+[move_group-4] [INFO] [1775636765.253620169] [moveit_move_group_default_capabilities.cartersian_path_service_capability]: Computed Cartesian path with 6 points (followed 100.000000% of requested trajectory)
+[move_group-4] [INFO] [1775636765.255372737] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[move_group-4] [INFO] [1775636765.255449807] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636765.255466832] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636765.255496990] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[grasp_state_machine-1] [INFO] [1775636765.255451907] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636765.255546545] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [ERROR] [1775636765.260114000] [moveit_ros.trajectory_execution_manager]: 
+[move_group-4] Invalid Trajectory: start point deviates from current robot state more than 0.01
+[move_group-4] joint 'joint3': expected: 1.50583, current: 1.51651
+[move_group-4] [INFO] [1775636765.260176558] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: ABORTED
+[grasp_state_machine-1] [INFO] [1775636765.260523981] [move_group_interface]: Execute request aborted
+[grasp_state_machine-1] [ERROR] [1775636765.260804918] [move_group_interface]: MoveGroupInterface::execute() failed or timeout reached
+[grasp_state_machine-1] [WARN] [1775636765.260904842] [grasp_state_machine]: SELECTING: Cartesian step failed
+[grasp_state_machine-1] [WARN] [1775636765.260945455] [grasp_state_machine]: SELECTING: step failed — returning to IDLE
+[grasp_state_machine-1] [INFO] [1775636765.260952122] [grasp_state_machine]: Cycle complete — returning to IDLE
+[grasp_state_machine-1] [INFO] [1775636765.261200340] [move_group_interface]: MoveGroup action client/server ready
+[move_group-4] [INFO] [1775636765.261733534] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[grasp_state_machine-1] [INFO] [1775636765.261911524] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636765.261825225] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[move_group-4] [INFO] [1775636765.264873131] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636765.277342761] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-4] [INFO] [1775636766.045546852] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636766.045902231] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636766.045976396] [move_group_interface]: time taken to generate plan: 0.679794 seconds
+[move_group-4] [INFO] [1775636766.046264576] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636766.046359163] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636766.046339139] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636766.046364569] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636766.046392839] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636766.046439973] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [ERROR] [1775636766.049751993] [moveit_ros.trajectory_execution_manager]: 
+[move_group-4] Invalid Trajectory: start point deviates from current robot state more than 0.01
+[move_group-4] joint 'joint2': expected: -0.286738, current: -0.311674
+[grasp_state_machine-1] [INFO] [1775636766.050013291] [move_group_interface]: Execute request aborted
+[move_group-4] [INFO] [1775636766.049823649] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution completed: ABORTED
+[grasp_state_machine-1] [ERROR] [1775636766.050425754] [move_group_interface]: MoveGroupInterface::execute() failed or timeout reached
+[grasp_state_machine-1] [INFO] [1775636766.050514756] [grasp_state_machine]: State → IDLE
+[grasp_state_machine-1] [INFO] [1775636766.050710475] [move_group_interface]: MoveGroup action client/server ready
+[move_group-4] [INFO] [1775636766.050857152] [moveit_move_group_default_capabilities.move_action_capability]: Received request
+[grasp_state_machine-1] [INFO] [1775636766.050931186] [move_group_interface]: Planning request accepted
+[move_group-4] [INFO] [1775636766.050953595] [moveit_move_group_default_capabilities.move_action_capability]: executing..
+[move_group-4] [INFO] [1775636766.054730439] [moveit_move_group_default_capabilities.move_action_capability]: Planning request received for MoveGroup action. Forwarding to planning pipeline.
+[move_group-4] [INFO] [1775636766.065760684] [moveit.ompl_planning.model_based_planning_context]: Planner configuration 'rm_group' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-4] [INFO] [1775636766.917468039] [moveit_move_group_default_capabilities.move_action_capability]: Motion plan was computed successfully.
+[grasp_state_machine-1] [INFO] [1775636766.917822593] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1775636766.917839417] [move_group_interface]: time taken to generate plan: 0.779347 seconds
+[move_group-4] [INFO] [1775636766.918211426] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Received goal request
+[grasp_state_machine-1] [INFO] [1775636766.918326119] [move_group_interface]: Execute request accepted
+[move_group-4] [INFO] [1775636766.918310363] [moveit_move_group_default_capabilities.execute_trajectory_action_capability]: Execution request received
+[move_group-4] [INFO] [1775636766.918337075] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636766.918374667] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636766.918436021] [moveit_ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.01
+[move_group-4] [INFO] [1775636766.919979902] [moveit_ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-4] [INFO] [1775636766.920036854] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636766.920056061] [moveit.plugins.moveit_simple_controller_manager]: Returned 1 controllers in list
+[move_group-4] [INFO] [1775636766.920209098] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to rm_group_controller
+[rm_control-3] ---handle goal:6
+[rm_control-3] base_link00
+[move_group-4] [INFO] [1775636766.920499450] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: rm_group_controller started execution
+[move_group-4] [INFO] [1775636766.920513543] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[rm_control-3] [INFO] [1775636766.920544138] [rm_control]: First Move_group give us 26 points
+[rm_control-3] [INFO] [1775636766.920610642] [rm_control]: Second Move_group max_time is 2.422339

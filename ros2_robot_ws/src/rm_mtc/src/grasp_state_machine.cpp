@@ -31,11 +31,11 @@
 // ===========================================================================
 static constexpr double APPROACH_STEP_M = 0.04;
 static constexpr int MAX_APPROACH_STEPS = 50;
-static constexpr double EXECUTE_DEPTH_THRESH_M = 0.40;
+static constexpr double EXECUTE_DEPTH_THRESH_M = 0.20;
 static constexpr double FINAL_EXEC_THRESH_M = 0.25;
-static constexpr double CENTROID_TARGET_OFFSET_X = 25.0;
-static constexpr double CENTROID_TARGET_OFFSET_Y = 40.0;
-static constexpr double MIN_APPROACH_ANGLE_DEG = 40.0;
+static constexpr double CENTROID_TARGET_OFFSET_X = 55.0;
+static constexpr double CENTROID_TARGET_OFFSET_Y = 0.0;
+static constexpr double MIN_APPROACH_ANGLE_DEG = 20.0;
 static constexpr double MAX_ORIENT_STEP_DEG = 5.0;
 static constexpr bool USE_SIMPLE_EXECUTE = false;
 static constexpr bool USE_SLERP_EXECUTE = false;
@@ -527,7 +527,7 @@ private:
       RCLCPP_INFO(this->get_logger(),
                   "EXECUTING: pose locked, depth=%.3fm — executing final Cartesian move%s",
                   object_depth, USE_SLERP_EXECUTE ? " (slerp)" : "");
-      if (mtc_planner_->moveCartesianStep(exec_pose))
+      if (mtc_planner_->moveToPose(exec_pose))
       {
         RCLCPP_INFO(this->get_logger(), "EXECUTING: Cartesian move succeeded");
         closeGripper();
@@ -555,7 +555,8 @@ private:
   // =========================================================================
   void executingSimple()
   {
-    RCLCPP_INFO(this->get_logger(), "EXECUTING (simple): closing gripper");
+
+    // mtc_planner_->moveCartesianStep(final_pose_base.pose);
     closeGripper();
   }
 
@@ -634,11 +635,41 @@ private:
           // EXECUTING
           // ==================================================================
           publishState(State::EXECUTING);
+          {
+            std::lock_guard<std::mutex> lock(centroid_mutex_);
+            centroid_snapshot_ = latest_centroid_;
+          }
           openGripper();
 
           if (USE_SIMPLE_EXECUTE)
           {
+            // Compute final target from snapshot
+            auto current_pose_stamped = mtc_planner_->getCurrentPose();
+            geometry_msgs::msg::PoseStamped current_pose_cam;
+            tf_buffer_.transform(current_pose_stamped, current_pose_cam,
+                                 "camera_color_optical_frame", tf2::durationFromSec(0.1));
+
+            double px_err_x = centroid_snapshot_.point.x - (image_cx_ + CENTROID_TARGET_OFFSET_X);
+            double px_err_y = centroid_snapshot_.point.y - (image_cy_ + CENTROID_TARGET_OFFSET_Y);
+            double depth = centroid_snapshot_.point.z;
+            double lateral_x = (px_err_x / fx_) * depth;
+            double lateral_y = (px_err_y / fy_) * depth;
+            double dz = APPROACH_STEP_M;
+            double magnitude = std::sqrt(lateral_x * lateral_x + lateral_y * lateral_y + dz * dz);
+            double scale = APPROACH_STEP_M / magnitude;
+
+            geometry_msgs::msg::PoseStamped goal_pose_cam = current_pose_cam;
+            goal_pose_cam.pose.position.x += lateral_x * scale;
+            goal_pose_cam.pose.position.y += lateral_y * scale;
+            goal_pose_cam.pose.position.z += dz * scale;
+
+            geometry_msgs::msg::PoseStamped goal_pose_base;
+            tf_buffer_.transform(goal_pose_cam, goal_pose_base, "base_link", tf2::durationFromSec(0.1));
+
+            mtc_planner_->moveCartesianStep(goal_pose_base.pose);
             executingSimple();
+            RCLCPP_INFO(this->get_logger(),
+                        "Object grasped successfully");
           }
           else
           {
@@ -701,6 +732,7 @@ private:
   geometry_msgs::msg::PointStamped latest_centroid_;
   bool has_centroid_ = false;
   std::mutex centroid_mutex_;
+  geometry_msgs::msg::PointStamped centroid_snapshot_;
 
   // Grasp candidate queue (shared with callbacks)
   std::queue<rm_ros_interfaces::msg::GraspCandidateArray::SharedPtr> candidate_queue_;
@@ -715,7 +747,7 @@ private:
   std::deque<geometry_msgs::msg::Pose> stability_window_;
 
   // Flags
-  bool debug_flag_ = true;
+  bool debug_flag_ = false;
   bool grasped_ = false;
 };
 
