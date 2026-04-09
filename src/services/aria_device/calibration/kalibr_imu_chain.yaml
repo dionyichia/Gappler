@@ -6,13 +6,13 @@ imu0:
     - [0.0, 1.0, 0.0, 0.0]
     - [0.0, 0.0, 1.0, 0.0]
     - [0.0, 0.0, 0.0, 1.0]
-  accelerometer_noise_density: 8.0e-3   # m/s²/√Hz
-  accelerometer_random_walk: 4.7e-5     # m/s³/√Hz
-  gyroscope_noise_density: 8.7e-4       # rad/s/√Hz  — imu-left spec (~5e-3 dps/√Hz)
-  gyroscope_random_walk: 1.6e-5         # rad/s²/√Hz
+  accelerometer_noise_density: 2.34e-3   # m/s²/√Hz
+  accelerometer_random_walk: 9.53e-5     # m/s³/√Hz
+  gyroscope_noise_density: 2.35e-4       # rad/s/√Hz  — imu-left spec (~5e-3 dps/√Hz)
+  gyroscope_random_walk: 4.40e-6         # rad/s²/√Hz
   rostopic: /aria/imu
   time_offset: 0.0
-  update_rate: 800                    # Aria Gen1 IMU-left runs at 800 Hz
+  update_rate: 400                    # Aria Gen1 IMU-left runs at 800 Hz
   # must match VIOPipeline._TOPIC_IMU
   model: calibrated
   
@@ -38,3 +38,9 @@ imu0:
     - [ 0.0, 0.0, 0.0 ]
     - [ 0.0, 0.0, 0.0 ]
     - [ 0.0, 0.0, 0.0 ]
+
+# Data from Aria Website
+# accelerometer_noise_density: 8.0e-3   # m/s²/√Hz
+# accelerometer_random_walk: 4.7e-5     # m/s³/√Hz
+# gyroscope_noise_density: 8.7e-4       # rad/s/√Hz  — imu-left spec (~5e-3 dps/√Hz)
+# gyroscope_random_walk: 1.6e-5         # rad/s²/√Hz

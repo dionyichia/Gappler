@@ -14,7 +14,7 @@ node that subscribes to three topics and publishes one corrected pose:
 
 Frame conventions
 -----------------
-  map      — SLAM map origin (robot LiDAR-SLAM frame)
+  robot      — SLAM map origin (robot LiDAR-SLAM frame)
   glasses  — Aria glasses IMU / OpenVINS reference frame
   camera   — Aria RGB camera optical frame
   marker   — ArUco marker body frame
@@ -54,7 +54,7 @@ from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from scipy.spatial.transform import Rotation
 from std_msgs.msg import Empty, Header
-from tf2_ros import StaticTransformBroadcaster, TransformBroadcaster
+from tf2_ros import TransformBroadcaster
 from visualization_msgs.msg import Marker
 
 logger = logging.getLogger(__name__)
@@ -120,34 +120,16 @@ class PoseFusionNode(Node):
     def __init__(self) -> None:
         super().__init__("aria_pose_fusion")
 
-        # self._static_broadcaster = StaticTransformBroadcaster(self)
-        # t = TransformStamped()
-        # t.header.stamp = self.get_clock().now().to_msg()
-        # t.header.frame_id = "global"
-        # t.child_frame_id = "map"
-        # t.transform.rotation.w = 1.0  # identity — adjust once you know the real offset
-        # self._static_broadcaster.sendTransform(t)
-
         # ── parameters ────────────────────────────────────────────────────────
-        # Marker pose in SLAM map frame.  Set these to match the known ArUco
-        # position in your map before running.  Defaults = map origin.
-        self.declare_parameter("marker_pos_x", 0.0)
-        self.declare_parameter("marker_pos_y", 0.0)
-        self.declare_parameter("marker_pos_z", 0.0)
-        self.declare_parameter("marker_quat_x", 0.0)
-        self.declare_parameter("marker_quat_y", 0.0)
-        self.declare_parameter("marker_quat_z", 0.0)
-
         # Fixed offset from robot SLAM origin to ArUco marker (robot frame).
-        # Marker is at back-right corner of base, 1.2 m above ground:
-        #   x = -0.30 (back), y = -0.31 (right), z = 1.2 (height)
+
         self.declare_parameter("marker_offset_x", -0.20)
         self.declare_parameter("marker_offset_y", -0.25)
         self.declare_parameter("marker_offset_z", 1.20)
-        self.declare_parameter("marker_offset_quat_x", 0.0)
-        self.declare_parameter("marker_offset_quat_y", 0.0)
-        self.declare_parameter("marker_offset_quat_z", 0.0)
-        self.declare_parameter("marker_offset_quat_w", 1.0)
+        self.declare_parameter("marker_offset_quat_x", -0.5)
+        self.declare_parameter("marker_offset_quat_y", 0.5)
+        self.declare_parameter("marker_offset_quat_z", -0.5)
+        self.declare_parameter("marker_offset_quat_w", 0.5)
 
         # ── subscribers ───────────────────────────────────────────────────────
         self.create_subscription(
@@ -193,21 +175,6 @@ class PoseFusionNode(Node):
 
     # ── parameter helpers ─────────────────────────────────────────────────────
 
-    def _T_map_marker(self) -> np.ndarray:
-        """Build T_map_marker from current ROS parameters (static / no-robot fallback)."""
-        px = self.get_parameter("marker_pos_x").value
-        py = self.get_parameter("marker_pos_y").value
-        pz = self.get_parameter("marker_pos_z").value
-        qx = self.get_parameter("marker_quat_x").value
-        qy = self.get_parameter("marker_quat_y").value
-        qz = self.get_parameter("marker_quat_z").value
-        qw = self.get_parameter("marker_quat_w").value
-
-        T = np.eye(4, dtype=np.float64)
-        T[:3, :3] = Rotation.from_quat([qx, qy, qz, qw]).as_matrix()
-        T[:3, 3] = [px, py, pz]
-        return T
-
     def _T_robot_marker(self) -> np.ndarray:
         """Fixed transform from robot SLAM origin to ArUco marker (robot frame)."""
         ox = self.get_parameter("marker_offset_x").value
@@ -229,12 +196,10 @@ class PoseFusionNode(Node):
     def _on_aruco_pose(self, msg: PoseStamped) -> None:
         T_camera_marker = _pose_to_T(msg)
 
-        if self._T_robot is not None:
-            # Robot is running — chain robot map pose with fixed robot→marker offset
-            T_map_marker = self._T_robot @ self._T_robot_marker()
-        else:
-            # Robot not running — fall back to static params
-            T_map_marker = self._T_map_marker()
+        if self._T_robot is None:
+            self.get_logger().warning("No robot pose available, skipping ArUco update")
+            return
+        T_map_marker = self._T_robot @ self._T_robot_marker()
 
         T_map_glasses = T_map_marker @ np.linalg.inv(T_camera_marker)
 

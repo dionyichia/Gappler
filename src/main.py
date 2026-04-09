@@ -103,7 +103,8 @@ class ProcessPipelineBuilder:
         self, device_ip: Optional[IPv4Address], profile_name: str
     ) -> "ProcessPipelineBuilder":
         """Build the complete pipeline for live streaming mode."""
-        self.add_streaming(device_ip, profile_name).build_common_pipeline()
+        self.add_streaming(device_ip, profile_name)
+        self.build_common_pipeline()
         self.add_audio_streaming()
         sensors_calib_json_str = self.config_queue.get()
         self.add_image_streaming(sensors_calib_json_str)

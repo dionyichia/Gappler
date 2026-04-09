@@ -10,8 +10,7 @@ import aria.sdk as aria
 @dataclass(frozen=True)
 class AriaConfig:
     ARIA_LOG_LEVEL: aria.Level = aria.Level.Info
-    ARIA_STREAMING_PROFILE_NAME: str = "profile15"  # for usb
-    # ARIA_STREAMING_PROFILE_NAME: str = "profile28" #for wifi
+    ARIA_STREAMING_PROFILE_NAME: str = "profile18"  # for usb
     USE_EPHEMERAL_CERTS: bool = True
 
     EYE_STREAM_ID: str = "211-1"
