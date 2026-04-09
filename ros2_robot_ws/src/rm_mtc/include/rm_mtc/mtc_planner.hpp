@@ -27,6 +27,7 @@ public:
   // Moves arm back to the defined home joint configuration.
   // Returns true on success, false on planning or execution failure.
   bool moveToHome();
+  bool moveToReturn();
 
   geometry_msgs::msg::PoseStamped getCurrentPose();
 
@@ -49,5 +50,15 @@ private:
       {"joint4", 0.0},    // 0 degrees
       {"joint5", 1.5708}, // 90 degrees
       {"joint6", 1.5708}, // 90 degrees
+  };
+
+  // Return pose joint values (radians)
+  const std::map<std::string, double> RETURN_JOINTS = {
+      {"joint1", 0.0},     // 0 degrees
+      {"joint2", -0.2443}, // -14 degrees
+      {"joint3", 2.3562},  // 135 degrees
+      {"joint4", 0.0},     // 0 degrees
+      {"joint5", -0.5585}, // -32 degrees
+      {"joint6", 1.5708},  // 90 degrees
   };
 };

@@ -83,6 +83,21 @@ bool MtcPlanner::moveToHome()
   return true;
 }
 
+bool MtcPlanner::moveToReturn()
+{
+  move_group_->setJointValueTarget(RETURN_JOINTS);
+  move_group_->setMaxVelocityScalingFactor(0.1);
+  move_group_->setMaxAccelerationScalingFactor(0.1);
+  moveit::planning_interface::MoveGroupInterface::Plan plan;
+  if (move_group_->plan(plan) != moveit::core::MoveItErrorCode::SUCCESS)
+  {
+    RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] moveToReturn: planning failed");
+    return false;
+  }
+  move_group_->execute(plan);
+  return true;
+}
+
 geometry_msgs::msg::PoseStamped MtcPlanner::getCurrentPose()
 {
   return move_group_->getCurrentPose();
