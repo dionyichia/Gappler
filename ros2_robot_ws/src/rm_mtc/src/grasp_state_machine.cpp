@@ -336,6 +336,16 @@ private:
     }
   }
 
+  void homeWithRetry()
+  {
+    while (!mtc_planner_->moveToHome())
+    {
+      if (shutdown_) return;
+      RCLCPP_WARN(this->get_logger(), "Homing failed, retrying...");
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+  }
+
   // =========================================================================
   // SELECTING — iterative approach step (called once per loop iteration)
   // =========================================================================
@@ -568,11 +578,7 @@ private:
     // --- Startup ---
     std::this_thread::sleep_for(std::chrono::seconds(2));
     addSafetyWalls();
-    while (!mtc_planner_->moveToHome())
-    {
-      RCLCPP_WARN(this->get_logger(), "Homing failed, retrying...");
-      std::this_thread::sleep_for(std::chrono::seconds(1));
-    }
+    homeWithRetry()
     publishState(State::IDLE);
 
     // -----------------------------------------------------------------------
@@ -593,115 +599,115 @@ private:
       {
         std::unique_lock<std::mutex> lock(centroid_mutex_);
         queue_cv_.wait(lock, [this]
-                       { return has_centroid_ || shutdown_; });
-        if (shutdown_)
-          return;
-        has_centroid_ = false;
+                      { return has_centroid_ || shutdown_; });
+        if (shutdown_) return;
       }
 
-      while (!mtc_planner_->moveToHome())
-      {
-        RCLCPP_WARN(this->get_logger(), "Homing failed, retrying...");
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-      }
-
+      // Re-home before each approach cycle
+      homeWithRetry();
       // =====================================================================
       // SELECTING — approach object using 2D centroid
       // =====================================================================
       publishState(State::SELECTING);
 
-      bool selecting_done = false;
-      for (int steps = 0; steps < MAX_APPROACH_STEPS && !selecting_done; ++steps)
+      bool transition_to_executing = false;
+      for (int steps = 0; steps < MAX_APPROACH_STEPS; ++steps)
       {
-        double object_depth;
-        {
-          std::lock_guard<std::mutex> lock(centroid_mutex_);
-          if (!has_centroid_)
+          double object_depth;
           {
-            RCLCPP_WARN(this->get_logger(), "SELECTING: centroid lost — returning to IDLE");
-            selecting_done = true;
-            break;
+              auto age = this->now() - latest_centroid_.header.stamp;
+              if (age > rclcpp::Duration::from_seconds(0.5)) {
+                  RCLCPP_WARN(this->get_logger(), "SELECTING: centroid lost — returning to IDLE");
+                  break;
+              }
+              object_depth = latest_centroid_.point.z;
           }
-          object_depth = latest_centroid_.point.z;
-        }
 
-        if (object_depth < EXECUTE_DEPTH_THRESH_M)
-        {
-          RCLCPP_INFO(this->get_logger(),
-                      "SELECTING: object at %.3fm — transitioning to EXECUTING", object_depth);
-          selecting_done = true;
-
-          // ==================================================================
-          // EXECUTING
-          // ==================================================================
-          publishState(State::EXECUTING);
+          if (object_depth < EXECUTE_DEPTH_THRESH_M)
           {
-            std::lock_guard<std::mutex> lock(centroid_mutex_);
-            centroid_snapshot_ = latest_centroid_;
+              RCLCPP_INFO(this->get_logger(),
+                          "SELECTING: object at %.3fm — transitioning to EXECUTING", object_depth);
+              transition_to_executing = true;
+              break;
           }
-          openGripper();
-
-          if (USE_SIMPLE_EXECUTE)
-          {
-            // Compute final target from snapshot
-            auto current_pose_stamped = mtc_planner_->getCurrentPose();
-            geometry_msgs::msg::PoseStamped current_pose_cam;
-            tf_buffer_.transform(current_pose_stamped, current_pose_cam,
-                                 "camera_color_optical_frame", tf2::durationFromSec(0.1));
-
-            double px_err_x = centroid_snapshot_.point.x - (image_cx_ + CENTROID_TARGET_OFFSET_X);
-            double px_err_y = centroid_snapshot_.point.y - (image_cy_ + CENTROID_TARGET_OFFSET_Y);
-            double depth = centroid_snapshot_.point.z;
-            double lateral_x = (px_err_x / fx_) * depth;
-            double lateral_y = (px_err_y / fy_) * depth;
-            double dz = APPROACH_STEP_M;
-            double magnitude = std::sqrt(lateral_x * lateral_x + lateral_y * lateral_y + dz * dz);
-            double scale = APPROACH_STEP_M / magnitude;
-
-            geometry_msgs::msg::PoseStamped goal_pose_cam = current_pose_cam;
-            goal_pose_cam.pose.position.x += lateral_x * scale;
-            goal_pose_cam.pose.position.y += lateral_y * scale;
-            goal_pose_cam.pose.position.z += dz * scale;
-
-            geometry_msgs::msg::PoseStamped goal_pose_base;
-            tf_buffer_.transform(goal_pose_cam, goal_pose_base, "base_link", tf2::durationFromSec(0.1));
-
-            mtc_planner_->moveCartesianStep(goal_pose_base.pose);
-            executingSimple();
-            RCLCPP_INFO(this->get_logger(),
-                        "Object grasped successfully");
-          }
-          else
-          {
-            bool pose_locked = false;
-            geometry_msgs::msg::Pose stable_pose_base;
-            resetStability();
-
-            bool executing_done = false;
-            while (!executing_done)
-              executing_done = executingStep(pose_locked, stable_pose_base);
-          }
-          // ==================================================================
-        }
-        else
-        {
           if (!selectingStep())
           {
-            RCLCPP_WARN(this->get_logger(), "SELECTING: step failed — returning to IDLE");
-            selecting_done = true;
+              RCLCPP_WARN(this->get_logger(), "SELECTING: step failed — returning to IDLE");
+              break;
           }
-        }
       }
+
+      if (!transition_to_executing) {
+        continue;
+      }
+      // ==================================================================
+      // EXECUTING
+      // ==================================================================
+      publishState(State::EXECUTING);
+      {
+          std::lock_guard<std::mutex> lock(centroid_mutex_);
+          centroid_snapshot_ = latest_centroid_;
+      }
+      openGripper();
+
+      if (USE_SIMPLE_EXECUTE)
+      {
+          // Compute final target from snapshot
+          auto current_pose_stamped = mtc_planner_->getCurrentPose();
+          geometry_msgs::msg::PoseStamped current_pose_cam;
+
+          // LOGICAL ERROR: missing try/catch — this transform can throw
+          // tf2::TransformException but is unguarded here, unlike selectingStep()
+          // which wraps the same call in try/catch
+          tf_buffer_.transform(current_pose_stamped, current_pose_cam,
+                              "camera_color_optical_frame", tf2::durationFromSec(0.1));
+
+          double px_err_x = centroid_snapshot_.point.x - (image_cx_ + CENTROID_TARGET_OFFSET_X);
+          double px_err_y = centroid_snapshot_.point.y - (image_cy_ + CENTROID_TARGET_OFFSET_Y);
+          double depth = centroid_snapshot_.point.z;
+          double lateral_x = (px_err_x / fx_) * depth;
+          double lateral_y = (px_err_y / fy_) * depth;
+          double dz = APPROACH_STEP_M;
+          double magnitude = std::sqrt(lateral_x * lateral_x + lateral_y * lateral_y + dz * dz);
+          double scale = APPROACH_STEP_M / magnitude;
+
+          geometry_msgs::msg::PoseStamped goal_pose_cam = current_pose_cam;
+          goal_pose_cam.pose.position.x += lateral_x * scale;
+          goal_pose_cam.pose.position.y += lateral_y * scale;
+          goal_pose_cam.pose.position.z += dz * scale;
+
+          geometry_msgs::msg::PoseStamped goal_pose_base;
+
+          // LOGICAL ERROR: same issue — unguarded transform, should be try/catch
+          tf_buffer_.transform(goal_pose_cam, goal_pose_base, "base_link", tf2::durationFromSec(0.1));
+
+          // LOGICAL ERROR: return value of moveCartesianStep ignored —
+          // executingSimple() will run even if the Cartesian step failed
+          mtc_planner_->moveCartesianStep(goal_pose_base.pose);
+          executingSimple();
+          RCLCPP_INFO(this->get_logger(), "Object grasped successfully");
+      }
+      else
+      {
+          bool pose_locked = false;
+          geometry_msgs::msg::Pose stable_pose_base;
+          resetStability();
+
+          bool executing_done = false;
+          while (!executing_done)
+              executing_done = executingStep(pose_locked, stable_pose_base);
+      }
+      // =================================================================
 
       // =====================================================================
       // Return to IDLE
       // =====================================================================
       RCLCPP_INFO(this->get_logger(), "Cycle complete — returning to IDLE");
-      mtc_planner_->moveToHome();
+      has_centroid_ = false;
+      homeWithRetry();
       publishState(State::IDLE);
     }
   }
-
   // =========================================================================
   // Members
   // =========================================================================
