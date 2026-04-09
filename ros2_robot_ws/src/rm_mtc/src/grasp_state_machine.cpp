@@ -156,6 +156,8 @@ private:
     pipeline_state_pub_ = this->create_publisher<std_msgs::msg::String>(
         "/pipeline_state", 10);
 
+    return_to_user_pub_ = this->create_publisher<std_msgs::msg::Bool>("/manipulator/return_to_user", 10);
+
     RCLCPP_INFO(this->get_logger(), "Grasp state machine constructed");
   }
 
@@ -711,6 +713,11 @@ private:
         executingSimple();
         RCLCPP_INFO(this->get_logger(), "Object grasped successfully");
         returnWithRetry();
+
+        // Publish completion message to orchestrator
+        std_msgs::msg::Bool return_msg;
+        return_msg.data = true;
+        return_to_user_pub_->publish(return_msg);
         return;
       }
       else
@@ -744,6 +751,7 @@ private:
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperset>::SharedPtr gripper_position_pub_;
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperpick>::SharedPtr gripper_pick_on_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pipeline_state_pub_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr return_to_user_pub_;
 
   // TF2
   tf2_ros::Buffer tf_buffer_;
