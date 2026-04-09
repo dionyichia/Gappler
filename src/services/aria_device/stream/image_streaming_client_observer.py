@@ -1,5 +1,4 @@
 import logging
-import time
 from typing import Callable
 
 import aria.sdk as aria
@@ -23,7 +22,6 @@ class ImageObserver(BaseStreamingClientObserver):
 
     def __init__(self) -> None:
         self._callbacks: dict[aria.CameraId, ImageCallback] = {}
-        self._last_callback = time.time()
 
     def register_on_image_callback(
         self, camera_id: aria.CameraId, callback: ImageCallback
@@ -32,12 +30,6 @@ class ImageObserver(BaseStreamingClientObserver):
         self._callbacks[camera_id] = callback
 
     def on_image_received(self, image: np.ndarray, record) -> None:
-        now = time.time()
-        if hasattr(self, "_last_callback"):
-            gap = now - self._last_callback
-            if gap > 0.1:  # flag unusually large gaps indicating burst arrival
-                logger.warning(f"Burst detected — {gap:.3f}s since last callback")
-        self._last_callback = now
         if image is None:
             return
         cb = self._callbacks.get(record.camera_id)

@@ -42,13 +42,6 @@ def _put_latest(q: Queue, item) -> None:
         pass
 
 
-qos_profile = QoSProfile(
-    reliability=ReliabilityPolicy.RELIABLE,
-    history=HistoryPolicy.KEEP_LAST,
-    depth=10,
-)
-
-
 def audio_worker(
     raw_audio_queue: Queue,
     quit_event: Event,
@@ -57,7 +50,11 @@ def audio_worker(
         "Aria_audio_prompt_publisher",
         String,
         ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value,
-        qos_profile,
+        QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10,
+        ),
     )
     whisper_model = WhisperModel(
         AudioStreamingPipelineConfig.TRANSCRIPTION_MODEL,
