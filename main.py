@@ -2,11 +2,13 @@
 """
 Top-level entry point.
 Launches orchestrator and AriaApplication in parallel.
+Press 'q' or Ctrl+C for emergency stop.
 """
 
 import subprocess
 import sys
 import signal
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).parent
@@ -17,7 +19,7 @@ processes = []
 
 
 def shutdown(sig=None, frame=None):
-    print("\n[root] Shutting down all processes...")
+    print("\n[root] EMERGENCY STOP — killing all processes...")
     for label, p in processes:
         if p.poll() is None:
             print(f"[root] Terminating {label}...")
@@ -25,7 +27,9 @@ def shutdown(sig=None, frame=None):
             try:
                 p.wait(timeout=5)
             except subprocess.TimeoutExpired:
+                print(f"[root] Force killing {label}...")
                 p.kill()
+    print("[root] All processes stopped.")
     sys.exit(0)
 
 
@@ -37,18 +41,31 @@ def launch(cmd, label):
 
 
 def main():
+    # Register OS-level signals
     signal.signal(signal.SIGINT, shutdown)
     signal.signal(signal.SIGTERM, shutdown)
 
     launch(["python3", str(ARIA_APP_PATH)], label="aria_app")
     launch(["python3", str(ORCHESTRATOR_PATH)], label="orchestrator")
 
-    # Wait — if either process dies unexpectedly, shut everything down
-    while True:
-        for label, p in processes:
-            if p.poll() is not None:
-                print(f"[root] {label} exited unexpectedly (code {p.returncode})")
+    print("[root] Running — press 'q' for emergency stop.")
+
+    from src.utils import TerminalRawMode, exit_keypress
+
+    with TerminalRawMode():
+        while True:
+            # Emergency stop on 'q'
+            if exit_keypress():
+                print("\n[root] 'q' pressed — emergency stop triggered.")
                 shutdown()
+
+            # Watchdog — if either child dies unexpectedly, stop everything
+            for label, p in processes:
+                if p.poll() is not None:
+                    print(f"[root] '{label}' exited unexpectedly (code {p.returncode})")
+                    shutdown()
+
+            time.sleep(0.1)
 
 
 if __name__ == "__main__":
