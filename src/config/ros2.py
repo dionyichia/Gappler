@@ -1,36 +1,21 @@
+from pathlib import Path
 from enum import Enum
-
+import yaml
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 
+config_path = Path(__file__).parent.parent / "shared" / "config.yaml"
+with open(config_path) as f:
+    config = yaml.safe_load(f)
 
-class ROS2Topics(Enum):
-    RGB_CAMERA_RAW = "/aria/rgb_camera/raw"
-    RGB_CAMERA_UNDISTORTED = "/aria/rgb_camera/undistorted"
+# Topics enum — built dynamically from yaml
+ROS2Topics = Enum(
+    "ROS2Topics", {k.upper(): v for k, v in config["ros2"]["topics"].items()}
+)
 
-    SLAM_LEFT_RAW = "/aria/slam_left/raw"
-    SLAM_RIGHT_RAW = "/aria/slam_right/raw"
-
-    EYE_TRACKING_RAW = "/aria/eye_tracking/raw"
-    EYE_TRACKING_GAZE_ESTIMATE = "/aria/eye_tracking/gaze_estimate"
-
-    RGB_CAMERA_WITH_OBJECT_MASKS = "/aria/rgb_camera/object_masks"
-    ROS_CAMERA_WITH_OBJECT_MASKS = "/realman/rgb_camera/object_masks"
-    COMBINED_VISUALIZATION = "/combined/object_masks"
-
-    FEATURE_MATCH_RESULTS = "/aria/rgb_camera/feature_match"
-
-    AUDIO_TRANSCRIPTION_PROMPT = "/aria/audio/prompt"
-
-    IMU = "/aria/imu"
-
-    ARUCO_POSE = "/aria/aruco_pose"
-    VIO_POSE = "/aria/vio_pose"
-    FUSED_POSE = "/aria/fused_pose"
-    IS_STATIONARY = "/aria/is_stationary"
-
-
+# QoS profile — reconstructed from yaml
+_qos_cfg = config["ros2"]["qos"]["video"]
 VIDEO_QOS = QoSProfile(
-    reliability=ReliabilityPolicy.BEST_EFFORT,
-    history=HistoryPolicy.KEEP_LAST,
-    depth=10,
+    reliability=ReliabilityPolicy[_qos_cfg["reliability"]],
+    history=HistoryPolicy[_qos_cfg["history"]],
+    depth=_qos_cfg["depth"],
 )
