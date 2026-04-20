@@ -12,11 +12,7 @@ Poses are transformed from camera_color_optical_frame → base_link.
 Run in any ROS2 env (does not need conda).
 """
 
-import os
-import subprocess
-
 import numpy as np
-import psutil
 import rclpy
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.node import Node
@@ -26,8 +22,6 @@ from std_msgs.msg import String
 from tf2_geometry_msgs import do_transform_pose
 from tf2_ros import Buffer, TransformListener
 from visualization_msgs.msg import Marker, MarkerArray
-
-RVIZ_CONFIG = os.path.join(os.path.dirname(__file__), "rviz_config.rviz")
 
 # Gripper geometry constants (metres)
 PALM_LENGTH = 0.04  # cylinder along approach axis
@@ -69,12 +63,6 @@ class GraspVisualizer(Node):
         )
         self.state_marker_pub = self.create_publisher(Marker, "/debug/state_marker", 10)
         self.current_state = "IDLE"
-
-        rviz_running = any("rviz2" in p.name() for p in psutil.process_iter())
-        if not rviz_running:
-            self.rviz_proc = subprocess.Popen(["rviz2", "-d", RVIZ_CONFIG])
-        else:
-            self.get_logger().info("RViz already running, skipping launch")
 
         self.get_logger().info("Grasp visualizer ready")
 
@@ -309,8 +297,6 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        if hasattr(node, "rviz_proc"):
-            node.rviz_proc.terminate()
         node.destroy_node()
         rclpy.shutdown()
 

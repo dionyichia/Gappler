@@ -1,5 +1,6 @@
 import logging
 import multiprocessing
+import time
 from multiprocessing import Queue
 from multiprocessing.synchronize import Event
 from typing import Any
@@ -117,6 +118,11 @@ def rgb_worker(
     camera_matrix = np.array([[fx, 0, cx], [0, fy, cy], [0, 0, 1]], dtype=np.float64)
     dist_coeffs = np.zeros(5, dtype=np.float64)
 
+    # Run ArUco detection at most every ARUCO_INTERVAL_S seconds to avoid
+    # blocking the publish loop and starving the Aria DDS subscriber.
+    ARUCO_INTERVAL_S = 0.5
+    last_aruco_time = 0.0
+
     while not quit_event.is_set():
         try:
             image = rgb_queue.get(timeout=0.1)
@@ -129,12 +135,16 @@ def rgb_worker(
         undistorted_image = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
         undistorted_rgb_publisher.publish_image(undistorted_image)
 
-        result, frame = detect_aruco(
-            undistorted_image.copy(), camera_matrix, dist_coeffs
-        )
-
-        rgb_publisher.publish_image(frame)
-        _publish_aruco_detections(result, aruco_pose_publisher)
+        now = time.monotonic()
+        if now - last_aruco_time >= ARUCO_INTERVAL_S:
+            last_aruco_time = now
+            result, frame = detect_aruco(
+                undistorted_image.copy(), camera_matrix, dist_coeffs
+            )
+            rgb_publisher.publish_image(frame)
+            _publish_aruco_detections(result, aruco_pose_publisher)
+        else:
+            rgb_publisher.publish_image(undistorted_image)
 
 
 def et_worker(

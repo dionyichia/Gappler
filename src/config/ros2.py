@@ -1,9 +1,10 @@
-from pathlib import Path
 from enum import Enum
+from pathlib import Path
+
 import yaml
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 
-config_path = Path(__file__).parent.parent / "shared" / "config.yaml"
+config_path = Path(__file__).parent.parent.parent / "shared" / "config.yaml"
 with open(config_path) as f:
     config = yaml.safe_load(f)
 

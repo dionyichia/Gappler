@@ -16,7 +16,7 @@ import rclpy
 
 from schemas.application import ApplicationConfig
 from services.process_manager import ProcessManager
-from utils import TerminalRawMode, exit_keypress, safe_update_iptables, setup_logging
+from utils import exit_keypress, safe_update_iptables, setup_logging
 
 # Logging setup
 setup_logging()
@@ -97,18 +97,20 @@ class ProcessPipelineBuilder:
 
     def build_common_pipeline(self) -> "ProcessPipelineBuilder":
         """Build the common processing pipeline used by both modes."""
-        return self.add_visualization().add_object_recognition().add_feature_matching()
+        return self.add_visualization().add_object_recognition()
 
     def build_streaming_pipeline(
         self, device_ip: Optional[IPv4Address], profile_name: str
     ) -> "ProcessPipelineBuilder":
         """Build the complete pipeline for live streaming mode."""
         self.add_streaming(device_ip, profile_name)
-        self.build_common_pipeline()
-        self.add_audio_streaming()
+        self.add_visualization()
+        self.add_object_recognition()
+        # self.build_common_pipeline()
+        # self.add_audio_streaming()
         sensors_calib_json_str = self.config_queue.get()
         self.add_image_streaming(sensors_calib_json_str)
-        self.add_pose_streaming(sensors_calib_json_str)
+        # self.add_pose_streaming(sensors_calib_json_str)
         return self
 
 
@@ -393,7 +395,7 @@ def parse_arguments() -> ApplicationConfig:
     parser.add_argument(
         "--track-pose",
         action="store_true",
-        default=True,
+        default=False,
         help="Launch OpenVINS MSCKF and rviz2 on startup",
     )
 
@@ -438,5 +440,4 @@ def main():
 
 
 if __name__ == "__main__":
-    with TerminalRawMode():
-        main()
+    main()

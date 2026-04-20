@@ -17,8 +17,8 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Bool, String
 from rm_ros_interfaces.msg import Gripperset
+from std_msgs.msg import Bool, String
 
 MAIN_PY_DIR = "/home/iot22/GitHub/Renaissance-Capstone-Project/ros2_robot_ws/src"
 MAIN_PY_PATH = f"{MAIN_PY_DIR}/main.py"
@@ -54,14 +54,21 @@ class Orchestrator(Node):
         self._start_sub = self.create_subscription(
             Bool, "/manipulation/start", self._on_start, 10
         )
-        self._goal_sub = self.create_subscription(
-            String, "/return_to_user/goal_reached", self._on_goal_reached, 10
-        )
-        self._return_sub = self.create_subscription(
-            Bool, "/manipulator/return_to_user", self._on_return_to_user, 10
-        )
+        # self._goal_sub = self.create_subscription(
+        #     String, "/return_to_user/goal_reached", self._on_goal_reached, 10
+        # )
+        # self._return_sub = self.create_subscription(
+        #     Bool, "/manipulator/return_to_user", self._on_return_to_user, 10
+        # )
         self._audio_sub = self.create_subscription(
-            String, "/aria/audio/prompt", self._on_audio, 10
+            Bool, "/manipulator/release", self._on_audio, 10
+        )
+
+        self.get_logger().info("Launching rm_bringup...")
+        launch(
+            ["ros2", "launch", "rm_mtc", "background.launch.py"],
+            label="rm_bringup",
+            delay=0.0,
         )
 
         self.get_logger().info("Orchestrator ready")
@@ -75,39 +82,39 @@ class Orchestrator(Node):
         launch(["python3", MAIN_PY_PATH], label="main", cwd=MAIN_PY_DIR)
 
     # ------------------------------------------------------------------
-    def _on_return_to_user(self, msg: Bool):
+    # def _on_return_to_user(self, msg: Bool):
+    #     if not msg.data:
+    #         return
+    #     self.get_logger().info("Grasp confirmed — terminating main.py")
+    #     for label, p in processes:
+    #         if label == "main":
+    #             p.terminate()
+    #             try:
+    #                 p.wait(timeout=5)
+    #             except subprocess.TimeoutExpired:
+    #                 p.kill()
+    #             self.get_logger().info("main.py terminated")
+    #             break
+
+    # ------------------------------------------------------------------
+    # def _on_goal_reached(self, msg: String):
+    #     if self._goal_reached or msg.data.strip().lower() != "success":
+    #         return
+    #     self._goal_reached = True
+    #     self.get_logger().info("Goal reached — launching rm_bringup")
+    #     launch(
+    #         ["ros2", "launch", "rm_mtc", "background.launch.py"],
+    #         label="rm_bringup",
+    #         delay=0.0,
+    #     )
+    #     self._bringup_done = True
+
+    # ------------------------------------------------------------------
+    def _on_audio(self, msg: Bool):
         if not msg.data:
             return
-        self.get_logger().info("Grasp confirmed — terminating main.py")
-        for label, p in processes:
-            if label == "main":
-                p.terminate()
-                try:
-                    p.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    p.kill()
-                self.get_logger().info("main.py terminated")
-                break
-
-    # ------------------------------------------------------------------
-    def _on_goal_reached(self, msg: String):
-        if self._goal_reached or msg.data.strip().lower() != "success":
-            return
-        self._goal_reached = True
-        self.get_logger().info("Goal reached — launching rm_bringup")
-        launch(
-            ["ros2", "launch", "rm_mtc", "background.launch.py"],
-            label="rm_bringup",
-            delay=0.0,
-        )
-        self._bringup_done = True
-
-    # ------------------------------------------------------------------
-    def _on_audio(self, msg: String):
-        if not self._bringup_done:
-            return
-        if "release" not in msg.data.lower():
-            return
+        # if "release" not in msg.data.lower():
+        #     return
 
         self.get_logger().info("'release' heard — opening gripper and shutting down")
         self._open_gripper()

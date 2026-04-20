@@ -1,0 +1,9 @@
+# Colcon build artifacts
+build/
+install/
+log/
+
+# OpenVINS sub-workspace build artifacts
+OpenVINS/build/
+OpenVINS/install/
+OpenVINS/log/

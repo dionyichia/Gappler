@@ -1,0 +1,40 @@
+%YAML:1.0
+
+imu0:
+  T_i_b:
+    - [1.0, 0.0, 0.0, 0.0]
+    - [0.0, 1.0, 0.0, 0.0]
+    - [0.0, 0.0, 1.0, 0.0]
+    - [0.0, 0.0, 0.0, 1.0]
+  accelerometer_noise_density: 8.0e-4   # m/s²/√Hz
+  accelerometer_random_walk: 0.001     # m/s³/√Hz
+  gyroscope_noise_density: 8.7e-5      # rad/s/√Hz  — imu-left spec (~5e-3 dps/√Hz)
+  gyroscope_random_walk: 4.0e-5        # rad/s²/√Hz
+  rostopic: /aria/imu
+  time_offset: 0.0
+  update_rate: 800                    # Aria Gen1 IMU-left runs at 800 Hz
+  # must match VIOPipeline._TOPIC_IMU
+  model: calibrated
+  
+  Tw:
+    - [  1.00880270,  -1.89688354e-03, -2.68755183e-03]
+    - [  2.73522008e-05,  0.99348132,  -8.67145988e-03]
+    - [  2.54156451e-03,  9.72793998e-03,  0.96940751]
+
+  R_IMUtoGYRO:
+    - [ 1.0, 0.0, 0.0 ]
+    - [ 0.0, 1.0, 0.0 ]
+    - [ 0.0, 0.0, 1.0 ]
+  Ta:
+    - [  0.99263511,  -1.12702410e-04, -2.13764313e-04]
+    - [  0.00000000,   0.99461557,  -6.67941871e-03]
+    - [  0.00000000,   0.00000000,   1.00293678]
+
+  R_IMUtoACC:
+    - [ 1.0, 0.0, 0.0 ]
+    - [ 0.0, 1.0, 0.0 ]
+    - [ 0.0, 0.0, 1.0 ]
+  Tg:
+    - [ 0.0, 0.0, 0.0 ]
+    - [ 0.0, 0.0, 0.0 ]
+    - [ 0.0, 0.0, 0.0 ]

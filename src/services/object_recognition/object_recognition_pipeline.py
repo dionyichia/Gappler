@@ -6,25 +6,33 @@ from multiprocessing.synchronize import Event
 from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
+import rclpy.duration
+import tf2_ros
 import torch
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PointStamped, PoseStamped
+from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
-from sensor_msgs.msg import CompressedImage, Image
+from sensor_msgs.msg import CameraInfo, CompressedImage, Image
 from std_msgs.msg import String, UInt8MultiArray
 
 from config import VIDEO_QOS, AudioStreamingPipelineConfig, ModelPaths, ROS2Topics
 from services.feature_matching import FeatureMatcher
 from services.object_recognition import SAM3Model
-from services.ros import (
-    ImageHelper,
-    ROSPublisher,
-)
+from services.ros import ImageHelper, ROSPublisher
+from services.visualizer.renderers.object_mask_visualizer import ObjectMaskVisualizer
 
 logger = logging.getLogger(__name__)
 
-PROMPT = "apple"
+DEPTH_SCALE = 0.001  # metres per depth unit
+
+TOPIC_RGB = "/camera/camera/color/image_raw"
+TOPIC_DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
+TOPIC_CAMERA_INFO = "/camera/camera/color/camera_info"
+TOPIC_MASK = "/camera/sam/mask"
+TOPIC_CENTROID_2D = "/object_centroid_2d"
+TOPIC_CENTROID_VIZ = "/object_centroid"
 
 
 class CameraFeed:
@@ -47,11 +55,35 @@ class CameraFeed:
             return self._image.copy(), self._image_id
 
 
+class RealSenseFrame:
+    """Holds the latest synchronised RGB+depth pair for the RealSense camera."""
+
+    def __init__(self):
+        self._rgb: Optional[np.ndarray] = None
+        self._depth: Optional[np.ndarray] = None
+        self._frame_id: int = 0
+        self._header = None
+        self._lock = threading.Lock()
+
+    def update(self, rgb: np.ndarray, depth: np.ndarray, header) -> None:
+        with self._lock:
+            self._rgb = rgb
+            self._depth = depth
+            self._header = header
+            self._frame_id += 1
+
+    def get(self) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], Any, int]:
+        with self._lock:
+            if self._rgb is None:
+                return None, None, None, -1
+            return self._rgb.copy(), self._depth.copy(), self._header, self._frame_id
+
+
 class ObjectRecognitionPipeline:
     def __init__(self, quit_event: Event):
         self._quit_event = quit_event
 
-        self.prompt = PROMPT
+        self.prompt = "box"
 
         self.model = SAM3Model(
             checkpoint_path=ModelPaths.SAM3_PATH,
@@ -64,9 +96,14 @@ class ObjectRecognitionPipeline:
         self._feature_matcher = FeatureMatcher()
 
         self._aria_feed = CameraFeed()
-        self._ros_feed = CameraFeed()
+        self._ros_feed = RealSenseFrame()
         self._gaze_point: Optional[Tuple[float, float]] = None
         self._state_lock = threading.Lock()
+
+        # RealSense intrinsics — gated until received
+        self._fx = self._fy = None
+        self._cx = self._cy = None
+        self._intrinsics_received = False
 
         self._setup_ros_node()
 
@@ -75,20 +112,21 @@ class ObjectRecognitionPipeline:
     # ---------------------------------------------------------------------------
 
     def _setup_ros_node(self) -> None:
-        """Initialise the ROS node, subscriptions, executor, and publishers."""
         self._object_recognition_node = Node("object_recognition_node")
 
         image_cb_group = ReentrantCallbackGroup()
         state_cb_group = MutuallyExclusiveCallbackGroup()
 
+        # CameraInfo — one-time latch
         self._object_recognition_node.create_subscription(
-            Image,
-            "/camera/camera/color/image_raw",
-            self._on_realsense_image,
-            VIDEO_QOS,
-            callback_group=image_cb_group,
+            CameraInfo,
+            TOPIC_CAMERA_INFO,
+            self._on_camera_info,
+            1,
+            callback_group=state_cb_group,
         )
 
+        # Aria image
         self._object_recognition_node.create_subscription(
             CompressedImage,
             ROS2Topics.RGB_CAMERA_UNDISTORTED.value,
@@ -96,6 +134,16 @@ class ObjectRecognitionPipeline:
             VIDEO_QOS,
             callback_group=image_cb_group,
         )
+
+        # Synchronised RealSense RGB + depth
+        self._rgb_sub = Subscriber(self._object_recognition_node, Image, TOPIC_RGB)
+        self._depth_sub = Subscriber(self._object_recognition_node, Image, TOPIC_DEPTH)
+        self._sync = ApproximateTimeSynchronizer(
+            [self._rgb_sub, self._depth_sub], queue_size=10, slop=0.05
+        )
+        self._sync.registerCallback(self._on_realsense_image)
+
+        # Audio prompt + gaze
         self._object_recognition_node.create_subscription(
             String,
             ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value,
@@ -116,6 +164,7 @@ class ObjectRecognitionPipeline:
         self._spin_thread = threading.Thread(target=self._executor.spin, daemon=True)
         self._spin_thread.start()
 
+        # Inference bundle publishers (Aria + ROS)
         self.aria_inference_publisher = ROSPublisher(
             "Aria_inference_publisher",
             UInt8MultiArray,
@@ -132,14 +181,46 @@ class ObjectRecognitionPipeline:
             ROS2Topics.COMBINED_VISUALIZATION.value,
         )
 
+        # Mask + centroid publishers (RealSense only)
+        self._mask_pub = self._object_recognition_node.create_publisher(
+            Image, TOPIC_MASK, 10
+        )
+        self._centroid_pub = self._object_recognition_node.create_publisher(
+            PointStamped, TOPIC_CENTROID_2D, 10
+        )
+        self._centroid_viz_pub = self._object_recognition_node.create_publisher(
+            PointStamped, TOPIC_CENTROID_VIZ, 10
+        )
+
+        # TF buffer, publisher
+        self._tf_buffer = tf2_ros.Buffer()
+        self._tf_listener = tf2_ros.TransformListener(
+            self._tf_buffer, self._object_recognition_node
+        )
+        self._goal_pose_pub = self._object_recognition_node.create_publisher(
+            PoseStamped, "/manipulation/goal_pose", 10
+        )
+
     # ---------------------------------------------------------------------------
     # ROS callbacks
     # ---------------------------------------------------------------------------
 
+    def _on_camera_info(self, msg: CameraInfo) -> None:
+        if self._intrinsics_received:
+            return
+        self._fx = msg.k[0]
+        self._fy = msg.k[4]
+        self._cx = msg.k[2]
+        self._cy = msg.k[5]
+        self._intrinsics_received = True
+        logger.info(
+            f"Intrinsics received: fx={self._fx:.2f} fy={self._fy:.2f} "
+            f"cx={self._cx:.2f} cy={self._cy:.2f}"
+        )
+
     def _on_aria_image(self, msg: CompressedImage) -> None:
         try:
             frame = ImageHelper.uncompress_image(msg.data)
-
             if frame is None:
                 logger.warning("Received empty Aria frame, skipping")
                 return
@@ -147,21 +228,22 @@ class ObjectRecognitionPipeline:
         except Exception as e:
             logger.error(f"Error decoding Aria image: {e}", exc_info=True)
 
-    def _on_realsense_image(self, msg: Image) -> None:
-        frame = np.frombuffer(msg.data, dtype=np.uint8).reshape(
-            msg.height, msg.width, -1
-        )
-        if frame is None:
-            logger.warning("Received empty RealSense frame, skipping")
+    def _on_realsense_image(self, rgb_msg: Image, depth_msg: Image) -> None:
+        if not self._intrinsics_received:
             return
-        self._ros_feed.update(frame)
+        rgb = np.frombuffer(rgb_msg.data, dtype=np.uint8).reshape(
+            rgb_msg.height, rgb_msg.width, -1
+        )
+        depth = np.frombuffer(depth_msg.data, dtype=np.uint16).reshape(
+            depth_msg.height, depth_msg.width
+        )
+        self._ros_feed.update(rgb, depth, rgb_msg.header)
 
     def _on_gaze(self, msg: Point) -> None:
         with self._state_lock:
             self._gaze_point = (msg.x, msg.y)
 
     def _on_prompt(self, msg: String) -> None:
-        """Handle an incoming audio transcription prompt from ROS."""
         command = msg.data.strip().lower()
         if not command:
             return
@@ -169,9 +251,13 @@ class ObjectRecognitionPipeline:
             if command == AudioStreamingPipelineConfig.STOP_KEYWORD:
                 self.prompt = ""
                 self._aria_inference_state = None
-            elif command != self.prompt:
-                self.prompt = command
+            if self.prompt == "":
+                self.prompt = "box"
                 self._aria_inference_state = None
+            elif command != self.prompt:
+                pass
+                # self.prompt = command
+                # self._aria_inference_state = None
 
     # ---------------------------------------------------------------------------
     # Main loop
@@ -196,7 +282,7 @@ class ObjectRecognitionPipeline:
                     continue
 
                 aria_image, aria_id = self._aria_feed.get()
-                ros_image, ros_id = self._ros_feed.get()
+                ros_image, depth, header, ros_id = self._ros_feed.get()
 
                 if aria_id != last_aria_id:
                     last_aria_id = aria_id
@@ -207,7 +293,12 @@ class ObjectRecognitionPipeline:
                 if ros_id != last_ros_id:
                     last_ros_id = ros_id
                     self._process_ros_frame(
-                        ros_image, prompt, aria_locked_image, aria_inference_state
+                        ros_image,
+                        depth,
+                        header,
+                        prompt,
+                        aria_locked_image,
+                        aria_inference_state,
                     )
 
         except KeyboardInterrupt:
@@ -228,7 +319,6 @@ class ObjectRecognitionPipeline:
         gaze_point: Optional[Tuple[float, float]],
         aria_inference_state: Optional[Dict[str, Any]],
     ) -> None:
-        """Run inference on a new Aria frame and publish the result."""
         if aria_image is None or aria_inference_state is not None:
             return
 
@@ -243,7 +333,6 @@ class ObjectRecognitionPipeline:
             inference_state["scores"] = [inference_state["scores"][best]]
             inference_state["boxes"] = [inference_state["boxes"][best]]
 
-        # Discard result if the prompt changed during inference
         with self._state_lock:
             if self.prompt != prompt:
                 logger.debug("Prompt changed during Aria inference, discarding result")
@@ -259,19 +348,19 @@ class ObjectRecognitionPipeline:
     def _process_ros_frame(
         self,
         ros_image: Optional[np.ndarray],
+        depth: Optional[np.ndarray],
+        header,
         prompt: str,
         aria_locked_image: Optional[np.ndarray],
         aria_inference_state: Optional[Dict[str, Any]],
     ) -> None:
-        """Run inference on a new ROS frame, match to Aria mask, and publish."""
-        if ros_image is None:
+        if ros_image is None or depth is None:
             return
 
         inference_state = self._generate_mask(ros_image, prompt)
         if inference_state is None:
             return
 
-        # Discard result if the prompt changed during inference
         with self._state_lock:
             if self.prompt != prompt:
                 logger.debug("Prompt changed during ROS inference, discarding result")
@@ -290,21 +379,101 @@ class ObjectRecognitionPipeline:
         self._publish_inference(
             self.ros_inference_publisher, ros_image, inference_state
         )
+        self._publish_mask_and_centroid(inference_state, depth, header, ros_image)
 
-        # Publish combined bundle when we have keypoints and a reference frame.
-        if (
-            filtered_kp0 is not None
-            and filtered_kp1 is not None
-            and aria_locked_image is not None
-        ):
-            self._publish_combined(
-                ros_image,
-                inference_state,
-                filtered_kp0,
-                filtered_kp1,
-                aria_locked_image,
-                aria_inference_state,
+        # if (
+        #     filtered_kp0 is not None
+        #     and filtered_kp1 is not None
+        #     and aria_locked_image is not None
+        # ):
+        #     self._publish_combined(
+        #         ros_image,
+        #         inference_state,
+        #         filtered_kp0,
+        #         filtered_kp1,
+        #         aria_locked_image,
+        #         aria_inference_state,
+        #     )
+
+    # ---------------------------------------------------------------------------
+    # Mask + centroid publishing (RealSense)
+    # ---------------------------------------------------------------------------
+
+    def _publish_mask_and_centroid(
+        self,
+        inference_state: Dict[str, Any],
+        depth: np.ndarray,
+        header,
+        ros_image: np.ndarray,
+    ) -> None:
+        best_mask, best_score, centroid_px = ObjectMaskVisualizer.get_best_mask(
+            inference_state
+        )
+
+        if best_mask is None:
+            logger.debug("No detection above threshold for mask/centroid publishing")
+            return
+
+        # Mono8 mask
+        mask_msg = Image()
+        mask_msg.header = header
+        mask_msg.height, mask_msg.width = best_mask.shape[:2]
+        mask_msg.encoding = "mono8"
+        mask_msg.step = mask_msg.width
+        mask_msg.data = bytes(best_mask.astype(np.uint8).flatten())
+        self._mask_pub.publish(mask_msg)
+        logger.debug(f"Mask published with score: {best_score:.3f}")
+
+        if centroid_px is None:
+            return
+
+        cx_px, cy_px = centroid_px
+
+        # Median depth over valid mask pixels
+        depth_vals = depth[best_mask]
+        depth_vals = depth_vals[depth_vals > 0]
+        if len(depth_vals) == 0:
+            logger.warning("No valid depth in mask region, skipping centroid")
+            return
+        z = float(np.median(depth_vals)) * DEPTH_SCALE
+
+        # 2D centroid + depth
+        pt = PointStamped()
+        pt.header = header
+        pt.header.frame_id = "camera_color_optical_frame"
+        pt.point.x = float(cx_px)
+        pt.point.y = float(cy_px)
+        pt.point.z = z
+        self._centroid_pub.publish(pt)
+
+        # Back-projected 3D centroid for visualisation
+        viz_pt = PointStamped()
+        viz_pt.header = header
+        viz_pt.header.frame_id = "camera_color_optical_frame"
+        viz_pt.point.x = (float(cx_px) - self._cx) * z / self._fx
+        viz_pt.point.y = (float(cy_px) - self._cy) * z / self._fy
+        viz_pt.point.z = z
+        self._centroid_viz_pub.publish(viz_pt)
+
+        logger.debug(f"Centroid published: px=({cx_px}, {cy_px}) depth={z:.3f}m")
+
+        # Base link frame - 3D centroid publishing
+        try:
+            stamped_in = PoseStamped()
+            stamped_in.header = viz_pt.header
+            stamped_in.pose.position.x = viz_pt.point.x
+            stamped_in.pose.position.y = viz_pt.point.y
+            stamped_in.pose.position.z = viz_pt.point.z
+            stamped_in.pose.orientation.w = 1.0
+            goal_pose_base = self._tf_buffer.transform(
+                stamped_in, "base_link", timeout=rclpy.duration.Duration(seconds=1.0)
             )
+            self._goal_pose_pub.publish(goal_pose_base)
+            logger.debug(
+                f"Goal pose published in base_link: {goal_pose_base.pose.position}"
+            )
+        except Exception as e:
+            logger.warning(f"TF transform to base_link failed: {e}")
 
     # ---------------------------------------------------------------------------
     # Inference helpers
@@ -313,16 +482,6 @@ class ObjectRecognitionPipeline:
     def _generate_mask(
         self, image: np.ndarray, prompt: str
     ) -> Optional[Dict[str, Any]]:
-        """
-        Generate a segmentation mask for a given image and text prompt.
-
-        Args:
-            image: Input image as numpy array.
-            prompt: Text prompt for segmentation.
-
-        Returns:
-            Dictionary containing masks, boxes, and scores, or None if no objects found.
-        """
         inference_state = self.model.process_text_prompt(image, prompt)
         masks = inference_state.get("masks")
         if masks is None or len(masks) == 0:
@@ -336,13 +495,6 @@ class ObjectRecognitionPipeline:
         masks: list,
         gaze_point: Optional[Tuple[float, float]],
     ) -> int:
-        """
-        Return the index of the mask closest to the gaze point.
-
-        - If gaze_point is None or masks is empty, returns 0.
-        - If gaze_point falls inside a mask, returns that mask's index immediately.
-        - Otherwise returns the mask whose nearest edge pixel is closest to the gaze point.
-        """
         if gaze_point is None or len(masks) == 0:
             return 0
 
@@ -375,26 +527,7 @@ class ObjectRecognitionPipeline:
         aria_inference_state: Dict[str, Any],
         ros_image: np.ndarray,
         ros_inference_state: Dict[str, Any],
-    ) -> Tuple[Optional[Dict[str, Any]], Optional[np.ndarray]]:
-        """
-        Use feature matching to identify which ROS mask corresponds to the Aria mask.
-
-        Steps:
-          1. Find all matched keypoint pairs between the Aria and ROS frames.
-          2. Keep only the Aria-side keypoints that fall inside the Aria mask.
-          3. For each ROS mask, count how many corresponding ROS-side keypoints land inside it.
-          4. Return a copy of ros_inference_state filtered to the best-matching mask,
-             or None if no mask receives any hits.
-
-        Args:
-            aria_image: The Aria frame used when the Aria mask was computed.
-            aria_inference_state: Locked Aria inference state (single mask).
-            ros_image: Current ROS camera frame.
-            ros_inference_state: ROS inference state with one or more masks.
-
-        Returns:
-            Filtered ros_inference_state with only the best mask, or None.
-        """
+    ) -> Tuple[Optional[Dict[str, Any]], Optional[np.ndarray], Optional[np.ndarray]]:
         aria_masks = aria_inference_state.get("masks", [])
         ros_masks = ros_inference_state.get("masks", [])
 
@@ -475,7 +608,6 @@ class ObjectRecognitionPipeline:
         image: np.ndarray,
         inference_state: Dict[str, Any],
     ) -> None:
-        """Compress and publish an image alongside its inference state."""
         try:
             success, compressed = ImageHelper.compress_image(image=image)
             if not success:
@@ -495,7 +627,6 @@ class ObjectRecognitionPipeline:
             msg = UInt8MultiArray()
             msg.data = payload
             logger.debug(f"Payload size: {len(payload) / 1024:.1f} KB")
-
             ros_publisher.publish(msg)
         except Exception as e:
             logger.error(f"Error publishing results: {e}", exc_info=True)
@@ -504,21 +635,11 @@ class ObjectRecognitionPipeline:
         self,
         ros_image: np.ndarray,
         inference_state: Dict[str, Any],
-        keypoints0: np.ndarray,  # Aria-side
-        keypoints1: np.ndarray,  # ROS-side
+        keypoints0: np.ndarray,
+        keypoints1: np.ndarray,
         reference_image: np.ndarray,
         aria_inference_state: Dict[str, Any],
     ) -> None:
-        """
-        Publish a combined bundle for the visualizer.
-
-        Bundle keys
-        -----------
-        image           : compressed ROS frame bytes
-        inference_state : filtered ROS mask state
-        keypoints       : (K, 2) int ndarray — ROS-side matched keypoints inside mask
-        reference_image : compressed Aria locked frame bytes
-        """
         try:
             _, compressed_ros = ImageHelper.compress_image(image=ros_image)
             _, compressed_ref = ImageHelper.compress_image(image=reference_image)

@@ -22,9 +22,12 @@ def generate_launch_description():
             Node(
                 package="robot_state_publisher",
                 executable="robot_state_publisher",
-                name="robot_state_publisher",
+                name="arm_state_publisher",
                 respawn=True,
                 parameters=[{"robot_description": robot_description}],
+                remappings=[
+                    ("joint_states", "/joint_states"),
+                ],
                 output="screen",
             )
         ]

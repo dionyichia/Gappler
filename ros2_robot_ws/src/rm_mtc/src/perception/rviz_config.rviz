@@ -38,29 +38,6 @@ Panels:
     Name: Time
     SyncMode: 0
     SyncSource: PointCloud2
-  - Class: moveit_task_constructor/Motion Planning Tasks
-    Global Settings:
-      Task View Settings:
-        Old task handling: Keep
-        Show Computation Times: true
-        Task Expansion: All Expanded
-    Name: Motion Planning Tasks
-    Tasks View:
-      property_splitter:
-        - 148
-        - 148
-      solution_sorting:
-        column: 0
-        order: 1
-      solutions_splitter:
-        - 48
-        - 48
-      solutions_view_columns: ~
-      tasks_view_columns:
-        - 100
-        - 57
-        - 57
-        - 57
 Visualization Manager:
   Class: ""
   Displays:
@@ -100,7 +77,6 @@ Visualization Manager:
         Image: true
         Marker: true
         MarkerArray: true
-        Motion Planning Tasks: true
         MotionPlanning: true
         PointCloud2: true
         Value: true
@@ -151,42 +127,6 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /grasp_candidate_markers
       Value: true
-    - Class: moveit_task_constructor/Motion Planning Tasks
-      Enabled: false
-      Interrupt Display: false
-      Loop Animation: false
-      Markers:
-        All at once?: false
-        Value: true
-      Name: Motion Planning Tasks
-      Robot:
-        Fixed Robot Color: 150; 50; 150
-        Links:
-          All Links Enabled: true
-          Expand Joint Details: false
-          Expand Link Details: false
-          Expand Tree: false
-          Link Tree Style: Links in Alphabetic Order
-        Robot Alpha: 0.5
-        Show Robot Collision: false
-        Show Robot Visual: true
-        Use Fixed Robot Color: false
-        Value: ""
-      Robot Description: robot_description
-      Scene:
-        Attached Body Color: 150; 50; 150
-        Scene Alpha: 0.8999999761581421
-        Scene Color: 50; 230; 50
-        Value: true
-        Voxel Coloring: Z-Axis
-        Voxel Rendering: Occupied Voxels
-      Show Trail: false
-      State Display Time: 0.05 s
-      Task Solution Topic: ""
-      Tasks:
-        {}
-      Trail Step Size: 1
-      Value: false
     - Class: rviz_default_plugins/Image
       Enabled: true
       Max Value: 1
@@ -352,7 +292,7 @@ Visualization Manager:
       Scene Geometry:
         Scene Alpha: 0.8999999761581421
         Scene Color: 50; 230; 50
-        Scene Display Time: 0.009999999776482582
+        Scene Display Time: 0.009999999076425076
         Show Scene Geometry: true
         Voxel Coloring: Z-Axis
         Voxel Rendering: Occupied Voxels
@@ -530,10 +470,6 @@ Window Geometry:
   Hide Left Dock: false
   Hide Right Dock: true
   Image:
-    collapsed: false
-  Motion Planning Tasks:
-    collapsed: false
-  Motion Planning Tasks - Slider:
     collapsed: false
   MotionPlanning:
     collapsed: false

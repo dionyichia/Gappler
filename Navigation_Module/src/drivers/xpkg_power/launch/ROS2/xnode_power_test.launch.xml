@@ -1,0 +1,18 @@
+<!--xnode_power_test-->
+<launch> 
+	<node name="xnode_comm" pkg="xpkg_comm" exec="xnode_comm" output="screen" >
+		<param name="dev_list" value="true"/>
+		<param name="com_enable" value="true"/>
+		<param name="com_channel_common" value="false"/>
+		<param name="com_channel_xstd" value="true"/>
+	</node>    
+	<node name="xnode_power" pkg="xpkg_power" exec="xnode_power" output="screen" >
+        <param name="ini_path" value="$(find-pkg-share xpkg_power)/ini/device_id_list.ini"/>
+		<param name="test_mode" value="false"/>
+		<param name="manu_enable" value="false"/>
+		<param name="manu_state" value="true"/>
+		<param name="beep_enable" value="true"/>
+		<param name="rec_votage" value="1.0"/>
+		<param name="min_current" value="0.2"/>
+    	</node>
+</launch>

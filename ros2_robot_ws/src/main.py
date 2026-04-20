@@ -41,6 +41,9 @@ SAM3_WORK_DIR = (
 GRASP_VIZ_NODE_PATH = os.path.join(
     os.path.dirname(__file__), "rm_mtc/src/perception/grasp_viz.py"
 )
+RVIZ_CONFIG_PATH = os.path.join(
+    os.path.dirname(__file__), "rm_mtc/src/perception/rviz_config.rviz"
+)
 
 # ---------------------------------------------------------------------------
 # Process registry
@@ -84,38 +87,38 @@ signal.signal(signal.SIGTERM, shutdown)
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     # 0. RealSense camera driver
-    launch(
-        [
-            "ros2",
-            "launch",
-            "realsense2_camera",
-            "rs_launch.py",
-            "align_depth.enable:=true",
-            "pointcloud.enable:=true",
-        ],
-        label="realsense_camera",
-        delay=0.0,
-    )
+    # launch(
+    #     [
+    #         "ros2",
+    #         "launch",
+    #         "realsense2_camera",
+    #         "rs_launch.py",
+    #         "align_depth.enable:=true",
+    #         "pointcloud.enable:=true",
+    #     ],
+    #     label="realsense_camera",
+    #     delay=0.0,
+    # )
 
     # 1. ROS2 bringup — allow time for move_group to fully initialise
-    launch(
-        ["ros2", "launch", "rm_mtc", "background.launch.py"],
-        label="rm_bringup",
-        delay=0.0,
-    )
+    # launch(
+    #     ["ros2", "launch", "rm_mtc", "background.launch.py"],
+    #     label="rm_bringup",
+    #     delay=0.0,
+    # )
 
     # 2. Local SAM3 Node publisher
-    launch(
-        ["uv", "run", "--project", SAM3_PROJECT_ROOT, "python", SAM3_NODE_PATH],
-        label="sam3_ros_node",
-        delay=0.0,
-        cwd=SAM3_WORK_DIR,
-        env={
-            **os.environ,
-            "PYTHONPATH": "/home/iot22/GitHub/Renaissance-Capstone-Project/src:"
-            + os.environ.get("PYTHONPATH", ""),
-        },
-    )
+    # launch(
+    #     ["uv", "run", "--project", SAM3_PROJECT_ROOT, "python", SAM3_NODE_PATH],
+    #     label="sam3_ros_node",
+    #     delay=0.0,
+    #     cwd=SAM3_WORK_DIR,
+    #     env={
+    #         **os.environ,
+    #         "PYTHONPATH": "/home/iot22/GitHub/Renaissance-Capstone-Project/src:"
+    #         + os.environ.get("PYTHONPATH", ""),
+    #     },
+    # )
 
     # 3. AnyGrasp node — runs in conda env
     launch(
@@ -137,6 +140,10 @@ if __name__ == "__main__":
     # 4. Grasp visualizer — runs in normal ROS2 env
     launch(["python3", GRASP_VIZ_NODE_PATH], label="grasp_viz", delay=2.0)
 
+    # 4b. Manipulation RViz — owned by main.py so it survives grasp_viz crashes
+    #     and closes cleanly when grasping is done (main.py shutdown kills it).
+    launch(["rviz2", "-d", RVIZ_CONFIG_PATH], label="manipulation_rviz", delay=3.0)
+
     # 5. Grasp state machine — launched last, after all sources are ready
     launch(
         ["ros2", "launch", "rm_mtc", "grasp_state_machine.launch.py"],
@@ -146,9 +153,11 @@ if __name__ == "__main__":
 
     print("[main] All processes launched. Press Ctrl+C to shut down.")
 
-    # Monitor for unexpected exits
+    # Monitor for unexpected exits (warn once per process)
+    warned = set()
     while True:
         for label, p in processes:
-            if p.poll() is not None:
+            if p.poll() is not None and label not in warned:
                 print(f"[main] WARNING: '{label}' exited with code {p.returncode}")
+                warned.add(label)
         time.sleep(2.0)

@@ -132,12 +132,12 @@ class PoseFusionNode(Node):
         self.declare_parameter("marker_offset_quat_w", 0.5)
 
         # ── subscribers ───────────────────────────────────────────────────────
-        self.create_subscription(
-            PoseWithCovarianceStamped,
-            "/ov_msckf/poseimu",
-            self._on_vio_pose,
-            VIDEO_QOS,
-        )
+        # self.create_subscription(
+        #     PoseWithCovarianceStamped,
+        #     "/ov_msckf/poseimu",
+        #     self._on_vio_pose,
+        #     VIDEO_QOS,
+        # )
         self.create_subscription(
             PoseStamped,
             "/aria/aruco_pose",
@@ -199,7 +199,7 @@ class PoseFusionNode(Node):
         if self._T_robot is None:
             self.get_logger().warning("No robot pose available, skipping ArUco update")
             return
-        T_map_marker = self._T_robot @ self._T_robot_marker()
+        T_map_marker = T_map_marker = self._T_robot_marker()
 
         T_map_glasses = T_map_marker @ np.linalg.inv(T_camera_marker)
 
@@ -212,7 +212,7 @@ class PoseFusionNode(Node):
 
         t = TransformStamped()
         t.header.stamp = msg.header.stamp
-        t.header.frame_id = "base_link"
+        t.header.frame_id = "robot_base_link"
         t.child_frame_id = "aria_glasses"
         t.transform.translation.x = float(T_map_glasses[0, 3])
         t.transform.translation.y = float(T_map_glasses[1, 3])
@@ -226,7 +226,7 @@ class PoseFusionNode(Node):
 
         # Publish fused pose directly from ArUco — works even without VIO running
         aruco_fused_msg = _T_to_pose_stamped(
-            T_map_glasses, "base_link", msg.header.stamp
+            T_map_glasses, "robot_base_link", msg.header.stamp
         )
         self._pub.publish(aruco_fused_msg)
         self._publish_glasses_marker(T_map_glasses, msg.header.stamp)
@@ -240,60 +240,60 @@ class PoseFusionNode(Node):
             f"pos=[{T_map_glasses[0, 3]:.3f}, {T_map_glasses[1, 3]:.3f}, {T_map_glasses[2, 3]:.3f}]"
         )
 
-    def _on_vio_pose(self, msg: PoseWithCovarianceStamped) -> None:
-        T_new = _pwcs_to_T(msg)
+    # def _on_vio_pose(self, msg: PoseWithCovarianceStamped) -> None:
+    #     T_new = _pwcs_to_T(msg)
 
-        # Sanity check: reject frames where VIO teleports (> 0.5 m from last pose)
-        if self._T_vio_current is not None:
-            step = np.linalg.norm(T_new[:3, 3] - self._T_vio_current[:3, 3])
-            if step > 0.5:
-                self.get_logger().warning(
-                    f"VIO jump of {step:.2f} m rejected — likely tracking loss"
-                )
-                return
+    #     # Sanity check: reject frames where VIO teleports (> 0.5 m from last pose)
+    #     if self._T_vio_current is not None:
+    #         step = np.linalg.norm(T_new[:3, 3] - self._T_vio_current[:3, 3])
+    #         if step > 0.5:
+    #             self.get_logger().warning(
+    #                 f"VIO jump of {step:.2f} m rejected — likely tracking loss"
+    #             )
+    #             return
 
-        self._T_vio_current = T_new
+    #     self._T_vio_current = T_new
 
-        if self._T_vio_at_anchor is None:
-            self._T_vio_at_anchor = self._T_vio_current.copy()
-            return
+    #     if self._T_vio_at_anchor is None:
+    #         self._T_vio_at_anchor = self._T_vio_current.copy()
+    #         return
 
-        T_delta = np.linalg.inv(self._T_vio_at_anchor) @ self._T_vio_current
+    #     T_delta = np.linalg.inv(self._T_vio_at_anchor) @ self._T_vio_current
 
-        delta_dist = np.linalg.norm(T_delta[:3, 3])
-        if delta_dist > 2.0:
-            self.get_logger().warning(
-                f"VIO drift {delta_dist:.2f}m from anchor — consider scanning ArUco marker"
-            )
+    #     delta_dist = np.linalg.norm(T_delta[:3, 3])
+    #     if delta_dist > 2.0:
+    #         self.get_logger().warning(
+    #             f"VIO drift {delta_dist:.2f}m from anchor — consider scanning ArUco marker"
+    #         )
 
-        T_fused = self._T_anchor @ T_delta
+    #     T_fused = self._T_anchor @ T_delta
 
-        if self._aruco_seen:
-            fused_msg = _T_to_pose_stamped(T_fused, "base_link", msg.header.stamp)
-            self._pub.publish(fused_msg)
-            self._publish_glasses_marker(T_fused, msg.header.stamp)
+    #     if self._aruco_seen:
+    #         fused_msg = _T_to_pose_stamped(T_fused, "robot_base_link", msg.header.stamp)
+    #         self._pub.publish(fused_msg)
+    #         self._publish_glasses_marker(T_fused, msg.header.stamp)
 
-        t = TransformStamped()
-        t.header.stamp = msg.header.stamp
-        t.header.frame_id = "base_link"
-        t.child_frame_id = "glasses"
-        t.transform.translation.x = float(T_fused[0, 3])
-        t.transform.translation.y = float(T_fused[1, 3])
-        t.transform.translation.z = float(T_fused[2, 3])
-        q = Rotation.from_matrix(T_fused[:3, :3]).as_quat()
-        t.transform.rotation.x = float(q[0])
-        t.transform.rotation.y = float(q[1])
-        t.transform.rotation.z = float(q[2])
-        t.transform.rotation.w = float(q[3])
-        self._tf_broadcaster.sendTransform(t)
-        print("VIO Published")
+    #     t = TransformStamped()
+    #     t.header.stamp = msg.header.stamp
+    #     t.header.frame_id = "robot_base_link"
+    #     t.child_frame_id = "glasses"
+    #     t.transform.translation.x = float(T_fused[0, 3])
+    #     t.transform.translation.y = float(T_fused[1, 3])
+    #     t.transform.translation.z = float(T_fused[2, 3])
+    #     q = Rotation.from_matrix(T_fused[:3, :3]).as_quat()
+    #     t.transform.rotation.x = float(q[0])
+    #     t.transform.rotation.y = float(q[1])
+    #     t.transform.rotation.z = float(q[2])
+    #     t.transform.rotation.w = float(q[3])
+    #     self._tf_broadcaster.sendTransform(t)
+    #     print("VIO Published")
 
     def _publish_glasses_marker(self, T_fused: np.ndarray, stamp) -> None:
         """Publish 'Aria Glasses' text label above the existing TF frame in RViz."""
         x, y, z = float(T_fused[0, 3]), float(T_fused[1, 3]), float(T_fused[2, 3])
 
         label = Marker()
-        label.header.frame_id = "base_link"
+        label.header.frame_id = "robot_base_link"
         label.header.stamp = stamp
         label.ns = "aria_glasses"
         label.id = 0
