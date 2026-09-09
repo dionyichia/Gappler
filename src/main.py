@@ -104,12 +104,11 @@ class ProcessPipelineBuilder:
     ) -> "ProcessPipelineBuilder":
         """Build the complete pipeline for live streaming mode."""
         self.add_streaming(device_ip, profile_name)
-        self.add_visualization()
-        self.add_object_recognition()
-        # self.build_common_pipeline()
-        # self.add_audio_streaming()
+        # self.add_visualization()
+        # self.add_object_recognition()
+        self.add_audio_streaming()
         sensors_calib_json_str = self.config_queue.get()
-        self.add_image_streaming(sensors_calib_json_str)
+        # self.add_image_streaming(sensors_calib_json_str)
         # self.add_pose_streaming(sensors_calib_json_str)
         return self
 

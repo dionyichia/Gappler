@@ -130,7 +130,7 @@ def rgb_worker(
             continue
 
         image = np.rot90(image, -1)
-        # rgb_publisher.publish_image(image)
+        rgb_publisher.publish_image(image)
 
         undistorted_image = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
         undistorted_rgb_publisher.publish_image(undistorted_image)
@@ -141,10 +141,8 @@ def rgb_worker(
             result, frame = detect_aruco(
                 undistorted_image.copy(), camera_matrix, dist_coeffs
             )
-            rgb_publisher.publish_image(frame)
+            # rgb_publisher.publish_image(frame)
             _publish_aruco_detections(result, aruco_pose_publisher)
-        else:
-            rgb_publisher.publish_image(undistorted_image)
 
 
 def et_worker(
@@ -156,6 +154,11 @@ def et_worker(
         "gaze_estimate_publisher",
         Point,
         ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value,
+    )
+    et_raw_publisher = ROSPublisher(
+        "et_raw_publisher",
+        CompressedImage,
+        ROS2Topics.EYE_TRACKING_RAW.value,
     )
     device_calibration = device_calibration_from_json_string(sensors_calib_json_str)
     rgb_camera_calibration = device_calibration.get_camera_calib(
@@ -172,6 +175,8 @@ def et_worker(
             image = eye_queue.get(timeout=0.1)
         except Exception:
             continue
+
+        et_raw_publisher.publish_image(image)
 
         gaze_estimate = eye_tracking.predict_eye_gaze(image)
         gaze_estimate = eye_tracking.project_gaze(gaze_estimate=gaze_estimate)

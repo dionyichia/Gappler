@@ -70,6 +70,20 @@ class Visualizer:
         # Reference frame used when overlaying gaze on the raw image.
         self._reference_frame: Optional[np.ndarray] = None
 
+        # Latest raw gaze point (original ET camera space, pre-rotation).
+        self._gaze_point_raw: Optional[Tuple[float, float]] = None
+
+        # Latest raw ET camera frame (used for synced recording).
+        self._et_raw_frame: Optional[np.ndarray] = None
+
+        # Recording state.
+        self._recording: bool = False
+        self._video_writer: Optional[cv2.VideoWriter] = None
+        # Each panel in the side-by-side recording is this tall (px).
+        _RECORD_PANEL_H = 480
+        self._record_panel_h: int = _RECORD_PANEL_H
+        self._record_panel_w: int = _RECORD_PANEL_H  # square panels
+
         # Renderers
         self._gaze_viz = GazeVisualizer()
         self._match_viz = FeatureMatchVisualizer()
@@ -142,6 +156,7 @@ class Visualizer:
             on_raw_image=self._on_raw_image,
             on_undistorted_image=self._on_undistorted_image,
             on_gaze_position=self._on_gaze_position,
+            on_et_raw_image=self._on_et_raw_image,
             on_aria_mask_bundle=lambda b: self._on_mask_bundle(b, "aria"),
             on_ros_mask_bundle=lambda b: self._on_mask_bundle(b, "ros"),
             on_feature_match=self._on_feature_match,
@@ -175,6 +190,18 @@ class Visualizer:
                 annotated = self._gaze_viz.visualize(self._reference_frame, gaze_point)
                 if annotated is not None:
                     self._set_display_frame(annotated)
+                    frame = annotated
+
+        if self._recording and self._et_raw_frame is not None:
+            self._write_synced_frame(frame, self._et_raw_frame)
+
+        # Just keep the latest raw gaze point; the Aria mask bundle is the draw trigger.
+        # self._gaze_point_raw = (msg.x, msg.y)
+
+    def _on_et_raw_image(self, msg: CompressedImage) -> None:
+        frame = self._ingest_compressed_image(msg)
+        if frame is not None:
+            self._et_raw_frame = frame
 
     def _rotate_gaze_point_90_cw(
         self, point: Tuple[float, float], image_shape: Tuple[int, ...]
@@ -183,6 +210,71 @@ class Visualizer:
         x, y = point
         h, w = image_shape[:2]
         return (h - y, x)
+
+    # ------------------------------------------------------------------
+    # Synced recording
+    # ------------------------------------------------------------------
+
+    def toggle_recording(self) -> None:
+        if self._recording:
+            self._stop_recording()
+        else:
+            self._start_recording()
+
+    def _start_recording(self) -> None:
+        ph, pw = self._record_panel_h, self._record_panel_w
+        frame_size = (pw * 2, ph)  # width × height for cv2.VideoWriter
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        filename = f"gaze_recording_{timestamp}.avi"
+        self._video_writer = cv2.VideoWriter(
+            filename,
+            cv2.VideoWriter_fourcc(*"MJPG"),
+            15.0,
+            frame_size,
+        )
+        if not self._video_writer.isOpened():
+            logger.error("Failed to open VideoWriter for recording")
+            self._video_writer = None
+            return
+        self._recording = True
+        logger.info(f"Recording started: {filename}")
+        print(f"[REC] Recording started: {filename}")
+
+    def _stop_recording(self) -> None:
+        self._recording = False
+        if self._video_writer is not None:
+            self._video_writer.release()
+            self._video_writer = None
+        logger.info("Recording stopped")
+        print("[REC] Recording stopped")
+
+    def _write_synced_frame(self, gaze_frame: np.ndarray, et_frame: np.ndarray) -> None:
+        """Composite ET image (left) and gaze image (right) into one video frame."""
+        if self._video_writer is None:
+            return
+        ph, pw = self._record_panel_h, self._record_panel_w
+
+        def _fit(img: np.ndarray) -> np.ndarray:
+            """Resize img to pw×ph, padding with black to preserve aspect ratio."""
+            h, w = img.shape[:2]
+            scale = min(pw / w, ph / h)
+            new_w, new_h = int(w * scale), int(h * scale)
+            resized = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+            canvas = np.zeros((ph, pw, 3), dtype=np.uint8)
+            y_off = (ph - new_h) // 2
+            x_off = (pw - new_w) // 2
+            canvas[y_off : y_off + new_h, x_off : x_off + new_w] = resized
+            return canvas
+
+        # Ensure ET frame is 3-channel BGR.
+        et_bgr = (
+            et_frame
+            if et_frame.ndim == 3
+            else cv2.cvtColor(et_frame, cv2.COLOR_GRAY2BGR)
+        )
+
+        combined = np.hstack([_fit(et_bgr), _fit(gaze_frame)])
+        self._video_writer.write(combined)
 
     def _on_mask_bundle(self, bundle: dict, source: str) -> None:
         """Handle a deserialized image + inference_state bundle.
@@ -249,37 +341,46 @@ class Visualizer:
             logger.warning("Combined bundle missing ROS image")
             return
 
-        # 1. Render mask onto the ROS frame.
-        frame = ObjectMaskVisualizer.plot_results(
-            ros_image, bundle.get("inference_state")
-        )
-        frame = cv2.cvtColor(frame.copy(), cv2.COLOR_RGB2BGR)
+        # uncompress_image returns BGR; plot_results expects RGB input.
+        def _to_rgb(bgr: np.ndarray) -> np.ndarray:
+            return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
-        # 2. Render mask onto the Aria reference frame.
+        # 1. Render ROS mask onto the ROS frame (BGR → RGB → annotated RGB).
+        frame_rgb = ObjectMaskVisualizer.plot_results(
+            _to_rgb(ros_image), bundle.get("inference_state")
+        )
+
+        # 2. Render Aria mask onto the Aria reference frame.
         ref_raw = ImageHelper.uncompress_image(bundle.get("reference_image", b""))
         if ref_raw is not None:
-            ref_frame = ObjectMaskVisualizer.plot_results(
-                ref_raw, bundle.get("aria_inference_state")
+            ref_rgb = ObjectMaskVisualizer.plot_results(
+                _to_rgb(ref_raw), bundle.get("aria_inference_state")
             )
-            ref_frame = cv2.cvtColor(ref_frame.copy(), cv2.COLOR_RGB2BGR)
+
+            # 3. Draw gaze point on the Aria panel.
+            gaze_point = bundle.get("gaze_point")
+            if gaze_point is not None:
+                annotated = self._gaze_viz.visualize(ref_rgb, gaze_point)
+                if annotated is not None:
+                    ref_rgb = annotated
         else:
-            ref_frame = None
+            ref_rgb = None
 
-        # 3. Side-by-side with match lines between Aria reference and ROS frame.
-        kp0 = bundle.get("keypoints0")  # Aria-side, (K, 2)
-        kp1 = bundle.get("keypoints1")  # ROS-side,  (K, 2)
+        # 4. Side-by-side with feature-match lines (draw_matches expects RGB input).
+        kp0 = bundle.get("keypoints0")  # Aria-side matched kps, (K, 2)
+        kp1 = bundle.get("keypoints1")  # ROS-side matched kps,  (K, 2)
 
-        if ref_frame is not None and kp0 is not None and kp1 is not None and len(kp0):
+        if ref_rgb is not None and kp0 is not None and kp1 is not None and len(kp0):
             identity_matches = np.column_stack(
                 [np.arange(len(kp0)), np.arange(len(kp0))]
             )
             combined = self._match_viz.draw_matches(
-                ref_frame, frame, kp0, kp1, identity_matches
+                ref_rgb, frame_rgb, kp0, kp1, identity_matches
             )
-        elif ref_frame is not None:
-            combined = self._match_viz.draw_side_by_side(ref_frame, frame)
+        elif ref_rgb is not None:
+            combined = self._match_viz.draw_side_by_side(ref_rgb, frame_rgb)
         else:
-            combined = frame
+            combined = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
 
         self._set_display_frame(combined)
 
@@ -328,6 +429,7 @@ class Visualizer:
             on_menu_toggle=self._on_menu_toggle,
             on_save_frame=self._on_save_frame,
             toggle_camera_source=self._toggle_camera_source,
+            on_record_toggle=self.toggle_recording,
         )
 
     def _on_topic_change(self, topic: ROS2Topics) -> None:
@@ -390,6 +492,17 @@ class Visualizer:
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.8,
                 (0, 255, 255),
+                2,
+            )
+
+        if self._recording:
+            cv2.putText(
+                display,
+                "● REC",
+                (10, display.shape[0] - 15),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (0, 0, 255),
                 2,
             )
 

@@ -32,6 +32,7 @@ class ROSManager:
         on_raw_image: Callable[[CompressedImage], None],
         on_undistorted_image: Callable[[CompressedImage], None],
         on_gaze_position: Callable[[Point], None],
+        on_et_raw_image: Callable[[CompressedImage], None],
         on_aria_mask_bundle: Callable[[dict], None],
         on_ros_mask_bundle: Callable[[dict], None],
         on_feature_match: Callable[[dict], None],
@@ -40,6 +41,7 @@ class ROSManager:
         self._on_raw_image = on_raw_image
         self._on_undistorted_image = on_undistorted_image
         self._on_gaze_position = on_gaze_position
+        self._on_et_raw_image = on_et_raw_image
         self._on_aria_mask_bundle = on_aria_mask_bundle
         self._on_ros_mask_bundle = on_ros_mask_bundle
         self._on_feature_match = on_feature_match
@@ -76,6 +78,12 @@ class ROSManager:
             Point,
             ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value,
             self._on_gaze_position,
+            VIDEO_QOS,
+        )
+        self._subscriber.create_subscription(
+            CompressedImage,
+            ROS2Topics.EYE_TRACKING_RAW.value,
+            self._on_et_raw_image,
             VIDEO_QOS,
         )
         self._subscriber.create_subscription(

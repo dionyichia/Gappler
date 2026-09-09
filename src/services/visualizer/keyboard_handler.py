@@ -34,11 +34,13 @@ class KeyboardHandler:
         on_menu_toggle: Callable[[], None],
         on_save_frame: Callable[[], None] = None,
         toggle_camera_source: Callable[[], None] = None,
+        on_record_toggle: Callable[[], None] = None,
     ):
         self._on_topic_change = on_topic_change
         self._on_menu_toggle = on_menu_toggle
         self._on_save_frame = on_save_frame
         self._toggle_camera_source = toggle_camera_source
+        self._on_record_toggle = on_record_toggle
 
         self._topic_keys = {
             ord("1"): ROS2Topics.RGB_CAMERA_RAW,
@@ -78,6 +80,10 @@ class KeyboardHandler:
 
         if key == ord("s") and self._on_save_frame:
             self._on_save_frame()
+            return True
+
+        if key == ord("r") and self._on_record_toggle:
+            self._on_record_toggle()
             return True
 
         return True

@@ -45,7 +45,7 @@ class AudioObserver(BaseStreamingClientObserver):
         self.save_dir = Path(save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
         self._save_interval = save_interval  # seconds between WAV exports
-        self._saved_sample_count: int = 0
+        self._saved_write_pos: int = 0  # ring-buffer write pos at last save
         self._last_save_time: float = time.time()
 
     def on_audio_received(self, audio_data: AudioData, record: AudioDataRecord):
@@ -69,18 +69,18 @@ class AudioObserver(BaseStreamingClientObserver):
         self.received = True
 
         # Periodically export a WAV chunk.
-        # now = time.time()
-        # if now - self._last_save_time >= self._save_interval:
-        #     resampled = self._resample_new_samples()
-        #     if resampled is not None:
-        #         try:
-        #             save_path = self._save_wav_chunk(
-        #                 resampled, AudioStreamingPipelineConfig.WHISPER_SAMPLE_RATE
-        #             )
-        #             logger.debug(f"Audio saved: {save_path}")
-        #         except Exception as e:
-        #             logger.error(f"Error saving audio: {e}")
-        #     self._last_save_time = now
+        now = time.time()
+        if now - self._last_save_time >= self._save_interval:
+            resampled = self._resample_new_samples()
+            if resampled is not None:
+                try:
+                    save_path = self._save_wav_chunk(
+                        resampled, AudioStreamingPipelineConfig.WHISPER_SAMPLE_RATE
+                    )
+                    logger.debug(f"Audio saved: {save_path}")
+                except Exception as e:
+                    logger.error(f"Error saving audio: {e}")
+            self._last_save_time = now
 
     def snapshot(self) -> np.ndarray:
         with self._lock:
@@ -104,54 +104,46 @@ class AudioObserver(BaseStreamingClientObserver):
         Amplitude is normalised to [-1, 1] using the actual peak value so
         the output level is independent of the hardware gain setting.
         """
-        mono = self._mix_to_mono(self.channel_buffers)
-        resampled = self._downsample(mono, len(mono))
-        return self._normalise(resampled)
-
-    def _mix_to_mono(self, channels: list[list]) -> np.ndarray:
-        """Average all channels into a single mono signal."""
-        if not channels:
+        frames = self.snapshot()  # (NUM_CHANNELS, N)
+        if frames.size == 0:
             return np.array([], dtype=np.float32)
+        mono = np.mean(frames.astype(np.float32), axis=0)
+        return self._resample_and_normalise(mono)
 
-        # Truncate all channels to the length of the shortest one
-        min_length = min(len(c) for c in channels)
-        trimmed = [np.array(list(c)[:min_length], dtype=np.float32) for c in channels]
-
-        return np.mean(trimmed, axis=0)
-
-    def _downsample(self, mono: np.ndarray, original_length: int) -> np.ndarray:
-        """Resample a mono signal from ARIA_SAMPLE_RATE to WHISPER_SAMPLE_RATE."""
+    def _resample_and_normalise(self, mono: np.ndarray) -> np.ndarray:
+        """Downsample a 48 kHz mono signal to 16 kHz and normalise to [-1, 1]."""
+        if len(mono) == 0:
+            return np.array([], dtype=np.float32)
         target_length = int(
-            original_length
+            len(mono)
             * AudioStreamingPipelineConfig.WHISPER_SAMPLE_RATE
             / AriaConfig.AUDIO_SAMPLE_RATE
         )
-        return resample(mono, target_length)
-
-    def _normalise(self, audio: np.ndarray) -> np.ndarray:
-        """Scale audio to [-1, 1] based on its actual peak amplitude."""
-        peak = np.max(np.abs(audio))
+        resampled = resample(mono, target_length)
+        peak = np.max(np.abs(resampled))
         if peak > 0:
-            audio = audio / peak
-        return audio.astype(np.float32)
+            resampled /= peak
+        return resampled.astype(np.float32)
 
     def _resample_new_samples(self) -> np.ndarray | None:
-        """
-        Resample only the new samples recorded since the last save.
-        Returns None if no new data is available.
-        """
-        current_length = len(self.channel_buffers[0])
-        if current_length <= self._saved_sample_count:
-            return None
+        with self._lock:
+            current_pos = self._write_pos
+            saved_pos = self._saved_write_pos
 
-        new_samples = [
-            list(ch)[self._saved_sample_count :] for ch in self.channel_buffers
-        ]
-        self._saved_sample_count = current_length
+            if current_pos == saved_pos:
+                return None
 
-        mono = self._mix_to_mono(new_samples)
-        resampled = self._downsample(mono, len(mono))
-        return self._normalise(resampled)
+            if current_pos > saved_pos:
+                new_frames = self._buffers[:, saved_pos:current_pos].copy()
+            else:
+                new_frames = np.concatenate(
+                    [self._buffers[:, saved_pos:], self._buffers[:, :current_pos]],
+                    axis=1,
+                )
+            self._saved_write_pos = current_pos
+
+        mono = np.mean(new_frames.astype(np.float32), axis=0)
+        return self._resample_and_normalise(mono)
 
     def _save_wav_chunk(self, audio: np.ndarray, sample_rate: int) -> Path:
         """Write a float32 audio array to a 16-bit mono WAV file."""

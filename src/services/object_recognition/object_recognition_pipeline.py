@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import rclpy.duration
+import tf2_geometry_msgs
 import tf2_ros
 import torch
 from geometry_msgs.msg import Point, PointStamped, PoseStamped
@@ -83,7 +84,7 @@ class ObjectRecognitionPipeline:
     def __init__(self, quit_event: Event):
         self._quit_event = quit_event
 
-        self.prompt = "box"
+        self.prompt = ""
 
         self.model = SAM3Model(
             checkpoint_path=ModelPaths.SAM3_PATH,
@@ -180,6 +181,9 @@ class ObjectRecognitionPipeline:
             UInt8MultiArray,
             ROS2Topics.COMBINED_VISUALIZATION.value,
         )
+        self._match_publisher = ROSPublisher(
+            "match_publisher", UInt8MultiArray, ROS2Topics.FEATURE_MATCH_RESULTS.value
+        )
 
         # Mask + centroid publishers (RealSense only)
         self._mask_pub = self._object_recognition_node.create_publisher(
@@ -213,10 +217,10 @@ class ObjectRecognitionPipeline:
         self._cx = msg.k[2]
         self._cy = msg.k[5]
         self._intrinsics_received = True
-        logger.info(
-            f"Intrinsics received: fx={self._fx:.2f} fy={self._fy:.2f} "
-            f"cx={self._cx:.2f} cy={self._cy:.2f}"
-        )
+        # logger.info(
+        #     f"Intrinsics received: fx={self._fx:.2f} fy={self._fy:.2f} "
+        #     f"cx={self._cx:.2f} cy={self._cy:.2f}"
+        # )
 
     def _on_aria_image(self, msg: CompressedImage) -> None:
         try:
@@ -251,13 +255,9 @@ class ObjectRecognitionPipeline:
             if command == AudioStreamingPipelineConfig.STOP_KEYWORD:
                 self.prompt = ""
                 self._aria_inference_state = None
-            if self.prompt == "":
-                self.prompt = "box"
-                self._aria_inference_state = None
             elif command != self.prompt:
-                pass
-                # self.prompt = command
-                # self._aria_inference_state = None
+                self.prompt = command
+                self._aria_inference_state = None
 
     # ---------------------------------------------------------------------------
     # Main loop
@@ -299,6 +299,7 @@ class ObjectRecognitionPipeline:
                         prompt,
                         aria_locked_image,
                         aria_inference_state,
+                        gaze_point,
                     )
 
         except KeyboardInterrupt:
@@ -319,8 +320,8 @@ class ObjectRecognitionPipeline:
         gaze_point: Optional[Tuple[float, float]],
         aria_inference_state: Optional[Dict[str, Any]],
     ) -> None:
-        if aria_image is None or aria_inference_state is not None:
-            return
+        # if aria_image is None or aria_inference_state is not None:
+        #     return
 
         inference_state = self._generate_mask(aria_image, prompt)
         if inference_state is None:
@@ -353,6 +354,7 @@ class ObjectRecognitionPipeline:
         prompt: str,
         aria_locked_image: Optional[np.ndarray],
         aria_inference_state: Optional[Dict[str, Any]],
+        gaze_point: Optional[Tuple[float, float]] = None,
     ) -> None:
         if ros_image is None or depth is None:
             return
@@ -379,21 +381,22 @@ class ObjectRecognitionPipeline:
         self._publish_inference(
             self.ros_inference_publisher, ros_image, inference_state
         )
-        self._publish_mask_and_centroid(inference_state, depth, header, ros_image)
+        # self._publish_mask_and_centroid(inference_state, depth, header, ros_image)
 
-        # if (
-        #     filtered_kp0 is not None
-        #     and filtered_kp1 is not None
-        #     and aria_locked_image is not None
-        # ):
-        #     self._publish_combined(
-        #         ros_image,
-        #         inference_state,
-        #         filtered_kp0,
-        #         filtered_kp1,
-        #         aria_locked_image,
-        #         aria_inference_state,
-        #     )
+        if (
+            filtered_kp0 is not None
+            and filtered_kp1 is not None
+            and aria_locked_image is not None
+        ):
+            self._publish_combined(
+                ros_image,
+                inference_state,
+                filtered_kp0,
+                filtered_kp1,
+                aria_locked_image,
+                aria_inference_state,
+                gaze_point,
+            )
 
     # ---------------------------------------------------------------------------
     # Mask + centroid publishing (RealSense)
@@ -539,6 +542,11 @@ class ObjectRecognitionPipeline:
 
         try:
             match_result = self._feature_matcher.match_frames(aria_image, ros_image)
+            payload = pickle.dumps(match_result)
+            msg = UInt8MultiArray()
+            msg.data = payload
+            self._match_publisher.publish(msg)
+
         except Exception as e:
             logger.error(f"Feature matching failed: {e}", exc_info=True)
             return None, None, None
@@ -639,6 +647,7 @@ class ObjectRecognitionPipeline:
         keypoints1: np.ndarray,
         reference_image: np.ndarray,
         aria_inference_state: Dict[str, Any],
+        gaze_point: Optional[Tuple[float, float]] = None,
     ) -> None:
         try:
             _, compressed_ros = ImageHelper.compress_image(image=ros_image)
@@ -649,6 +658,14 @@ class ObjectRecognitionPipeline:
                 for k, v in inference_state.items()
                 if k not in ("backbone_out", "masks_logits")
             }
+
+            # Rotate the raw gaze point (original camera space) to match the
+            # aria_locked_image which has already been rotated 90° CW.
+            rotated_gaze = None
+            if gaze_point is not None:
+                h = reference_image.shape[0]
+                gx, gy = gaze_point
+                rotated_gaze = (h - gy, gx)
 
             payload = pickle.dumps(
                 {
@@ -662,6 +679,7 @@ class ObjectRecognitionPipeline:
                         for k, v in aria_inference_state.items()
                         if k not in ("backbone_out", "masks_logits")
                     },
+                    "gaze_point": rotated_gaze,
                 }
             )
 
