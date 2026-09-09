@@ -24,13 +24,12 @@ import time
 # Placeholders — fill in before running
 # ---------------------------------------------------------------------------
 ANYGRASP_CONDA_ENV = "anygrasp"
-ANYGRASP_DIR = "/home/iot22/GitHub/Renaissance-Capstone-Project/ros2_robot_ws/src/rm_mtc/src/perception"
 ANYGRASP_CHECKPOINT = "log/checkpoint_tracking.tar"
-
 
 ANYGRASP_NODE_PATH = os.path.join(
     os.path.dirname(__file__), "rm_mtc/src/perception/anygrasp_node.py"
 )
+ANYGRASP_DIR = os.path.dirname(ANYGRASP_NODE_PATH)
 DUMMY_MASK_NODE_PATH = os.path.join(
     os.path.dirname(__file__), "rm_mtc/src/perception/dummy_mask_publisher.py"
 )

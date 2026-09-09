@@ -103,7 +103,7 @@ class SAM3Segmenter:
 if __name__ == "__main__":
     # Initialize segmenter
     segmenter = SAM3Segmenter(
-        checkpoint_path="/home/iot22/GitHub/Renaissance-Capstone-Project/sam3/sam3.pt",
+        checkpoint_path="/home/iot22/Desktop/Renaissance-Capstone-Project/src/models/sam3/sam3.pt",
         confidence_threshold=0.5,
     )
 

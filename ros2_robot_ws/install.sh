@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 
-DEPS_WS="$HOME/GitHub/Renaissance-Capstone-Project/deps_ws"
-ROBOT_WS="$HOME/GitHub/Renaissance-Capstone-Project/ros2_robot_ws"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEPS_WS="$SCRIPT_DIR/../deps_ws"
+ROBOT_WS="$SCRIPT_DIR"
 
 # 1. Force build deps if actual setup file is missing
 if [ ! -f "$DEPS_WS/install/setup.bash" ]; then

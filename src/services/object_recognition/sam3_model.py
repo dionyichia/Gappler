@@ -88,12 +88,12 @@ if __name__ == "__main__":
 
     # Initialize segmenter
     segmenter = SAM3Model(
-        checkpoint_path="/home/iot22/GitHub/Renaissance-Capstone-Project/src/models/sam3/sam3.pt",
+        checkpoint_path="/home/iot22/Desktop/Renaissance-Capstone-Project/src/models/sam3/sam3.pt",
         confidence_threshold=0.5,
     )
 
     # Load image as numpy array using OpenCV
-    image_path = "/home/iot22/GitHub/Renaissance-Capstone-Project/assets/images.jpeg"
+    image_path = "/home/iot22/Desktop/Renaissance-Capstone-Project/assets/images.jpeg"
     image = cv2.imread(image_path)  # Returns numpy array in BGR format (H, W, C)
 
     print(f"Loaded image shape: {image.shape}")
