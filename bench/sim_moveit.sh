@@ -26,7 +26,8 @@ share="$(ros2 pkg prefix "$CFG" 2>/dev/null)/share/$CFG"
 grep -q "mock_components/GenericSystem" "$share/config/rm_65_with_gripper.ros2_control.xacro" \
   || refuse "installed ros2_control config is not mock_components -- this might drive real hardware"
 LAUNCH="$REPO/bench/nodes/sim_arm.launch.py"
-grep -qs "rm_driver" "$LAUNCH" "$REPO/bench/nodes/sim_arm.urdf.xacro" && refuse "the bench sim launch mentions rm_driver"
+# a quoted package name is how launch code starts a node; prose in comments is not
+grep -qsE "[\"']rm_driver[\"']" "$LAUNCH" "$REPO/bench/nodes/sim_arm.urdf.xacro" && refuse "the bench sim launch references the rm_driver package"
 n_ctl="$(xacro "$REPO/bench/nodes/sim_arm.urdf.xacro" initial_positions_file:="$share/config/initial_positions.yaml" 2>/dev/null | grep -c "mock_components/GenericSystem")"
 [ "$n_ctl" = "1" ] || refuse "sim robot model has $n_ctl mock_components blocks, expected exactly 1"
 pgrep -af "rm_driver" | grep -v -e pgrep -e sim_moveit >/dev/null \

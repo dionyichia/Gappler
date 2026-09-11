@@ -1,4 +1,4 @@
-"""MoveIt + a SIMULATED RM65 (mock_components) for the bench. Never rm_driver.
+"""MoveIt + a SIMULATED RM65 (mock_components) for the bench -- never the real arm driver.
 
 Same as rm_65_w_gripper_config's demo.launch.py, except the robot model comes
 from bench/nodes/sim_arm.urdf.xacro, which actually attaches the fake hardware.
