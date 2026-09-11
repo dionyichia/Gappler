@@ -329,13 +329,11 @@ bench session.
 
 ### 2.7 🟡 `bench/` — the offline regression bench
 
-> ➡️ **Continuing this work? Start at [`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md)** — the detailed
-> handoff (2026-09-11). It records three preflight bugs that only show on Linux (rate and TF checks
-> always false-fail; the IP check substring-matches `.10` against `.100`), the contracts extractor's
-> blind spot for every Aria-side publisher, and the plan: establish which machine and clone
-> `rcp2026@10.91.242.76` actually is → get the bench onto it → preflight → verify the
-> `[unverified]` findings → build → node-behaviour tests (domain-isolated, simulated arm) → replay.
-> SSH was reported up on 2026-09-11; nothing has been run on the lab machine yet.
+> ➡️ **Continuing this work? Start at [`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md) → "▶ Start here"** — status
+> table, decisions, held fixes and the work queue. As of 2026-09-11 the bench runs on the lab box
+> (over tailscale): tiers 0–2 plus Tier 3 tests for MoveIt and the grasp state machine on a simulated
+> arm, the e-stop, and the AnyGrasp env. They have found real bugs (CODE_AUDIT B2a, C7). Next: the
+> `Navigation_Module` build (W4b).
 
 `[code]` Added 2026-09-10. Stdlib-only, no ROS, no hardware, ~1 s.
 
@@ -360,12 +358,13 @@ contract that actually changed.
 there is no observed behaviour to regress against — the arm has never been commanded to move. Every
 run ends with an explicit list of what could not be checked and why. See `bench/README.md`.
 
-⚠️ **When the reorg moves code, update `OWNED_PREFIXES` in `bench/contracts.py` and
-`bench/static.py`** — otherwise moved files get classified as vendor and stop failing the build.
+⚠️ **When the reorg moves code, update `OWNED_PREFIXES` in `bench/_common.py`** (one copy, used by all
+three tools) — otherwise moved files get classified as vendor and stop failing the build.
 
-**Next tiers, not yet built:** a `ros:humble` container that runs `colcon build` (needed before
-touching the 802-line `grasp_state_machine.cpp`), then node-level tests driving synthetic inputs
-against a mock `rm_driver`, then replay against a rosbag recorded on the lab machine.
+**Tiers built since (on the lab box, 2026-09-11):** `bench/build.sh` (colcon, Tier 2) and Tier 3 scripts
+on a private ROS channel with a simulated arm — no container needed, the box has ROS. **Still to build:**
+the navigation node tests with a mock `navigate_to_pose` server (W7), and replay against a recorded
+rosbag (W6/W8).
 
 ---
 
@@ -490,3 +489,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-11 | Claude (Opus 5) + Dion | Added §2.8: one `assets/models/` folder for model weights (see ASSETS.md). |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added §2.9: important state outside git, with a keep/drop list; `~iot22/Ros2Workspaces` (never committed) copied to `~/rcp-old-ros-wkspace`. §3.1: `xpkg_demo` found. |
 | 2026-09-11 | Claude (Opus 5) + Dion | §2.5: AnyGrasp runs in the project uv env (W5); the `conda run` launch in `main.py` is now the only reason for conda. |
+| 2026-09-11 | Claude (Opus 5) + Dion | §2.7 refreshed: the bench's lab-box tiers exist; pointer to TESTBENCH_PLAN's Start here; `OWNED_PREFIXES` lives in `bench/_common.py`. |

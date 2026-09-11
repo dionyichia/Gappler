@@ -1,9 +1,10 @@
 # `bench/` — offline regression bench
 
-> **Status 2026-09-11:** tiers 0–1 and preflight built; verified on macOS only. Preflight has
-> three known bugs that only show on Linux, and the contracts extractor cannot see Aria-side
-> publishers — both listed in [`docs/dion_docs/TESTBENCH_PLAN.md`](../docs/dion_docs/TESTBENCH_PLAN.md) §4, which is also
-> the plan for tiers 2–4. Read it before running this on the lab machine.
+> **Status 2026-09-11 (evening):** tiers 0–1 and preflight work on the Mac and on the lab box; Tier 2
+> (build) and four Tier 3 scripts run on the box. Latest results, known gaps and the next work are in
+> [`docs/dion_docs/TESTBENCH_PLAN.md`](../docs/dion_docs/TESTBENCH_PLAN.md) → "▶ Start here"; raw results
+> in [`docs/dion_docs/bench-runs/`](../docs/dion_docs/bench-runs/). Read its §3 (safety) before running
+> anything on the lab machine.
 
 A safety net for refactoring this repo **without** the robot, the glasses, ROS,
 or any Python dependencies. Runs on a laptop in about a second.
@@ -16,6 +17,25 @@ python3 bench/contracts.py snapshot   # re-baseline after a deliberate change
 ```
 
 Python 3.8+, stdlib only. Nothing to install.
+
+### On the lab box: tiers 2–3
+
+These need ROS 2 Humble and, except `build.sh`, the overlay it builds. None moves hardware. Each
+Tier 3 script sets a private ROS channel (`ROS_DOMAIN_ID`, default 77, overridable with
+`BENCH_DOMAIN`; never 0) plus `ROS_LOCALHOST_ONLY=1`, and **refuses to start** if the channel isn't
+empty or an `rm_driver` process exists. Exit codes: 0 pass (expected-fails allowed), 1 fail or
+refused, 3 skipped — never a pass.
+
+| Script | What it checks | Extra guards |
+|---|---|---|
+| `build.sh [nav]` | Tier 2: colcon build of the arm workspace (or `Navigation_Module`) into this checkout | only `/opt/ros/humble` may be sourced |
+| `sim_moveit.sh` | MoveIt plans and executes to both home poses and zero on a `mock_components` arm | installed config must be mock hardware |
+| `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s`, the Ctrl+C key and SIGINT deliver a stop? | — |
+| `state_machine_sim.sh` | `grasp_state_machine` runs a full grasp cycle on the simulated arm; the test plays camera, detector and gripper | mock hardware; preflight's `arm-ping`/`arm-port` must not pass (Dion's exception in `CLAUDE.md`) |
+| `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint | GPU only, no ROS |
+
+Tests that encode a CODE_AUDIT finding assert the *intended* behaviour and report **XFAIL** while the
+bug is there, **XPASS** once it isn't — then retag the finding.
 
 ---
 
@@ -85,7 +105,7 @@ topic and never launches `grasp_state_machine` or `ros2_robot_ws/src/main.py`, b
 the arm within seconds of start, unprompted (`ORIENTATION.md` §8.1).
 
 Everything short of that is checked: GPU and VRAM, RAM, disk, the `PYTHONNOUSERSITE` trap, ROS
-overlay completeness and the double-source trap, the venv and the `anygrasp` conda env, Aria auth,
+overlay completeness and the double-source trap, the venv and AnyGrasp's env (MinkowskiEngine), Aria auth,
 model weights and AnyGrasp licences, NIC addressing, arm ping and port 8080, LiDAR ping, RealSense
 USB, and — when a ROS graph is already running — node list, camera frame rates, `/joint_states`,
 and the two TF links that gate every grasp.
@@ -179,13 +199,11 @@ misclassified as vendor and stop failing the build.
 
 Deliberately out of scope for now, in rough order of value:
 
-1. **Does the C++ compile.** Needs `colcon` in a `ros:humble` container. This is
-   the obvious next tier and the one to add before touching
-   `grasp_state_machine.cpp` (802 lines).
-2. **Does a node behave.** Needs a ROS container: publish synthetic inputs,
-   assert outputs. `object_approach_node`, `goal_reached_publisher`, `qos_relay`,
-   `orchestrator` and the state machine are all testable this way with a mock
-   `rm_driver` standing in for the arm.
+1. ~~**Does the C++ compile.**~~ Now `build.sh` on the lab box (arm workspace 22/22;
+   `Navigation_Module` not yet built).
+2. **Does a node behave** — partly built: the simulated-arm, e-stop and state-machine scripts above.
+   Still to do: `object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay` and
+   `pose_publisher` against a mock `navigate_to_pose` server (TESTBENCH_PLAN W7).
 3. **Replay against real data.** A 30-second rosbag of `/camera/camera/*`,
    `/livox/lidar`, `/aria/audio/prompt` and `/tf` recorded once on the lab
    machine would turn (2) from synthetic into real. Cheap to capture, high value,

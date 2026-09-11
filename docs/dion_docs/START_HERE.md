@@ -10,14 +10,15 @@ segmentation → AnyGrasp → RealMan RM65 arm on a LiDAR-navigating mobile base
 ## How the docs are organised — read this first
 
 Several people (and their Claude sessions) work in this repo at once. So that one person's plans
-are never mistaken for another's, **docs live in per-person folders at the repo root, named
-`<name>_docs/`.**
+are never mistaken for another's, **docs live in per-person folders inside `docs/`, named
+`docs/<name>_docs/`.**
 
 | Folder | Whose | What's in it |
 |---|---|---|
 | **`docs/dion_docs/`** (this folder) | Dion | **The shared reference everyone starts from** — what the system is (`ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `hico-nav/`) — plus Dion's own plans and session records (`NEXT_STEPS`, `TESTBENCH_PLAN`, `bench-runs/`). |
-| `<name>_docs/` | each other contributor | Their plans, session notes, handoffs and bench-run reports. |
+| `docs/<name>_docs/` | each other contributor | Their plans, session notes, handoffs and bench-run reports. |
 | `bench/` | shared | The regression bench — tooling, not docs. |
+| `docs/` | — | Holds only the per-person folders. |
 | root `README.md` | — | Stale (a different upstream project). Ignore it. |
 
 ### New here? Read in this order
@@ -36,16 +37,17 @@ flight; they are not your to-do list unless you are working with Dion on that it
 
 ### Rules for every session — human or AI
 
-1. **Know whose session you are.** Your folder is `<first name, lowercase>_docs/` (e.g.
-   `alex_docs/`). A Claude session that doesn't know its user's name asks — `git config user.name`
+1. **Know whose session you are.** Your folder is `docs/<first name, lowercase>_docs/` (e.g.
+   `docs/alex_docs/`). A Claude session that doesn't know its user's name asks — `git config user.name`
    is a hint, not an answer.
 2. **Write only in your own folder.** Plans, session notes, handoffs, investigation write-ups,
-   bench-run reports → `<name>_docs/`. Create it on first need, with its own short `START_HERE.md`
+   bench-run reports → `docs/<name>_docs/`. Create it on first need, with its own short `START_HERE.md`
    saying what is in it and linking back here.
 3. **Don't edit another person's `*_docs/` folder.** If something there is wrong or stale, write the
    correction in your own folder (cite file and section) and tell its owner. Link to shared docs
    rather than copying them — copies drift.
-4. **Never create a bare `docs/` folder.** Unowned docs are what this layout exists to prevent.
+4. **Never put files directly in `docs/`.** Only per-person folders live there — unowned docs are what
+   this layout exists to prevent.
 5. **Code, `bench/` and `CLAUDE.md` are shared.** Change them by commit; robot code goes on a branch
    for review. The safety rules in `CLAUDE.md` bind everyone.
 6. **Keep the conventions:** provenance tags (below), `file.py:123` citations, a changelog on any
@@ -66,13 +68,15 @@ flight; they are not your to-do list unless you are working with Dion on that it
 | **[`CODE_AUDIT.md`](CODE_AUDIT.md)** | A **line-by-line read of every file we own**, publisher to subscriber. 45 findings, all `[unverified]` — static analysis only, nothing was run. Starts with the three interlocking defects that stop the grasp path working. | Before touching the grasp path, and before the first hardware run. |
 | **[`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md)** | **The cold-start handoff for building the test bench.** State at handoff, safety rules for the lab machine, known bench bugs, and a phased plan from "establish which machine this is" through build, node-behaviour and replay tiers. | **When you pick up bench work.** Read §0–§3 before touching the lab machine. |
 | [`ASSETS.md`](ASSETS.md) | The files git doesn't hold — model weights and the `.venv` — with sizes, checksums, sources and why each is ignored. | Before copying or re-downloading a model file, or setting up a new machine. |
+| [`bench-runs/`](bench-runs/) | Raw results of every lab-box bench run, one file per run, with what each result means and what it does not show. | For the evidence behind any ✅ in TESTBENCH_PLAN. |
 
 Plus **[`../../bench/`](../../bench/README.md)** — the offline regression bench. `./bench/run.sh` checks,
 in order: whether this machine can run the stack at all (GPU, RAM, ROS, weights, and whether the arm
 and LiDAR answer), whether the code is internally consistent, and whether a refactor moved any
 topic / frame / parameter contract. Stdlib-only, ~1 s, no ROS or hardware needed — and every run
 ends with an explicit list of what it could **not** check and why. Run it before and after any
-refactor. See [`bench/README.md`](../../bench/README.md).
+refactor. On the lab box it also has Tier 2–3 scripts — the arm build, MoveIt and the grasp state
+machine on a simulated arm, the e-stop, the AnyGrasp env. See [`bench/README.md`](../../bench/README.md).
 
 Plus [`wiring-map.html`](wiring-map.html) — the interactive version of ARCHITECTURE (clickable
 drill-down, searchable topic table). Publish it as an Artifact to get a shareable link; the source
@@ -108,18 +112,26 @@ Honour the provenance tags: `[code]` verified by reading source · `[reported]` 
 `[inferred]`, promote it and say how. If you are Dion's session and something here is wrong, delete it — a
 confidently wrong doc is worse than none. Anyone else: rule 3 above.
 
-## Where work stands (2026-09-10)
+## Where work stands (2026-09-11, evening)
 
+- **Test bench — Dion's current work:** [`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md) → "▶ Start here". Tiers 0–3
+  run on the lab box (reach it over tailscale). The new tests have already found real bugs: the e-stop
+  ignores Ctrl+C (CODE_AUDIT B2a), and the grasp state machine handles one object per launch (C7).
+  AnyGrasp runs in the project's single uv env — no conda needed. **Next: build `Navigation_Module`.**
+- **Standing rule: no fixes yet.** Findings are recorded; fixes come later, on branches for review.
+- **Things the robot needs that live outside git** — `robot_navigation`, `xpkg_demo`, the SLAM map and
+  more: [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.9. The lab box now has a copy of `iot22`'s navigation
+  workspace at `~/rcp-old-ros-wkspace`.
+- **Hardware:** nothing has moved. Arm, base and glasses are unplugged from the box.
 - **Reading:** Round 1 done. **Round 2 written but not yet read** — resume at `READING_GUIDE.md` §2.
-- **Blocking decision, now sharpened:** the paper has been read (`hico-nav/PAPER_REPORT.md`).
-  The RGB-D requirement is **confirmed and load-bearing** — a base-mounted RealSense D455 should be
-  raised for purchase now, since nothing else has a lead time measured in weeks. HiCo-Nav emits
-  **velocities**, but the recommendation is to take only the goal-level layer above that.
-- **Not yet run:** no hardware bring-up has happened from this branch. `Navigation_Module` has
-  never been built, and depends on a package that is not in this repo (`NEXT_STEPS.md` §3.1).
+- **HiCo-Nav:** the paper has been read (`hico-nav/PAPER_REPORT.md`). The RGB-D requirement is
+  **confirmed and load-bearing** — a base-mounted RealSense D455 should be raised for purchase now,
+  since nothing else has a lead time measured in weeks. HiCo-Nav emits **velocities**, but the
+  recommendation is to take only the goal-level layer above that.
 
 ## Changelog
 
 | Date | Who | Change |
 |---|---|---|
-| 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `docs/dion_docs/` as more contributors join. Added "How the docs are organised": the per-person `<name>_docs/` convention, reading order, rules for every session. |
+| 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `dion_docs/` as more contributors join (moved to `docs/dion_docs/` the same evening). Added "How the docs are organised": the per-person `docs/<name>_docs/` convention, reading order, rules for every session. |
+| 2026-09-11 | Claude (Opus 5) + Dion | Folder moved to `docs/dion_docs/`; per-person folders now live under `docs/`. "Where work stands" refreshed for a cold start; `bench-runs/` added to the table. |

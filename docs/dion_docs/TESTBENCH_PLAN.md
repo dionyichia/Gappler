@@ -15,12 +15,40 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 ## ▶ Start here — next session (written end of 2026-09-11)
 
-**One paragraph:** the bench runs on the lab box, in `~/rcp-Gappler` (clone of `main`; the only
-repo to work in there). Tiers 0–1 and preflight run; the arm workspace builds (Tier 2); MoveIt
-plans and executes on a **simulated** arm (`bench/sim_moveit.sh`, first Tier 3 test). Model files
-are copied in (checksums in [`ASSETS.md`](ASSETS.md)). `.venv` rebuilt with uv (W1 ✅; one fix awaiting merge). Nothing physical has moved;
-Aria, arm and base are unplugged, so their checks fail or skip **as expected**. Dion's standing
-instruction: *build all the tests below*, in `~/rcp-Gappler`, no real-world movement.
+**One paragraph (updated 2026-09-11, evening):** the bench runs on the lab box in `~/rcp-Gappler`.
+Done there: tiers 0–1, preflight, Tier 2 for the arm workspace, and Tier 3 on a private ROS channel —
+MoveIt on a simulated arm, the e-stop, the whole grasp state machine on the simulated arm, and the
+AnyGrasp env probe. The project `.venv` is rebuilt with uv; a scratch env showed AnyGrasp runs in
+**one** env (W5). Nothing physical has moved; Aria, arm and base are unplugged, so their checks fail or
+skip **as expected**. **Next: W4b — build `Navigation_Module`**, which should stop on the packages that
+exist only outside git (NEXT_STEPS §2.9). Dion's standing instruction: build the tests, survey, record —
+**no fixes yet** — in `~/rcp-Gappler`, no real-world movement.
+
+**Status at a glance:**
+
+| Item | State | Evidence |
+|---|---|---|
+| W1 project env (uv) | ✅ torch sees the GPU; setuptools pin merged | [`bench-runs/…-w1-venv.txt`](bench-runs/2026-09-11-labbox-w1-venv.txt) |
+| W2 state machine, simulated arm | ✅ full cycle; **C7 reproduced**, B4 observed | [`…-w2-state-machine.txt`](bench-runs/2026-09-11-labbox-w2-state-machine.txt) |
+| W3 e-stop delivery | ✅ **B2a found** (Ctrl+C ignored); B2 loss not reproduced | [`…-w3-estop.txt`](bench-runs/2026-09-11-labbox-w3-estop.txt) |
+| W4a nav code vs `iot22` | ✅ repo newer; `robot_navigation`, `xpkg_demo` only outside git | [`…-w4a-nav-diff.txt`](bench-runs/2026-09-11-labbox-w4a-nav-diff.txt) |
+| **W4b nav build** | **next** | — |
+| W5 AnyGrasp env | ✅ survey: one env works (licence passed, grasps found). Making it permanent is held | [`…-w5-anygrasp-env.txt`](bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt) |
+| W6 AnyGrasp gate + replay | needs recorded frames = starting the camera driver → **ask Dion first** | — |
+| W7 nav node tests | after W4b | — |
+| W8 Tier 4 | human at the robot; Dion schedules it | — |
+
+**Found, not fixed (held — each becomes a branch for Dion's review):** `estop.py` ignores the Ctrl+C key
+and crashes on SIGINT (CODE_AUDIT B2, B2a) · the state machine never returns to IDLE after a grasp (C7)
+and homes to an unvalidated pose (B4) · `robot_navigation`, `xpkg_demo` and the livox `package.xml` are
+not in the repo (NEXT_STEPS §2.9, §3.1–3.2) · the AnyGrasp one-env recipe isn't in the repo and
+`main.py` still uses `conda run` (NEXT_STEPS §2.5) · 10 hardcoded `/home/iot22` paths (§2.5).
+
+**Box facts a session should know:** `/home` is **96 % full (14 GB free)** — the W5 scratch env
+`log/w5/` (~2 GB) and `~/rcp-old-ros-wkspace` (4.5 GB) are today's additions; ask before deleting
+either. The CPU is throttled (builds take ~4× longer). **Other people log in as `rcp2026` too** (a
+tailscale session from `sams-sidekick` on 2026-09-11) — every Tier 3 script refuses to start unless its
+ROS channel is empty, so never skip that guard.
 
 **Decisions already made (don't re-ask):**
 
@@ -31,17 +59,20 @@ instruction: *build all the tests below*, in `~/rcp-Gappler`, no real-world move
 | `iot22`'s nav workspace | Copied whole to **`~/rcp-old-ros-wkspace`** on 2026-09-11 (4.5 GB, `rsync -a` of `~iot22/Ros2Workspaces`). Reference only — its `install/` points at `/home/iot22` paths. What to keep: NEXT_STEPS §2.9 |
 | Fixes | **None yet** (Dion, 2026-09-11): survey, record findings, build tests. Fixes come later, on branches |
 | W2 | **Allowed** (Dion, 2026-09-11) — simulated arm only, via `bench/state_machine_sim.sh`; `CLAUDE.md` records the exception |
-| `.venv` | **Do not copy — rebuild** with `uv sync` (install uv for `rcp2026` first) |
+| `.venv` | **Rebuilt ✅** with `uv sync --locked` (W1). Never copy one; uv is at `~/.local/bin/uv` (not on the non-interactive PATH) |
 | Model files | Copied into `~/rcp-Gappler` ✅. Long-term: one `assets/models/` folder (NEXT_STEPS §2.8) — later, with the reorg |
-| AnyGrasp env | **Rebuild with uv, don't trust `iot22`'s conda.** Try *one* project env first; a second env only if MinkowskiEngine forces it (see W5) |
+| AnyGrasp env | **One env confirmed** (W5 survey): the project env + MinkowskiEngine etc. runs AnyGrasp. `iot22`'s conda is not used. Making it permanent is held |
 | Simulation | MoveIt with `mock_components` is allowed. `rm_driver` never. Private ROS channel always |
 | Robot config | Not edited by the bench. `bench/nodes/sim_arm.*` carries the simulated model (ORIENTATION §8.16) |
 
-**Every session on the box:** `ssh rcp2026@10.91.242.76` (off the NTU network: tailscale,
-`ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60` — same host key, verified 2026-09-11) → `cd ~/rcp-Gappler && git pull` → read §3
-(safety). Edit on the Mac, commit, push, pull on the box — the box's tree stays clean. Push work
-that changes robot code (`pyproject.toml`, configs, nodes) to a **branch** for Dion's review;
-`bench/` and `docs/dion_docs/` go to `main`.
+**Every session on the box:** connect over **tailscale**, which works from anywhere:
+`ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60` (`HostKeyAlias` reuses the host key already
+verified for the campus address — same machine, checked 2026-09-11). Is it up? `tailscale ping
+100.87.133.60` (plain `ping` to the campus IP fails off-campus). The campus address
+`ssh rcp2026@10.91.242.76` works only on the NTU network. Then `cd ~/rcp-Gappler && git pull` → read §3
+(safety). Edit on the Mac, commit, push, pull on the box — the box's tree stays clean. Push work that
+changes robot code (`pyproject.toml`, configs, nodes) to a **branch** for Dion's review; `bench/` and
+`docs/dion_docs/` go to `main`.
 
 ### Work queue, in order
 
@@ -93,7 +124,7 @@ on the private channel to `/rm_driver/emergency_stop_cmd`, SIGINT the node, expe
 > not reproduce — but rclpy's handler has already shut the context down, and `estop.py:76` then crashes (exit 1).
 > Both are recorded in CODE_AUDIT B2; a fix is robot code → branch.
 
-**W4 — Navigation_Module: compare, then build.**
+**W4 — Navigation_Module: compare (✅ a), then build (b — next).**
 (a) Read-only diff of the repo's `Navigation_Module/src/{robot_slam,robot_navigation,simple_teleop,
 echo_plus_driver,livox_ros_driver2}` against `~iot22/Ros2Workspaces/src/` — that workspace is what
 actually ran on the base (ORIENTATION §8.6). Record which is newer. (b) `./bench/build.sh nav` —
@@ -158,18 +189,19 @@ ORIENTATION §8.16's decision (fix the config's simulated-arm launch, or keep it
 
 ---
 
-## 0. State at handoff (2026-09-11)
+## 0. State at handoff (2026-09-11, evening)
 
 | Thing | State |
 |---|---|
-| `bench/` tiers 0–1 (contracts + static) | **Built, working on macOS**, verified against a simulated refactor |
-| `bench/preflight.py` (hardware/env tier) | **Ran on the lab box 2026-09-11**: 17 pass / 5 fail / 1 warn / 13 skip; every FAIL is unplugged hardware or model files not yet in `~/rcp-Gappler` (`docs/dion_docs/bench-runs/`). P1–P9 fixed |
-| Tier 2 (build) | **Arm workspace PASS on the box**: 22/22 packages, 27 min 41 s (CPU throttled). `Navigation_Module` not yet built |
-| Tier 3 (node behaviour) | **Started**: `bench/sim_moveit.sh` PASS — MoveIt plans and executes on a simulated arm (both B4 home poses + zero). The 11 node tests in Phase 5 not yet written |
-| Tier 4 (replay + hw smoke) | Not started |
-| `docs/dion_docs/CODE_AUDIT.md` | 45 findings, all `[unverified]`. Published privately: <https://claude.ai/code/artifact/63cc961e-e49a-4421-9132-fec0f3e35822> |
-| SSH to the lab machine | Works (key auth). **All box work in `~/rcp-Gappler`** — clone of `main`, created 2026-09-11. `rcp-desktop` / `rcp-github` untouched |
-| Git | `bench/` + `docs/dion_docs/` committed and pushed to `main` (`1cfb9b1` … `a9399d0`); the box pulls from there |
+| Tiers 0–1 (contracts + static) | Working on the Mac and the box. Static: the same 7 pre-existing owned-code findings (no baseline yet — S1); contracts PASS |
+| Preflight | Runs on the box. `gpu`/`env`/`assets`: 12 of 13 pass — the fail is `anygrasp-env` on the project env (expected until W5 is made permanent). Arm, LiDAR and Aria checks fail or skip: unplugged |
+| Tier 2 (build) | Arm workspace 22/22 (27 min 41 s, CPU throttled). `Navigation_Module` not built yet (W4b) |
+| Tier 3 (node behaviour) | `sim_moveit.sh` PASS · `estop_delivery.sh` PASS, found B2a · `state_machine_sim.sh` PASS, C7 XFAIL · `anygrasp_env.sh` PASS in the W5 scratch env. The 8 nav node tests not written (W7) |
+| Tier 4 (replay + hw smoke) | Not started — needs a person at the robot |
+| `docs/dion_docs/CODE_AUDIT.md` | 45 findings + B2a. B2, B4, C7 now observed; the rest `[unverified]`. Published privately: <https://claude.ai/code/artifact/63cc961e-e49a-4421-9132-fec0f3e35822> |
+| Lab box access | tailscale (see Start here). All work in `~/rcp-Gappler`; `rcp-desktop` / `rcp-github` untouched |
+| Git | Everything on `main`; the box pulls from it. `bench/w1-setuptools-pin` is merged (the branch can go) |
+| Test bench page | <https://claude.ai/code/artifact/cb1f53f5-3154-4271-be1e-4daf46fca7fe> — source `bench/testbench-map.html`; republish after each result |
 
 ---
 
@@ -179,7 +211,7 @@ ORIENTATION §8.16's decision (fix the config's simulated-arm launch, or keep it
 |---|---|---|
 | Local clone (where `bench/` and `docs/dion_docs/` were written) | `/Users/Dion/sch_repo/Gappler` on Dion's Mac, branch `main` @ `2d36a89` + uncommitted work | `[code]` |
 | GitHub remote | `git@github.com:dionyichia/Gappler.git` | `[code]` |
-| Lab machine SSH | `ssh rcp2026@10.91.242.76` — key auth from the Mac works (2026-09-11). NTU LAN address, so NTU network / VPN only | observed |
+| Lab machine SSH | **tailscale** (from anywhere): `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60`. Campus: `ssh rcp2026@10.91.242.76` — NTU network / VPN only. Key auth from the Mac | observed 2026-09-11 |
 | The code on the lab machine | `~/rcp-desktop` = `realman_manip`; `~/rcp-github/Renaissance-Capstone-Project` = `combined` = **this Mac's `main`** — see Phase 0 results below | read on the box 2026-09-11 |
 | Aria / arm / LiDAR / camera | attached to the lab machine | `[reported]` |
 
@@ -542,9 +574,10 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-11 | Claude (Opus 5) + Dion | Phase 0 done over SSH, read-only; results table in §1. **Corrected:** the Mac's `main` is `rcp-github`'s `combined`, not `rcp-desktop`. Found: no copied overlay works for `rcp2026`; no conda/AnyGrasp env for `rcp2026`; `rcp-desktop/.venv` has working CUDA torch; `enp2s0`'s saved profile is `192.168.1.100`; `iot22` is still logged in (added §3 rule 4b). Phase 3 findings retagged in ORIENTATION and CODE_AUDIT. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Phases 1, 2, 4 (arm) done in `~/rcp-Gappler`; first Tier 3 test (`sim_moveit.sh`) passes. Recorded CPU throttling, the broken config simulated-arm launch (ORIENTATION §8.16), bench bugs P7–P9. Reports in `docs/dion_docs/bench-runs/`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | End of day: added **Start here** with Dion's decisions and the ordered work queue W1–W8 for the next session. Model files copied into `~/rcp-Gappler` (docs/dion_docs/ASSETS.md). Recorded the AnyGrasp env facts (numpy 1 vs 2, MinkowskiEngine) behind the one-env-first plan. |
-| 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `docs/dion_docs/` (per-person doc folders as more people join; rules in START_HERE). Paths here and in `bench/` updated; preflight's home scan skips any `*_docs/`. Root `.gitignore` extended for weights, recordings, archives, `*.swp`. |
+| 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `dion_docs/`, later moved to `docs/dion_docs/` (per-person doc folders as more people join; rules in START_HERE). Paths here and in `bench/` updated; preflight's home scan skips any `*_docs/`. Root `.gitignore` extended for weights, recordings, archives, `*.swp`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W1 done** on the box (over tailscale): `.venv` rebuilt with uv; preflight `torch-cuda` uses the venv, `conda-anygrasp` → `anygrasp-env`, `aria-sdk` reports CLI crashes. Found setuptools 82 breaks the `aria` CLI; pin on branch `bench/w1-setuptools-pin` for review. Record: `bench-runs/2026-09-11-labbox-w1-venv.txt`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W4a done** (read-only): repo nav code is newer and equivalent; `robot_navigation` and `xpkg_demo` exist only in `iot22`'s workspace. Record in `bench-runs/`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W3 done**: `bench/estop_delivery.sh`. Ctrl+C key ignored by `estop.py` (new, B2a); SIGINT stop delivered 5/5 (B2 not reproduced on localhost) but exits via a double-shutdown traceback. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W2 done**: full grasp cycle on the simulated arm, C7 reproduced. W5 test written, scratch MinkowskiEngine build under way (survey only). `~iot22/Ros2Workspaces` copied to `~/rcp-old-ros-wkspace`. Decisions recorded: W2 allowed (sim only), no fixes yet. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W5 survey answered**: one uv env runs AnyGrasp (licence passed, demo grasps found) on torch 2.10 / numpy 2 — recipe in `bench-runs/`. Productising it is held. |
+| 2026-09-11 | Claude (Opus 5) + Dion | Cold-start refresh: docs now at `docs/dion_docs/`; Start here rewritten (status table, held fixes, box facts), tailscale as the default route, §0 updated. |
