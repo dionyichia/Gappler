@@ -8,7 +8,7 @@ Every seam in this system is a *string*. ROS binds publishers to subscribers by
 literal topic name, TF by literal frame name, parameters by literal key. A
 refactor that renames one of them in four places out of five compiles clean,
 launches clean, and silently does nothing. That failure mode has already
-happened twice in this repo (see docs/ORIENTATION.md 0b).
+happened twice in this repo (see dion_docs/ORIENTATION.md 0b).
 
 So the bench does not test behaviour -- there is no observed behaviour to
 regress against for much of this system. It pins the *contracts*, and tells you
@@ -55,7 +55,7 @@ EXCLUDE_DIRS = {
 # ROS message packages, used to recognise a type import as a message type.
 MSG_PKG_RE = re.compile(r"^([a-z0-9_]+_(?:msgs|interfaces))(?:\.(msg|srv|action))?$")
 
-# Code we own and will refactor, per docs/ORIENTATION.md 2. Everything else is
+# Code we own and will refactor, per dion_docs/ORIENTATION.md 2. Everything else is
 # vendor code that ships with the arm, the base or the LiDAR: its contracts still
 # matter (we call into them) but they are not going to move because *we* moved a
 # file, so the report separates them.

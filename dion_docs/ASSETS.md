@@ -21,6 +21,15 @@ on the lab box, so every copy there is the same file.
 the lab box) and its compiled binaries (`perception/*.so`, CPython 3.10). `lib_cxx.so` links
 `libcrypto.so.1.1`, which the box has system-wide (`/lib/x86_64-linux-gnu/`) `[observed]`.
 
+**Ignore rules (2026-09-11):** the root `.gitignore` now ignores model weights by extension
+(`*.pt`, `*.pth`, `*.ckpt`, `*.onnx`, `*.safetensors`, `*.engine`, `*.h5`), `assets/models/`, the
+AnyGrasp checkpoints **by name** (no longer relying on the accidental `log` rule), recordings
+(`*.vrs`, bags, `*.avi`/`*.mp4`, `frame_*.png`, `src/output/`) and archives. One exception is kept
+tracked: `src/models/projectaria_eyetracking/weights.pth` (11 MB, the Aria eye-gaze model, in git
+since before the rule). Large files **already in history** (OpenVINS `ov_data/` datasets, the gripper
+serial-debugger `.exe`, AnyGrasp `lib_cxx` builds for four Pythons) stay tracked — untracking them
+would not shrink the clone, and a `git pull` would delete them from every working tree.
+
 ## Where they come from
 
 - **SAM 3 weights** — Meta's SAM 3 release (Hugging Face, licence acceptance required)
@@ -57,3 +66,4 @@ one configurable path instead of hardcoded ones. Tracked as NEXT_STEPS §2.8. Wh
 | Date | Who | Change |
 |---|---|---|
 | 2026-09-11 | Claude (Opus 5) + Dion | Created. Checksums, sizes, sources, why each is ignored; the accidental `log` rule; proposed `assets/models/`. |
+| 2026-09-11 | Claude (Opus 5) + Dion | Moved to `dion_docs/`. Root `.gitignore` now covers weights, recordings and archives explicitly; recorded why already-tracked big files stay. |

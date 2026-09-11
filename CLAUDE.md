@@ -4,14 +4,20 @@ Gappler: Aria smart glasses (voice + gaze) → SAM 3 segmentation → AnyGrasp �
 LiDAR-navigating mobile base, glued by ROS 2 Humble. Being integrated with the HiCo-Nav paper and
 refactored toward one-folder-per-node modular code.
 
-## Read first
+## Read first — docs are per person
 
-- **Current work: [`docs/TESTBENCH_PLAN.md`](docs/TESTBENCH_PLAN.md) — start at its "▶ Start here"
-  section** (decisions made + work queue W1–W8). It is the cold-start handoff for
-  building the test bench. §0 is the state, §3 the safety rules, §5 the phased plan.
-- [`docs/START_HERE.md`](docs/START_HERE.md) indexes every doc. [`docs/ORIENTATION.md`](docs/ORIENTATION.md)
-  is what the system is; [`docs/NEXT_STEPS.md`](docs/NEXT_STEPS.md) the work register;
-  [`docs/CODE_AUDIT.md`](docs/CODE_AUDIT.md) 45 unverified findings.
+Several people work in this repo, each with their own Claude sessions. Docs live in per-person
+folders at the repo root: **`<name>_docs/`**.
+
+- **Everyone starts at [`dion_docs/START_HERE.md`](dion_docs/START_HERE.md), then
+  [`dion_docs/ORIENTATION.md`](dion_docs/ORIENTATION.md).** START_HERE explains the layout and the
+  reading order; `dion_docs/` holds the shared reference (ORIENTATION, ARCHITECTURE, READING_GUIDE,
+  CODE_AUDIT, ASSETS).
+- **Plans, session notes and handoffs you write go in your user's own `<firstname>_docs/`** (ask
+  them if you don't know their name). Never edit another person's `*_docs/` folder, and never create
+  a bare `docs/`.
+- **Dion's current work:** [`dion_docs/TESTBENCH_PLAN.md`](dion_docs/TESTBENCH_PLAN.md) — "▶ Start
+  here" (decisions + work queue W1–W8). Only yours if you are working with Dion on the bench.
 - The root `README.md` is stale (a different upstream project). Ignore it.
 
 ## Safety — this code moves a real robot arm

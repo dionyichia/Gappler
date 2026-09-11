@@ -676,7 +676,7 @@ NOT_TESTABLE_HERE = [
 
 HOME_PATH_RE = re.compile(r"/home/[A-Za-z0-9_.-]+/[^\s\"'`:,;(){}\[\]]*")
 HOME_SCAN_SKIP = {".git", "install", "build", "log", "bench", "docs", ".venv", "venv",
-                  "node_modules", "__pycache__"}
+                  "node_modules", "__pycache__"}   # plus any <name>_docs/ folder, below
 HOME_SCAN_EXT = (".py", ".sh", ".yaml", ".yml", ".xml", ".json", ".launch", ".cfg")
 
 
@@ -684,7 +684,7 @@ def _hardcoded_home_paths() -> dict[str, list[str]]:
     """{absolute /home/... path: [file:line, ...]} over owned code (_common.OWNED_PREFIXES)."""
     hits: dict[str, list[str]] = {}
     for root, dirs, files in os.walk(REPO):
-        dirs[:] = [d for d in dirs if d not in HOME_SCAN_SKIP]
+        dirs[:] = [d for d in dirs if d not in HOME_SCAN_SKIP and not d.endswith("_docs")]
         for fn in files:
             if not fn.endswith(HOME_SCAN_EXT):
                 continue

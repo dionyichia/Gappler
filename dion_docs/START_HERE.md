@@ -7,7 +7,55 @@ segmentation → AnyGrasp → RealMan RM65 arm on a LiDAR-navigating mobile base
 > ⚠️ **Code in this repo moves a real robot arm within seconds of launch, unprompted.** Read
 > [`ORIENTATION.md`](ORIENTATION.md) §8.1 before running anything on hardware.
 
-## The six documents
+## How the docs are organised — read this first
+
+Several people (and their Claude sessions) work in this repo at once. So that one person's plans
+are never mistaken for another's, **docs live in per-person folders at the repo root, named
+`<name>_docs/`.**
+
+| Folder | Whose | What's in it |
+|---|---|---|
+| **`dion_docs/`** (this folder) | Dion | **The shared reference everyone starts from** — what the system is (`ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `hico-nav/`) — plus Dion's own plans and session records (`NEXT_STEPS`, `TESTBENCH_PLAN`, `bench-runs/`). |
+| `<name>_docs/` | each other contributor | Their plans, session notes, handoffs and bench-run reports. |
+| `bench/` | shared | The regression bench — tooling, not docs. |
+| root `README.md` | — | Stale (a different upstream project). Ignore it. |
+
+### New here? Read in this order
+
+1. **This file**, to the end.
+2. **[`ORIENTATION.md`](ORIENTATION.md), in full** — what the system is, the topic graph, the traps.
+   §8.1 before running anything.
+3. [`ARCHITECTURE.md`](ARCHITECTURE.md) alongside it — the same thing as diagrams.
+4. Then by task: [`READING_GUIDE.md`](READING_GUIDE.md) to walk the code ·
+   [`CODE_AUDIT.md`](CODE_AUDIT.md) before touching the grasp path · [`ASSETS.md`](ASSETS.md) before
+   setting up a machine · [`../bench/README.md`](../bench/README.md) before any refactor ·
+   [`hico-nav/`](hico-nav/PAPER_REPORT.md) for the navigation paper.
+
+`NEXT_STEPS.md` and `TESTBENCH_PLAN.md` are **Dion's** work plans. Read them to know what is in
+flight; they are not your to-do list unless you are working with Dion on that item.
+
+### Rules for every session — human or AI
+
+1. **Know whose session you are.** Your folder is `<first name, lowercase>_docs/` (e.g.
+   `alex_docs/`). A Claude session that doesn't know its user's name asks — `git config user.name`
+   is a hint, not an answer.
+2. **Write only in your own folder.** Plans, session notes, handoffs, investigation write-ups,
+   bench-run reports → `<name>_docs/`. Create it on first need, with its own short `START_HERE.md`
+   saying what is in it and linking back here.
+3. **Don't edit another person's `*_docs/` folder.** If something there is wrong or stale, write the
+   correction in your own folder (cite file and section) and tell its owner. Link to shared docs
+   rather than copying them — copies drift.
+4. **Never create a bare `docs/` folder.** Unowned docs are what this layout exists to prevent.
+5. **Code, `bench/` and `CLAUDE.md` are shared.** Change them by commit; robot code goes on a branch
+   for review. The safety rules in `CLAUDE.md` bind everyone.
+6. **Keep the conventions:** provenance tags (below), `file.py:123` citations, a changelog on any
+   doc you substantively edit, descriptive names (ORIENTATION §0b).
+
+### Dion's sessions: where to resume
+
+[`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md) → "▶ Start here" (work queue W1–W8).
+
+## The documents in this folder
 
 | File | What it is | When to read it |
 |---|---|---|
@@ -57,8 +105,8 @@ the wheelbase). This applies to prose too.
 
 Honour the provenance tags: `[code]` verified by reading source · `[reported]` from the
 2026-08-25 hardware session · `[inferred]` reasoning, not fact. If you verify something that was
-`[inferred]`, promote it and say how. If something here is wrong, delete it — a confidently wrong
-doc is worse than none.
+`[inferred]`, promote it and say how. If you are Dion's session and something here is wrong, delete it — a
+confidently wrong doc is worse than none. Anyone else: rule 3 above.
 
 ## Where work stands (2026-09-10)
 
@@ -69,3 +117,9 @@ doc is worse than none.
   **velocities**, but the recommendation is to take only the goal-level layer above that.
 - **Not yet run:** no hardware bring-up has happened from this branch. `Navigation_Module` has
   never been built, and depends on a package that is not in this repo (`NEXT_STEPS.md` §3.1).
+
+## Changelog
+
+| Date | Who | Change |
+|---|---|---|
+| 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `dion_docs/` as more contributors join. Added "How the docs are organised": the per-person `<name>_docs/` convention, reading order, rules for every session. |

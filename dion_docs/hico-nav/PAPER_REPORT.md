@@ -14,7 +14,7 @@ ICRA 2026 conference paper. Local copy: [`HiCo-Nav.pdf`](HiCo-Nav.pdf). Upstream
 that have procurement or calibration lead time before any code is written." It deliberately stops
 short of an integration plan. Section 7 states what it does *not* answer.
 
-**Status tags**, consistent with the rest of `docs/`: `[paper]` stated explicitly in the PDF ·
+**Status tags**, consistent with the rest of `dion_docs/`: `[paper]` stated explicitly in the PDF ·
 `[code]` verified by reading this repository · `[inferred]` my reasoning, not a fact in either
 source · `[open]` genuinely undecided.
 

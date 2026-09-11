@@ -2,7 +2,7 @@
 
 > **Status 2026-09-11:** tiers 0–1 and preflight built; verified on macOS only. Preflight has
 > three known bugs that only show on Linux, and the contracts extractor cannot see Aria-side
-> publishers — both listed in [`docs/TESTBENCH_PLAN.md`](../docs/TESTBENCH_PLAN.md) §4, which is also
+> publishers — both listed in [`dion_docs/TESTBENCH_PLAN.md`](../dion_docs/TESTBENCH_PLAN.md) §4, which is also
 > the plan for tiers 2–4. Read it before running this on the lab machine.
 
 A safety net for refactoring this repo **without** the robot, the glasses, ROS,

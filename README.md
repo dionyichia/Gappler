@@ -8,7 +8,7 @@
 > It has already misled at least one reader. Do not follow its install steps, its Quick Start,
 > or its architecture section.
 >
-> ### 👉 Read [`docs/`](docs/START_HERE.md) instead — start with [`docs/ORIENTATION.md`](docs/ORIENTATION.md).
+> ### 👉 Read [`dion_docs/`](dion_docs/START_HERE.md) instead — start with [`dion_docs/ORIENTATION.md`](dion_docs/ORIENTATION.md).
 >
 > That document explains what this system actually is, how the code is laid out, what order to
 > read it in, and which parts are currently connected. It is the entry point for new team
