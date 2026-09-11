@@ -38,7 +38,9 @@ IMPORTS = [
 
 def pick_python(argv):
     if len(argv) > 1:
-        return Path(argv[1])
+        # absolute, but NOT resolved: resolving follows a venv's python symlink to the system
+        # interpreter and would silently test the wrong environment
+        return Path(os.path.abspath(argv[1]))
     for c in CANDIDATES:
         if c.exists():
             return c
