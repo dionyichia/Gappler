@@ -371,6 +371,37 @@ rule. Move them to `assets/models/{sam3,anygrasp}/`, gitignore that folder expli
 checksum list in [`ASSETS.md`](ASSETS.md), and make the code read one configurable path (ties into
 §2.5). Do it with the modular reorg, not before: `preflight.py`'s `assets` group must move with it.
 
+### 2.9 🔴 Important state lives outside git — decide what is needed, then bring it in
+
+Dion, 2026-09-11. Things the robot needs were kept in folders no repo tracks. When `iot22`'s two
+project clones were copied to `rcp2026` and pushed, everything outside them was left behind — and
+some of it is what actually ran. **Nothing is fixed yet;** this is the list to work from.
+
+`[observed]` `~iot22/Ros2Workspaces` (the base's navigation workspace) is a git repo with **no
+commits and no remote** — everything in it was only ever staged. It is now copied whole to
+**`~/rcp-old-ros-wkspace`** on the lab box (4.5 GB, 2026-09-11) so `rcp2026` has it. Its `install/`
+is built against `/home/iot22/Ros2Workspaces/install`, so it is reference, not something to run.
+
+| What | Where now | Size | Needed? `[inferred]` unless tagged |
+|---|---|---|---|
+| `robot_navigation` (Nav2 launch + `nav2_params.yaml`) | `~/rcp-old-ros-wkspace/src/` | 32 KB | **Yes** — the base's navigation launch; not in this repo at all |
+| `xpkg_demo` (`demo/demo_general_chassis`, includes `bringup_basic_ctrl.launch.py`) | same, `src/demo/` | 328 KB | **Yes** — both SLAM launches and `robot_navigation` include it (§3.1) |
+| livox generated `package.xml` (ROS 2 format) | same, `src/livox_ros_driver2/` | 1 file | **Yes** — without it colcon can't see the package (§3.2) |
+| SLAM map `completed_map.*` | `~iot22/maps/` | small | **Yes**, for localisation — or re-map |
+| `robot_slam`, `simple_teleop`, `echo_plus_driver`, `base`, `drivers`, `urdf`, `Livox-SDk2` | same | — | Already in the repo; the repo's copies are newer and equivalent (W4a) |
+| OpenVINS workspace | same, `OpenVINS/` | 3.2 GB | Unclear — which OpenVINS is authoritative is open (§2.5); keep as reference |
+| Orbbec camera driver (`orbbec_camera*` in `install/`) | same | — | Unknown — nobody has mentioned an Orbbec camera; ask |
+| MoveIt / MTC source builds in `install/` | same | — | No — MoveIt comes from apt; MTC is in `deps_ws/` |
+| `build/`, `log/` | same | 700 MB | No |
+| AnyGrasp conda env, `~/.local` CUDA torch | `~iot22/` | GBs | No — replaced by the uv env (W1, W5) |
+| `~/.aria` certificates | `~iot22/` | small | Covered — `aria auth check` already passes for `rcp2026` |
+| `sdk_echo_plus_ws` (Echo Plus SDK, `xpkg_demo`'s origin) | `~iot22/` | — | Possibly — compare with `src/demo/` before importing |
+| Isaac Sim (+ 8.7 GB zip) | `~iot22/` | ~9+ GB | No, unless simulation work starts |
+
+**When fixing:** bring the "Yes" rows into this repo (a branch for review — robot code), gitignore the
+generated/large ones, record the rest in [`ASSETS.md`](ASSETS.md), and after that nothing the robot
+needs should live only in someone's home folder.
+
 ## 3. Bring-up (needs the lab machine)
 
 ### 3.1 🔴 Find `xpkg_demo` — `Navigation_Module` cannot launch without it
@@ -379,6 +410,9 @@ checksum list in [`ASSETS.md`](ASSETS.md), and make the code read one configurab
 that is **not in this repo** (declared `exec_depend` in `robot_slam/package.xml:12`). `[inferred]`
 it is the Echo Plus vehicle/power/comm bring-up. `colcon build` may pass — it is an *exec*
 dependency — but launching will fail. **Ask whoever set up the base before booking machine time.**
+
+> **Found 2026-09-11** `[observed]`: in `~iot22/Ros2Workspaces/src/demo/` (never committed, no remote); now also in
+> `~/rcp-old-ros-wkspace/src/demo/` on the lab box. Bringing it into this repo is part of §2.9.
 
 ### 3.2 🟠 Build `Navigation_Module` (8 packages, never built)
 
@@ -448,3 +482,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §2.4, the naming cleanup pass, sequenced so the frame rename (highest value, highest risk) comes last and after the HiCo-Nav scoping decision. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Created. Seeded with the HiCo-Nav scoping decisions, the SAM3 triggering-policy question (§2.1), the segmentation-unification item (§2.2), the broken dummy mask publisher (§2.3), and the bring-up blockers. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added §2.8: one `assets/models/` folder for model weights (see ASSETS.md). |
+| 2026-09-11 | Claude (Opus 5) + Dion | Added §2.9: important state outside git, with a keep/drop list; `~iot22/Ros2Workspaces` (never committed) copied to `~/rcp-old-ros-wkspace`. §3.1: `xpkg_demo` found. |

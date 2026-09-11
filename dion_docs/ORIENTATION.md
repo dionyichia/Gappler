@@ -741,6 +741,11 @@ OpenVINS: **the navigation stack that actually ran on the base came from `~iot22
 not from this repo's `Navigation_Module`.** `[code]`, read from the files; whether the two copies
 differ is unchecked.
 
+
+**Copied 2026-09-11** `[observed]`: `~iot22/Ros2Workspaces` is a git repo with no commits and no remote, so
+none of it ever reached GitHub. It is copied whole to `~/rcp-old-ros-wkspace` on the lab box (reference only —
+its `install/` points at `/home/iot22`). What to bring into this repo: NEXT_STEPS §2.9.
+
 ### 8.7 Two nodes both claim `/cmd_vel` `[code]`
 
 - `xnode_vehicle` (`xpkg_vehicle`) is the real driver — subscribes `/cmd_vel`, publishes `/odom`
@@ -1126,3 +1131,4 @@ options, none free:
    the base, alongside `xpkg_demo` (§8.6).
 5. Do we need §6.1 and §6.3 restored at all for the HiCo-Nav milestone, or only for the thesis
    demo?
+| 2026-09-11 | Claude (Opus 5) + Dion | §8.6: `Ros2Workspaces` never committed; copied to `~/rcp-old-ros-wkspace`. |

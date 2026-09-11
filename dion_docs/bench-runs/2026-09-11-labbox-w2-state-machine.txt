@@ -1,0 +1,39 @@
+W2 -- grasp_state_machine on the SIMULATED arm (./bench/state_machine_sim.sh)
+lab box, ~/rcp-Gappler @ 972a17a, 2026-09-11 19:09 -- Dion allowed this exception to the
+"never launch grasp_state_machine" rule, simulated arm only
+===========================================================================================
+Guards: mock_components in the installed config and exactly one in the sim model; no rm_driver
+process; preflight arm-ping=SKIP arm-port=SKIP (arm unreachable); channel 77 empty; localhost only;
+after launch, no rm_driver node. Launch = bench sim arm (move_group + mock controllers) + rm_mtc
+grasp_state_machine with moveit_config.to_dict(), as its own launch file passes.
+The test plays: camera_info (real D435i intrinsics, ros2_robot_ws/src/output.log:200); the optical
+frames camera_link -> camera_color_optical_frame (the sim model stops at camera_link -- on the
+robot the RealSense driver publishes these); /object_centroid_2d straight ahead at 0.30 m, then
+0.15 m once the arm has moved; and records the gripper commands (nothing acts on them).
+
+  pipeline_state sequence: IDLE -> SELECTING -> EXECUTING
+  gripper commands: set_position position=1000; pick_on speed=200 force=150
+  [PASS ] safety walls accepted by the planning scene
+  [PASS ] startup: homes, then publishes IDLE          joints 0.0001 rad from main's home; 0 retries
+  [INFO ] home pose actually used                      main's (joint4 0.0) -- CODE_AUDIT B4
+  [INFO ] camera optical frame                         supplied by the test (see above)
+  [PASS ] object seen -> re-homes, then SELECTING
+  [PASS ] SELECTING: an approach step moves the arm
+  [PASS ] object near -> EXECUTING
+  [PASS ] gripper told to open                         position=1000
+  [PASS ] final approach, then gripper told to close   speed=200 force=150
+  [PASS ] moves to the return pose, announces /manipulator/return_to_user   0.0012 rad from RETURN_JOINTS
+  [XFAIL] after a grasp: re-homes and returns to IDLE  stays EXECUTING -- workerLoop returns (CODE_AUDIT C7)
+  [INFO ] node exits within 15 s of SIGINT             exited
+  RESULT: PASS (exit 0)
+
+Log notes: one SELECTING step before the depth switch; "Object grasped successfully" is the node's
+own log line (simulated). move_group segfaults (-11) on shutdown -- the known Humble shutdown
+behaviour seen in sim_moveit (ORIENTATION 8.16). kdl_parser warns about root-link inertia; TOTG
+warns that joint acceleration limits are not defined.
+
+What this does NOT show: that the real arm, gripper or camera behave the same; the collision walls
+match the real bench; USE_SIMPLE_EXECUTE=false (the AnyGrasp path, A1-A3) -- with the flag on,
+/grasp_candidates is never consumed, so no candidate test was possible; the races C1-C5 (not
+observable from outside in one run).
+Launch log: ~/rcp-Gappler/log/bench_state_machine_2026-09-11_1909.txt (gitignored).

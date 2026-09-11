@@ -28,6 +28,9 @@ instruction: *build all the tests below*, in `~/rcp-Gappler`, no real-world move
 |---|---|
 | Where | `~/rcp-Gappler` only. `~/rcp-desktop`, `~/rcp-github` are old code — read-only reference |
 | `/home/iot22` | Readable by `rcp2026` (ACL Dion set). Read only; never write |
+| `iot22`'s nav workspace | Copied whole to **`~/rcp-old-ros-wkspace`** on 2026-09-11 (4.5 GB, `rsync -a` of `~iot22/Ros2Workspaces`). Reference only — its `install/` points at `/home/iot22` paths. What to keep: NEXT_STEPS §2.9 |
+| Fixes | **None yet** (Dion, 2026-09-11): survey, record findings, build tests. Fixes come later, on branches |
+| W2 | **Allowed** (Dion, 2026-09-11) — simulated arm only, via `bench/state_machine_sim.sh`; `CLAUDE.md` records the exception |
 | `.venv` | **Do not copy — rebuild** with `uv sync` (install uv for `rcp2026` first) |
 | Model files | Copied into `~/rcp-Gappler` ✅. Long-term: one `assets/models/` folder (NEXT_STEPS §2.8) — later, with the reorg |
 | AnyGrasp env | **Rebuild with uv, don't trust `iot22`'s conda.** Try *one* project env first; a second env only if MinkowskiEngine forces it (see W5) |
@@ -63,7 +66,7 @@ Fix preflight's `torch-cuda` check to use `.venv/bin/python` when it exists (tod
 > `decord`, leaves torch alone. **After Dion merges it:** `git pull && uv sync --locked` on the box, re-run
 > preflight `-g env`. `torch-cuda` now uses `.venv/bin/python`; `aria-sdk` reports a crashing CLI as FAIL.
 
-**W2 — State machine on the simulated arm** (`bench/state_machine_sim.sh` +
+**W2 ✅ — State machine on the simulated arm** (`bench/state_machine_sim.sh` +
 `bench/nodes/test_state_machine_sim.py`). Launch `bench/nodes/sim_arm.launch.py` + `rm_mtc
 grasp_state_machine` on the private channel, with every guard from `sim_moveit.sh`. The test plays
 the other actors: publish `/camera/camera/color/camera_info` (D435i intrinsics), the static TF the
@@ -73,6 +76,13 @@ to** `/rm_driver/set_gripper_*_cmd` to capture what the gripper *would* be told 
 the private channel). Assert the intended sequence IDLE → SELECTING → EXECUTING → IDLE with homing
 at start and end. Mark audit bugs as expected-fail (CODE_AUDIT C1–C7; B4 home pose; A3
 `USE_SIMPLE_EXECUTE`). **Done when** it runs to completion or to a named, audit-linked failure.
+
+> ✅ **Done 2026-09-11** ([`bench-runs/2026-09-11-labbox-w2-state-machine.txt`](bench-runs/2026-09-11-labbox-w2-state-machine.txt)).
+> A full cycle on the simulated arm: walls → home → IDLE → SELECTING (one approach step) → EXECUTING → gripper
+> open (position 1000) → final step → gripper close (speed 200, force 150) → return pose → `/manipulator/return_to_user`.
+> **C7 reproduced** (XFAIL): it never goes back to IDLE. Homes to `main`'s unvalidated pose (B4). The sim model has
+> no optical frames, so the test publishes them as the RealSense driver would. A1–A3 untestable while
+> `USE_SIMPLE_EXECUTE` is on.
 
 **W3 ✅ — The Python-only Tier 3 tests** (no extra build needed): `estop.py` delivery (B2, subscribe
 on the private channel to `/rm_driver/emergency_stop_cmd`, SIGINT the node, expect a message).
@@ -110,6 +120,18 @@ against torch 2.10 + `/usr/local/cuda-12.8` (`nvcc` is not on PATH — set `CUDA
 need patches for CUDA 12. If it builds and imports under numpy 2 → **one env**. If not → a
 second, scripted env (`envs/anygrasp/` + lock) matching `iot22`'s versions. **Done when** a script
 in the repo builds the env from nothing and AnyGrasp prints `license passed` on a saved frame.
+
+> **In progress 2026-09-11 — survey only, nothing in `.venv` or `pyproject.toml` changed.** The test exists:
+> `./bench/anygrasp_env.sh [PYTHON]` imports each dependency separately, then runs the SDK demo on its example frame
+> with the perception folder's `.so`, licence and checkpoint (the perception and SDK `.so` files are byte-identical).
+> Scratch build: `log/w5/` on the box — a venv that sees `.venv`'s packages through a `.pth` file, plus
+> MinkowskiEngine 0.5.4 compiled from a copy of `grasp_module/dependencies/` against torch 2.10 / CUDA 12.8 /
+> numpy 2.2.6, system OpenBLAS, GPU arch 8.9 only. The README's `sed` on `/usr/include/c++/11/…` (sudo, system
+> file) is **deliberately not applied** — if the build fails there, that is the recorded answer.
+> Survey facts `[observed]`: `iot22`'s env = torch 2.7.0 (conda `pytorch-cuda=11.8`), numpy 1.21.2, ME 0.5.4
+> (egg), pointnet2, open3d 0.18.0, scikit-learn 1.3.2, scipy 1.10.1, graspnetAPI 1.2.10. The SDK pins numpy 1.21.2,
+> scikit-learn 1.3.2, scipy 1.10.1 — all numpy-1 builds, so one env needs newer versions of them. Box toolchain:
+> nvcc 12.8, gcc 11.4, libopenblas-dev, python3.10-dev; no system `ninja` (pip-installed into the scratch env).
 
 **W6 — AnyGrasp gate test** (A1, expected-fail) and perception replay. Needs W5 + frames. The
 D435i *is* plugged in (preflight `realsense-usb` PASS): recording frames means starting the camera
@@ -518,3 +540,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-11 | Claude (Opus 5) + Dion | **W1 done** on the box (over tailscale): `.venv` rebuilt with uv; preflight `torch-cuda` uses the venv, `conda-anygrasp` → `anygrasp-env`, `aria-sdk` reports CLI crashes. Found setuptools 82 breaks the `aria` CLI; pin on branch `bench/w1-setuptools-pin` for review. Record: `bench-runs/2026-09-11-labbox-w1-venv.txt`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W4a done** (read-only): repo nav code is newer and equivalent; `robot_navigation` and `xpkg_demo` exist only in `iot22`'s workspace. Record in `bench-runs/`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W3 done**: `bench/estop_delivery.sh`. Ctrl+C key ignored by `estop.py` (new, B2a); SIGINT stop delivered 5/5 (B2 not reproduced on localhost) but exits via a double-shutdown traceback. |
+| 2026-09-11 | Claude (Opus 5) + Dion | **W2 done**: full grasp cycle on the simulated arm, C7 reproduced. W5 test written, scratch MinkowskiEngine build under way (survey only). `~iot22/Ros2Workspaces` copied to `~/rcp-old-ros-wkspace`. Decisions recorded: W2 allowed (sim only), no fixes yet. |

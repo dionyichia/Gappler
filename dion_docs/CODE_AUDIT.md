@@ -173,6 +173,9 @@ The arm homes unprompted within seconds of launch (`ORIENTATION.md` §8.1), and 
 commanded to move at all. So the first motion this arm ever makes will be to a pose nobody has
 validated, and anyone who cleared space based on the guide cleared the wrong volume.
 
+*Simulated arm 2026-09-11* `[observed]`: a build of `main` homes to `main`'s row (within 0.0001 rad) —
+`bench/state_machine_sim.sh`. Reachable and collision-free in the model; that says nothing about the real cell.
+
 ### B5. The orchestrator orphans the arm driver and state machine on exit
 
 `orchestrator.py:85-97` — the handler that terminated the child processes is commented out. Nothing
@@ -257,6 +260,11 @@ then `return`s out of `workerLoop` — **without** reaching `publishState(State:
 `state_` therefore stays `EXECUTING` forever. `graspCallback` (`:171`) keeps accepting candidates
 and pushing them into `candidate_queue_`, which nothing drains any more. The node also handles
 exactly **one** object per launch, despite the `while (true)` structure.
+
+**Checked 2026-09-11 on the simulated arm** (`bench/state_machine_sim.sh`) `[observed]`: after a full cycle
+(return pose reached, `/manipulator/return_to_user` published) `/pipeline_state` stays `EXECUTING` and the arm
+never re-homes. The candidate-queue growth itself was not measured (with `USE_SIMPLE_EXECUTE` on, nothing
+publishes candidates in the test).
 
 ---
 
@@ -568,3 +576,4 @@ noticed roughly never. `ros2_robot_ws/src/main.py:165` polls every 2 s.
 | 2026-09-10 | Claude (Opus 5) + Dion | Created. Line-by-line read of ~10,600 lines of owned code. 45 findings, all `[unverified]`. Corrects `ORIENTATION.md` §8.2 (the `:706` comment is stale). |
 | 2026-09-11 | Claude (Opus 5) + Dion | A1, B4: added what the box's two checkouts contain (read over SSH). Fixed B4's line citation for `main`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | B2 checked on the box: stop delivered 5/5 after SIGINT (loss not reproduced), but via a double-shutdown crash. New B2a: Ctrl+C key ignored by `estop.py`. |
+| 2026-09-11 | Claude (Opus 5) + Dion | C7 reproduced and B4 observed on the simulated arm (`bench/state_machine_sim.sh`). |

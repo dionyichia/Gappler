@@ -30,6 +30,13 @@ since before the rule). Large files **already in history** (OpenVINS `ov_data/` 
 serial-debugger `.exe`, AnyGrasp `lib_cxx` builds for four Pythons) stay tracked — untracking them
 would not shrink the clone, and a `git pull` would delete them from every working tree.
 
+## Also outside git, on the lab box
+
+Not model files, but the same problem: **`~/rcp-old-ros-wkspace`** (4.5 GB) is a copy, made
+2026-09-11, of `~iot22/Ros2Workspaces` — the base's navigation workspace, a git repo with no commits
+and no remote. It holds `robot_navigation` and `xpkg_demo`, which this repo lacks. What in it is
+needed, and what to do about each item: [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.9.
+
 ## Where they come from
 
 - **SAM 3 weights** — Meta's SAM 3 release (Hugging Face, licence acceptance required)
@@ -67,3 +74,4 @@ one configurable path instead of hardcoded ones. Tracked as NEXT_STEPS §2.8. Wh
 |---|---|---|
 | 2026-09-11 | Claude (Opus 5) + Dion | Created. Checksums, sizes, sources, why each is ignored; the accidental `log` rule; proposed `assets/models/`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Moved to `dion_docs/`. Root `.gitignore` now covers weights, recordings and archives explicitly; recorded why already-tracked big files stay. |
+| 2026-09-11 | Claude (Opus 5) + Dion | Added the `~/rcp-old-ros-wkspace` pointer (NEXT_STEPS §2.9). |
