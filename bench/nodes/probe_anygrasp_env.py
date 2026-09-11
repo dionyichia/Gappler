@@ -25,7 +25,8 @@ IMPORTS = [
     ("torch", "PyTorch", "import torch;print(torch.__version__,'cuda',torch.version.cuda,'gpu',torch.cuda.is_available())"),
     ("numpy", "numpy (AnyGrasp pins 1.21.2; the project env has 2.x)", "import numpy;print(numpy.__version__)"),
     ("MinkowskiEngine", "sparse-conv CUDA extension, built by hand", "import MinkowskiEngine as ME;print(ME.__version__)"),
-    ("pointnet2", "AnyGrasp's CUDA op (grasp_module/src/anygrasp_sdk/pointnet2)", "import pointnet2._ext;print('ok')"),
+    # torch first: it loads libc10.so, which the extension links against (as the real code does)
+    ("pointnet2", "AnyGrasp's CUDA op (grasp_module/src/anygrasp_sdk/pointnet2)", "import torch, pointnet2._ext;print('ok')"),
     ("open3d", "point clouds (pinned 0.18.0)", "import open3d;print(open3d.__version__)"),
     ("graspnetAPI", "GraspGroup data structure", "import graspnetAPI;print('ok')"),
     ("sklearn", "scikit-learn (pinned 1.3.2)", "import sklearn;print(sklearn.__version__)"),
