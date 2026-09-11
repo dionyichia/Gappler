@@ -107,6 +107,7 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);
 .s-plan{color:var(--ink-3);background:var(--surface);border:1px dashed var(--line-2)}
 .s-blocked{color:var(--caution);background:var(--caution-soft);border-color:var(--caution)}
 .s-gap{color:var(--caution);background:var(--surface);border:1px dashed var(--caution)}
+.s-hw{color:var(--ink-2);background:var(--surface-2);border:1px dotted var(--ink-3)}
 .s-na{color:var(--ink-3);background:transparent;border-color:transparent}
 .s-na::before{background:transparent;border:1px solid var(--line-2)}
 .legend{display:flex;gap:10px 18px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-2);
@@ -193,7 +194,7 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
 
 <header class="masthead">
   <div class="inner">
-    <p class="eyebrow">Gappler · test bench · 11 Sep 2026</p>
+    <p class="eyebrow">Gappler · test bench · updated 11 Sep 2026, after the first lab-box run</p>
     <h1>Gappler Test Bench</h1>
     <p class="dek">What the bench checks, for which part of the robot, at which level, and where each check
       runs. The bench is read-only up to a hard line: it never makes the arm move.</p>
@@ -217,14 +218,15 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
 
 <section id="status">
   <h2>Where things stand</h2>
-  <p class="sub">Three levels exist and run on the Mac. Nothing has run on the lab box yet except a
-    read-only inventory. Everything to the right of Preflight in the map below is designed but not built.</p>
+  <p class="sub">The bench now runs on the lab box, in <code>~/rcp-Gappler</code>. The arm's code builds there,
+    and MoveIt plans and executes on a simulated arm. Every remaining failure is hardware that isn't plugged in,
+    or model files not yet copied into the new repo.</p>
   <div class="kv">
-    <div><span class="k">Built</span><span class="v"><b>3 of 6 levels</b>contracts, static, preflight</span></div>
-    <div><span class="k">Checks today</span><span class="v"><b>46 + 9</b>36 preflight, 10 static, 9 contract kinds</span></div>
+    <div><span class="k">Levels running</span><span class="v"><b>5 of 6</b>Tier 3 has its first test; Tier 4 not started</span></div>
+    <div><span class="k">Simulated arm</span><span class="v"><b>3 of 3 motions</b>both home poses + zero, error ≤ 0.0045 rad</span></div>
+    <div><span class="k">Arm build</span><span class="v"><b>22 / 22</b>27 min on a throttled CPU</span></div>
+    <div><span class="k">Preflight on the box</span><span class="v"><b>17 pass · 5 fail</b>fails = unplugged arm, missing model files</span></div>
     <div><span class="k">Contract baseline</span><span class="v"><b>120 topics</b>74 launch nodes · 201 params · 39 frames</span></div>
-    <div><span class="k">Last Mac run</span><span class="v"><b>2 of 3 green</b>static fails on 7 old findings</span></div>
-    <div><span class="k">Lab box</span><span class="v"><b>Inventory done</b>read-only; nothing built or launched</span></div>
   </div>
 </section>
 
@@ -276,7 +278,7 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
 
 <section id="checks">
   <h2>Every check</h2>
-  <p class="sub">Everything in the map, one row per check; preflight's 36 checks are grouped into 16 rows by what they look at. Tests marked <span class="xf">expected-fail</span>
+  <p class="sub">Everything in the map, one row per check, with the state from the 11 Sep lab-box run; preflight's 36 checks are grouped into 16 rows by what they look at. Tests marked <span class="xf">expected-fail</span>
     encode a bug from the code audit. They are written to assert the <em>intended</em> behaviour, so they
     turn green when the bug is fixed.</p>
   <div class="finder">
@@ -294,59 +296,54 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
 </section>
 
 <section id="labbox">
-  <h2>On the lab box: exactly what happens</h2>
-  <p class="sub">To run on the box, the bench needs a copy of the repo there. The two existing folders
-    hold the only known-good builds and your uncommitted captures, so the bench gets its own scratch folder,
-    <code>~/bench_work</code>. It's a new, empty folder I'd create, not old code. Deleting it undoes everything.</p>
+  <h2>On the lab box</h2>
+  <p class="sub">All bench work on the box happens in <code>~/rcp-Gappler</code>, a fresh clone of <code>main</code>.
+    <code>rcp-desktop</code> and <code>rcp-github</code> are old code and are never modified. Build output stays
+    inside <code>~/rcp-Gappler</code>, and nothing here has moved or commanded real hardware.</p>
 
   <div class="tree"><span class="lock">/home/rcp2026/</span>
-├── <span class="keep">rcp-desktop/</span>            <span class="lock">untouched · realman_manip · the build the 25 Aug session ran</span>
-├── <span class="keep">rcp-github/…/Renaissance-Capstone-Project/</span>   <span class="lock">untouched · = main · read once, to copy from</span>
-└── <span class="new">bench_work/</span>             <span class="new">NEW · everything the bench writes lives here</span>
-    ├── <span class="new">gappler/</span>            <span class="lock">copy of main + the bench commits</span>
-    ├── <span class="new">build/  install/  log/</span>   <span class="lock">only after you OK the build (step 3)</span>
-    └── <span class="new">reports/</span>            <span class="lock">preflight output, kept for the docs</span>
-<span class="lock">/home/iot22/</span>                <span class="lock">locked to rcp2026 · reading needs your sudo password</span></div>
+├── <span class="new">rcp-Gappler/</span>          <span class="new">WORKING REPO · clone of main · pulled after every bench change</span>
+│   ├── <span class="new">build/ install/</span>     <span class="lock">Tier 2 output (281 MB) · gitignored</span>
+│   └── <span class="new">log/</span>                <span class="lock">build and launch logs, bench reports</span>
+├── <span class="keep">rcp-desktop/</span>          <span class="lock">old · realman_manip · untouched</span>
+└── <span class="keep">rcp-github/…</span>          <span class="lock">old · combined · untouched</span>
+<span class="lock">/home/iot22/</span>              <span class="lock">readable by rcp2026 (ACL) · conda envs, maps, xpkg_demo · never written</span></div>
 
   <div class="steps">
     <div class="step">
-      <div class="top"><span class="n">Step 1</span><h4>Make the scratch copy</h4><span class="chip s-ready">needs your OK</span></div>
+      <div class="top"><span class="n">Done</span><h4>Clone the working repo</h4><span class="chip s-ok">60 s · 669 MB</span></div>
       <div class="body">
-        <div class="k">Commands</div>
-        <div><pre>mkdir ~/bench_work
-git clone ~/rcp-github/Renaissance-Capstone-Project ~/bench_work/gappler   <span class="cm"># local copy, shares files on disk</span>
-cd ~/bench_work/gappler && git pull git@github.com:dionyichia/Gappler.git main   <span class="cm"># adds bench/ + docs/</span></pre></div>
-        <div class="k">Writes</div><div>Only <code>~/bench_work/gappler</code>. A local clone reuses git's files, so it costs about the size of the checkout, not the 3 GB history. [inferred]</div>
-        <div class="k">Reads</div><div><code>rcp-github</code>'s git history. Cloning never modifies the source.</div>
+        <div class="k">Command</div><div><pre>git clone --branch main git@github.com:dionyichia/Gappler.git ~/rcp-Gappler</pre></div>
       </div>
     </div>
     <div class="step">
-      <div class="top"><span class="n">Step 2</span><h4>Run preflight, static and contracts</h4><span class="chip s-ready">needs your OK</span></div>
+      <div class="top"><span class="n">Done</span><h4>Run the bench</h4><span class="chip s-flag">17 pass · 5 fail</span></div>
       <div class="body">
-        <div class="k">Commands</div>
-        <div><pre>cd ~/bench_work/gappler && source /opt/ros/humble/setup.bash
-./bench/run.sh | tee ~/bench_work/reports/preflight-2026-09-11.txt</pre></div>
-        <div class="k">Does</div><div>Looks: lists interfaces, pings the arm and LiDAR addresses, opens a TCP connection to the arm's port and closes it, reads topic rates <em>if</em> something is already running. Sends no command.</div>
-        <div class="k">Writes</div><div>One report file. I'll first add a <code>--repo</code> option so it can inspect <code>rcp-github</code>'s model files (3.7 GB, not in git) in place instead of copying them.</div>
+        <div class="k">Command</div><div><pre>./bench/run.sh</pre></div>
+        <div class="k">Result</div><div>Every fail is expected today: the arm cable is unplugged, and the model files (gitignored) aren't in the new repo yet. Static shows the same 5 old findings; contracts pass. Report in <code>docs/bench-runs/</code>.</div>
       </div>
     </div>
     <div class="step">
-      <div class="top"><span class="n">Step 3</span><h4>Build (Tier 2)</h4><span class="chip s-blocked">waiting on you</span></div>
+      <div class="top"><span class="n">Done</span><h4>Build the arm workspace (Tier 2)</h4><span class="chip s-ok">22 / 22 packages</span></div>
       <div class="body">
-        <div class="k">Commands</div>
-        <div><pre>source /opt/ros/humble/setup.bash          <span class="cm"># nothing else: a stale overlay poisons the build</span>
-colcon build --base-paths ros2_robot_ws/src deps_ws/src \
-  --build-base ~/bench_work/build --install-base ~/bench_work/install</pre></div>
-        <div class="k">Does</div><div>Compiles C++ and packages Python: the same thing the earlier team did to make <code>install/</code>. About 6 min for the arm's 24 packages [reported]. Keeps the CPU busy while it runs, so pick a time when nobody is operating the robot.</div>
-        <div class="k">Doesn't</div><div>Start any node, contact the arm or LiDAR, use <code>sudo</code>, install packages, or touch the existing <code>install/</code> folders.</div>
-        <div class="k">Writes</div><div><code>~/bench_work/build</code>, <code>install</code>, <code>log</code>: a few GB [inferred]; 33 GB free. Livox needs its missing <code>package.xml</code> copied into the scratch copy first.</div>
+        <div class="k">Command</div><div><pre>./bench/build.sh          <span class="cm"># colcon, ros2_robot_ws/src + deps_ws/src, Release</span></pre></div>
+        <div class="k">Did not</div><div>Start any node, contact the arm or LiDAR, use <code>sudo</code>, or touch any other <code>install/</code>.</div>
+        <div class="k">Note</div><div>27 min 41 s. The CPU is throttled (800 MHz, 90 °C, forced idle), so it's slow. That's for whoever looks after the machine.</div>
       </div>
     </div>
     <div class="step">
-      <div class="top"><span class="n">Step 4</span><h4>Node tests (Tier 3)</h4><span class="chip s-plan">later</span></div>
+      <div class="top"><span class="n">Done</span><h4>MoveIt on a simulated arm (Tier 3)</h4><span class="chip s-ok">3 / 3 motions</span></div>
       <div class="body">
-        <div class="k">Isolation</div><div>A private ROS channel (<code>ROS_DOMAIN_ID=77</code>). <code>iot22</code> is logged in on the same machine, and localhost-only does <em>not</em> separate the two users, so the unique channel is what isolates. Each test checks the channel is empty before starting.</div>
-        <div class="k">Never</div><div>Starts <code>rm_driver</code>. The state-machine test runs against a simulated arm and refuses to start if the real driver's topics exist.</div>
+        <div class="k">Command</div><div><pre>./bench/sim_moveit.sh     <span class="cm"># private channel 77, mock_components, refuses if rm_driver exists</span></pre></div>
+        <div class="k">Result</div><div><code>main</code>'s home, <code>realman_manip</code>'s home and zero: planned, executed, arrived within 0.0045 rad. The poses are reachable in the <em>model</em>; that isn't the same as safe on the real arm.</div>
+        <div class="k">Found</div><div>The robot config's own simulated-arm launch can't start (<code>no ros2_control tag</code>: the fake-hardware line is commented out). The bench carries its own copy; see ORIENTATION §8.16.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="top"><span class="n">Next</span><h4>Still to do</h4><span class="chip s-plan">planned</span></div>
+      <div class="body">
+        <div class="k">Needs your OK</div><div>Copy <code>.venv</code>, <code>sam3.pt</code> and the two AnyGrasp checkpoints into <code>rcp-Gappler</code> (read-only from the old folders, about 7 GB).</div>
+        <div class="k">Then</div><div>The grasp state machine on the simulated arm; building <code>Navigation_Module</code>; the eight navigation node tests.</div>
       </div>
     </div>
   </div>
@@ -389,20 +386,20 @@ const LEVELS = [
   ["t4","Tier 4","Real data","Lab box · person present"],
 ];
 const STATES = {
-  ok:["Passing","s-ok"], flag:["Finds real bugs","s-flag"], ready:["Built · first box run next","s-ready"],
-  gap:["Blind spot","s-gap"], blocked:["Blocked","s-blocked"], plan:["Planned","s-plan"], na:["Not applicable","s-na"],
+  ok:["Passing","s-ok"], flag:["Finds real bugs","s-flag"], ready:["Built · not run yet","s-ready"], hw:["Hardware unplugged","s-hw"],
+  gap:["Blind spot","s-gap"], blocked:["Needs setup","s-blocked"], plan:["Planned","s-plan"], na:["Not applicable","s-na"],
 };
 // [component][level] = [state, summary]
 const CELLS = {
-  machine:{t0:["na","No ROS interfaces"],t1:["na","—"],pf:["ready","13 checks: CPU, RAM, disk, GPU driver, VRAM, ROS, overlay, domain id, running user, hardcoded /home paths"],t2:["na","colcon + rosdep present"],t3:["na","—"],t4:["na","—"]},
-  aria:{t0:["gap","What it subscribes to is baselined; its publishers are invisible (C1)"],t1:["ok","Parses, imports resolve"],pf:["ready","Project venv, glasses auth"],t2:["na","Python in the venv; nothing to compile"],t3:["plan","None designed yet"],t4:["plan","Voice prompt recorded in the bag"]},
-  sam3:{t0:["ok","Mask topics baselined"],t1:["ok","Parses, imports resolve"],pf:["ready","3.4 GB weights, CUDA torch, PYTHONNOUSERSITE trap"],t2:["na","Python in the venv"],t3:["plan","None designed yet"],t4:["plan","Replay recorded camera frames"]},
-  anygrasp:{t0:["ok","Candidate + mask topics baselined"],t1:["ok","Parses, imports resolve"],pf:["ready","Both checkpoints, licence, compiled .so, conda env"],t2:["na","Python + prebuilt .so"],t3:["blocked","Gate test (A1). Needs the conda env rcp2026 doesn't have"],t4:["plan","Smoke: first frame yields seed grasps"]},
-  planner:{t0:["ok","State-machine topics, frames, params baselined"],t1:["flag","Launch file names mtc_sim_test, which nothing builds"],pf:["na","Only observable once launched"],t2:["plan","rm_mtc + MoveIt Task Constructor in the 24-package arm build"],t3:["plan","Full run against a simulated arm, never the real one"],t4:["na","Real arm = the stop line"]},
-  driver:{t0:["gap","Vendor code: seen only through our subscribers"],t1:["ok","estop.py parses"],pf:["ready","Arm port, host IP .10, ping, TCP 8080, joint feedback rate"],t2:["plan","rm_driver in the arm build"],t3:["plan","E-stop reaches the arm after Ctrl-C (B2)"],t4:["plan","Driver handshake reports RM65-BI"]},
-  camera:{t0:["ok","Camera topics + static TF baselined"],t1:["na","External package"],pf:["ready","USB present, 13–14 Hz, camera TF matches URDF"],t2:["na","Installed from apt"],t3:["na","Supplies other tests' inputs"],t4:["plan","30 s of colour, depth, camera_info"]},
-  nav:{t0:["ok","Topics, frames, launch nodes baselined"],t1:["flag","xpkg_demo missing; Livox manifest not in git"],pf:["ready","LiDAR ping, both host IPs, SLAM map, base TF bridge"],t2:["plan","Never built before: first run is discovery"],t3:["plan","8 tests: approach, goal bridge, return-to-user, pose, QoS relay"],t4:["plan","LiDAR + TF recorded"]},
-  glue:{t0:["ok","74 launch nodes, 52 includes baselined"],t1:["ok","Launch → package, executable, include all resolve here"],pf:["ready","Lists what's running"],t2:["na","—"],t3:["na","Never launched: both start the arm"],t4:["na","—"]},
+  machine:{t0:["na","No ROS interfaces"],t1:["na","—"],pf:["flag","Ran on the box: all pass, but 10 code paths resolve into /home/iot22"],t2:["na","colcon + rosdep present"],t3:["na","—"],t4:["na","—"]},
+  aria:{t0:["gap","What it subscribes to is baselined; its publishers are invisible (C1)"],t1:["ok","Parses, imports resolve"],pf:["blocked","No venv in rcp-Gappler yet, so skipped"],t2:["na","Python in the venv; nothing to compile"],t3:["plan","None designed yet"],t4:["plan","Voice prompt recorded in the bag"]},
+  sam3:{t0:["ok","Mask topics baselined"],t1:["ok","Parses, imports resolve"],pf:["blocked","Weights + venv not copied into rcp-Gappler yet"],t2:["na","Python in the venv"],t3:["plan","None designed yet"],t4:["plan","Replay recorded camera frames"]},
+  anygrasp:{t0:["ok","Candidate + mask topics baselined"],t1:["ok","Parses, imports resolve"],pf:["blocked","Licence + .so pass; checkpoints not copied, no conda for rcp2026"],t2:["na","Python + prebuilt .so"],t3:["blocked","Gate test (A1). Needs the conda env rcp2026 doesn't have"],t4:["plan","Smoke: first frame yields seed grasps"]},
+  planner:{t0:["ok","State-machine topics, frames, params baselined"],t1:["flag","Launch file names mtc_sim_test, which nothing builds"],pf:["na","Only observable once launched"],t2:["ok","rm_mtc + MoveIt Task Constructor build on the box"],t3:["ok","MoveIt moves the simulated arm to both home poses. State-machine test next"],t4:["na","Real arm = the stop line"]},
+  driver:{t0:["gap","Vendor code: seen only through our subscribers"],t1:["ok","estop.py parses"],pf:["hw","Arm cable unplugged: port fails, pings skip. As expected"],t2:["ok","rm_driver compiles (with warnings)"],t3:["plan","E-stop reaches the arm after Ctrl-C (B2)"],t4:["plan","Driver handshake reports RM65-BI"]},
+  camera:{t0:["ok","Camera topics + static TF baselined"],t1:["na","External package"],pf:["ok","D435i found on USB; rates need the camera driver running"],t2:["na","Installed from apt"],t3:["na","Supplies other tests' inputs"],t4:["plan","30 s of colour, depth, camera_info"]},
+  nav:{t0:["ok","Topics, frames, launch nodes baselined"],t1:["flag","xpkg_demo missing; Livox manifest not in git"],pf:["hw","LiDAR unreachable (no .5 address); SLAM map found in /home/iot22"],t2:["plan","Never built before: first run is discovery"],t3:["plan","8 tests: approach, goal bridge, return-to-user, pose, QoS relay"],t4:["plan","LiDAR + TF recorded"]},
+  glue:{t0:["ok","74 launch nodes, 52 includes baselined"],t1:["ok","Launch → package, executable, include all resolve here"],pf:["ready","Nothing running yet to list"],t2:["na","—"],t3:["na","Never launched: both start the arm"],t4:["na","—"]},
 };
 const ALL = COMPS.map(c=>c[0]);
 // [name, components, level, what it catches, state, runs on, expected-fail audit id]
@@ -427,23 +424,23 @@ const CHECKS = [
   ["launch-executables",["planner"],"t1","A launch file starts an executable nothing builds — finds mtc_sim_test","flag","Mac"],
   ["launch-includes",["nav"],"t1","A launch file includes one that doesn't exist — finds bringup_basic_ctrl.launch.py","flag","Mac"],
   ["generated-manifests",["nav"],"t1","A vendor package whose manifest is generated at build time and never committed — finds livox_ros_driver2","flag","Mac"],
-  ["platform · ram · disk · cpu",["machine"],"pf","Wrong machine, or not enough memory, disk or cores for SAM 3 + AnyGrasp + a build","ready","Lab box"],
-  ["nvidia-driver · vram",["machine"],"pf","No CUDA GPU, or too little free VRAM","ready","Lab box"],
-  ["humble · colcon · overlay",["machine"],"pf","ROS missing, or sourcing the wrong one of the four install folders","ready","Lab box"],
-  ["no-double-source · domain-id",["machine"],"pf","Duplicate MoveIt libraries; a ROS channel mismatch that silently hides every topic","ready","Lab box"],
-  ["running-user · hardcoded-homes",["machine"],"pf","Code pointing into another user's home: 10 paths into /home/iot22, locked to rcp2026","ready","Lab box"],
-  ["pythonnousersite · torch-cuda",["sam3"],"pf","The setting that silently swaps in a CPU-only torch; torch that can't see the GPU","ready","Lab box"],
-  ["sam3-weights",["sam3"],"pf","The 3.4 GB checkpoint missing (it's gitignored)","ready","Lab box"],
-  ["venv · aria-sdk",["aria"],"pf","Project venv missing; glasses not authorised","ready","Lab box"],
-  ["conda-anygrasp",["anygrasp"],"pf","AnyGrasp's own Python env missing","ready","Lab box"],
-  ["anygrasp checkpoints · licence · .so",["anygrasp"],"pf","Detection/tracking weights, machine-locked licence, compiled binaries","ready","Lab box"],
-  ["arm-nic · arm-ping · arm-port",["driver"],"pf","Arm cable, control box at 192.168.1.18, port 8080 (connect + close only)","ready","Lab box"],
-  ["joint-states",["driver"],"pf","Arm connected but sending no feedback: the wrong-host-IP symptom","ready","Lab box"],
-  ["arm-lidar-coexist · lidar-ping",["nav","driver"],"pf","Host needs both .10 (arm) and .5 (LiDAR) on one port; the saved profile has .100","ready","Lab box"],
-  ["slam-map · tf-base-bridge",["nav"],"pf","Prebuilt map missing; arm not attached to the base's TF tree","ready","Lab box"],
-  ["realsense-usb · camera-hz · tf-arm-camera",["camera"],"pf","Camera absent, slow, or its mount offset different from the URDF","ready","Lab box"],
+  ["platform · ram · disk · cpu",["machine"],"pf","Wrong machine, or not enough memory, disk or cores for SAM 3 + AnyGrasp + a build","ok","Lab box"],
+  ["nvidia-driver · vram",["machine"],"pf","No CUDA GPU, or too little free VRAM (15.3 of 16 GB free)","ok","Lab box"],
+  ["humble · colcon · overlay",["machine"],"pf","ROS missing, or sourcing the wrong one of the four install folders","ok","Lab box"],
+  ["no-double-source · domain-id",["machine"],"pf","Duplicate MoveIt libraries; a ROS channel mismatch that silently hides every topic","ok","Lab box"],
+  ["running-user · hardcoded-homes",["machine"],"pf","Code pointing into another user's home: all 10 paths resolve into /home/iot22's old clone","flag","Lab box"],
+  ["pythonnousersite · torch-cuda",["sam3"],"pf","The setting that silently swaps in a CPU-only torch; torch that can't see the GPU","blocked","Lab box"],
+  ["sam3-weights",["sam3"],"pf","The 3.4 GB checkpoint missing (it's gitignored)","blocked","Lab box"],
+  ["venv · aria-sdk",["aria"],"pf","Project venv missing; glasses not authorised","blocked","Lab box"],
+  ["conda-anygrasp",["anygrasp"],"pf","AnyGrasp's own Python env missing","blocked","Lab box"],
+  ["anygrasp checkpoints · licence · .so",["anygrasp"],"pf","Detection/tracking weights, machine-locked licence, compiled binaries","blocked","Lab box"],
+  ["arm-nic · arm-ping · arm-port",["driver"],"pf","Arm cable, control box at 192.168.1.18, port 8080 (connect + close only)","hw","Lab box"],
+  ["joint-states",["driver"],"pf","Arm connected but sending no feedback: the wrong-host-IP symptom","hw","Lab box"],
+  ["arm-lidar-coexist · lidar-ping",["nav","driver"],"pf","Host needs both .10 (arm) and .5 (LiDAR) on one port; the saved profile has .100","hw","Lab box"],
+  ["slam-map · tf-base-bridge",["nav"],"pf","Prebuilt map missing; arm not attached to the base's TF tree","ok","Lab box"],
+  ["realsense-usb · camera-hz · tf-arm-camera",["camera"],"pf","Camera absent, slow, or its mount offset different from the URDF","ok","Lab box"],
   ["nodes",["glue"],"pf","What is actually running before anything is judged","ready","Lab box"],
-  ["arm workspace build",["planner","driver"],"t2","A package that no longer compiles — 24 packages, about 6 min [reported]","plan","Lab box"],
+  ["arm workspace build",["planner","driver"],"t2","A package that no longer compiles: 22 / 22 pass, 27 min 41 s on a throttled CPU","ok","Lab box"],
   ["Navigation_Module build",["nav"],"t2","Never built; expect Livox and xpkg_demo to stop it","plan","Lab box"],
   ["executables vs install/",["planner","glue"],"t2","Upgrades the static launch check to read what was really built","plan","Lab box"],
   ["approach, far object",["nav"],"t3","Sends a goal 0.78 m from the object, facing it","plan","Private channel"],
@@ -456,6 +453,7 @@ const CHECKS = [
   ["robot pose",["nav"],"t3","/robot_pose at about 10 Hz in the map frame","plan","Private channel"],
   ["AnyGrasp gate",["anygrasp"],"t3","Candidates while EXECUTING, none while IDLE. Blocked on the conda env","blocked","Private channel","A1"],
   ["e-stop delivery",["driver"],"t3","The stop message actually leaves after Ctrl-C","plan","Private channel","B2"],
+  ["MoveIt, simulated arm",["planner"],"t3","Plans + executes to both home poses (B4) and zero on mock hardware; refuses to start if rm_driver exists","ok","Private channel"],
   ["state machine, simulated arm",["planner"],"t3","Homes, reaches SELECTING, steps: on MoveIt's fake hardware only","plan","Private channel"],
   ["record.sh",["camera","nav","driver","aria"],"t4","30 s of real camera, LiDAR, TF, joints, voice; replayed by Tier 3 afterwards","plan","Person present"],
   ["driver handshake",["driver"],"t4","Driver log shows product_version = RM65-BI","plan","Person present"],

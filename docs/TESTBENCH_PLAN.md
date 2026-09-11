@@ -18,11 +18,13 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 | Thing | State |
 |---|---|
 | `bench/` tiers 0–1 (contracts + static) | **Built, working on macOS**, verified against a simulated refactor |
-| `bench/preflight.py` (hardware/env tier) | **Built, run only on macOS.** P1–P5 fixed and unit-tested on the Mac (§4); new `home` group. Every Linux/hardware code path is still **unrun** |
-| Tier 2 (build), Tier 3 (node behaviour), Tier 4 (replay + hw smoke) | **Not started.** Designed below. |
+| `bench/preflight.py` (hardware/env tier) | **Ran on the lab box 2026-09-11**: 17 pass / 5 fail / 1 warn / 13 skip; every FAIL is unplugged hardware or model files not yet in `~/rcp-Gappler` (`docs/bench-runs/`). P1–P9 fixed |
+| Tier 2 (build) | **Arm workspace PASS on the box**: 22/22 packages, 27 min 41 s (CPU throttled). `Navigation_Module` not yet built |
+| Tier 3 (node behaviour) | **Started**: `bench/sim_moveit.sh` PASS — MoveIt plans and executes on a simulated arm (both B4 home poses + zero). The 11 node tests in Phase 5 not yet written |
+| Tier 4 (replay + hw smoke) | Not started |
 | `docs/CODE_AUDIT.md` | 45 findings, all `[unverified]`. Published privately: <https://claude.ai/code/artifact/63cc961e-e49a-4421-9132-fec0f3e35822> |
-| SSH to the lab machine | **Works** — Dion installed the Mac's key for `rcp2026` on 2026-09-11. **Phase 0 done, read-only** (§1). Nothing written or launched on the box |
-| Git | **Nothing committed.** See §2. |
+| SSH to the lab machine | Works (key auth). **All box work in `~/rcp-Gappler`** — clone of `main`, created 2026-09-11. `rcp-desktop` / `rcp-github` untouched |
+| Git | `bench/` + `docs/` committed and pushed to `main` (`1cfb9b1` … `a9399d0`); the box pulls from there |
 
 ---
 
@@ -52,6 +54,19 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 | Live | no ROS / driver / MoveIt / AnyGrasp process from any user at check time |
 | Disk | `/home` 325 GB, **33 GB free (90 % used)** — enough for Phase 4, not for many build copies |
 | Also in `~rcp2026` | `INTEGRATION_PLAN.md` + `RCP_REPO_DIFF_REPORT.md` (2026-09-09): the record of how the four Gappler branches were pushed from the two clones |
+
+### Lab-box results, 2026-09-11 (Phases 1, 2, 4 and the first of 5)
+
+| What | Result |
+|---|---|
+| Working repo | `~/rcp-Gappler`, `git clone --branch main git@github.com:dionyichia/Gappler.git` (60 s, 669 MB). Builds go to its own `build/ install/ log/` (gitignored) |
+| Bench run (`./bench/run.sh`) | preflight 17 pass / 5 fail / 1 warn / 13 skip; static the same 5 known findings; contracts pass. Report: `docs/bench-runs/2026-09-11-labbox-bench.txt` |
+| Tier 2 (`./bench/build.sh`) | **PASS** — 22 packages, 27 min 41 s. stderr (warnings) from `moveit_task_constructor_core`, `rm_driver`. Old overlay had 23: the difference is `pointnet2` (AnyGrasp's CUDA op in `grasp_module/`, built against the conda torch — not part of the arm workspace) |
+| Tier 3 (`./bench/sim_moveit.sh`) | **PASS** — both home poses (`main`, `realman_manip`) and zero, SUCCESS, max joint error ≤ 0.0045 rad, on `mock_components`, channel 77, `enp2s0` NO-CARRIER throughout. `move_group` segfaults (−11) **on shutdown**, after all motions `[inferred]` known Humble shutdown behaviour; harmless to the result |
+| The config's own simulated-arm launch | **Cannot start** — see ORIENTATION §8.16. The bench carries its own model (`bench/nodes/sim_arm.urdf.xacro`) instead of editing the robot config |
+| CPU | **Throttled**: all 16 threads at 800 MHz, max capped at 1.84 of 4.6 GHz, package 90 °C, `intel_powerclamp` injecting idle, RAPL limit 32.5 W. Explains the 28-min build (~6 min reported earlier). Cooling / power profile — a question for whoever looks after the machine |
+| Not yet in `~/rcp-Gappler` | `.venv`, `sam3.pt`, both AnyGrasp checkpoints (all gitignored). Copy from `~/rcp-github` / `~/rcp-desktop` (read-only there) — awaiting Dion's OK |
+| Found in `~iot22` (read ACL granted by Dion) | `anygrasp` + `grasp` conda envs, `~/.local` CUDA torch 2.10, `~/maps/completed_map.*`, `~/.aria` certs, `xpkg_demo` (§8.6), and `~/Ros2Workspaces` — the base's real nav workspace |
 
 ### ⚠️ Three things about the lab machine that do not add up yet — settle these first
 
@@ -191,6 +206,9 @@ owned code, all pre-existing — see known issue S1) · contracts PASS.
 | P3 ✅ | `_has_ip` does `addr in out` — substring match | `preflight.py:394-396` | `192.168.1.10` matches `192.168.1.100`; `192.168.1.5` matches `.50–.59` → false PASS on the arm/LiDAR coexistence check | match `inet 192.168.1.10/` with a regex anchored on `/` |
 | P4 ✅ | `on_lab_machine()` is a heuristic (Linux + ROS or NVIDIA) | `preflight.py` | on a Linux laptop with ROS, off-lab asset checks FAIL instead of SKIP | acceptable for now; add a `--lab/--no-lab` override |
 | P5 ✅ | Per-user state (`~/.local`, `~/.aria`, conda envs, `~/maps`) is checked for **whoever runs it** | several | as `rcp2026`, may report missing things `iot22` has (§1 point 1) | print the running user in the header; make that visible in results |
+| P7 ✅ | `slam-map` looked for `completed_map` or `.yaml`; slam_toolbox stores `.posegraph` + `.data` | preflight | false WARN | `_exists_or_prefix()` |
+| P8 ✅ | `hardcoded-homes` reported only unreachable paths, not ones that silently resolve into another user's home | preflight | hid 9 of 10 once the ACL was granted | reports both |
+| P9 ✅ | contracts extracted `bench/` itself — the sim test showed as a `/joint_states` orphan; sim guard refused on the word `rm_driver` in a docstring | contracts, sim_moveit | false regression / false refusal | skip `bench/`; match a quoted package name |
 | P6 ✅ | `Path.exists()` **raises** `PermissionError` under a locked parent on Python < 3.12 (the box has 3.10.12) instead of returning False | `slam-map` and the new `home` check | as `rcp2026`, preflight would have **crashed** on `/home/iot22/...` (found 2026-09-11 by a `chmod 000` unit test) | `_exists()` treats unreachable as absent; `home` names the locked ancestor, e.g. `[no access: /home/iot22]` |
 
 **Contracts extractor:**
@@ -238,13 +256,13 @@ against `2d36a89`), whether this is `iot22-Computer`, and which user owns the ve
 share **no common ancestor** — ORIENTATION §7), the contract baseline and the audit's line numbers
 may not apply to it. Record the divergence before going further.
 
-### Phase 1 — Get the bench onto the box
+### Phase 1 — Get the bench onto the box — ✅ done 2026-09-11 in `~/rcp-Gappler`
 
 After Dion's decision in §2.1: commit + push from the Mac, then on the box
 `git worktree add ~/bench_work/gappler main` (or a fresh clone) — **not** a pull into `rcp-desktop`.
 ~~Then fix P1–P3~~ — done on the Mac 2026-09-11 (§4); they ride along with the `bench/` commit.
 
-### Phase 2 — Run preflight, read-only
+### Phase 2 — Run preflight, read-only — ✅ first run 2026-09-11 (no live graph yet)
 
 With nothing launched first, then — only if someone at the robot has already started the driver and
 camera per the startup guide — again with a live graph:
@@ -276,7 +294,7 @@ These can be settled without launching anything. Retag each in ORIENTATION / COD
 The last two matter: if `rcp-desktop` is the Desktop/`realman_manip` clone, it may have different
 home joints and different gate logic from what the audit read.
 
-### Phase 4 — Tier 2: does it build (no hardware)
+### Phase 4 — Tier 2: does it build (no hardware) — ✅ arm workspace 2026-09-11; `Navigation_Module` still to do
 
 The lab box already has ROS 2 Humble, so **build natively there** rather than in Docker — Docker
 on the Mac is the fallback for when the box is unavailable.
@@ -296,7 +314,7 @@ arm workspace ~6 min, 24 packages, six benign stderr warnings (startup guide §2
 build to be discovery, not regression. Then extend `static.py`'s `launch-executables` check to read
 the real `install/lib/<pkg>/` instead of parsing CMakeLists.
 
-### Phase 5 — Tier 3: node behaviour against synthetic inputs
+### Phase 5 — Tier 3: node behaviour against synthetic inputs — started: MoveIt on a simulated arm passes
 
 **Domain-isolated per §3 rule 4. Every test here runs with no hardware and cannot reach it.**
 
@@ -377,3 +395,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-11 | Claude (Opus 5) + Dion | Created as the cold-start handoff. Records three preflight bugs found on review (P1–P3: `topic hz` / `tf2_echo` output discarded on timeout; substring IP match), the contracts extractor's blind spot for every Aria-side publisher (C1), and the static tier's missing baseline (S1). Re-confirmed CODE_AUDIT §D with plain grep. Phases 0–6 planned; nothing yet run on the lab machine. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Second session. SSH attempted: host reachable, login refused (no key for `rcp2026`). Host key identical to `10.91.155.97`, so §1 point 2 is settled. Recorded Dion's account of the `iot22`→`rcp2026` copy (`rcp-desktop`, `rcp-github`). Fixed P1–P5 and S2 in `bench/`; added preflight `home` group, which found 10 `/home/iot22` paths in owned code. Bench verdicts on the Mac unchanged apart from that. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Phase 0 done over SSH, read-only; results table in §1. **Corrected:** the Mac's `main` is `rcp-github`'s `combined`, not `rcp-desktop`. Found: no copied overlay works for `rcp2026`; no conda/AnyGrasp env for `rcp2026`; `rcp-desktop/.venv` has working CUDA torch; `enp2s0`'s saved profile is `192.168.1.100`; `iot22` is still logged in (added §3 rule 4b). Phase 3 findings retagged in ORIENTATION and CODE_AUDIT. |
+| 2026-09-11 | Claude (Opus 5) + Dion | Phases 1, 2, 4 (arm) done in `~/rcp-Gappler`; first Tier 3 test (`sim_moveit.sh`) passes. Recorded CPU throttling, the broken config simulated-arm launch (ORIENTATION §8.16), bench bugs P7–P9. Reports in `docs/bench-runs/`. |

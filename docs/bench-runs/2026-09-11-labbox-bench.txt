@@ -1,0 +1,169 @@
+######################## 1/3  PREFLIGHT ########################
+==============================================================================
+PREFLIGHT -- capability and hardware, up to but not including arm motion
+host: Linux x86_64   repo: /home/rcp2026/rcp-Gappler
+user: rcp2026   lab machine: True (guessed: Linux + ROS or NVIDIA)
+==============================================================================
+
+### host
+  [PASS] platform               Linux 6.8.0-138-generic x86_64
+  [PASS] ram                    31.2 GB total, 27.1 GB available
+  [PASS] disk                   31.4 GB free at /home/rcp2026/rcp-Gappler
+  [PASS] cpu                    16 cores
+
+### home
+  [PASS] running-user           rcp2026 (/home/rcp2026)
+  [warn] hardcoded-homes        all 10 resolve -- but into /home/iot22/, so rcp2026 silently runs another user's copy, not /home/rcp2026
+         -> parametrise these before trusting any run as this user
+
+### gpu
+  [PASS] nvidia-driver          NVIDIA GeForce RTX 4060 Ti, 575.57.08, 16380 MiB, 718 MiB
+  [PASS] vram                   15.3 GB free of 16.0 GB
+  [PASS] pythonnousersite       not set (correct)
+  [skip] torch-cuda             torch not importable by /usr/bin/python3 (ModuleNotFoundError: No module named 'torch')
+
+### ros
+  [PASS] humble                 /opt/ros/humble present, ROS_DISTRO=humble
+  [PASS] colcon                 /usr/bin/colcon
+  [PASS] overlay                repo-root overlay present with MTC (also found: install)
+  [PASS] no-double-source       1 prefixes, no duplicate MTC overlay
+  [PASS] domain-id              ROS_DOMAIN_ID unset (default 0)
+
+### env
+  [skip] venv                   no .venv in this clone -- run `uv sync`
+  [skip] conda-anygrasp         conda not on PATH
+  [skip] aria-sdk               aria CLI not found (venv not built, or not the lab machine)
+
+### assets
+  [FAIL] sam3-weights           missing: src/models/sam3/sam3.pt
+         -> copy it from the lab machine
+  [FAIL] anygrasp-detection     missing: log/checkpoint_detection.tar
+         -> gitignored; copy from the lab machine
+  [FAIL] anygrasp-tracking      missing: log/checkpoint_tracking.tar
+         -> gitignored; copy from the lab machine
+  [PASS] anygrasp-licence       4 file(s): Puneet.lic, Puneet.public_key, Puneet.signature, licenseCfg.json (lock can only be verified by running the node)
+  [PASS] anygrasp-so            gsnet.cpython-310-x86_64-linux-gnu.so, lib_cxx.cpython-310-x86_64-linux-gnu.so, tracker.cpython-310-x86_64-linux-gnu.so
+  [PASS] slam-map               /home/iot22/maps/completed_map present -- but in /home/iot22, not this user's home
+
+### net
+  [FAIL] arm-nic                enp2s0 NO-CARRIER -- nothing electrically connected
+         -> plug the cable in; no software fixes this
+  [FAIL] arm-lidar-coexist      neither host address is configured
+         -> `sudo nmcli con up enp2s0` for the arm; add 192.168.1.5/24 as an alias for the LiDAR
+  [skip] arm-ping               this host has no address on 192.168.1.0/24, so the arm and LiDAR cannot be reached from here by definition
+  [skip] arm-port               this host has no address on 192.168.1.0/24, so the arm and LiDAR cannot be reached from here by definition
+  [skip] lidar-ping             this host has no address on 192.168.1.0/24, so the arm and LiDAR cannot be reached from here by definition
+  [PASS] realsense-usb          Bus 002 Device 002: ID 8086:0b3a Intel Corp. Intel(R) RealSense(TM) Depth Camera 435i
+
+### graph
+  [skip] nodes                  no ROS graph is running (start the driver / camera first; see startup guide 4)
+  [skip] camera-hz-color        no ROS graph is running (start the driver / camera first; see startup guide 4)
+  [skip] camera-hz-depth        no ROS graph is running (start the driver / camera first; see startup guide 4)
+  [skip] tf-arm-camera          no ROS graph is running (start the driver / camera first; see startup guide 4)
+  [skip] tf-base-bridge         no ROS graph is running (start the driver / camera first; see startup guide 4)
+  [skip] joint-states           no ROS graph is running (start the driver / camera first; see startup guide 4)
+
+==============================================================================
+RESULT   17 pass   5 fail   1 warn   13 skipped
+==============================================================================
+
+COULD NOT BE RUN HERE (13) -- these are unverified, not passing:
+
+  no ROS graph is running (start the driver / camera first; see startup guide 4)
+      - graph/nodes
+      - graph/camera-hz-color
+      - graph/camera-hz-depth
+      - graph/tf-arm-camera
+      - graph/tf-base-bridge
+      - graph/joint-states
+
+  this host has no address on 192.168.1.0/24, so the arm and LiDAR cannot be reached from here by definition
+      - net/arm-ping
+      - net/arm-port
+      - net/lidar-ping
+
+  torch not importable by /usr/bin/python3 (ModuleNotFoundError: No module named 'torch')
+      - gpu/torch-cuda
+
+  no .venv in this clone -- run `uv sync`
+      - env/venv
+
+  conda not on PATH
+      - env/conda-anygrasp
+
+  aria CLI not found (venv not built, or not the lab machine)
+      - env/aria-sdk
+
+NOT TESTABLE BY THIS BENCH AT ALL, BY DESIGN:
+  - arm motion: grasp_state_machine homes the arm within seconds of launch, unprompted (ORIENTATION 8.1). Nothing in this bench launches it.
+  - grasp execution: AnyGrasp -> MoveIt -> arm has never been run end to end; there is no known-good result to compare against (startup guide 7).
+  - gripper: opening or closing the gripper is a physical command; out of scope by design.
+  - Nav2 driving: publishing /goal_pose moves the base. Not exercised.
+  - the full pipeline: voice -> SAM 3 -> gaze -> grasp is severed at object_recognition_pipeline.py:384 (ORIENTATION 6.2), so there is no end-to-end path to test yet.
+
+  This script never publishes to any of: /rm_driver/movej_cmd, /rm_driver/movel_cmd, /rm_driver/movec_cmd, ...
+  Everything past that line needs a human at the robot with the e-stop in hand.
+
+######################## 2/3  STATIC ###########################
+==============================================================================
+STATIC CHECKS  (10 checks)
+==============================================================================
+
+[PASS] python-syntax  (156 checked)
+       every Python file we own parses
+
+[PASS] undefined-names  (156 checked)
+       no name is used that is never imported or assigned
+
+[PASS] internal-imports  (156 checked)
+       every intra-repo import resolves to a file that exists
+
+[PASS] xml-wellformed  (46 checked)
+       package.xml / urdf / xacro parse as XML
+
+[FAIL] launch-packages  (58 checked)
+       every package a launch file names exists in the repo or in ROS Humble
+       note: 25 packages found in repo
+   !   Navigation_Module/src/robot_slam/launch/slam_localization.launch.py:56: references package 'xpkg_demo' -- not in repo, not a known ROS Humble package
+   !   Navigation_Module/src/robot_slam/launch/slam_mapping.launch.py:61: references package 'xpkg_demo' -- not in repo, not a known ROS Humble package
+
+[FAIL] package-xml-deps  (24 checked)
+       declared dependencies exist in repo or in ROS Humble
+   !   Navigation_Module/src/robot_slam/package.xml: package 'robot_slam' declares <exec_depend>xpkg_demo</exec_depend> -- not in repo, not recognised as a ROS Humble package
+       -- plus 2 finding(s) in vendor code (-v to show)
+
+[FAIL] launch-executables  (24 checked)
+       every executable a launch file names is installed by its package
+   !   ros2_robot_ws/src/rm_mtc/launch/mtc_sim_test.launch.py:11: Node(package='rm_mtc', executable='mtc_sim_test') -- 'mtc_sim_test' is not installed by rm_mtc
+
+[FAIL] launch-includes  (26 checked)
+       launch files included by other launch files exist
+   !   Navigation_Module/src/robot_slam/launch/slam_localization.launch.py:58: includes 'bringup_basic_ctrl.launch.py' -- not found in any repo package
+   !   Navigation_Module/src/robot_slam/launch/slam_mapping.launch.py:63: includes 'bringup_basic_ctrl.launch.py' -- not found in any repo package
+
+[PASS] install-targets  (6 checked)
+       scripts named in CMakeLists install(PROGRAMS) exist on disk
+
+[FAIL] generated-manifests  (1 checked)
+       vendor packages that generate package.xml ship the ROS 2 template
+   !   Navigation_Module/src/livox_ros_driver2/: build.sh generates package.xml from package_ROS2.xml, but only ['package_ROS1.xml'] is present and package.xml is gitignored -- colcon will not find this package on a fresh clone
+
+==============================================================================
+findings: 7 in code we own, 2 in vendor code
+FAIL: 5/10 checks have findings in code we own.
+
+######################## 3/3  CONTRACTS ########################
+
+baseline 2d36a89-dirty  ->  current 70f7e6e
+
+PASS: no contract regressions. (0 warnings, 0 informational)
+
+================================================================
+  preflight  FAIL
+  static     FAIL
+  contracts  ok
+================================================================
+Reminder: a green bench means no contract moved and the environment is
+sane. It does NOT mean the robot works. Everything from 'arm moves'
+onward is untested by design and needs a human with the e-stop.
+run.sh exit 1

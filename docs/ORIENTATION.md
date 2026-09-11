@@ -731,6 +731,16 @@ before planning a bring-up session — this is a question for whoever set up the
 `~/rcp-github` (depth 7). `/home/iot22` is not readable by `rcp2026`, so a copy in `iot22`'s own
 workspaces is still possible — that account is the one place left to look.
 
+**Found 2026-09-11** (after Dion granted `rcp2026` read access to `/home/iot22`): `xpkg_demo` is
+the package in `~iot22/sdk_echo_plus_ws/src/demo/demo/demo_general_chassis/` (the Echo Plus base
+vendor SDK, built 2025-11-08), also copied into `~iot22/Ros2Workspaces/src/demo/`. It was never
+in any repo. `~iot22/start_robot.sh` launches it with `ros2 launch xpkg_demo
+bringup_basic_ctrl.launch.py` after sourcing `~/Ros2Workspaces/install`. That workspace also holds
+`robot_slam`, `robot_navigation`, `simple_teleop`, `echo_plus_driver`, `livox_ros_driver2` and
+OpenVINS: **the navigation stack that actually ran on the base came from `~iot22/Ros2Workspaces`,
+not from this repo's `Navigation_Module`.** `[code]`, read from the files; whether the two copies
+differ is unchecked.
+
 ### 8.7 Two nodes both claim `/cmd_vel` `[code]`
 
 - `xnode_vehicle` (`xpkg_vehicle`) is the real driver — subscribes `/cmd_vel`, publishes `/odom`
@@ -871,6 +881,11 @@ a hang" symptom), unless someone adds `.10` by hand each session. The old prefli
 would have reported this as PASS: `"192.168.1.10" in "…192.168.1.100/24…"` (TESTBENCH_PLAN §4
 P3, now fixed). Whether both devices can coexist is still `[unverified]` — never tried.
 
+**It gets worse** `[code]`: `~iot22/start_robot.sh` and `start_everything.sh` (the base's real
+start-up scripts) run `sudo ip addr flush dev enp2s0` and then add only `192.168.1.5/24`. That
+*removes* the arm's `.10`. Starting the base this way silently cuts the arm's feedback, which is the
+§9 hang. Any combined start-up must add both addresses and must not flush.
+
 | Device | Device IP | Host must be | Source |
 |---|---|---|---|
 | RM65 arm | `192.168.1.18` | **`192.168.1.10`** | `rm_driver.cpp:4094,4097` (`arm_ip`, `udp_ip`) |
@@ -949,6 +964,31 @@ compiling.
 `package.xml` is present there, it was generated locally by `build.sh` and simply never committed —
 in which case the fix is to commit `package_ROS2.xml` from upstream. `bench/static.py`
 (`generated-manifests`) checks this.
+
+---
+
+### 8.16 `[code]` MoveIt's simulated-arm launch cannot start
+
+Found by the bench on the lab box, 2026-09-11. `ros2 launch rm_65_w_gripper_config demo.launch.py`
+starts `move_group`, but `ros2_control_node` aborts with **`no ros2_control tag`**, so there are no
+joint states and nothing can execute. Two reasons, both `[code]`:
+
+- `config/rm_65_with_gripper.urdf.xacro` — the file that would add the `mock_components` fake
+  hardware — has its `<xacro:rm_65_with_gripper_ros2_control …/>` call **commented out** (commit
+  `52c8ce9`, 2026-03-27, same on `realman_manip`). `xacro` on it yields 0 `<ros2_control>` tags.
+- `.setup_assistant` points MoveIt at `rm_description/urdf/rm_65_w_gripper.urdf.xacro`, which has no
+  `ros2_control` block either, so `MoveItConfigsBuilder`'s default model never includes one
+  `[inferred]` from how `moveit_configs_utils` resolves the URDF.
+
+Why it may have been done `[inferred]`: `real_moveit_demo.launch.py` builds from the same config
+package, and nobody wanted a fake arm in a real-arm run. Whatever the reason, the project has had no
+working hardware-free MoveIt launch since March — together with §8.12 (`mtc_sim_test` unbuilt), none.
+
+**What exists now:** `bench/nodes/sim_arm.launch.py` + `sim_arm.urdf.xacro` — the same URDF and the
+same `mock_components` block, owned by the bench, robot config untouched. `bench/sim_moveit.sh` runs
+it: MoveIt plans and executes to both home poses and zero on the simulated arm (TESTBENCH_PLAN §1).
+**Decision for the team:** fix the config (a separate `sim` xacro, or a launch argument), or keep
+the simulation in `bench/`.
 
 ---
 
@@ -1063,7 +1103,9 @@ options, none free:
 | 2026-09-10 | Claude (Opus 5) + Dion | Naming audit folded in: §0b gained the full collision inventory (9 cases, incl. the new `/manipulation/` vs `/manipulator/` contract split); added §8.10 (duplicated constants, `VIDEO_QOS` already drifted 10→1) and §8.11 (`/aria/aruco_pose` stamped with the undefined frame `camera_rgb`). |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §0b, the descriptive-naming convention, prompted by the `base_link` / `robot_base_link` collision. Renamed the docs index to `START_HERE.md` to stop it colliding with the root `README.md`. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §6.5 (two nodes publish the same segmentation topics — collision hazard), §8.1 addendum (the orchestrator makes arm motion message-triggered, not human-triggered). Linked the new `NEXT_STEPS.md`. |
+| 2026-09-11 | Claude (Opus 5) + Dion | §8.6: `xpkg_demo` found in `~iot22/sdk_echo_plus_ws` (Echo Plus SDK); the base's navigation actually ran from `~iot22/Ros2Workspaces`. §8.13: `~iot22/start_robot.sh` flushes `enp2s0` and sets only the LiDAR address, removing the arm's. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Checked findings on the box over SSH, read-only: §8.12 and §8.15 retagged `[code]` (confirmed); §8.6 `xpkg_demo` absent from ROS and both clones (only `iot22`'s home unchecked); §8.13 adds `enp2s0`'s saved profile `192.168.1.100/24`; §8.14 adds that the detection checkpoint exists in `~/rcp-github` and that `rcp2026` has no conda env for AnyGrasp. |
+| 2026-09-11 | Claude (Opus 5) + Dion | Added §8.16: the config's `demo.launch.py` cannot start a simulated arm (`no ros2_control tag`); the bench carries its own. |
 | 2026-09-09 | Claude (Opus 5), from a full read of `main` @ `2d36a89` | Initial version. Structure, reading order, topic map, three severed seams, HiCo-Nav surface. No hardware available; nothing runtime-verified. |
 | 2026-09-09 | Claude (Opus 5), from agent-assisted deep pass on `src/` and `Navigation_Module/` | **Corrected** `/aria/fused_pose` frame (`robot_base_link`, not `map`). Added §6.4 (pose fusion README vs code), §8.6 (missing `xpkg_demo`), §8.7 (three `/cmd_vel` claimants), Nav2 plugin table in §10, and the `base_link`/`robot_base_link` static-TF caveat in §5. |
 | 2026-09-09 | Claude (Opus 5), folding in the vendor-arm agent pass | Added §8.8 (fixed 1.5 m gaze depth assumption, external `realsense2_description` dependency, missing staleness guard) and §8.9 (dead code / debug leftovers). Expanded the contract table with `object_approach_node`'s full five-topic subscription list. |
