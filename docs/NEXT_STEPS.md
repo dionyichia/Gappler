@@ -363,6 +363,14 @@ against a mock `rm_driver`, then replay against a rosbag recorded on the lab mac
 
 ---
 
+### 2.8 🟡 One folder for model weights — `assets/models/`
+
+Dion, 2026-09-11. Model files are scattered: `src/models/sam3/sam3.pt`, and the AnyGrasp checkpoints
+under `ros2_robot_ws/src/rm_mtc/src/perception/log/` — ignored only because of a catch-all `log`
+rule. Move them to `assets/models/{sam3,anygrasp}/`, gitignore that folder explicitly, keep the
+checksum list in [`ASSETS.md`](ASSETS.md), and make the code read one configurable path (ties into
+§2.5). Do it with the modular reorg, not before: `preflight.py`'s `assets` group must move with it.
+
 ## 3. Bring-up (needs the lab machine)
 
 ### 3.1 🔴 Find `xpkg_demo` — `Navigation_Module` cannot launch without it
@@ -439,3 +447,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-10 | Claude (Opus 5) + Dion | HiCo-Nav paper read. §1.1 and §1.2 answered, §1.3 narrowed — see `hico-nav/PAPER_REPORT.md`. Three previously unrecorded dependencies surfaced there (FAST-LIVO2 localisation, LiDAR↔camera extrinsic calibration, VLM endpoint choice); they are not yet folded into this register. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §2.4, the naming cleanup pass, sequenced so the frame rename (highest value, highest risk) comes last and after the HiCo-Nav scoping decision. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Created. Seeded with the HiCo-Nav scoping decisions, the SAM3 triggering-policy question (§2.1), the segmentation-unification item (§2.2), the broken dummy mask publisher (§2.3), and the bring-up blockers. |
+| 2026-09-11 | Claude (Opus 5) + Dion | Added §2.8: one `assets/models/` folder for model weights (see ASSETS.md). |

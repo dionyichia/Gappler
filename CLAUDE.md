@@ -6,7 +6,8 @@ refactored toward one-folder-per-node modular code.
 
 ## Read first
 
-- **Current work: [`docs/TESTBENCH_PLAN.md`](docs/TESTBENCH_PLAN.md)** — the cold-start handoff for
+- **Current work: [`docs/TESTBENCH_PLAN.md`](docs/TESTBENCH_PLAN.md) — start at its "▶ Start here"
+  section** (decisions made + work queue W1–W8). It is the cold-start handoff for
   building the test bench. §0 is the state, §3 the safety rules, §5 the phased plan.
 - [`docs/START_HERE.md`](docs/START_HERE.md) indexes every doc. [`docs/ORIENTATION.md`](docs/ORIENTATION.md)
   is what the system is; [`docs/NEXT_STEPS.md`](docs/NEXT_STEPS.md) the work register;

@@ -17,6 +17,7 @@ segmentation → AnyGrasp → RealMan RM65 arm on a LiDAR-navigating mobile base
 | **[`NEXT_STEPS.md`](NEXT_STEPS.md)** | **What we intend to *do*** — prioritised work register with the open decisions. | Planning. Churns; expect it to change. |
 | **[`CODE_AUDIT.md`](CODE_AUDIT.md)** | A **line-by-line read of every file we own**, publisher to subscriber. 45 findings, all `[unverified]` — static analysis only, nothing was run. Starts with the three interlocking defects that stop the grasp path working. | Before touching the grasp path, and before the first hardware run. |
 | **[`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md)** | **The cold-start handoff for building the test bench.** State at handoff, safety rules for the lab machine, known bench bugs, and a phased plan from "establish which machine this is" through build, node-behaviour and replay tiers. | **When you pick up bench work.** Read §0–§3 before touching the lab machine. |
+| [`ASSETS.md`](ASSETS.md) | The files git doesn't hold — model weights and the `.venv` — with sizes, checksums, sources and why each is ignored. | Before copying or re-downloading a model file, or setting up a new machine. |
 
 Plus **[`../bench/`](../bench/README.md)** — the offline regression bench. `./bench/run.sh` checks,
 in order: whether this machine can run the stack at all (GPU, RAM, ROS, weights, and whether the arm
