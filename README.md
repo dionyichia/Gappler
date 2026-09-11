@@ -1,3 +1,26 @@
+> # ⛔ NOT RELEVANT AS OF SEPT 9 2026
+>
+> **This README does not describe the code in this repository.** It was inherited from a
+> different upstream project (`joshopp/aria_pkg`) and describes ZeroMQ messaging, a YOLO
+> `best.pt` model, and a `start_interaction.py` entry point. **None of those exist here.**
+> This repo uses ROS 2 topics, SAM 3, and `src/main.py`.
+>
+> It has already misled at least one reader. Do not follow its install steps, its Quick Start,
+> or its architecture section.
+>
+> ### 👉 Read [`docs/`](docs/START_HERE.md) instead — start with [`docs/ORIENTATION.md`](docs/ORIENTATION.md).
+>
+> That document explains what this system actually is, how the code is laid out, what order to
+> read it in, and which parts are currently connected. It is the entry point for new team
+> members and for AI assistants pointed at this repo.
+>
+> The original text is preserved below for historical reference only.
+
+---
+
+<details>
+<summary><b>Stale original README (from <code>joshopp/aria_pkg</code>) — click to expand</b></summary>
+
 # Multimodal Data Streaming Component - aria_pkg
 
 A Python library for handling real-time data streaming in a multimodal brick manipulation system. This component manages data streaming from the Project Aria glasses. Moreover, eye gaze tracking, intentian alignment and multi-view alignment are implemented.
@@ -157,3 +180,5 @@ The components communicate through a distributed architecture using ZeroMQ for e
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+</details>

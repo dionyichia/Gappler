@@ -1,0 +1,1430 @@
+<title>HiCo-Nav Map</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#f7f8fa; --surface:#ffffff; --surface-2:#f0f2f6;
+  --ink:#16191f; --ink-2:#495261; --ink-3:#78828f;
+  --line:#dbe0e8; --line-2:#c3cad6;
+  --accent:#1f5fa8; --accent-soft:#e8f0f9;
+  --broken:#b02a2a; --broken-soft:#fbeced;
+  --caution:#96620d; --caution-soft:#fdf3e3;
+  --working:#1c7048; --working-soft:#e7f4ed;
+  --plum:#6b3fa0; --plum-soft:#f0eaf8;
+  --display:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --body:'IBM Plex Sans',-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+  --shadow:0 1px 2px rgba(20,30,50,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14171c; --surface:#1c2027; --surface-2:#23282f;
+    --ink:#e8ebef; --ink-2:#b0b8c4; --ink-3:#828c99;
+    --line:#2e343d; --line-2:#3d444f;
+    --accent:#6aa6e8; --accent-soft:#1b2836;
+    --broken:#e8797a; --broken-soft:#2c1c1e;
+    --caution:#d9a353; --caution-soft:#2a2118;
+    --working:#5fb98a; --working-soft:#17271f;
+    --plum:#b391dd; --plum-soft:#241d33;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14171c; --surface:#1c2027; --surface-2:#23282f;
+  --ink:#e8ebef; --ink-2:#b0b8c4; --ink-3:#828c99;
+  --line:#2e343d; --line-2:#3d444f;
+  --accent:#6aa6e8; --accent-soft:#1b2836;
+  --broken:#e8797a; --broken-soft:#2c1c1e;
+  --caution:#d9a353; --caution-soft:#2a2118;
+  --working:#5fb98a; --working-soft:#17271f;
+  --plum:#b391dd; --plum-soft:#241d33;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);
+  font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px;display:grid;
+  grid-template-columns:216px minmax(0,1fr);gap:44px;align-items:start}
+@media (max-width:900px){.wrap{grid-template-columns:1fr;gap:0}}
+
+.masthead{border-bottom:1px solid var(--line);background:var(--surface);margin-bottom:36px}
+.masthead .inner{max-width:1180px;margin:0 auto;padding:34px 24px 30px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 10px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,4.4vw,42px);
+  line-height:1.1;margin:0 0 12px;letter-spacing:-.02em;text-wrap:balance}
+.dek{font-size:17.5px;color:var(--ink-2);max-width:64ch;margin:0}
+.who{margin:20px 0 0;padding:13px 16px;background:var(--accent-soft);border-radius:4px;
+  font-size:14.5px;color:var(--ink-2);max-width:76ch}
+.who strong{color:var(--ink)}
+
+nav.rail{position:sticky;top:20px;font-size:14px}
+@media (max-width:900px){nav.rail{position:static;margin-bottom:32px;
+  border:1px solid var(--line);border-radius:5px;background:var(--surface);padding:16px}}
+nav.rail .hd{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:12px}
+nav.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+nav.rail a{display:flex;gap:9px;padding:5px 8px;border-radius:3px;text-decoration:none;
+  color:var(--ink-2);line-height:1.35}
+nav.rail a:hover{background:var(--surface-2);color:var(--ink)}
+nav.rail a .n{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);padding-top:2px;min-width:14px}
+nav.rail a.hot{color:var(--broken);font-weight:500}
+nav.rail a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+main{min-width:0;padding-bottom:80px}
+section{margin:0 0 56px;scroll-margin-top:20px}
+h2{font-family:var(--display);font-weight:600;font-size:26px;line-height:1.2;
+  margin:0 0 6px;letter-spacing:-.015em;text-wrap:balance}
+h2 .sn{font-family:var(--mono);font-size:13px;font-weight:400;color:var(--ink-3);
+  display:block;margin-bottom:5px;letter-spacing:.04em}
+h3{font-family:var(--display);font-weight:600;font-size:18.5px;margin:32px 0 8px;letter-spacing:-.01em}
+h4{font-family:var(--display);font-weight:600;font-size:16px;margin:22px 0 6px}
+.sub{color:var(--ink-2);font-size:16.5px;margin:0 0 20px;max-width:68ch}
+p{margin:0 0 15px;max-width:68ch}
+ul,ol.body{margin:0 0 15px;padding-left:22px;max-width:66ch}
+li{margin-bottom:7px}
+a{color:var(--accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+
+code{font-family:var(--mono);font-size:.87em;background:var(--surface-2);
+  padding:1.5px 5px;border-radius:3px;color:var(--ink)}
+.topic{font-family:var(--mono);font-size:.87em;color:var(--accent);
+  background:var(--accent-soft);padding:1.5px 6px;border-radius:3px;white-space:nowrap}
+.cite{font-family:var(--mono);font-size:12px;color:var(--ink-3);
+  border:1px solid var(--line-2);border-radius:3px;padding:1px 6px;white-space:nowrap}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  padding:2px 6px;border-radius:2px;vertical-align:1px;white-space:nowrap}
+.t-pap{background:var(--working-soft);color:var(--working);border:1px solid var(--working)}
+.t-code{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}
+.t-inf{background:var(--surface-2);color:var(--ink-3);border:1px dashed var(--line-2)}
+.t-open{background:var(--caution-soft);color:var(--caution);border:1px solid var(--caution)}
+
+.callout{border-radius:5px;padding:16px 18px;margin:0 0 20px;border:1px solid;
+  border-left-width:4px;font-size:15.5px}
+.callout p{max-width:none;margin:0 0 10px}
+.callout p:last-child{margin:0}
+.callout .ct{font-family:var(--display);font-weight:600;font-size:16px;margin:0 0 7px;display:block}
+.c-stop{background:var(--broken-soft);border-color:var(--broken);color:var(--ink)}
+.c-stop .ct{color:var(--broken)}
+.c-warn{background:var(--caution-soft);border-color:var(--caution)}
+.c-warn .ct{color:var(--caution)}
+.c-note{background:var(--accent-soft);border-color:var(--accent)}
+.c-note .ct{color:var(--accent)}
+.c-ok{background:var(--working-soft);border-color:var(--working)}
+.c-ok .ct{color:var(--working)}
+
+.scroller{overflow-x:auto;margin:0 0 20px;border:1px solid var(--line);
+  border-radius:5px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:520px}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);text-align:left;padding:11px 14px;border-bottom:1px solid var(--line-2);
+  background:var(--surface-2);font-weight:500;white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+tr:last-child td{border-bottom:none}
+td strong{font-weight:600}
+tr.hi td{background:var(--broken-soft)}
+tr.hi td:first-child{box-shadow:inset 3px 0 0 var(--broken)}
+
+.break{background:var(--surface);border:1px solid var(--line);border-radius:5px;
+  margin:0 0 18px;overflow:hidden;box-shadow:var(--shadow)}
+.break > .top{padding:18px 20px 16px;border-left:4px solid var(--broken)}
+.break.caution > .top{border-left-color:var(--caution)}
+.break.mild > .top{border-left-color:var(--accent)}
+.break .bn{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--broken);margin:0 0 7px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.break.caution .bn{color:var(--caution)}
+.break.mild .bn{color:var(--accent)}
+.break h4{font-family:var(--display);font-weight:600;font-size:19px;margin:0 0 9px;
+  line-height:1.28;letter-spacing:-.01em;text-wrap:balance}
+.break .plain{font-size:16px;color:var(--ink-2);margin:0;max-width:70ch}
+.break .rows{border-top:1px solid var(--line);display:flex;flex-direction:column}
+.break .row{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;
+  padding:14px 20px;border-bottom:1px solid var(--line);font-size:15px}
+.break .row:last-child{border-bottom:none}
+@media (max-width:620px){.break .row{grid-template-columns:1fr;gap:5px}}
+.break .row .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);padding-top:4px}
+.break .row .v{min-width:0}
+.break .row .v p{margin:0 0 9px;max-width:64ch}
+.break .row .v p:last-child{margin:0}
+.break .row.evid{background:var(--surface-2)}
+
+pre{font-family:var(--mono);font-size:13px;line-height:1.6;background:var(--ground);
+  border:1px solid var(--line);border-radius:4px;padding:11px 13px;margin:0 0 15px;
+  overflow-x:auto;color:var(--ink)}
+pre .cm{color:var(--ink-3)}
+pre .hl{color:var(--accent)}
+
+figure{margin:0 0 26px}
+figcaption{font-size:13.5px;color:var(--ink-3);margin-top:9px;max-width:70ch}
+.figbox{overflow-x:auto;border:1px solid var(--line);border-radius:5px;
+  background:var(--surface);padding:18px 16px}
+svg.fig{display:block;width:100%;height:auto;min-width:660px}
+svg.fig .bx{fill:var(--surface);stroke:var(--line-2);stroke-width:1.2}
+svg.fig .bx-a{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.4}
+svg.fig .bx-w{fill:var(--caution-soft);stroke:var(--caution);stroke-width:1.4}
+svg.fig .bx-g{fill:var(--working-soft);stroke:var(--working);stroke-width:1.4}
+svg.fig .bx-r{fill:var(--broken-soft);stroke:var(--broken);stroke-width:1.4}
+svg.fig .bx-p{fill:var(--plum-soft);stroke:var(--plum);stroke-width:1.4}
+svg.fig .band{fill:var(--surface-2);stroke:var(--line);stroke-width:1;stroke-dasharray:4 3}
+svg.fig .tl{font-family:var(--body);font-size:13px;font-weight:500;fill:var(--ink)}
+svg.fig .ts{font-family:var(--body);font-size:11px;fill:var(--ink-3)}
+svg.fig .tm{font-family:var(--mono);font-size:10.5px;fill:var(--accent)}
+svg.fig .lb{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;fill:var(--ink-3)}
+svg.fig .hz{font-family:var(--mono);font-size:11px;fill:var(--caution);font-weight:500}
+svg.fig .e{stroke:var(--ink-3);stroke-width:1.4;fill:none}
+svg.fig .e-a{stroke:var(--accent);stroke-width:1.6;fill:none}
+svg.fig .e-g{stroke:var(--working);stroke-width:1.8;fill:none}
+svg.fig .e-r{stroke:var(--broken);stroke-width:1.6;fill:none;stroke-dasharray:5 4}
+svg.fig .e-f{stroke:var(--line-2);stroke-width:1.1;fill:none}
+
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:5px;overflow:hidden;margin:0 0 20px}
+.kv > div{background:var(--surface);padding:14px 16px}
+.kv .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);display:block;margin-bottom:5px}
+.kv .v{font-size:15px;line-height:1.45}
+.kv .v b{font-family:var(--display);font-size:17px;font-weight:600;display:block;margin-bottom:2px}
+
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-2);
+  margin:0 0 22px;padding:12px 15px;background:var(--surface);border:1px solid var(--line);border-radius:5px}
+.legend span{display:flex;gap:7px;align-items:center}
+.sw{width:13px;height:13px;border-radius:3px;display:inline-block;flex:none}
+footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;
+  font-size:14px;color:var(--ink-3);max-width:70ch}
+</style>
+
+<header class="masthead">
+  <div class="inner">
+    <p class="eyebrow">Gappler · paper reconnaissance · 10 Sep 2026</p>
+    <h1>HiCo-Nav, and what it would mean for this robot</h1>
+    <p class="dek">A visual reading of the HiCo-Nav paper: what the system actually does, what it
+      needs to be plugged in, which parts are worth taking, and the one purchase that has to be
+      raised now rather than later.</p>
+    <p class="who"><strong>Who this is for:</strong> anyone on this project deciding what to build
+      next. It assumes no familiarity with the paper and explains each term the first time it
+      appears. It is a <em>reconnaissance</em> document — it deliberately stops short of an
+      integration plan. The written version is
+      <a href="PAPER_REPORT.md">PAPER_REPORT.md</a>; the paper itself is
+      <a href="HiCo-Nav.pdf">HiCo-Nav.pdf</a>.</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="rail">
+    <div class="hd">Contents</div>
+    <ol>
+      <li><a href="#short"><span class="n">1</span><span>The short version</span></a></li>
+      <li><a href="#task"><span class="n">2</span><span>What it actually does</span></a></li>
+      <li><a href="#layers"><span class="n">3</span><span>The three layers</span></a></li>
+      <li><a href="#io"><span class="n">4</span><span>Inputs and outputs</span></a></li>
+      <li><a href="#graph"><span class="n">5</span><span>Memory &amp; registering objects</span></a></li>
+      <li><a href="#explore"><span class="n">6</span><span>Choosing where to go</span></a></li>
+      <li><a href="#tiers"><span class="n">7</span><span>What it would replace here</span></a></li>
+      <li><a href="#blockers" class="hot"><span class="n">8</span><span>Blockers &amp; the purchase</span></a></li>
+      <li><a href="#numbers"><span class="n">9</span><span>How well it works</span></a></li>
+      <li><a href="#next"><span class="n">10</span><span>What to do next</span></a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+  <div class="legend">
+    <span><span class="tag t-pap">paper</span> stated in the PDF</span>
+    <span><span class="tag t-code">code</span> verified in this repo</span>
+    <span><span class="tag t-inf">inferred</span> my reasoning, not a fact</span>
+    <span><span class="tag t-open">open</span> genuinely undecided</span>
+  </div>
+
+  <!-- ============================================================ -->
+  <section id="short">
+    <h2><span class="sn">Section 1</span>The short version</h2>
+    <p class="sub">Six sentences, then the detail.</p>
+
+    <p><strong>HiCo-Nav lets you talk to a robot in ordinary language and have it go find the
+    thing you meant, in a building it has never seen.</strong> You say <em>"I want to host a dinner
+    party on a summer evening, where should I set the table?"</em> and it works out that it is
+    looking for a table, explores until it finds one, and drives there. It does this with no
+    training on that building and no training at all — it is <em>zero-shot</em>, built out of
+    off-the-shelf models wired together well.</p>
+
+    <p>The interesting engineering is in <em>how</em> it is wired. Thinking hard is slow; driving
+    without hitting things has to be fast. Most systems make the fast part stop and wait while the
+    slow part thinks. HiCo-Nav refuses to do that: it runs three loops at three different speeds
+    at the same time, and they talk to each other only by reading and writing a shared
+    <strong>memory</strong> — a growing collection of camera snapshots and the objects visible in
+    them. Nothing ever waits for anything.</p>
+
+    <h3>The four things you should take away</h3>
+    <div class="kv">
+      <div><span class="k">Answer 1 · the camera</span><span class="v"><b>Yes, it needs one</b>
+        A forward-facing colour-plus-depth camera is load-bearing, not optional. This robot does not
+        have one. <a href="#blockers">Section 8</a></span></div>
+      <div><span class="k">Answer 2 · goals or speeds</span><span class="v"><b>Speeds — but take goals</b>
+        The paper drives the wheels directly. We should take only the layer above that.
+        <a href="#tiers">Section 7</a></span></div>
+      <div><span class="k">Answer 3 · how much it swallows</span><span class="v"><b>Less than feared</b>
+        Its memory can tell us <em>which table</em>. It cannot replace close-range grasp
+        perception. <a href="#tiers">Section 7</a></span></div>
+      <div><span class="k">The surprise</span><span class="v"><b>Three new dependencies</b>
+        A different localisation stack, a camera–LiDAR calibration, and a vision-language model to
+        host. <a href="#blockers">Section 8</a></span></div>
+      <div><span class="k">Bonus answer · registration</span><span class="v"><b>A cascade, not every frame</b>
+        Cheap detection on all 10 fps; expensive segmentation on ~1 frame per 1–2 s. Answers our own
+        §2.1. <a href="#graph">Section 5</a></span></div>
+    </div>
+
+    <div class="callout c-ok">
+      <span class="ct">One genuine piece of luck</span>
+      <p>The paper's real robot uses a <strong>Livox MID-360 LiDAR</strong> and a
+      <strong>RealSense camera</strong>. <span class="tag t-code">code</span> This robot already has
+      a MID-360, mounted rigidly on the base. Half the sensor suite already matches. What is missing
+      is a camera in the right <em>place</em> — not a camera of an unusual <em>kind</em>.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="task">
+    <h2><span class="sn">Section 2</span>What it actually does</h2>
+    <p class="sub">The task, start to finish, in plain terms.</p>
+
+    <figure>
+      <div class="figbox">
+      <svg class="fig" viewBox="0 0 900 200" role="img"
+           aria-label="Five-step flow: instruction, decompose, explore, recognise, arrive.">
+        <defs>
+          <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+            <path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--ink-3)"/>
+          </marker>
+        </defs>
+        <rect class="bx-a" x="6"   y="52" width="150" height="76" rx="5"/>
+        <text class="tl" x="81" y="78" text-anchor="middle">You speak</text>
+        <text class="ts" x="81" y="97" text-anchor="middle">"where should I</text>
+        <text class="ts" x="81" y="112" text-anchor="middle">set the table?"</text>
+
+        <rect class="bx-p" x="188" y="52" width="150" height="76" rx="5"/>
+        <text class="tl" x="263" y="78" text-anchor="middle">It works out</text>
+        <text class="ts" x="263" y="97" text-anchor="middle">target: table</text>
+        <text class="ts" x="263" y="112" text-anchor="middle">related: chair, plate</text>
+
+        <rect class="bx-w" x="370" y="52" width="150" height="76" rx="5"/>
+        <text class="tl" x="445" y="78" text-anchor="middle">It explores</text>
+        <text class="ts" x="445" y="97" text-anchor="middle">picks the doorway</text>
+        <text class="ts" x="445" y="112" text-anchor="middle">most likely to pay off</text>
+
+        <rect class="bx-g" x="552" y="52" width="150" height="76" rx="5"/>
+        <text class="tl" x="627" y="78" text-anchor="middle">It recognises</text>
+        <text class="ts" x="627" y="97" text-anchor="middle">a language model</text>
+        <text class="ts" x="627" y="112" text-anchor="middle">reads its own photos</text>
+
+        <rect class="bx" x="734" y="52" width="150" height="76" rx="5"/>
+        <text class="tl" x="809" y="78" text-anchor="middle">It arrives</text>
+        <text class="ts" x="809" y="97" text-anchor="middle">and points at the</text>
+        <text class="ts" x="809" y="112" text-anchor="middle">object it found</text>
+
+        <line class="e" x1="158" y1="90" x2="184" y2="90" marker-end="url(#ar)"/>
+        <line class="e" x1="340" y1="90" x2="366" y2="90" marker-end="url(#ar)"/>
+        <line class="e" x1="522" y1="90" x2="548" y2="90" marker-end="url(#ar)"/>
+        <line class="e" x1="704" y1="90" x2="730" y2="90" marker-end="url(#ar)"/>
+
+        <path class="e-f" d="M627 132 L627 160 L445 160 L445 134" marker-end="url(#ar)"/>
+        <text class="ts" x="536" y="176" text-anchor="middle">not found yet → keep exploring</text>
+
+        <text class="lb" x="6" y="30">THE TASK, END TO END</text>
+      </svg>
+      </div>
+      <figcaption><strong>Figure 1.</strong> The loop. Steps 3 and 4 run
+      <em>simultaneously and independently</em> — the robot never stops driving in order to think
+      about what it has seen. That is the paper's central idea.</figcaption>
+    </figure>
+
+    <h3>Two words worth learning</h3>
+    <p><strong>Zero-shot</strong> means no training. Point it at a building it has never entered,
+    give it a phrase it has never been shown, and it works. Nothing here needs a dataset, an
+    annotation budget, or a fine-tuning run. <span class="tag t-pap">paper</span></p>
+    <p><strong>Frontier</strong> means the edge of what the robot has mapped so far — the boundary
+    between "I have seen this" and "I have not". Exploring means repeatedly choosing which frontier
+    to go stand at next. Most of Section 6 is about choosing well.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="layers">
+    <h2><span class="sn">Section 3</span>The three layers</h2>
+    <p class="sub">Three loops at three speeds, never waiting on each other.</p>
+
+    <p>The problem the paper is solving: a robot has to react to a chair leg in milliseconds, but
+    understanding <em>"where should I set the table"</em> takes a large model a second or more. Bolt
+    those together and you get a bad choice — think often and drive badly, or drive well and miss
+    the target.</p>
+
+    <p>HiCo-Nav's answer is to stop connecting them directly. Each layer runs on its own thread at
+    its own rate, and the <strong>only</strong> thing they share is the memory graph. The reasoning
+    layer <em>deposits</em> conclusions there whenever it reaches them; the driving layer
+    <em>reads</em> them whenever it next needs to decide. Neither ever blocks.</p>
+
+    <figure>
+      <div class="figbox">
+      <svg class="fig" viewBox="0 0 900 560" role="img"
+           aria-label="Three-layer architecture with sensors on the left and chassis commands on the right.">
+        <defs>
+          <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+            <path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--ink-3)"/>
+          </marker>
+          <marker id="ar2a" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+            <path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+
+        <text class="lb" x="6" y="20">SENSORS</text>
+        <rect class="bx-r" x="6" y="32" width="118" height="30" rx="4"/>
+        <text class="tl" x="65" y="52" text-anchor="middle">RGB camera</text>
+        <rect class="bx-r" x="6" y="68" width="118" height="30" rx="4"/>
+        <text class="tl" x="65" y="88" text-anchor="middle">Depth camera</text>
+        <rect class="bx-g" x="6" y="104" width="118" height="30" rx="4"/>
+        <text class="tl" x="65" y="124" text-anchor="middle">MID-360 LiDAR</text>
+        <rect class="bx-w" x="6" y="140" width="118" height="30" rx="4"/>
+        <text class="tl" x="65" y="160" text-anchor="middle">IMU</text>
+        <rect class="bx-g" x="6" y="188" width="118" height="34" rx="4"/>
+        <text class="tl" x="65" y="203" text-anchor="middle">Voice /</text>
+        <text class="tl" x="65" y="217" text-anchor="middle">instruction</text>
+        <text class="ts" x="6" y="240">red = we do not</text>
+        <text class="ts" x="6" y="254">have this yet</text>
+
+        <!-- Layer 1 -->
+        <rect class="band" x="152" y="26" width="600" height="122" rx="6"/>
+        <text class="lb" x="164" y="46">LAYER 1 · PERCEPTION, LOCALISATION, PLANNING</text>
+        <text class="hz" x="740" y="46" text-anchor="end">10–20 Hz</text>
+        <rect class="bx" x="164" y="58" width="132" height="72" rx="4"/>
+        <text class="tl" x="230" y="83" text-anchor="middle">Localisation</text>
+        <text class="ts" x="230" y="101" text-anchor="middle">FAST-LIVO2</text>
+        <text class="ts" x="230" y="116" text-anchor="middle">(LiDAR+IMU+cam)</text>
+        <rect class="bx" x="308" y="58" width="132" height="72" rx="4"/>
+        <text class="tl" x="374" y="83" text-anchor="middle">Object detection</text>
+        <text class="ts" x="374" y="101" text-anchor="middle">YOLO-World</text>
+        <text class="ts" x="374" y="116" text-anchor="middle">open-vocabulary</text>
+        <rect class="bx" x="452" y="58" width="132" height="72" rx="4"/>
+        <text class="tl" x="518" y="83" text-anchor="middle">Path planning</text>
+        <text class="ts" x="518" y="101" text-anchor="middle">A* + local</text>
+        <text class="ts" x="518" y="116" text-anchor="middle">optimiser</text>
+        <rect class="bx" x="596" y="58" width="144" height="72" rx="4"/>
+        <text class="tl" x="668" y="83" text-anchor="middle">Obstacle avoidance</text>
+        <text class="ts" x="668" y="101" text-anchor="middle">dynamic-aware</text>
+        <text class="ts" x="668" y="116" text-anchor="middle">control</text>
+
+        <!-- Layer 2 -->
+        <rect class="band" x="152" y="176" width="600" height="150" rx="6"/>
+        <text class="lb" x="164" y="196">LAYER 2 · MEMORY CONSTRUCTION</text>
+        <text class="hz" x="740" y="196" text-anchor="end">1–2 Hz</text>
+        <rect class="bx-a" x="164" y="208" width="576" height="102" rx="5"/>
+        <text class="tl" x="452" y="230" text-anchor="middle">Cognitive Memory Graph</text>
+        <text class="ts" x="452" y="248" text-anchor="middle">snapshots ("visual anchors") ←→ the objects visible in them</text>
+        <rect class="bx" x="180" y="258" width="126" height="40" rx="4"/>
+        <text class="ts" x="243" y="276" text-anchor="middle">pick a snapshot</text>
+        <text class="ts" x="243" y="290" text-anchor="middle">worth keeping</text>
+        <rect class="bx" x="318" y="258" width="126" height="40" rx="4"/>
+        <text class="ts" x="381" y="276" text-anchor="middle">merge repeats of</text>
+        <text class="ts" x="381" y="290" text-anchor="middle">the same object</text>
+        <rect class="bx" x="456" y="258" width="126" height="40" rx="4"/>
+        <text class="ts" x="519" y="276" text-anchor="middle">throw away</text>
+        <text class="ts" x="519" y="290" text-anchor="middle">redundant snapshots</text>
+        <rect class="bx" x="594" y="258" width="130" height="40" rx="4"/>
+        <text class="ts" x="659" y="276" text-anchor="middle">split into chunks</text>
+        <text class="ts" x="659" y="290" text-anchor="middle">the model can read</text>
+
+        <!-- Layer 3 -->
+        <rect class="band" x="152" y="354" width="600" height="128" rx="6"/>
+        <text class="lb" x="164" y="374">LAYER 3 · HIGH-LEVEL REASONING</text>
+        <text class="hz" x="740" y="374" text-anchor="end">continuous</text>
+        <rect class="bx-p" x="164" y="386" width="176" height="80" rx="4"/>
+        <text class="tl" x="252" y="411" text-anchor="middle">Understand the</text>
+        <text class="tl" x="252" y="427" text-anchor="middle">instruction</text>
+        <text class="ts" x="252" y="447" text-anchor="middle">once per task</text>
+        <rect class="bx-p" x="352" y="386" width="188" height="80" rx="4"/>
+        <text class="tl" x="446" y="411" text-anchor="middle">Read the snapshots</text>
+        <text class="ts" x="446" y="431" text-anchor="middle">vision-language model,</text>
+        <text class="ts" x="446" y="446" text-anchor="middle">chunk by chunk, forever</text>
+        <rect class="bx-p" x="552" y="386" width="188" height="80" rx="4"/>
+        <text class="tl" x="646" y="411" text-anchor="middle">"Is the target here?"</text>
+        <text class="ts" x="646" y="431" text-anchor="middle">yes/no + a box on the</text>
+        <text class="ts" x="646" y="446" text-anchor="middle">image + a justification</text>
+
+        <!-- output -->
+        <text class="lb" x="776" y="20">OUTPUT</text>
+        <rect class="bx-g" x="776" y="58" width="118" height="72" rx="4"/>
+        <text class="tl" x="835" y="84" text-anchor="middle">Wheel speeds</text>
+        <text class="ts" x="835" y="103" text-anchor="middle">linear + angular</text>
+        <text class="tm" x="835" y="119" text-anchor="middle">(v, ω)</text>
+
+        <!-- sensor edges -->
+        <path class="e" d="M126 47 L146 47 L146 94 L160 94" marker-end="url(#ar2)"/>
+        <path class="e" d="M126 83 L140 83 L140 94 L160 94"/>
+        <path class="e" d="M126 119 L140 119 L140 94"/>
+        <path class="e" d="M126 155 L146 155 L146 94"/>
+        <path class="e" d="M126 205 L144 205 L144 426 L160 426" marker-end="url(#ar2)"/>
+
+        <line class="e" x1="752" y1="94" x2="772" y2="94" marker-end="url(#ar2)"/>
+
+        <!-- layer 1 -> layer 2 -->
+        <path class="e-a" d="M452 134 L452 172" marker-end="url(#ar2a)"/>
+        <text class="tm" x="462" y="160">frames + poses + detections</text>
+
+        <!-- layer 2 -> layer 3 -->
+        <path class="e-a" d="M420 314 L420 350" marker-end="url(#ar2a)"/>
+        <text class="tm" x="430" y="338">memory chunks</text>
+
+        <!-- layer 3 -> layer 2 (deposit) -->
+        <path class="e-a" d="M600 350 L600 314" marker-end="url(#ar2a)"/>
+        <text class="tm" x="610" y="338">verdicts written back</text>
+
+        <!-- layer 2 -> layer 1 (read) -->
+        <path class="e-a" d="M660 172 L660 204" marker-end="url(#ar2a)"/>
+        <text class="tm" x="670" y="192">read when deciding</text>
+
+        <text class="ts" x="152" y="510">Nothing on this diagram blocks. Layer 3 writes its conclusions into the graph whenever it reaches them;</text>
+        <text class="ts" x="152" y="527">Layer 1 reads whatever is there at the moment it has to choose a direction. That is the whole trick.</text>
+      </svg>
+      </div>
+      <figcaption><strong>Figure 2.</strong> The architecture, redrawn from the paper's Fig. 2.
+      Layer rates are stated in the paper's own diagram. Red sensor boxes are the ones this robot
+      does not currently have in a usable position — see <a href="#blockers">Section 8</a>.</figcaption>
+    </figure>
+
+    <div class="callout c-note">
+      <span class="ct">Why "proactive" is the important word</span>
+      <p>In competing systems, the fast module decides <em>when</em> to wake the slow one, then sits
+      and waits for an answer. HiCo-Nav's reasoning layer is never woken and never asked. It walks
+      the memory on its own schedule, continuously, and leaves its findings behind.
+      <span class="tag t-pap">paper</span></p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="io">
+    <h2><span class="sn">Section 4</span>Inputs and outputs</h2>
+    <p class="sub">Exactly what has to go in, and what comes out.</p>
+
+    <h3>What it consumes</h3>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Input</th><th>What it is used for</th><th>Do we have it?</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td><strong>RGB image stream</strong></td>
+            <td>Detecting objects, and — more importantly — the images <em>are</em> the memory that
+            gets read by the language model</td>
+            <td><strong>No.</strong> One camera, on the arm's wrist</td></tr>
+          <tr class="hi"><td><strong>Depth image stream</strong></td>
+            <td>Turning a detected object into a 3D position</td>
+            <td><strong>No.</strong> Same camera, same problem</td></tr>
+          <tr><td>LiDAR point cloud</td>
+            <td>Localisation, the occupancy map, obstacle avoidance</td>
+            <td><strong>Yes.</strong> MID-360, already mounted <span class="tag t-code">code</span></td></tr>
+          <tr><td>IMU</td>
+            <td>Required by FAST-LIVO2, the localisation the paper uses</td>
+            <td><span class="tag t-open">open</span> The MID-360 has one built in; whether the
+            driver publishes it here is unchecked</td></tr>
+          <tr><td>LiDAR ↔ camera extrinsics</td>
+            <td>Placing camera images into the same coordinates as the LiDAR map</td>
+            <td><strong>No.</strong> Never needed one before. <a href="#blockers">Section 8</a></td></tr>
+          <tr><td>Language instruction</td>
+            <td>The task itself</td>
+            <td><strong>Yes.</strong> The glasses already publish
+            <span class="topic">/aria/audio/prompt</span> <span class="tag t-code">code</span></td></tr>
+          <tr><td>Robot speed limits</td>
+            <td>Estimating how long each candidate detour would take</td>
+            <td><strong>Yes.</strong> Already in the Nav2 configuration</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>What it produces</h3>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Output</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Wheel speeds</strong> <code>(v, ω)</code></td>
+            <td>Smooth, collision-free velocity commands, straight to the chassis. <em>This is the
+            answer to "goals or velocities" — it is velocities.</em> <span class="tag t-pap">paper</span></td></tr>
+          <tr><td>A mid-term goal</td>
+            <td>The next frontier to go stand at, chosen by the ordering in
+            <a href="#explore">Section 6</a></td></tr>
+          <tr><td>Target localisation</td>
+            <td>Which stored snapshot the target is in, plus a box drawn on it</td></tr>
+          <tr><td>Reasoning evidence</td>
+            <td>A short sentence explaining <em>why</em> — genuinely useful for debugging a system
+            that is otherwise a black box</td></tr>
+          <tr><td>The memory graph</td>
+            <td>Persistent, and the reason this is interesting to us beyond navigation. See
+            <a href="#tiers">Section 7</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="graph">
+    <h2><span class="sn">Section 5</span>Memory, and how objects get into it</h2>
+    <p class="sub">The most portable idea in the paper, the one that needs the camera — and the
+    cascade that decides when the expensive model runs.</p>
+
+    <p>Most comparable systems build a <em>scene graph</em> — a tidy symbolic structure that says
+    "chair is near table, table is in kitchen". HiCo-Nav argues that is the wrong substrate, for a
+    blunt reason: <strong>a vision-language model reads pictures, not symbol tables.</strong> Every
+    conversion into symbols throws away information the model could have used.</p>
+
+    <p>So the memory is built out of the photographs themselves. It has exactly two kinds of thing
+    in it, and one kind of link:</p>
+
+    <figure>
+      <div class="figbox">
+      <svg class="fig" viewBox="0 0 900 400" role="img"
+           aria-label="Bipartite memory graph: snapshots on top, objects below, with pruning shown.">
+        <defs>
+          <marker id="ar3" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+            <path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--ink-3)"/>
+          </marker>
+        </defs>
+
+        <text class="lb" x="6" y="22">BEFORE PRUNING — SNAPSHOTS PILE UP</text>
+
+        <rect class="bx-a" x="30"  y="40" width="76" height="42" rx="4"/>
+        <text class="ts" x="68" y="60" text-anchor="middle">snapshot</text>
+        <text class="tm" x="68" y="74" text-anchor="middle">a₁</text>
+        <rect class="bx-a" x="122" y="40" width="76" height="42" rx="4"/>
+        <text class="ts" x="160" y="60" text-anchor="middle">snapshot</text>
+        <text class="tm" x="160" y="74" text-anchor="middle">a₂</text>
+        <rect class="bx-a" x="214" y="40" width="76" height="42" rx="4"/>
+        <text class="ts" x="252" y="60" text-anchor="middle">snapshot</text>
+        <text class="tm" x="252" y="74" text-anchor="middle">a₃</text>
+        <rect class="bx-a" x="306" y="40" width="76" height="42" rx="4"/>
+        <text class="ts" x="344" y="60" text-anchor="middle">snapshot</text>
+        <text class="tm" x="344" y="74" text-anchor="middle">a₄</text>
+
+        <line class="e-f" x1="68"  y1="84" x2="80"  y2="146"/>
+        <line class="e-f" x1="68"  y1="84" x2="196" y2="146"/>
+        <line class="e-f" x1="160" y1="84" x2="80"  y2="146"/>
+        <line class="e-f" x1="160" y1="84" x2="196" y2="146"/>
+        <line class="e-f" x1="252" y1="84" x2="196" y2="146"/>
+        <line class="e-f" x1="252" y1="84" x2="312" y2="146"/>
+        <line class="e-f" x1="344" y1="84" x2="312" y2="146"/>
+
+        <rect class="bx-g" x="34"  y="148" width="92" height="46" rx="4"/>
+        <text class="ts" x="80" y="167" text-anchor="middle">object o₁</text>
+        <text class="ts" x="80" y="182" text-anchor="middle">"table"</text>
+        <rect class="bx-g" x="150" y="148" width="92" height="46" rx="4"/>
+        <text class="ts" x="196" y="167" text-anchor="middle">object o₂</text>
+        <text class="ts" x="196" y="182" text-anchor="middle">"chair"</text>
+        <rect class="bx-g" x="266" y="148" width="92" height="46" rx="4"/>
+        <text class="ts" x="312" y="167" text-anchor="middle">object o₃</text>
+        <text class="ts" x="312" y="182" text-anchor="middle">"plant"</text>
+
+        <text class="ts" x="30" y="216">each object node carries a 3D point cloud + a CLIP feature</text>
+        <text class="ts" x="30" y="232">an edge means "this snapshot saw this object"</text>
+
+        <!-- arrow -->
+        <path class="e" d="M410 130 L470 130" marker-end="url(#ar3)"/>
+        <text class="tm" x="440" y="118" text-anchor="middle">prune</text>
+        <text class="ts" x="440" y="150" text-anchor="middle">solve an</text>
+        <text class="ts" x="440" y="164" text-anchor="middle">optimisation</text>
+
+        <text class="lb" x="500" y="22">AFTER PRUNING — SAME COVERAGE, FEWER SNAPSHOTS</text>
+
+        <rect class="bx-a" x="524" y="40" width="76" height="42" rx="4"/>
+        <text class="ts" x="562" y="60" text-anchor="middle">snapshot</text>
+        <text class="tm" x="562" y="74" text-anchor="middle">a₂</text>
+        <rect class="bx-a" x="640" y="40" width="76" height="42" rx="4"/>
+        <text class="ts" x="678" y="60" text-anchor="middle">snapshot</text>
+        <text class="tm" x="678" y="74" text-anchor="middle">a₃</text>
+        <rect class="bx" x="756" y="40" width="76" height="42" rx="4" stroke-dasharray="4 3"/>
+        <text class="ts" x="794" y="60" text-anchor="middle">a₁, a₄</text>
+        <text class="ts" x="794" y="74" text-anchor="middle">dropped</text>
+
+        <line class="e-f" x1="562" y1="84" x2="574" y2="146"/>
+        <line class="e-f" x1="562" y1="84" x2="690" y2="146"/>
+        <line class="e-f" x1="678" y1="84" x2="690" y2="146"/>
+        <line class="e-f" x1="678" y1="84" x2="806" y2="146"/>
+
+        <rect class="bx-g" x="528" y="148" width="92" height="46" rx="4"/>
+        <text class="ts" x="574" y="167" text-anchor="middle">object o₁</text>
+        <text class="ts" x="574" y="182" text-anchor="middle">"table"</text>
+        <rect class="bx-g" x="644" y="148" width="92" height="46" rx="4"/>
+        <text class="ts" x="690" y="167" text-anchor="middle">object o₂</text>
+        <text class="ts" x="690" y="182" text-anchor="middle">"chair"</text>
+        <rect class="bx-g" x="760" y="148" width="92" height="46" rx="4"/>
+        <text class="ts" x="806" y="167" text-anchor="middle">object o₃</text>
+        <text class="ts" x="806" y="182" text-anchor="middle">"plant"</text>
+
+        <text class="ts" x="500" y="216">every object is still seen by at least one kept snapshot —</text>
+        <text class="ts" x="500" y="232">that constraint is what the optimiser enforces</text>
+
+        <rect class="bx-w" x="30" y="264" width="820" height="112" rx="5"/>
+        <text class="tl" x="48" y="290">Why pruning is an optimisation and not a heuristic</text>
+        <text class="ts" x="48" y="312">The obvious approach — "drop snapshots older than N, or closer together than d" — can silently drop the only view of some object.</text>
+        <text class="ts" x="48" y="330">The paper instead states the requirement directly: keep the cheapest set of snapshots such that every object is still covered, ideally several times over.</text>
+        <text class="ts" x="48" y="348">That is a classic "set cover" problem, solved exactly by integer linear programming. It guarantees nothing is forgotten, which a heuristic cannot.</text>
+        <text class="ts" x="48" y="366">Cost per snapshot is tunable, so it can also prefer sharper or more diverse viewpoints rather than just counting.</text>
+      </svg>
+      </div>
+      <figcaption><strong>Figure 3.</strong> The Cognitive Memory Graph. Snapshots on top, objects
+      below, edges meaning "saw". As the robot drives, snapshots accumulate faster than objects do,
+      so the graph is periodically compressed without losing coverage.</figcaption>
+    </figure>
+
+    <h3>So how are objects registered — does it run segmentation on every frame?</h3>
+    <p><strong>No, and this is the part most worth copying.</strong> The obvious guess — run the
+    expensive segmentation model on every frame, or every other frame — is not what happens. The
+    pipeline is a <strong>cascade</strong>: a cheap detector looks at everything, and the expensive
+    segmenter only ever sees the frames a free test has already judged worth keeping.</p>
+
+    <figure>
+      <div class="figbox">
+      <svg class="fig" viewBox="0 0 900 372" role="img"
+           aria-label="Timeline over two seconds: detection runs on all twenty frames, segmentation on only two.">
+        <defs>
+          <marker id="arc" markerWidth="8" markerHeight="8" refX="6" refY="2.8" orient="auto">
+            <path d="M0,0 L6,2.8 L0,5.6 z" fill="var(--caution)"/>
+          </marker>
+        </defs>
+        <text class="lb" x="20" y="24">TWO SECONDS OF DRIVING, AT THE PAPER'S REPORTED RATES</text>
+        <line class="e-f" x1="156" y1="40" x2="855" y2="40"/>
+        <text class="ts" x="156" y="34">0.0 s</text>
+        <text class="ts" x="855" y="34" text-anchor="end">2.0 s</text>
+        <text class="ts" x="20" y="66">Frames arriving</text>
+        <text class="tm" x="20" y="82">20 frames</text>
+        <rect class="bx" x="160" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="195" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="230" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="265" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="300" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="335" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="370" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="405" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="440" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="475" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="510" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="545" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="580" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="615" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="650" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="685" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="720" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="755" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="790" y="52" width="16" height="26" rx="2"/>
+        <rect class="bx" x="825" y="52" width="16" height="26" rx="2"/>
+        <text class="ts" x="20" y="120">Detect</text>
+        <text class="tm" x="20" y="136">YOLO-World</text>
+        <rect class="bx-g" x="156" y="104" width="689" height="30" rx="4"/>
+        <text class="tl" x="500" y="123" text-anchor="middle">runs on every single frame — cheap, always on</text>
+        <text class="ts" x="20" y="174">Anchor test</text>
+        <text class="tm" x="20" y="190">free, no model</text>
+        <path d="M168 158 L174 165 L168 172 L162 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M203 158 L209 165 L203 172 L197 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M238 158 L244 165 L238 172 L232 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M273 154 L282 165 L273 176 L264 165 z" fill="var(--caution-soft)" stroke="var(--caution)" stroke-width="1.6"/>
+        <path d="M308 158 L314 165 L308 172 L302 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M343 158 L349 165 L343 172 L337 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M378 158 L384 165 L378 172 L372 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M413 158 L419 165 L413 172 L407 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M448 158 L454 165 L448 172 L442 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M483 158 L489 165 L483 172 L477 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M518 158 L524 165 L518 172 L512 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M553 158 L559 165 L553 172 L547 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M588 158 L594 165 L588 172 L582 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M623 158 L629 165 L623 172 L617 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M658 154 L667 165 L658 176 L649 165 z" fill="var(--caution-soft)" stroke="var(--caution)" stroke-width="1.6"/>
+        <path d="M693 158 L699 165 L693 172 L687 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M728 158 L734 165 L728 172 L722 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M763 158 L769 165 L763 172 L757 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M798 158 L804 165 L798 172 L792 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <path d="M833 158 L839 165 L833 172 L827 165 z" fill="var(--surface-2)" stroke="var(--line-2)" stroke-width="1"/>
+        <line class="e" x1="273" y1="178" x2="273" y2="204" stroke="var(--caution)" stroke-width="1.6" marker-end="url(#arc)"/>
+        <line class="e" x1="658" y1="178" x2="658" y2="204" stroke="var(--caution)" stroke-width="1.6" marker-end="url(#arc)"/>
+        <text class="ts" x="20" y="228">Segment &amp; register</text>
+        <text class="tm" x="20" y="244">MobileSAM</text>
+        <line class="e-f" x1="168" y1="221" x2="168" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="203" y1="221" x2="203" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="238" y1="221" x2="238" y2="229" stroke="var(--line-2)"/>
+        <rect class="bx-w" x="235" y="208" width="76" height="34" rx="4"/>
+        <text class="ts" x="273" y="223" text-anchor="middle">mask → 3D</text>
+        <text class="ts" x="273" y="237" text-anchor="middle">→ merge test</text>
+        <line class="e-f" x1="308" y1="221" x2="308" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="343" y1="221" x2="343" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="378" y1="221" x2="378" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="413" y1="221" x2="413" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="448" y1="221" x2="448" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="483" y1="221" x2="483" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="518" y1="221" x2="518" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="553" y1="221" x2="553" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="588" y1="221" x2="588" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="623" y1="221" x2="623" y2="229" stroke="var(--line-2)"/>
+        <rect class="bx-w" x="620" y="208" width="76" height="34" rx="4"/>
+        <text class="ts" x="658" y="223" text-anchor="middle">mask → 3D</text>
+        <text class="ts" x="658" y="237" text-anchor="middle">→ merge test</text>
+        <line class="e-f" x1="693" y1="221" x2="693" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="728" y1="221" x2="728" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="763" y1="221" x2="763" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="798" y1="221" x2="798" y2="229" stroke="var(--line-2)"/>
+        <line class="e-f" x1="833" y1="221" x2="833" y2="229" stroke="var(--line-2)"/>
+        <text class="tm" x="20" y="272" fill="var(--caution)">2 of 20</text>
+        <text class="ts" x="20" y="288">frames segmented</text>
+        <rect class="bx-a" x="168" y="258" width="712" height="98" rx="5"/>
+        <text class="tl" x="186" y="282">A frame becomes a keyframe if EITHER test fires</text>
+        <text class="ts" x="186" y="304">· something is in view that was not in the graph before  —  semantic novelty</text>
+        <text class="ts" x="186" y="322">· the robot has driven far enough or turned enough since the last keyframe  —  geometric novelty</text>
+        <text class="ts" x="186" y="344">Both are thresholds on numbers the detector and the localiser already produced, so the test itself costs nothing.</text>
+      </svg>
+      </div>
+      <figcaption><strong>Figure 4.</strong> The registration cascade, drawn to the paper's own
+      reported rates: detection at 10 frames per second, keyframes at roughly one every 1&ndash;2
+      seconds. <span class="tag t-pap">paper</span> Two frames in twenty reach the segmenter — a
+      <strong>10&ndash;20&times; reduction</strong> in segmentation calls.</figcaption>
+    </figure>
+
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Stage</th><th>What runs</th><th>On what</th><th>Rate</th></tr></thead>
+        <tbody>
+          <tr><td>1 · Pose</td><td>FAST-LIVO2, mapped into the camera frame</td><td>every frame</td><td>sensor rate</td></tr>
+          <tr><td>2 · Detect</td><td><strong>YOLO-World</strong> — open-vocabulary boxes</td><td><strong>every frame</strong></td><td>10 fps</td></tr>
+          <tr><td>3 · Decide</td><td>The keyframe test — two thresholds, no model at all</td><td>every frame</td><td>10 fps</td></tr>
+          <tr class="hi"><td>4 · Register</td><td><strong>MobileSAM</strong> mask → depth to 3D → CLIP feature → merge</td><td><strong>keyframes only</strong></td><td><strong>~1 per 1–2 s</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Only at stage 4 does an object actually enter the memory. The mask is cut, depth and the
+    camera pose lift it into a 3D shape, a CLIP feature records what it looks like, and then the
+    merge test decides whether this is a new object or the fourth time the robot has seen the same
+    chair.</p>
+
+    <h4>The merge test — "have I seen this before?"</h4>
+    <p>Two independent measures have to agree before a sighting is folded into an existing object:
+    <strong>do the 3D shapes overlap</strong>, and <strong>do they look like the same kind of
+    thing</strong>. Both are needed, because each fails alone — overlap alone merges a book with the
+    table it rests on, and appearance alone merges the four identical chairs around that table into
+    one. Fail the combined test and a new object node is created instead.</p>
+
+    <div class="callout c-stop">
+      <span class="ct">This is where the camera requirement becomes unavoidable</span>
+      <p>Every stage from 2 onward needs the camera, and stage 4's output <em>is</em> the memory.
+      There is no version of this that runs on LiDAR alone: with no images there are no snapshots,
+      with no snapshots there is nothing for the language model to read, and Layer 3 has no input at
+      all. The camera is not a quality improvement — it is the substrate.</p>
+    </div>
+
+    <div class="callout c-ok">
+      <span class="ct">This answers an open question in our own work register</span>
+      <p><code>NEXT_STEPS.md</code> §2.1 asks when SAM 3 should run — it currently runs on
+      <em>every</em> synchronised RGB+depth pair, against a hardcoded prompt. That item lists a
+      "two-stage" option but marks it <span class="tag t-inf">inferred</span>, noting it would need
+      <em>"a second model and an 'interesting' criterion"</em>. <strong>The paper is that design,
+      and it supplies the criterion:</strong> escalate when a new object class appears, or when the
+      robot has moved or turned enough since last time.</p>
+      <p>Two things make the case stronger here than in the paper.
+      <span class="tag t-inf">inferred</span> First, the paper escalates to MobileSAM — a
+      deliberately lightweight model — whereas we would be escalating to <strong>SAM 3 at
+      3.4 GB</strong>, so we save proportionally more. Second, §2.1's "graph-driven" and
+      "event-driven" options turn out to be the same option: the keyframe test <em>is</em> the
+      event. There is one policy to build, not two.</p>
+      <p>It is also the cheapest item in this entire document to try — a distance threshold, a
+      rotation threshold, and a set-difference on class names. It needs no camera purchase and does
+      not wait on anything else.</p>
+    </div>
+
+    <div class="callout c-warn">
+      <span class="ct">One caution that comes with it</span>
+      <p>A cascade <em>lowers</em> the update rate by design. <code>ORIENTATION.md</code> §8.8
+      records that the consumer-side staleness guard in
+      <code>grasp_state_machine.cpp:637-641</code> is commented out — so the state machine will
+      happily drive toward a target position that stopped updating. That missing guard becomes more
+      dangerous under a cascade, not less. Restore it alongside, not afterwards.</p>
+    </div>
+
+    <h3>How the model reads it</h3>
+    <p>The whole graph will not fit in a language model's context window, so it is cut into chunks
+    and streamed. The order is not arbitrary. At the very start of the task, the model is asked once
+    to expand the instruction into two lists:</p>
+    <pre><span class="cm">"where should I set the table?"</span>
+  → <span class="hl">targets</span>  = { table }              <span class="cm">seeing one of these completes the task</span>
+  → <span class="hl">related</span>  = { chair, plate, dining room }  <span class="cm">these hint where the target is</span></pre>
+    <p>Chunks containing targets go first, then chunks containing related objects, then everything
+    else ordered by how well its contents match the instruction. That single up-front call is then
+    <strong>reused for the entire run</strong> — including by the exploration scorer in the next
+    section, which is how the system gets language-model-quality judgement into a loop that runs
+    hundreds of times a second without paying for it.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="explore">
+    <h2><span class="sn">Section 6</span>Choosing where to go</h2>
+    <p class="sub">Scoring the doorways, then putting them in the right order. This is the part with
+    the largest measured effect.</p>
+
+    <h3>Step one — score each frontier</h3>
+    <p>Two independent sources of evidence, added together. Most published systems use only one of
+    them; the paper's own ablation shows they are complementary rather than redundant.</p>
+
+    <figure>
+      <div class="figbox">
+      <svg class="fig" viewBox="0 0 900 300" role="img"
+           aria-label="Two frontier scoring signals: semantic spread inside the map and image evidence beyond it.">
+        <rect class="bx" x="20" y="34" width="410" height="236" rx="5"/>
+        <text class="lb" x="38" y="58">SIGNAL A · WHAT I HAVE ALREADY SEEN</text>
+        <text class="ts" x="38" y="78">Objects cast a fading "glow" onto the map around them.</text>
+        <text class="ts" x="38" y="94">Bright = relevant to the task. Wide = physically large.</text>
+
+        <circle cx="150" cy="176" r="58" fill="var(--working)" opacity="0.10"/>
+        <circle cx="150" cy="176" r="40" fill="var(--working)" opacity="0.13"/>
+        <circle cx="150" cy="176" r="22" fill="var(--working)" opacity="0.18"/>
+        <rect class="bx-g" x="132" y="164" width="36" height="24" rx="3"/>
+        <text class="ts" x="150" y="180" text-anchor="middle">chair</text>
+
+        <circle cx="290" cy="200" r="34" fill="var(--ink-3)" opacity="0.07"/>
+        <circle cx="290" cy="200" r="18" fill="var(--ink-3)" opacity="0.10"/>
+        <rect class="bx" x="272" y="188" width="36" height="24" rx="3"/>
+        <text class="ts" x="290" y="204" text-anchor="middle">bin</text>
+
+        <line x1="210" y1="120" x2="210" y2="250" stroke="var(--caution)" stroke-width="2.4" stroke-dasharray="6 4"/>
+        <text class="ts" x="216" y="134" fill="var(--caution)">frontier</text>
+        <text class="ts" x="38" y="252">"chair" is on the related list → its glow is boosted.</text>
+        <text class="ts" x="38" y="266">The frontier sitting in that glow scores highly.</text>
+
+        <rect class="bx" x="466" y="34" width="414" height="236" rx="5"/>
+        <text class="lb" x="484" y="58">SIGNAL B · WHAT I CAN SEE BUT NOT MEASURE</text>
+        <text class="ts" x="484" y="78">Depth runs out at a few metres. The photograph does not.</text>
+        <text class="ts" x="484" y="94">Score the image content past the edge of the map.</text>
+
+        <rect x="484" y="118" width="180" height="132" fill="var(--surface-2)" stroke="var(--line-2)"/>
+        <text class="ts" x="574" y="142" text-anchor="middle">mapped region</text>
+        <text class="ts" x="574" y="158" text-anchor="middle">(depth valid)</text>
+        <line x1="664" y1="118" x2="664" y2="250" stroke="var(--caution)" stroke-width="2.4" stroke-dasharray="6 4"/>
+        <text class="ts" x="670" y="134" fill="var(--caution)">frontier</text>
+
+        <rect class="bx-a" x="690" y="130" width="174" height="80" rx="4"/>
+        <text class="ts" x="777" y="152" text-anchor="middle">the snapshot that saw</text>
+        <text class="ts" x="777" y="168" text-anchor="middle">this boundary still shows</text>
+        <text class="ts" x="777" y="184" text-anchor="middle">a long dining table</text>
+        <text class="ts" x="777" y="200" text-anchor="middle">further down the corridor</text>
+        <text class="ts" x="484" y="252">Match that image against the instruction with CLIP.</text>
+        <text class="ts" x="484" y="266">This is how it "sees down the corridor" before going there.</text>
+      </svg>
+      </div>
+      <figcaption><strong>Figure 5.</strong> The two frontier signals. Removing signal A costs 1.1
+      points of success rate; removing signal B costs 1.3. <span class="tag t-pap">paper</span></figcaption>
+    </figure>
+
+    <h3>Step two — put them in order, not just pick the best</h3>
+    <p>Here is the paper's sharpest observation. Almost every comparable system is
+    <strong>greedy</strong>: score the frontiers, go to the highest one, rescore, repeat. That
+    produces the oscillating, doubling-back behaviour anyone who has watched an exploring robot will
+    recognise.</p>
+
+    <p>But a full tour of every frontier is wrong too, because <strong>the robot stops the moment it
+    finds the thing.</strong> Visiting all of them is never required. So the quantity to minimise is
+    not distance travelled — it is <em>how long you expect to wait before you find it</em>.</p>
+
+    <figure>
+      <div class="figbox">
+      <svg class="fig" viewBox="0 0 900 290" role="img"
+           aria-label="Greedy route versus weighted-ordering route across four candidate frontiers.">
+        <rect class="bx" x="20" y="30" width="410" height="240" rx="5"/>
+        <text class="lb" x="38" y="54">GREEDY — ALWAYS TAKE THE BEST-SCORING NEXT</text>
+
+        <circle cx="70" cy="200" r="8" fill="var(--ink-2)"/>
+        <text class="ts" x="70" y="224" text-anchor="middle">robot</text>
+        <circle cx="360" cy="90" r="16" class="bx-g"/>
+        <text class="ts" x="360" y="95" text-anchor="middle">0.9</text>
+        <circle cx="130" cy="90" r="14" class="bx-w"/>
+        <text class="ts" x="130" y="95" text-anchor="middle">0.6</text>
+        <circle cx="240" cy="200" r="14" class="bx-w"/>
+        <text class="ts" x="240" y="205" text-anchor="middle">0.5</text>
+        <circle cx="330" cy="230" r="12" class="bx"/>
+        <text class="ts" x="330" y="235" text-anchor="middle">0.2</text>
+
+        <path class="e-r" d="M70 200 L360 90 M360 90 L130 90 M130 90 L240 200 M240 200 L330 230"/>
+        <text class="ts" x="38" y="252">Long detour, then doubles back across the room.</text>
+        <text class="ts" x="38" y="266">Rescoring on arrival makes it worse, not better.</text>
+
+        <rect class="bx" x="466" y="30" width="414" height="240" rx="5"/>
+        <text class="lb" x="484" y="54">WEIGHTED ORDERING — MINIMISE EXPECTED WAIT</text>
+
+        <circle cx="516" cy="200" r="8" fill="var(--ink-2)"/>
+        <text class="ts" x="516" y="224" text-anchor="middle">robot</text>
+        <circle cx="806" cy="90" r="16" class="bx-g"/>
+        <text class="ts" x="806" y="95" text-anchor="middle">0.9</text>
+        <circle cx="576" cy="90" r="14" class="bx-w"/>
+        <text class="ts" x="576" y="95" text-anchor="middle">0.6</text>
+        <circle cx="686" cy="200" r="14" class="bx-w"/>
+        <text class="ts" x="686" y="205" text-anchor="middle">0.5</text>
+        <circle cx="776" cy="230" r="12" class="bx"/>
+        <text class="ts" x="776" y="235" text-anchor="middle">0.2</text>
+
+        <path class="e-g" d="M516 200 L576 90 M576 90 L806 90 M806 90 L686 200 M686 200 L776 230"/>
+        <text class="ts" x="484" y="252">Sweeps the promising ones in a sensible order. Slightly</text>
+        <text class="ts" x="484" y="266">longer total route, much shorter expected time-to-find.</text>
+      </svg>
+      </div>
+      <figcaption><strong>Figure 6.</strong> The Weighted Traveling Repairman formulation. A
+      "repairman" visits customers to minimise their average waiting time, not to minimise his own
+      mileage — exactly the right objective for search. The scores are raised to an exponential
+      first, so a clearly-best frontier is pulled hard to the front while near-ties stay flexible.</figcaption>
+    </figure>
+
+    <h4>Two refinements worth noting</h4>
+    <ul>
+      <li><strong>Cost is measured in seconds, not metres.</strong> A candidate directly behind the
+      robot is expensive because turning takes time. The cost model uses the robot's actual maximum
+      linear and angular speeds. <span class="tag t-pap">paper</span></li>
+      <li><strong>Small enclosed pockets get priority.</strong> A little unexplored alcove is
+      cheap to resolve now and a recurring nuisance if left — the robot will keep coming back to it.
+      The paper raycasts to detect that case and pulls those candidates forward.</li>
+    </ul>
+
+    <div class="callout c-note">
+      <span class="ct">This ordering is the single biggest contributor in the paper's ablation</span>
+      <p>Replacing it with greedy selection costs <strong>2.4 points</strong> of success rate — more
+      than either camera-derived scoring signal. It is also the only major component that
+      <em>needs no camera at all</em>, which makes it the obvious thing to build while a camera is
+      on order. <a href="#next">Section 10</a></p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="tiers">
+    <h2><span class="sn">Section 7</span>What it would replace here</h2>
+    <p class="sub">The paper is a whole navigation stack. We already have one. These are separable —
+    that is the useful insight.</p>
+
+    <p>The temptation is to treat this as all-or-nothing: either adopt HiCo-Nav or do not. But its
+    contributions sit at four different heights in the stack, and they can be taken independently.
+    Three of the four are <em>additive</em> — they occupy space that is currently empty.</p>
+
+    <figure>
+      <div class="figbox">
+      <svg class="fig" viewBox="0 0 900 420" role="img"
+           aria-label="Four tiers of HiCo-Nav mapped against the existing Nav2 stack.">
+        <text class="lb" x="20" y="24">TODAY</text>
+        <text class="lb" x="330" y="24">HICO-NAV OFFERS</text>
+        <text class="lb" x="700" y="24">VERDICT</text>
+
+        <!-- Tier A -->
+        <rect class="bx" x="20" y="40" width="272" height="66" rx="5" stroke-dasharray="5 4"/>
+        <text class="ts" x="156" y="66" text-anchor="middle" font-style="italic">— nothing here —</text>
+        <text class="ts" x="156" y="86" text-anchor="middle">no exploration policy exists</text>
+        <rect class="bx-g" x="330" y="40" width="330" height="66" rx="5"/>
+        <text class="tl" x="346" y="64">Tier A · Frontier scoring + WTRP ordering</text>
+        <text class="ts" x="346" y="84">decides where to go; hands a goal to Nav2</text>
+        <text class="ts" x="346" y="99">LiDAR only — needs no camera</text>
+        <rect class="bx-g" x="700" y="40" width="184" height="66" rx="5"/>
+        <text class="tl" x="792" y="66" text-anchor="middle">PORT FIRST</text>
+        <text class="ts" x="792" y="86" text-anchor="middle">additive, biggest effect</text>
+
+        <!-- Tier B -->
+        <rect class="bx" x="20" y="118" width="272" height="66" rx="5" stroke-dasharray="5 4"/>
+        <text class="ts" x="156" y="144" text-anchor="middle" font-style="italic">— nothing here —</text>
+        <text class="ts" x="156" y="164" text-anchor="middle">no semantic memory at all</text>
+        <rect class="bx-a" x="330" y="118" width="330" height="66" rx="5"/>
+        <text class="tl" x="346" y="142">Tier B · Memory graph + language reasoning</text>
+        <text class="ts" x="346" y="162">makes the spoken instruction actually mean something</text>
+        <text class="ts" x="346" y="177">requires the camera</text>
+        <rect class="bx-a" x="700" y="118" width="184" height="66" rx="5"/>
+        <text class="tl" x="792" y="144" text-anchor="middle">PORT SECOND</text>
+        <text class="ts" x="792" y="164" text-anchor="middle">blocked on hardware</text>
+
+        <!-- Tier C -->
+        <rect class="bx-g" x="20" y="196" width="272" height="76" rx="5"/>
+        <text class="tl" x="156" y="220" text-anchor="middle">Nav2</text>
+        <text class="ts" x="156" y="238" text-anchor="middle">NavfnPlanner + Regulated</text>
+        <text class="ts" x="156" y="253" text-anchor="middle">Pure Pursuit + costmaps</text>
+        <text class="ts" x="156" y="268" text-anchor="middle">tuned for this chassis</text>
+        <rect class="bx-r" x="330" y="196" width="330" height="76" rx="5"/>
+        <text class="tl" x="346" y="220">Tier C · A* + trajectory optimiser + controller</text>
+        <text class="ts" x="346" y="240">emits wheel speeds directly</text>
+        <text class="ts" x="346" y="255">would displace everything in the box to its left</text>
+        <rect class="bx-r" x="700" y="196" width="184" height="76" rx="5"/>
+        <text class="tl" x="792" y="226" text-anchor="middle">DECLINE (for now)</text>
+        <text class="ts" x="792" y="246" text-anchor="middle">re-tuning cost, no</text>
+        <text class="ts" x="792" y="261" text-anchor="middle">benchmark benefit</text>
+
+        <!-- Tier D -->
+        <rect class="bx-w" x="20" y="284" width="272" height="76" rx="5"/>
+        <text class="tl" x="156" y="308" text-anchor="middle">slam_toolbox (2D)</text>
+        <text class="ts" x="156" y="326" text-anchor="middle">LiDAR flattened to a</text>
+        <text class="ts" x="156" y="341" text-anchor="middle">laser scan + wheel odometry</text>
+        <rect class="bx-w" x="330" y="284" width="330" height="76" rx="5"/>
+        <text class="tl" x="346" y="308">Tier D · FAST-LIVO2 localisation</text>
+        <text class="ts" x="346" y="328">LiDAR + IMU + camera, full 3D pose</text>
+        <text class="ts" x="346" y="343">every memory entry's position depends on this</text>
+        <rect class="bx-w" x="700" y="284" width="184" height="76" rx="5"/>
+        <text class="tl" x="792" y="314" text-anchor="middle">MEASURE FIRST</text>
+        <text class="ts" x="792" y="334" text-anchor="middle">may not be optional</text>
+
+        <text class="ts" x="20" y="390">Adopting A and B while declining C keeps the entire motion layer — the part that can drive a robot into a wall — exactly as it is today.</text>
+        <text class="ts" x="20" y="407">That is a much smaller and much safer change than "replace navigation".</text>
+      </svg>
+      </div>
+      <figcaption><strong>Figure 7.</strong> The four tiers. Dashed boxes on the left are empty
+      slots in the current stack — Tiers A and B add capability rather than replacing
+      it.</figcaption>
+    </figure>
+
+    <h3>Does the memory graph swallow our object-finding?</h3>
+    <p><span class="tag t-inf">inferred</span> Partly, and the boundary is clear enough to state.
+    The memory graph knows every object it has ever seen, where it roughly is, and what it looks
+    like. That is <em>exactly</em> what is needed to answer "drive me to the thing I asked for". It
+    is <em>not</em> enough to grasp it — its object shapes come from a fast segmentation at
+    navigation distance, and the grasp planner needs a clean close-range mask.</p>
+
+    <pre><span class="cm">the likely division of labour</span>
+
+  memory graph  ─────►  "the mug is on that table over there"   <span class="cm">coarse, from memory</span>
+                          │
+                          ▼  drive there, arrive
+                          │
+  live SAM 3 + AnyGrasp ─►  "grip it here, at this angle"       <span class="cm">fine, from live frames</span></pre>
+
+    <p>This is close to the split already described in <code>ORIENTATION.md</code> §5. The graph
+    changes <em>where the goal pose comes from</em>; it does not touch the grasp pipeline. That is a
+    smaller change than <code>NEXT_STEPS.md</code> §1.3 was braced for.</p>
+
+    <div class="callout c-ok">
+      <span class="ct">One thing we already have that the paper needed to build</span>
+      <p><span class="tag t-code">code</span> HiCo-Nav's real-world experiments were voice
+      commanded. The Aria glasses on this project already run Whisper and publish
+      <span class="topic">/aria/audio/prompt</span>, and the navigation code already listens to it.
+      Tier B's input side is essentially free.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="blockers">
+    <h2><span class="sn">Section 8</span>Blockers, and the one purchase to raise now</h2>
+    <p class="sub">Ordered by lead time, longest first. This section is the reason the document
+    exists.</p>
+
+    <div class="break">
+      <div class="top">
+        <p class="bn"><span>Blocker 1</span><span>🔴 weeks · procurement</span></p>
+        <h4>A forward-facing colour-plus-depth camera. Confirmed, and load-bearing.</h4>
+        <p class="plain">The existing documentation guessed this and marked it as needing
+        confirmation. It is confirmed, and the requirement is stronger than assumed: the camera
+        images are not <em>input to</em> the memory, they <em>are</em> the memory.</p>
+      </div>
+      <div class="rows">
+        <div class="row"><div class="k">Three uses</div><div class="v">
+          <p>1 · The snapshots the language model reads. 2 · Depth, which gives every object a 3D
+          position. 3 · Seeing past the edge of the map, worth 1.3 points of success rate on its
+          own.</p></div></div>
+        <div class="row"><div class="k">What we have</div><div class="v">
+          <p><span class="tag t-code">code</span> One RealSense D435i, bolted to the arm's wrist.
+          The navigation workspace has no image topic in it at all.</p></div></div>
+        <div class="row evid"><div class="k">Option 1 · buy</div><div class="v">
+          <p><strong>Recommended.</strong> Buy a <strong>D455</strong>, not another D435i — the D455
+          is what the paper deployed, and its wider field of view and longer depth range suit
+          looking at doorways, where the D435i's roughly 2 m usable range is marginal. Mount it
+          rigidly, forward-facing, on the base.</p></div></div>
+        <div class="row"><div class="k">Option 2 · park the arm</div><div class="v">
+          <p><strong>Worse than the docs assumed.</strong> The paper's own small-object success rate
+          falls to 65 % because of vibration blur — and that is with a <em>rigidly mounted</em>
+          camera. A camera at the end of a 6-DoF arm will be worse. It also ties every snapshot's
+          position to joint-state timing, and it makes the arm unavailable for grasping while
+          exploring. Usable as a stopgap during the wait; not the answer.</p></div></div>
+        <div class="row"><div class="k">Option 3 · LiDAR only</div><div class="v">
+          <p><strong>Gives up Tier B entirely.</strong> No image means no snapshot, no snapshot means
+          nothing for the language model to read. What survives is a geometry-only explorer, which
+          discards the entire reason to adopt this paper.</p></div></div>
+        <div class="row"><div class="k">Also start now</div><div class="v">
+          <p><span class="tag t-inf">inferred</span> The <strong>mount design</strong>. It has to
+          clear the arm's swept volume and not stare at the robot's own shell. The arm is mounted
+          yawed 180°, which complicates this. Weeks of lead time, and it can run in parallel with
+          the purchase.</p></div></div>
+      </div>
+    </div>
+
+    <div class="break">
+      <div class="top">
+        <p class="bn"><span>Blocker 2</span><span>🔴 days–weeks · not in the existing docs</span></p>
+        <h4>Where do camera poses come from?</h4>
+        <p class="plain">The paper uses <strong>FAST-LIVO2</strong>, a LiDAR-inertial-visual
+        odometry system. We use 2D <code>slam_toolbox</code>. Every position in the memory graph
+        inherits this choice.</p>
+      </div>
+      <div class="rows">
+        <div class="row"><div class="k">Why it matters</div><div class="v">
+          <p>If poses drift, the same table seen twice becomes two objects, and the graph degrades
+          steadily over a run. The failure is gradual and easy to misdiagnose.</p></div></div>
+        <div class="row evid"><div class="k">Three paths</div><div class="v">
+          <p><strong>Adopt FAST-LIVO2</strong> — closest to the paper, but needs time-synchronised
+          LiDAR + camera + IMU. <span class="tag t-open">open</span> Whether the MID-360's built-in
+          IMU is even published in this workspace is unchecked.</p>
+          <p><strong>Derive poses from <code>slam_toolbox</code> + the transform tree</strong> —
+          cheapest. 2D SLAM gives no reliable pitch or roll, so snapshots inherit that error.
+          <span class="tag t-inf">inferred</span> Probably fine on a wheeled base on a flat lab
+          floor.</p>
+          <p><strong>Use OpenVINS</strong> — already vendored in this repository, but visual-inertial
+          without the LiDAR term, so it does not solve camera–LiDAR registration for free.</p></div></div>
+        <div class="row"><div class="k">Recommendation</div><div class="v">
+          <p>Start cheap, then measure. Pose quality is directly observable as duplicate object
+          nodes in the graph, so this is a decision that can be made from evidence rather than in
+          advance.</p></div></div>
+      </div>
+    </div>
+
+    <div class="break caution">
+      <div class="top">
+        <p class="bn"><span>Blocker 3</span><span>🟠 days · only after the camera arrives</span></p>
+        <h4>Calibrating the camera against the LiDAR</h4>
+        <p class="plain">The paper names calibrated LiDAR–camera extrinsics as a prerequisite. There
+        is no such calibration here, because there has never been a base-mounted camera to
+        calibrate.</p>
+      </div>
+      <div class="rows">
+        <div class="row"><div class="k">Plainly</div><div class="v">
+          <p>The two sensors have to agree on where things are. Without that, an object detected in
+          the image lands in the wrong place on the map — and every downstream position is wrong by
+          the same amount.</p></div></div>
+        <div class="row"><div class="k">Effort</div><div class="v">
+          <p>A well-understood but fiddly workshop task. Budget days, not hours. It sits directly
+          behind Blocker 1 on the critical path, which is another reason the purchase is the
+          urgent item.</p></div></div>
+      </div>
+    </div>
+
+    <div class="break caution">
+      <div class="top">
+        <p class="bn"><span>Blocker 4</span><span>🟠 days + a policy check</span></p>
+        <h4>Where does the vision-language model run?</h4>
+        <p class="plain">The paper's robot called a <strong>cloud API</strong> (Qwen3-Omni). It also
+        reports an offline variant (Qwen3-VL-8B) running locally.</p>
+      </div>
+      <div class="rows">
+        <div class="row"><div class="k">Cloud</div><div class="v">
+          <p>Needs reliable network from a moving robot, an API key, and a per-call budget. It also
+          sends lab imagery off-site — worth checking against department policy
+          <em>before</em> it becomes the default by accident.</p></div></div>
+        <div class="row"><div class="k">Local</div><div class="v">
+          <p><span class="tag t-inf">inferred</span> Roughly 8–16 GB of VRAM depending on
+          quantisation, on a 16 GB card that already hosts SAM 3 (3.4 GB), YOLO-World, MobileSAM and
+          CLIP. This is a real contention problem, not a rounding error. Quantisation or a smaller
+          model is likely required.</p></div></div>
+        <div class="row evid"><div class="k">Read the speed table carefully</div><div class="v">
+          <p>The paper's timing numbers come from an <strong>RTX 5090</strong>. The only
+          embedded-hardware claim is qualitative. Nothing in the paper predicts throughput on our
+          card, and the local-model path in particular should be expected to be slower here. The
+          asynchronous design makes that survivable — a slower reasoning layer degrades decision
+          quality rather than stalling the robot — but it is worth stating rather than
+          discovering.</p></div></div>
+      </div>
+    </div>
+
+    <div class="break mild">
+      <div class="top">
+        <p class="bn"><span>Blocker 5</span><span>🟡 hours–days · check before writing Tier A</span></p>
+        <h4>Two solvers, one of which has a licence worth reading</h4>
+        <p class="plain">Graph pruning needs an integer-programming solver; the frontier ordering
+        needs a travelling-salesman solver.</p>
+      </div>
+      <div class="rows">
+        <div class="row"><div class="k">The ILP</div><div class="v">
+          <p>Open options exist (CBC, HiGHS, OR-Tools). Low risk — but this project already carries
+          one machine-locked commercial licence in AnyGrasp, and a second would be unwelcome.</p></div></div>
+        <div class="row"><div class="k">The tour solver</div><div class="v">
+          <p>The paper names <strong>LKH</strong>. LKH is free for academic use but is
+          <strong>not open source and not redistributable</strong>.
+          <span class="tag t-inf">inferred</span> OR-Tools' routing solver should substitute fine at
+          the problem sizes involved. Worth settling before Tier A is written, because Tier A
+          <em>is</em> this solver.</p></div></div>
+      </div>
+    </div>
+
+    <h3>Confirmed non-blockers</h3>
+    <p>Recorded so the same ground is not covered twice.</p>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Thing</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>LiDAR</td><td>MID-360 is exactly what the paper used. No action.</td></tr>
+          <tr><td>Cross-floor navigation</td><td>The paper cannot do it either — its map is 2D, and
+            13–19 % of its benchmark failures are exactly this. Single-floor lab, so irrelevant.</td></tr>
+          <tr><td>Voice input</td><td>Already built and already wired. <span class="tag t-code">code</span></td></tr>
+          <tr><td>Chassis interface</td><td>The paper's wheel speeds map onto
+            <span class="topic">/cmd_vel</span>, which this base already consumes.</td></tr>
+          <tr><td>Training data</td><td><strong>None needed.</strong> Zero-shot end to end — no
+            dataset, no annotation, no fine-tuning.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>The register</h3>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>#</th><th>Blocker</th><th>Priority</th><th>Lead time</th><th>Whose call</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td>1</td><td>Base-mounted D455</td><td>🔴</td><td><strong>Weeks</strong></td><td>Dr. Yuan / Dion — raise now</td></tr>
+          <tr class="hi"><td>1b</td><td>Camera mount design</td><td>🟠</td><td>Weeks, in parallel</td><td>Engineering</td></tr>
+          <tr><td>2</td><td>Camera-pose source</td><td>🔴</td><td>Days–weeks</td><td>Engineering, after 1</td></tr>
+          <tr><td>3</td><td>LiDAR ↔ camera calibration</td><td>🟠</td><td>Days, after camera arrives</td><td>Engineering</td></tr>
+          <tr><td>4</td><td>VLM endpoint: cloud or local</td><td>🟠</td><td>Days + policy check</td><td>Dion + supervisor</td></tr>
+          <tr><td>5</td><td>Solver choice and licensing</td><td>🟡</td><td>Hours–days</td><td>Engineering</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="numbers">
+    <h2><span class="sn">Section 9</span>How well it works</h2>
+    <p class="sub">The published numbers, and how much of them to believe for our case.</p>
+
+    <p>Two measures are used throughout. <strong>SR</strong> (success rate) is the share of tasks
+    completed. <strong>SPL</strong> weights each success by how close the route was to the shortest
+    possible one — it penalises wandering. Both are percentages, higher is better.</p>
+
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Benchmark</th><th>Instruction difficulty</th><th>HiCo-Nav SR / SPL</th><th>Best rival</th><th>Margin</th></tr></thead>
+        <tbody>
+          <tr><td>ObjectNav · MP3D</td><td>a bare category name</td><td><strong>48.5 / 21.5</strong></td><td>45.4 / 17.2</td><td>+3.1</td></tr>
+          <tr><td>ObjectNav · HM3D</td><td>a bare category name</td><td><strong>61.0 / 31.8</strong></td><td>59.6 / 33.0</td><td>+1.4 SR, −1.2 SPL</td></tr>
+          <tr><td>Open-vocabulary · HM3D-OVON</td><td>arbitrary object names</td><td><strong>52.4 / 20.7</strong></td><td>40.8 / 12.1</td><td><strong>+11.6</strong></td></tr>
+          <tr><td>Text-instance · TextNav</td><td>a paragraph describing one specific object</td><td><strong>27.8 / 12.9</strong></td><td>20.2 / 11.4</td><td><strong>+7.6</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>Read the shape, not the absolute numbers.</strong> The margin is small when the
+    instruction is one word and large when it is a sentence. That is the signature of a system whose
+    advantage comes from <em>understanding</em> rather than from searching faster — which is exactly
+    the advantage this project needs, since our instructions come from a person speaking
+    naturally.</p>
+
+    <h3>Speed, and the honest caveat</h3>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Method</th><th>Task time ↓</th><th>Speed ↑</th><th>Per-frame ↓</th><th>Reasoning quality</th></tr></thead>
+        <tbody>
+          <tr><td>VLFM</td><td>33.9 s</td><td>1.00 m/s</td><td>0.25 s</td><td>Low</td></tr>
+          <tr><td>ApexNav</td><td>44.4 s</td><td>1.67 m/s</td><td>0.15 s</td><td>Medium</td></tr>
+          <tr><td>SG-Nav</td><td>569.3 s</td><td>0.11 m/s</td><td>2.36 s</td><td>High</td></tr>
+          <tr><td>UniGoal</td><td>298.3 s</td><td>0.23 m/s</td><td>1.07 s</td><td>High</td></tr>
+          <tr><td><strong>HiCo-Nav</strong> (local model)</td><td>27.8 s</td><td>1.47 m/s</td><td>0.23 s</td><td>High</td></tr>
+          <tr><td><strong>HiCo-Nav</strong> (cloud API)</td><td><strong>21.5 s</strong></td><td>1.54 m/s</td><td>0.22 s</td><td>High</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The comparison that matters is against SG-Nav and UniGoal. They achieve the same reasoning
+    quality by calling a large model at every single step — and pay 10 to 25 times over in task
+    time. The asynchronous design is what buys deep reasoning at shallow-system speed.</p>
+
+    <div class="callout c-warn">
+      <span class="ct">These numbers are from an RTX 5090</span>
+      <p>Not from the Jetson the real robot carried, and not from our card. The paper's only
+      embedded-platform claim is qualitative, with two concrete figures: detection at 10 frames per
+      second, and one memory snapshot kept every 1–2 seconds. No honest throughput estimate for our
+      hardware can be derived from the table above.</p>
+    </div>
+
+    <h3>Which parts actually earn their place</h3>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Remove this</th><th>SR falls to</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr><td>— nothing (full system) —</td><td>27.8</td><td>—</td></tr>
+          <tr class="hi"><td>The WTRP ordering (go greedy instead)</td><td>25.4</td><td><strong>−2.4</strong></td></tr>
+          <tr><td>Seeing past the map edge</td><td>26.5</td><td>−1.3</td></tr>
+          <tr><td>The semantic score map</td><td>26.7</td><td>−1.1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The ordering is the largest single contributor — and, conveniently, the only one that needs
+    no camera.</p>
+
+    <h3>How it fails</h3>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Failure</th><th>Share</th><th>Does it apply to us?</th></tr></thead>
+        <tbody>
+          <tr><td>Target on a different floor</td><td>14–19 %</td><td>No — single-floor lab</td></tr>
+          <tr><td>Stopped at the wrong object</td><td>9–20 %</td><td>Partly benchmark labelling error,
+            partly genuine confusion under odd viewing angles (a sofa read as a bed)</td></tr>
+          <tr><td>Ran out of steps</td><td>10–15 %</td><td>A benchmark budget artefact in large scenes</td></tr>
+          <tr><td>Explored everywhere, found nothing</td><td>2–3 %</td><td>Target never seen, or seen and not detected</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout c-warn">
+      <span class="ct">The real-world number we should pay most attention to</span>
+      <p>On an actual quadruped, over 40 voice-commanded trials: <strong>95 % success on large
+      objects, 65 % on small ones.</strong> The gap is attributed to the robot's motion blurring the
+      images. Our targets — mugs, boxes, tabletop items — are firmly in the small-object regime, and
+      our base is wheeled and therefore smoother than a walking quadruped. But this is the number
+      that should set expectations, not the 61 % simulator figure.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="next">
+    <h2><span class="sn">Section 10</span>What to do next</h2>
+    <p class="sub">In order. Note that step 3 is deliberately chosen to fill the procurement wait.</p>
+
+    <div class="scroller">
+      <table>
+        <thead><tr><th>#</th><th>Action</th><th>Why now</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td>1</td><td><strong>Raise the D455 purchase.</strong> Start the mount
+            design in parallel.</td><td>The only item measured in weeks. Everything visual queues
+            behind it.</td></tr>
+          <tr><td>2</td><td><strong>Spend one hour on the upstream repository</strong> —
+            <code>package.xml</code>, launch files, dependency list.</td><td>Settles the solver
+            question outright and most of the unknowns in the next column. Highest
+            value-per-hour available right now.</td></tr>
+          <tr><td>3</td><td><strong>Prototype Tier A</strong> — frontier scoring and WTRP ordering,
+            emitting a goal pose to the existing Nav2.</td><td>LiDAR only, no camera needed, largest
+            ablation contribution, drops in beside existing code. The best possible use of the
+            waiting time.</td></tr>
+          <tr><td>4</td><td>On camera arrival: calibrate, then measure pose quality, then build
+            Tier B.</td><td>In that order — pose quality decides Blocker 2, and Blocker 2 shapes
+            Tier B.</td></tr>
+          <tr><td>5</td><td>Revisit Tier C only if Nav2's controller proves inadequate around moving
+            obstacles.</td><td>Not before. There is no evidence it is needed.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Questions still open</h3>
+    <ol class="body">
+      <li>Is the MID-360's built-in IMU published in this workspace? Decides whether FAST-LIVO2 is
+      even reachable.</li>
+      <li>Does department policy permit sending lab imagery to a commercial API?</li>
+      <li>What is the real concurrent VRAM budget on the 4060 Ti with SAM 3 already resident?</li>
+      <li>Does the arm's swept volume leave room for a forward-facing base camera, given the arm is
+      mounted yawed 180°?</li>
+      <li>Is the upstream implementation ROS 2, ROS 1, or standalone? Unknown, and it materially
+      changes the effort estimate.</li>
+    </ol>
+
+    <div class="callout c-note">
+      <span class="ct">What this document deliberately does not do</span>
+      <p>No integration plan. No node decomposition, no topic names, no launch structure, no
+      decision about which of the existing contract topics the memory graph takes over. That work is
+      premature until Blocker 1 is resolved and the upstream repository has been read. The purpose
+      here was to find the things with long lead times early enough to act on them — and there is
+      exactly one: <strong>the camera</strong>.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>Sources.</strong> Xu, Liu, Yang, Liang, Jin, Yuan, Wang &amp; Xie, <em>HiCo-Nav: A
+    Deployable Embodied Vision-Language Navigation System with Hierarchical Cognition and
+    Context-Aware Exploration</em> — CARTIN/NTU and University at Buffalo. Local copy:
+    <a href="HiCo-Nav.pdf">HiCo-Nav.pdf</a>. Repository claims verified against <code>main</code>
+    @ <code>2d36a89</code>.</p>
+    <p><strong>Companions.</strong> <a href="PAPER_REPORT.md">PAPER_REPORT.md</a> (the written
+    version of this page) · <a href="../ORIENTATION.md">ORIENTATION.md</a> §10 (the integration
+    surface) · <a href="../NEXT_STEPS.md">NEXT_STEPS.md</a> §1 (the decisions this closes) ·
+    <a href="../wiring-map.html">wiring-map.html</a> (the current system).</p>
+    <p>Written 10 September 2026. Reconnaissance only — no integration plan, by design.</p>
+  </footer>
+
+  </main>
+</div>

@@ -1,0 +1,1343 @@
+<title>Gappler Wiring Map</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#f7f8fa; --surface:#ffffff; --surface-2:#f0f2f6;
+  --ink:#16191f; --ink-2:#495261; --ink-3:#78828f;
+  --line:#dbe0e8; --line-2:#c3cad6;
+  --accent:#1f5fa8; --accent-soft:#e8f0f9;
+  --broken:#b02a2a; --broken-soft:#fbeced;
+  --caution:#96620d; --caution-soft:#fdf3e3;
+  --working:#1c7048; --working-soft:#e7f4ed;
+  --display:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --body:'IBM Plex Sans',-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+  --shadow:0 1px 2px rgba(20,30,50,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14171c; --surface:#1c2027; --surface-2:#23282f;
+    --ink:#e8ebef; --ink-2:#b0b8c4; --ink-3:#828c99;
+    --line:#2e343d; --line-2:#3d444f;
+    --accent:#6aa6e8; --accent-soft:#1b2836;
+    --broken:#e8797a; --broken-soft:#2c1c1e;
+    --caution:#d9a353; --caution-soft:#2a2118;
+    --working:#5fb98a; --working-soft:#17271f;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14171c; --surface:#1c2027; --surface-2:#23282f;
+  --ink:#e8ebef; --ink-2:#b0b8c4; --ink-3:#828c99;
+  --line:#2e343d; --line-2:#3d444f;
+  --accent:#6aa6e8; --accent-soft:#1b2836;
+  --broken:#e8797a; --broken-soft:#2c1c1e;
+  --caution:#d9a353; --caution-soft:#2a2118;
+  --working:#5fb98a; --working-soft:#17271f;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);
+  font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px;display:grid;
+  grid-template-columns:216px minmax(0,1fr);gap:44px;align-items:start}
+@media (max-width:900px){.wrap{grid-template-columns:1fr;gap:0}}
+
+/* ---------- masthead ---------- */
+.masthead{border-bottom:1px solid var(--line);background:var(--surface);margin-bottom:36px}
+.masthead .inner{max-width:1180px;margin:0 auto;padding:34px 24px 30px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 10px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,4.4vw,42px);
+  line-height:1.1;margin:0 0 12px;letter-spacing:-.02em;text-wrap:balance}
+.dek{font-size:17.5px;color:var(--ink-2);max-width:64ch;margin:0}
+.who{margin:20px 0 0;padding:13px 16px;background:var(--accent-soft);border-radius:4px;
+  font-size:14.5px;color:var(--ink-2);max-width:76ch}
+.who strong{color:var(--ink)}
+
+/* ---------- contents rail ---------- */
+nav.rail{position:sticky;top:20px;font-size:14px}
+@media (max-width:900px){nav.rail{position:static;margin-bottom:32px;
+  border:1px solid var(--line);border-radius:5px;background:var(--surface);padding:16px}}
+nav.rail .hd{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:12px}
+nav.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+nav.rail a{display:flex;gap:9px;padding:5px 8px;border-radius:3px;text-decoration:none;
+  color:var(--ink-2);line-height:1.35}
+nav.rail a:hover{background:var(--surface-2);color:var(--ink)}
+nav.rail a .n{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);padding-top:2px;min-width:14px}
+nav.rail a.hot{color:var(--broken);font-weight:500}
+nav.rail a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* ---------- sections ---------- */
+main{min-width:0;padding-bottom:80px}
+section{margin:0 0 56px;scroll-margin-top:20px}
+h2{font-family:var(--display);font-weight:600;font-size:26px;line-height:1.2;
+  margin:0 0 6px;letter-spacing:-.015em;text-wrap:balance}
+h2 .sn{font-family:var(--mono);font-size:13px;font-weight:400;color:var(--ink-3);
+  display:block;margin-bottom:5px;letter-spacing:.04em}
+h3{font-family:var(--display);font-weight:600;font-size:18.5px;margin:32px 0 8px;letter-spacing:-.01em}
+.sub{color:var(--ink-2);font-size:16.5px;margin:0 0 20px;max-width:68ch}
+p{margin:0 0 15px;max-width:68ch}
+ul,ol.body{margin:0 0 15px;padding-left:22px;max-width:66ch}
+li{margin-bottom:7px}
+a{color:var(--accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+
+/* ---------- the subject's own objects: topics and citations ---------- */
+code{font-family:var(--mono);font-size:.87em;background:var(--surface-2);
+  padding:1.5px 5px;border-radius:3px;color:var(--ink)}
+.topic{font-family:var(--mono);font-size:.87em;color:var(--accent);
+  background:var(--accent-soft);padding:1.5px 6px;border-radius:3px;white-space:nowrap}
+.cite{font-family:var(--mono);font-size:12px;color:var(--ink-3);
+  border:1px solid var(--line-2);border-radius:3px;padding:1px 6px;white-space:nowrap}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  padding:2px 6px;border-radius:2px;vertical-align:1px;white-space:nowrap}
+.t-code{background:var(--working-soft);color:var(--working);border:1px solid var(--working)}
+.t-rep{background:var(--caution-soft);color:var(--caution);border:1px solid var(--caution)}
+.t-inf{background:var(--surface-2);color:var(--ink-3);border:1px dashed var(--line-2)}
+
+/* ---------- callouts ---------- */
+.callout{border-radius:5px;padding:16px 18px;margin:0 0 20px;border:1px solid;
+  border-left-width:4px;font-size:15.5px}
+.callout p{max-width:none;margin:0 0 10px}
+.callout p:last-child{margin:0}
+.callout .ct{font-family:var(--display);font-weight:600;font-size:16px;margin:0 0 7px;display:block}
+.c-stop{background:var(--broken-soft);border-color:var(--broken);color:var(--ink)}
+.c-stop .ct{color:var(--broken)}
+.c-warn{background:var(--caution-soft);border-color:var(--caution)}
+.c-warn .ct{color:var(--caution)}
+.c-note{background:var(--accent-soft);border-color:var(--accent)}
+.c-note .ct{color:var(--accent)}
+
+/* ---------- tables ---------- */
+.scroller{overflow-x:auto;margin:0 0 20px;border:1px solid var(--line);
+  border-radius:5px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:520px}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);text-align:left;padding:11px 14px;border-bottom:1px solid var(--line-2);
+  background:var(--surface-2);font-weight:500;white-space:nowrap}
+td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+tr:last-child td{border-bottom:none}
+td strong{font-weight:600}
+
+/* ---------- the breaks ---------- */
+.break{background:var(--surface);border:1px solid var(--line);border-radius:5px;
+  margin:0 0 18px;overflow:hidden;box-shadow:var(--shadow)}
+.break > .top{padding:18px 20px 16px;border-left:4px solid var(--broken)}
+.break.caution > .top{border-left-color:var(--caution)}
+.break .bn{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--broken);margin:0 0 7px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.break.caution .bn{color:var(--caution)}
+.break h4{font-family:var(--display);font-weight:600;font-size:19px;margin:0 0 9px;
+  line-height:1.28;letter-spacing:-.01em;text-wrap:balance}
+.break .plain{font-size:16px;color:var(--ink-2);margin:0;max-width:70ch}
+.break .rows{border-top:1px solid var(--line);display:flex;flex-direction:column}
+.break .row{display:grid;grid-template-columns:132px minmax(0,1fr);gap:18px;
+  padding:14px 20px;border-bottom:1px solid var(--line);font-size:15px}
+.break .row:last-child{border-bottom:none}
+@media (max-width:620px){.break .row{grid-template-columns:1fr;gap:5px}}
+.break .row .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);padding-top:4px}
+.break .row .v{min-width:0}
+.break .row .v p{margin:0 0 9px;max-width:64ch}
+.break .row .v p:last-child{margin:0}
+.break .row.evid{background:var(--surface-2)}
+pre{font-family:var(--mono);font-size:13px;line-height:1.6;background:var(--ground);
+  border:1px solid var(--line);border-radius:4px;padding:11px 13px;margin:0 0 9px;
+  overflow-x:auto;color:var(--ink)}
+pre .off{color:var(--broken)}
+pre .cm{color:var(--ink-3)}
+
+/* ---------- figures ---------- */
+figure{margin:0 0 12px}
+figcaption{font-size:13.5px;color:var(--ink-3);margin-top:9px;max-width:70ch}
+svg.fig{display:block;width:100%;height:auto;min-width:600px}
+svg.fig .bx{fill:var(--surface);stroke:var(--line-2);stroke-width:1.2}
+svg.fig .bx-red{fill:var(--broken-soft);stroke:var(--broken);stroke-width:1.4}
+svg.fig .bx-amb{fill:var(--caution-soft);stroke:var(--caution);stroke-width:1.4}
+svg.fig .bx-ok{fill:var(--working-soft);stroke:var(--working);stroke-width:1.6}
+svg.fig .tl{font-family:var(--body);font-size:13.5px;font-weight:500;fill:var(--ink)}
+svg.fig .ts{font-family:var(--body);font-size:11.5px;fill:var(--ink-3)}
+svg.fig .tm{font-family:var(--mono);font-size:11px;fill:var(--accent)}
+svg.fig .lb{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;fill:var(--ink-3)}
+svg.fig .e{stroke:var(--ink-3);stroke-width:1.4;fill:none}
+svg.fig .e-red{stroke:var(--broken);stroke-width:1.6;fill:none;stroke-dasharray:5 4}
+svg.fig .e-ok{stroke:var(--working);stroke-width:1.6;fill:none}
+svg.fig .er{font-family:var(--body);font-size:12px;font-weight:500;fill:var(--broken)}
+
+/* ---------- topic search ---------- */
+.finder{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.finder input{font-family:var(--body);font-size:15px;padding:9px 13px;border:1px solid var(--line-2);
+  border-radius:4px;background:var(--surface);color:var(--ink);min-width:240px;flex:1}
+.finder input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+.finder .count{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);white-space:nowrap}
+tr.contract td{background:var(--accent-soft)}
+tr.contract td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.star{color:var(--accent);font-weight:600}
+.flag{display:block;font-size:13px;color:var(--broken);margin-top:5px}
+
+/* ---------- misc ---------- */
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:5px;overflow:hidden;margin:0 0 20px}
+.kv > div{background:var(--surface);padding:14px 16px}
+.kv .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);display:block;margin-bottom:5px}
+.kv .v{font-size:15px;line-height:1.45}
+.kv .v b{font-family:var(--display);font-size:17px;font-weight:600;display:block;margin-bottom:2px}
+footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;
+  font-size:14px;color:var(--ink-3);max-width:70ch}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-2);
+  margin:0 0 22px;padding:12px 15px;background:var(--surface);border:1px solid var(--line);border-radius:5px}
+.legend span{display:flex;gap:7px;align-items:center}
+</style>
+
+<header class="masthead">
+  <div class="inner">
+    <p class="eyebrow">Gappler · engineering reference · 10 Sep 2026</p>
+    <h1>Gappler Wiring Map</h1>
+    <p class="dek">How the glasses, the camera, the robot arm and the mobile base are wired
+      together — what works today, what is disconnected, and where the evidence for each claim
+      lives in the code.</p>
+    <p class="who"><strong>Who this is for:</strong> anyone joining this project. It assumes you
+      can read code and find your way around a folder, but <em>not</em> that you have used ROS
+      before. Technical terms are explained the first time they appear. Every claim carries the
+      file and line number it came from, so you can check it yourself.</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="rail">
+    <div class="hd">Contents</div>
+    <ol>
+      <li><a href="#summary"><span class="n">1</span><span>The short version</span></a></li>
+      <li><a href="#goal"><span class="n">2</span><span>What it should do</span></a></li>
+      <li><a href="#ros"><span class="n">3</span><span>How the parts talk</span></a></li>
+      <li><a href="#parts"><span class="n">4</span><span>The five parts</span></a></li>
+      <li><a href="#naming"><span class="n">4b</span><span>Naming convention</span></a></li>
+      <li><a href="#safety" class="hot"><span class="n">5</span><span>Before you run anything</span></a></li>
+      <li><a href="#breaks" class="hot"><span class="n">6</span><span>Where it's disconnected</span></a></li>
+      <li><a href="#channels"><span class="n">7</span><span>Channel reference</span></a></li>
+      <li><a href="#handover"><span class="n">8</span><span>The handover points</span></a></li>
+      <li><a href="#hico"><span class="n">9</span><span>HiCo-Nav integration</span></a></li>
+      <li><a href="#traps"><span class="n">10</span><span>Traps</span></a></li>
+      <li><a href="#next"><span class="n">11</span><span>What to do next</span></a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <div class="legend">
+      <span><span class="tag t-code">code</span> checked by reading the source</span>
+      <span><span class="tag t-rep">reported</span> from the 25 Aug 2026 lab session</span>
+      <span><span class="tag t-inf">inferred</span> reasoning, not established fact</span>
+    </div>
+
+    <!-- ══════════ 1 ══════════ -->
+    <section id="summary">
+      <h2><span class="sn">Section 1</span>The short version</h2>
+      <p class="sub">If you read nothing else on this page, read this.</p>
+
+      <p>The goal is a robot you can talk to: <strong>you wear smart glasses, look at an object,
+      say "grab that box", and a mobile robot drives over, picks it up and brings it back to
+      you.</strong></p>
+
+      <p>Most of the individual pieces work. What is missing is the wiring between them. Right
+      now the system behaves like <strong>two separate machines that happen to sit in the same
+      room:</strong></p>
+
+      <div class="kv">
+        <div><span class="k">Machine A — listening</span><span class="v">
+          <b>Hears you</b>The glasses' microphones, speech recognition and a small language model
+          all work. Your spoken words come out the other end correctly.</span></div>
+        <div><span class="k">Machine B — grasping</span><span class="v">
+          <b>Grabs things</b>The camera, the segmentation model, the grasp planner and the arm all
+          work, and the arm can pick something up.</span></div>
+        <div><span class="k">The problem</span><span class="v">
+          <b>They don't talk</b>Machine B never receives the word Machine A heard. It looks for a
+          fixed, hardcoded object instead: the word <code>"box"</code>.</span></div>
+      </div>
+
+      <p>So today the robot can hear you well enough to <em>drive somewhere</em>, but not well
+      enough to know <em>what to pick up</em>. There are <strong>five specific places</strong>
+      where the wiring is cut or crossed — <a href="#breaks">Section 6</a> walks through each one
+      with the exact line of code responsible.</p>
+
+      <div class="callout c-note">
+        <span class="ct">These are not bugs anyone forgot about</span>
+        <p>Four of the five are lines someone deliberately commented out, most likely so the arm
+        could be tested on its own without depending on the glasses. That was a sensible thing to
+        do. But it means <strong>you cannot just uncomment them and expect it to work</strong> —
+        and break 5 explains a case where doing exactly that makes things worse.</p>
+      </div>
+    </section>
+
+    <!-- ══════════ 2 ══════════ -->
+    <section id="goal">
+      <h2><span class="sn">Section 2</span>What the system is meant to do</h2>
+      <p class="sub">The full intended sequence, in order, in plain terms.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th style="width:34px">#</th><th>Step</th><th>How it is done</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><strong>You speak.</strong> "Grab that yellow box."</td>
+              <td>Seven microphones in the glasses record continuously.</td></tr>
+            <tr><td>2</td><td><strong>Speech becomes text.</strong></td>
+              <td>Whisper, a speech-recognition model, transcribes it.</td></tr>
+            <tr><td>3</td><td><strong>Text becomes one object name.</strong> → "box"</td>
+              <td>Qwen2.5, a small language model, pulls the object out of the sentence.
+              It also recognises "stop" and friends as a kill word.</td></tr>
+            <tr><td>4</td><td><strong>Both cameras look for a "box".</strong></td>
+              <td>SAM 3, a segmentation model, outlines every matching object it can see — once in
+              the glasses' camera, once in the camera on the arm.</td></tr>
+            <tr><td>5</td><td><strong>Your eyes settle the ambiguity.</strong></td>
+              <td>If three boxes are visible, the eye tracker says which one you were looking at.</td></tr>
+            <tr><td>6</td><td><strong>The two cameras confirm they agree.</strong></td>
+              <td>LightGlue matches visual features between the two views, checking that both
+              cameras are looking at the same physical object and not two similar ones.</td></tr>
+            <tr><td>7</td><td><strong>The outline becomes a position in space.</strong></td>
+              <td>The depth camera turns the 2D outline into a 3D point the robot can drive toward.</td></tr>
+            <tr><td>8</td><td><strong>The base drives within reach.</strong></td>
+              <td>Nav2 (the standard robot navigation stack) plans a path using a laser map and
+              stops 0.6 m from the object.</td></tr>
+            <tr><td>9</td><td><strong>The arm approaches and grasps.</strong></td>
+              <td>The arm creeps toward the object in 4 cm steps until it is 18 cm away, then
+              AnyGrasp proposes where to put the fingers, and the gripper closes.</td></tr>
+            <tr><td>10</td><td><strong>The robot returns to you.</strong></td>
+              <td>It finds the glasses' position and drives back.</td></tr>
+            <tr><td>11</td><td><strong>You say "release".</strong></td>
+              <td>The gripper opens.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Steps 1–3 work. Step 4 works but uses the wrong word. Steps 5, 6 and 10 are disconnected.
+      Steps 8, 9 and 11 work in isolation but have never been run as one sequence.</p>
+    </section>
+
+    <!-- ══════════ 3 ══════════ -->
+    <section id="ros">
+      <h2><span class="sn">Section 3</span>How the parts talk to each other</h2>
+      <p class="sub">One idea, and it explains the whole structure of this codebase.</p>
+
+      <p>Everything here is built on <strong>ROS 2</strong>. ROS 2 is not a program you run — it is
+      a <strong>message system</strong>. Picture a set of named radio channels. Any program can
+      broadcast on a channel, and any other program can tune in.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Term</th><th>What it means</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Topic</strong></td><td>A named channel, like
+              <span class="topic">/aria/audio/prompt</span>. Data flows one way. Any number of
+              programs can broadcast or listen.</td></tr>
+            <tr><td><strong>Node</strong></td><td>Any running program that broadcasts or listens.
+              One Python script can contain several.</td></tr>
+            <tr><td><strong>Message type</strong></td><td>The shape of the data on a channel — a
+              string, an image, a position.</td></tr>
+            <tr><td><strong>TF</strong></td><td>A always-running service that tracks where every
+              physical part is relative to every other part. "Where is the camera lens relative to
+              the robot's base?" is a TF question. It is how a pixel in an image becomes a place
+              the arm can reach.</td></tr>
+            <tr><td><strong>Launch file</strong></td><td>A recipe that starts several nodes at once
+              with the right settings. Files ending <code>.launch.py</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Why this matters for reading the code:</strong> the five parts of this system are
+      connected <em>only</em> by channel name. No part imports code from another part. That has two
+      consequences you will feel immediately:</p>
+      <ul>
+        <li><strong>Good:</strong> you can replace one part entirely — say, swapping in a different
+        navigation system — without touching the others, as long as it broadcasts and listens on
+        the same channels.</li>
+        <li><strong>Awkward:</strong> half the system can be broken while the other half runs
+        perfectly, and nothing reports an error. A channel with nobody broadcasting on it is not a
+        crash. It is just silence. That is exactly the situation today.</li>
+      </ul>
+
+      <div class="callout c-note">
+        <span class="ct">One setting worth knowing early: BEST_EFFORT vs RELIABLE</span>
+        <p>Each channel declares how hard it should try to deliver. <strong>RELIABLE</strong> means
+        retry until it arrives. <strong>BEST_EFFORT</strong> means drop it rather than wait. Video
+        uses BEST_EFFORT, because an old frame is worse than no frame.</p>
+        <p>Get this wrong and the two sides simply never connect — with no error message. This
+        repo contains an entire node whose only job is to bridge that mismatch, because the laser
+        scanner broadcasts RELIABLE and the thing consuming it demands BEST_EFFORT.
+        <span class="cite">qos_relay.py</span></p>
+      </div>
+    </section>
+
+    <!-- ══════════ 4 ══════════ -->
+    <section id="parts">
+      <h2><span class="sn">Section 4</span>The five parts</h2>
+      <p class="sub">Which folder is which, and which ones you will actually edit.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Part</th><th>Hardware</th><th>Folder</th><th>Edit it?</th></tr></thead>
+          <tbody>
+            <tr><td><strong>A · Perception</strong><br><span style="color:var(--ink-2);font-size:14px">
+              Sees and hears</span></td>
+              <td>Project Aria smart glasses — camera, eye tracker, 7 microphones, motion sensors</td>
+              <td><code>src/</code></td><td><strong>Yes, a lot</strong></td></tr>
+            <tr><td><strong>B · Grasp planner</strong><br><span style="color:var(--ink-2);font-size:14px">
+              Decides where to put the fingers</span></td>
+              <td>None — it just thinks about camera data</td>
+              <td><code>grasp_module/</code>, <code>rm_mtc/src/perception/</code></td>
+              <td>No — build once, then leave alone</td></tr>
+            <tr><td><strong>C · Arm</strong><br><span style="color:var(--ink-2);font-size:14px">
+              Reaches and grips</span></td>
+              <td>RealMan RM65 arm, EG2-4B gripper, RealSense depth camera on the wrist</td>
+              <td><code>ros2_robot_ws/</code></td>
+              <td>Only <code>rm_mtc/</code> — the rest is the manufacturer's</td></tr>
+            <tr><td><strong>D · Mobile base</strong><br><span style="color:var(--ink-2);font-size:14px">
+              Drives around</span></td>
+              <td>Wheeled base with a Livox spinning laser scanner</td>
+              <td><code>Navigation_Module/</code></td><td><strong>Yes</strong></td></tr>
+            <tr><td><strong>E · Coordinator</strong><br><span style="color:var(--ink-2);font-size:14px">
+              Decides what happens when</span></td>
+              <td>None</td><td><code>orchestrator.py</code>, <code>main.py</code></td>
+              <td>Yes — it is small</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Why part B lives in its own separate environment</h3>
+      <p>The grasp planner (AnyGrasp) ships as a pre-compiled binary built against an old version
+      of PyTorch. That version cannot coexist with the one the segmentation model needs. So B runs
+      in a completely separate Python environment and talks to everything else <em>only</em> over
+      ROS channels.</p>
+      <p><strong>Practical rule:</strong> never make part B import code from the rest of the
+      project. It will break. This is also why some channels carry Python "pickle" data that only
+      part A can read — those are for visual debugging, and B must never subscribe to them.</p>
+
+      <h3>Roughly 95% of the files are not yours</h3>
+      <p>Three folders are third-party code copied into the repo wholesale, and you should treat
+      them as sealed boxes: <code>Navigation_Module/OpenVINS/</code> (about 3.4 million lines of
+      motion-tracking code), <code>grasp_module/</code>, and <code>deps_ws/</code>. Add every
+      <code>rm_*</code> folder except <code>rm_mtc</code> — those are the arm manufacturer's.
+      What is genuinely ours: <code>src/</code>, <code>rm_mtc/</code>,
+      <code>robot_slam/</code>, and four loose scripts.</p>
+
+      <div class="callout c-warn">
+        <span class="ct">Three files are called main.py</span>
+        <p>Sort this out now and a lot of confusion disappears. When someone says "run main.py",
+        always ask which one.</p>
+      </div>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>File</th><th>What it starts</th></tr></thead>
+          <tbody>
+            <tr><td><code>main.py</code> (top folder)</td><td>The coordinator plus the glasses app</td></tr>
+            <tr><td><code>src/main.py</code></td><td>The <strong>glasses</strong> side (part A)</td></tr>
+            <tr><td><code>ros2_robot_ws/src/main.py</code></td><td>The <strong>robot</strong> side —
+              camera, arm planning, segmentation, grasp planner, state machine.
+              <span class="flag">⚠ This one moves the arm. See Section 5.</span></td></tr>
+            <tr><td><code>ros2_robot_ws/src/orchestrator.py</code></td>
+              <td>Waits for signals, then starts the robot side at the right moment</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════════ 4b ══════════ -->
+    <section id="naming">
+      <h2><span class="sn">Section 4b · project convention</span>Name things descriptively</h2>
+      <p class="sub">Five subsystems here each have a "base", a "camera", a "pose" and a "main".
+      Unqualified names are not just untidy in this project — they cause real bugs.</p>
+
+      <div class="callout c-note">
+        <span class="ct">The rule for all new code, channels, frames, files and documentation</span>
+        <p><strong>A name must say which subsystem it belongs to, without the reader needing
+        context.</strong></p>
+      </div>
+
+      <p>The cautionary example is a real one in this repo <span class="tag t-code">code</span> —
+      two nearly identical names for two different physical objects about half a metre apart:</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Name in the code</th><th>What it actually refers to</th><th>Would be clearer as</th></tr></thead>
+          <tbody>
+            <tr><td><code>base_link</code></td><td>the <strong>arm's</strong> root — the point the
+              arm measures all its own movements from</td><td><code>arm_base_link</code></td></tr>
+            <tr><td><code>robot_base_link</code></td><td>the <strong>wheelbase's</strong> root —
+              the point navigation measures from</td><td><code>mobile_base_link</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Anyone reading "base" has to already know which subsystem they are in. And the connection
+      between the two is published in only one of the two navigation launch files
+      (<a href="#handover">Section 8</a>), so getting them confused produces a calculation that
+      fails silently rather than erroring.</p>
+
+      <h3>The same problem in other forms</h3>
+      <ul>
+        <li><strong>Three files named <code>main.py</code></strong>, plus
+          <code>orchestrator.py</code> — four entry points, and no name tells you which is which.
+          <a href="#parts">Section 4</a></li>
+        <li><strong>"camera"</strong> could mean the glasses' main camera, their eye-tracking
+          camera, their two navigation cameras, or the one on the arm's wrist. The channel prefixes
+          are what disambiguate: <span class="topic">/aria/…</span> is the glasses,
+          <span class="topic">/camera/…</span> is the wrist camera.</li>
+        <li><strong><span class="topic">/object_centroid</span> vs
+          <span class="topic">/object_centroid_2d</span></strong> — differ by a suffix, and the
+          <code>_2d</code> one is not even an ordinary point (its third value is a distance in
+          metres, not a coordinate).</li>
+      </ul>
+
+      <h3>Every collision we found, ranked by risk <span class="tag t-code">code</span></h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th style="width:30px">#</th><th>Names that collide</th><th>What each actually is</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><code>base_link</code> / <code>robot_base_link</code></td>
+              <td>arm root / wheelbase root</td></tr>
+            <tr><td>2</td><td><code>camera_link</code>, <code>camera_color_optical_frame</code>,
+              <code>camera_rgb</code></td>
+              <td>The wrist camera's mount, the wrist camera's lens, and <strong>the glasses'
+              camera</strong> — three unrelated things all called "camera"</td></tr>
+            <tr><td>3</td><td><span class="topic">/manipulation/…</span> vs
+              <span class="topic">/manipulator/…</span></td>
+              <td><strong>The same arm↔navigation contract, split across two prefixes that differ
+              by one character.</strong> Three channels use one, two use the other, with no rule
+              telling you which</td></tr>
+            <tr><td>4</td><td><span class="topic">/goal_pose</span> vs
+              <span class="topic">/manipulation/goal_pose</span></td>
+              <td>"Drive here", measured against the room — versus "the object is here", measured
+              against the arm. Two different reference points</td></tr>
+            <tr><td>5</td><td><span class="topic">/goal_reached</span> vs
+              <span class="topic">/return_to_user/goal_reached</span></td>
+              <td>Outbound trip finished vs return trip finished — identical data, different
+              meaning</td></tr>
+            <tr><td>6</td><td><span class="topic">/object_centroid</span> vs
+              <span class="topic">/object_centroid_2d</span></td>
+              <td>A real 3D point vs pixels-plus-distance</td></tr>
+            <tr><td>7</td><td>three × <code>main.py</code> + <code>orchestrator.py</code></td>
+              <td>Four entry points. Worse: <code>ros2_robot_ws/src/main.py</code> describes
+              <em>itself</em> as "Main orchestrator" — which is the other file's name</td></tr>
+            <tr><td>8</td><td><code>rm_65_config</code> / <code>rm_65_w_gripper_config</code></td>
+              <td>Arm without / with the gripper. Ours all use the gripper version, but the
+              manufacturer's launch files use the plain one — so copying a launch snippet gives you
+              an arm with no gripper</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout c-stop">
+        <span class="ct">Two of these have already caused real defects</span>
+        <p><strong>A test tool broadcasting into the void.</strong> The same constant name is
+        defined in five files. Four say the real channel; one says an old placeholder name
+        <span class="cite">dummy_mask_publisher.py:14</span>. That file's own comment tells you to
+        "match these to the placeholders" in another file — but that file's value is not a
+        placeholder, it is the real one. So the tool for testing the arm without the glasses sends
+        its messages nowhere.</p>
+        <p><strong>A comment describing the wrong machine.</strong> One file documents a
+        measurement as being taken "from <code>base_link</code> centre"
+        <span class="cite">goto_glasses.py:35</span> — the <em>arm's</em> reference point, used to
+        describe the <em>wheelbase's</em> own geometry, inside the navigation code. Another file
+        describes the identical measurement correctly
+        <span class="cite">object_approach_node.py:51</span>. One of the two is simply wrong, and
+        the near-identical names are why.</p>
+      </div>
+
+      <div class="callout c-warn">
+        <span class="ct">One more, found by the same audit</span>
+        <p>The glasses' marker-sighting messages are stamped with a reference frame called
+        <code>camera_rgb</code> <span class="cite">image_streaming_pipeline.py:60</span>. That name
+        appears <strong>exactly once in the whole repository</strong> — nothing defines it and
+        nothing publishes it. Any position calculation against it fails. It is hidden right now
+        only because break 1 means those messages are never sent at all.</p>
+      </div>
+
+      <h3>Applying it</h3>
+      <p>Prefix channels with the subsystem. Name reference frames after the physical thing
+      <em>and</em> its subsystem. Never name a file, program or constant something a reader could
+      reasonably attribute to a different part of the system. Write "the wheelbase's root frame" in
+      prose, not "the base frame".</p>
+      <div class="callout c-warn">
+        <span class="ct">When renaming something that already exists</span>
+        <p>Grep for every occurrence of the string first. Channel and frame names are matched as
+        <strong>plain text</strong> at runtime, not checked when the code is compiled — so a rename
+        that misses one place fails silently while the robot is running, which is the worst time to
+        find out.</p>
+      </div>
+    </section>
+
+    <!-- ══════════ 5 ══════════ -->
+    <section id="safety">
+      <h2><span class="sn">Section 5</span>Before you run anything</h2>
+      <p class="sub">Two things that will cost you a broken arm or a wasted day.</p>
+
+      <div class="callout c-stop">
+        <span class="ct">⚠ The arm moves on its own, seconds after launch, with no command</span>
+        <p>The state machine calls its "go to home position" routine <strong>before it waits for
+        any input at all</strong> — within a couple of seconds of starting.
+        <span class="cite">grasp_state_machine.cpp:594-595</span> <span class="tag t-code">code</span>
+        And the retry loop keeps trying forever until it succeeds.
+        <span class="cite">:342</span></p>
+        <p><strong>As of 25 August 2026 the arm had never been commanded to move at all.</strong>
+        Nothing about arm motion in this repo has been tested on hardware.
+        <span class="tag t-rep">reported</span></p>
+        <p><strong>Rules:</strong> clear the space around the arm first; run the emergency-stop
+        script <span class="cite">estop.py</span> in its own terminal before anything else; and
+        never start <code>grasp_state_machine</code> or <code>ros2_robot_ws/src/main.py</code>
+        unless somebody is physically standing next to the robot.</p>
+      </div>
+
+      <div class="callout c-stop">
+        <span class="ct">⚠ Worse: the arm can start moving because a <em>message</em> arrived</span>
+        <p>The coordinator itself is safe at startup — it only launches the arm driver and the
+        motion planner, which plan but do not move. <span class="cite">orchestrator.py:78</span></p>
+        <p>But it then sits waiting on the channel <span class="topic">/manipulation/start</span>.
+        The moment any message appears there, it launches the robot side, which starts the state
+        machine, which moves the arm.</p>
+        <p>So <strong>a stray test command, a leftover navigation node, or a replayed recording can
+        set the arm in motion.</strong> There is no point in that sequence where a human confirms
+        anything. Treat a running coordinator as a loaded arm.</p>
+      </div>
+
+      <div class="callout c-warn">
+        <span class="ct">The navigation module depends on a package that is not in this repo</span>
+        <p>Both navigation launch files try to include a launch file from a package called
+        <code>xpkg_demo</code>. That package is nowhere in this repository, though it is listed as
+        a dependency. <span class="cite">robot_slam/package.xml:12</span> <span class="tag t-code">code</span></p>
+        <p>Because of how ROS classifies that dependency, <strong>compiling will probably succeed
+        and launching will fail.</strong> <span class="tag t-inf">inferred</span> it is the
+        wheelbase's own startup code. Find out where it came from before booking time with the
+        robot.</p>
+      </div>
+    </section>
+
+    <!-- ══════════ 6 ══════════ -->
+    <section id="breaks">
+      <h2><span class="sn">Section 6 · the important one</span>Where the system is disconnected</h2>
+      <p class="sub">Five specific places. Each one below gives the plain-English problem, the exact
+      code responsible so you can check it, and what it means in practice.</p>
+
+      <h3>First, the picture</h3>
+      <figure>
+        <div class="scroller">
+          <svg class="fig" viewBox="0 0 700 250" role="img" aria-label="What runs today: two disconnected chains. The microphone feeds speech recognition then a language model, which broadcasts the object name, but only the coordinator listens and it changes nothing downstream. Separately the wrist camera feeds a segmentation node using the hardcoded word box, which feeds the grasp planner, the state machine and the arm. A red dashed line marks where the spoken word fails to reach the segmenter.">
+            <text class="lb" x="8" y="14">WHAT RUNS TODAY</text>
+            <text class="ts" x="150" y="14">two chains that never meet</text>
+
+            <rect class="bx" x="8" y="28" width="118" height="42" rx="3"/>
+            <text class="tl" x="67" y="46" text-anchor="middle">Glasses mic</text>
+            <text class="ts" x="67" y="61" text-anchor="middle">7 channels</text>
+
+            <rect class="bx" x="150" y="28" width="118" height="42" rx="3"/>
+            <text class="tl" x="209" y="46" text-anchor="middle">Whisper</text>
+            <text class="ts" x="209" y="61" text-anchor="middle">speech → text</text>
+
+            <rect class="bx" x="292" y="28" width="118" height="42" rx="3"/>
+            <text class="tl" x="351" y="46" text-anchor="middle">Qwen2.5</text>
+            <text class="ts" x="351" y="61" text-anchor="middle">text → "box"</text>
+
+            <rect class="bx-red" x="470" y="28" width="222" height="42" rx="3"/>
+            <text class="tl" x="581" y="46" text-anchor="middle">nothing useful listens</text>
+            <text class="ts" x="581" y="61" text-anchor="middle">changes nothing downstream</text>
+
+            <path class="e" d="M126 49 H144" marker-end="url(#ar)"/>
+            <path class="e" d="M268 49 H286" marker-end="url(#ar)"/>
+            <path class="e" d="M410 49 H464" marker-end="url(#ar)"/>
+            <text class="tm" x="437" y="42" text-anchor="middle">/aria/audio/prompt</text>
+
+            <path class="e-red" d="M351 70 V96 H209 V120" marker-end="url(#arr)"/>
+            <text class="er" x="360" y="100">✂ the spoken word never reaches the camera side</text>
+
+            <rect class="bx" x="8" y="130" width="118" height="46" rx="3"/>
+            <text class="tl" x="67" y="150" text-anchor="middle">Wrist camera</text>
+            <text class="ts" x="67" y="165" text-anchor="middle">colour + depth</text>
+
+            <rect class="bx-amb" x="150" y="130" width="118" height="46" rx="3"/>
+            <text class="tl" x="209" y="150" text-anchor="middle">Segmenter</text>
+            <text class="ts" x="209" y="165" text-anchor="middle">looks for "box"</text>
+
+            <rect class="bx" x="292" y="130" width="118" height="46" rx="3"/>
+            <text class="tl" x="351" y="157" text-anchor="middle">AnyGrasp</text>
+
+            <rect class="bx" x="434" y="130" width="140" height="46" rx="3"/>
+            <text class="tl" x="504" y="150" text-anchor="middle">State machine</text>
+            <text class="ts" x="504" y="165" text-anchor="middle">approach + grip</text>
+
+            <rect class="bx" x="598" y="130" width="94" height="46" rx="3"/>
+            <text class="tl" x="645" y="157" text-anchor="middle">RM65 arm</text>
+
+            <path class="e" d="M126 153 H144" marker-end="url(#ar)"/>
+            <path class="e" d="M268 153 H286" marker-end="url(#ar)"/>
+            <path class="e" d="M410 153 H428" marker-end="url(#ar)"/>
+            <path class="e" d="M574 153 H592" marker-end="url(#ar)"/>
+            <path class="e" d="M209 176 V200 H504 V180" marker-end="url(#ar)"/>
+            <text class="tm" x="250" y="215">/object_centroid_2d</text>
+            <text class="ts" x="390" y="215">— where the object is on screen, plus its distance</text>
+
+            <defs>
+              <marker id="ar" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0 1 L7 4 L0 7 z" fill="var(--ink-3)"/></marker>
+              <marker id="arr" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0 1 L7 4 L0 7 z" fill="var(--broken)"/></marker>
+            </defs>
+          </svg>
+        </div>
+        <figcaption>Today. The voice chain (top) produces the right answer and hands it to nobody
+          who acts on it. The camera chain (bottom) works, but on a fixed word written into the
+          source code.</figcaption>
+      </figure>
+
+      <figure>
+        <div class="scroller">
+          <svg class="fig" viewBox="0 0 700 210" role="img" aria-label="What the design intends: voice, eye tracking and both cameras all feed into one object recognition pipeline, where gaze selects which object and LightGlue confirms both cameras see the same one. That pipeline then feeds the grasp planner, the state machine and the navigation approach node, which drive the arm.">
+            <text class="lb" x="8" y="14">WHAT THE DESIGN INTENDS</text>
+            <text class="ts" x="205" y="14">one chain · your eyes pick the object</text>
+
+            <rect class="bx" x="8" y="28" width="152" height="40" rx="3"/>
+            <text class="tl" x="84" y="46" text-anchor="middle">What you said</text>
+            <text class="ts" x="84" y="60" text-anchor="middle">mic → Whisper → Qwen</text>
+
+            <rect class="bx" x="8" y="78" width="152" height="40" rx="3"/>
+            <text class="tl" x="84" y="96" text-anchor="middle">Where you looked</text>
+            <text class="ts" x="84" y="110" text-anchor="middle">eye tracker</text>
+
+            <rect class="bx" x="8" y="128" width="152" height="40" rx="3"/>
+            <text class="tl" x="84" y="146" text-anchor="middle">Both cameras</text>
+            <text class="ts" x="84" y="160" text-anchor="middle">glasses + wrist</text>
+
+            <rect class="bx-ok" x="212" y="28" width="176" height="140" rx="3"/>
+            <text class="tl" x="300" y="72" text-anchor="middle">One recognition</text>
+            <text class="tl" x="300" y="90" text-anchor="middle">pipeline</text>
+            <text class="ts" x="300" y="114" text-anchor="middle">your gaze picks which</text>
+            <text class="ts" x="300" y="130" text-anchor="middle">object; both cameras</text>
+            <text class="ts" x="300" y="146" text-anchor="middle">confirm it is the same one</text>
+
+            <path class="e-ok" d="M160 48 H206" marker-end="url(#ao)"/>
+            <path class="e-ok" d="M160 98 H206" marker-end="url(#ao)"/>
+            <path class="e-ok" d="M160 148 H206" marker-end="url(#ao)"/>
+
+            <rect class="bx" x="440" y="28" width="150" height="40" rx="3"/>
+            <text class="tl" x="515" y="53" text-anchor="middle">AnyGrasp</text>
+            <rect class="bx" x="440" y="78" width="150" height="40" rx="3"/>
+            <text class="tl" x="515" y="103" text-anchor="middle">State machine</text>
+            <rect class="bx" x="440" y="128" width="150" height="40" rx="3"/>
+            <text class="tl" x="515" y="146" text-anchor="middle">Drive into range</text>
+            <text class="ts" x="515" y="160" text-anchor="middle">navigation</text>
+
+            <rect class="bx" x="614" y="78" width="78" height="40" rx="3"/>
+            <text class="tl" x="653" y="103" text-anchor="middle">Arm</text>
+
+            <path class="e-ok" d="M388 60 H434" marker-end="url(#ao)"/>
+            <path class="e-ok" d="M388 98 H434" marker-end="url(#ao)"/>
+            <path class="e-ok" d="M388 136 H434" marker-end="url(#ao)"/>
+            <path class="e-ok" d="M590 98 H608" marker-end="url(#ao)"/>
+
+            <defs>
+              <marker id="ao" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0 1 L7 4 L0 7 z" fill="var(--working)"/></marker>
+            </defs>
+          </svg>
+        </div>
+        <figcaption>The design. Three inputs converge on one pipeline that decides <em>which</em>
+          object you meant, then hands a single answer to the arm and the wheels.</figcaption>
+      </figure>
+
+      <h3>The five breaks</h3>
+
+      <div class="break">
+        <div class="top">
+          <p class="bn">Break 1 <span class="tag t-code">code</span></p>
+          <h4>The glasses barely broadcast anything</h4>
+          <p class="plain">Six things should start up when the glasses app runs. Four of them are
+          commented out. Only the audio path survives.</p>
+        </div>
+        <div class="rows">
+          <div class="row evid"><div class="k">Evidence</div><div class="v">
+            <p><span class="cite">src/main.py:106-112</span></p>
+<pre>self.add_streaming(device_ip, profile_name)
+<span class="off"># self.add_visualization()          ← off</span>
+<span class="off"># self.add_object_recognition()     ← off</span>
+self.add_audio_streaming()
+sensors_calib_json_str = self.config_queue.get()
+<span class="off"># self.add_image_streaming(...)     ← off</span>
+<span class="off"># self.add_pose_streaming(...)      ← off</span></pre>
+          </div></div>
+          <div class="row"><div class="k">Effect</div><div class="v">
+            <p>No camera images, no eye tracking, no motion sensors, no marker detection, and no
+            debug window. Only the spoken-word channel works.</p>
+            <p>This knocks out more than it looks. The glasses' position is worked out from a
+            printed marker they see through the camera — no camera images means no position, which
+            means <strong>the robot can never find you to come back.</strong></p>
+          </div></div>
+          <div class="row"><div class="k">Clue</div><div class="v">
+            <p>Line 110 fetches the camera calibration data from a queue, but the only two things
+            that use it are among the commented-out lines. It is fetched and thrown away — which
+            suggests these lines were switched off quickly, not designed out.</p>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="break">
+        <div class="top">
+          <p class="bn">Break 2 <span class="tag t-code">code</span> <span style="color:var(--ink-3)">· the headline problem</span></p>
+          <h4>The object you asked for never reaches the robot</h4>
+          <p class="plain">One line of code would send the chosen object's outline and position to
+          the arm. It is commented out. A second, simpler program does that job instead — using a
+          fixed word typed into the source.</p>
+        </div>
+        <div class="rows">
+          <div class="row evid"><div class="k">Evidence</div><div class="v">
+            <p>The good version, switched off <span class="cite">object_recognition_pipeline.py:384</span></p>
+<pre><span class="off"># self._publish_mask_and_centroid(inference_state, depth, header, ros_image)</span></pre>
+            <p>The stand-in that runs instead <span class="cite">sam3_ros_node.py:40</span></p>
+<pre>TEXT_PROMPT = "box"   <span class="cm"># no voice input, no eye tracking</span></pre>
+          </div></div>
+          <div class="row"><div class="k">Effect</div><div class="v">
+            <p>The arm grasps whatever matches the literal word <code>"box"</code>. Everything
+            upstream — speech recognition, the language model, eye tracking, the two-camera
+            cross-check — is <strong>computed correctly and then discarded.</strong></p>
+            <p>The method that is not being called is complete and looks correct. It is simply
+            never invoked.</p>
+          </div></div>
+          <div class="row"><div class="k">Fixing it</div><div class="v">
+            <p><strong>Do not just uncomment line 384.</strong> Read break 5 first — that creates
+            a second, subtler problem which will make your fix look broken for reasons that have
+            nothing to do with this break.</p>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="break">
+        <div class="top">
+          <p class="bn">Break 3 <span class="tag t-code">code</span></p>
+          <h4>The "bring it back to me" sequence is not wired up</h4>
+          <p class="plain">The coordinator's own comments describe a six-step sequence. Steps 3 and
+          4 — the ones that handle the return trip — are commented out.</p>
+        </div>
+        <div class="rows">
+          <div class="row evid"><div class="k">Evidence</div><div class="v">
+            <p><span class="cite">orchestrator.py:57-62</span>, and the handlers at
+            <span class="cite">:69-102</span></p>
+<pre><span class="cm"># The intended sequence, from the file's own docstring:</span>
+1. Wait for /manipulation/start   2. Launch main.py
+<span class="off">3. Wait for goal_reached          4. Launch rm_bringup   ← both off</span>
+5. Wait for "release"             6. Open gripper</pre>
+          </div></div>
+          <div class="row"><div class="k">Effect</div><div class="v">
+            <p>What remains: start the arm driver, wait for a go signal, launch the robot side,
+            wait to hear "release", open the gripper. The navigate-back-to-the-user leg is absent.</p>
+            <p>Small to restore — two subscriptions — but it depends on break 1 and break 4, since
+            the robot needs to know where you are.</p>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="break caution">
+        <div class="top">
+          <p class="bn">Break 4 <span class="tag t-code">code</span> <span style="color:var(--ink-3)">· a different kind of problem</span></p>
+          <h4>One component's documentation describes something the code does not do</h4>
+          <p class="plain">There is a file that is supposed to combine two sources of position data
+          into one accurate estimate of where you are standing. Its README describes that clearly.
+          The code does roughly half of it, and reports its answer in the wrong coordinate frame.</p>
+        </div>
+        <div class="rows">
+          <div class="row evid"><div class="k">Evidence</div><div class="v">
+            <p>Checked line by line against <code>pose_fusion/README.md</code>.
+            <span class="cite">pose_fusion_node.py</span></p>
+          </div></div>
+          <div class="row"><div class="k">The gaps</div><div class="v">
+            <div class="scroller" style="margin:0">
+              <table>
+                <thead><tr><th>README says</th><th>Code actually does</th></tr></thead>
+                <tbody>
+                  <tr><td>Combines motion-tracking with marker sightings</td>
+                    <td>The motion-tracking input and its whole handler are commented out
+                    <span class="cite">:135-140</span> <span class="cite">:243-289</span>.
+                    There is no motion-tracking contribution at all.</td></tr>
+                  <tr><td>Reports the position relative to the room map</td>
+                    <td>Reports it relative to the <em>robot's own body</em>
+                    <span class="cite">:229</span> — a different reference point entirely.</td></tr>
+                  <tr><td>Settings are named <code>marker_pos_x</code> and so on</td>
+                    <td>They are named <code>marker_offset_x</code>
+                    <span class="cite">:126-132</span>. <strong>The example command in the README
+                    silently does nothing</strong> — those settings do not exist.</td></tr>
+                  <tr><td>Also broadcasts a "standing still" signal</td>
+                    <td>No such broadcast exists anywhere in the code.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div></div>
+          <div class="row"><div class="k">Effect</div><div class="v">
+            <p>The program that drives the robot back to you reads this position and assumes it is
+            relative to the room. It is not. Combined with break 1 — which means no marker
+            sightings ever happen — <strong>"return to the user" has two independent reasons it
+            cannot work.</strong></p>
+            <p>This is worth internalising as a habit: <em>read the code first, then the
+            documentation, and note where they disagree.</em></p>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="break">
+        <div class="top">
+          <p class="bn">Break 5 <span class="tag t-code">code</span> <span style="color:var(--ink-3)">· nothing is switched off here</span></p>
+          <h4>Two programs claim the same three channels</h4>
+          <p class="plain">This one is different: no code is commented out. Two separate programs
+          are each set up to broadcast on the <em>same</em> three channels. Only one does today —
+          because the other one's line is the very line from break 2.</p>
+        </div>
+        <div class="rows">
+          <div class="row evid"><div class="k">Evidence</div><div class="v">
+            <p>Both declare <span class="topic">/camera/sam/mask</span>,
+            <span class="topic">/object_centroid_2d</span> and
+            <span class="topic">/object_centroid</span>.
+            <span class="cite">object_recognition_pipeline.py:34-36</span>
+            <span class="cite">sam3_ros_node.py:30-32</span></p>
+          </div></div>
+          <div class="row"><div class="k">Good news</div><div class="v">
+            <p>The two are <strong>not</strong> separate implementations. There is exactly one
+            segmentation class, and the second program imports it from the first folder — which is
+            why it has to be launched with an unusual command that points its search path back at
+            <code>src/</code>. So this is a question of <em>which program owns the model</em>, not
+            duplicated code. The fix is smaller than it first appears.</p>
+          </div></div>
+          <div class="row"><div class="k">What differs</div><div class="v">
+            <div class="scroller" style="margin:0">
+              <table>
+                <thead><tr><th></th><th>The full pipeline</th><th>The stand-in</th></tr></thead>
+                <tbody>
+                  <tr><td>Object comes from</td><td>your voice</td><td><strong>the fixed word "box"</strong></td></tr>
+                  <tr><td>Your gaze picks the object</td><td>yes</td><td><strong>no</strong></td></tr>
+                  <tr><td>Two cameras cross-check</td><td>yes</td><td><strong>no</strong></td></tr>
+                  <tr><td>Cameras used</td><td>glasses <em>and</em> wrist</td><td>wrist only</td></tr>
+                  <tr><td>Broadcasting today</td><td>no — line 384 is off</td><td><strong>yes</strong></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div></div>
+          <div class="row"><div class="k">The hazard</div><div class="v">
+            <p><strong>Uncomment line 384 while the stand-in is still running and you get two
+            programs broadcasting on the same channels at once.</strong> The state machine will act
+            on whichever message happens to arrive last — so behaviour becomes a race, changing run
+            to run for no visible reason.</p>
+            <p>Second cost: two copies of a 3.4 GB model loaded into graphics memory at once, since
+            each program gets its own fresh Python process.</p>
+            <p><span class="tag t-inf">inferred</span> the stand-in looks like a temporary measure
+            so the arm could be tested without the glasses, never reconciled afterwards.</p>
+          </div></div>
+        </div>
+      </div>
+
+      <div class="callout c-note">
+        <span class="ct">If you restore these, do it one at a time</span>
+        <p>Each break interacts with the others. Restoring one at a time means that when something
+        fails, you know which change caused it. Break 5 should be resolved <em>before</em> break 2,
+        not after.</p>
+      </div>
+    </section>
+
+    <!-- ══════════ 7 ══════════ -->
+    <section id="channels">
+      <h2><span class="sn">Section 7</span>Channel reference</h2>
+      <p class="sub">Every channel that matters, what travels on it, and who is at each end. Type
+      to filter.</p>
+
+      <div class="finder">
+        <input id="q" type="search" placeholder="Filter by channel, sender or purpose…"
+          aria-label="Filter channels">
+        <span class="count" id="cnt"></span>
+      </div>
+      <div class="scroller">
+        <table id="tt">
+          <thead><tr><th>Channel</th><th>Carries</th><th>Sent by</th><th>Listened to by</th></tr></thead>
+          <tbody>
+            <tr><td colspan="4" style="background:var(--surface-2);font-family:var(--mono);
+              font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">
+              From the glasses</td></tr>
+            <tr><td><span class="topic">/aria/audio/prompt</span></td>
+              <td>The object name you spoke</td><td>audio pipeline</td>
+              <td>navigation ×2; the recognition pipeline (not running)</td></tr>
+            <tr><td><span class="topic">/aria/eye_tracking/gaze_estimate</span></td>
+              <td>Where you are looking, as a screen position
+                <span class="flag">Assumes everything is 1.5 m away — see Section 10</span></td>
+              <td>image pipeline (off)</td><td>recognition pipeline</td></tr>
+            <tr><td><span class="topic">/aria/rgb_camera/undistorted</span></td>
+              <td>Glasses camera image, lens distortion removed</td>
+              <td>image pipeline (off)</td><td>recognition pipeline, RViz relay</td></tr>
+            <tr><td><span class="topic">/aria/aruco_pose</span></td>
+              <td>Printed marker sighting — how the glasses locate themselves</td>
+              <td>image pipeline (off)</td><td>position fusion</td></tr>
+            <tr><td><span class="topic">/aria/fused_pose</span></td>
+              <td>Where you are standing
+                <span class="flag">Relative to the robot's body, not the room — see break 4</span></td>
+              <td>position fusion</td><td>the return-trip navigator</td></tr>
+            <tr><td><span class="topic">/aria/imu</span></td>
+              <td>Glasses motion sensors</td><td>pose pipeline (off)</td><td>motion tracking</td></tr>
+
+            <tr><td colspan="4" style="background:var(--surface-2);font-family:var(--mono);
+              font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">
+              Camera → grasping</td></tr>
+            <tr><td><span class="topic">/camera/sam/mask</span></td>
+              <td>Black-and-white outline of the chosen object</td>
+              <td><strong>two senders</strong> — see break 5</td><td>AnyGrasp</td></tr>
+            <tr><td><span class="topic">/object_centroid_2d</span></td>
+              <td>Object's screen position and distance
+                <span class="flag">Not an ordinary 3D point: x and y are pixels, z is metres</span></td>
+              <td><strong>two senders</strong></td><td>state machine</td></tr>
+            <tr><td><span class="topic">/grasp_candidates</span></td>
+              <td>Five suggested grip positions, scored</td><td>AnyGrasp</td>
+              <td>state machine
+                <span class="flag">Subscribed but currently unused — see Section 10</span></td></tr>
+            <tr><td><span class="topic">/pipeline_state</span></td>
+              <td>Which phase the arm is in: idle, approaching, or gripping</td>
+              <td>state machine</td><td>AnyGrasp, debug view</td></tr>
+
+            <tr><td colspan="4" style="background:var(--surface-2);font-family:var(--mono);
+              font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">
+              Handover points — the integration surface <span class="star">★</span></td></tr>
+            <tr class="contract"><td><span class="star">★</span> <span class="topic">/manipulation/goal_pose</span></td>
+              <td>"The object is here"</td><td>recognition pipeline</td><td>navigation</td></tr>
+            <tr class="contract"><td><span class="star">★</span> <span class="topic">/goal_pose</span></td>
+              <td>"Drive to this spot"</td><td>navigation</td><td>Nav2</td></tr>
+            <tr class="contract"><td><span class="star">★</span> <span class="topic">/manipulation/start</span></td>
+              <td>"In position — arm may proceed"
+                <span class="flag">⚠ This message sets the arm in motion. See Section 5</span></td>
+              <td>navigation</td><td>coordinator</td></tr>
+            <tr class="contract"><td><span class="star">★</span> <span class="topic">/manipulator/return_to_user</span></td>
+              <td>"Got it — take me back"</td><td>state machine</td><td>navigation</td></tr>
+            <tr class="contract"><td><span class="star">★</span> <span class="topic">/return_to_user/goal_reached</span></td>
+              <td>Return trip finished, succeeded or failed</td><td>navigation</td><td>coordinator</td></tr>
+            <tr class="contract"><td><span class="star">★</span> <span class="topic">/goal_reached</span></td>
+              <td>Arrival, used to reset the approach logic</td><td>navigation</td><td>approach node</td></tr>
+            <tr class="contract"><td><span class="star">★</span> <span class="topic">/manipulator/release</span></td>
+              <td>"Let go"</td><td>voice</td><td>coordinator</td></tr>
+
+            <tr><td colspan="4" style="background:var(--surface-2);font-family:var(--mono);
+              font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">
+              Base and arm hardware</td></tr>
+            <tr><td><span class="topic">/livox/lidar</span> → <span class="topic">/cloud_relay</span></td>
+              <td>Laser scan of the room — relayed only to change one delivery setting</td>
+              <td>laser driver → relay</td><td>map builder</td></tr>
+            <tr><td><span class="topic">/cmd_vel</span></td>
+              <td>"Drive at this speed"
+                <span class="flag">Three different programs can send this — see Section 10</span></td>
+              <td>Nav2, teleop, docking</td><td>wheelbase driver</td></tr>
+            <tr><td><span class="topic">/odom</span></td>
+              <td>How far the wheels think they have travelled</td>
+              <td>wheelbase driver</td><td>map builder</td></tr>
+            <tr><td><span class="topic">/joint_states</span></td>
+              <td>Current angle of each arm joint</td><td>arm driver</td><td>motion planner</td></tr>
+            <tr><td><span class="topic">/rm_driver/movej_canfd_cmd</span></td>
+              <td>Streamed joint targets, 50 per second — how the arm is actually driven</td>
+              <td>arm control bridge</td><td>arm driver</td></tr>
+            <tr><td><span class="topic">/rm_driver/emergency_stop_cmd</span></td>
+              <td><strong>Emergency stop</strong></td><td><code>estop.py</code></td><td>arm driver</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:14.5px;color:var(--ink-2)">The arm driver alone exposes around 197
+      channels, nearly all following the pattern <code>…_cmd</code> to send a command and
+      <code>…_result</code> to hear back whether it worked. The handful above are the ones you will
+      touch. <span class="tag t-code">code</span></p>
+    </section>
+
+    <!-- ══════════ 8 ══════════ -->
+    <section id="handover">
+      <h2><span class="sn">Section 8</span>The handover points</h2>
+      <p class="sub">Seven channels carry the whole conversation between seeing, driving and
+      grasping. If you are replacing a part, this is the contract you must honour.</p>
+
+      <p>Everything else in <a href="#channels">Section 7</a> is internal to one part. These seven
+      are the seams between them — marked <span class="star">★</span> in that table. The full
+      sequence, in order:</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th style="width:34px">#</th><th>Who</th><th>Says what</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Perception → Navigation</td><td>"The object is at this position"
+              <span class="topic">/manipulation/goal_pose</span></td></tr>
+            <tr><td>2</td><td>Navigation (internal)</td><td>Works out where to stop, drives there
+              <span class="topic">/goal_pose</span> → <span class="topic">/goal_reached</span></td></tr>
+            <tr><td>3</td><td>Navigation → Coordinator</td><td>"In position, go ahead"
+              <span class="topic">/manipulation/start</span></td></tr>
+            <tr><td>4</td><td>Coordinator → Arm</td><td>Starts the grasp sequence</td></tr>
+            <tr><td>5</td><td>Arm → Navigation</td><td>"Got it, take me back"
+              <span class="topic">/manipulator/return_to_user</span></td></tr>
+            <tr><td>6</td><td>Navigation → Coordinator</td><td>"We're back"
+              <span class="topic">/return_to_user/goal_reached</span></td></tr>
+            <tr><td>7</td><td>You → Coordinator</td><td>"Release"
+              <span class="topic">/manipulator/release</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout c-warn">
+        <span class="ct">Two similarly named reference frames, and mixing them up is a classic bug</span>
+        <p><code>base_link</code> is the <strong>arm's</strong> base. <code>robot_base_link</code>
+        is the <strong>wheelbase's</strong>. Everything the arm plans happens in the first;
+        everything navigation plans happens relative to the room map.</p>
+        <p>The connection between them is published in <strong>only one of the two navigation
+        launch files</strong> <span class="cite">slam_localization.launch.py:98-103</span>
+        <span class="tag t-code">code</span> — the arm sits 0.18 m forward, 0.48 m up, and
+        <strong>rotated 180°, facing backwards</strong>. The map-building launch file does not
+        publish it at all, so during map-building the arm is not connected to the position tree
+        and any calculation involving it fails silently.</p>
+      </div>
+    </section>
+
+    <!-- ══════════ 9 ══════════ -->
+    <section id="hico">
+      <h2><span class="sn">Section 9</span>HiCo-Nav integration</h2>
+      <p class="sub">The planned next phase: replacing the navigation system with the one from the
+      HiCo-Nav paper.</p>
+
+      <div class="callout c-stop">
+        <span class="ct">⚠ Open blocker: the required camera does not exist on this robot</span>
+        <p>HiCo-Nav's memory graph needs a <strong>continuous forward-facing colour-plus-depth
+        camera</strong>. This robot has exactly one camera and it is bolted to the arm's
+        wrist — it points wherever the arm points, and it moves during a grasp. The navigation
+        system is laser-only; there are no camera channels in it anywhere.
+        <span class="tag t-code">code</span></p>
+        <p>Three ways forward, none free: <strong>buy</strong> a base-mounted camera (about $400,
+        plus university ordering time); <strong>park the arm</strong> in a fixed observation pose
+        and accept the compromise; or <strong>substitute the laser scan</strong> and adapt the
+        method. This is the decision that costs weeks if it turns out wrong — settle it first.</p>
+      </div>
+
+      <h3>The first question to answer from the paper</h3>
+      <p>Does HiCo-Nav produce <strong>destinations</strong> or <strong>wheel speeds</strong>? The
+      answer decides how big this job is:</p>
+      <ul>
+        <li><strong>Destinations</strong> — it sits alongside the existing code and Nav2 stays as
+        it is. Small change.</li>
+        <li><strong>Wheel speeds</strong> — it replaces the component that steers the robot, and
+        inherits all the map and reference-frame plumbing. Much larger change.</li>
+      </ul>
+
+      <h3>What a replacement would displace</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Role</th><th>Currently</th></tr></thead>
+          <tbody>
+            <tr><td>Route planner</td><td><code>NavfnPlanner</code>, 0.5 m tolerance, unknown space
+              treated as passable</td></tr>
+            <tr><td>Steering controller</td><td><code>RegulatedPurePursuitController</code> —
+              0.2 m/s, 0.6 m look-ahead, reversing disabled</td></tr>
+            <tr><td>Obstacle map (local)</td><td>3D voxel layer plus a safety margin, relative to
+              wheel odometry</td></tr>
+            <tr><td>Obstacle map (global)</td><td>Saved map plus safety margin, relative to the room</td></tr>
+            <tr><td>Robot shape</td><td>A circle of radius 0.2 m — no detailed outline is configured</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Nothing in the segmentation, grasp-planning or arm channels should be touched by a
+      navigation change. That separation is what makes it possible to integrate navigation while
+      the grasping half is still half-working.</p>
+
+      <div class="callout c-note">
+        <span class="ct">Scope this before building anything</span>
+        <p>HiCo-Nav records every object it sees into a memory graph. If that graph becomes the
+        answer to "where is the thing I was asked for", then three things change at once: where the
+        camera image comes from, when segmentation is triggered, and possibly whether perception
+        produces the object's position at all — or whether it is read out of the graph.</p>
+        <p>That could take over three of the seven handover channels. <strong>Read the paper
+        against Section 8 and decide which ones, before investing in the segmentation work in
+        Section 11.</strong></p>
+      </div>
+    </section>
+
+    <!-- ══════════ 10 ══════════ -->
+    <section id="traps">
+      <h2><span class="sn">Section 10</span>Traps</h2>
+      <p class="sub">Things that are true, non-obvious, and will waste your time if you meet them
+      unprepared.</p>
+
+      <h3>Hidden assumptions</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Assumption</th><th>Why it matters</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Eye tracking assumes everything is 1.5 m away</strong>
+              <span class="cite">eye_tracking.py:150</span> <span class="tag t-code">code</span></td>
+              <td>The eye tracker gives a <em>direction</em>, never a distance. To turn that into a
+              point on the screen the code projects it onto an imaginary wall at a fixed 1.5 m. For
+              anything nearer or further, the reported gaze point drifts off target — and that
+              point is what decides which object you meant.</td></tr>
+            <tr><td><strong>The wrist camera's reference frames are not defined in this repo</strong>
+              <span class="tag t-code">code</span></td>
+              <td>They come from a third-party package that is not included here. Every grasp
+              calculation depends on them, so if that package is missing or the camera driver is not
+              running, grasp attempts are skipped silently rather than erroring.</td></tr>
+            <tr><td><strong>The arm does not check whether its target is stale</strong>
+              <span class="cite">grasp_state_machine.cpp:637-641</span> <span class="tag t-code">code</span></td>
+              <td>The freshness check is commented out, so the arm will keep creeping toward a
+              target position that stopped updating.</td></tr>
+            <tr><td><strong>The clever grasp planning is compiled but not used</strong>
+              <span class="cite">grasp_state_machine.cpp:40</span> <span class="tag t-code">code</span></td>
+              <td>A simplification flag is switched on, so the arm does a blind 10 cm push toward
+              the object and closes the gripper. AnyGrasp's suggestions are received and ignored in
+              this mode. Worth knowing before anyone spends a day debugging AnyGrasp's output.</td></tr>
+            <tr><td><strong>Startup timing is handled by guessing</strong>
+              <span class="cite">ros2_robot_ws/src/main.py</span> <span class="tag t-code">code</span></td>
+              <td>Components are started with fixed waits — 2 s, 3 s, 5 s — because the state
+              machine needs the motion planner to be ready. On a slower machine the guess is wrong
+              and you get confusing failures.</td></tr>
+            <tr><td><strong>Three programs can send driving commands</strong>
+              <span class="tag t-code">code</span></td>
+              <td>The wheelbase driver is the real one. The docking system also sends a slow creep
+              when a test mode is on. And a third, unfinished driver exists whose speed conversion
+              is an explicit placeholder — it is not started by anything, and must not be run
+              alongside the real one.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Traps that cost a previous session real time <span class="tag t-rep">reported</span></h3>
+      <ul>
+        <li><strong>Never set <code>PYTHONNOUSERSITE=1</code>.</strong> There are two versions of
+        PyTorch installed. The one that works with the graphics card is in the user folder; the one
+        in the grasp planner's environment has no graphics support at all. That setting forces the
+        broken one. Do not "tidy up" the user folder either — the system depends on it winning.</li>
+        <li><strong>A depth filter silently emptied the point cloud.</strong> The grasp planner was
+        set to ignore anything beyond 0.5 m while the workbench sat at 1.45 m — so every point was
+        discarded and the program <em>crashed rather than complaining</em>. It looked like a
+        successful start followed by an instant crash.</li>
+        <li><strong>Launch every terminal with the environment script.</strong> The grasp planner is
+        started in a way that inherits its search paths from the terminal. Start it from an
+        unprepared terminal and that one component dies on startup while everything else looks
+        fine.</li>
+        <li><strong>Child programs dying is reported as a warning, not an error.</strong> The
+        launcher keeps running. A dead grasp planner presents as "nothing ever happens". Read the
+        terminal output.</li>
+        <li><strong>The arm's controller takes about 60 seconds after power-on</strong> before it
+        accepts connections. "Connection refused" immediately after switching on is normal.</li>
+        <li><strong>The workstation's network address is not arbitrary.</strong> The arm is told to
+        send its status to one specific address. Set it wrong and everything connects but no data
+        arrives — which presents as a hang, not an error.</li>
+      </ul>
+
+      <h3>Dead code that will mislead you</h3>
+      <p>Not bugs, but each one looks meaningful and is not: a feature-matching program that is
+      wired up but never actually started (the class inside it <em>is</em> used, directly); a
+      calibration-logging function that is never called and writes to a stray file; several
+      leftover <code>print("Success")</code>-style debug lines; an on-screen menu that lists five
+      of six available views; and a test tool for the arm that broadcasts on an old channel name
+      nothing listens to any more, so it no longer works as a stand-in.</p>
+    </section>
+
+    <!-- ══════════ 11 ══════════ -->
+    <section id="next">
+      <h2><span class="sn">Section 11</span>What to do next</h2>
+      <p class="sub">Ordered by what unblocks the most. Mirrors <code>docs/NEXT_STEPS.md</code>,
+      which is the version that gets updated.</p>
+
+      <h3>Decide first — wrong answers here cost weeks</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Item</th><th>Why it is first</th></tr></thead>
+          <tbody>
+            <tr><td><strong>The missing camera</strong></td>
+              <td>HiCo-Nav needs a forward-facing depth camera this robot does not have. Ordering
+              takes weeks. <a href="#hico">Section 9</a></td></tr>
+            <tr><td><strong>Find the missing <code>xpkg_demo</code> package</strong></td>
+              <td>Navigation cannot launch without it. Ask whoever set up the wheelbase.
+              <a href="#safety">Section 5</a></td></tr>
+            <tr><td><strong>Destinations or wheel speeds?</strong></td>
+              <td>Decides whether the integration is small or large. Answer from the paper.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Then: how often should segmentation run?</h3>
+      <p>Today the segmentation model runs on <strong>every single camera frame</strong>, against a
+      fixed word. It is the most computationally expensive thing in the system.
+      <span class="tag t-code">code</span> There is no policy deciding when to run it — just "on
+      every frame".</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Option</th><th>Idea</th><th>Effort</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Only while asked</strong></td><td>Run only when there is an active
+              request, and stop once the answer is stable. Probably what an already-commented-out
+              guard was for.</td><td>Trivial</td></tr>
+            <tr><td><strong>Two-stage</strong> <span class="tag t-inf">inferred</span></td>
+              <td>A cheap model watches continuously; escalate to the expensive one only when
+              something interesting appears.</td><td>Medium</td></tr>
+            <tr><td><strong>Memory-graph driven</strong></td><td>HiCo-Nav's graph decides when a
+              region needs looking at again.</td><td>Depends on scoping</td></tr>
+            <tr><td><strong>On an event</strong></td><td>Re-run when your gaze settles, or when the
+              scene changes noticeably.</td><td>Low–medium</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout c-warn">
+        <span class="ct">Do not build the two-stage version yet</span>
+        <p>If HiCo-Nav's memory graph already tracks every object it has seen, that graph is
+        probably the right trigger and a purpose-built cheap model would be wasted work. Settle the
+        scoping question in <a href="#hico">Section 9</a> first.</p>
+      </div>
+
+      <h3>Then: make segmentation one service</h3>
+      <p>Resolve break 5 by deciding which program owns the model. The target: one service that
+      holds the model, accepts a word and a camera to look through, and is the only broadcaster of
+      the outline and position channels. Both current programs become users of it. Because the code
+      is already shared, this is a reorganisation rather than a rewrite.</p>
+      <p><strong>Sequence it after the two decisions above</strong> — both change what this
+      service's interface should look like, and doing it twice is wasted effort.</p>
+
+      <h3>Work that needs the lab machine</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Task</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>Compile the navigation module</td><td>Eight packages, never once built. Pure
+              compilation, touches no hardware, safe to do remotely.</td></tr>
+            <tr><td>Bring the bring-up notes onto the main branch</td><td>Another branch holds the
+              only verified record of getting the hardware running. It should not live only
+              there.</td></tr>
+            <tr><td>Remove the seven hardcoded folder paths</td><td>They point at one person's home
+              directory and block anyone else from running this. Preferred approach: gather them
+              into one settings block at the entry point rather than fixing each in place — three
+              of the four launchers currently hardcode paths independently.</td></tr>
+            <tr><td>Fix the arm test tool</td><td>It broadcasts on an old channel name. Thirty
+              seconds, and it restores the ability to test the arm without the glasses.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      <p><strong>Where the authoritative versions live.</strong> This page is generated from
+      <code>docs/ORIENTATION.md</code> (the full written reference),
+      <code>docs/ARCHITECTURE.md</code> (diagrams), <code>docs/READING_GUIDE.md</code> (a guided
+      walk through the code, round by round) and <code>docs/NEXT_STEPS.md</code> (the work
+      register). Those files are updated first; this page follows.</p>
+      <p>Written 9–10 September 2026 against branch <code>main</code> at commit
+      <code>2d36a89</code>, by reading the source. <strong>No hardware was running</strong> — every
+      claim tagged <span class="tag t-code">code</span> was checked against the file and line
+      cited, and nothing here has been verified against a live robot.</p>
+    </footer>
+  </main>
+</div>
+
+<script>
+(function(){
+  var q=document.getElementById('q'), tbl=document.getElementById('tt'), cnt=document.getElementById('cnt');
+  if(!q||!tbl) return;
+  var rows=[].slice.call(tbl.tBodies[0].rows);
+  var data=rows.filter(function(r){return r.cells.length>1;});
+  function run(){
+    var v=q.value.trim().toLowerCase(), shown=0;
+    rows.forEach(function(r){
+      if(r.cells.length===1){ r.hidden = v.length>0; return; }
+      var hit = !v || r.textContent.toLowerCase().indexOf(v)>-1;
+      r.hidden = !hit;
+      if(hit) shown++;
+    });
+    cnt.textContent = v ? shown+' of '+data.length+' channels' : data.length+' channels';
+  }
+  q.addEventListener('input',run); run();
+})();
+</script>
