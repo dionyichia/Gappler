@@ -1,0 +1,513 @@
+<title>Gappler Test Bench</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Tokens match docs/wiring-map.html so the three Gappler pages read as one set. */
+:root{
+  --ground:#f7f8fa; --surface:#ffffff; --surface-2:#f0f2f6;
+  --ink:#16191f; --ink-2:#495261; --ink-3:#78828f;
+  --line:#dbe0e8; --line-2:#c3cad6;
+  --accent:#1f5fa8; --accent-soft:#e8f0f9;
+  --broken:#b02a2a; --broken-soft:#fbeced;
+  --caution:#96620d; --caution-soft:#fdf3e3;
+  --working:#1c7048; --working-soft:#e7f4ed;
+  --display:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --body:'IBM Plex Sans',-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+  --shadow:0 1px 2px rgba(20,30,50,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14171c; --surface:#1c2027; --surface-2:#23282f;
+    --ink:#e8ebef; --ink-2:#b0b8c4; --ink-3:#828c99;
+    --line:#2e343d; --line-2:#3d444f;
+    --accent:#6aa6e8; --accent-soft:#1b2836;
+    --broken:#e8797a; --broken-soft:#2c1c1e;
+    --caution:#d9a353; --caution-soft:#2a2118;
+    --working:#5fb98a; --working-soft:#17271f;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14171c; --surface:#1c2027; --surface-2:#23282f;
+  --ink:#e8ebef; --ink-2:#b0b8c4; --ink-3:#828c99;
+  --line:#2e343d; --line-2:#3d444f;
+  --accent:#6aa6e8; --accent-soft:#1b2836;
+  --broken:#e8797a; --broken-soft:#2c1c1e;
+  --caution:#d9a353; --caution-soft:#2a2118;
+  --working:#5fb98a; --working-soft:#17271f;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);
+  font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px;display:grid;
+  grid-template-columns:200px minmax(0,1fr);gap:44px;align-items:start}
+@media (max-width:900px){.wrap{grid-template-columns:1fr;gap:0}}
+
+.masthead{border-bottom:1px solid var(--line);background:var(--surface);margin-bottom:36px}
+.masthead .inner{max-width:1240px;margin:0 auto;padding:34px 24px 30px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 10px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,4.4vw,42px);
+  line-height:1.1;margin:0 0 12px;letter-spacing:-.02em;text-wrap:balance}
+.dek{font-size:17.5px;color:var(--ink-2);max-width:66ch;margin:0}
+
+nav.rail{position:sticky;top:20px;font-size:14px}
+@media (max-width:900px){nav.rail{position:static;margin-bottom:32px;
+  border:1px solid var(--line);border-radius:5px;background:var(--surface);padding:16px}}
+nav.rail .hd{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:12px}
+nav.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+nav.rail a{display:block;padding:5px 8px;border-radius:3px;text-decoration:none;color:var(--ink-2);line-height:1.35}
+nav.rail a:hover{background:var(--surface-2);color:var(--ink)}
+nav.rail a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+main{min-width:0;padding-bottom:80px}
+section{margin:0 0 60px;scroll-margin-top:20px}
+h2{font-family:var(--display);font-weight:600;font-size:26px;line-height:1.2;
+  margin:0 0 8px;letter-spacing:-.015em;text-wrap:balance}
+h3{font-family:var(--display);font-weight:600;font-size:18.5px;margin:30px 0 8px;letter-spacing:-.01em}
+.sub{color:var(--ink-2);font-size:16.5px;margin:0 0 22px;max-width:70ch}
+p{margin:0 0 14px;max-width:68ch}
+a{color:var(--accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);
+  padding:1.5px 5px;border-radius:3px;color:var(--ink)}
+
+/* ---------- status strip ---------- */
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:5px;overflow:hidden;margin:0 0 22px}
+.kv > div{background:var(--surface);padding:14px 16px}
+.kv .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);display:block;margin-bottom:6px}
+.kv .v{font-size:14.5px;line-height:1.45;color:var(--ink-2)}
+.kv .v b{font-family:var(--display);font-size:22px;font-weight:600;display:block;margin-bottom:2px;
+  color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* ---------- where tests run ---------- */
+.places{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 10px}
+@media (max-width:760px){.places{grid-template-columns:1fr}}
+.place{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:16px 18px;
+  display:flex;flex-direction:column;gap:8px}
+.place .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.place h4{font-family:var(--display);font-weight:600;font-size:17px;margin:0;line-height:1.25}
+.place p{font-size:14.5px;color:var(--ink-2);margin:0}
+.place ul{margin:0;padding-left:18px;font-size:14.5px}
+.place li{margin-bottom:3px}
+.place.human{border-color:var(--caution);background:var(--caution-soft)}
+
+/* ---------- states ---------- */
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap;
+  border:1px solid transparent;line-height:1.5}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.s-ok{color:var(--working);background:var(--working-soft);border-color:var(--working)}
+.s-flag{color:var(--broken);background:var(--broken-soft);border-color:var(--broken)}
+.s-ready{color:var(--accent);background:var(--accent-soft);border-color:var(--accent)}
+.s-plan{color:var(--ink-3);background:var(--surface);border:1px dashed var(--line-2)}
+.s-blocked{color:var(--caution);background:var(--caution-soft);border-color:var(--caution)}
+.s-gap{color:var(--caution);background:var(--surface);border:1px dashed var(--caution)}
+.s-na{color:var(--ink-3);background:transparent;border-color:transparent}
+.s-na::before{background:transparent;border:1px solid var(--line-2)}
+.legend{display:flex;gap:10px 18px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-2);
+  margin:0 0 16px;padding:12px 15px;background:var(--surface);border:1px solid var(--line);border-radius:5px}
+.legend span{display:flex;gap:8px;align-items:center}
+
+/* ---------- the coverage matrix ---------- */
+.scroller{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--surface);margin:0 0 12px}
+.matrix{display:grid;grid-template-columns:190px repeat(6,minmax(128px,1fr)) 58px;min-width:1040px}
+.matrix > *{border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.mh{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+  background:var(--surface-2);padding:10px 11px;line-height:1.4;display:flex;flex-direction:column;gap:3px}
+.mh b{font-family:var(--display);font-size:13.5px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:600}
+.mh .where{color:var(--ink-3);text-transform:none;letter-spacing:0;font-family:var(--body);font-size:11.5px}
+.mc{padding:11px 12px;font-size:13.5px;line-height:1.4;display:flex;flex-direction:column;gap:3px}
+.mc b{font-weight:600;font-size:14px}
+.mc span{color:var(--ink-3);font-size:12px}
+.cell{all:unset;box-sizing:border-box;padding:10px 11px;font-size:12.5px;line-height:1.42;color:var(--ink-2);
+  display:flex;flex-direction:column;gap:6px;cursor:pointer;min-height:92px;
+  border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.cell:hover{background:var(--surface-2)}
+.cell:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.cell.na{cursor:default;color:var(--ink-3)}
+.cell.na:hover{background:transparent}
+.cell.sel{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.cell .chip{align-self:flex-start}
+/* The line the bench never crosses: arm motion. */
+.stop{background:repeating-linear-gradient(135deg,var(--broken-soft) 0 7px,var(--surface) 7px 14px);
+  border-left:2px solid var(--broken)}
+.stop.head{display:flex;align-items:center;justify-content:center;padding:8px 0}
+.stop.head span{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--mono);font-size:10px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--broken);font-weight:500}
+.note{font-size:13.5px;color:var(--ink-3);max-width:80ch;margin:0}
+
+/* ---------- catalogue ---------- */
+.finder{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
+.finder select{font-family:var(--body);font-size:14.5px;padding:8px 10px;border:1px solid var(--line-2);
+  border-radius:4px;background:var(--surface);color:var(--ink)}
+.finder select:focus-visible,.finder button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.finder button{font-family:var(--body);font-size:14px;padding:8px 12px;border:1px solid var(--line-2);
+  border-radius:4px;background:var(--surface-2);color:var(--ink);cursor:pointer}
+.finder .count{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);white-space:nowrap;margin-left:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:820px}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  text-align:left;padding:10px 13px;border-bottom:1px solid var(--line-2);background:var(--surface-2);
+  font-weight:500;white-space:nowrap}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+tr:last-child td{border-bottom:none}
+td.nm{font-family:var(--mono);font-size:12.5px;color:var(--ink);white-space:nowrap}
+td.meta{font-size:12.5px;color:var(--ink-3);white-space:nowrap}
+.xf{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--broken);
+  border:1px solid var(--broken);border-radius:2px;padding:0 5px;margin-left:6px;white-space:nowrap}
+
+/* ---------- lab box plan ---------- */
+.tree{font-family:var(--mono);font-size:13px;line-height:1.75;background:var(--surface);border:1px solid var(--line);
+  border-radius:5px;padding:14px 16px;overflow-x:auto;margin:0 0 18px;white-space:pre;color:var(--ink-2)}
+.tree .new{color:var(--accent);font-weight:500}
+.tree .keep{color:var(--working)}
+.tree .lock{color:var(--ink-3)}
+.steps{display:flex;flex-direction:column;gap:14px;margin:0 0 18px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.step .top{padding:14px 18px 12px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.step .top h4{font-family:var(--display);font-weight:600;font-size:17px;margin:0;flex:1;min-width:220px}
+.step .n{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+.step .body{display:grid;grid-template-columns:110px minmax(0,1fr);gap:0}
+.step .body > div{padding:10px 18px;border-bottom:1px solid var(--line);font-size:14.5px}
+.step .body > div:nth-last-child(-n+2){border-bottom:none}
+.step .body .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding-top:13px}
+@media (max-width:620px){.step .body{grid-template-columns:1fr}.step .body .k{padding-bottom:0;border-bottom:none}}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--ground);border:1px solid var(--line);
+  border-radius:4px;padding:10px 12px;margin:0;overflow-x:auto;color:var(--ink)}
+pre .cm{color:var(--ink-3)}
+.callout{border-radius:5px;padding:15px 18px;margin:0 0 18px;border:1px solid;border-left-width:4px;font-size:15px}
+.callout p{max-width:none;margin:0 0 8px}.callout p:last-child{margin:0}
+.callout .ct{font-family:var(--display);font-weight:600;font-size:16px;margin:0 0 6px;display:block}
+.c-stop{background:var(--broken-soft);border-color:var(--broken)}.c-stop .ct{color:var(--broken)}
+.c-note{background:var(--accent-soft);border-color:var(--accent)}.c-note .ct{color:var(--accent)}
+.never{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.never div{border:1px solid var(--broken);border-radius:5px;padding:13px 15px;background:var(--surface);font-size:14px;color:var(--ink-2)}
+.never b{display:block;font-family:var(--display);font-weight:600;font-size:15.5px;color:var(--broken);margin-bottom:4px}
+footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-size:14px;color:var(--ink-3);max-width:74ch}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<header class="masthead">
+  <div class="inner">
+    <p class="eyebrow">Gappler · test bench · 11 Sep 2026</p>
+    <h1>Gappler Test Bench</h1>
+    <p class="dek">What the bench checks, for which part of the robot, at which level, and where each check
+      runs. The bench is read-only up to a hard line: it never makes the arm move.</p>
+  </div>
+</header>
+
+<div class="wrap">
+<nav class="rail" aria-label="Contents">
+  <div class="hd">On this page</div>
+  <ol>
+    <li><a href="#status">Where things stand</a></li>
+    <li><a href="#levels">The six levels</a></li>
+    <li><a href="#map">Coverage map</a></li>
+    <li><a href="#checks">Every check</a></li>
+    <li><a href="#labbox">On the lab box</a></li>
+    <li><a href="#never">Never tested</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section id="status">
+  <h2>Where things stand</h2>
+  <p class="sub">Three levels exist and run on the Mac. Nothing has run on the lab box yet except a
+    read-only inventory. Everything to the right of Preflight in the map below is designed but not built.</p>
+  <div class="kv">
+    <div><span class="k">Built</span><span class="v"><b>3 of 6 levels</b>contracts, static, preflight</span></div>
+    <div><span class="k">Checks today</span><span class="v"><b>46 + 9</b>36 preflight, 10 static, 9 contract kinds</span></div>
+    <div><span class="k">Contract baseline</span><span class="v"><b>120 topics</b>74 launch nodes · 201 params · 39 frames</span></div>
+    <div><span class="k">Last Mac run</span><span class="v"><b>2 of 3 green</b>static fails on 7 old findings</span></div>
+    <div><span class="k">Lab box</span><span class="v"><b>Inventory done</b>read-only; nothing built or launched</span></div>
+  </div>
+</section>
+
+<section id="levels">
+  <h2>The six levels, and where each one runs</h2>
+  <p class="sub">Each level only means something once the one before it passes: there's no point building code
+    that doesn't parse, or testing a node that doesn't build. Where a level runs is set by what it needs.</p>
+  <div class="places">
+    <div class="place">
+      <span class="k">This Mac · no ROS needed</span>
+      <h4>Code is consistent with itself</h4>
+      <ul>
+        <li><b>Tier 0 · Contracts</b>: every topic, frame, param, launch node vs. a saved baseline</li>
+        <li><b>Tier 1 · Static</b>: parses, imports resolve, launch files point at real things</li>
+      </ul>
+      <p>Run before and after every refactor. Seconds.</p>
+    </div>
+    <div class="place">
+      <span class="k">Lab box · no hardware moves</span>
+      <h4>It can run on the real machine</h4>
+      <ul>
+        <li><b>Preflight</b>: GPU, ROS, model files, network, users. Looks only</li>
+        <li><b>Tier 2 · Build</b>: compiles into a scratch folder</li>
+        <li><b>Tier 3 · Node behaviour</b>: one node at a time, fake inputs, on a private ROS channel</li>
+      </ul>
+    </div>
+    <div class="place human">
+      <span class="k">Lab box · a person at the robot</span>
+      <h4>Real sensors, real data</h4>
+      <ul>
+        <li><b>Tier 4</b>: record 30 s of real camera, LiDAR and joint data once; replay it forever</li>
+        <li>Two driver/AnyGrasp smoke checks, each confirmed by the operator</li>
+      </ul>
+      <p>E-stop in hand. Stops before anything that moves the arm.</p>
+    </div>
+  </div>
+</section>
+
+<section id="map">
+  <h2>Coverage map</h2>
+  <p class="sub">Rows are the parts of the robot, following the signal from the glasses to the wheels. Columns are
+    the levels. Click a cell to list its exact checks below.</p>
+  <div class="legend" id="legend"></div>
+  <div class="scroller"><div class="matrix" id="matrix" role="grid" aria-label="Test coverage by component and level"></div></div>
+  <p class="note">The striped column is the line the bench never crosses. A red cell is a check working as
+    intended: it has found a real, pre-existing bug. "Blind spot" means the check runs but can't see part of that
+    component yet (TESTBENCH_PLAN §4, C1).</p>
+</section>
+
+<section id="checks">
+  <h2>Every check</h2>
+  <p class="sub">Everything in the map, one row per check; preflight's 36 checks are grouped into 16 rows by what they look at. Tests marked <span class="xf">expected-fail</span>
+    encode a bug from the code audit. They are written to assert the <em>intended</em> behaviour, so they
+    turn green when the bug is fixed.</p>
+  <div class="finder">
+    <select id="fComp" aria-label="Filter by component"></select>
+    <select id="fLevel" aria-label="Filter by level"></select>
+    <button id="fClear" type="button">Show all</button>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="scroller">
+    <table>
+      <thead><tr><th>Check</th><th>Part of the robot</th><th>Level</th><th>What it catches</th><th>State</th><th>Runs on</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="labbox">
+  <h2>On the lab box: exactly what happens</h2>
+  <p class="sub">To run on the box, the bench needs a copy of the repo there. The two existing folders
+    hold the only known-good builds and your uncommitted captures, so the bench gets its own scratch folder,
+    <code>~/bench_work</code>. It's a new, empty folder I'd create, not old code. Deleting it undoes everything.</p>
+
+  <div class="tree"><span class="lock">/home/rcp2026/</span>
+├── <span class="keep">rcp-desktop/</span>            <span class="lock">untouched · realman_manip · the build the 25 Aug session ran</span>
+├── <span class="keep">rcp-github/…/Renaissance-Capstone-Project/</span>   <span class="lock">untouched · = main · read once, to copy from</span>
+└── <span class="new">bench_work/</span>             <span class="new">NEW · everything the bench writes lives here</span>
+    ├── <span class="new">gappler/</span>            <span class="lock">copy of main + the bench commits</span>
+    ├── <span class="new">build/  install/  log/</span>   <span class="lock">only after you OK the build (step 3)</span>
+    └── <span class="new">reports/</span>            <span class="lock">preflight output, kept for the docs</span>
+<span class="lock">/home/iot22/</span>                <span class="lock">locked to rcp2026 · reading needs your sudo password</span></div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="top"><span class="n">Step 1</span><h4>Make the scratch copy</h4><span class="chip s-ready">needs your OK</span></div>
+      <div class="body">
+        <div class="k">Commands</div>
+        <div><pre>mkdir ~/bench_work
+git clone ~/rcp-github/Renaissance-Capstone-Project ~/bench_work/gappler   <span class="cm"># local copy, shares files on disk</span>
+cd ~/bench_work/gappler && git pull git@github.com:dionyichia/Gappler.git main   <span class="cm"># adds bench/ + docs/</span></pre></div>
+        <div class="k">Writes</div><div>Only <code>~/bench_work/gappler</code>. A local clone reuses git's files, so it costs about the size of the checkout, not the 3 GB history. [inferred]</div>
+        <div class="k">Reads</div><div><code>rcp-github</code>'s git history. Cloning never modifies the source.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="top"><span class="n">Step 2</span><h4>Run preflight, static and contracts</h4><span class="chip s-ready">needs your OK</span></div>
+      <div class="body">
+        <div class="k">Commands</div>
+        <div><pre>cd ~/bench_work/gappler && source /opt/ros/humble/setup.bash
+./bench/run.sh | tee ~/bench_work/reports/preflight-2026-09-11.txt</pre></div>
+        <div class="k">Does</div><div>Looks: lists interfaces, pings the arm and LiDAR addresses, opens a TCP connection to the arm's port and closes it, reads topic rates <em>if</em> something is already running. Sends no command.</div>
+        <div class="k">Writes</div><div>One report file. I'll first add a <code>--repo</code> option so it can inspect <code>rcp-github</code>'s model files (3.7 GB, not in git) in place instead of copying them.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="top"><span class="n">Step 3</span><h4>Build (Tier 2)</h4><span class="chip s-blocked">waiting on you</span></div>
+      <div class="body">
+        <div class="k">Commands</div>
+        <div><pre>source /opt/ros/humble/setup.bash          <span class="cm"># nothing else: a stale overlay poisons the build</span>
+colcon build --base-paths ros2_robot_ws/src deps_ws/src \
+  --build-base ~/bench_work/build --install-base ~/bench_work/install</pre></div>
+        <div class="k">Does</div><div>Compiles C++ and packages Python: the same thing the earlier team did to make <code>install/</code>. About 6 min for the arm's 24 packages [reported]. Keeps the CPU busy while it runs, so pick a time when nobody is operating the robot.</div>
+        <div class="k">Doesn't</div><div>Start any node, contact the arm or LiDAR, use <code>sudo</code>, install packages, or touch the existing <code>install/</code> folders.</div>
+        <div class="k">Writes</div><div><code>~/bench_work/build</code>, <code>install</code>, <code>log</code>: a few GB [inferred]; 33 GB free. Livox needs its missing <code>package.xml</code> copied into the scratch copy first.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="top"><span class="n">Step 4</span><h4>Node tests (Tier 3)</h4><span class="chip s-plan">later</span></div>
+      <div class="body">
+        <div class="k">Isolation</div><div>A private ROS channel (<code>ROS_DOMAIN_ID=77</code>). <code>iot22</code> is logged in on the same machine, and localhost-only does <em>not</em> separate the two users, so the unique channel is what isolates. Each test checks the channel is empty before starting.</div>
+        <div class="k">Never</div><div>Starts <code>rm_driver</code>. The state-machine test runs against a simulated arm and refuses to start if the real driver's topics exist.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="never">
+  <h2>Never tested by the bench</h2>
+  <p class="sub">By design. Each of these needs a person at the robot with the e-stop, and none has ever been run end to end.</p>
+  <div class="never">
+    <div><b>Arm motion</b>The state machine homes the arm within seconds of launch, to a pose nobody has validated.</div>
+    <div><b>Gripper</b>Opening or closing it is a physical command.</div>
+    <div><b>Driving the base</b>Publishing <code>/goal_pose</code> or <code>/cmd_vel</code> moves the robot.</div>
+    <div><b>The whole pipeline</b>Voice → SAM 3 → gaze → grasp is cut in the code today, so there is no end-to-end path yet.</div>
+  </div>
+</section>
+
+<footer>Source of truth: <code>bench/</code> and <code>docs/TESTBENCH_PLAN.md</code>. States as of 11 Sep 2026.
+  Tags follow the docs: [reported] from the 25 Aug hardware session, [inferred] reasoning.</footer>
+</main>
+</div>
+
+<script>
+const COMPS = [
+  ["machine","Machine & accounts","host, GPU, ROS install, users"],
+  ["aria","Aria glasses","voice + gaze"],
+  ["sam3","SAM 3","object segmentation"],
+  ["anygrasp","AnyGrasp","grasp candidates"],
+  ["planner","Grasp state machine","MoveIt / MTC · rm_mtc"],
+  ["driver","Arm driver + e-stop","RM65 · rm_driver"],
+  ["camera","Wrist camera + TF","RealSense D435i"],
+  ["nav","Mobile base","LiDAR · SLAM · Nav2"],
+  ["glue","Launchers","orchestrator · main.py"],
+];
+const LEVELS = [
+  ["t0","Tier 0","Contracts","Mac"],
+  ["t1","Tier 1","Static","Mac"],
+  ["pf","Preflight","Environment","Lab box · looks only"],
+  ["t2","Tier 2","Build","Lab box"],
+  ["t3","Tier 3","Node behaviour","Lab box · private channel"],
+  ["t4","Tier 4","Real data","Lab box · person present"],
+];
+const STATES = {
+  ok:["Passing","s-ok"], flag:["Finds real bugs","s-flag"], ready:["Built · first box run next","s-ready"],
+  gap:["Blind spot","s-gap"], blocked:["Blocked","s-blocked"], plan:["Planned","s-plan"], na:["Not applicable","s-na"],
+};
+// [component][level] = [state, summary]
+const CELLS = {
+  machine:{t0:["na","No ROS interfaces"],t1:["na","—"],pf:["ready","13 checks: CPU, RAM, disk, GPU driver, VRAM, ROS, overlay, domain id, running user, hardcoded /home paths"],t2:["na","colcon + rosdep present"],t3:["na","—"],t4:["na","—"]},
+  aria:{t0:["gap","What it subscribes to is baselined; its publishers are invisible (C1)"],t1:["ok","Parses, imports resolve"],pf:["ready","Project venv, glasses auth"],t2:["na","Python in the venv; nothing to compile"],t3:["plan","None designed yet"],t4:["plan","Voice prompt recorded in the bag"]},
+  sam3:{t0:["ok","Mask topics baselined"],t1:["ok","Parses, imports resolve"],pf:["ready","3.4 GB weights, CUDA torch, PYTHONNOUSERSITE trap"],t2:["na","Python in the venv"],t3:["plan","None designed yet"],t4:["plan","Replay recorded camera frames"]},
+  anygrasp:{t0:["ok","Candidate + mask topics baselined"],t1:["ok","Parses, imports resolve"],pf:["ready","Both checkpoints, licence, compiled .so, conda env"],t2:["na","Python + prebuilt .so"],t3:["blocked","Gate test (A1). Needs the conda env rcp2026 doesn't have"],t4:["plan","Smoke: first frame yields seed grasps"]},
+  planner:{t0:["ok","State-machine topics, frames, params baselined"],t1:["flag","Launch file names mtc_sim_test, which nothing builds"],pf:["na","Only observable once launched"],t2:["plan","rm_mtc + MoveIt Task Constructor in the 24-package arm build"],t3:["plan","Full run against a simulated arm, never the real one"],t4:["na","Real arm = the stop line"]},
+  driver:{t0:["gap","Vendor code: seen only through our subscribers"],t1:["ok","estop.py parses"],pf:["ready","Arm port, host IP .10, ping, TCP 8080, joint feedback rate"],t2:["plan","rm_driver in the arm build"],t3:["plan","E-stop reaches the arm after Ctrl-C (B2)"],t4:["plan","Driver handshake reports RM65-BI"]},
+  camera:{t0:["ok","Camera topics + static TF baselined"],t1:["na","External package"],pf:["ready","USB present, 13–14 Hz, camera TF matches URDF"],t2:["na","Installed from apt"],t3:["na","Supplies other tests' inputs"],t4:["plan","30 s of colour, depth, camera_info"]},
+  nav:{t0:["ok","Topics, frames, launch nodes baselined"],t1:["flag","xpkg_demo missing; Livox manifest not in git"],pf:["ready","LiDAR ping, both host IPs, SLAM map, base TF bridge"],t2:["plan","Never built before: first run is discovery"],t3:["plan","8 tests: approach, goal bridge, return-to-user, pose, QoS relay"],t4:["plan","LiDAR + TF recorded"]},
+  glue:{t0:["ok","74 launch nodes, 52 includes baselined"],t1:["ok","Launch → package, executable, include all resolve here"],pf:["ready","Lists what's running"],t2:["na","—"],t3:["na","Never launched: both start the arm"],t4:["na","—"]},
+};
+const ALL = COMPS.map(c=>c[0]);
+// [name, components, level, what it catches, state, runs on, expected-fail audit id]
+const CHECKS = [
+  ["topics",ALL,"t0","A topic renamed, retyped, or left with no publisher or subscriber — 120 in the baseline","ok","Mac"],
+  ["launch nodes",["glue","nav","planner","driver","anygrasp","sam3"],"t0","A node dropped from or renamed in a launch file — 74","ok","Mac"],
+  ["launch includes",["glue","nav","planner"],"t0","A launch file including one that moved — 52","ok","Mac"],
+  ["params",ALL,"t0","A parameter's default changed — 201","ok","Mac"],
+  ["frames",["camera","nav","planner","anygrasp"],"t0","A TF frame name changed in one place only — 39","ok","Mac"],
+  ["static transforms",["camera","nav"],"t0","A hardcoded camera or base offset changed — 4","ok","Mac"],
+  ["hardcoded paths",ALL,"t0","A new absolute path appeared — 16","ok","Mac"],
+  ["package deps",["nav","planner"],"t0","A package dependency added or dropped — 7","ok","Mac"],
+  ["divergent constants",ALL,"t0","One constant with different values in different files — 2","ok","Mac"],
+  ["Aria publishers",["aria"],"t0","Blind spot: publishers created via the ROSPublisher wrapper aren't extracted yet (C1)","gap","Mac"],
+  ["python-syntax",["aria","sam3","anygrasp","driver","nav","glue"],"t1","A Python file that won't even parse","ok","Mac"],
+  ["undefined-names",["aria","sam3","anygrasp","driver","nav","glue"],"t1","A name used but never defined; crashes only when that line runs","ok","Mac"],
+  ["internal-imports",["aria","sam3","anygrasp","nav","glue"],"t1","An import of a repo module that no longer exists: the classic refactor break","ok","Mac"],
+  ["xml-wellformed",["nav","planner","driver"],"t1","A broken package.xml or XML launch file","ok","Mac"],
+  ["install-targets",["planner","nav"],"t1","CMake installs a file that isn't there","ok","Mac"],
+  ["launch-packages",["nav"],"t1","A launch file uses a package that exists nowhere — finds xpkg_demo","flag","Mac"],
+  ["package-xml-deps",["nav"],"t1","A declared dependency on a package that exists nowhere — finds xpkg_demo","flag","Mac"],
+  ["launch-executables",["planner"],"t1","A launch file starts an executable nothing builds — finds mtc_sim_test","flag","Mac"],
+  ["launch-includes",["nav"],"t1","A launch file includes one that doesn't exist — finds bringup_basic_ctrl.launch.py","flag","Mac"],
+  ["generated-manifests",["nav"],"t1","A vendor package whose manifest is generated at build time and never committed — finds livox_ros_driver2","flag","Mac"],
+  ["platform · ram · disk · cpu",["machine"],"pf","Wrong machine, or not enough memory, disk or cores for SAM 3 + AnyGrasp + a build","ready","Lab box"],
+  ["nvidia-driver · vram",["machine"],"pf","No CUDA GPU, or too little free VRAM","ready","Lab box"],
+  ["humble · colcon · overlay",["machine"],"pf","ROS missing, or sourcing the wrong one of the four install folders","ready","Lab box"],
+  ["no-double-source · domain-id",["machine"],"pf","Duplicate MoveIt libraries; a ROS channel mismatch that silently hides every topic","ready","Lab box"],
+  ["running-user · hardcoded-homes",["machine"],"pf","Code pointing into another user's home: 10 paths into /home/iot22, locked to rcp2026","ready","Lab box"],
+  ["pythonnousersite · torch-cuda",["sam3"],"pf","The setting that silently swaps in a CPU-only torch; torch that can't see the GPU","ready","Lab box"],
+  ["sam3-weights",["sam3"],"pf","The 3.4 GB checkpoint missing (it's gitignored)","ready","Lab box"],
+  ["venv · aria-sdk",["aria"],"pf","Project venv missing; glasses not authorised","ready","Lab box"],
+  ["conda-anygrasp",["anygrasp"],"pf","AnyGrasp's own Python env missing","ready","Lab box"],
+  ["anygrasp checkpoints · licence · .so",["anygrasp"],"pf","Detection/tracking weights, machine-locked licence, compiled binaries","ready","Lab box"],
+  ["arm-nic · arm-ping · arm-port",["driver"],"pf","Arm cable, control box at 192.168.1.18, port 8080 (connect + close only)","ready","Lab box"],
+  ["joint-states",["driver"],"pf","Arm connected but sending no feedback: the wrong-host-IP symptom","ready","Lab box"],
+  ["arm-lidar-coexist · lidar-ping",["nav","driver"],"pf","Host needs both .10 (arm) and .5 (LiDAR) on one port; the saved profile has .100","ready","Lab box"],
+  ["slam-map · tf-base-bridge",["nav"],"pf","Prebuilt map missing; arm not attached to the base's TF tree","ready","Lab box"],
+  ["realsense-usb · camera-hz · tf-arm-camera",["camera"],"pf","Camera absent, slow, or its mount offset different from the URDF","ready","Lab box"],
+  ["nodes",["glue"],"pf","What is actually running before anything is judged","ready","Lab box"],
+  ["arm workspace build",["planner","driver"],"t2","A package that no longer compiles — 24 packages, about 6 min [reported]","plan","Lab box"],
+  ["Navigation_Module build",["nav"],"t2","Never built; expect Livox and xpkg_demo to stop it","plan","Lab box"],
+  ["executables vs install/",["planner","glue"],"t2","Upgrades the static launch check to read what was really built","plan","Lab box"],
+  ["approach, far object",["nav"],"t3","Sends a goal 0.78 m from the object, facing it","plan","Private channel"],
+  ["approach, near object",["nav"],"t3","Starts manipulation instead of driving","plan","Private channel"],
+  ["approach recovers from nav failure",["nav"],"t3","A second grasp request is still acted on after a failed drive","plan","Private channel","F1"],
+  ["goal bridge, server down",["nav"],"t3","Reports \"failed\" within 6 s instead of hanging","plan","Private channel","F1"],
+  ["return-to-user retry",["nav"],"t3","A second return request isn't ignored","plan","Private channel","F2"],
+  ["fused pose frame",["nav"],"t3","Goal is in the map frame, not the robot's own","plan","Private channel","E1"],
+  ["QoS relay",["nav"],"t3","LiDAR cloud re-published in the format Nav2 accepts, at input rate","plan","Private channel"],
+  ["robot pose",["nav"],"t3","/robot_pose at about 10 Hz in the map frame","plan","Private channel"],
+  ["AnyGrasp gate",["anygrasp"],"t3","Candidates while EXECUTING, none while IDLE. Blocked on the conda env","blocked","Private channel","A1"],
+  ["e-stop delivery",["driver"],"t3","The stop message actually leaves after Ctrl-C","plan","Private channel","B2"],
+  ["state machine, simulated arm",["planner"],"t3","Homes, reaches SELECTING, steps: on MoveIt's fake hardware only","plan","Private channel"],
+  ["record.sh",["camera","nav","driver","aria"],"t4","30 s of real camera, LiDAR, TF, joints, voice; replayed by Tier 3 afterwards","plan","Person present"],
+  ["driver handshake",["driver"],"t4","Driver log shows product_version = RM65-BI","plan","Person present"],
+  ["AnyGrasp first frame",["anygrasp"],"t4","\"Frame 0: selected 5 seed grasps\" on real data","plan","Person present"],
+];
+
+const $ = s => document.querySelector(s);
+const chip = st => `<span class="chip ${STATES[st][1]}">${STATES[st][0]}</span>`;
+$("#legend").innerHTML = Object.keys(STATES).map(k => `<span>${chip(k)}</span>`).join("");
+
+// matrix
+let html = `<div class="mh">Part of the robot</div>` +
+  LEVELS.map(l => `<div class="mh">${l[1]}<b>${l[2]}</b><span class="where">${l[3]}</span></div>`).join("") +
+  `<div class="stop head" title="The bench never makes the arm move"><span>Arm moves · never</span></div>`;
+for (const [id, name, what] of COMPS) {
+  html += `<div class="mc"><b>${name}</b><span>${what}</span></div>`;
+  for (const [lv] of LEVELS) {
+    const [st, txt] = CELLS[id][lv];
+    const na = st === "na";
+    html += `<button class="cell${na ? " na" : ""}" data-comp="${id}" data-level="${lv}" ${na ? 'tabindex="-1" aria-disabled="true"' : ""}>` +
+      `${na ? "" : chip(st)}<span>${txt}</span></button>`;
+  }
+  html += `<div class="stop"></div>`;
+}
+$("#matrix").innerHTML = html;
+
+// catalogue
+const fC = $("#fComp"), fL = $("#fLevel");
+fC.innerHTML = `<option value="">All parts of the robot</option>` + COMPS.map(c => `<option value="${c[0]}">${c[1]}</option>`).join("");
+fL.innerHTML = `<option value="">All levels</option>` + LEVELS.map(l => `<option value="${l[0]}">${l[1]} · ${l[2]}</option>`).join("");
+const compName = Object.fromEntries(COMPS.map(c => [c[0], c[1]]));
+const levelName = Object.fromEntries(LEVELS.map(l => [l[0], `${l[1]} · ${l[2]}`]));
+
+function render() {
+  const c = fC.value, l = fL.value;
+  const rows = CHECKS.filter(r => (!c || r[1].includes(c)) && (!l || r[2] === l));
+  $("#rows").innerHTML = rows.map(r => {
+    const comps = r[1].length === ALL.length ? "All" : r[1].map(x => compName[x]).join(", ");
+    return `<tr><td class="nm">${r[0]}</td><td class="meta">${comps}</td><td class="meta">${levelName[r[2]]}</td>` +
+      `<td>${r[3]}${r[6] ? `<span class="xf">expected-fail · ${r[6]}</span>` : ""}</td><td>${chip(r[4])}</td><td class="meta">${r[5]}</td></tr>`;
+  }).join("") || `<tr><td colspan="6">No checks at this level for this part yet. See the map cell above for why.</td></tr>`;
+  $("#count").textContent = `${rows.length} of ${CHECKS.length}`;
+  document.querySelectorAll(".cell").forEach(el =>
+    el.classList.toggle("sel", !!c && !!l && el.dataset.comp === c && el.dataset.level === l));
+}
+fC.onchange = fL.onchange = render;
+$("#fClear").onclick = () => { fC.value = ""; fL.value = ""; render(); };
+$("#matrix").addEventListener("click", e => {
+  const b = e.target.closest(".cell"); if (!b || b.classList.contains("na")) return;
+  fC.value = b.dataset.comp; fL.value = b.dataset.level; render();
+  const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  $("#checks").scrollIntoView({behavior: smooth ? "smooth" : "auto"});
+});
+render();
+</script>
