@@ -121,6 +121,18 @@ def _exists(p) -> bool:
         return False
 
 
+def _exists_or_prefix(p) -> bool:
+    """True if p exists, or p is a file-name prefix with siblings (slam_toolbox's
+    map_file_name `completed_map` is stored as completed_map.posegraph + .data)."""
+    if _exists(p):
+        return True
+    q = Path(p)
+    try:
+        return q.parent.is_dir() and any(x.name.startswith(q.name + ".") for x in q.parent.iterdir())
+    except OSError:
+        return False
+
+
 def is_linux() -> bool:
     return platform.system() == "Linux"
 
@@ -418,8 +430,11 @@ def g_assets() -> list[Check]:
         cs.append(c.skip("no map_file_name in slam_toolbox_localization.yaml"))
     else:
         exp = Path(os.path.expanduser(want))
-        if _exists(exp.with_suffix(".yaml")) or _exists(exp):
-            cs.append(c.ok(f"{want} present"))
+        if _exists_or_prefix(exp):
+            owner = exp.parts[2] if len(exp.parts) > 2 and exp.parts[1] == "home" else None
+            note = (f" -- but in /home/{owner}, not this user's home"
+                    if owner and not str(exp).startswith(f"{Path.home()}/") else "")
+            cs.append(c.ok(f"{want} present{note}"))
         elif not lab:
             cs.append(c.skip(NOT_LAB))
         else:
@@ -716,10 +731,13 @@ def g_home() -> list[Check]:
         while not _exists(a) and a != a.parent:
             a = a.parent
         return "" if os.access(a, os.R_OK | os.X_OK) else f" [no access: {a}]"
-    missing = sorted(p for p in foreign if not _exists(p))
+    missing = sorted(p for p in foreign if not _exists_or_prefix(p))
+    resolving = sorted(p for p in foreign if p not in missing)
+    borrowed = (f"; {len(resolving)} more resolve into /home/{','.join(owners)}/ -- "
+                f"{user} would silently run another user's copy" if resolving else "")
     if missing:
         cs.append(c.bad(f"{len(missing)} of {len(foreign)} hardcoded path(s) unreachable, "
-                        f"e.g. {where(missing[0])}{why(missing[0])}",
+                        f"e.g. {where(missing[0])}{why(missing[0])}{borrowed}",
                         f"running as {user}: parametrise these, or run as their owner "
                         f"(full list: python3 bench/preflight.py -g home --json)"))
         c.detail += "\n" + "\n".join(f"           missing: {where(p)}{why(p)}" for p in missing[1:])

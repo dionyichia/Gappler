@@ -82,7 +82,12 @@ def rel(path: Path) -> str:
 
 def walk(*suffixes: str):
     for p in sorted(REPO.rglob("*")):
-        if p.is_file() and p.suffix in suffixes and not is_excluded(p.relative_to(REPO)):
+        r = p.relative_to(REPO)
+        # bench/ is the instrument, not the robot: its test nodes subscribe to
+        # /joint_states etc. and would otherwise read as contract changes.
+        if r.parts[:1] == ("bench",):
+            continue
+        if p.is_file() and p.suffix in suffixes and not is_excluded(r):
             yield p
 
 
