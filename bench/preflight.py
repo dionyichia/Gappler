@@ -56,7 +56,6 @@ ARIA_SERIAL = "1WM10350101291"
 TF_EXPECT = {("base_link", "camera_color_optical_frame"): (-0.100, -0.049, 0.728)}
 TF_TOL = 0.05
 CAMERA_HZ_RANGE = (8.0, 20.0)          # guide says 13-14 Hz
-ANYGRASP_CONDA_ENV = "anygrasp"        # ros2_robot_ws/src/main.py:28
 
 PASS, FAIL, WARN, SKIP = "PASS", "FAIL", "WARN", "SKIP"
 
@@ -259,9 +258,10 @@ def g_gpu() -> list[Check]:
               else c.ok("not set (correct)"))
 
     c = Check("gpu", "torch-cuda", "the interpreter that runs SAM 3 must see CUDA")
-    py = shutil.which("python3")
+    venv_py = REPO / ".venv" / "bin" / "python"     # SAM 3 runs from the project venv
+    py = str(venv_py) if venv_py.exists() else shutil.which("python3")
     if not py:
-        cs.append(c.skip("no python3 on PATH"))
+        cs.append(c.skip("no .venv and no python3 on PATH"))
     else:
         rc, out = sh([py, "-c",
                       "import torch;print(torch.__version__, torch.cuda.is_available())"],
@@ -347,19 +347,24 @@ def g_env() -> list[Check]:
     else:
         cs.append(c.skip("no .venv in this clone -- run `uv sync`"))
 
-    c = Check("env", "conda-anygrasp",
-              "AnyGrasp runs in its own env; it cannot share SAM 3's dependencies")
-    if not shutil.which("conda"):
-        cs.append(c.skip("conda not on PATH"))
+    # AnyGrasp's env is rebuilt with uv (TESTBENCH_PLAN W5), not taken from iot22's conda:
+    # either the project venv gains MinkowskiEngine (one env) or envs/anygrasp/ holds a second.
+    c = Check("env", "anygrasp-env",
+              "AnyGrasp needs MinkowskiEngine (CUDA extension) next to torch")
+    candidates = [REPO / "envs" / "anygrasp" / ".venv" / "bin" / "python", v / "bin" / "python"]
+    found = [py for py in candidates if py.exists()]
+    if not found:
+        cs.append(c.skip("no project venv yet -- run `uv sync`; AnyGrasp env is W5"))
     else:
-        rc, out = sh(["conda", "env", "list"], timeout=30)
-        if rc != 0:
-            cs.append(c.skip("`conda env list` failed"))
-        elif re.search(rf"^{ANYGRASP_CONDA_ENV}\s", out, re.M):
-            cs.append(c.ok(f"env '{ANYGRASP_CONDA_ENV}' exists"))
+        py = found[0]
+        rc, out = sh([str(py), "-c", "import MinkowskiEngine as ME;print(ME.__version__)"],
+                     timeout=60)
+        where = py.parent.parent.relative_to(REPO)
+        if rc == 0:
+            cs.append(c.ok(f"MinkowskiEngine {out.strip()} in {where}"))
         else:
-            cs.append(c.bad(f"no conda env named '{ANYGRASP_CONDA_ENV}'",
-                            "AnyGrasp node will fail to launch"))
+            cs.append(c.bad(f"MinkowskiEngine not importable from {where}",
+                            "build the AnyGrasp env -- TESTBENCH_PLAN W5"))
 
     c = Check("env", "aria-sdk", "glasses auth is a prerequisite for any Aria stream")
     aria = shutil.which("aria") or str(REPO / ".venv" / "bin" / "aria")
