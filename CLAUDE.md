@@ -24,7 +24,9 @@ folders at the repo root: **`<name>_docs/`**.
 
 - Never launch `grasp_state_machine`, `ros2_robot_ws/src/main.py`, `ros2_robot_ws/src/orchestrator.py`
   or root `main.py`. The state machine homes the arm within seconds, unprompted, to a home pose that
-  has never been validated.
+  has never been validated. **One exception (Dion, 2026-09-11):** `bench/state_machine_sim.sh` may launch the
+  state machine against the *simulated* arm, behind its guards (mock hardware, private channel, no
+  `rm_driver`, preflight shows the arm unreachable).
 - Never publish to `/rm_driver/*_cmd`, `/goal_pose`, `/cmd_vel`, `/manipulation/*`, or
   `/object_centroid_2d` on the real ROS domain. Isolate tests with `ROS_DOMAIN_ID` + `ROS_LOCALHOST_ONLY=1`.
   `iot22` shares the box, and localhost-only does not separate you from its processes; the unique
