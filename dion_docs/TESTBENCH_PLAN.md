@@ -18,7 +18,7 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 **One paragraph:** the bench runs on the lab box, in `~/rcp-Gappler` (clone of `main`; the only
 repo to work in there). Tiers 0–1 and preflight run; the arm workspace builds (Tier 2); MoveIt
 plans and executes on a **simulated** arm (`bench/sim_moveit.sh`, first Tier 3 test). Model files
-are copied in (checksums in [`ASSETS.md`](ASSETS.md)). No `.venv` yet. Nothing physical has moved;
+are copied in (checksums in [`ASSETS.md`](ASSETS.md)). `.venv` rebuilt with uv (W1 ✅; one fix awaiting merge). Nothing physical has moved;
 Aria, arm and base are unplugged, so their checks fail or skip **as expected**. Dion's standing
 instruction: *build all the tests below*, in `~/rcp-Gappler`, no real-world movement.
 
@@ -34,7 +34,8 @@ instruction: *build all the tests below*, in `~/rcp-Gappler`, no real-world move
 | Simulation | MoveIt with `mock_components` is allowed. `rm_driver` never. Private ROS channel always |
 | Robot config | Not edited by the bench. `bench/nodes/sim_arm.*` carries the simulated model (ORIENTATION §8.16) |
 
-**Every session on the box:** `ssh rcp2026@10.91.242.76` → `cd ~/rcp-Gappler && git pull` → read §3
+**Every session on the box:** `ssh rcp2026@10.91.242.76` (off the NTU network: tailscale,
+`ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60` — same host key, verified 2026-09-11) → `cd ~/rcp-Gappler && git pull` → read §3
 (safety). Edit on the Mac, commit, push, pull on the box — the box's tree stays clean. Push work
 that changes robot code (`pyproject.toml`, configs, nodes) to a **branch** for Dion's review;
 `bench/` and `dion_docs/` go to `main`.
@@ -43,13 +44,24 @@ that changes robot code (`pyproject.toml`, configs, nodes) to a **branch** for D
 
 Each item: what to build → how you know it's done. Mark ✅ here as you go.
 
-**W1 — Rebuild the main Python env (uv).**
+**W1 ✅ — Rebuild the main Python env (uv).**
 `curl -LsSf https://astral.sh/uv/install.sh | sh` (installs `~/.local/bin/uv` for `rcp2026` — that
 is fine; **never** `pip install --user` into `~/.local/lib`, which recreates ORIENTATION §8.5's
 trap). Then `cd ~/rcp-Gappler && uv sync` (~4 GB of downloads incl. torch 2.10 cu128; 28 GB free).
 Fix preflight's `torch-cuda` check to use `.venv/bin/python` when it exists (today it uses
 `/usr/bin/python3`). **Done when** preflight `gpu`, `env` and `assets` groups pass except
 `aria-sdk` (glasses unplugged) and `conda-anygrasp` (superseded by W5 — change that check).
+
+> ✅ **Done 2026-09-11** ([`bench-runs/2026-09-11-labbox-w1-venv.txt`](bench-runs/2026-09-11-labbox-w1-venv.txt)).
+> uv was already at `~/.local/bin/uv` (0.12.12), so nothing new went into `~/.local`. `uv sync --locked
+> --python /usr/bin/python3.10` with downloads off: 95 packages, 11 min, `.venv` 8.3 GB (free disk 28 → 20 GB);
+> torch 2.10.0+cu128 sees CUDA. Undo = `rm -rf .venv ~/.cache/uv`. Preflight gpu/env/assets: 11 pass, 2 fail —
+> `anygrasp-env` (the renamed conda check; expected until W5) and **`aria-sdk`: the lock pulls setuptools 82,
+> which removed `pkg_resources`, and the `aria` CLI crashes on import** `[observed]`. Fix on branch
+> **`bench/w1-setuptools-pin`** (`setuptools<81`; verified in an ephemeral overlay — the CLI then reports "no
+> devices over USB", correct with the glasses unplugged). Dry-run of that lock: swaps setuptools, reinstalls
+> `decord`, leaves torch alone. **After Dion merges it:** `git pull && uv sync --locked` on the box, re-run
+> preflight `-g env`. `torch-cuda` now uses `.venv/bin/python`; `aria-sdk` reports a crashing CLI as FAIL.
 
 **W2 — State machine on the simulated arm** (`bench/state_machine_sim.sh` +
 `bench/nodes/test_state_machine_sim.py`). Launch `bench/nodes/sim_arm.launch.py` + `rm_mtc
@@ -489,3 +501,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-11 | Claude (Opus 5) + Dion | Phases 1, 2, 4 (arm) done in `~/rcp-Gappler`; first Tier 3 test (`sim_moveit.sh`) passes. Recorded CPU throttling, the broken config simulated-arm launch (ORIENTATION §8.16), bench bugs P7–P9. Reports in `dion_docs/bench-runs/`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | End of day: added **Start here** with Dion's decisions and the ordered work queue W1–W8 for the next session. Model files copied into `~/rcp-Gappler` (dion_docs/ASSETS.md). Recorded the AnyGrasp env facts (numpy 1 vs 2, MinkowskiEngine) behind the one-env-first plan. |
 | 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `dion_docs/` (per-person doc folders as more people join; rules in START_HERE). Paths here and in `bench/` updated; preflight's home scan skips any `*_docs/`. Root `.gitignore` extended for weights, recordings, archives, `*.swp`. |
+| 2026-09-11 | Claude (Opus 5) + Dion | **W1 done** on the box (over tailscale): `.venv` rebuilt with uv; preflight `torch-cuda` uses the venv, `conda-anygrasp` → `anygrasp-env`, `aria-sdk` reports CLI crashes. Found setuptools 82 breaks the `aria` CLI; pin on branch `bench/w1-setuptools-pin` for review. Record: `bench-runs/2026-09-11-labbox-w1-venv.txt`. |

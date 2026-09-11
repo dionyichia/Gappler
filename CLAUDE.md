@@ -29,7 +29,8 @@ folders at the repo root: **`<name>_docs/`**.
   `/object_centroid_2d` on the real ROS domain. Isolate tests with `ROS_DOMAIN_ID` + `ROS_LOCALHOST_ONLY=1`.
   `iot22` shares the box, and localhost-only does not separate you from its processes; the unique
   domain id does.
-- On the lab machine (`ssh rcp2026@10.91.242.76`, key auth from the Mac): **all work happens in
+- On the lab machine (`ssh rcp2026@10.91.242.76`, key auth from the Mac; off the NTU network use tailscale:
+  `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60`): **all work happens in
   `~/rcp-Gappler`** — a clone of Gappler `main` created 2026-09-11; build, test and commit there.
   `~/rcp-desktop` (`realman_manip`) and `~/rcp-github` (`combined`) are old code: never modify
   them or their `install/` overlays. Don't touch `~/.local` or `/home/iot22`; never set `PYTHONNOUSERSITE=1`.

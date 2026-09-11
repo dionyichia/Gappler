@@ -1,0 +1,41 @@
+W1 -- rebuild the main Python env with uv          lab box, ~/rcp-Gappler, 2026-09-11
+===========================================================================================
+Box reached over tailscale (100.87.133.60, host key = 10.91.242.76's) -- the Mac was on a
+phone hotspot, off the NTU network.
+
+uv        ~/.local/bin/uv 0.12.12 -- already installed (2026-09-10); nothing new put in ~/.local.
+          No ~/.local/lib, no uv-managed Pythons.
+command   UV_PYTHON_DOWNLOADS=never uv sync --locked --python /usr/bin/python3.10
+          -> Using CPython 3.10.12 at /usr/bin/python3.10; Resolved 99; Prepared 95 in 10m 55s;
+             Installed 95. No errors. Log: ~/rcp-Gappler/log/uv-sync.log (gitignored).
+footprint .venv 8.3 GB, ~/.cache/uv 197 MB. /home free 28 GB -> 20 GB.
+undo      rm -rf ~/rcp-Gappler/.venv ~/.cache/uv
+check     .venv/bin/python: torch 2.10.0+cu128, cuda=True, numpy 2.2.6
+
+preflight -g gpu -g env -g assets  (bench @ 6b84929)
+  [PASS] nvidia-driver          NVIDIA GeForce RTX 4060 Ti, 575.57.08, 16380 MiB, 515 MiB
+  [PASS] vram                   15.5 GB free of 16.0 GB
+  [PASS] pythonnousersite       not set (correct)
+  [PASS] torch-cuda             torch 2.10.0+cu128, cuda=True
+  [PASS] venv                   .venv -> Python 3.10.12
+  [FAIL] anygrasp-env           MinkowskiEngine not importable from .venv   -> W5 (expected)
+  [FAIL] aria-sdk               aria CLI crashed: ModuleNotFoundError: No module named 'pkg_resources'
+  [PASS] sam3-weights           3.21 GB
+  [PASS] anygrasp-detection     283 MB
+  [PASS] anygrasp-tracking      23 MB
+  [PASS] anygrasp-licence       4 file(s) (lock can only be verified by running the node)
+  [PASS] anygrasp-so            gsnet, lib_cxx, tracker (cpython-310)
+  [PASS] slam-map               /home/iot22/maps/completed_map present -- but in /home/iot22
+  RESULT 11 pass / 2 fail / 0 warn / 0 skip
+
+aria-sdk root cause
+  uv.lock resolves setuptools 82.0.0, which removed pkg_resources; aria/__cli__.py:19 imports it.
+  The old iot22-copied venv (~/rcp-desktop/.venv, read only) has setuptools 80.10.2.
+  Ephemeral test, .venv untouched:  uv run --no-sync --with "setuptools<81" aria auth check
+    -> "[AriaCli:App][ERROR]: Connection error (-4) There are no devices connected over USB"
+       i.e. the CLI works; the glasses are unplugged (expected).
+  Fix: branch bench/w1-setuptools-pin (42363cd) pins setuptools<81.
+  Dry-run of that lock against this .venv (uv sync --locked --dry-run, nothing changed):
+    ~ decord==0.6.0   - setuptools==82.0.0   + setuptools==80.10.2      (torch not reinstalled)
+
+Not checked here: aria auth pairing (glasses unplugged); the AnyGrasp env (W5).
