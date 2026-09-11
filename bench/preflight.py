@@ -372,8 +372,11 @@ def g_env() -> list[Check]:
         cs.append(c.skip("aria CLI not found (venv not built, or not the lab machine)"))
     else:
         rc, out = sh([aria, "auth", "check"], timeout=30)
-        if rc != 0:
-            cs.append(c.warn(out[:120], "run `aria auth pair`"))
+        last = out.strip().splitlines()[-1][:120] if out.strip() else f"rc={rc}"
+        if "Traceback" in out:      # the CLI itself is broken, not the pairing
+            cs.append(c.bad(f"aria CLI crashed: {last}", "fix the venv (see TESTBENCH_PLAN W1)"))
+        elif rc != 0:
+            cs.append(c.warn(last, "run `aria auth pair`"))
         else:
             cs.append(c.ok(f"authenticated"
                            + (f", device {ARIA_SERIAL} seen" if ARIA_SERIAL in out else "")))
