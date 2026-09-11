@@ -86,6 +86,14 @@ first teach it the Livox prep: copy a ROS 2 `package.xml` into the (untracked) l
 `xpkg_demo` is only an `exec_depend`, so the build should not need it. **Done when** the nav build
 result is in `dion_docs/bench-runs/` and the §8.15 fix (commit `package_ROS2.xml`) is proposed on a branch.
 
+> ✅ **(a) done 2026-09-11** ([`bench-runs/2026-09-11-labbox-w4a-nav-diff.txt`](bench-runs/2026-09-11-labbox-w4a-nav-diff.txt)).
+> The repo's copies are the **newer** ones (tidied rewrites, git 2026-04-20; `iot22`'s are Feb–Apr) and do the
+> same thing once formatting is ignored — the repo's `qos_relay.py` even fixes a shutdown crash in `iot22`'s.
+> `base`, `drivers`, `urdf`, `echo_plus_driver`, `Livox-SDk2` are identical. **But two packages exist only in
+> `iot22`'s workspace:** `robot_navigation` (Nav2 launch + `nav2_params.yaml`; not in this repo at all — the
+> plan's list above assumed it was) and `demo/` = `xpkg_demo` (ORIENTATION §8.6). `iot22` also has the
+> generated ROS 2 livox `package.xml` that (b) needs. Importing the two packages is robot code → branch.
+
 **W5 — AnyGrasp env, reproducibly.** What `iot22`'s env actually is `[observed]`: conda, Python
 3.10, torch 2.7.0 (but at runtime `~iot22/.local`'s torch 2.10 wins), **numpy 1.21.2**,
 MinkowskiEngine 0.5.4 (compiled by hand, unrecorded), open3d 0.18.0. The main env pins
@@ -502,3 +510,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-11 | Claude (Opus 5) + Dion | End of day: added **Start here** with Dion's decisions and the ordered work queue W1–W8 for the next session. Model files copied into `~/rcp-Gappler` (dion_docs/ASSETS.md). Recorded the AnyGrasp env facts (numpy 1 vs 2, MinkowskiEngine) behind the one-env-first plan. |
 | 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `dion_docs/` (per-person doc folders as more people join; rules in START_HERE). Paths here and in `bench/` updated; preflight's home scan skips any `*_docs/`. Root `.gitignore` extended for weights, recordings, archives, `*.swp`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W1 done** on the box (over tailscale): `.venv` rebuilt with uv; preflight `torch-cuda` uses the venv, `conda-anygrasp` → `anygrasp-env`, `aria-sdk` reports CLI crashes. Found setuptools 82 breaks the `aria` CLI; pin on branch `bench/w1-setuptools-pin` for review. Record: `bench-runs/2026-09-11-labbox-w1-venv.txt`. |
+| 2026-09-11 | Claude (Opus 5) + Dion | **W4a done** (read-only): repo nav code is newer and equivalent; `robot_navigation` and `xpkg_demo` exist only in `iot22`'s workspace. Record in `bench-runs/`. |

@@ -1,0 +1,40 @@
+W4a -- repo Navigation_Module/src vs ~iot22/Ros2Workspaces/src (what ran on the base)
+lab box, read-only, 2026-09-11
+===========================================================================================
+Method: diff -rq per package (excluding __pycache__, build, .git, *.pyc); for each differing
+.py file, parse both, drop docstrings, ast.unparse, and diff -- so formatting, quote style and
+comments don't count. Repo-side mtimes are the 2026-09-11 clone; git dates used instead.
+
+package              result
+robot_slam           3 files differ, all cosmetic (see below)
+simple_teleop        1 file differs, cosmetic
+echo_plus_driver     identical
+livox_ros_driver2    identical except iot22 has the generated package.xml (29 lines, ROS 2
+                     format 3) -- the file ORIENTATION 8.15 says a fresh clone lacks
+base, drivers, urdf, Livox-SDk2   identical
+robot_navigation     ONLY in iot22: package.xml, CMakeLists.txt, launch/navigation.launch.py,
+                     config/nav2_params.yaml (newest 2026-04-05). exec_depends nav2_bringup,
+                     slam_toolbox, robot_slam, pointcloud_to_laserscan. Its launch includes
+                     bringup_basic_ctrl.launch.py (xpkg_demo) and msg_MID360_launch.py (livox)
+demo                 ONLY in iot22: demo/demo/demo_general_chassis = package xpkg_demo
+                     (ament_cmake, rclcpp; ROS1 + ROS2 variants; tools/hex-pkg-init.py)
+
+differing files      iot22 mtime       repo (git)                 logic after normalising
+robot_slam/launch/slam_mapping.launch.py
+                     2026-04-10 17:24  2026-04-20 31763e8         identical; iot22 also imports
+                                                                  nav2_common RewrittenYaml (unused)
+robot_slam/scripts/goal_reached_publisher.py
+                     2026-04-08 11:42  2026-04-20 31763e8         identical; renames, one log
+                                                                  level info -> warn
+robot_slam/scripts/qos_relay.py
+                     2026-03-13 11:44  2026-04-20 31763e8         identical relay; iot22's main()
+                                                                  calls rclpy.destroy_node() (no such
+                                                                  function) -> AttributeError on
+                                                                  shutdown; repo fixed (try/finally)
+simple_teleop/simple_teleop/teleop_node.py
+                     2026-02-27 09:51  2026-04-20 31763e8         identical; log text / emoji only
+
+Verdict: the repo's copies are the newer, tidied versions of the same code [observed]. Nothing
+in iot22's workspace is newer logic -- but two packages exist only there: robot_navigation
+(the Nav2 launch + params the base used) and xpkg_demo. Without them the repo cannot bring up
+navigation. Importing them is a robot-code change -> a branch for Dion's review.
