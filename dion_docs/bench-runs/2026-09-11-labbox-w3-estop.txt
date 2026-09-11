@@ -1,0 +1,29 @@
+W3 -- estop.py delivery (./bench/estop_delivery.sh)       lab box, ~/rcp-Gappler @ 7d4e307, 2026-09-11 15:45
+===========================================================================================
+Private channel 77, ROS_LOCALHOST_ONLY=1; guards: domain != 0, no rm_driver process, channel empty.
+estop.py runs under a pseudo-terminal (it needs a tty) with system python3 + the built overlay;
+the test subscribes to /rm_driver/emergency_stop_cmd and /rm_driver/move_stop_cmd. Nothing on
+the channel acts on these messages.
+
+  [PASS ] key 'e' -> emergency stop                  arrived
+  [PASS ] key 'r' -> resume                          arrived
+  [PASS ] key 's' -> soft stop                       arrived
+  [XFAIL] Ctrl+C key -> emergency stop               no stop; estop.py still running
+  [XPASS] kill -INT -> emergency stop (5 trials)     5/5 delivered; exit 1 each time
+  RESULT: PASS (exit 0)
+
+What each line means
+- Ctrl+C key: getch() puts the tty in raw mode (estop.py:52), so Ctrl+C arrives as the byte 0x03,
+  matches no key, and is ignored. An operator who presses Ctrl+C gets no stop and no exit.
+  Only E sends a stop. [observed]
+- kill -INT: the stop WAS delivered, 5/5, same host (rm_driver also runs on this host, so this is
+  the realistic transport). CODE_AUDIT B2's loss did not reproduce. But the log shows rclpy's own
+  SIGINT handler shuts the context down first: "Failed to publish log message to rosout:
+  publisher's context is invalid", then estop.py:76 rclpy.shutdown() raises
+  "RCLError: rcl_shutdown already called" -> traceback, exit 1. The Stop publish survived that
+  window in all 5 trials; nothing guarantees it always will. [observed]
+
+Not tested: delivery over a real network; a stop sent before rm_driver has subscribed (VOLATILE,
+depth 1 -- CODE_AUDIT B2, second paragraph); closing the terminal (SIGHUP is not handled, so no
+stop is sent [inferred]).
+Log: ~/rcp-Gappler/log/bench_estop_2026-09-11_1545.txt (gitignored).

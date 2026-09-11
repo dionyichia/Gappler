@@ -120,6 +120,25 @@ matters most — does not.
 Also note the publisher is created with `depth=1` and default VOLATILE durability (`:25`), so a
 stop sent before `rm_driver` has subscribed is dropped silently.
 
+**Checked on the box 2026-09-11** (`bench/estop_delivery.sh`, private ROS channel, no `rm_driver`) `[observed]`:
+the loss above **did not reproduce** — after `kill -INT`, the stop arrived in 5 of 5 trials, same host
+(where `rm_driver` also runs). But the mechanism is different from what this entry assumed: rclpy's own
+SIGINT handler shuts the context down *before* the `except KeyboardInterrupt` block runs. The publish
+still got out (logging to `/rosout` already failed: "publisher's context is invalid"), and then
+`rclpy.shutdown()` at `:76` raises `RCLError: rcl_shutdown already called` → traceback, exit 1. So delivery
+rests on a window nothing guarantees. The `depth=1` / VOLATILE point was not tested.
+
+### B2a. Ctrl+C in the e-stop terminal does nothing `[observed]`
+
+`ros2_robot_ws/src/estop.py:48-55` — `getch()` puts the terminal in raw mode while it waits for a key,
+which is nearly all the time. In raw mode Ctrl+C is delivered as the character `0x03`, not as SIGINT,
+so it matches none of `e`/`r`/`s`/`q` and is ignored: **no stop is sent and the script keeps running**
+(`bench/estop_delivery.sh`, 2026-09-11). The `except KeyboardInterrupt` path B2 worries about is
+reached only by a signal from outside (`kill -INT`). An operator whose reflex is Ctrl+C gets nothing.
+Closing the terminal sends SIGHUP, which is not handled either, so no stop `[inferred]`.
+Fix direction: treat `\x03` (and `\x1b`?) as `e`; handle SIGHUP/SIGTERM; publish, then sleep briefly
+before shutdown, and guard the second `rclpy.shutdown()`.
+
 ### B3. The voice kill word cannot stop the arm
 
 `prompt_extractor.py`'s system prompt maps "stop", "end", "kill", "terminate", "quit", "cancel" →
@@ -548,3 +567,4 @@ noticed roughly never. `ros2_robot_ws/src/main.py:165` polls every 2 s.
 |---|---|---|
 | 2026-09-10 | Claude (Opus 5) + Dion | Created. Line-by-line read of ~10,600 lines of owned code. 45 findings, all `[unverified]`. Corrects `ORIENTATION.md` §8.2 (the `:706` comment is stale). |
 | 2026-09-11 | Claude (Opus 5) + Dion | A1, B4: added what the box's two checkouts contain (read over SSH). Fixed B4's line citation for `main`. |
+| 2026-09-11 | Claude (Opus 5) + Dion | B2 checked on the box: stop delivered 5/5 after SIGINT (loss not reproduced), but via a double-shutdown crash. New B2a: Ctrl+C key ignored by `estop.py`. |

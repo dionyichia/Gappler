@@ -74,8 +74,14 @@ the private channel). Assert the intended sequence IDLE → SELECTING → EXECUT
 at start and end. Mark audit bugs as expected-fail (CODE_AUDIT C1–C7; B4 home pose; A3
 `USE_SIMPLE_EXECUTE`). **Done when** it runs to completion or to a named, audit-linked failure.
 
-**W3 — The Python-only Tier 3 tests** (no extra build needed): `estop.py` delivery (B2, subscribe
+**W3 ✅ — The Python-only Tier 3 tests** (no extra build needed): `estop.py` delivery (B2, subscribe
 on the private channel to `/rm_driver/emergency_stop_cmd`, SIGINT the node, expect a message).
+
+> ✅ **Done 2026-09-11** — `./bench/estop_delivery.sh` ([`bench-runs/2026-09-11-labbox-w3-estop.txt`](bench-runs/2026-09-11-labbox-w3-estop.txt)).
+> Keys `e`/`r`/`s` deliver. **The Ctrl+C key does nothing** — raw tty mode makes it a plain character, so no
+> stop and no exit (new finding, CODE_AUDIT B2a). `kill -INT` delivered **5/5** on localhost, so B2's loss did
+> not reproduce — but rclpy's handler has already shut the context down, and `estop.py:76` then crashes (exit 1).
+> Both are recorded in CODE_AUDIT B2; a fix is robot code → branch.
 
 **W4 — Navigation_Module: compare, then build.**
 (a) Read-only diff of the repo's `Navigation_Module/src/{robot_slam,robot_navigation,simple_teleop,
@@ -511,3 +517,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `dion_docs/` (per-person doc folders as more people join; rules in START_HERE). Paths here and in `bench/` updated; preflight's home scan skips any `*_docs/`. Root `.gitignore` extended for weights, recordings, archives, `*.swp`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W1 done** on the box (over tailscale): `.venv` rebuilt with uv; preflight `torch-cuda` uses the venv, `conda-anygrasp` → `anygrasp-env`, `aria-sdk` reports CLI crashes. Found setuptools 82 breaks the `aria` CLI; pin on branch `bench/w1-setuptools-pin` for review. Record: `bench-runs/2026-09-11-labbox-w1-venv.txt`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W4a done** (read-only): repo nav code is newer and equivalent; `robot_navigation` and `xpkg_demo` exist only in `iot22`'s workspace. Record in `bench-runs/`. |
+| 2026-09-11 | Claude (Opus 5) + Dion | **W3 done**: `bench/estop_delivery.sh`. Ctrl+C key ignored by `estop.py` (new, B2a); SIGINT stop delivered 5/5 (B2 not reproduced on localhost) but exits via a double-shutdown traceback. |

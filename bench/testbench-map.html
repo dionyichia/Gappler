@@ -194,7 +194,7 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
 
 <header class="masthead">
   <div class="inner">
-    <p class="eyebrow">Gappler · test bench · updated 11 Sep 2026, after the first lab-box run</p>
+    <p class="eyebrow">Gappler · test bench · updated 11 Sep 2026, after W1 (Python env) and W3 (e-stop test)</p>
     <h1>Gappler Test Bench</h1>
     <p class="dek">What the bench checks, for which part of the robot, at which level, and where each check
       runs. The bench is read-only up to a hard line: it never makes the arm move.</p>
@@ -219,13 +219,14 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
 <section id="status">
   <h2>Where things stand</h2>
   <p class="sub">The bench now runs on the lab box, in <code>~/rcp-Gappler</code>. The arm's code builds there,
-    and MoveIt plans and executes on a simulated arm. Every remaining failure is hardware that isn't plugged in,
-    or model files not yet copied into the new repo.</p>
+    MoveIt plans and executes on a simulated arm, the Python env is rebuilt, and the e-stop has its first test.
+    What still fails is hardware that isn't plugged in, and AnyGrasp's env, which is next to build.</p>
   <div class="kv">
-    <div><span class="k">Levels running</span><span class="v"><b>5 of 6</b>Tier 3 has its first test; Tier 4 not started</span></div>
+    <div><span class="k">Levels running</span><span class="v"><b>5 of 6</b>Tier 3 has two tests; Tier 4 not started</span></div>
     <div><span class="k">Simulated arm</span><span class="v"><b>3 of 3 motions</b>both home poses + zero, error ≤ 0.0045 rad</span></div>
     <div><span class="k">Arm build</span><span class="v"><b>22 / 22</b>27 min on a throttled CPU</span></div>
-    <div><span class="k">Preflight on the box</span><span class="v"><b>17 pass · 5 fail</b>fails = unplugged arm, missing model files</span></div>
+    <div><span class="k">Preflight on the box</span><span class="v"><b>12 of 13</b>GPU, env and model checks pass; the one fail is AnyGrasp's env (next)</span></div>
+    <div><span class="k">E-stop test</span><span class="v"><b>3 / 3 keys</b>but the Ctrl+C key does nothing (B2a)</span></div>
     <div><span class="k">Contract baseline</span><span class="v"><b>120 topics</b>74 launch nodes · 201 params · 39 frames</span></div>
   </div>
 </section>
@@ -304,10 +305,11 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
   <div class="tree"><span class="lock">/home/rcp2026/</span>
 ├── <span class="new">rcp-Gappler/</span>          <span class="new">WORKING REPO · clone of main · pulled after every bench change</span>
 │   ├── <span class="new">build/ install/</span>     <span class="lock">Tier 2 output (281 MB) · gitignored</span>
+│   ├── <span class="new">.venv/</span>              <span class="lock">Python env · uv sync · 8.3 GB · gitignored · undo: rm -rf .venv ~/.cache/uv</span>
 │   └── <span class="new">log/</span>                <span class="lock">build and launch logs, bench reports</span>
 ├── <span class="keep">rcp-desktop/</span>          <span class="lock">old · realman_manip · untouched</span>
 └── <span class="keep">rcp-github/…</span>          <span class="lock">old · combined · untouched</span>
-<span class="lock">/home/iot22/</span>              <span class="lock">readable by rcp2026 (ACL) · conda envs, maps, xpkg_demo · never written</span></div>
+<span class="lock">/home/iot22/</span>              <span class="lock">readable by rcp2026 (ACL) · conda envs, maps, xpkg_demo, robot_navigation · never written</span></div>
 
   <div class="steps">
     <div class="step">
@@ -340,11 +342,26 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
       </div>
     </div>
     <div class="step">
+      <div class="top"><span class="n">Done</span><h4>Rebuild the Python env (W1)</h4><span class="chip s-ok">torch sees the GPU</span></div>
+      <div class="body">
+        <div class="k">Command</div><div><pre>uv sync --locked --python /usr/bin/python3.10   <span class="cm"># 95 packages, 11 min, 8.3 GB</span></pre></div>
+        <div class="k">Found</div><div>The lock pulled setuptools 82, which broke the Aria CLI. Pinned <code>setuptools&lt;81</code>; the CLI now starts and reports the glasses as unplugged, which is correct.</div>
+        <div class="k">Undo</div><div><code>rm -rf ~/rcp-Gappler/.venv ~/.cache/uv</code>. Nothing was installed into <code>~/.local</code>.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="top"><span class="n">Done</span><h4>E-stop delivery (W3, Tier 3)</h4><span class="chip s-flag">finds a real bug</span></div>
+      <div class="body">
+        <div class="k">Command</div><div><pre>./bench/estop_delivery.sh   <span class="cm"># private channel 77, refuses if rm_driver exists</span></pre></div>
+        <div class="k">Result</div><div>Keys E, R and S deliver their messages. After <code>kill -INT</code>, the stop arrived 5 of 5 times (the audit expected it might not), but the script then crashes on exit.</div>
+        <div class="k">Found</div><div>Pressing <b>Ctrl+C</b> in the e-stop terminal does nothing: the terminal is in raw mode, so it arrives as a plain character. No stop, no exit (CODE_AUDIT B2a).</div>
+      </div>
+    </div>
+    <div class="step">
       <div class="top"><span class="n">Next</span><h4>Still to do</h4><span class="chip s-plan">planned</span></div>
       <div class="body">
-        <div class="k">Done</div><div>Model files copied into <code>rcp-Gappler</code>, checksums verified (<code>dion_docs/ASSETS.md</code>). Preflight not re-run yet.</div>
-        <div class="k">Next</div><div>Rebuild the Python env with <code>uv sync</code>. It's rebuilt, never copied. Then AnyGrasp's env, scripted with uv.</div>
-        <div class="k">Then</div><div>The grasp state machine on the simulated arm; building <code>Navigation_Module</code>; the eight navigation node tests.</div>
+        <div class="k">Next</div><div>AnyGrasp's env with MinkowskiEngine, scripted with uv (W5). Building <code>Navigation_Module</code> (W4b). The repo turns out to lack <code>robot_navigation</code> and <code>xpkg_demo</code>, which exist only in <code>iot22</code>'s workspace.</div>
+        <div class="k">Then</div><div>The grasp state machine on the simulated arm (W2, waiting on a safety review), and the eight navigation node tests.</div>
       </div>
     </div>
   </div>
@@ -393,11 +410,11 @@ const STATES = {
 // [component][level] = [state, summary]
 const CELLS = {
   machine:{t0:["na","No ROS interfaces"],t1:["na","—"],pf:["flag","Ran on the box: all pass, but 10 code paths resolve into /home/iot22"],t2:["na","colcon + rosdep present"],t3:["na","—"],t4:["na","—"]},
-  aria:{t0:["gap","What it subscribes to is baselined; its publishers are invisible (C1)"],t1:["ok","Parses, imports resolve"],pf:["blocked","No venv in rcp-Gappler yet, so skipped"],t2:["na","Python in the venv; nothing to compile"],t3:["plan","None designed yet"],t4:["plan","Voice prompt recorded in the bag"]},
-  sam3:{t0:["ok","Mask topics baselined"],t1:["ok","Parses, imports resolve"],pf:["blocked","Weights + venv not copied into rcp-Gappler yet"],t2:["na","Python in the venv"],t3:["plan","None designed yet"],t4:["plan","Replay recorded camera frames"]},
-  anygrasp:{t0:["ok","Candidate + mask topics baselined"],t1:["ok","Parses, imports resolve"],pf:["blocked","Licence + .so pass; checkpoints not copied, no conda for rcp2026"],t2:["na","Python + prebuilt .so"],t3:["blocked","Gate test (A1). Needs the conda env rcp2026 doesn't have"],t4:["plan","Smoke: first frame yields seed grasps"]},
+  aria:{t0:["gap","What it subscribes to is baselined; its publishers are invisible (C1)"],t1:["ok","Parses, imports resolve"],pf:["ok","Venv rebuilt with uv; aria CLI works after the setuptools<81 pin (glasses unplugged)"],t2:["na","Python in the venv; nothing to compile"],t3:["plan","None designed yet"],t4:["plan","Voice prompt recorded in the bag"]},
+  sam3:{t0:["ok","Mask topics baselined"],t1:["ok","Parses, imports resolve"],pf:["ok","Weights present; torch 2.10 (cu128) sees the GPU from the venv"],t2:["na","Python in the venv"],t3:["plan","None designed yet"],t4:["plan","Replay recorded camera frames"]},
+  anygrasp:{t0:["ok","Candidate + mask topics baselined"],t1:["ok","Parses, imports resolve"],pf:["blocked","Checkpoints, licence, .so pass; the MinkowskiEngine env is W5"],t2:["na","Python + prebuilt .so"],t3:["blocked","Gate test (A1). Needs the AnyGrasp env (W5)"],t4:["plan","Smoke: first frame yields seed grasps"]},
   planner:{t0:["ok","State-machine topics, frames, params baselined"],t1:["flag","Launch file names mtc_sim_test, which nothing builds"],pf:["na","Only observable once launched"],t2:["ok","rm_mtc + MoveIt Task Constructor build on the box"],t3:["ok","MoveIt moves the simulated arm to both home poses. State-machine test next"],t4:["na","Real arm = the stop line"]},
-  driver:{t0:["gap","Vendor code: seen only through our subscribers"],t1:["ok","estop.py parses"],pf:["hw","Arm cable unplugged: port fails, pings skip. As expected"],t2:["ok","rm_driver compiles (with warnings)"],t3:["plan","E-stop reaches the arm after Ctrl-C (B2)"],t4:["plan","Driver handshake reports RM65-BI"]},
+  driver:{t0:["gap","Vendor code: seen only through our subscribers"],t1:["ok","estop.py parses"],pf:["hw","Arm cable unplugged: port fails, pings skip. As expected"],t2:["ok","rm_driver compiles (with warnings)"],t3:["flag","e-stop test: stops delivered, but the Ctrl+C key is ignored (B2a)"],t4:["plan","Driver handshake reports RM65-BI"]},
   camera:{t0:["ok","Camera topics + static TF baselined"],t1:["na","External package"],pf:["ok","D435i found on USB; rates need the camera driver running"],t2:["na","Installed from apt"],t3:["na","Supplies other tests' inputs"],t4:["plan","30 s of colour, depth, camera_info"]},
   nav:{t0:["ok","Topics, frames, launch nodes baselined"],t1:["flag","xpkg_demo missing; Livox manifest not in git"],pf:["hw","LiDAR unreachable (no .5 address); SLAM map found in /home/iot22"],t2:["plan","Never built before: first run is discovery"],t3:["plan","8 tests: approach, goal bridge, return-to-user, pose, QoS relay"],t4:["plan","LiDAR + TF recorded"]},
   glue:{t0:["ok","74 launch nodes, 52 includes baselined"],t1:["ok","Launch → package, executable, include all resolve here"],pf:["ready","Nothing running yet to list"],t2:["na","—"],t3:["na","Never launched: both start the arm"],t4:["na","—"]},
@@ -430,11 +447,11 @@ const CHECKS = [
   ["humble · colcon · overlay",["machine"],"pf","ROS missing, or sourcing the wrong one of the four install folders","ok","Lab box"],
   ["no-double-source · domain-id",["machine"],"pf","Duplicate MoveIt libraries; a ROS channel mismatch that silently hides every topic","ok","Lab box"],
   ["running-user · hardcoded-homes",["machine"],"pf","Code pointing into another user's home: all 10 paths resolve into /home/iot22's old clone","flag","Lab box"],
-  ["pythonnousersite · torch-cuda",["sam3"],"pf","The setting that silently swaps in a CPU-only torch; torch that can't see the GPU","blocked","Lab box"],
-  ["sam3-weights",["sam3"],"pf","The 3.4 GB checkpoint missing (it's gitignored)","blocked","Lab box"],
-  ["venv · aria-sdk",["aria"],"pf","Project venv missing; glasses not authorised","blocked","Lab box"],
+  ["pythonnousersite · torch-cuda",["sam3"],"pf","The setting that silently swaps in a CPU-only torch; torch that can't see the GPU","ok","Lab box"],
+  ["sam3-weights",["sam3"],"pf","The 3.4 GB checkpoint missing (it's gitignored)","ok","Lab box"],
+  ["venv · aria-sdk",["aria"],"pf","Project venv missing; aria CLI broken (found: setuptools 82) or glasses not authorised","ok","Lab box"],
   ["anygrasp-env",["anygrasp"],"pf","AnyGrasp env (MinkowskiEngine) not built yet — W5","blocked","Lab box"],
-  ["anygrasp checkpoints · licence · .so",["anygrasp"],"pf","Detection/tracking weights, machine-locked licence, compiled binaries","blocked","Lab box"],
+  ["anygrasp checkpoints · licence · .so",["anygrasp"],"pf","Detection/tracking weights, machine-locked licence, compiled binaries","ok","Lab box"],
   ["arm-nic · arm-ping · arm-port",["driver"],"pf","Arm cable, control box at 192.168.1.18, port 8080 (connect + close only)","hw","Lab box"],
   ["joint-states",["driver"],"pf","Arm connected but sending no feedback: the wrong-host-IP symptom","hw","Lab box"],
   ["arm-lidar-coexist · lidar-ping",["nav","driver"],"pf","Host needs both .10 (arm) and .5 (LiDAR) on one port; the saved profile has .100","hw","Lab box"],
@@ -452,8 +469,8 @@ const CHECKS = [
   ["fused pose frame",["nav"],"t3","Goal is in the map frame, not the robot's own","plan","Private channel","E1"],
   ["QoS relay",["nav"],"t3","LiDAR cloud re-published in the format Nav2 accepts, at input rate","plan","Private channel"],
   ["robot pose",["nav"],"t3","/robot_pose at about 10 Hz in the map frame","plan","Private channel"],
-  ["AnyGrasp gate",["anygrasp"],"t3","Candidates while EXECUTING, none while IDLE. Blocked on the conda env","blocked","Private channel","A1"],
-  ["e-stop delivery",["driver"],"t3","The stop message actually leaves after Ctrl-C","plan","Private channel","B2"],
+  ["AnyGrasp gate",["anygrasp"],"t3","Candidates while EXECUTING, none while IDLE. Blocked on the AnyGrasp env (W5)","blocked","Private channel","A1"],
+  ["e-stop delivery",["driver"],"t3","Keys e/r/s deliver; kill -INT delivers 5/5 but exits via a crash; the Ctrl+C key is ignored (B2a) · ./bench/estop_delivery.sh","flag","Private channel","B2"],
   ["MoveIt, simulated arm",["planner"],"t3","Plans + executes to both home poses (B4) and zero on mock hardware; refuses to start if rm_driver exists","ok","Private channel"],
   ["state machine, simulated arm",["planner"],"t3","Homes, reaches SELECTING, steps: on MoveIt's fake hardware only","plan","Private channel"],
   ["record.sh",["camera","nav","driver","aria"],"t4","30 s of real camera, LiDAR, TF, joints, voice; replayed by Tier 3 afterwards","plan","Person present"],
