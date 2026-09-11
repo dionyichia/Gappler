@@ -121,7 +121,13 @@ need patches for CUDA 12. If it builds and imports under numpy 2 → **one env**
 second, scripted env (`envs/anygrasp/` + lock) matching `iot22`'s versions. **Done when** a script
 in the repo builds the env from nothing and AnyGrasp prints `license passed` on a saved frame.
 
-> **In progress 2026-09-11 — survey only, nothing in `.venv` or `pyproject.toml` changed.** The test exists:
+> ✅ **Survey answered 2026-09-11: ONE env works** ([`bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt`](bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt)).
+> `.venv` (torch 2.10, numpy 2.2.6) + MinkowskiEngine + pointnet2 + open3d 0.19 + scikit-learn 1.7.2 + graspnetAPI
+> (no-deps) and its runtime deps: every import passes, the licence check passes, the SDK demo finds grasps
+> (score 0.476). No conda, no second env, no system-header edit. **Left, and held under "no fixes yet":** a repo
+> script for the recipe, and whether AnyGrasp's packages join `pyproject.toml` — a branch for review.
+>
+> *How it was done:* survey only, nothing in `.venv` or `pyproject.toml` changed. The test exists:
 > `./bench/anygrasp_env.sh [PYTHON]` imports each dependency separately, then runs the SDK demo on its example frame
 > with the perception folder's `.so`, licence and checkpoint (the perception and SDK `.so` files are byte-identical).
 > Scratch build: `log/w5/` on the box — a venv that sees `.venv`'s packages through a `.pth` file, plus
@@ -541,3 +547,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-11 | Claude (Opus 5) + Dion | **W4a done** (read-only): repo nav code is newer and equivalent; `robot_navigation` and `xpkg_demo` exist only in `iot22`'s workspace. Record in `bench-runs/`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W3 done**: `bench/estop_delivery.sh`. Ctrl+C key ignored by `estop.py` (new, B2a); SIGINT stop delivered 5/5 (B2 not reproduced on localhost) but exits via a double-shutdown traceback. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W2 done**: full grasp cycle on the simulated arm, C7 reproduced. W5 test written, scratch MinkowskiEngine build under way (survey only). `~iot22/Ros2Workspaces` copied to `~/rcp-old-ros-wkspace`. Decisions recorded: W2 allowed (sim only), no fixes yet. |
+| 2026-09-11 | Claude (Opus 5) + Dion | **W5 survey answered**: one uv env runs AnyGrasp (licence passed, demo grasps found) on torch 2.10 / numpy 2 — recipe in `bench-runs/`. Productising it is held. |

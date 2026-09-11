@@ -274,6 +274,12 @@ a second machine, which blocks anyone else on the team running anything.
 
 ---
 
+**AnyGrasp does not need its own conda env** `[observed]` 2026-09-11 (TESTBENCH_PLAN W5): the project uv env plus
+MinkowskiEngine, pointnet2 and graspnetAPI's runtime packages ran the SDK demo with the licence passing, on torch
+2.10 / numpy 2. Yet `ros2_robot_ws/src/main.py:26-28` still launches the node with `conda run -n anygrasp` from
+`/home/iot22/...`. When this section is fixed, the AnyGrasp launch should use the project env — recipe in
+[`bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt`](bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt).
+
 ### 2.6 🟠 Verify the four `[unverified]` findings at the machine
 
 `[unverified]` `bench/` found these by static analysis on 2026-09-10. **Nobody has confirmed any of
@@ -483,3 +489,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-10 | Claude (Opus 5) + Dion | Created. Seeded with the HiCo-Nav scoping decisions, the SAM3 triggering-policy question (§2.1), the segmentation-unification item (§2.2), the broken dummy mask publisher (§2.3), and the bring-up blockers. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added §2.8: one `assets/models/` folder for model weights (see ASSETS.md). |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added §2.9: important state outside git, with a keep/drop list; `~iot22/Ros2Workspaces` (never committed) copied to `~/rcp-old-ros-wkspace`. §3.1: `xpkg_demo` found. |
+| 2026-09-11 | Claude (Opus 5) + Dion | §2.5: AnyGrasp runs in the project uv env (W5); the `conda run` launch in `main.py` is now the only reason for conda. |

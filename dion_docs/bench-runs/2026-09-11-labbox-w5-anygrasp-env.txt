@@ -1,0 +1,55 @@
+W5 -- can ONE Python env run AnyGrasp? (survey; ./bench/anygrasp_env.sh)     lab box, 2026-09-11
+===========================================================================================
+Answer: YES [observed]. The project env's torch 2.10.0+cu128 and numpy 2.2.6, plus the packages
+below, import every AnyGrasp dependency and run the SDK detection demo on its example frame:
+  licence: "[FlexivLic] license .../Puneet.lic check passed." / "license passed: True, state: PASSED"
+  result:  demo exit 0, "grasp score: 0.4764862060546875"
+No second env, no conda, no system file edited, and the AnyGrasp README's sed on
+/usr/include/c++/11/bits/shared_ptr_base.h was NOT needed. .venv and pyproject.toml are untouched:
+everything below lives in the scratch env log/w5/venv (gitignored).
+
+How the scratch env is made (the recipe, as run)
+  1. uv venv log/w5/venv --python /usr/bin/python3.10
+     echo ~/rcp-Gappler/.venv/lib/python3.10/site-packages > log/w5/venv/.../_project_venv.pth
+     -> the scratch env sees every .venv package; anything installed into it shadows .venv
+  2. uv pip install ninja
+  3. MinkowskiEngine 0.5.4, from a COPY of grasp_module/dependencies/MinkowskiEngine:
+     CUDA_HOME=/usr/local/cuda-12.8 MAX_JOBS=8 TORCH_CUDA_ARCH_LIST=8.9 \
+       python setup.py install --force_cuda --blas=openblas \
+       --blas_include_dirs=/usr/include/x86_64-linux-gnu/openblas-pthread \
+       --blas_library_dirs=/usr/lib/x86_64-linux-gnu/openblas-pthread
+     12 min (19:00-19:12), exit 0, 64 warnings (thrust/cusparse deprecations), none fatal
+  4. pointnet2, from a COPY of grasp_module/src/anygrasp_sdk/pointnet2 (without its tracked build/):
+     same env vars, python setup.py install -- 4 min, exit 0
+  5. uv pip install -c <.venv freeze> "open3d>=0.19" scikit-learn transforms3d trimesh scikit-image
+     uv pip install --no-deps graspnetAPI==1.2.10     (its metadata pins transforms3d==0.3.1 and the
+                                                       deprecated 'sklearn' package -- both skipped)
+     uv pip install -c <.venv freeze> autolab_core cvxopt dill h5py pywavefront matplotlib ipython
+     uv pip install -c <.venv freeze> grasp_nms       (compiled against numpy 2 -- fine)
+     "-c <.venv freeze>" pins every package .venv already has to .venv's version, so nothing the
+     project env relies on moved.
+
+Versions that differ from the SDK's requirements.txt (numpy-1 pins) and from iot22's conda env
+  numpy 2.2.6 (SDK 1.21.2) · open3d 0.19.0 (0.18.0) · scikit-learn 1.7.2 (1.3.2) · scipy 1.15.3
+  (1.10.1) · transforms3d 0.4.2 (0.3.1) · torch 2.10.0+cu128 (conda: 2.7.0) · MinkowskiEngine 0.5.4
+  built for CUDA 12.8 (conda: pytorch-cuda 11.8)
+Added on top of .venv (all): addict annotated-types asttokens autolab-core blinker charset-normalizer
+  cloudpickle colorlog comm configargparse cvxopt cython dash decorator dill executing
+  fastjsonschema flask graspnetapi grasp-nms h5py imageio importlib-metadata ipython ipywidgets
+  itsdangerous janus jedi joblib jsonschema jsonschema-specifications jupyter-core
+  jupyterlab-widgets lazy-loader matplotlib-inline minkowskiengine multiprocess narwhals nbformat
+  nest-asyncio ninja open3d pandas parso pexpect platformdirs plotly pointnet2 prompt-toolkit
+  ptyprocess pure-eval pydantic pydantic-core pyquaternion pytz pywavefront referencing requests
+  retrying rpds-py ruamel-yaml scikit-image scikit-learn setproctitle stack-data threadpoolctl
+  tifffile traitlets transforms3d trimesh typing-inspection tzdata urllib3 werkzeug
+  widgetsnbextension zipp   (exact versions: log/w5 on the box)
+
+Probe on the project env alone (.venv), same day: FAIL -- MinkowskiEngine, pointnet2, open3d,
+graspnetAPI, sklearn missing; gsnet cannot import (needs open3d). Expected: nothing added yet.
+
+Demo warnings: autolab_core cannot import its ROS helpers (geometry_msgs, catkin) -- unused here.
+
+Not shown: the ROS node (anygrasp_detection_node.py) running in this env against a live or recorded
+camera (that is W6); tracking (grasp_tracking / tracker.so); speed vs the conda env.
+What is left, held under "no fixes yet": turn steps 1-5 into a script in the repo and decide whether
+AnyGrasp's packages join pyproject.toml (then `uv sync` builds it) -- a robot-env change, so a branch.
