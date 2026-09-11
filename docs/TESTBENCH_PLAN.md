@@ -132,7 +132,9 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
    network but does **not** separate `rcp2026` from `iot22`'s processes on the same host. The
    unique `ROS_DOMAIN_ID` is what isolates. Before Phase 5, also check
    `ps -u iot22 -o pid,cmd | grep -E 'ros2|rm_driver|move_group'`, and see what domain it uses.
-5. **Do not touch the existing overlays or working tree.** The repo-root `install/` on the
+5. **Work only in `~/rcp-Gappler`** (Dion, 2026-09-11 — supersedes the `~/bench_work` idea below).
+   `~/rcp-desktop` and `~/rcp-github` are old code; leave them and their overlays alone.
+   Original rule, kept for context: **Do not touch the existing overlays or working tree.** The repo-root `install/` on the
    Desktop clone is the only verified-complete overlay (startup guide §2). Build and test in a
    separate checkout (`git worktree add` or a fresh clone under `~/bench_work/`), with
    `colcon build --build-base ~/bench_work/build --install-base ~/bench_work/install`.

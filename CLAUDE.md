@@ -22,9 +22,11 @@ refactored toward one-folder-per-node modular code.
   `/object_centroid_2d` on the real ROS domain. Isolate tests with `ROS_DOMAIN_ID` + `ROS_LOCALHOST_ONLY=1`.
   `iot22` shares the box, and localhost-only does not separate you from its processes; the unique
   domain id does.
-- On the lab machine (`ssh rcp2026@10.91.242.76`, key auth from the Mac; `~/rcp-github/...` = `main`,
-  `~/rcp-desktop` = `realman_manip`): **read-only unless Dion says otherwise.** Don't
-  touch the existing `install/` overlays, `~/.local`, or the working tree; never set `PYTHONNOUSERSITE=1`.
+- On the lab machine (`ssh rcp2026@10.91.242.76`, key auth from the Mac): **all work happens in
+  `~/rcp-Gappler`** — a clone of Gappler `main` created 2026-09-11; build, test and commit there.
+  `~/rcp-desktop` (`realman_manip`) and `~/rcp-github` (`combined`) are old code: never modify
+  them or their `install/` overlays. Don't touch `~/.local` or `/home/iot22`; never set `PYTHONNOUSERSITE=1`.
+  MoveIt with `mock_components` (simulated arm) is allowed; anything with `rm_driver` is not.
 
 ## The bench
 

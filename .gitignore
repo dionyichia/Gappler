@@ -14,3 +14,9 @@ recordings
 tmp
 
 src/models/sam3/sam3.pt
+# colcon output (bench/build.sh)
+/build/
+/install/
+/log/
+/build_nav/
+/install_nav/
