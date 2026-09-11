@@ -36,15 +36,24 @@ n_ctl="$(xacro "$REPO/bench/nodes/sim_arm.urdf.xacro" initial_positions_file:="$
 [ "$n_ctl" = "1" ] || refuse "sim robot model has $n_ctl mock_components blocks, expected exactly 1"
 pgrep -af "rm_driver" | grep -v -e pgrep -e state_machine_sim >/dev/null \
   && refuse "an rm_driver process is running on this machine: $(pgrep -af rm_driver | head -1)"
-# Dion's point: the preflight network gates must show the arm is unreachable
-arm="$(python3 bench/preflight.py -g net --json 2>/dev/null | python3 -c '
+# Dion's point: the preflight network gates must show the arm is unreachable. preflight exits
+# non-zero whenever any check fails (e.g. the unplugged port), so read its JSON, not its exit code.
+netjson="$(python3 bench/preflight.py -g net --json 2>/dev/null || true)"
+armcheck="$(printf '%s' "$netjson" | python3 -c '
 import json, sys
-up = [c["name"] for c in json.load(sys.stdin) if c["name"] in ("arm-ping", "arm-port") and c["status"] == "PASS"]
-print(" ".join(up))' 2>/dev/null)" || refuse "could not run the preflight network checks"
-[ -z "$arm" ] || refuse "the real arm answers on the network ($arm) -- unplug it or power it off first"
+cs = {c["name"]: c["status"] for c in json.load(sys.stdin)}
+st = {k: cs.get(k, "MISSING") for k in ("arm-ping", "arm-port")}
+print(" ".join(f"{k}={v}" for k, v in st.items()))
+sys.exit(2 if "PASS" in st.values() else 3 if "MISSING" in st.values() else 0)' 2>/dev/null)"
+case $? in
+  0) ;;
+  2) refuse "the real arm answers on the network ($armcheck) -- unplug it or power it off first" ;;
+  3) refuse "preflight did not report both arm checks ($armcheck)" ;;
+  *) refuse "could not read the preflight network checks" ;;
+esac
 busy="$(timeout 15 ros2 topic list --no-daemon 2>/dev/null | grep -vE '^/(parameter_events|rosout)$' || true)"
 [ -z "$busy" ] || refuse "ROS channel $DOMAIN is not empty: $(echo $busy | head -c 200)"
-echo "guards ok: mock_components, no rm_driver, arm unreachable, channel $DOMAIN empty, localhost only"
+echo "guards ok: mock_components, no rm_driver, arm unreachable ($armcheck), channel $DOMAIN empty, localhost only"
 
 # ---- launch the simulated arm + state machine, headless ---------------------
 setsid ros2 launch "$LAUNCH" use_rviz:=false >"$BENCH_SM_LOG" 2>&1 &
