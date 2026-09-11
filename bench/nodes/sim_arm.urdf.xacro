@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!-- Bench-only robot model: the real arm's URDF plus the mock_components
+     ros2_control block. rm_65_w_gripper_config's own xacro has this macro call
+     commented out (commit 52c8ce9), so MoveIt's demo.launch.py cannot start a
+     simulated arm. This file lives in bench/ so the robot config is untouched. -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rm_65_with_gripper">
+  <xacro:arg name="initial_positions_file" default="initial_positions.yaml" />
+  <xacro:include filename="$(find rm_description)/urdf/rm_65_w_gripper.urdf.xacro" />
+  <xacro:include filename="$(find rm_65_w_gripper_config)/config/rm_65_with_gripper.ros2_control.xacro" />
+  <xacro:rm_65_with_gripper_ros2_control name="BenchSimulatedArm"
+      initial_positions_file="$(arg initial_positions_file)" />
+</robot>

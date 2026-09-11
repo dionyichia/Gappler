@@ -25,7 +25,10 @@ share="$(ros2 pkg prefix "$CFG" 2>/dev/null)/share/$CFG"
 [ -d "$share" ] || refuse "$CFG is not in $REPO/install"
 grep -q "mock_components/GenericSystem" "$share/config/rm_65_with_gripper.ros2_control.xacro" \
   || refuse "installed ros2_control config is not mock_components -- this might drive real hardware"
-grep -rqs "rm_driver" "$share/launch/demo.launch.py" && refuse "demo.launch.py mentions rm_driver"
+LAUNCH="$REPO/bench/nodes/sim_arm.launch.py"
+grep -qs "rm_driver" "$LAUNCH" "$REPO/bench/nodes/sim_arm.urdf.xacro" && refuse "the bench sim launch mentions rm_driver"
+n_ctl="$(xacro "$REPO/bench/nodes/sim_arm.urdf.xacro" initial_positions_file:="$share/config/initial_positions.yaml" 2>/dev/null | grep -c "mock_components/GenericSystem")"
+[ "$n_ctl" = "1" ] || refuse "sim robot model has $n_ctl mock_components blocks, expected exactly 1"
 pgrep -af "rm_driver" | grep -v -e pgrep -e sim_moveit >/dev/null \
   && refuse "an rm_driver process is running on this machine: $(pgrep -af rm_driver | head -1)"
 busy="$(timeout 15 ros2 topic list --no-daemon 2>/dev/null | grep -vE '^/(parameter_events|rosout)$' || true)"
@@ -33,7 +36,7 @@ busy="$(timeout 15 ros2 topic list --no-daemon 2>/dev/null | grep -vE '^/(parame
 echo "guards ok: mock_components, no rm_driver, channel $DOMAIN empty, localhost only"
 
 # ---- launch the simulated arm, headless -------------------------------------
-setsid ros2 launch "$CFG" demo.launch.py use_rviz:=false >"$LOG" 2>&1 &
+setsid ros2 launch "$LAUNCH" use_rviz:=false >"$LOG" 2>&1 &
 PG=$!
 cleanup() { kill -INT -"$PG" 2>/dev/null; sleep 4; kill -KILL -"$PG" 2>/dev/null; }
 trap cleanup EXIT
