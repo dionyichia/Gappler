@@ -26,7 +26,7 @@ if [ -n "${AMENT_PREFIX_PATH:-}" ] && [ "$AMENT_PREFIX_PATH" != "/opt/ros/humble
   echo "FAIL: an overlay is already sourced (AMENT_PREFIX_PATH=$AMENT_PREFIX_PATH)."
   echo "      Open a fresh shell; this script sources /opt/ros/humble itself."; exit 1
 fi
-source /opt/ros/humble/setup.bash
+set +u; source /opt/ros/humble/setup.bash; set -u   # ROS's setup reads unset vars
 cd "$REPO"
 mkdir -p log
 out="log/bench_build_${target}_$(date +%F_%H%M).txt"
