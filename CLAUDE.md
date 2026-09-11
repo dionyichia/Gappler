@@ -57,6 +57,7 @@ python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract
 ./bench/sim_moveit.sh                  # Tier 3: MoveIt on a simulated arm
 ./bench/estop_delivery.sh              # Tier 3: does estop.py's stop message leave
 ./bench/state_machine_sim.sh           # Tier 3: grasp state machine on the simulated arm
+./bench/nav_nodes.sh                   # Tier 3: the five nav nodes vs a mock Nav2 (nothing drives)
 ./bench/anygrasp_env.sh [PYTHON]       # can this env run AnyGrasp (imports + SDK demo)
 ```
 
@@ -73,5 +74,7 @@ Every Tier 3 script refuses to start unless its ROS channel is private and empty
 - Append to each doc's changelog on substantive edits. Cite `file.py:123`.
 - Name things descriptively by subsystem (`arm_base_link`, not `base_link`) — ORIENTATION §0b.
 - Skipped checks are reported as skipped, never as passing.
+- Dion's docs and pages: plain language, main point first, jargon only when needed and explained.
+  Readers include mechanical engineering students new to code. No em dashes, semicolons or emojis.
 - On macOS, `grep` is ugrep; multi-path `grep -r --include` can silently return nothing — use
   `find ... | xargs grep`.

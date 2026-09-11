@@ -41,17 +41,17 @@
 *{box-sizing:border-box}
 body{background:var(--ground);color:var(--ink);font-family:var(--body);
   font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1240px;margin:0 auto;padding:0 24px;display:grid;
-  grid-template-columns:200px minmax(0,1fr);gap:44px;align-items:start}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px;display:grid;
+  grid-template-columns:190px minmax(0,1fr);gap:44px;align-items:start}
 @media (max-width:900px){.wrap{grid-template-columns:1fr;gap:0}}
 
 .masthead{border-bottom:1px solid var(--line);background:var(--surface);margin-bottom:36px}
-.masthead .inner{max-width:1240px;margin:0 auto;padding:34px 24px 30px}
+.masthead .inner{max-width:1180px;margin:0 auto;padding:34px 24px 30px}
 .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--accent);margin:0 0 10px}
 h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,4.4vw,42px);
   line-height:1.1;margin:0 0 12px;letter-spacing:-.02em;text-wrap:balance}
-.dek{font-size:17.5px;color:var(--ink-2);max-width:66ch;margin:0}
+.dek{font-size:18px;color:var(--ink-2);max-width:62ch;margin:0}
 
 nav.rail{position:sticky;top:20px;font-size:14px}
 @media (max-width:900px){nav.rail{position:static;margin-bottom:32px;
@@ -67,36 +67,31 @@ main{min-width:0;padding-bottom:80px}
 section{margin:0 0 60px;scroll-margin-top:20px}
 h2{font-family:var(--display);font-weight:600;font-size:26px;line-height:1.2;
   margin:0 0 8px;letter-spacing:-.015em;text-wrap:balance}
-h3{font-family:var(--display);font-weight:600;font-size:18.5px;margin:30px 0 8px;letter-spacing:-.01em}
-.sub{color:var(--ink-2);font-size:16.5px;margin:0 0 22px;max-width:70ch}
-p{margin:0 0 14px;max-width:68ch}
+h3{font-family:var(--display);font-weight:600;font-size:18px;margin:26px 0 10px;letter-spacing:-.01em}
+.sub{color:var(--ink-2);font-size:16.5px;margin:0 0 20px;max-width:66ch}
+p{margin:0 0 14px;max-width:66ch}
 a{color:var(--accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
 code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);
   padding:1.5px 5px;border-radius:3px;color:var(--ink)}
 
-/* ---------- status strip ---------- */
-.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;
-  background:var(--line);border:1px solid var(--line);border-radius:5px;overflow:hidden;margin:0 0 22px}
+/* status tiles */
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:5px;overflow:hidden;margin:0 0 24px}
 .kv > div{background:var(--surface);padding:14px 16px}
 .kv .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--ink-3);display:block;margin-bottom:6px}
 .kv .v{font-size:14.5px;line-height:1.45;color:var(--ink-2)}
-.kv .v b{font-family:var(--display);font-size:22px;font-weight:600;display:block;margin-bottom:2px;
+.kv .v b{font-family:var(--display);font-size:21px;font-weight:600;display:block;margin-bottom:2px;
   color:var(--ink);font-variant-numeric:tabular-nums}
 
-/* ---------- where tests run ---------- */
-.places{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 10px}
-@media (max-width:760px){.places{grid-template-columns:1fr}}
-.place{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:16px 18px;
-  display:flex;flex-direction:column;gap:8px}
-.place .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
-.place h4{font-family:var(--display);font-weight:600;font-size:17px;margin:0;line-height:1.25}
-.place p{font-size:14.5px;color:var(--ink-2);margin:0}
-.place ul{margin:0;padding-left:18px;font-size:14.5px}
-.place li{margin-bottom:3px}
-.place.human{border-color:var(--caution);background:var(--caution-soft)}
+/* next steps: a real sequence, so numbered */
+.next{margin:0;padding:0;list-style:none;counter-reset:n;display:flex;flex-direction:column;gap:8px;max-width:72ch}
+.next li{counter-increment:n;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:baseline}
+.next li::before{content:counter(n);font-family:var(--mono);font-size:12px;color:var(--accent);
+  border:1px solid var(--accent);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.next .who{color:var(--ink-3);font-size:14px}
 
-/* ---------- states ---------- */
+/* states */
 .chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;
   letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap;
   border:1px solid transparent;line-height:1.5}
@@ -114,9 +109,31 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);
   margin:0 0 16px;padding:12px 15px;background:var(--surface);border:1px solid var(--line);border-radius:5px}
 .legend span{display:flex;gap:8px;align-items:center}
 
-/* ---------- the coverage matrix ---------- */
+/* tables */
 .scroller{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--surface);margin:0 0 12px}
-.matrix{display:grid;grid-template-columns:190px repeat(6,minmax(128px,1fr)) 58px;min-width:1040px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+table.wide{min-width:820px}
+table.mid{min-width:640px}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  text-align:left;padding:10px 13px;border-bottom:1px solid var(--line-2);background:var(--surface-2);
+  font-weight:500;white-space:nowrap}
+td{padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+tr:last-child td{border-bottom:none}
+td.nm{font-family:var(--mono);font-size:12.5px;color:var(--ink);white-space:nowrap}
+td.meta{font-size:13px;color:var(--ink-3)}
+td b{font-weight:600}
+.tag{font-family:var(--mono);font-size:11px;color:var(--ink-3);white-space:nowrap}
+.xf{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--broken);
+  border:1px solid var(--broken);border-radius:2px;padding:0 5px;margin-left:6px;white-space:nowrap}
+
+/* the six levels */
+.levels td:first-child{white-space:nowrap}
+.levels .lv{font-family:var(--display);font-weight:600;font-size:15px;display:block}
+.levels .ln{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.levels .an{color:var(--ink-2);font-style:italic}
+
+/* the coverage matrix */
+.matrix{display:grid;grid-template-columns:180px repeat(6,minmax(128px,1fr)) 58px;min-width:1030px}
 .matrix > *{border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
 .mh{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
   background:var(--surface-2);padding:10px 11px;line-height:1.4;display:flex;flex-direction:column;gap:3px}
@@ -140,9 +157,9 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);
 .stop.head{display:flex;align-items:center;justify-content:center;padding:8px 0}
 .stop.head span{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--mono);font-size:10px;
   letter-spacing:.14em;text-transform:uppercase;color:var(--broken);font-weight:500}
-.note{font-size:13.5px;color:var(--ink-3);max-width:80ch;margin:0}
+.note{font-size:14px;color:var(--ink-3);max-width:76ch;margin:0}
 
-/* ---------- catalogue ---------- */
+/* every check */
 .finder{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
 .finder select{font-family:var(--body);font-size:14.5px;padding:8px 10px;border:1px solid var(--line-2);
   border-radius:4px;background:var(--surface);color:var(--ink)}
@@ -150,43 +167,23 @@ code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);
 .finder button{font-family:var(--body);font-size:14px;padding:8px 12px;border:1px solid var(--line-2);
   border-radius:4px;background:var(--surface-2);color:var(--ink);cursor:pointer}
 .finder .count{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);white-space:nowrap;margin-left:auto}
-table{border-collapse:collapse;width:100%;font-size:14px;min-width:820px}
-th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
-  text-align:left;padding:10px 13px;border-bottom:1px solid var(--line-2);background:var(--surface-2);
-  font-weight:500;white-space:nowrap}
-td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
-tr:last-child td{border-bottom:none}
-td.nm{font-family:var(--mono);font-size:12.5px;color:var(--ink);white-space:nowrap}
-td.meta{font-size:12.5px;color:var(--ink-3);white-space:nowrap}
-.xf{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--broken);
-  border:1px solid var(--broken);border-radius:2px;padding:0 5px;margin-left:6px;white-space:nowrap}
 
-/* ---------- lab box plan ---------- */
-.tree{font-family:var(--mono);font-size:13px;line-height:1.75;background:var(--surface);border:1px solid var(--line);
-  border-radius:5px;padding:14px 16px;overflow-x:auto;margin:0 0 18px;white-space:pre;color:var(--ink-2)}
-.tree .new{color:var(--accent);font-weight:500}
-.tree .keep{color:var(--working)}
-.tree .lock{color:var(--ink-3)}
-.steps{display:flex;flex-direction:column;gap:14px;margin:0 0 18px}
-.step{background:var(--surface);border:1px solid var(--line);border-radius:5px;overflow:hidden}
-.step .top{padding:14px 18px 12px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;border-bottom:1px solid var(--line)}
-.step .top h4{font-family:var(--display);font-weight:600;font-size:17px;margin:0;flex:1;min-width:220px}
-.step .n{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
-.step .body{display:grid;grid-template-columns:110px minmax(0,1fr);gap:0}
-.step .body > div{padding:10px 18px;border-bottom:1px solid var(--line);font-size:14.5px}
-.step .body > div:nth-last-child(-n+2){border-bottom:none}
-.step .body .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding-top:13px}
-@media (max-width:620px){.step .body{grid-template-columns:1fr}.step .body .k{padding-bottom:0;border-bottom:none}}
-pre{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--ground);border:1px solid var(--line);
-  border-radius:4px;padding:10px 12px;margin:0;overflow-x:auto;color:var(--ink)}
-pre .cm{color:var(--ink-3)}
-.callout{border-radius:5px;padding:15px 18px;margin:0 0 18px;border:1px solid;border-left-width:4px;font-size:15px}
-.callout p{max-width:none;margin:0 0 8px}.callout p:last-child{margin:0}
-.callout .ct{font-family:var(--display);font-weight:600;font-size:16px;margin:0 0 6px;display:block}
-.c-stop{background:var(--broken-soft);border-color:var(--broken)}.c-stop .ct{color:var(--broken)}
-.c-note{background:var(--accent-soft);border-color:var(--accent)}.c-note .ct{color:var(--accent)}
-.never{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
-.never div{border:1px solid var(--broken);border-radius:5px;padding:13px 15px;background:var(--surface);font-size:14px;color:var(--ink-2)}
+/* glossary */
+.gloss{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr);gap:0;border:1px solid var(--line);
+  border-radius:5px;background:var(--surface);overflow:hidden;max-width:860px}
+.gloss dt,.gloss dd{margin:0;padding:10px 14px;border-bottom:1px solid var(--line)}
+.gloss dt{font-family:var(--display);font-weight:600;font-size:15px;background:var(--surface-2)}
+.gloss dd{font-size:14.5px;color:var(--ink-2)}
+.gloss dt:last-of-type,.gloss dd:last-of-type{border-bottom:none}
+@media (max-width:620px){.gloss{grid-template-columns:1fr}.gloss dt{border-bottom:none;padding-bottom:2px}}
+
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--surface);border:1px solid var(--line);
+  border-radius:4px;padding:10px 12px;margin:0 0 16px;overflow-x:auto;color:var(--ink)}
+.callout{border-radius:5px;padding:14px 18px;margin:0 0 18px;border:1px solid var(--accent);
+  background:var(--accent-soft);font-size:15px;max-width:76ch}
+.callout b{color:var(--accent)}
+.never{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.never div{border:1px solid var(--broken);border-radius:5px;padding:13px 15px;background:var(--surface);font-size:14.5px;color:var(--ink-2)}
 .never b{display:block;font-family:var(--display);font-weight:600;font-size:15.5px;color:var(--broken);margin-bottom:4px}
 footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-size:14px;color:var(--ink-3);max-width:74ch}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
@@ -194,10 +191,10 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
 
 <header class="masthead">
   <div class="inner">
-    <p class="eyebrow">Gappler · test bench · updated 11 Sep 2026, after W1–W3 and the W5 survey</p>
+    <p class="eyebrow">Gappler · updated 11 Sep 2026</p>
     <h1>Gappler Test Bench</h1>
-    <p class="dek">What the bench checks, for which part of the robot, at which level, and where each check
-      runs. The bench is read-only up to a hard line: it never makes the arm move.</p>
+    <p class="dek">The test bench is a set of automatic checks for the robot's software. It never moves the
+      robot. It tells us which parts of the software work, which are broken, and which haven't been tested yet.</p>
   </div>
 </header>
 
@@ -206,10 +203,13 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
   <div class="hd">On this page</div>
   <ol>
     <li><a href="#status">Where things stand</a></li>
-    <li><a href="#levels">The six levels</a></li>
+    <li><a href="#found">Problems found</a></li>
+    <li><a href="#levels">How the checks work</a></li>
+    <li><a href="#sim">The simulated arm</a></li>
     <li><a href="#map">Coverage map</a></li>
     <li><a href="#checks">Every check</a></li>
-    <li><a href="#labbox">On the lab box</a></li>
+    <li><a href="#words">Words used here</a></li>
+    <li><a href="#run">Running the bench</a></li>
     <li><a href="#never">Never tested</a></li>
   </ol>
 </nav>
@@ -218,295 +218,352 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
 
 <section id="status">
   <h2>Where things stand</h2>
-  <p class="sub">The bench now runs on the lab box, in <code>~/rcp-Gappler</code>. The arm's code builds there,
-    MoveIt plans and executes on a simulated arm, the Python env is rebuilt, and the e-stop has its first test.
-    What still fails is hardware that isn't plugged in, and AnyGrasp's env, which is next to build.</p>
+  <p class="sub">Most checks now run on the lab computer. They have already found real bugs, listed in the next
+    section. The lab computer was switched off on the evening of 11 Sep, so the newest navigation tests are
+    written but haven't run yet.</p>
   <div class="kv">
-    <div><span class="k">Levels running</span><span class="v"><b>5 of 6</b>Tier 3 has three tests; Tier 4 not started</span></div>
-    <div><span class="k">Simulated arm</span><span class="v"><b>3 of 3 motions</b>both home poses + zero, error ≤ 0.0045 rad</span></div>
-    <div><span class="k">Arm build</span><span class="v"><b>22 / 22</b>27 min on a throttled CPU</span></div>
-    <div><span class="k">Preflight on the box</span><span class="v"><b>12 of 13</b>GPU, env and model checks pass; the fail is the AnyGrasp env, which works in a scratch copy</span></div>
-    <div><span class="k">AnyGrasp, one env</span><span class="v"><b>Licence passed</b>SDK demo finds grasps on torch 2.10 + numpy 2</span></div>
-    <div><span class="k">State machine (sim)</span><span class="v"><b>1 full cycle</b>then never back to IDLE (C7)</span></div>
-    <div><span class="k">E-stop test</span><span class="v"><b>3 / 3 keys</b>but the Ctrl+C key does nothing (B2a)</span></div>
-    <div><span class="k">Contract baseline</span><span class="v"><b>120 topics</b>74 launch nodes · 201 params · 39 frames</span></div>
+    <div><span class="k">Arm software</span><span class="v"><b>Builds</b>all 22 parts compile</span></div>
+    <div><span class="k">Simulated arm</span><span class="v"><b>Moves correctly</b>reaches both home positions and zero</span></div>
+    <div><span class="k">Grasp controller</span><span class="v"><b>1 grasp, then stuck</b>on the simulated arm</span></div>
+    <div><span class="k">Emergency stop</span><span class="v"><b>Stop is sent</b>but Ctrl+C does nothing</span></div>
+    <div><span class="k">Grasp finder (AnyGrasp)</span><span class="v"><b>Runs</b>in a test copy of the Python setup</span></div>
+    <div><span class="k">Navigation</span><span class="v"><b>10 tests written</b>not run yet, and never built</span></div>
+  </div>
+
+  <h3>Next steps</h3>
+  <ol class="next">
+    <li><div>Turn the lab computer back on and update its copy of the code (<code>git pull</code>).</div></li>
+    <li><div>Build the navigation software. <span class="who">This is the first time anyone has built it from this repo.</span></div></li>
+    <li><div>Run the 10 navigation tests.</div></li>
+    <li><div>Record a few camera frames so the grasp finder can be tested. <span class="who">Ask Dion first: it means starting the camera.</span></div></li>
+    <li><div>Test at the robot with a person present. <span class="who">Dion schedules this.</span></div></li>
+  </ol>
+</section>
+
+<section id="found">
+  <h2>Problems found so far</h2>
+  <p class="sub">None of these are fixed yet. The rule for now is to find and record problems. Fixes come later,
+    each reviewed separately. The code in brackets points to the full write-up in <code>CODE_AUDIT.md</code>.</p>
+  <div class="scroller">
+    <table class="mid">
+      <thead><tr><th>Problem</th><th>What it means for the robot</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><b>The grasp controller handles one object, then gets stuck</b> <span class="tag">C7</span></td>
+          <td>After one grasp it never goes back to waiting. It has to be restarted for every object.</td>
+          <td><span class="chip s-flag">Seen</span></td></tr>
+        <tr><td><b>The arm goes to an unchecked home position</b> <span class="tag">B4</span></td>
+          <td>At start-up the arm moves, without being asked, to a position nobody has checked on the real arm.</td>
+          <td><span class="chip s-flag">Seen</span></td></tr>
+        <tr><td><b>Ctrl+C does nothing in the emergency stop window</b> <span class="tag">B2a</span></td>
+          <td>Most people would press Ctrl+C to stop. Here it sends no stop and doesn't quit. The E key works.</td>
+          <td><span class="chip s-flag">Seen</span></td></tr>
+        <tr><td><b>The emergency stop program crashes when it closes</b> <span class="tag">B2</span></td>
+          <td>The stop message was sent all 5 times, so the arm would stop. The program then crashes on exit.</td>
+          <td><span class="chip s-flag">Seen</span></td></tr>
+        <tr><td><b>Two navigation packages are missing from the repo</b></td>
+          <td>The files that start driving (<code>robot_navigation</code>, <code>xpkg_demo</code>) exist only on an old user's copy. Without them the base can't navigate from this repo.</td>
+          <td><span class="chip s-flag">Seen</span></td></tr>
+        <tr><td><b>The LiDAR driver can't be built from a fresh copy</b></td>
+          <td>One setup file is made during the build and was never saved in the repo. The bench now supplies it.</td>
+          <td><span class="chip s-flag">Seen</span></td></tr>
+        <tr><td><b>10 file paths point to an old user's folder</b></td>
+          <td>They point into <code>/home/iot22</code>, so they break for anyone else.</td>
+          <td><span class="chip s-flag">Seen</span></td></tr>
+        <tr><td><b>After one failed drive, the robot ignores every new object</b> <span class="tag">F1</span></td>
+          <td>If a drive fails, the navigation code never resets. Every later object is ignored until a restart.</td>
+          <td><span class="chip s-ready">Test written</span></td></tr>
+        <tr><td><b>A failed return trip can't be retried</b> <span class="tag">F2</span></td>
+          <td>If the drive back to the user fails to start, the robot refuses every later "come back" request.</td>
+          <td><span class="chip s-ready">Test written</span></td></tr>
+        <tr><td><b>The robot drives to the wrong place when going to the user</b> <span class="tag">E1</span></td>
+          <td>The glasses' position is measured from the robot, but the code treats it as a position on the map.</td>
+          <td><span class="chip s-ready">Test written</span></td></tr>
+        <tr><td><b>A software update broke the glasses tool</b></td>
+          <td>A newer version of one Python package stopped the Aria tool from starting. Pinned to an older version.</td>
+          <td><span class="chip s-ok">Fixed</span></td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
 <section id="levels">
-  <h2>The six levels, and where each one runs</h2>
-  <p class="sub">Each level only means something once the one before it passes: there's no point building code
-    that doesn't parse, or testing a node that doesn't build. Where a level runs is set by what it needs.</p>
-  <div class="places">
-    <div class="place">
-      <span class="k">This Mac · no ROS needed</span>
-      <h4>Code is consistent with itself</h4>
-      <ul>
-        <li><b>Tier 0 · Contracts</b>: every topic, frame, param, launch node vs. a saved baseline</li>
-        <li><b>Tier 1 · Static</b>: parses, imports resolve, launch files point at real things</li>
-      </ul>
-      <p>Run before and after every refactor. Seconds.</p>
-    </div>
-    <div class="place">
-      <span class="k">Lab box · no hardware moves</span>
-      <h4>It can run on the real machine</h4>
-      <ul>
-        <li><b>Preflight</b>: GPU, ROS, model files, network, users. Looks only</li>
-        <li><b>Tier 2 · Build</b>: compiles into a scratch folder</li>
-        <li><b>Tier 3 · Node behaviour</b>: one node at a time, fake inputs, on a private ROS channel</li>
-      </ul>
-    </div>
-    <div class="place human">
-      <span class="k">Lab box · a person at the robot</span>
-      <h4>Real sensors, real data</h4>
-      <ul>
-        <li><b>Tier 4</b>: record 30 s of real camera, LiDAR and joint data once; replay it forever</li>
-        <li>Two driver/AnyGrasp smoke checks, each confirmed by the operator</li>
-      </ul>
-      <p>E-stop in hand. Stops before anything that moves the arm.</p>
-    </div>
+  <h2>How the checks work</h2>
+  <p class="sub">The checks come in six levels, from quick paperwork checks to a real run. Each level only
+    makes sense once the one before it passes. The comparison to building a machine is only a rough guide.</p>
+  <div class="scroller">
+    <table class="mid levels">
+      <thead><tr><th>Level</th><th>What it asks</th><th>Like checking a machine</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td><span class="ln">Tier 0</span><span class="lv">Names match</span></td>
+          <td>Do the programs still agree on the names they use to talk to each other?</td>
+          <td class="an">Part numbers match across all the drawings</td><td class="meta">Any computer, seconds</td></tr>
+        <tr><td><span class="ln">Tier 1</span><span class="lv">Code checks</span></td>
+          <td>Is each file readable, and does everything it points to exist?</td>
+          <td class="an">Each drawing is complete and references real parts</td><td class="meta">Any computer, seconds</td></tr>
+        <tr><td><span class="ln">Preflight</span><span class="lv">Lab computer ready</span></td>
+          <td>Does the lab computer have the graphics card, software, model files and network setup it needs?</td>
+          <td class="an">The workshop has the tools and materials</td><td class="meta">Lab computer, looks only</td></tr>
+        <tr><td><span class="ln">Tier 2</span><span class="lv">Build</span></td>
+          <td>Does the code turn into working programs?</td>
+          <td class="an">The parts can be made</td><td class="meta">Lab computer</td></tr>
+        <tr><td><span class="ln">Tier 3</span><span class="lv">Fake inputs</span></td>
+          <td>Does one program do the right thing when we feed it made-up sensor data?</td>
+          <td class="an">One subassembly on a test rig</td><td class="meta">Lab computer, sealed off from the robot</td></tr>
+        <tr><td><span class="ln">Tier 4</span><span class="lv">Real data</span></td>
+          <td>Record real camera and LiDAR data once, then replay it in every later test.</td>
+          <td class="an">A supervised trial run</td><td class="meta">Lab computer, person at the robot</td></tr>
+      </tbody>
+    </table>
   </div>
+</section>
+
+<section id="sim">
+  <h2>How the simulated arm works</h2>
+  <p class="sub">The bench tests the arm's software on a computer model of the arm. The real programs run,
+    but the motors are fake, so nothing physical moves.</p>
+
+  <h3>What runs</h3>
+  <div class="scroller">
+    <table class="mid">
+      <thead><tr><th>Piece</th><th>Real or stand-in</th><th>What it does in the test</th></tr></thead>
+      <tbody>
+        <tr><td><b>Arm model</b></td><td><span class="chip s-ready">Stand-in</span></td>
+          <td>The RM65 and gripper's shape and joints, from the robot's own description file. The motors are replaced by
+            "fake hardware": each joint accepts a position command and reports it has arrived. There is no physics, so no
+            weight, no gravity and no contact with objects.</td></tr>
+        <tr><td><b>MoveIt</b></td><td><span class="chip s-ok">Real</span></td>
+          <td>The motion planner, with the robot's own settings. It works out a path for the arm that avoids the table
+            and the safety walls, then sends it to the fake motors.</td></tr>
+        <tr><td><b>Grasp controller</b></td><td><span class="chip s-ok">Real</span></td>
+          <td>The program that decides what the arm does next (<code>grasp_state_machine</code>). Unchanged. It asks
+            MoveIt for every move.</td></tr>
+        <tr><td><b>Camera, object finder, gripper</b></td><td><span class="chip s-ready">Stand-in</span></td>
+          <td>The test script plays these. It sends the camera's settings and the "object is here" messages that SAM 3
+            would send, and records the gripper commands instead of acting on them.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Two tests use it</h3>
+  <div class="scroller">
+    <table class="mid">
+      <thead><tr><th>Test</th><th>What it tests</th><th>Question it answers</th></tr></thead>
+      <tbody>
+        <tr><td class="nm">sim_moveit.sh</td><td>MoveIt on its own</td><td>Can the planner move the arm to the two home positions and to zero without hitting anything?</td></tr>
+        <tr><td class="nm">state_machine_sim.sh</td><td>The grasp controller, with MoveIt underneath</td><td>Does the controller go through the right steps, in the right order, for one grasp?</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>One simulated grasp, step by step</h3>
+  <p>This is what happened in the 11 Sep run of <code>state_machine_sim.sh</code>. "Test" is the bench script,
+    "controller" is the grasp controller.</p>
+  <ol class="next">
+    <li><div><b>Controller starts.</b> It adds invisible safety walls and the table to MoveIt's picture of the world.</div></li>
+    <li><div><b>Arm goes home.</b> The controller asks MoveIt to move to the home position. The fake motors report the arm arrived, 0.0001 rad off. The controller announces IDLE, meaning "waiting for an object". <span class="who">On the real robot this happens within seconds of starting, without being asked (B4).</span></div></li>
+    <li><div><b>Test: "object straight ahead, 0.30 m away".</b> This is the message SAM 3 would send from the wrist camera.</div></li>
+    <li><div><b>Controller approaches.</b> It homes again, switches to SELECTING, and asks MoveIt for a 4 cm step toward the object. The simulated arm moves.</div></li>
+    <li><div><b>Test: "object now 0.15 m away".</b> That's closer than 0.18 m, so the controller switches to EXECUTING.</div></li>
+    <li><div><b>Gripper opens.</b> The controller sends "open" (position 1000). The test records it.</div></li>
+    <li><div><b>Final move, gripper closes.</b> The arm moves 10 cm toward the object, then the controller sends "close" (speed 200, force 150).</div></li>
+    <li><div><b>Arm carries the object.</b> MoveIt moves the arm to the carry position. The controller announces "grasp done, take me back to the user".</div></li>
+    <li><div><b>Expected: back to IDLE for the next object. Actual: stuck in EXECUTING.</b> <span class="who">This is bug C7, and why it handles one object per start-up.</span></div></li>
+  </ol>
+
+  <h3>What the simulation can't tell us</h3>
+  <p>Whether the real arm, gripper and camera behave the same. Whether the gripper actually holds the object,
+    because there is no contact. And nothing about AnyGrasp: today the controller skips its grip suggestions and
+    simply moves straight toward the object's centre.</p>
 </section>
 
 <section id="map">
   <h2>Coverage map</h2>
-  <p class="sub">Rows are the parts of the robot, following the signal from the glasses to the wheels. Columns are
-    the levels. Click a cell to list its exact checks below.</p>
+  <p class="sub">Rows are the parts of the robot, in the order a command flows: glasses, vision, arm, base.
+    Columns are the six levels. Click a cell to see its checks in the list below.</p>
   <div class="legend" id="legend"></div>
-  <div class="scroller"><div class="matrix" id="matrix" role="grid" aria-label="Test coverage by component and level"></div></div>
-  <p class="note">The striped column is the line the bench never crosses. A red cell is a check working as
-    intended: it has found a real, pre-existing bug. "Blind spot" means the check runs but can't see part of that
-    component yet (TESTBENCH_PLAN §4, C1).</p>
+  <div class="scroller"><div class="matrix" id="matrix" role="grid" aria-label="Test coverage by robot part and level"></div></div>
+  <p class="note">The striped column is the line the bench never crosses: moving the real arm. A red cell means
+    the check works and has found a real bug.</p>
 </section>
 
 <section id="checks">
   <h2>Every check</h2>
-  <p class="sub">Everything in the map, one row per check, with the state from the 11 Sep lab-box run; preflight's 36 checks are grouped into 16 rows by what they look at. Tests marked <span class="xf">expected-fail</span>
-    encode a bug from the code audit. They are written to assert the <em>intended</em> behaviour, so they
-    turn green when the bug is fixed.</p>
+  <p class="sub">One row per check. Checks marked <span class="xf">known bug</span> test for the correct
+    behaviour, so they fail today and will pass once the bug is fixed.</p>
   <div class="finder">
-    <select id="fComp" aria-label="Filter by component"></select>
+    <select id="fComp" aria-label="Filter by part of the robot"></select>
     <select id="fLevel" aria-label="Filter by level"></select>
     <button id="fClear" type="button">Show all</button>
     <span class="count" id="count"></span>
   </div>
   <div class="scroller">
-    <table>
-      <thead><tr><th>Check</th><th>Part of the robot</th><th>Level</th><th>What it catches</th><th>State</th><th>Runs on</th></tr></thead>
+    <table class="wide">
+      <thead><tr><th>Check</th><th>Part of the robot</th><th>Level</th><th>What it catches</th><th>State</th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
 </section>
 
-<section id="labbox">
-  <h2>On the lab box</h2>
-  <p class="sub">All bench work on the box happens in <code>~/rcp-Gappler</code>, a fresh clone of <code>main</code>.
-    Reach the box over tailscale: <code>ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60</code>.
-    <code>rcp-desktop</code> and <code>rcp-github</code> are old code and are never modified. Build output stays
-    inside <code>~/rcp-Gappler</code>, and nothing here has moved or commanded real hardware.</p>
+<section id="words">
+  <h2>Words used here</h2>
+  <p class="sub">Only the software terms this page can't avoid.</p>
+  <dl class="gloss">
+    <dt>ROS</dt><dd>The software framework the robot's programs use to send messages to each other. Each program does one job, such as reading the camera or planning an arm move.</dd>
+    <dt>Channel (topic)</dt><dd>A named line that programs send messages on. For example, <code>/goal_pose</code> carries "drive here" commands to the base. If one program renames a channel and the others don't, nothing arrives and nothing reports an error.</dd>
+    <dt>Sealed-off channel</dt><dd>The tests run on their own ROS network number, so their messages can't reach the real arm or base.</dd>
+    <dt>Simulated arm</dt><dd>A computer model of the RM65 arm with fake motors. The real software moves the model instead of the real arm. See "How the simulated arm works" above.</dd>
+    <dt>Coordinate frame</dt><dd>The point a position is measured from, such as the map, the base or the arm. Mixing up frames sends the robot to the wrong place.</dd>
+    <dt>Nav2</dt><dd>The navigation software that drives the base to a target. The navigation tests use a fake Nav2 that only notes the target and never drives.</dd>
+    <dt>MoveIt</dt><dd>The software that plans the arm's path to a target without hitting anything.</dd>
+    <dt>AnyGrasp</dt><dd>The program that looks at a camera image and picks where to grip the object.</dd>
+    <dt>LiDAR</dt><dd>The spinning laser sensor on the base that measures distances. It's used to build the map and find the robot on it.</dd>
+    <dt>Build</dt><dd>Turning source code into programs the computer can run, like making parts from drawings.</dd>
+  </dl>
+</section>
 
-  <div class="tree"><span class="lock">/home/rcp2026/</span>
-├── <span class="new">rcp-Gappler/</span>          <span class="new">WORKING REPO · clone of main · pulled after every bench change</span>
-│   ├── <span class="new">build/ install/</span>     <span class="lock">Tier 2 output (281 MB) · gitignored</span>
-│   ├── <span class="new">.venv/</span>              <span class="lock">Python env · uv sync · 8.3 GB · gitignored · undo: rm -rf .venv ~/.cache/uv</span>
-│   └── <span class="new">log/</span>                <span class="lock">build and launch logs, bench reports</span>
-├── <span class="keep">rcp-desktop/</span>          <span class="lock">old · realman_manip · untouched</span>
-├── <span class="keep">rcp-github/…</span>          <span class="lock">old · combined · untouched</span>
-└── <span class="keep">rcp-old-ros-wkspace/</span>  <span class="lock">copy of iot22's nav workspace (never committed) · reference only</span>
-<span class="lock">/home/iot22/</span>              <span class="lock">readable by rcp2026 (ACL) · conda envs, maps · never written</span></div>
-
-  <div class="steps">
-    <div class="step">
-      <div class="top"><span class="n">Done</span><h4>Clone the working repo</h4><span class="chip s-ok">60 s · 669 MB</span></div>
-      <div class="body">
-        <div class="k">Command</div><div><pre>git clone --branch main git@github.com:dionyichia/Gappler.git ~/rcp-Gappler</pre></div>
-      </div>
-    </div>
-    <div class="step">
-      <div class="top"><span class="n">Done</span><h4>Run the bench</h4><span class="chip s-flag">17 pass · 5 fail</span></div>
-      <div class="body">
-        <div class="k">Command</div><div><pre>./bench/run.sh</pre></div>
-        <div class="k">Result</div><div>Every fail is expected today: the arm cable is unplugged, and the model files (gitignored) aren't in the new repo yet. Static shows the same 5 old findings; contracts pass. Report in <code>docs/dion_docs/bench-runs/</code>.</div>
-      </div>
-    </div>
-    <div class="step">
-      <div class="top"><span class="n">Done</span><h4>Build the arm workspace (Tier 2)</h4><span class="chip s-ok">22 / 22 packages</span></div>
-      <div class="body">
-        <div class="k">Command</div><div><pre>./bench/build.sh          <span class="cm"># colcon, ros2_robot_ws/src + deps_ws/src, Release</span></pre></div>
-        <div class="k">Did not</div><div>Start any node, contact the arm or LiDAR, use <code>sudo</code>, or touch any other <code>install/</code>.</div>
-        <div class="k">Note</div><div>27 min 41 s. The CPU is throttled (800 MHz, 90 °C, forced idle), so it's slow. That's for whoever looks after the machine.</div>
-      </div>
-    </div>
-    <div class="step">
-      <div class="top"><span class="n">Done</span><h4>MoveIt on a simulated arm (Tier 3)</h4><span class="chip s-ok">3 / 3 motions</span></div>
-      <div class="body">
-        <div class="k">Command</div><div><pre>./bench/sim_moveit.sh     <span class="cm"># private channel 77, mock_components, refuses if rm_driver exists</span></pre></div>
-        <div class="k">Result</div><div><code>main</code>'s home, <code>realman_manip</code>'s home and zero: planned, executed, arrived within 0.0045 rad. The poses are reachable in the <em>model</em>; that isn't the same as safe on the real arm.</div>
-        <div class="k">Found</div><div>The robot config's own simulated-arm launch can't start (<code>no ros2_control tag</code>: the fake-hardware line is commented out). The bench carries its own copy; see ORIENTATION §8.16.</div>
-      </div>
-    </div>
-    <div class="step">
-      <div class="top"><span class="n">Done</span><h4>Rebuild the Python env (W1)</h4><span class="chip s-ok">torch sees the GPU</span></div>
-      <div class="body">
-        <div class="k">Command</div><div><pre>uv sync --locked --python /usr/bin/python3.10   <span class="cm"># 95 packages, 11 min, 8.3 GB</span></pre></div>
-        <div class="k">Found</div><div>The lock pulled setuptools 82, which broke the Aria CLI. Pinned <code>setuptools&lt;81</code>; the CLI now starts and reports the glasses as unplugged, which is correct.</div>
-        <div class="k">Undo</div><div><code>rm -rf ~/rcp-Gappler/.venv ~/.cache/uv</code>. Nothing was installed into <code>~/.local</code>.</div>
-      </div>
-    </div>
-    <div class="step">
-      <div class="top"><span class="n">Done</span><h4>E-stop delivery (W3, Tier 3)</h4><span class="chip s-flag">finds a real bug</span></div>
-      <div class="body">
-        <div class="k">Command</div><div><pre>./bench/estop_delivery.sh   <span class="cm"># private channel 77, refuses if rm_driver exists</span></pre></div>
-        <div class="k">Result</div><div>Keys E, R and S deliver their messages. After <code>kill -INT</code>, the stop arrived 5 of 5 times (the audit expected it might not), but the script then crashes on exit.</div>
-        <div class="k">Found</div><div>Pressing <b>Ctrl+C</b> in the e-stop terminal does nothing: the terminal is in raw mode, so it arrives as a plain character. No stop, no exit (CODE_AUDIT B2a).</div>
-      </div>
-    </div>
-    <div class="step">
-      <div class="top"><span class="n">Done</span><h4>Grasp state machine on the simulated arm (W2, Tier 3)</h4><span class="chip s-flag">finds a real bug</span></div>
-      <div class="body">
-        <div class="k">Command</div><div><pre>./bench/state_machine_sim.sh   <span class="cm"># also refuses unless preflight shows the arm unreachable</span></pre></div>
-        <div class="k">Result</div><div>A full cycle on fake hardware: home, IDLE, approach, EXECUTING, gripper open and close (recorded, not acted on), return pose, <code>/manipulator/return_to_user</code>.</div>
-        <div class="k">Found</div><div>After one grasp the node never goes back to IDLE, so it handles one object per launch (CODE_AUDIT C7). It homes to <code>main</code>'s pose, which has never been checked on the real arm (B4).</div>
-      </div>
-    </div>
-    <div class="step">
-      <div class="top"><span class="n">Done</span><h4>AnyGrasp's env (W5), survey only</h4><span class="chip s-ok">one env works</span></div>
-      <div class="body">
-        <div class="k">Test</div><div><pre>./bench/anygrasp_env.sh [PYTHON]</pre></div>
-        <div class="k">Result</div><div>A scratch env sharing the project env's torch 2.10 and numpy 2, plus MinkowskiEngine (12 min build), pointnet2 and graspnetAPI's packages, passes every import. The licence check passes and the SDK demo finds grasps. No conda, no second env, no system file edited.</div>
-        <div class="k">Held</div><div>Making it permanent (a script, or adding the packages to <code>pyproject.toml</code>). That is a change to the robot env, so it waits for the fixes phase.</div>
-      </div>
-    </div>
-    <div class="step">
-      <div class="top"><span class="n">Next</span><h4>Still to do</h4><span class="chip s-plan">planned</span></div>
-      <div class="body">
-        <div class="k">Next</div><div>Building <code>Navigation_Module</code> (W4b), then the eight navigation node tests. <code>robot_navigation</code> and <code>xpkg_demo</code> are missing from the repo; copies are now in <code>~/rcp-old-ros-wkspace</code>.</div>
-        <div class="k">Rule</div><div>No fixes yet: survey, record, build tests. Fixes come later on branches.</div>
-      </div>
-    </div>
+<section id="run">
+  <h2>Running the bench</h2>
+  <p class="sub">For whoever runs the checks. Connect to the lab computer from anywhere with:</p>
+  <pre>ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60</pre>
+  <p>Work only in the <code>~/rcp-Gappler</code> folder. The folders <code>rcp-desktop</code>, <code>rcp-github</code>
+    and <code>rcp-old-ros-wkspace</code> are old copies. Read them, but never change them.</p>
+  <div class="callout"><b>Safety.</b> Every test that starts a robot program runs on a sealed-off channel. It
+    refuses to start if anything else is already on that channel. None of the tests talk to the real arm or base.</div>
+  <div class="scroller">
+    <table class="mid">
+      <thead><tr><th>Command</th><th>What it does</th><th>Last result</th></tr></thead>
+      <tbody>
+        <tr><td class="nm">./bench/run.sh</td><td>Tiers 0 and 1, plus the preflight check. Runs on any computer.</td><td><span class="chip s-flag">7 known problems</span></td></tr>
+        <tr><td class="nm">./bench/build.sh</td><td>Builds the arm software.</td><td><span class="chip s-ok">22 of 22</span></td></tr>
+        <tr><td class="nm">./bench/build.sh nav</td><td>Builds the navigation software.</td><td><span class="chip s-ready">Not run yet</span></td></tr>
+        <tr><td class="nm">./bench/sim_moveit.sh</td><td>Moves the simulated arm to its home positions.</td><td><span class="chip s-ok">Passes</span></td></tr>
+        <tr><td class="nm">./bench/state_machine_sim.sh</td><td>Runs a full grasp on the simulated arm.</td><td><span class="chip s-flag">Found C7</span></td></tr>
+        <tr><td class="nm">./bench/estop_delivery.sh</td><td>Checks the emergency stop sends its message.</td><td><span class="chip s-flag">Found B2a</span></td></tr>
+        <tr><td class="nm">./bench/nav_nodes.sh</td><td>Tests the navigation programs against a fake Nav2.</td><td><span class="chip s-ready">Not run yet</span></td></tr>
+        <tr><td class="nm">./bench/anygrasp_env.sh</td><td>Checks a Python setup can run the grasp finder.</td><td><span class="chip s-ok">Passes in test copy</span></td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
 <section id="never">
   <h2>Never tested by the bench</h2>
-  <p class="sub">By design. Each of these needs a person at the robot with the e-stop, and none has ever been run end to end.</p>
+  <p class="sub">On purpose. Each of these needs a person at the robot with the emergency stop.</p>
   <div class="never">
-    <div><b>Arm motion</b>The state machine homes the arm within seconds of launch, to a pose nobody has validated.</div>
-    <div><b>Gripper</b>Opening or closing it is a physical command.</div>
-    <div><b>Driving the base</b>Publishing <code>/goal_pose</code> or <code>/cmd_vel</code> moves the robot.</div>
-    <div><b>The whole pipeline</b>Voice → SAM 3 → gaze → grasp is cut in the code today, so there is no end-to-end path yet.</div>
+    <div><b>Arm motion</b>The grasp controller moves the arm within seconds of starting, to a position nobody has checked.</div>
+    <div><b>Gripper</b>Opening or closing it is a physical action.</div>
+    <div><b>Driving the base</b>Sending a drive command moves the robot.</div>
+    <div><b>The whole system</b>Voice, vision, grasp and drive have never run together. Part of the connection is switched off in the code.</div>
   </div>
 </section>
 
-<footer>Source of truth: <code>bench/</code> and <code>docs/dion_docs/TESTBENCH_PLAN.md</code>. States as of 11 Sep 2026.
-  Tags follow the docs: [reported] from the 25 Aug hardware session, [inferred] reasoning.</footer>
+<footer>Details: <code>bench/README.md</code> and <code>docs/dion_docs/TESTBENCH_PLAN.md</code>. States as of 11 Sep 2026.</footer>
 </main>
 </div>
 
 <script>
 const COMPS = [
-  ["machine","Machine & accounts","host, GPU, ROS install, users"],
-  ["aria","Aria glasses","voice + gaze"],
-  ["sam3","SAM 3","object segmentation"],
-  ["anygrasp","AnyGrasp","grasp candidates"],
-  ["planner","Grasp state machine","MoveIt / MTC · rm_mtc"],
-  ["driver","Arm driver + e-stop","RM65 · rm_driver"],
-  ["camera","Wrist camera + TF","RealSense D435i"],
-  ["nav","Mobile base","LiDAR · SLAM · Nav2"],
-  ["glue","Launchers","orchestrator · main.py"],
+  ["machine","Lab computer","graphics card, software, users"],
+  ["aria","Aria glasses","hears the command, tracks gaze"],
+  ["sam3","SAM 3","finds the object in the image"],
+  ["anygrasp","AnyGrasp","picks where to grip"],
+  ["planner","Grasp controller","plans and runs the grasp"],
+  ["driver","Arm driver, emergency stop","talks to the RM65 arm"],
+  ["camera","Wrist camera","RealSense D435i and its mount"],
+  ["nav","Mobile base","LiDAR, map, driving"],
+  ["glue","Start-up scripts","start everything together"],
 ];
 const LEVELS = [
-  ["t0","Tier 0","Contracts","Mac"],
-  ["t1","Tier 1","Static","Mac"],
-  ["pf","Preflight","Environment","Lab box · looks only"],
-  ["t2","Tier 2","Build","Lab box"],
-  ["t3","Tier 3","Node behaviour","Lab box · private channel"],
-  ["t4","Tier 4","Real data","Lab box · person present"],
+  ["t0","Tier 0","Names match","Any computer"],
+  ["t1","Tier 1","Code checks","Any computer"],
+  ["pf","Preflight","Lab computer ready","Looks only"],
+  ["t2","Tier 2","Build","Lab computer"],
+  ["t3","Tier 3","Fake inputs","Sealed off"],
+  ["t4","Tier 4","Real data","Person present"],
 ];
 const STATES = {
-  ok:["Passing","s-ok"], flag:["Finds real bugs","s-flag"], ready:["Built · not run yet","s-ready"], hw:["Hardware unplugged","s-hw"],
-  gap:["Blind spot","s-gap"], blocked:["Needs setup","s-blocked"], plan:["Planned","s-plan"], na:["Not applicable","s-na"],
+  ok:["Passing","s-ok"], flag:["Found a bug","s-flag"], ready:["Written, not run","s-ready"], hw:["Hardware unplugged","s-hw"],
+  gap:["Partly checked","s-gap"], blocked:["Needs setup","s-blocked"], plan:["Planned","s-plan"], na:["Not needed","s-na"],
 };
-// [component][level] = [state, summary]
+// [part][level] = [state, summary]
 const CELLS = {
-  machine:{t0:["na","No ROS interfaces"],t1:["na","—"],pf:["flag","Ran on the box: all pass, but 10 code paths resolve into /home/iot22"],t2:["na","colcon + rosdep present"],t3:["na","—"],t4:["na","—"]},
-  aria:{t0:["gap","What it subscribes to is baselined; its publishers are invisible (C1)"],t1:["ok","Parses, imports resolve"],pf:["ok","Venv rebuilt with uv; aria CLI works after the setuptools<81 pin (glasses unplugged)"],t2:["na","Python in the venv; nothing to compile"],t3:["plan","None designed yet"],t4:["plan","Voice prompt recorded in the bag"]},
-  sam3:{t0:["ok","Mask topics baselined"],t1:["ok","Parses, imports resolve"],pf:["ok","Weights present; torch 2.10 (cu128) sees the GPU from the venv"],t2:["na","Python in the venv"],t3:["plan","None designed yet"],t4:["plan","Replay recorded camera frames"]},
-  anygrasp:{t0:["ok","Candidate + mask topics baselined"],t1:["ok","Parses, imports resolve"],pf:["blocked","Checkpoints, licence, .so pass. A scratch env runs the SDK demo; the project env doesn't have its packages yet"],t2:["na","Python + prebuilt .so"],t3:["plan","Gate test (A1). The env now exists (W5 scratch); needs recorded frames (W6)"],t4:["plan","Smoke: first frame yields seed grasps"]},
-  planner:{t0:["ok","State-machine topics, frames, params baselined"],t1:["flag","Launch file names mtc_sim_test, which nothing builds"],pf:["na","Only observable once launched"],t2:["ok","rm_mtc + MoveIt Task Constructor build on the box"],t3:["flag","Simulated arm: a full grasp cycle runs, then the node never returns to IDLE (C7)"],t4:["na","Real arm = the stop line"]},
-  driver:{t0:["gap","Vendor code: seen only through our subscribers"],t1:["ok","estop.py parses"],pf:["hw","Arm cable unplugged: port fails, pings skip. As expected"],t2:["ok","rm_driver compiles (with warnings)"],t3:["flag","e-stop test: stops delivered, but the Ctrl+C key is ignored (B2a)"],t4:["plan","Driver handshake reports RM65-BI"]},
-  camera:{t0:["ok","Camera topics + static TF baselined"],t1:["na","External package"],pf:["ok","D435i found on USB; rates need the camera driver running"],t2:["na","Installed from apt"],t3:["na","Supplies other tests' inputs"],t4:["plan","30 s of colour, depth, camera_info"]},
-  nav:{t0:["ok","Topics, frames, launch nodes baselined"],t1:["flag","xpkg_demo missing; Livox manifest not in git"],pf:["hw","LiDAR unreachable (no .5 address); SLAM map found in /home/iot22"],t2:["plan","Never built before: first run is discovery"],t3:["plan","8 tests: approach, goal bridge, return-to-user, pose, QoS relay"],t4:["plan","LiDAR + TF recorded"]},
-  glue:{t0:["ok","74 launch nodes, 52 includes baselined"],t1:["ok","Launch → package, executable, include all resolve here"],pf:["ready","Nothing running yet to list"],t2:["na","—"],t3:["na","Never launched: both start the arm"],t4:["na","—"]},
+  machine:{t0:["na","Nothing to compare"],t1:["na","Nothing to check"],pf:["flag","Everything passes, but 10 file paths point into /home/iot22"],t2:["na","Build tools are installed"],t3:["na","Nothing to test"],t4:["na","Nothing to test"]},
+  aria:{t0:["gap","What it receives is checked. What it sends isn't yet"],t1:["ok","Files readable, links work"],pf:["hw","Glasses unplugged, so this fails. The glasses software itself starts"],t2:["na","Nothing to build"],t3:["plan","No test designed yet"],t4:["plan","Voice commands recorded with the sensor data"]},
+  sam3:{t0:["ok","Its channels are checked"],t1:["ok","Files readable, links work"],pf:["ok","Model file present, graphics card works"],t2:["na","Nothing to build"],t3:["plan","No test designed yet"],t4:["plan","Replay recorded camera frames"]},
+  anygrasp:{t0:["ok","Its channels are checked"],t1:["ok","Files readable, links work"],pf:["blocked","Model files and licence pass. Only runs in a test copy of the Python setup"],t2:["na","Supplied ready-made"],t3:["plan","Needs recorded camera frames first"],t4:["plan","First real frame gives grip points"]},
+  planner:{t0:["ok","Its channels and settings are checked"],t1:["flag","A start-up file launches a program that doesn't exist"],pf:["na","Can only be checked while running"],t2:["ok","Builds"],t3:["flag","One full grasp on the simulated arm, then stuck (C7)"],t4:["na","Moving the real arm is past the line"]},
+  driver:{t0:["gap","Supplier's code. Only checked through what we send it"],t1:["ok","Emergency stop file readable"],pf:["hw","Arm cable unplugged, so these checks can't pass. Expected"],t2:["ok","Builds, with warnings"],t3:["flag","Stop is sent, but Ctrl+C is ignored (B2a)"],t4:["plan","Driver confirms the arm model, RM65-BI"]},
+  camera:{t0:["ok","Its channels and mount position are checked"],t1:["na","Supplier's software"],pf:["ok","Camera found on USB"],t2:["na","Installed ready-made"],t3:["na","Provides inputs for other tests"],t4:["plan","Record 30 s of colour and depth"]},
+  nav:{t0:["ok","Its channels and positions are checked"],t1:["flag","Two packages missing. LiDAR setup file not saved"],pf:["hw","LiDAR unreachable. Saved map found"],t2:["ready","Never built. Ready to try"],t3:["ready","10 tests with a fake Nav2"],t4:["plan","Record LiDAR and positions"]},
+  glue:{t0:["ok","Every start-up file entry is checked"],t1:["ok","Start-up files point at real programs"],pf:["ready","Lists running programs. Nothing running yet"],t2:["na","Nothing to build"],t3:["na","Never started here: they move the arm"],t4:["na","Past the line"]},
 };
 const ALL = COMPS.map(c=>c[0]);
-// [name, components, level, what it catches, state, runs on, expected-fail audit id]
+// [name, parts, level, what it catches, state, known-bug id]
 const CHECKS = [
-  ["topics",ALL,"t0","A topic renamed, retyped, or left with no publisher or subscriber — 120 in the baseline","ok","Mac"],
-  ["launch nodes",["glue","nav","planner","driver","anygrasp","sam3"],"t0","A node dropped from or renamed in a launch file — 74","ok","Mac"],
-  ["launch includes",["glue","nav","planner"],"t0","A launch file including one that moved — 52","ok","Mac"],
-  ["params",ALL,"t0","A parameter's default changed — 201","ok","Mac"],
-  ["frames",["camera","nav","planner","anygrasp"],"t0","A TF frame name changed in one place only — 39","ok","Mac"],
-  ["static transforms",["camera","nav"],"t0","A hardcoded camera or base offset changed — 4","ok","Mac"],
-  ["hardcoded paths",ALL,"t0","A new absolute path appeared — 16","ok","Mac"],
-  ["package deps",["nav","planner"],"t0","A package dependency added or dropped — 7","ok","Mac"],
-  ["divergent constants",ALL,"t0","One constant with different values in different files — 2","ok","Mac"],
-  ["Aria publishers",["aria"],"t0","Blind spot: publishers created via the ROSPublisher wrapper aren't extracted yet (C1)","gap","Mac"],
-  ["python-syntax",["aria","sam3","anygrasp","driver","nav","glue"],"t1","A Python file that won't even parse","ok","Mac"],
-  ["undefined-names",["aria","sam3","anygrasp","driver","nav","glue"],"t1","A name used but never defined; crashes only when that line runs","ok","Mac"],
-  ["internal-imports",["aria","sam3","anygrasp","nav","glue"],"t1","An import of a repo module that no longer exists: the classic refactor break","ok","Mac"],
-  ["xml-wellformed",["nav","planner","driver"],"t1","A broken package.xml or XML launch file","ok","Mac"],
-  ["install-targets",["planner","nav"],"t1","CMake installs a file that isn't there","ok","Mac"],
-  ["launch-packages",["nav"],"t1","A launch file uses a package that exists nowhere — finds xpkg_demo","flag","Mac"],
-  ["package-xml-deps",["nav"],"t1","A declared dependency on a package that exists nowhere — finds xpkg_demo","flag","Mac"],
-  ["launch-executables",["planner"],"t1","A launch file starts an executable nothing builds — finds mtc_sim_test","flag","Mac"],
-  ["launch-includes",["nav"],"t1","A launch file includes one that doesn't exist — finds bringup_basic_ctrl.launch.py","flag","Mac"],
-  ["generated-manifests",["nav"],"t1","A vendor package whose manifest is generated at build time and never committed — finds livox_ros_driver2","flag","Mac"],
-  ["platform · ram · disk · cpu",["machine"],"pf","Wrong machine, or not enough memory, disk or cores for SAM 3 + AnyGrasp + a build","ok","Lab box"],
-  ["nvidia-driver · vram",["machine"],"pf","No CUDA GPU, or too little free VRAM (15.3 of 16 GB free)","ok","Lab box"],
-  ["humble · colcon · overlay",["machine"],"pf","ROS missing, or sourcing the wrong one of the four install folders","ok","Lab box"],
-  ["no-double-source · domain-id",["machine"],"pf","Duplicate MoveIt libraries; a ROS channel mismatch that silently hides every topic","ok","Lab box"],
-  ["running-user · hardcoded-homes",["machine"],"pf","Code pointing into another user's home: all 10 paths resolve into /home/iot22's old clone","flag","Lab box"],
-  ["pythonnousersite · torch-cuda",["sam3"],"pf","The setting that silently swaps in a CPU-only torch; torch that can't see the GPU","ok","Lab box"],
-  ["sam3-weights",["sam3"],"pf","The 3.4 GB checkpoint missing (it's gitignored)","ok","Lab box"],
-  ["venv · aria-sdk",["aria"],"pf","Project venv missing; aria CLI broken (found: setuptools 82) or glasses not authorised","ok","Lab box"],
-  ["anygrasp-env",["anygrasp"],"pf","AnyGrasp env (MinkowskiEngine) not built yet — W5","blocked","Lab box"],
-  ["anygrasp checkpoints · licence · .so",["anygrasp"],"pf","Detection/tracking weights, machine-locked licence, compiled binaries","ok","Lab box"],
-  ["anygrasp_env.sh",["anygrasp"],"pf","In a given Python env: every AnyGrasp dependency imports, the licence passes, and the SDK demo finds grasps on its example frame. Passes in the W5 scratch env; fails on the project env alone","ok","Lab box"],
-  ["arm-nic · arm-ping · arm-port",["driver"],"pf","Arm cable, control box at 192.168.1.18, port 8080 (connect + close only)","hw","Lab box"],
-  ["joint-states",["driver"],"pf","Arm connected but sending no feedback: the wrong-host-IP symptom","hw","Lab box"],
-  ["arm-lidar-coexist · lidar-ping",["nav","driver"],"pf","Host needs both .10 (arm) and .5 (LiDAR) on one port; the saved profile has .100","hw","Lab box"],
-  ["slam-map · tf-base-bridge",["nav"],"pf","Prebuilt map missing; arm not attached to the base's TF tree","ok","Lab box"],
-  ["realsense-usb · camera-hz · tf-arm-camera",["camera"],"pf","Camera absent, slow, or its mount offset different from the URDF","ok","Lab box"],
-  ["nodes",["glue"],"pf","What is actually running before anything is judged","ready","Lab box"],
-  ["arm workspace build",["planner","driver"],"t2","A package that no longer compiles: 22 / 22 pass, 27 min 41 s on a throttled CPU","ok","Lab box"],
-  ["Navigation_Module build",["nav"],"t2","Never built; expect Livox and xpkg_demo to stop it","plan","Lab box"],
-  ["executables vs install/",["planner","glue"],"t2","Upgrades the static launch check to read what was really built","plan","Lab box"],
-  ["approach, far object",["nav"],"t3","Sends a goal 0.78 m from the object, facing it","plan","Private channel"],
-  ["approach, near object",["nav"],"t3","Starts manipulation instead of driving","plan","Private channel"],
-  ["approach recovers from nav failure",["nav"],"t3","A second grasp request is still acted on after a failed drive","plan","Private channel","F1"],
-  ["goal bridge, server down",["nav"],"t3","Reports \"failed\" within 6 s instead of hanging","plan","Private channel","F1"],
-  ["return-to-user retry",["nav"],"t3","A second return request isn't ignored","plan","Private channel","F2"],
-  ["fused pose frame",["nav"],"t3","Goal is in the map frame, not the robot's own","plan","Private channel","E1"],
-  ["QoS relay",["nav"],"t3","LiDAR cloud re-published in the format Nav2 accepts, at input rate","plan","Private channel"],
-  ["robot pose",["nav"],"t3","/robot_pose at about 10 Hz in the map frame","plan","Private channel"],
-  ["AnyGrasp gate",["anygrasp"],"t3","Candidates while EXECUTING, none while IDLE. Env exists now; needs recorded frames (W6)","plan","Private channel","A1"],
-  ["e-stop delivery",["driver"],"t3","Keys e/r/s deliver; kill -INT delivers 5/5 but exits via a crash; the Ctrl+C key is ignored (B2a) · ./bench/estop_delivery.sh","flag","Private channel","B2"],
-  ["MoveIt, simulated arm",["planner"],"t3","Plans + executes to both home poses (B4) and zero on mock hardware; refuses to start if rm_driver exists","ok","Private channel"],
-  ["state machine, simulated arm",["planner"],"t3","Full cycle on fake hardware: home, IDLE, SELECTING, EXECUTING, gripper open + close, return pose. Never goes back to IDLE · ./bench/state_machine_sim.sh","flag","Private channel","C7"],
-  ["record.sh",["camera","nav","driver","aria"],"t4","30 s of real camera, LiDAR, TF, joints, voice; replayed by Tier 3 afterwards","plan","Person present"],
-  ["driver handshake",["driver"],"t4","Driver log shows product_version = RM65-BI","plan","Person present"],
-  ["AnyGrasp first frame",["anygrasp"],"t4","\"Frame 0: selected 5 seed grasps\" on real data","plan","Person present"],
+  ["channels",ALL,"t0","A channel renamed or changed in one program but not the others. 120 channels.","ok"],
+  ["start-up entries",["glue","nav","planner","driver","anygrasp","sam3"],"t0","A program dropped or renamed in a start-up file. 74 entries.","ok"],
+  ["start-up links",["glue","nav","planner"],"t0","A start-up file that loads another one that has moved. 52 links.","ok"],
+  ["settings",ALL,"t0","A setting's default value changed. 201 settings.","ok"],
+  ["coordinate frames",["camera","nav","planner","anygrasp"],"t0","A frame renamed in one place only. 39 frames.","ok"],
+  ["fixed offsets",["camera","nav"],"t0","A mounting offset changed, such as where the camera or LiDAR sits. 4 offsets.","ok"],
+  ["fixed file paths",ALL,"t0","A new file path that only works on one computer. 16 today.","ok"],
+  ["package links",["nav","planner"],"t0","A package added to or removed from another's list of needs. 7 links.","ok"],
+  ["duplicated numbers",ALL,"t0","The same measurement written with different values in different files. 2 found.","ok"],
+  ["glasses outputs",["aria"],"t0","Not checked yet. The tool can't see what the glasses code sends (C1).","gap"],
+  ["file readable",["aria","sam3","anygrasp","driver","nav","glue"],"t1","A Python file with a typo that stops it loading.","ok"],
+  ["names defined",["aria","sam3","anygrasp","driver","nav","glue"],"t1","A name used but never defined. It only crashes when that line runs.","ok"],
+  ["files found",["aria","sam3","anygrasp","nav","glue"],"t1","Code that loads a repo file that no longer exists. The usual break when files move.","ok"],
+  ["setup files readable",["nav","planner","driver"],"t1","A broken package setup file.","ok"],
+  ["installed files exist",["planner","nav"],"t1","The build installs a file that isn't there.","ok"],
+  ["packages exist",["nav"],"t1","A start-up file or package needs a package that doesn't exist. Finds xpkg_demo.","flag"],
+  ["programs exist",["planner"],"t1","A start-up file launches a program nothing builds. Finds mtc_sim_test.","flag"],
+  ["start-up links exist",["nav"],"t1","A start-up file loads one that doesn't exist. Finds bringup_basic_ctrl.launch.py.","flag"],
+  ["generated setup files",["nav"],"t1","A setup file made during the build and never saved. Finds the LiDAR driver's.","flag"],
+  ["computer basics",["machine"],"pf","Wrong computer, or not enough memory, disk or processor.","ok"],
+  ["graphics card",["machine"],"pf","No graphics card, or too little free memory on it (15.3 of 16 GB free).","ok"],
+  ["ROS installed",["machine"],"pf","ROS missing, or an old or duplicate build loaded by mistake.","ok"],
+  ["other users' folders",["machine"],"pf","Code that points into another user's home folder. All 10 point into /home/iot22.","flag"],
+  ["GPU from Python",["sam3"],"pf","A setting that quietly swaps in a slower version of the maths library without graphics card support.","ok"],
+  ["SAM 3 model file",["sam3"],"pf","The 3.4 GB model file is missing. It isn't stored in the repo.","ok"],
+  ["glasses connected",["aria"],"pf","Glasses software starts, is paired, and finds the glasses over USB. Today the software works but the glasses are unplugged. (This check used to pass without the glasses. Fixed 11 Sep.)","hw"],
+  ["AnyGrasp setup",["anygrasp"],"pf","AnyGrasp's extra packages missing from the main Python setup. They work in a test copy.","blocked"],
+  ["AnyGrasp files",["anygrasp"],"pf","AnyGrasp's model files, licence (locked to this computer) and ready-made libraries.","ok"],
+  ["AnyGrasp demo",["anygrasp"],"pf","Every AnyGrasp package loads, the licence passes and the demo finds grip points. Passes in the test copy.","ok"],
+  ["arm connection",["driver"],"pf","Arm cable, arm controller at 192.168.1.18 and its port. Only connects, never sends a command.","hw"],
+  ["arm joint readings",["driver"],"pf","Arm connected but sending no joint positions. Usually a wrong network address.","hw"],
+  ["arm and LiDAR network",["nav","driver"],"pf","The computer needs network addresses for both the arm and the LiDAR on one port. The saved setting has neither.","hw"],
+  ["map and base link",["nav"],"pf","Saved map missing, or the arm's position not linked to the base's.","ok"],
+  ["camera",["camera"],"pf","Camera missing, too slow, or mounted somewhere other than the model says.","ok"],
+  ["running programs",["glue"],"pf","Lists what is running before judging anything.","ready"],
+  ["arm software build",["planner","driver"],"t2","Any arm software part that no longer builds. 22 of 22 pass (27 min, the lab computer's processor is slowed by heat).","ok"],
+  ["navigation build",["nav"],"t2","Never built. The bench now supplies the LiDAR setup file. The LiDAR's own library may still be missing.","ready"],
+  ["built programs match",["planner","glue"],"t2","Start-up files checked against what was really built.","plan"],
+  ["object far away",["nav"],"t3","Object 2 m away: sends one drive target 0.78 m from it, facing it.","ready"],
+  ["object close",["nav"],"t3","Object within reach: starts the grasp instead of driving.","ready"],
+  ["drive succeeds",["nav"],"t3","After a successful drive, the grasp starts.","ready"],
+  ["drive fails, next object",["nav"],"t3","After a failed drive, a new object still gets a drive target.","ready","F1"],
+  ["drive fails, reported",["nav"],"t3","A failed drive is reported as failed.","ready"],
+  ["Nav2 not running",["nav"],"t3","With no Nav2, reports failed within 6 s instead of staying silent.","ready","F1"],
+  ["return trip retry",["nav"],"t3","A return trip that failed because Nav2 was down can be tried again.","ready","F2"],
+  ["glasses position",["nav"],"t3","The glasses' position is converted to map coordinates before the robot drives there.","ready","E1"],
+  ["LiDAR relay",["nav"],"t3","LiDAR data is passed on in the form the mapping software needs, without dropping frames.","ready"],
+  ["robot position",["nav"],"t3","The robot's position on the map is sent about 10 times a second.","ready"],
+  ["grasp finder timing",["anygrasp"],"t3","Grip points produced only while the arm is grasping. Needs recorded camera frames.","plan","A1"],
+  ["emergency stop",["driver"],"t3","Keys E, R and S send their messages. A system stop signal sends the stop, then the program crashes. Ctrl+C does nothing (B2a).","flag","B2"],
+  ["simulated arm moves",["planner"],"t3","The simulated arm reaches both home positions and zero. Refuses to start if the real arm's driver is running.","ok"],
+  ["simulated grasp",["planner"],"t3","One full grasp on the simulated arm: home, look, approach, grip, return. Then stuck.","flag","C7"],
+  ["recording",["camera","nav","driver","aria"],"t4","Record 30 s of camera, LiDAR, positions, joints and voice. Tier 3 then replays it.","plan"],
+  ["arm driver start",["driver"],"t4","The driver reports the arm model RM65-BI.","plan"],
+  ["first real grasp points",["anygrasp"],"t4","AnyGrasp finds grip points on a real camera frame.","plan"],
 ];
 
 const $ = s => document.querySelector(s);
 const chip = st => `<span class="chip ${STATES[st][1]}">${STATES[st][0]}</span>`;
 $("#legend").innerHTML = Object.keys(STATES).map(k => `<span>${chip(k)}</span>`).join("");
 
-// matrix
 let html = `<div class="mh">Part of the robot</div>` +
   LEVELS.map(l => `<div class="mh">${l[1]}<b>${l[2]}</b><span class="where">${l[3]}</span></div>`).join("") +
-  `<div class="stop head" title="The bench never makes the arm move"><span>Arm moves · never</span></div>`;
+  `<div class="stop head" title="The bench never moves the real arm"><span>Real arm moves · never</span></div>`;
 for (const [id, name, what] of COMPS) {
   html += `<div class="mc"><b>${name}</b><span>${what}</span></div>`;
   for (const [lv] of LEVELS) {
@@ -519,21 +576,20 @@ for (const [id, name, what] of COMPS) {
 }
 $("#matrix").innerHTML = html;
 
-// catalogue
 const fC = $("#fComp"), fL = $("#fLevel");
 fC.innerHTML = `<option value="">All parts of the robot</option>` + COMPS.map(c => `<option value="${c[0]}">${c[1]}</option>`).join("");
-fL.innerHTML = `<option value="">All levels</option>` + LEVELS.map(l => `<option value="${l[0]}">${l[1]} · ${l[2]}</option>`).join("");
+fL.innerHTML = `<option value="">All levels</option>` + LEVELS.map(l => `<option value="${l[0]}">${l[1]}: ${l[2]}</option>`).join("");
 const compName = Object.fromEntries(COMPS.map(c => [c[0], c[1]]));
-const levelName = Object.fromEntries(LEVELS.map(l => [l[0], `${l[1]} · ${l[2]}`]));
+const levelName = Object.fromEntries(LEVELS.map(l => [l[0], `${l[1]}: ${l[2]}`]));
 
 function render() {
   const c = fC.value, l = fL.value;
   const rows = CHECKS.filter(r => (!c || r[1].includes(c)) && (!l || r[2] === l));
   $("#rows").innerHTML = rows.map(r => {
-    const comps = r[1].length === ALL.length ? "All" : r[1].map(x => compName[x]).join(", ");
-    return `<tr><td class="nm">${r[0]}</td><td class="meta">${comps}</td><td class="meta">${levelName[r[2]]}</td>` +
-      `<td>${r[3]}${r[6] ? `<span class="xf">expected-fail · ${r[6]}</span>` : ""}</td><td>${chip(r[4])}</td><td class="meta">${r[5]}</td></tr>`;
-  }).join("") || `<tr><td colspan="6">No checks at this level for this part yet. See the map cell above for why.</td></tr>`;
+    const parts = r[1].length === ALL.length ? "All" : r[1].map(x => compName[x]).join(", ");
+    return `<tr><td class="nm">${r[0]}</td><td class="meta">${parts}</td><td class="meta">${levelName[r[2]]}</td>` +
+      `<td>${r[3]}${r[5] ? `<span class="xf">known bug · ${r[5]}</span>` : ""}</td><td>${chip(r[4])}</td></tr>`;
+  }).join("") || `<tr><td colspan="5">No checks for this part at this level yet. The map cell above says why.</td></tr>`;
   $("#count").textContent = `${rows.length} of ${CHECKS.length}`;
   document.querySelectorAll(".cell").forEach(el =>
     el.classList.toggle("sel", !!c && !!l && el.dataset.comp === c && el.dataset.level === l));

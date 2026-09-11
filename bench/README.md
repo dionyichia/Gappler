@@ -1,7 +1,7 @@
 # `bench/` — offline regression bench
 
-> **Status 2026-09-11 (evening):** tiers 0–1 and preflight work on the Mac and on the lab box; Tier 2
-> (build) and four Tier 3 scripts run on the box. Latest results, known gaps and the next work are in
+> **Status 2026-09-12:** tiers 0–1 and preflight work on the Mac and on the lab box; Tier 2
+> (build) and four Tier 3 scripts run on the box; a fifth, `nav_nodes.sh`, is written but not yet run. Latest results, known gaps and the next work are in
 > [`docs/dion_docs/TESTBENCH_PLAN.md`](../docs/dion_docs/TESTBENCH_PLAN.md) → "▶ Start here"; raw results
 > in [`docs/dion_docs/bench-runs/`](../docs/dion_docs/bench-runs/). Read its §3 (safety) before running
 > anything on the lab machine.
@@ -28,10 +28,11 @@ refused, 3 skipped — never a pass.
 
 | Script | What it checks | Extra guards |
 |---|---|---|
-| `build.sh [nav]` | Tier 2: colcon build of the arm workspace (or `Navigation_Module`) into this checkout | only `/opt/ros/humble` may be sourced |
+| `build.sh [nav]` | Tier 2: colcon build of the arm workspace (or `Navigation_Module`) into this checkout. `nav` first does the Livox prep: copies `bench/nodes/livox_package_ROS2.xml` in as the (gitignored) livox `package.xml` if missing, passes the ROS 2 CMake flags, and warns if Livox-SDK2 isn't installed | only `/opt/ros/humble` may be sourced |
 | `sim_moveit.sh` | MoveIt plans and executes to both home poses and zero on a `mock_components` arm | installed config must be mock hardware |
 | `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s`, the Ctrl+C key and SIGINT deliver a stop? | — |
 | `state_machine_sim.sh` | `grasp_state_machine` runs a full grasp cycle on the simulated arm; the test plays camera, detector and gripper | mock hardware; preflight's `arm-ping`/`arm-port` must not pass (Dion's exception in `CLAUDE.md`) |
+| `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 10 cases, 4 expected-fail (F1 ×2, F2, E1). Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
 | `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint | GPU only, no ROS |
 
 Tests that encode a CODE_AUDIT finding assert the *intended* behaviour and report **XFAIL** while the
@@ -106,7 +107,7 @@ the arm within seconds of start, unprompted (`ORIENTATION.md` §8.1).
 
 Everything short of that is checked: GPU and VRAM, RAM, disk, the `PYTHONNOUSERSITE` trap, ROS
 overlay completeness and the double-source trap, the venv and AnyGrasp's env (MinkowskiEngine), Aria auth,
-model weights and AnyGrasp licences, NIC addressing, arm ping and port 8080, LiDAR ping, RealSense
+whether the glasses are plugged in, model weights and AnyGrasp licences, NIC addressing, arm ping and port 8080, LiDAR ping, RealSense
 USB, and — when a ROS graph is already running — node list, camera frame rates, `/joint_states`,
 and the two TF links that gate every grasp.
 
@@ -200,10 +201,10 @@ misclassified as vendor and stop failing the build.
 Deliberately out of scope for now, in rough order of value:
 
 1. ~~**Does the C++ compile.**~~ Now `build.sh` on the lab box (arm workspace 22/22;
-   `Navigation_Module` not yet built).
+   `Navigation_Module` not yet built; `build.sh nav` now does the Livox prep).
 2. **Does a node behave** — partly built: the simulated-arm, e-stop and state-machine scripts above.
-   Still to do: `object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay` and
-   `pose_publisher` against a mock `navigate_to_pose` server (TESTBENCH_PLAN W7).
+   The nav nodes against a mock `navigate_to_pose` server are written (`nav_nodes.sh`, TESTBENCH_PLAN
+   W7) but not yet run on the box.
 3. **Replay against real data.** A 30-second rosbag of `/camera/camera/*`,
    `/livox/lidar`, `/aria/audio/prompt` and `/tf` recorded once on the lab
    machine would turn (2) from synthetic into real. Cheap to capture, high value,

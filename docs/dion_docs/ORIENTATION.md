@@ -447,7 +447,7 @@ one subsystem; these six topics are the seams between them.
 | `/manipulator/return_to_user` | `Bool` | arm → nav | "got it, take me back" |
 | `/return_to_user/goal_reached` | `String` `"success"`/`"failed"` | nav → orchestrator | return leg done |
 | `/goal_reached` | `String` | nav → approach node | resets the approach guard |
-| `/manipulator/release` | `Bool` | voice → orchestrator | "let go" |
+| `/manipulator/release` | `Bool` | **nothing publishes it** `[code]` (CODE_AUDIT D1). Intended: voice → orchestrator | "let go" |
 | `/manipulation/done` | `Empty` | → approach node | cycle finished |
 
 `[code]` `object_approach_node` subscribes to **five** topics, not the two you would guess:
@@ -1114,6 +1114,7 @@ options, none free:
 | 2026-09-09 | Claude (Opus 5), from a full read of `main` @ `2d36a89` | Initial version. Structure, reading order, topic map, three severed seams, HiCo-Nav surface. No hardware available; nothing runtime-verified. |
 | 2026-09-09 | Claude (Opus 5), from agent-assisted deep pass on `src/` and `Navigation_Module/` | **Corrected** `/aria/fused_pose` frame (`robot_base_link`, not `map`). Added §6.4 (pose fusion README vs code), §8.6 (missing `xpkg_demo`), §8.7 (three `/cmd_vel` claimants), Nav2 plugin table in §10, and the `base_link`/`robot_base_link` static-TF caveat in §5. |
 | 2026-09-09 | Claude (Opus 5), folding in the vendor-arm agent pass | Added §8.8 (fixed 1.5 m gaze depth assumption, external `realsense2_description` dependency, missing staleness guard) and §8.9 (dead code / debug leftovers). Expanded the contract table with `object_approach_node`'s full five-topic subscription list. |
+| 2026-09-12 | Claude (Opus 5) + Dion | §5: `/manipulator/release` has no publisher anywhere in the repo (CODE_AUDIT D1). The table said "voice → orchestrator", which is the intent, not the code. |
 
 ### Open questions for the team
 

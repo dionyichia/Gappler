@@ -13,15 +13,22 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 ---
 
-## ▶ Start here — next session (written end of 2026-09-11)
+## ▶ Start here — next session (updated 2026-09-12)
 
-**One paragraph (updated 2026-09-11, evening):** the bench runs on the lab box in `~/rcp-Gappler`.
+**One paragraph (updated 2026-09-12):** the bench runs on the lab box in `~/rcp-Gappler`.
 Done there: tiers 0–1, preflight, Tier 2 for the arm workspace, and Tier 3 on a private ROS channel —
 MoveIt on a simulated arm, the e-stop, the whole grasp state machine on the simulated arm, and the
 AnyGrasp env probe. The project `.venv` is rebuilt with uv; a scratch env showed AnyGrasp runs in
 **one** env (W5). Nothing physical has moved; Aria, arm and base are unplugged, so their checks fail or
-skip **as expected**. **Next: W4b — build `Navigation_Module`**, which should stop on the packages that
-exist only outside git (NEXT_STEPS §2.9). Dion's standing instruction: build the tests, survey, record —
+skip **as expected**. **The box went offline ~19:40 on 2026-09-11** (someone at the lab turned it off —
+`tailscale status`: offline); while it was off, the W4b prep and all of W7 were written on the Mac,
+neither yet run. **Still offline on 2026-09-12** (`tailscale status`: last seen ~4 h earlier), so
+**first check it is up** (`tailscale ping 100.87.133.60`); if not, someone at the lab must switch it on.
+**Then, in order:** `cd ~/rcp-Gappler && git pull` → `./bench/run.sh preflight` (the fixed glasses check
+should now FAIL "no glasses connected", confirm it) → W4b `./bench/build.sh nav` → W7 `./bench/nav_nodes.sh`
+(expect a first-run fix or two, see W7) → record each in `bench-runs/`, update this table, the test bench
+page and its artifact. The nav build should stop, if anywhere, on Livox-SDK2 not being installed
+— `robot_navigation` / `xpkg_demo` are only `exec_depend`s (NEXT_STEPS §2.9). Dion's standing instruction: build the tests, survey, record —
 **no fixes yet** — in `~/rcp-Gappler`, no real-world movement.
 
 **Status at a glance:**
@@ -32,17 +39,26 @@ exist only outside git (NEXT_STEPS §2.9). Dion's standing instruction: build th
 | W2 state machine, simulated arm | ✅ full cycle; **C7 reproduced**, B4 observed | [`…-w2-state-machine.txt`](bench-runs/2026-09-11-labbox-w2-state-machine.txt) |
 | W3 e-stop delivery | ✅ **B2a found** (Ctrl+C ignored); B2 loss not reproduced | [`…-w3-estop.txt`](bench-runs/2026-09-11-labbox-w3-estop.txt) |
 | W4a nav code vs `iot22` | ✅ repo newer; `robot_navigation`, `xpkg_demo` only outside git | [`…-w4a-nav-diff.txt`](bench-runs/2026-09-11-labbox-w4a-nav-diff.txt) |
-| **W4b nav build** | **next** | — |
+| **W4b nav build** | **next** — prep written (Livox manifest + CMake flags in `build.sh nav`), not run: box off | — |
 | W5 AnyGrasp env | ✅ survey: one env works (licence passed, grasps found). Making it permanent is held | [`…-w5-anygrasp-env.txt`](bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt) |
 | W6 AnyGrasp gate + replay | needs recorded frames = starting the camera driver → **ask Dion first** | — |
-| W7 nav node tests | after W4b | — |
+| W7 nav node tests | **written, not run** (box off): `./bench/nav_nodes.sh`, 10 cases, 4 xfail (F1 ×2, F2, E1). Doesn't need W4b | — |
 | W8 Tier 4 | human at the robot; Dion schedules it | — |
+| Preflight glasses check | **fixed, not run on the box**: `aria-sdk` used to PASS with the glasses unplugged (`aria auth check` exits 0 and prints "no devices connected"). Now FAIL "no glasses connected" | `bench/preflight.py` |
 
 **Found, not fixed (held — each becomes a branch for Dion's review):** `estop.py` ignores the Ctrl+C key
 and crashes on SIGINT (CODE_AUDIT B2, B2a) · the state machine never returns to IDLE after a grasp (C7)
 and homes to an unvalidated pose (B4) · `robot_navigation`, `xpkg_demo` and the livox `package.xml` are
 not in the repo (NEXT_STEPS §2.9, §3.1–3.2) · the AnyGrasp one-env recipe isn't in the repo and
 `main.py` still uses `conda run` (NEXT_STEPS §2.5) · 10 hardcoded `/home/iot22` paths (§2.5).
+
+**The two pages (keep them current):** both are written for readers new to code, including mechanical
+engineering students. Republish after each change, to the same link.
+
+| Page | Source | Link |
+|---|---|---|
+| Test bench: what each check covers, what it found, the simulated arm explained | `bench/testbench-map.html` | <https://claude.ai/code/artifact/cb1f53f5-3154-4271-be1e-4daf46fca7fe> |
+| Wiring map, with the tab "One grasp, start to finish" (17 steps: program, method, message, status today) | `docs/dion_docs/wiring-map.html` | <https://claude.ai/code/artifact/837635d4-0107-4248-83cc-ce1d7536d0ea> |
 
 **Box facts a session should know:** `/home` is **96 % full (14 GB free)** — the W5 scratch env
 `log/w5/` (~2 GB) and `~/rcp-old-ros-wkspace` (4.5 GB) are today's additions; ask before deleting
@@ -63,7 +79,9 @@ ROS channel is empty, so never skip that guard.
 | Model files | Copied into `~/rcp-Gappler` ✅. Long-term: one `assets/models/` folder (NEXT_STEPS §2.8) — later, with the reorg |
 | AnyGrasp env | **One env confirmed** (W5 survey): the project env + MinkowskiEngine etc. runs AnyGrasp. `iot22`'s conda is not used. Making it permanent is held |
 | Simulation | MoveIt with `mock_components` is allowed. `rm_driver` never. Private ROS channel always |
-| Robot config | Not edited by the bench. `bench/nodes/sim_arm.*` carries the simulated model (ORIENTATION §8.16) |
+| Robot config | Not edited by the bench. `bench/nodes/sim_arm.*` carries the simulated model (ORIENTATION §8.16); `bench/nodes/livox_package_ROS2.xml` the Livox manifest |
+| Writing | Dion's docs and pages: plain language, main point first, jargon only when needed and explained. Readers include mechanical engineering students. No em dashes, semicolons or emojis in pages |
+| Baselines | **Neither wanted** (Dion, 2026-09-11). The contracts snapshot keeps its `2d36a89-dirty` label — its content equals `3f37cab`'s, so re-taking it changes only the label. No static baseline (S1): the 7 known findings stay red |
 
 **Every session on the box:** connect over **tailscale**, which works from anywhere:
 `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60` (`HostKeyAlias` reuses the host key already
@@ -141,6 +159,16 @@ result is in `docs/dion_docs/bench-runs/` and the §8.15 fix (commit `package_RO
 > plan's list above assumed it was) and `demo/` = `xpkg_demo` (ORIENTATION §8.6). `iot22` also has the
 > generated ROS 2 livox `package.xml` that (b) needs. Importing the two packages is robot code → branch.
 
+> **(b) prep written 2026-09-11, not run (box off).** `./bench/build.sh nav` now copies
+> `bench/nodes/livox_package_ROS2.xml` (upstream Livox master's `package_ROS2.xml`, fetched 2026-09-11) to
+> the gitignored `livox_ros_driver2/package.xml` when it's missing — what the vendor `build.sh` does — and passes
+> `-DROS_EDITION=ROS2 -DHUMBLE_ROS=humble`. The livox launch files need no copy: its CMakeLists installs
+> `launch_ROS2/` directly (`CMakeLists.txt:326-329`) `[code]`. It warns up front if `liblivox_lidar_sdk_shared.so`
+> is missing (`find_library … REQUIRED`, `CMakeLists.txt:249`); installing Livox-SDK2 needs sudo, so the bench
+> doesn't. `Livox-SDk2/` has no `package.xml`, so colcon ignores it `[code]`. On the box: diff the template
+> against `~/rcp-old-ros-wkspace/src/livox_ros_driver2/package.xml` (`iot22`'s generated one, 29 lines)
+> `[unverified]`. Expect only `robot_slam`'s exec-depends (`xpkg_demo`) to be missing at run time, not at build.
+
 **W5 — AnyGrasp env, reproducibly.** What `iot22`'s env actually is `[observed]`: conda, Python
 3.10, torch 2.7.0 (but at runtime `~iot22/.local`'s torch 2.10 wins), **numpy 1.21.2**,
 MinkowskiEngine 0.5.4 (compiled by hand, unrecorded), open3d 0.18.0. The main env pins
@@ -178,11 +206,33 @@ driver — passive, but **ask Dion first**.
 recovery F1, goal bridge F1, return retry F2, fused-pose frame E1, QoS relay J4, robot pose). Need
 W4's build; a mock `navigate_to_pose` action server replaces Nav2 — nothing drives.
 
+> **Written 2026-09-11, not run (box off)** — `./bench/nav_nodes.sh` + `bench/nodes/test_nav_nodes.py`. It
+> starts each node from `robot_slam/scripts/` (the files `install(PROGRAMS)` installs), so **it doesn't need
+> W4b**; it needs ROS + `nav2_msgs`, and `scipy` / `tf2_geometry_msgs` in the ROS Python (a case whose node
+> can't import is SKIP, not pass). TF as `slam_localization.launch.py:102` publishes it. The guard also checks
+> hidden topics, so a live `navigate_to_pose` server on the channel refuses the run. 10 cases:
+>
+> | Case | Kind | Asserts |
+> |---|---|---|
+> | approach, far object | control | object lands at the right map point through the yaw-π arm mount; one `/goal_pose` in `map` 0.78 m from it, facing it; no `/manipulation/start` |
+> | approach, near object | control | `/manipulation/start` true, no `/goal_pose` |
+> | approach, nav succeeds | control | approach → bridge → mock Nav2 succeeds → `"success"` → `/manipulation/start` |
+> | approach after nav failure | xfail F1 | Nav2 rejects goal 1; a second object still gets a `/goal_pose` |
+> | goal bridge, nav aborts | control | `/goal_reached` `"failed"` |
+> | goal bridge, server down | xfail F1 | `"failed"` within 6 s with no Nav2 |
+> | return retry | xfail F2 | return 1 with Nav2 down; return 2 with Nav2 back reaches Nav2 |
+> | fused pose frame | xfail E1 | a `robot_base_link`-stamped fused pose gives the goal the map pose implies, not the raw numbers |
+> | QoS relay | control (J4) | `/cloud_relay` publisher is BEST_EFFORT; ≥ 90 % of 50 frames of 20,000 points at 10 Hz arrive; latency printed |
+> | robot pose | control | `/robot_pose` 8–12 Hz, `map`, at the TF pose |
+>
+> Not verified by running: rclpy details (action-server teardown seen by a client's `wait_for_server` within
+> 2.5 s; `ros2 topic list --include-hidden-topics`) are `[inferred]` from Humble's API. Expect a first-run fix or two.
+
 **W8 — Tier 4** (record + hardware smoke) — **human at the robot**; not before Dion schedules it.
 
-**Bench chores alongside:** re-snapshot `bench/golden/contracts.json` on a clean commit (C3 — still
-`2d36a89-dirty`); S1 static baseline; C1 Aria publishers; add every new test to
-`bench/testbench-map.html` and republish (artifact `cb1f53f5-3154-4271-be1e-4daf46fca7fe`).
+**Bench chores alongside:** C1 Aria publishers; add every new test to `bench/testbench-map.html` and
+republish (artifact `cb1f53f5-3154-4271-be1e-4daf46fca7fe`). (C3's re-snapshot and S1's static baseline are
+dropped — Dion, 2026-09-11; see Decisions.)
 
 **Open, not blocking:** the box's CPU is throttled (800 MHz, 90 °C — ask who maintains it);
 ORIENTATION §8.16's decision (fix the config's simulated-arm launch, or keep it in `bench/`).
@@ -194,9 +244,9 @@ ORIENTATION §8.16's decision (fix the config's simulated-arm launch, or keep it
 | Thing | State |
 |---|---|
 | Tiers 0–1 (contracts + static) | Working on the Mac and the box. Static: the same 7 pre-existing owned-code findings (no baseline yet — S1); contracts PASS |
-| Preflight | Runs on the box. `gpu`/`env`/`assets`: 12 of 13 pass — the fail is `anygrasp-env` on the project env (expected until W5 is made permanent). Arm, LiDAR and Aria checks fail or skip: unplugged |
-| Tier 2 (build) | Arm workspace 22/22 (27 min 41 s, CPU throttled). `Navigation_Module` not built yet (W4b) |
-| Tier 3 (node behaviour) | `sim_moveit.sh` PASS · `estop_delivery.sh` PASS, found B2a · `state_machine_sim.sh` PASS, C7 XFAIL · `anygrasp_env.sh` PASS in the W5 scratch env. The 8 nav node tests not written (W7) |
+| Preflight | Runs on the box. `gpu`/`env`/`assets`: 12 of 13 pass — the fail is `anygrasp-env` on the project env (expected until W5 is made permanent). Arm, LiDAR and Aria checks fail or skip: unplugged. (The Aria check wrongly passed until the 2026-09-11 fix, not yet run on the box) |
+| Tier 2 (build) | Arm workspace 22/22 (27 min 41 s, CPU throttled). `Navigation_Module` not built yet (W4b); `build.sh nav` has the Livox prep |
+| Tier 3 (node behaviour) | `sim_moveit.sh` PASS · `estop_delivery.sh` PASS, found B2a · `state_machine_sim.sh` PASS, C7 XFAIL · `anygrasp_env.sh` PASS in the W5 scratch env. `nav_nodes.sh` (W7, 10 cases) written, not run |
 | Tier 4 (replay + hw smoke) | Not started — needs a person at the robot |
 | `docs/dion_docs/CODE_AUDIT.md` | 45 findings + B2a. B2, B4, C7 now observed; the rest `[unverified]`. Published privately: <https://claude.ai/code/artifact/63cc961e-e49a-4421-9132-fec0f3e35822> |
 | Lab box access | tailscale (see Start here). All work in `~/rcp-Gappler`; `rcp-desktop` / `rcp-github` untouched |
@@ -581,3 +631,6 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-11 | Claude (Opus 5) + Dion | **W2 done**: full grasp cycle on the simulated arm, C7 reproduced. W5 test written, scratch MinkowskiEngine build under way (survey only). `~iot22/Ros2Workspaces` copied to `~/rcp-old-ros-wkspace`. Decisions recorded: W2 allowed (sim only), no fixes yet. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W5 survey answered**: one uv env runs AnyGrasp (licence passed, demo grasps found) on torch 2.10 / numpy 2 — recipe in `bench-runs/`. Productising it is held. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Cold-start refresh: docs now at `docs/dion_docs/`; Start here rewritten (status table, held fixes, box facts), tailscale as the default route, §0 updated. |
+| 2026-09-11 | Claude (Opus 5) + Dion | Box went offline (~19:40). On the Mac: **W4b prep** (`build.sh nav` Livox manifest + flags + SDK warning) and **W7 written** (`nav_nodes.sh`, 10 cases, 4 xfail); neither run. Decision: no contracts re-snapshot, no static baseline. |
+| 2026-09-11 | Claude (Opus 5) + Dion | Preflight `aria-sdk` passed with the glasses unplugged (`aria auth check` exits 0 and prints "no devices connected"): now FAIL "no glasses connected". Test bench page rewritten in plain language, with a simulated-arm section. Wiring map: new tab "One grasp, start to finish". Confirmed CODE_AUDIT D1 (nothing publishes `/manipulator/release`) and corrected ORIENTATION §5, which said "voice → orchestrator". |
+| 2026-09-12 | Claude (Opus 5) + Dion | Cold-start refresh: box still offline, so Start here now opens with "check it's up" and the run order (preflight, W4b, W7). Added the two pages and the writing decision. |

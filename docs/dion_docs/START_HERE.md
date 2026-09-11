@@ -78,9 +78,14 @@ ends with an explicit list of what it could **not** check and why. Run it before
 refactor. On the lab box it also has Tier 2–3 scripts — the arm build, MoveIt and the grasp state
 machine on a simulated arm, the e-stop, the AnyGrasp env. See [`bench/README.md`](../../bench/README.md).
 
-Plus [`wiring-map.html`](wiring-map.html) — the interactive version of ARCHITECTURE (clickable
-drill-down, searchable topic table). Publish it as an Artifact to get a shareable link; the source
-lives here so it travels with the repo and anyone can republish under their own account.
+Plus [`wiring-map.html`](wiring-map.html), the visual version of ORIENTATION in plain language. Its
+second tab, **"One grasp, start to finish"**, follows one grasp from your voice to the gripper opening:
+which program runs at each step, what method it uses, what it sends, and whether it works today. Start
+there if the system is new to you. Published at
+<https://claude.ai/code/artifact/837635d4-0107-4248-83cc-ce1d7536d0ea>. The test bench has its own page,
+[`../../bench/testbench-map.html`](../../bench/testbench-map.html), published at
+<https://claude.ai/code/artifact/cb1f53f5-3154-4271-be1e-4daf46fca7fe>. Sources live here so they travel
+with the repo, and anyone can republish them under their own account.
 
 ## `hico-nav/` — everything about the paper we are integrating
 
@@ -112,12 +117,18 @@ Honour the provenance tags: `[code]` verified by reading source · `[reported]` 
 `[inferred]`, promote it and say how. If you are Dion's session and something here is wrong, delete it — a
 confidently wrong doc is worse than none. Anyone else: rule 3 above.
 
-## Where work stands (2026-09-11, evening)
+## Where work stands (2026-09-12)
 
-- **Test bench — Dion's current work:** [`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md) → "▶ Start here". Tiers 0–3
-  run on the lab box (reach it over tailscale). The new tests have already found real bugs: the e-stop
-  ignores Ctrl+C (CODE_AUDIT B2a), and the grasp state machine handles one object per launch (C7).
-  AnyGrasp runs in the project's single uv env — no conda needed. **Next: build `Navigation_Module`.**
+- **Test bench, Dion's current work:** [`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md) → "▶ Start here". Tiers 0–3
+  run on the lab box (reach it over tailscale). The tests have found real bugs: the e-stop ignores
+  Ctrl+C (CODE_AUDIT B2a), and the grasp state machine handles one object per launch (C7). AnyGrasp runs
+  in the project's single uv env, no conda needed.
+- **The lab box has been off since the evening of 2026-09-11.** Written on the Mac and waiting to run:
+  the navigation build prep (`./bench/build.sh nav`), 10 navigation node tests (`./bench/nav_nodes.sh`)
+  and a fix to the glasses check, which passed with the glasses unplugged. **Next: get the box back on,
+  then run those three.**
+- **Pages:** the wiring map and the test bench page are rewritten in plain language for readers new to
+  code (links above). Dion's docs follow the same rule.
 - **Standing rule: no fixes yet.** Findings are recorded; fixes come later, on branches for review.
 - **Things the robot needs that live outside git** — `robot_navigation`, `xpkg_demo`, the SLAM map and
   more: [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.9. The lab box now has a copy of `iot22`'s navigation
@@ -135,3 +146,4 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 |---|---|---|
 | 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `dion_docs/` as more contributors join (moved to `docs/dion_docs/` the same evening). Added "How the docs are organised": the per-person `docs/<name>_docs/` convention, reading order, rules for every session. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Folder moved to `docs/dion_docs/`; per-person folders now live under `docs/`. "Where work stands" refreshed for a cold start; `bench-runs/` added to the table. |
+| 2026-09-12 | Claude (Opus 5) + Dion | "Where work stands" refreshed: box off, three things waiting to run. `wiring-map.html` entry updated for the new tab and both page links. |

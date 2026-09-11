@@ -375,6 +375,11 @@ def g_env() -> list[Check]:
         last = out.strip().splitlines()[-1][:120] if out.strip() else f"rc={rc}"
         if "Traceback" in out:      # the CLI itself is broken, not the pairing
             cs.append(c.bad(f"aria CLI crashed: {last}", "fix the venv (see TESTBENCH_PLAN W1)"))
+        elif "no devices connected" in out.lower():
+            # The CLI works but finds no glasses. It can still exit 0 here, which used to
+            # pass as "authenticated" with the glasses unplugged (2026-09-11 box run).
+            cs.append(c.bad("aria CLI works, but no glasses are connected over USB",
+                            "plug in the glasses, then re-run"))
         elif rc != 0:
             cs.append(c.warn(last, "run `aria auth pair`"))
         else:
