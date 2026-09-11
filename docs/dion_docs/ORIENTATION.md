@@ -18,7 +18,7 @@ refute one, retag it and say how.
 
 ## 0. How to use this document
 
-**Doc index:** [`dion_docs/START_HERE.md`](START_HERE.md) — what each document is for and where work stands.
+**Doc index:** [`docs/dion_docs/START_HERE.md`](START_HERE.md) — what each document is for and where work stands.
 
 **Companion documents:** [`ARCHITECTURE.md`](ARCHITECTURE.md) has the same information as
 diagrams (Mermaid, renders on GitHub) — prose here, pictures there.
@@ -327,7 +327,7 @@ Follow this with the files open. Times are rough.
 |---|---|---|
 | 1 | `shared/config.yaml` | 20 lines. Every Aria-side topic name in one place. Read this first — it *is* the interface. |
 | 2 | `src/config/ros2.py` | Shows how that YAML becomes the `ROS2Topics` enum used everywhere. |
-| 3 | `dion_docs/ORIENTATION.md` §5 | The full topic table below. Skim, don't memorise. |
+| 3 | `docs/dion_docs/ORIENTATION.md` §5 | The full topic table below. Skim, don't memorise. |
 | 4 | `src/main.py` | The Aria entry point. Focus on `ProcessPipelineBuilder` (lines 30–113): each `add_*` method starts one subsystem. **Note which are commented out at 107–112.** |
 | 5 | `ros2_robot_ws/src/main.py` | The robot entry point. A plain sequential launcher — read the numbered comments. |
 | 6 | `ros2_robot_ws/src/orchestrator.py` | 146 lines. The highest-level state logic: wait for start → launch → wait for release. Note most subscriptions are commented out. |

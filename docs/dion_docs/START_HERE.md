@@ -15,7 +15,7 @@ are never mistaken for another's, **docs live in per-person folders at the repo 
 
 | Folder | Whose | What's in it |
 |---|---|---|
-| **`dion_docs/`** (this folder) | Dion | **The shared reference everyone starts from** — what the system is (`ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `hico-nav/`) — plus Dion's own plans and session records (`NEXT_STEPS`, `TESTBENCH_PLAN`, `bench-runs/`). |
+| **`docs/dion_docs/`** (this folder) | Dion | **The shared reference everyone starts from** — what the system is (`ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `hico-nav/`) — plus Dion's own plans and session records (`NEXT_STEPS`, `TESTBENCH_PLAN`, `bench-runs/`). |
 | `<name>_docs/` | each other contributor | Their plans, session notes, handoffs and bench-run reports. |
 | `bench/` | shared | The regression bench — tooling, not docs. |
 | root `README.md` | — | Stale (a different upstream project). Ignore it. |
@@ -28,7 +28,7 @@ are never mistaken for another's, **docs live in per-person folders at the repo 
 3. [`ARCHITECTURE.md`](ARCHITECTURE.md) alongside it — the same thing as diagrams.
 4. Then by task: [`READING_GUIDE.md`](READING_GUIDE.md) to walk the code ·
    [`CODE_AUDIT.md`](CODE_AUDIT.md) before touching the grasp path · [`ASSETS.md`](ASSETS.md) before
-   setting up a machine · [`../bench/README.md`](../bench/README.md) before any refactor ·
+   setting up a machine · [`../../bench/README.md`](../../bench/README.md) before any refactor ·
    [`hico-nav/`](hico-nav/PAPER_REPORT.md) for the navigation paper.
 
 `NEXT_STEPS.md` and `TESTBENCH_PLAN.md` are **Dion's** work plans. Read them to know what is in
@@ -67,12 +67,12 @@ flight; they are not your to-do list unless you are working with Dion on that it
 | **[`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md)** | **The cold-start handoff for building the test bench.** State at handoff, safety rules for the lab machine, known bench bugs, and a phased plan from "establish which machine this is" through build, node-behaviour and replay tiers. | **When you pick up bench work.** Read §0–§3 before touching the lab machine. |
 | [`ASSETS.md`](ASSETS.md) | The files git doesn't hold — model weights and the `.venv` — with sizes, checksums, sources and why each is ignored. | Before copying or re-downloading a model file, or setting up a new machine. |
 
-Plus **[`../bench/`](../bench/README.md)** — the offline regression bench. `./bench/run.sh` checks,
+Plus **[`../../bench/`](../../bench/README.md)** — the offline regression bench. `./bench/run.sh` checks,
 in order: whether this machine can run the stack at all (GPU, RAM, ROS, weights, and whether the arm
 and LiDAR answer), whether the code is internally consistent, and whether a refactor moved any
 topic / frame / parameter contract. Stdlib-only, ~1 s, no ROS or hardware needed — and every run
 ends with an explicit list of what it could **not** check and why. Run it before and after any
-refactor. See [`bench/README.md`](../bench/README.md).
+refactor. See [`bench/README.md`](../../bench/README.md).
 
 Plus [`wiring-map.html`](wiring-map.html) — the interactive version of ARCHITECTURE (clickable
 drill-down, searchable topic table). Publish it as an Artifact to get a shareable link; the source
@@ -122,4 +122,4 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 
 | Date | Who | Change |
 |---|---|---|
-| 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `dion_docs/` as more contributors join. Added "How the docs are organised": the per-person `<name>_docs/` convention, reading order, rules for every session. |
+| 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `docs/dion_docs/` as more contributors join. Added "How the docs are organised": the per-person `<name>_docs/` convention, reading order, rules for every session. |

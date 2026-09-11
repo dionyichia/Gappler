@@ -21,7 +21,7 @@ src/models/sam3/sam3.pt
 /build_nav/
 /install_nav/
 
-# ---- Big / generated files — never commit (dion_docs/ASSETS.md lists what's needed and where from)
+# ---- Big / generated files — never commit (docs/dion_docs/ASSETS.md lists what's needed and where from)
 # Model weights and checkpoints
 *.pt
 *.pth

@@ -73,5 +73,5 @@ one configurable path instead of hardcoded ones. Tracked as NEXT_STEPS §2.8. Wh
 | Date | Who | Change |
 |---|---|---|
 | 2026-09-11 | Claude (Opus 5) + Dion | Created. Checksums, sizes, sources, why each is ignored; the accidental `log` rule; proposed `assets/models/`. |
-| 2026-09-11 | Claude (Opus 5) + Dion | Moved to `dion_docs/`. Root `.gitignore` now covers weights, recordings and archives explicitly; recorded why already-tracked big files stay. |
+| 2026-09-11 | Claude (Opus 5) + Dion | Moved to `docs/dion_docs/`. Root `.gitignore` now covers weights, recordings and archives explicitly; recorded why already-tracked big files stay. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added the `~/rcp-old-ros-wkspace` pointer (NEXT_STEPS §2.9). |

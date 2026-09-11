@@ -74,7 +74,7 @@ KNOWN_EXTERNAL |= {
     "joint_trajectory_controller", "joint_state_broadcaster", "robot_localization",
 }
 
-# Code we own and will refactor (dion_docs/ORIENTATION.md 2). Vendor findings are
+# Code we own and will refactor (docs/dion_docs/ORIENTATION.md 2). Vendor findings are
 # still reported, but under a separate heading -- they are pre-existing
 # conditions of the vendor drops, not things this refactor caused.
 from _common import OWNED_PREFIXES   # noqa: E402 -- single source; edit there

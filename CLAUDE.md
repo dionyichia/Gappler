@@ -9,14 +9,14 @@ refactored toward one-folder-per-node modular code.
 Several people work in this repo, each with their own Claude sessions. Docs live in per-person
 folders at the repo root: **`<name>_docs/`**.
 
-- **Everyone starts at [`dion_docs/START_HERE.md`](dion_docs/START_HERE.md), then
-  [`dion_docs/ORIENTATION.md`](dion_docs/ORIENTATION.md).** START_HERE explains the layout and the
-  reading order; `dion_docs/` holds the shared reference (ORIENTATION, ARCHITECTURE, READING_GUIDE,
+- **Everyone starts at [`docs/dion_docs/START_HERE.md`](docs/dion_docs/START_HERE.md), then
+  [`docs/dion_docs/ORIENTATION.md`](docs/dion_docs/ORIENTATION.md).** START_HERE explains the layout and the
+  reading order; `docs/dion_docs/` holds the shared reference (ORIENTATION, ARCHITECTURE, READING_GUIDE,
   CODE_AUDIT, ASSETS).
 - **Plans, session notes and handoffs you write go in your user's own `<firstname>_docs/`** (ask
   them if you don't know their name). Never edit another person's `*_docs/` folder, and never create
   a bare `docs/`.
-- **Dion's current work:** [`dion_docs/TESTBENCH_PLAN.md`](dion_docs/TESTBENCH_PLAN.md) — "▶ Start
+- **Dion's current work:** [`docs/dion_docs/TESTBENCH_PLAN.md`](docs/dion_docs/TESTBENCH_PLAN.md) — "▶ Start
   here" (decisions + work queue W1–W8). Only yours if you are working with Dion on the bench.
 - The root `README.md` is stale (a different upstream project). Ignore it.
 
