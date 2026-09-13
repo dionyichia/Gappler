@@ -16,7 +16,8 @@ short of an integration plan. Section 7 states what it does *not* answer.
 
 **Status tags**, consistent with the rest of `docs/dion_docs/`: `[paper]` stated explicitly in the PDF ·
 `[code]` verified by reading this repository · `[inferred]` my reasoning, not a fact in either
-source · `[open]` genuinely undecided.
+source · `[open]` genuinely undecided · `[upstream]` read from the upstream GitHub front page,
+README or file list on 2026-09-12, not from its code.
 
 ---
 
@@ -106,6 +107,10 @@ implementation — solver choice, ROS interface, node layout, actual dependency 
 paper, and the paper describes a method, not an API. Several §6 estimates would firm up
 considerably after one hour spent reading that repository's `package.xml` and launch files. I have
 flagged where that is the case.
+
+**Update 2026-09-12.** The repository's front page, README, `environment.yml` and file list have now
+been read, but not its code. It has no `package.xml` and no launch files: the public release is an
+evaluation setup for the Habitat simulator, not a ROS package (§5.6).
 
 ---
 
@@ -501,6 +506,61 @@ current stack, independent of Tier A, Tier B and the camera purchase, and it dir
 `grasp_state_machine.cpp:637-641` is commented out. A cascade *lowers* the update rate by design,
 which makes a missing staleness guard more dangerous, not less.
 
+### 5.6 Testing it needs a simulator, and upstream already has one
+
+**Every benchmark number in §4.8 came from the Habitat simulator, and the public code is exactly that
+evaluation setup.** `[upstream]` The repository is Python in a conda environment: `habitat-sim` 0.2.5
+on Python 3.9, one script per benchmark (`object_nav_hm3d.py`, `object_nav_mp3d.py`,
+`instance_nav_hm3d.py`, `text_nav_hm3d.py`), and a `habitat/` folder holding the evaluation loop. The
+README mentions no ROS, no launch files and no real robot. The code that ran on the paper's quadruped
+is not in the public release.
+
+**Why HiCo-Nav needs a simulator when the rest of our bench does not.** `[inferred]` The test bench
+([`../TESTBENCH_PLAN.md`](../TESTBENCH_PLAN.md)) checks each node with fake inputs: a fake navigation
+server that fails when told to, a simulated arm that follows every command exactly. That works
+because the bugs it looks for are about messages: who sends what, in which frame, and what happens
+after a failure. HiCo-Nav's value is in how a whole search plays out. Where it goes next depends on
+what it has seen, and what it has seen depends on where it went. "Does it find the mug sooner than
+today's code" cannot be checked with fake inputs. It needs a world that changes as the robot moves.
+Tier A and Tier B (§5.1) both need one.
+
+**Two simulators, answering two different questions.**
+
+| Question | Tool | What it shows | What it cannot show |
+|---|---|---|---|
+| Does our port still work as well as the original? | Habitat, with upstream's own evaluation scripts | Success rate and path efficiency on the paper's own scenes, directly comparable with §4.8 | Anything specific to our robot. `[inferred]` Habitat's standard tasks move an idealised agent in fixed steps, with no Nav2, no MID-360 and no real base |
+| Does it work on our robot, through our navigation stack? | A ROS 2 robot simulator, such as Gazebo or Isaac Sim | The whole chain: HiCo-Nav picks a goal, Nav2 plans, a simulated base drives, a simulated LiDAR and camera see the result | Real sensor noise and motion blur, which the paper blames for its 65 % small-object result (§4.9). Only the real robot shows that |
+
+**What already exists for a robot simulation.** `[code]`
+
+- **The base has a Gazebo model.** `Navigation_Module/src/urdf/xpkg_urdf_echo_plus/launch/ROS2/simulate.launch.py`
+  spawns `urdf/sim_base.xacro` into Gazebo. A plugin, `libgazebo_ros_planar_move.so`, slides it around
+  on `cmd_vel` and publishes `odom` (`simplified_model.xacro:181-194`). It has no sensors: no LiDAR,
+  no camera. The model the SLAM launch files actually load, `urdf/model.urdf`, has no simulator
+  settings at all.
+- **The arm has a separate Gazebo model**, in RealMan's `ros2_robot_ws/src/rm_gazebo`.
+- **Both use Gazebo Classic**, which reached end of life in January 2025.
+- **Missing:** a simulated MID-360 and D455, the arm mounted on the base, and a model of the lab.
+  `[unverified]` whether a maintained MID-360 simulator plugin exists for ROS 2 Humble.
+
+**A design choice this suggests.** `[inferred]` Keep the algorithm in plain Python with no ROS inside
+it, and wrap it in a thin ROS node. Then the same code runs in upstream's Habitat setup, to check it
+against the paper, and on the robot. This also fits the one-folder-per-node refactor. If the port
+mixes ROS calls into the algorithm, the Habitat check stops being possible.
+
+**Costs to know before starting.**
+
+- `[upstream]` The HM3D scenes need a Matterport account (a token ID and secret) and a download of the
+  training and validation scenes. `[unverified]` their size. Check `df -h ~` on the lab box first:
+  `/home` had 14 GB free on 2026-09-11.
+- `[upstream]` This Habitat setup runs on Python 3.9. ROS 2 Humble uses Python 3.10, so Habitat needs
+  its own environment, as AnyGrasp already does (TESTBENCH_PLAN W5).
+- An Isaac Sim install exists under `~iot22` ([`../NEXT_STEPS.md`](../NEXT_STEPS.md) asset table), but
+  that folder is off limits, so using Isaac Sim means a fresh install. `[unverified]` whether the
+  4060 Ti can run it next to SAM 3.
+- `[inferred]` A robot simulation has to run on a private ROS channel, like every Tier 3 test. A
+  simulated Nav2 publishes `/cmd_vel`, and on the shared channel the real base would obey it.
+
 ---
 
 ## 6. Results — the blocker register
@@ -634,6 +694,7 @@ Recording these so they are not re-litigated:
 | 6.4 | VLM endpoint: cloud vs local | 🟠 | Days + policy check | Dion + supervisor |
 | 6.5 | ILP and TSP solver choice / licensing | 🟡 | Hours–days | Engineering |
 | — | Camera mount design | 🟠 | Weeks, **in parallel with 6.1** | Engineering |
+| 5.6 | A simulator to test navigation in | 🟡 | Days (Habitat), weeks (a robot simulation) | Engineering |
 
 ---
 
@@ -646,8 +707,9 @@ Per the brief, no integration plan has been written. Specifically left open:
 - Node decomposition, topic names, launch-file structure.
 - Which of the seven contract topics in `ORIENTATION.md` §5 the CMG takes over (`NEXT_STEPS` §1.3
   is *narrowed* by §5.3 above, not closed).
-- Whether the upstream implementation is ROS 2, ROS 1 or standalone — **unknown, and it materially
-  affects effort.** This is the highest-value hour of follow-up available.
+- **Answered 2026-09-12 (§5.6):** whether the upstream implementation is ROS 2, ROS 1 or
+  standalone. `[upstream]` It is standalone Python on the Habitat simulator, with no ROS in its README
+  or file list. The ROS layer is ours to write.
 - Frame conventions: the paper's 2D exploration map versus Nav2's costmap; whether the CMG lives in
   `map` or in its own frame.
 - How the CMG is persisted across runs, if at all.
@@ -656,11 +718,13 @@ Per the brief, no integration plan has been written. Specifically left open:
 
 1. **Now, before anything else:** raise the D455 purchase (§6.1). Start the mount design in
    parallel.
-2. **This week, one hour:** read `github.com/xukuanHIT/HiCo-Nav` — `package.xml`, launch files,
-   `requirements.txt`, node graph. Resolves §6.5 entirely and most of §7.1.
+2. **This week, one hour:** read `github.com/xukuanHIT/HiCo-Nav`. Started 2026-09-12: there is no
+   `package.xml` and no launch files (§5.6). Still to read: `requirements.txt` (settles §6.5) and how
+   `map/`, `planner/` and `vlm/` split the work.
 3. **While the camera is on order:** prototype **Tier A** (frontier utility + WTRP → `/goal_pose`).
    It is LiDAR-only, needs no camera, drops in beside `goal_reached_publisher.py`, and is the
-   largest single ablation contributor. Best available use of the procurement wait.
+   largest single ablation contributor. Best available use of the procurement wait. Set up upstream's
+   Habitat evaluation first (§5.6), so the prototype has a baseline to be measured against.
 4. **On camera arrival:** extrinsic calibration (§6.3), then measure camera-pose quality to settle
    §6.2, then build **Tier B**.
 5. **Revisit Tier C only if** Nav2's controller proves inadequate for dynamic obstacles. Not before.
@@ -706,5 +770,6 @@ productive than forcing the binary.
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-09-12 | Claude (Opus 5) + Dion | Added §5.6 (testing needs a simulator: upstream is a Habitat evaluation setup with no ROS, and what exists here for a robot simulation). New `[upstream]` tag. Updated the §2 limitation note, §6.7 register, §7.1 ROS question and §7.2 steps 2–3. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §4.4a (the object-registration cascade — SAM runs on keyframes, not frames) and §5.5 (it answers `NEXT_STEPS` §2.1 and promotes that item's `[inferred]` two-stage row). |
 | 2026-09-10 | Claude (Opus 5) + Dion | Created. Full read of the paper; confirmed the RGB-D blocker, answered the goals-vs-velocities question, narrowed the scoping question, and surfaced three previously unrecorded dependencies (FAST-LIVO2, extrinsic calibration, VLM endpoint). No integration plan by design. |

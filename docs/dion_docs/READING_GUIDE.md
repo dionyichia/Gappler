@@ -11,8 +11,8 @@ most instructive parts, so they are kept rather than tidied away.
 > ## 📍 RESUME HERE
 >
 > **Round 1: complete** (2026-09-09) — questions answered and marked in §1.4.
-> **Round 2: written but NOT YET READ.** Start at §2 below.
-> Two of Round 2's three check questions are still open (§2.8).
+> **Round 2: complete** (2026-09-13) — all three check questions answered in §2.8.
+> **Next: Round 3** (§3), the robot path. Read ORIENTATION §8.1–§8.3 *before* starting it.
 >
 > Rounds 3 and 4 are outlined in §3 and §4; the per-file reading order is in ORIENTATION §4.
 
@@ -186,7 +186,7 @@ addendum in ORIENTATION.
 
 ---
 
-## 2. Round 2 — the perception path (~1.5 h) ← **START HERE**
+## 2. Round 2 — the perception path (~1.5 h)
 
 **Goal:** understand how a spoken sentence becomes a segmented object, and see exactly where
 seam #2 sits.
@@ -211,32 +211,46 @@ Each consumer re-parses it independently.
 ### 2.2 `audio_streaming_pipeline.py` — the one path that works today
 
 The observer is a **ring buffer, not a queue** (`audio_streaming_client_observer.py:27`): a
-lock-guarded 7-channel numpy array that wraps around. The pipeline polls it once per second and
-pushes a snapshot into a depth-1 queue.
+lock-guarded 7-channel numpy array that wraps around (`:38-43`). The pipeline polls it once per
+second and pushes a snapshot into a depth-1 queue — the loop is paced to
+`ITERATION_INTERVAL_SECONDS = 1` at `audio_streaming_pipeline.py:173-187`.
 
 Why different from every other sensor? Because audio is **continuous** — you cannot drop a chunk
-mid-word the way you can drop a video frame. The ring buffer keeps the last 10 seconds so Whisper
-always receives a coherent window.
+mid-word the way you can drop a video frame. The ring buffer keeps the last 10 seconds
+(`MAX_BUFFER_SECONDS = 10`, `src/config/audio_streaming_pipeline_config.py:6`) so Whisper always
+receives a coherent window.
 
 Then `audio_worker`: mix 7 channels → mono, resample 48 kHz → 16 kHz, normalise, Whisper, LLM.
-Note the dedup at lines 115-124 — if the transcription is unchanged it skips the LLM entirely.
+Note the dedup at `audio_streaming_pipeline.py:115-124` — if the transcription is unchanged it
+skips the LLM entirely. It does **not** skip the publish (`:128` runs either way), which combined
+with the 10 s window over a 1 s loop means one spoken word is re-published ~10 times. That is
+CODE_AUDIT J1, and it matters again in §2.3.
 
 ### 2.3 `prompt_extractor.py` — read the system prompt as a spec
 
 This file *is* the voice UX. The prompt says: return only the object, return the **last** one if
 several, return `"end"` for stop/kill/cancel.
 
-Then look at the hardcoded fallback below it — a literal `termination_keywords` set checked
-independently of the model. **Someone did not trust a 0.5 B model to reliably recognise "stop".**
-That is a sound instinct and worth copying: a kill word must never depend on a model's judgement.
+Then look at the hardcoded fallback below it (`prompt_extractor.py:101-113`) — a literal
+`termination_keywords` set checked independently of the model. **Someone did not trust a 0.5 B model
+to reliably recognise "stop".** That is a sound instinct and worth copying: a kill word must never
+depend on a model's judgement.
+
+The instinct is right and the implementation is not: the membership test at `:110-111` is
+`kw in phrase.lower().split()`, which keeps punctuation, so `"Stop."` never matches — and it fires
+on any sentence merely *containing* one of the words. New CODE_AUDIT **B7**.
 
 ### 2.4 `image_streaming_pipeline.py` — RGB, gaze, ArUco
 
-`rgb_worker` publishes raw + undistorted RGB and rate-limits ArUco to every 0.5 s
-(`ARUCO_INTERVAL_S`). `et_worker` runs gaze inference and publishes a `Point`.
+`rgb_worker` (`:75`) publishes raw + undistorted RGB and rate-limits ArUco to every 0.5 s
+(`ARUCO_INTERVAL_S`, `:123`; detect-and-publish block `:121-145`). `et_worker` (`:148`) runs gaze
+inference and publishes a `Point` on `/aria/eye_tracking/gaze_estimate` (publisher `:153-157`,
+publish `:187-189`). Both are child processes of `stream_visual_feed` (`:199-210`), i.e. of
+`add_image_streaming` — which is one of the four stages commented out at `src/main.py:107-112`.
 
 Connect this to ORIENTATION §8.8 as you read: that `Point` comes from `project_gaze()`, which
-projects a **direction** onto a plane at a fixed assumed **1.5 m** (`config/eye_tracking.py`). The
+projects a **direction** onto a plane at a fixed assumed **1.5 m**
+(`DEFAULT_DEPTH_M`, `src/config/eye_tracking.py:5`). The
 eye tracker gives yaw/pitch, never distance. So the pixel is only correct for objects near 1.5 m —
 and that pixel is what decides *which object you meant*.
 
@@ -244,14 +258,14 @@ and that pixel is what decides *which object you meant*.
 
 Do not read top to bottom. This order:
 
-1. **`_setup_ros_node` (line 112)** — every input and output in one method. Read it twice.
-2. **`run` (line 267)** — the main loop. Notice it is driven by *frame-ID comparison*, not callbacks.
-3. **`_find_closest_mask` (line 499)** — the gaze→object logic. If gaze falls *inside* a mask take
+1. **`_setup_ros_node` (line 115)** — every input and output in one method. Read it twice.
+2. **`run` (line 266)** — the main loop. Notice it is driven by *frame-ID comparison*, not callbacks.
+3. **`_find_closest_mask` (line 501)** — the gaze→object logic. If gaze falls *inside* a mask take
    it; otherwise nearest by pixel distance.
-4. **`_find_matching_ros_mask` (line 527)** — cross-camera confirmation. Feature-match
+4. **`_find_matching_ros_mask` (line 532)** — cross-camera confirmation. Feature-match
    Aria↔RealSense, keep only matches landing inside the Aria mask, then pick the RealSense mask
    containing the most of them. The cleverest idea in the codebase.
-5. **Line 384** — the commented-out call. **Seam #2, physically.**
+5. **Line 389** — the commented-out call. **Seam #2, physically.**
 
 The `CameraFeed` / `RealSenseFrame` pattern at the top is worth internalising: a lock-guarded
 latest-value holder returning a defensive `.copy()` plus a monotonic ID; callers compare IDs to
@@ -271,12 +285,12 @@ wrapper.
 
 `[code]` `sam3_ros_node.py` and `object_recognition_pipeline.py` both declare the **same three
 topics**. This is ORIENTATION §6.5 and NEXT_STEPS §2.2. Knowing it in advance stops the natural
-"just uncomment line 384" instinct from producing a confusing failure.
+"just uncomment line 389" instinct from producing a confusing failure.
 
-### 2.8 Round 2 check questions — ⬜ NOT YET ANSWERED
+### 2.8 Round 2 check questions — answered 2026-09-13
 
 **Q1.** Both `sam3_ros_node.py` and `object_recognition_pipeline.py` produce a mask for the
-RealSense camera. If you closed seam #2 by uncommenting line 384 and left both running, what
+RealSense camera. If you closed seam #2 by uncommenting line 389 and left both running, what
 breaks?
 
 > *Answered in advance during the 2026-09-10 session, because it came up while investigating the
@@ -285,20 +299,82 @@ breaks?
 > model loads with separate CUDA contexts. See ORIENTATION §6.5.
 
 **Q2.** `_find_closest_mask` needs a gaze point. Given seam #1, what does it actually receive
-today, and what does it do then? ⬜ **open**
+today, and what does it do then?
 
-*(Hint: follow `_on_gaze` back to its publisher, then check whether that publisher's stage is one
-of the four commented out at `src/main.py:107-112`. Then read the first line of
-`_find_closest_mask`.)*
+Answered: gaze falling inside a mask wins; otherwise the nearest mask by pixel distance; the result
+is stored as the Aria inference state and handed to the ROS frame processing for feature matching.
+
+The mechanism is exactly right (`object_recognition_pipeline.py:501-530`, then `:334-344`). Three
+things that answer missed — and the third is the question that was actually asked.
+
+**(a) The hand-off is one iteration stale.** `[code]` The run loop snapshots shared state under the
+lock at `:274-278`, processes the Aria frame at `:289`, *then* the ROS frame at `:295`. So
+`_process_ros_frame` receives the `aria_inference_state` as it was **before** this iteration's Aria
+inference. The mask the cross-camera match runs against is always one loop behind.
+
+**(b) Nothing is actually locked.** `[code]` The guard at `:323-324` is commented out, so the Aria
+state is overwritten on every Aria frame despite the name `_aria_locked_image`. ORIENTATION §8.9
+already records this (`ORIENTATION.md:796`). The "locked" image is whatever arrived last.
+
+**(c) `_find_closest_mask` is never called today.** `[code]` Follow the chain:
+
+| Step | Where | Result |
+|---|---|---|
+| Only gaze publisher is `et_worker` | `image_streaming_pipeline.py:156` | part of `add_image_streaming` … |
+| … which is commented out | `src/main.py:111` | nothing publishes gaze |
+| So `gaze_point is None` → return `0` | `:506-507` | would take **the first mask SAM 3 returned** |
+
+Take the middle row seriously before the last one. Index 0 is not "the best mask": our code never
+sorts by score — `sam3_model.py:65-82` returns the processor's state untouched — so whether index 0
+is the best detection is upstream behaviour we have not checked. `[unverified]`
+
+**But it never even gets that far.** The same commented-out stage is what publishes the Aria image
+on `RGB_CAMERA_UNDISTORTED` (`image_streaming_pipeline.py:88`), which is the topic
+`_on_aria_image` subscribes to (`:131-133`). So `_on_aria_image` never fires, `CameraFeed.get()`
+returns `(None, -1)` (`:52-57`), `last_aria_id` starts at `-1` (`:269`), the check
+`aria_id != last_aria_id` (`:287`) is never true, and **`_process_aria_frame` never runs at all.**
+
+Worth stating plainly, because it is the trap this round exists to prevent: **uncomment line 389
+alone and you get no Aria mask, no gaze, `aria_inference_state is None` at `:377`, therefore no
+feature matching — and `_process_ros_frame` publishing *every* RealSense mask with no selection at
+all.** Wrong object, silently, nothing logged. **Seam #1 and seam #2 have to be closed together.**
 
 **Q3.** Why does the pipeline run SAM3 on the Aria image *and* the RealSense image, instead of
-segmenting once and reusing the result? ⬜ **open — the one worth sitting with**
+segmenting once and reusing the result?
 
-*(The answer explains why `feature_matching.py` has to exist at all.)*
+Answered: the robot's view and the user's view differ, so the same object has to be located in both
+and the two aligned. Right — and worth sharpening, because the reason is stronger than "the views
+differ".
+
+The two pieces of information the system needs live in spaces with **no transform between them**.
+Gaze exists only in Aria pixels. Depth and the whole arm TF chain exist only in RealSense pixels.
+And both cameras move independently — one head-mounted, one eye-in-hand on `Link6`
+(`ORIENTATION.md:1008`) — so there is no fixed extrinsic anyone could precompute. Segmenting once
+would leave the mask in a frame the arm cannot act in.
+
+Two alternatives came up: derive a transform from the matched keypoints, or use Aria depth plus the
+published 3D centroid. **The code deliberately does neither**, and that is the part worth keeping.
+`_find_matching_ros_mask` (`:532-613`) keeps the matches that fall inside the Aria mask
+(`:571-576`), then counts how many land inside each RealSense mask and takes the highest
+(`:589-597`). **A vote, not a fit.** It needs no calibration, no scale, no Aria-side depth, and it
+tolerates bad matches — because it only ever answers *"which of these masks"*, never *"where in
+3D"*. The 3D question is answered later, once, on the RealSense side where depth actually exists.
+
+Three footnotes, since both alternatives are more real than they look:
+
+- **Aria depth is reachable in principle** — the stereo SLAM cameras are handled in
+  `pose_streaming_pipeline.py` (`:88` names `camera-slam-left`/`-right`; `slam_worker`, `:112-232`,
+  publishes both). Nothing computes depth from them today.
+- **The geometric route exists in this repo — for navigation only.** `rgb_worker` publishes
+  `/aria/aruco_pose` (`image_streaming_pipeline.py:90-94`, `:121-145`), and `pose_fusion_node` uses
+  that detection to anchor the glasses' VIO into the map frame (`pose_fusion_node.py:10`, `:25-29`,
+  `:143`). So the project does solve a glasses↔robot geometry problem — with a fiducial, at a
+  coarser scale, for driving rather than grasping.
+- **The 3D centroid such a scheme would need is exactly the call commented out at `:389`.**
 
 ---
 
-## 3. Round 3 — the robot path (~2 h)
+## 3. Round 3 — the robot path (~2 h) ← **START HERE**
 
 Per-file order in ORIENTATION §4. Sequence and rationale:
 
@@ -335,3 +411,4 @@ unused in this mode.
 | Date | Who | Change |
 |---|---|---|
 | 2026-09-10 | Claude (Opus 5) + Dion | Created, capturing the Round 1 and Round 2 walkthroughs that previously existed only in a chat session. Round 1 questions answered and marked; Round 2 written but unread; Rounds 3-4 outlined. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Re-verified every line number in §2 against source after comments shifted them (`_setup_ros_node` 112→115, `run` 267→266, `_find_closest_mask` 499→501, `_find_matching_ros_mask` 527→532, seam #2 call 384→389; §2.7 and §2.8 Q1 follow). Added the missing cites in §2.2, §2.3 and §2.4. Round 2 Q2 and Q3 answered; Round 2 marked complete and the START HERE marker moved to Round 3. **Baseline:** §2's numbers are against the *working tree*, which in `object_recognition_pipeline.py` is 8 lines ahead of the last commit (the added comments); every other file cited is clean. |

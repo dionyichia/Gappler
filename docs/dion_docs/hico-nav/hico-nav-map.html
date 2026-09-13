@@ -98,6 +98,7 @@ code{font-family:var(--mono);font-size:.87em;background:var(--surface-2);
 .t-code{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}
 .t-inf{background:var(--surface-2);color:var(--ink-3);border:1px dashed var(--line-2)}
 .t-open{background:var(--caution-soft);color:var(--caution);border:1px solid var(--caution)}
+.t-up{background:var(--working-soft);color:var(--working);border:1px dashed var(--working)}
 
 .callout{border-radius:5px;padding:16px 18px;margin:0 0 20px;border:1px solid;
   border-left-width:4px;font-size:15.5px}
@@ -1265,6 +1266,7 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;
           <tr><td>3</td><td>LiDAR ↔ camera calibration</td><td>🟠</td><td>Days, after camera arrives</td><td>Engineering</td></tr>
           <tr><td>4</td><td>VLM endpoint: cloud or local</td><td>🟠</td><td>Days + policy check</td><td>Dion + supervisor</td></tr>
           <tr><td>5</td><td>Solver choice and licensing</td><td>🟡</td><td>Hours–days</td><td>Engineering</td></tr>
+          <tr><td>6</td><td>A simulator to test navigation in</td><td>🟡</td><td>Days (Habitat), weeks (robot simulation)</td><td>Engineering</td></tr>
         </tbody>
       </table>
     </div>
@@ -1374,8 +1376,9 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;
           <tr class="hi"><td>1</td><td><strong>Raise the D455 purchase.</strong> Start the mount
             design in parallel.</td><td>The only item measured in weeks. Everything visual queues
             behind it.</td></tr>
-          <tr><td>2</td><td><strong>Spend one hour on the upstream repository</strong> —
-            <code>package.xml</code>, launch files, dependency list.</td><td>Settles the solver
+          <tr><td>2</td><td><strong>Finish reading the upstream repository.</strong> Started 12 September:
+            there is no <code>package.xml</code> and no launch files. Still to read: the dependency
+            list and how the code is split.</td><td>Settles the solver
             question outright and most of the unknowns in the next column. Highest
             value-per-hour available right now.</td></tr>
           <tr><td>3</td><td><strong>Prototype Tier A</strong> — frontier scoring and WTRP ordering,
@@ -1391,6 +1394,19 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;
       </table>
     </div>
 
+    <h3>Testing it in a simulator</h3>
+    <p><span class="tag t-up">upstream</span> The public HiCo-Nav code is the Habitat simulator setup
+    that produced the paper's benchmark numbers: Python 3.9, one script per benchmark, and no ROS.
+    <span class="tag t-inf">inferred</span> That matters because our test bench checks nodes with fake
+    inputs, which works for message bugs but not for a search. Where HiCo-Nav goes next depends on what
+    it has already seen, so testing it needs a world that changes as the robot moves.</p>
+    <p>Two simulators answer two questions. <strong>Habitat</strong>, with upstream's own scripts, checks
+    that our port still scores like the paper. A <strong>robot simulator</strong> (Gazebo or Isaac Sim)
+    checks the whole chain through Nav2 on our base. <span class="tag t-code">code</span> The base
+    already has a Gazebo model that drives on <span class="topic">/cmd_vel</span>, but it has no LiDAR
+    or camera. Details, costs and a suggested code split in
+    <a href="PAPER_REPORT.md">PAPER_REPORT.md</a> §5.6.</p>
+
     <h3>Questions still open</h3>
     <ol class="body">
       <li>Is the MID-360's built-in IMU published in this workspace? Decides whether FAST-LIVO2 is
@@ -1399,8 +1415,9 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;
       <li>What is the real concurrent VRAM budget on the 4060 Ti with SAM 3 already resident?</li>
       <li>Does the arm's swept volume leave room for a forward-facing base camera, given the arm is
       mounted yawed 180°?</li>
-      <li>Is the upstream implementation ROS 2, ROS 1, or standalone? Unknown, and it materially
-      changes the effort estimate.</li>
+      <li><strong>Answered 12 September:</strong> is the upstream implementation ROS 2, ROS 1, or
+      standalone? Standalone Python on the Habitat simulator, with no ROS. The ROS layer is ours to
+      write.</li>
     </ol>
 
     <div class="callout c-note">
@@ -1423,7 +1440,7 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;
     version of this page) · <a href="../ORIENTATION.md">ORIENTATION.md</a> §10 (the integration
     surface) · <a href="../NEXT_STEPS.md">NEXT_STEPS.md</a> §1 (the decisions this closes) ·
     <a href="../wiring-map.html">wiring-map.html</a> (the current system).</p>
-    <p>Written 10 September 2026. Reconnaissance only — no integration plan, by design.</p>
+    <p>Written 10 September 2026. Simulator note added 12 September. Reconnaissance only — no integration plan, by design.</p>
   </footer>
 
   </main>

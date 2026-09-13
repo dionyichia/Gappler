@@ -323,12 +323,14 @@ class ObjectRecognitionPipeline:
         # if aria_image is None or aria_inference_state is not None:
         #     return
 
+        # Run the SAM model with the prompt to generate masks
         inference_state = self._generate_mask(aria_image, prompt)
         if inference_state is None:
             return
 
         masks = inference_state.get("masks")
         if len(masks) > 1:
+            # Pick the closest mask to the gaze point, return the idx of the closest mask
             best = self._find_closest_mask(masks, gaze_point)
             inference_state["masks"] = [masks[best]]
             inference_state["scores"] = [inference_state["scores"][best]]
@@ -359,6 +361,7 @@ class ObjectRecognitionPipeline:
         if ros_image is None or depth is None:
             return
 
+        # Run SAM generate masks from the wrist camera
         inference_state = self._generate_mask(ros_image, prompt)
         if inference_state is None:
             return
@@ -372,6 +375,8 @@ class ObjectRecognitionPipeline:
         filtered_kp1: Optional[np.ndarray] = None
 
         if aria_inference_state is not None and aria_locked_image is not None:
+            # If aria inference ran properly, state should be filled with best mask.
+            # Use feature matcher to find the cloest mask from the ROS frame 
             matched, filtered_kp0, filtered_kp1 = self._find_matching_ros_mask(
                 aria_locked_image, aria_inference_state, ros_image, inference_state
             )
@@ -449,7 +454,7 @@ class ObjectRecognitionPipeline:
         pt.point.z = z
         self._centroid_pub.publish(pt)
 
-        # Back-projected 3D centroid for visualisation
+        # Back-projected 3D centroid for visualisation, w.r.t wrist camera
         viz_pt = PointStamped()
         viz_pt.header = header
         viz_pt.header.frame_id = "camera_color_optical_frame"
@@ -460,7 +465,7 @@ class ObjectRecognitionPipeline:
 
         logger.debug(f"Centroid published: px=({cx_px}, {cy_px}) depth={z:.3f}m")
 
-        # Base link frame - 3D centroid publishing
+        # Base link frame - 3D centroid publishing, w.r.t base of robot
         try:
             stamped_in = PoseStamped()
             stamped_in.header = viz_pt.header
@@ -541,6 +546,7 @@ class ObjectRecognitionPipeline:
         aria_h, aria_w = aria_mask_np.shape
 
         try:
+            # Run feature matcher
             match_result = self._feature_matcher.match_frames(aria_image, ros_image)
             payload = pickle.dumps(match_result)
             msg = UInt8MultiArray()

@@ -510,7 +510,7 @@ Consequence: `pose_fusion_node` gets no `/aria/aruco_pose`, so `/aria/fused_pose
 
 ### 6.2 The gaze-selected mask never reaches the robot `[code]`
 
-`object_recognition_pipeline.py:384` — the one call that turns a chosen mask into a mask-image and
+`object_recognition_pipeline.py:389` — the one call that turns a chosen mask into a mask-image and
 a 3D centroid is commented out:
 
 ```python
@@ -582,9 +582,9 @@ So the code is shared; the **instances** are not.
 
 Both nodes publish the **same three topics** — `/camera/sam/mask`, `/object_centroid_2d`,
 `/object_centroid` (`object_recognition_pipeline.py:34-36`, `sam3_ros_node.py:30-32`). Right now
-only one of them actually does, because the pipeline's call site is commented out at `:384`.
+only one of them actually does, because the pipeline's call site is commented out at `:389`.
 
-⚠️ **Uncommenting `:384` while `sam3_ros_node` runs creates two publishers racing on the same
+⚠️ **Uncommenting `:389` while `sam3_ros_node` runs creates two publishers racing on the same
 topics**, with the state machine consuming whichever message lands last. Fix the ownership before
 closing the seam — see [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.2 for the comparison table and the
 target design.
@@ -789,7 +789,7 @@ Not bugs, but they mislead readers. Worth a cleanup pass someday:
   *class* is used, directly instantiated inside `ObjectRecognitionPipeline` (`:97`).
 - `_log_calibration()` (`pose_streaming_pipeline.py:53-109`) is defined, never called, and writes
   to a hardcoded relative `temp.txt`.
-- Raw `print()` instead of `logger` in several places: `object_recognition_pipeline.py:343`
+- Raw `print()` instead of `logger` in several places: `object_recognition_pipeline.py:345`
   (`"Success"`), `feature_matching.py:277` (`"HERE!"`), `pose_fusion_node.py:174,238`.
 - `MenuOverlay.topics` (`menu_overlay.py:22-32`) lists **5 of the visualizer's 6 view modes** —
   "Combined Visualization" is missing from the on-screen menu but the `6` key still works.
@@ -1133,3 +1133,4 @@ options, none free:
 5. Do we need §6.1 and §6.3 restored at all for the HiCo-Nav milestone, or only for the thesis
    demo?
 | 2026-09-11 | Claude (Opus 5) + Dion | §8.6: `Ros2Workspaces` never committed; copied to `~/rcp-old-ros-wkspace`. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Re-pointed citations shifted by the uncommitted comments in `object_recognition_pipeline.py`: §6.2 and §6.5 seam #2 call `:384`→`:389`, §8.9 raw `print()` `:343`→`:345`. Numbers are against the working tree, not HEAD. |

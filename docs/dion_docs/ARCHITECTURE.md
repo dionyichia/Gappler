@@ -142,7 +142,7 @@ flowchart LR
 | # | Where | What is disabled | Effect |
 |---|---|---|---|
 | 1 | `src/main.py:107-112` | 4 of 6 pipeline stages commented out — visualization, object recognition, image streaming, pose streaming | Glasses emit **only** `/aria/audio/prompt`. No RGB, gaze, ArUco, IMU. `/aria/fused_pose` never fires ⇒ "come back to me" is dead. |
-| 2 | `object_recognition_pipeline.py:384` | `_publish_mask_and_centroid(...)` call commented out | The gaze-selected mask never reaches the robot. `sam3_ros_node.py` does the job instead with a hardcoded prompt. |
+| 2 | `object_recognition_pipeline.py:389` | `_publish_mask_and_centroid(...)` call commented out | The gaze-selected mask never reaches the robot. `sam3_ros_node.py` does the job instead with a hardcoded prompt. |
 | 3 | `orchestrator.py:57-62` | Return-leg subscriptions commented out | Navigate-back-to-user is not wired. |
 | 4 | `pose_fusion_node.py:135-140, 243-289` | VIO subscription + handler commented out | Publishes an ArUco-only pose stamped `robot_base_link`, not the fused `map`-frame pose its README claims. ORIENTATION §6.4 |
 | 5 | `object_recognition_pipeline.py:34-36` vs `sam3_ros_node.py:30-32` | *Nothing* is disabled — both nodes claim the same three topics | Restoring cut 2 creates two publishers racing on `/object_centroid_2d`. Fix ownership first: NEXT_STEPS §2.2 |
@@ -505,3 +505,4 @@ See ORIENTATION §8.2 for the three self-annotated bugs in the EXECUTING branch.
 | 2026-09-09 | Claude (Opus 5) | Initial: L0, L-seams, L0b process boundaries, L0c contract sequence. L1/L2 pending agent results. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Cuts table now lists all five (added pose-fusion VIO and the duplicate-publisher collision). Linked NEXT_STEPS.md. |
 | 2026-09-09 | Claude (Opus 5) | Added L1a (arm end-to-end + rm_driver surface + TF chain), L1b (nav node graph, mapping-vs-localization, TF tree), L2 (process/thread model, latest-wins handoff), L2b (state machine transitions). Corrected `/aria/fused_pose` frame in L0c. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Cuts table: seam #2 citation `object_recognition_pipeline.py:384`→`:389`, shifted by uncommitted comments in that file. |

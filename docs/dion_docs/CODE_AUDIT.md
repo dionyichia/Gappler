@@ -192,6 +192,49 @@ The state machine does not subscribe to `/manipulation/start` at all; the orches
 *launching* it. Once running, any centroid starts the approach, whether or not navigation says the
 base is in position.
 
+### B7. The kill-word fallback misses punctuated speech, and fires on ordinary sentences `[unverified]`
+
+`src/services/prompt_extractor.py:110-111`
+
+```python
+if extracted in termination_keywords or any(
+    kw in phrase.lower().split() for kw in termination_keywords
+):
+    return AudioStreamingPipelineConfig.STOP_KEYWORD
+```
+
+`phrase` is the raw Whisper transcript. **`.split()` splits on whitespace only and keeps
+punctuation**, so Whisper's typical punctuated output *"Stop."* lowercases to `"stop."`, which is
+not the token `"stop"` and does not match. The first clause (`extracted in termination_keywords`)
+does not save it either — that one tests the *model's* output, so it only helps when the model
+already recognised the stop word.
+
+**The fallback therefore fails in exactly the case it exists to cover: the model missing the stop
+word.** That is the whole reason the set is hardcoded (`:101-109`).
+
+The same expression has the opposite failure. It matches any of `stop`, `kill`, `end`, `terminate`,
+`quit`, `cancel`, `abort` appearing **anywhere** in the transcript, so *"put it at the end of the
+table"* returns `STOP_KEYWORD` (`:113`) and the object name is lost. One line, both failure modes.
+
+*Aggravating factor:* repetition. The audio ring buffer holds 10 s (`MAX_BUFFER_SECONDS = 10`,
+`src/config/audio_streaming_pipeline_config.py:6`) while the poll loop runs once a second
+(`ITERATION_INTERVAL_SECONDS = 1`, `:4`; `audio_streaming_pipeline.py:173-187`), and an unchanged
+transcription is still published (J1, `audio_streaming_pipeline.py:128`). So a single spoken word is
+re-transcribed and re-published roughly **ten times** — a false positive is ~10 stop messages, and a
+genuine *"Stop."* is ~10 consecutive misses.
+
+**Not a duplicate of the neighbouring entries, and they should be read together:** J2 is the *model*
+path (the few-shot block ending in an empty completion), B7 is the *fallback* meant to back it up,
+and B3 is the fact that nothing in `rm_mtc` subscribes to the result anyway. All three sit on the
+one path from a spoken "stop" to a stopped robot.
+
+**Fix direction:** tokenise on word boundaries (`re.findall(r"[a-z']+", phrase.lower())`) and
+require the keyword to be the whole utterance or an edge token, not merely present in it.
+
+**To check:** call `extract_object()` directly on `"Stop."`, `"stop"` and
+`"put it at the end of the table"`. No hardware and no ROS needed — it is a pure function of the
+string, given a loaded model.
+
 ---
 
 ## C. 🔴 Concurrency defects in `grasp_state_machine.cpp`
@@ -422,7 +465,7 @@ trap on the exact topic you would open RViz to inspect.
 
 `grasp_state_machine.cpp` back-projects the centroid pixel using that `z` as if it were the depth of
 that pixel. For a tilted, large, or leaky mask the resulting 3D point is not on the object surface.
-Same code, same mismatch, in `object_recognition_pipeline.py:435-441`.
+Same code, same mismatch, in `object_recognition_pipeline.py:440-446`.
 
 ### G6. 🟡 No minimum-point guard before AnyGrasp
 
@@ -577,3 +620,5 @@ noticed roughly never. `ros2_robot_ws/src/main.py:165` polls every 2 s.
 | 2026-09-11 | Claude (Opus 5) + Dion | A1, B4: added what the box's two checkouts contain (read over SSH). Fixed B4's line citation for `main`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | B2 checked on the box: stop delivered 5/5 after SIGINT (loss not reproduced), but via a double-shutdown crash. New B2a: Ctrl+C key ignored by `estop.py`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | C7 reproduced and B4 observed on the simulated arm (`bench/state_machine_sim.sh`). |
+| 2026-09-13 | Claude (Opus 5) + Dion | New B7: the hardcoded kill-word fallback (`prompt_extractor.py:110-111`) misses punctuated speech and false-positives on any sentence containing a keyword. `[unverified]`, static only. Cross-referenced to J2 (model path) and B3 (no arm subscriber). |
+| 2026-09-13 | Claude (Opus 5) + Dion | G5 citation `object_recognition_pipeline.py:435-441`→`:440-446`, shifted by uncommitted comments in that file. |
