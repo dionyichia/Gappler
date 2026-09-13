@@ -15,6 +15,13 @@ session · `[inferred]` reasoning, not fact · `[open]` genuinely undecided ·
 
 **Priority key:** 🔴 blocks other work · 🟠 needed for the HiCo-Nav milestone · 🟡 quality/debt
 
+> ➡️ **This file is the register of everything we *could* do. What we *will* do, in what order and
+> who owns it, is now in [`PROJECT_PLAN.md`](PROJECT_PLAN.md)** — 11 milestones and 67 tasks over 20
+> weeks from 2026-09-14, with the three-way split validated, the scope written down, and the cut list
+> decided in advance. Visual version: [`next-steps-map.html`](next-steps-map.html)
+> (<https://claude.ai/code/artifact/72753a73-2ffc-4bb7-acfb-75ab297bed17>). Items here map onto task
+> IDs there — for example §2.5 is T0.3, §2.9 is T0.4, §2.2 is T2.0 and T2.1, §3.2 is T3.1.
+
 ---
 
 ## 1. Decide before writing code
@@ -128,11 +135,11 @@ What is actually duplicated:
 | Gaze disambiguation | yes, `_find_closest_mask` | none |
 | Cross-camera confirmation | yes, LightGlue | none |
 | Cameras | Aria **and** RealSense | RealSense only |
-| Publishes | `/camera/sam/mask`, `/object_centroid_2d`, `/object_centroid` (`:34-36`) — **call site commented out at `:384`** | the **same three topics** (`:30-32`) — live |
+| Publishes | `/camera/sam/mask`, `/object_centroid_2d`, `/object_centroid` (`:34-36`) — **call site commented out at `:389`** | the **same three topics** (`:30-32`) — live |
 
 **Two concrete hazards:**
 
-1. **Topic collision.** Both publish the identical three topics. Uncommenting `:384` while
+1. **Topic collision.** Both publish the identical three topics. Uncommenting `:389` while
    `sam3_ros_node` is running gives two publishers racing on `/object_centroid_2d`, and the state
    machine consuming whichever arrives last. *(This is the answer to Round 2 check-question 1.)*
 2. **Two model loads.** Two processes × 3.4 GB checkpoint, each with its own CUDA context, because
@@ -147,6 +154,26 @@ is the sole publisher of the mask/centroid topics. Both current call sites becom
 **Sequencing:** settle §1.3 and §2.1 first — the trigger policy and the source of truth for object
 identity both change what this service's interface should be. Unifying now and re-doing it after
 the HiCo-Nav scope lands would be wasted effort.
+
+#### `[open]` Decision: patch the prompt into `sam3_ros_node.py` now, or retire the node first?
+
+**Dion decides this later. No code changes until then** (the standing "no fixes yet" rule).
+
+What forces the question: `sam3_ros_node.py` never subscribes to `/aria/audio/prompt`, so on the
+path that runs today the arm only ever looks for the hardcoded word "box"
+(`sam3_ros_node.py:40`, `:114`). Full evidence in [`CODE_AUDIT.md`](CODE_AUDIT.md) **L1**, with the
+safety half of the same missing subscription in **B3**.
+
+| | **Option 1: patch in place** | **Option 2: decide ownership first** |
+|---|---|---|
+| What it is | Add a `/aria/audio/prompt` subscription to `sam3_ros_node.py` and make `TEXT_PROMPT` a default rather than a constant. | Retire `sam3_ros_node.py` and restore the pipeline call site at `object_recognition_pipeline.py:389`, which already handles the prompt and the stop keyword through `_on_prompt` (`:250`). |
+| Gains | Small, local, testable on its own. Restores voice retargeting on the path that actually runs. | Reaches the target design above in one step, and gaze disambiguation plus cross-camera confirmation come with it at no extra cost. |
+| Costs | Entrenches the duplicate segmentation node this section exists to retire, and adds a second prompt handler that has to be deleted again later. | Larger, and it depends on §1.3 and §2.1 being settled first, per the sequencing note above. |
+
+Either way, **ownership has to be settled before either change lands.** Hazard 1 above is the
+reason: uncommenting `object_recognition_pipeline.py:389` while `sam3_ros_node` is still running
+gives two publishers racing on the same three topics, with the state machine acting on whichever
+message arrives last. Same warning in [`ORIENTATION.md`](ORIENTATION.md) §6.5.
 
 ### 2.3 🟡 `dummy_mask_publisher.py` no longer works
 
@@ -612,3 +639,5 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-11 | Claude (Opus 5) + Dion | §2.7 refreshed: the bench's lab-box tiers exist; pointer to TESTBENCH_PLAN's Start here; `OWNED_PREFIXES` lives in `bench/_common.py`. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Added §2.10: one config tree. Inventory in CODE_AUDIT §K (38 of 54 owned topics declared outside `shared/config.yaml`). Recommends ROS parameters for topic names rather than imported constants, and flags that the dynamic enum blinds the bench's extractor, so TESTBENCH_PLAN C1 must be fixed before consolidating. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Added §2.11: box vendor code off from ours. 226 of 2,426 tracked files are ours; vendor and owned packages are siblings in both colcon workspaces, three AnyGrasp `.so` binaries are committed inside `rm_mtc/`, and `rm_ros_interfaces` holds 77 vendor messages plus 2 of ours. Proposes a `vendor/` folder per workspace, checked that colcon and ROS resolve by package name so a move is safe, and listed the three hardcoded paths that would break. Also flags that the reorg itself is referenced in four places but never specified. |
+| 2026-09-13 | Claude (Opus 5) + Dion | §2.2: added the open decision on whether to patch the `/aria/audio/prompt` subscription into `sam3_ros_node.py` now or retire the node first, with the trade-off table. Evidence is the new `CODE_AUDIT.md` L1. Also fixed the stale call-site citation `object_recognition_pipeline.py:384`→`:389` in both places it appears in §2.2 (the comparison table and hazard 1). ORIENTATION §6.5 and READING_GUIDE were re-pointed on 2026-09-13 and §2.2 was missed. Line numbers are against the working tree, which is ahead of the last commit in that file by some added comments. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Added the pointer to the new `PROJECT_PLAN.md`, which decides what of this register we actually do, in what order, and who owns it. This file stays the full register. |

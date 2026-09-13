@@ -151,6 +151,9 @@ graph: the only two subscribers are `goto_glasses.py:59` and `object_approach_no
 So "stop the robot" stops the base and leaves the arm running. The only arm stop is `estop.py`, in
 its own terminal, with the window focused (see B2).
 
+The same missing subscription also costs a capability, not just a safety property: the arm's
+segmentation target cannot be set by voice at all. That side of it is **L1**.
+
 ### B4. The home pose changed and the safety warning still quotes the old one
 
 `ros2_robot_ws/src/rm_mtc/include/rm_mtc/mtc_planner.hpp:40-47` (`realman_manip`; `:46-53` on `main`)
@@ -639,6 +642,49 @@ constant that both workspaces can import, so each file grows its own. `[inferred
 
 ---
 
+## L. Capability defects: the feature exists but the wiring stops short
+
+### L1. 🟠 Voice cannot change what the arm looks for: the target word is fixed in the source
+
+`[code]` Verified 2026-09-13 against the working tree, not against a commit.
+
+`ros2_robot_ws/src/rm_mtc/src/perception/sam3_ros_node.py` never subscribes to
+`/aria/audio/prompt`, so speech cannot change what the robot segments.
+
+- The node has exactly **one** `create_subscription`, and it is for `CameraInfo`
+  (`sam3_ros_node.py:52`). RGB and depth do not arrive that way: they come from two
+  `message_filters.Subscriber` objects (`:71-72`) feeding an `ApproximateTimeSynchronizer`
+  (`:73-75`). There is no other subscription in the file.
+- The target word is a module-level constant, `TEXT_PROMPT = "box"` (`sam3_ros_node.py:40`), handed
+  straight to `self.model.process_text_prompt(img, TEXT_PROMPT)` (`:114`). The file's own docstring
+  says so at `:8`: "Runs SAM3 inference with a fixed text prompt".
+- **The topic itself is live and correctly wired everywhere else.** Published by
+  `src/services/aria_device/stream/audio_streaming_pipeline.py:49-50` and `:127-128`, named in
+  `shared/config.yaml:14` as `audio_transcription_prompt: "/aria/audio/prompt"`, and subscribed by
+  `src/services/object_recognition/object_recognition_pipeline.py` (handler `_on_prompt` at `:250`,
+  which also acts on the stop keyword), `Navigation_Module/src/robot_slam/scripts/object_approach_node.py:81`
+  and `Navigation_Module/src/robot_slam/scripts/goto_glasses.py:60`.
+
+**What this means for an operator** `[inferred]`: on the robot path that actually runs today, the
+object being looked for is the literal word "box", fixed when the file was written. The whole voice
+chain (the Aria microphone, transcription, and the LLM object extraction in `prompt_extractor.py`)
+ends at the navigation nodes and at a segmentation call site that is commented out
+(`object_recognition_pipeline.py:389`). Ask for a bottle and the base will still drive, but the one
+segmentation node feeding the arm keeps hunting for a box, and nothing anywhere reports that the
+request was dropped.
+
+It compounds with **A3**: with `USE_SIMPLE_EXECUTE = true`
+(`ros2_robot_ws/src/rm_mtc/src/grasp_state_machine.cpp:41`), even a live prompt would only steer
+the visual servo. It would not select a grasp.
+
+**Related:** **B3** is the same missing subscription seen from the safety side (the kill word cannot
+reach the arm). The two ways to fix this, and the open decision between them, are in
+[`NEXT_STEPS.md`](NEXT_STEPS.md) §2.2. Read [`ORIENTATION.md`](ORIENTATION.md) §6.5 first: simply
+uncommenting `object_recognition_pipeline.py:389` while `sam3_ros_node` is running leaves two
+publishers racing on the same three topics.
+
+---
+
 ## What I did not audit
 
 - Vendor trees: `rm_driver`, `rm_control`, `rm_example`, `rm_arm_examples`, `rm_description`,
@@ -683,3 +729,4 @@ constant that both workspaces can import, so each file grows its own. `[inferred
 | 2026-09-13 | Claude (Opus 5) + Dion | New B7: the hardcoded kill-word fallback (`prompt_extractor.py:110-111`) misses punctuated speech and false-positives on any sentence containing a keyword. `[unverified]`, static only. Cross-referenced to J2 (model path) and B3 (no arm subscriber). |
 | 2026-09-13 | Claude (Opus 5) + Dion | G5 citation `object_recognition_pipeline.py:435-441`→`:440-446`, shifted by uncommitted comments in that file. |
 | 2026-09-13 | Claude (Opus 5) + Dion | New section K: the contract surface is not stated in one place. K1 (38 of 54 owned topics declared outside `shared/config.yaml`, with the breakdown by subsystem and the `/rm_driver/*` distinction), K2 (the `src/config/` constants pattern stops at `src/`). Measured with `bench/contracts.py extract`. |
+| 2026-09-13 | Claude (Opus 5) + Dion | New section L and finding L1: `sam3_ros_node.py` never subscribes to `/aria/audio/prompt`, so the segmentation target is the hardcoded `TEXT_PROMPT = "box"` (`:40`). `[code]`, verified against the working tree. Cross-referenced both ways with B3 (same missing subscription, safety side), and to `NEXT_STEPS.md` §2.2 and `ORIENTATION.md` §6.5. The audit now holds **49** findings (the "45" in the 2026-09-10 row is left as the count on the day it was written). |

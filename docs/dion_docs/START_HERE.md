@@ -32,6 +32,7 @@ are never mistaken for another's, **docs live in per-person folders inside `docs
    setting up a machine · [`../../bench/README.md`](../../bench/README.md) before any refactor ·
    [`hico-nav/`](hico-nav/PAPER_REPORT.md) for the navigation paper.
 
+`PROJECT_PLAN.md` is the **team** plan — milestones, task tree and owners for all three of us.
 `NEXT_STEPS.md` and `TESTBENCH_PLAN.md` are **Dion's** work plans. Read them to know what is in
 flight; they are not your to-do list unless you are working with Dion on that item.
 
@@ -64,6 +65,7 @@ flight; they are not your to-do list unless you are working with Dion on that it
 | **[`ORIENTATION.md`](ORIENTATION.md)** | **What the system *is*.** Repo map, ROS 2 primer, the full topic reference, the five severed seams, known defects and traps, hardware facts, the HiCo-Nav integration surface. | **First.** The main reference. Stays stable. |
 | **[`ARCHITECTURE.md`](ARCHITECTURE.md)** | The same information as **diagrams** — 9 Mermaid diagrams, L0 system down to L2 module level. Renders on GitHub. | Alongside ORIENTATION. Prose there, pictures here. |
 | **[`READING_GUIDE.md`](READING_GUIDE.md)** | A **guided walk through the code**, round by round, for someone new to ROS 2. What to notice in each file and why. Has check-yourself questions. | When you actually sit down to read the code. |
+| **[`PROJECT_PLAN.md`](PROJECT_PLAN.md)** | **The plan the team works to** — 11 milestones and 67 tasks over the 20 weeks from 2026-09-14, who owns each, what blocks what, what is in scope and what is not, and the cut list decided in advance. Answers whether three people can work in parallel (yes, from week 3, after two specific obstacles go). | **Before planning your own week.** Visual version: [`next-steps-map.html`](next-steps-map.html). |
 | **[`NEXT_STEPS.md`](NEXT_STEPS.md)** | **What we intend to *do*** — prioritised work register with the open decisions. | Planning. Churns; expect it to change. |
 | **[`CODE_AUDIT.md`](CODE_AUDIT.md)** | A **line-by-line read of every file we own**, publisher to subscriber. 45 findings, all `[unverified]` — static analysis only, nothing was run. Starts with the three interlocking defects that stop the grasp path working. | Before touching the grasp path, and before the first hardware run. |
 | **[`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md)** | **The cold-start handoff for building the test bench.** State at handoff, safety rules for the lab machine, known bench bugs, and a phased plan from "establish which machine this is" through build, node-behaviour and replay tiers. | **When you pick up bench work.** Read §0–§3 before touching the lab machine. |
@@ -77,6 +79,13 @@ topic / frame / parameter contract. Stdlib-only, ~1 s, no ROS or hardware needed
 ends with an explicit list of what it could **not** check and why. Run it before and after any
 refactor. On the lab box it also has Tier 2–3 scripts — the arm build, MoveIt and the grasp state
 machine on a simulated arm, the e-stop, the AnyGrasp env. See [`bench/README.md`](../../bench/README.md).
+
+Plus [`next-steps-map.html`](next-steps-map.html), the visual version of the project plan: the
+milestone schedule as a picture and a task tree you can click through to see who is waiting on whom.
+Published at <https://claude.ai/code/artifact/72753a73-2ffc-4bb7-acfb-75ab297bed17>. **It needs no
+Claude account to read** — it is one self-contained file, so open it straight off disk, or serve the
+folder with `cd docs/dion_docs && python3 -m http.server 8000` and open
+`http://localhost:8000/next-steps-map.html`.
 
 Plus [`wiring-map.html`](wiring-map.html), the visual version of ORIENTATION in plain language. Its
 second tab, **"One grasp, start to finish"**, follows one grasp from your voice to the gripper opening:
@@ -117,7 +126,13 @@ Honour the provenance tags: `[code]` verified by reading source · `[reported]` 
 `[inferred]`, promote it and say how. If you are Dion's session and something here is wrong, delete it — a
 confidently wrong doc is worse than none. Anyone else: rule 3 above.
 
-## Where work stands (2026-09-12)
+## Where work stands (2026-09-13)
+
+- **The project plan now exists:** [`PROJECT_PLAN.md`](PROJECT_PLAN.md). 20 weeks from 2026-09-14,
+  a checkpoint demonstration on 2026-12-06 and the finish on 2027-01-31. Milestone M0 (two weeks) is
+  what lets Zongzhe and Sherman work in parallel: making the repo run from a fresh clone, and getting
+  the arm and the LiDAR onto the network together.
+
 
 - **Test bench, Dion's current work:** [`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md) → "▶ Start here". Tiers 0–3
   run on the lab box (reach it over tailscale). The tests have found real bugs: the e-stop ignores
@@ -147,3 +162,4 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 | 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `dion_docs/` as more contributors join (moved to `docs/dion_docs/` the same evening). Added "How the docs are organised": the per-person `docs/<name>_docs/` convention, reading order, rules for every session. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Folder moved to `docs/dion_docs/`; per-person folders now live under `docs/`. "Where work stands" refreshed for a cold start; `bench-runs/` added to the table. |
 | 2026-09-12 | Claude (Opus 5) + Dion | "Where work stands" refreshed: box off, three things waiting to run. `wiring-map.html` entry updated for the new tab and both page links. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Added `PROJECT_PLAN.md` and `next-steps-map.html`: the team plan, its milestones, the task tree and the assignment across Dion, Zongzhe and Sherman. |
