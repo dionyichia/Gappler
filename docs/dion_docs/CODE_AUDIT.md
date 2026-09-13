@@ -579,6 +579,66 @@ noticed roughly never. `ros2_robot_ws/src/main.py:165` polls every 2 s.
 
 ---
 
+## K. The contract surface is not stated in one place
+
+Measured 2026-09-13 with `bench/contracts.py extract`, scope "code we own". Counts carry the
+extractor's known blind spot: it cannot resolve `ROS2Topics.X.value` (TESTBENCH_PLAN §4 C1), so
+Aria-side publishers are under-counted, not over-counted.
+
+### K1. 38 of 54 owned channel names are declared outside `shared/config.yaml` `[code]`
+
+| | Topics |
+|---|---|
+| Declared by code we own | 54 |
+| Named in `shared/config.yaml` | 16 |
+| **Declared somewhere else** | **38** |
+
+Where the other 38 live:
+
+| Where | Count | How they are written |
+|---|---|---|
+| `Navigation_Module/` Python | 15 | string literal inline in `create_publisher` / `create_subscription` |
+| `ros2_robot_ws/` Python | 14 | module-level `TOPIC_*` constants, re-declared per file |
+| `ros2_robot_ws/` C++ | 4 | string literal inline in the constructor |
+| `src/` Python | 3 | literal, despite the enum existing in the same workspace |
+| YAML only (nav params) | 2 | named in `nav2_params.yaml` / `slam_toolbox*.yaml`, no code reference |
+
+One of those last two is not a topic at all: `/home/iot22/maps/completed_map` is a `map_file_name`
+value the extractor mistook for a topic because it starts with `/` (recorded as bench bug
+TESTBENCH_PLAN §4 S3). **Net of it the real figures are 53 declared and 37 outside the shared
+config.** The headline numbers are left as the tool reports them so re-running it reproduces them.
+
+**Why this matters here specifically.** ROS binds publisher to subscriber by literal string at
+runtime. A rename that misses one of five copies compiles, launches, and silently does nothing.
+That failure mode has already occurred twice in this repo (ORIENTATION §0b), and `TOPIC_MASK` is
+live proof: five copies, one of which says `/PLACEHOLDER/sam/mask` (`dummy_mask_publisher.py:14`).
+
+**The `/rm_driver/*` case is different and worth separating.** Those names are the RealMan vendor
+driver's API, so we do not get to choose them. We do choose where they are written down, and today
+that is four unrelated literals: `estop.py:25`, `:26`, `orchestrator.py:49`, and
+`grasp_state_machine.cpp:150`, `:153`. The safety-critical stop topic is named in exactly one
+place, with no test that the string is right.
+
+**What should change:** every channel a node opens should be stated where a reader can find it
+without opening the node. See NEXT_STEPS §2.10 for the proposed shape and its constraints.
+
+### K2. The constants pattern exists but stops at `src/` `[code]`
+
+`src/config/` already holds typed constant groups (`AriaConfig`, `AudioStreamingPipelineConfig`,
+`ModelPaths`, `EyeTrackingConfig`). Nothing outside `src/` imports them, so the same values are
+re-declared as module-level constants in each node:
+
+- `DEPTH_SCALE = 0.001` in 4 files (ORIENTATION §8.10)
+- `TOPIC_MASK` in 5 files, one already divergent
+- `CAMERA_X_OFFSET = 0.18` in 2 scripts plus a third literal in `slam_localization.launch.py:102`
+- `NUM_CANDIDATES`, `LIMS`, `CONFIDENCE`, `TEXT_PROMPT` in `anygrasp_detection_node.py` and
+  `sam3_ros_node.py`, each a tuning value nobody can find without knowing the file
+
+These are not separate bugs from §8.10, they are its cause: there is no shared place to put a
+constant that both workspaces can import, so each file grows its own. `[inferred]`
+
+---
+
 ## What I did not audit
 
 - Vendor trees: `rm_driver`, `rm_control`, `rm_example`, `rm_arm_examples`, `rm_description`,
@@ -622,3 +682,4 @@ noticed roughly never. `ros2_robot_ws/src/main.py:165` polls every 2 s.
 | 2026-09-11 | Claude (Opus 5) + Dion | C7 reproduced and B4 observed on the simulated arm (`bench/state_machine_sim.sh`). |
 | 2026-09-13 | Claude (Opus 5) + Dion | New B7: the hardcoded kill-word fallback (`prompt_extractor.py:110-111`) misses punctuated speech and false-positives on any sentence containing a keyword. `[unverified]`, static only. Cross-referenced to J2 (model path) and B3 (no arm subscriber). |
 | 2026-09-13 | Claude (Opus 5) + Dion | G5 citation `object_recognition_pipeline.py:435-441`→`:440-446`, shifted by uncommitted comments in that file. |
+| 2026-09-13 | Claude (Opus 5) + Dion | New section K: the contract surface is not stated in one place. K1 (38 of 54 owned topics declared outside `shared/config.yaml`, with the breakdown by subsystem and the `/rm_driver/*` distinction), K2 (the `src/config/` constants pattern stops at `src/`). Measured with `bench/contracts.py extract`. |

@@ -211,7 +211,7 @@ Top-level, with an honest note on whether you will ever need to touch each one.
 | `Navigation_Module/OpenVINS/` | Vendored visual-inertial odometry (upstream, ~3.4 M lines). Estimates the *glasses'* pose from their stereo cams + IMU. | **No.** Treat as a black box; we only consume its output topic. |
 | `grasp_module/` | **Subsystem B** source: AnyGrasp SDK + MinkowskiEngine. Build-time only — the runtime `.so` files live in `rm_mtc/src/perception/`. | **No.** Build once per machine, then forget. |
 | `deps_ws/` | A third colcon workspace holding **MoveIt Task Constructor** (vendored, not a submodule). A dependency of `rm_mtc`. | **No.** Build it, source it. |
-| `shared/config.yaml` | **The single source of truth for Aria-side topic names.** Read by `src/config/ros2.py`, which builds a `ROS2Topics` enum from it at import time. | **Yes**, when adding a topic. |
+| `shared/config.yaml` | **The single source of truth for Aria-side topic names** — and only the Aria side: 16 of the 54 topics our code declares (§8.17). Read by `src/config/ros2.py`, which builds a `ROS2Topics` enum from it at import time. | **Yes**, when adding an Aria-side topic. |
 | `main.py` (root) | Top-level launcher: spawns `orchestrator.py` + the Aria app. | Yes — has hardcoded paths (§8.4). |
 | `assets/` | Vendor PDFs (arm + gripper manuals, in Chinese), a test image, gripper serial-debug tools. | No. Manuals are worth a skim. |
 | `README.md` (root) | **STALE — ignore it entirely.** It describes a different upstream project (`joshopp/aria_pkg`): ZeroMQ, YOLO `best.pt`, `start_interaction.py`. None of that exists in this code. | Delete it eventually. |
@@ -325,7 +325,7 @@ Follow this with the files open. Times are rough.
 
 | # | File | Why |
 |---|---|---|
-| 1 | `shared/config.yaml` | 20 lines. Every Aria-side topic name in one place. Read this first — it *is* the interface. |
+| 1 | `shared/config.yaml` | 20 lines. Every Aria-side topic name in one place. Read this first — it *is* the interface for that side. The other 38 owned topics are declared in the nodes themselves (§8.17). |
 | 2 | `src/config/ros2.py` | Shows how that YAML becomes the `ROS2Topics` enum used everywhere. |
 | 3 | `docs/dion_docs/ORIENTATION.md` §5 | The full topic table below. Skim, don't memorise. |
 | 4 | `src/main.py` | The Aria entry point. Focus on `ProcessPipelineBuilder` (lines 30–113): each `add_*` method starts one subsystem. **Note which are commented out at 107–112.** |
@@ -997,6 +997,41 @@ the simulation in `bench/`.
 
 ---
 
+### 8.17 `[code]` Most channel names are not in the shared config
+
+`shared/config.yaml` is the interface for the Aria side and nowhere else. Measured 2026-09-13 with
+`bench/contracts.py extract`, scope "code we own":
+
+| | Topics |
+|---|---|
+| Declared by code we own | 54 |
+| Named in `shared/config.yaml` | 16 |
+| Declared in the node that uses them | 38 |
+
+The 38 split as: `Navigation_Module/` Python 15 (inline literals), `ros2_robot_ws/` Python 14
+(per-file `TOPIC_*` constants), `ros2_robot_ws/` C++ 4 (inline literals), `src/` Python 3, and 2
+named only in nav YAML — one of which is a filesystem path the extractor mistook for a topic
+(TESTBENCH_PLAN §4 S3), so the true figures are 53 and 37. Full breakdown and consequences: [`CODE_AUDIT.md`](CODE_AUDIT.md) §K.
+Proposed fix and its constraints: [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.10.
+
+Two things follow that are easy to miss:
+
+- **No C++ we own reads `shared/config.yaml`.** Checked 2026-09-13. The arm side cannot use the
+  shared config even in principle without a YAML loader or ROS parameters, so "put it in the shared
+  config" is not available as a fix for the four C++ topics, including
+  `/rm_driver/set_gripper_position_cmd`.
+- **The enum hides topics from static analysis.** `src/config/ros2.py:11-14` builds `ROS2Topics`
+  dynamically at import time, so the topic a node publishes to cannot be found by reading that
+  node, and the bench's extractor cannot resolve it either (TESTBENCH_PLAN §4 C1). Aria-side
+  publishers therefore show as `pub=0` in the contract report. This is the cost side of the "one
+  clever line" noted in READING_GUIDE §1.2.
+
+The `/rm_driver/*` names are the vendor driver's API, not ours to choose — but they are currently
+written as four separate literals (`estop.py:25-26`, `orchestrator.py:49`,
+`grasp_state_machine.cpp:150`, `:153`), including the emergency-stop topic.
+
+---
+
 ## 9. Hardware facts worth knowing before you plan `[reported]`
 
 | Thing | Value |
@@ -1134,3 +1169,4 @@ options, none free:
    demo?
 | 2026-09-11 | Claude (Opus 5) + Dion | §8.6: `Ros2Workspaces` never committed; copied to `~/rcp-old-ros-wkspace`. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Re-pointed citations shifted by the uncommitted comments in `object_recognition_pipeline.py`: §6.2 and §6.5 seam #2 call `:384`→`:389`, §8.9 raw `print()` `:343`→`:345`. Numbers are against the working tree, not HEAD. |
+| 2026-09-13 | Claude (Opus 5) + Dion | New §8.17: 16 of 54 owned topics are in `shared/config.yaml`, the rest are declared in the nodes; no C++ we own reads the shared config; the dynamic enum hides Aria publishers from static analysis. Qualified the two rows that called the file a single source of truth. Detail in CODE_AUDIT §K, fix in NEXT_STEPS §2.10. |

@@ -38,6 +38,8 @@
 }
 
 *{box-sizing:border-box}
+/* The artifact host adds this; repeated here so the file also works opened on its own. */
+[hidden]{display:none!important}
 body{background:var(--ground);color:var(--ink);font-family:var(--body);
   font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
 
@@ -275,9 +277,183 @@ svg.scn{display:block;width:100%;height:auto;min-width:560px}
 @media (max-width:560px){.facts{grid-template-columns:1fr;gap:2px}.facts dt{padding-top:6px}}
 </style>
 
+<style>
+/* ══════════════════ tab 3 · the graph ══════════════════ */
+:root{
+  --lane-glass:#6b4c9a; --lane-glass-s:#efeaf7;
+  --lane-brain:#1f5fa8; --lane-brain-s:#e8f0f9;
+  --lane-eye:#0f6f74;   --lane-eye-s:#e3f2f2;
+  --lane-grasp:#8a5a0c; --lane-grasp-s:#fbf1e0;
+  --lane-arm:#9b3560;   --lane-arm-s:#fbeaf1;
+  --lane-nav:#1c7048;   --lane-nav-s:#e7f4ed;
+  --lane-out:#5c6672;   --lane-out-s:#eceff3;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --lane-glass:#b79ae8; --lane-glass-s:#241d33;
+    --lane-brain:#6aa6e8; --lane-brain-s:#1b2836;
+    --lane-eye:#4fbdc0;   --lane-eye-s:#132a2b;
+    --lane-grasp:#d9a353; --lane-grasp-s:#2a2118;
+    --lane-arm:#e58bb0;   --lane-arm-s:#2f1a24;
+    --lane-nav:#5fb98a;   --lane-nav-s:#17271f;
+    --lane-out:#98a3b0;   --lane-out-s:#22262c;
+  }
+}
+:root[data-theme="dark"]{
+  --lane-glass:#b79ae8; --lane-glass-s:#241d33;
+  --lane-brain:#6aa6e8; --lane-brain-s:#1b2836;
+  --lane-eye:#4fbdc0;   --lane-eye-s:#132a2b;
+  --lane-grasp:#d9a353; --lane-grasp-s:#2a2118;
+  --lane-arm:#e58bb0;   --lane-arm-s:#2f1a24;
+  --lane-nav:#5fb98a;   --lane-nav-s:#17271f;
+  --lane-out:#98a3b0;   --lane-out-s:#22262c;
+}
+
+.gtab{max-width:1440px;margin:0 auto;padding:0 24px 70px}
+.gtab .intro{max-width:70ch;margin:0 0 20px}
+.gtab .intro p{margin:0 0 12px}
+
+/* --- control strip --- */
+.g-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  padding:11px 13px;background:var(--surface);border:1px solid var(--line);
+  border-radius:5px 5px 0 0;border-bottom:none}
+.g-seg{display:flex;border:1px solid var(--line-2);border-radius:4px;overflow:hidden}
+.g-seg button{font-family:var(--display);font-weight:600;font-size:13px;color:var(--ink-2);
+  background:var(--surface);border:none;border-right:1px solid var(--line-2);
+  padding:7px 13px;cursor:pointer;line-height:1.3}
+.g-seg button:last-child{border-right:none}
+.g-seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.g-seg button:hover:not([aria-pressed="true"]){background:var(--surface-2);color:var(--ink)}
+.g-btn{font-family:var(--display);font-weight:600;font-size:13px;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--line-2);border-radius:4px;
+  padding:7px 13px;cursor:pointer;line-height:1.3;display:inline-flex;gap:7px;align-items:center}
+.g-btn:hover{border-color:var(--accent);color:var(--accent)}
+.g-btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.g-bar input[type="search"]{font-family:var(--body);font-size:14px;padding:7px 11px;
+  border:1px solid var(--line-2);border-radius:4px;background:var(--ground);
+  color:var(--ink);min-width:170px;flex:1 1 170px}
+.g-bar input[type="search"]:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.g-bar .g-hint{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);margin-left:auto;
+  white-space:nowrap}
+.g-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 13px 11px;background:var(--surface);
+  border:1px solid var(--line);border-top:none;border-bottom:none}
+.g-chip{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-2);
+  background:var(--ground);border:1px solid var(--line-2);border-radius:20px;
+  padding:4px 11px;cursor:pointer;user-select:none;display:inline-flex;gap:6px;align-items:center}
+.g-chip::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--line-2)}
+.g-chip[aria-pressed="true"]{color:var(--ink);border-color:var(--accent)}
+.g-chip[aria-pressed="true"]::before{background:var(--accent)}
+.g-btn:focus-visible,.g-chip:focus-visible,.g-seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* --- stage + side panel --- */
+.g-body{display:grid;grid-template-columns:minmax(0,1fr) 286px;gap:0;
+  border:1px solid var(--line);border-radius:0 0 5px 5px;background:var(--surface);overflow:hidden}
+@media (max-width:940px){.g-body{grid-template-columns:1fr}}
+.g-stage{position:relative;height:min(76vh,700px);min-height:440px;background:var(--ground);
+  overflow:hidden;touch-action:none}
+.g-stage svg{display:block;width:100%;height:100%;cursor:grab}
+.g-stage svg.drag{cursor:grabbing}
+.g-zoom{position:absolute;right:11px;bottom:11px;display:flex;flex-direction:column;gap:4px}
+.g-zoom button{width:31px;height:31px;font-family:var(--mono);font-size:15px;line-height:1;
+  color:var(--ink-2);background:var(--surface);border:1px solid var(--line-2);border-radius:4px;
+  cursor:pointer;padding:0}
+.g-zoom button:hover{border-color:var(--accent);color:var(--accent)}
+.g-caption{position:absolute;left:11px;right:52px;bottom:11px;background:var(--surface);
+  border:1px solid var(--accent);border-left-width:4px;border-radius:4px;padding:10px 13px;
+  font-size:14px;color:var(--ink);box-shadow:var(--shadow);line-height:1.5}
+.g-caption[hidden]{display:none}
+.g-caption .step{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent);display:block;margin-bottom:3px}
+.g-caption .nav{display:flex;gap:6px;margin-top:9px}
+.g-caption .nav button{font-family:var(--display);font-weight:600;font-size:12.5px;
+  padding:5px 11px;border:1px solid var(--line-2);border-radius:4px;background:var(--ground);
+  color:var(--ink-2);cursor:pointer}
+.g-caption .nav button:hover{border-color:var(--accent);color:var(--accent)}
+
+.g-side{border-left:1px solid var(--line);background:var(--surface);overflow-y:auto;
+  padding:15px 16px;font-size:14px}
+@media (max-width:940px){.g-side{border-left:none;border-top:1px solid var(--line);max-height:340px}}
+.g-side .ph{color:var(--ink-3);font-size:13.5px;line-height:1.6}
+.g-side h4{font-family:var(--display);font-weight:600;font-size:16.5px;margin:0 0 3px;
+  line-height:1.3;text-wrap:balance;word-break:break-word}
+.g-side .kind{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);display:block;margin-bottom:7px}
+.g-side .note{font-size:13.5px;color:var(--ink-2);margin:0 0 11px;line-height:1.5}
+.g-side .grp{display:flex;flex-direction:column;gap:4px;margin:0 0 13px}
+.g-side .grp .gh{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:1px}
+.g-side .lnk{display:block;width:100%;text-align:left;font-family:var(--mono);font-size:12px;
+  color:var(--accent);background:var(--ground);border:1px solid var(--line);border-radius:3px;
+  padding:5px 8px;cursor:pointer;word-break:break-all;line-height:1.45}
+.g-side .lnk:hover{border-color:var(--accent);background:var(--accent-soft)}
+.g-side .lnk .src{display:block;color:var(--ink-3);font-size:10.5px;margin-top:1px}
+.g-side .none{font-size:12.5px;color:var(--broken);font-family:var(--body);
+  background:var(--broken-soft);border:1px solid var(--broken);border-radius:3px;padding:5px 8px}
+.g-side .pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:2px;border:1px solid;
+  margin:0 4px 6px 0;line-height:1.6}
+.g-side .pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.p-live{color:var(--working);background:var(--working-soft);border-color:var(--working)}
+.p-off{color:var(--broken);background:var(--surface);border-color:var(--broken);border-style:dashed}
+.p-untested{color:var(--caution);background:var(--caution-soft);border-color:var(--caution)}
+.p-dead{color:var(--broken);background:var(--broken-soft);border-color:var(--broken)}
+.p-hidden{color:var(--accent);background:var(--accent-soft);border-color:var(--accent)}
+
+/* --- svg marks --- */
+.g-stage .ln{fill:none;stroke:var(--line-2);stroke-width:1.5}
+.g-stage .ln.cut{stroke:var(--broken);stroke-dasharray:5 4}
+.g-stage .ln.act{stroke:var(--lane-arm);stroke-width:2}
+.g-stage .ln.hid{stroke:var(--accent);stroke-dasharray:2 3}
+.g-stage .nb{stroke-width:1.4}
+.g-stage .nb.off{stroke-dasharray:5 4}
+.g-stage .tl{font-family:var(--display);font-weight:600;font-size:12.5px;fill:var(--ink)}
+.g-stage .ts{font-family:var(--body);font-size:10.5px;fill:var(--ink-3)}
+.g-stage .tp{font-family:var(--mono);font-size:11px;fill:var(--ink)}
+.g-stage .cnt{font-family:var(--mono);font-size:10px;fill:var(--ink-3)}
+.g-stage .tlg{font-family:var(--display);font-weight:600;font-size:16.5px;fill:var(--ink)}
+.g-stage .tsg{font-family:var(--body);font-size:12.5px;fill:var(--ink-2)}
+.g-stage .lane{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;fill:var(--ink-3)}
+.g-stage g.v{cursor:pointer}
+.g-stage g.v:focus{outline:none}
+.g-stage g.v:focus-visible rect{stroke:var(--accent);stroke-width:3}
+.g-stage .dead{fill:var(--broken)}
+
+/* dim / trace states */
+.g-stage.sel g.v{opacity:.17}
+.g-stage.sel g.v.on{opacity:1}
+.g-stage.sel .ln{opacity:.1}
+.g-stage.sel .ln.on{opacity:1;stroke:var(--accent);stroke-width:2.4}
+.g-stage.sel .ln.on.cut{stroke:var(--broken)}
+.g-stage .ln.on{stroke-dasharray:7 5;animation:gflow 1.1s linear infinite}
+@keyframes gflow{to{stroke-dashoffset:-24}}
+@media (prefers-reduced-motion:reduce){.g-stage .ln.on{animation:none;stroke-dasharray:none}}
+.g-stage g.v.root rect{stroke-width:3}
+.g-stage g.v.hit rect{stroke:var(--accent);stroke-width:2.6}
+
+/* --- legend + counts --- */
+.g-key{display:flex;flex-wrap:wrap;gap:9px 20px;font-size:13.5px;color:var(--ink-2);
+  margin:16px 0 0;padding:13px 16px;background:var(--surface);border:1px solid var(--line);
+  border-radius:5px}
+.g-key span{display:flex;gap:8px;align-items:center}
+.g-key i{width:26px;height:0;border-top:2px solid var(--line-2);display:inline-block;flex:none}
+.g-key i.cut{border-top-style:dashed;border-top-color:var(--broken)}
+.g-key i.act{border-top-color:var(--lane-arm);border-top-width:2.5px}
+.g-key i.hid{border-top-style:dotted;border-top-color:var(--accent)}
+.g-key b.sw{width:15px;height:15px;border-radius:3px;border:1.4px solid;flex:none}
+.g-tally{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);border-radius:5px;overflow:hidden;margin:16px 0 0}
+.g-tally > div{background:var(--surface);padding:13px 15px}
+.g-tally .k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);display:block;margin-bottom:4px}
+.g-tally .v{font-family:var(--display);font-size:22px;font-weight:600;line-height:1.15;
+  font-variant-numeric:tabular-nums}
+.g-tally .d{font-size:12.5px;color:var(--ink-2);line-height:1.4;margin-top:3px}
+</style>
+
 <header class="masthead">
   <div class="inner">
-    <p class="eyebrow">Gappler · engineering reference · updated 11 Sep 2026</p>
+    <p class="eyebrow">Gappler · engineering reference · updated 13 Sep 2026</p>
     <h1>Gappler Wiring Map</h1>
     <p class="dek">How the glasses, the camera, the robot arm and the mobile base are wired
       together — what works today, what is disconnected, and where the evidence for each claim
@@ -289,6 +465,7 @@ svg.scn{display:block;width:100%;height:auto;min-width:560px}
     <div class="tabbar" role="tablist" aria-label="Views of this page">
       <button type="button" role="tab" id="tb-map" aria-controls="tab-map" aria-selected="true">The map</button>
       <button type="button" role="tab" id="tb-seq" aria-controls="tab-seq" aria-selected="false" tabindex="-1">One grasp, start to finish</button>
+      <button type="button" role="tab" id="tb-graph" aria-controls="tab-graph" aria-selected="false" tabindex="-1">Every channel, drawn</button>
     </div>
   </div>
 </header>
@@ -1403,7 +1580,11 @@ sensors_calib_json_str = self.config_queue.get()
       walk through the code, round by round) and <code>docs/dion_docs/NEXT_STEPS.md</code> (the work
       register). Those files are updated first; this page follows.</p>
       <p>Written 9–10 September 2026 against branch <code>main</code> at commit
-      <code>2d36a89</code>, by reading the source. <strong>No hardware was running</strong> — every
+      <code>2d36a89</code>, by reading the source. The <a href="#graph">Every channel, drawn</a>
+      tab was added on 13 September 2026 from the same reading plus
+      <code>bench/golden/contracts.json</code>; the sixteen channels named in
+      <code>shared/config.yaml</code> were traced to their publishers by hand, because the bench
+      scanner cannot resolve them. <strong>No hardware was running</strong> — every
       claim tagged <span class="tag t-code">code</span> was checked against the file and line
       cited, and nothing here has been verified against a live robot.</p>
     </footer>
@@ -1695,6 +1876,177 @@ sensors_calib_json_str = self.config_queue.get()
   </section>
 </div>
 
+
+<div class="gtab" id="tab-graph" role="tabpanel" aria-labelledby="tb-graph" hidden>
+  <section style="margin-bottom:24px">
+    <h2><span class="sn">Section 12 · the whole thing at once</span>Every node, every channel</h2>
+    <div class="intro">
+      <p class="sub" style="margin-bottom:14px">There are more channels here than anyone can hold
+        in their head. This is all of them, drawn the way ROS tools draw them: <strong>rounded boxes
+        are programs, square boxes are channels, arrows point the way the data flows.</strong>
+        Click anything to trace it from end to end. Drag to move, scroll to zoom,
+        <strong>fit</strong> for the whole thing at once.</p>
+      <p>Start on <strong>Grouped</strong> to see the seven subsystems and how much traffic crosses
+        between them. Switch to <strong>Every node</strong> for the full picture, or click a group
+        to open just that one. <strong>Play one grasp</strong> walks the whole intended sequence,
+        one hop at a time, and shows you exactly where it stops working today.</p>
+    </div>
+  </section>
+
+  <div class="g-bar">
+    <div class="g-seg" role="group" aria-label="How much detail">
+      <button type="button" id="g-mode-group" aria-pressed="true">Grouped</button>
+      <button type="button" id="g-mode-full" aria-pressed="false">Every node</button>
+    </div>
+    <button type="button" class="g-btn" id="g-play">▶ Play one grasp</button>
+    <button type="button" class="g-btn" id="g-clear">Clear trace</button>
+    <input type="search" id="g-find" placeholder="Find a channel or program…" aria-label="Find a channel or program">
+    <span class="g-hint" id="g-count"></span>
+  </div>
+  <div class="g-chips" role="group" aria-label="What to include">
+    <button type="button" class="g-chip" id="g-f-debug" aria-pressed="false">Debug and RViz channels</button>
+    <button type="button" class="g-chip" id="g-f-vendor" aria-pressed="true">Hardware and vendor</button>
+    <button type="button" class="g-chip" id="g-f-off" aria-pressed="true">Programs not running</button>
+    <button type="button" class="g-chip" id="g-f-alt" aria-pressed="false">Duplicate and spare nodes</button>
+  </div>
+
+  <div class="g-body">
+    <div class="g-stage" id="g-stage">
+      <svg id="g-svg" role="img" aria-label="Node and channel graph of the Gappler system. Rounded boxes are running programs, square boxes are ROS channels, and arrows point from a publisher to a channel and on to its subscribers. Colour groups boxes by subsystem: glasses streams, glasses processing, wrist camera and segmentation, grasp planning, arm control, navigation, and outside hardware. Dashed outlines mark programs that are not started today, and red dashed arrows mark links that are cut."></svg>
+      <div class="g-zoom">
+        <button type="button" id="g-zin" aria-label="Zoom in">+</button>
+        <button type="button" id="g-zout" aria-label="Zoom out">−</button>
+        <button type="button" id="g-fit" aria-label="Fit to view" style="font-size:11px">fit</button>
+      </div>
+      <div class="g-caption" id="g-cap" hidden>
+        <span class="step" id="g-cap-step"></span>
+        <span id="g-cap-text"></span>
+        <div class="nav">
+          <button type="button" id="g-prev">← Back</button>
+          <button type="button" id="g-next">Next →</button>
+          <button type="button" id="g-stop">Stop</button>
+        </div>
+      </div>
+    </div>
+    <aside class="g-side" id="g-side" aria-live="polite">
+      <p class="ph">Click a box to see what it is, where it is defined, and what is at the other
+        end of every arrow. Click again on empty space to clear.</p>
+    </aside>
+  </div>
+
+  <div class="g-key">
+    <span><b class="sw" style="border-color:var(--lane-glass);background:var(--lane-glass-s)"></b> Glasses streams</span>
+    <span><b class="sw" style="border-color:var(--lane-brain);background:var(--lane-brain-s)"></b> Glasses processing</span>
+    <span><b class="sw" style="border-color:var(--lane-eye);background:var(--lane-eye-s)"></b> Wrist camera + segmentation</span>
+    <span><b class="sw" style="border-color:var(--lane-grasp);background:var(--lane-grasp-s)"></b> Grasp planning</span>
+    <span><b class="sw" style="border-color:var(--lane-arm);background:var(--lane-arm-s)"></b> Arm control</span>
+    <span><b class="sw" style="border-color:var(--lane-nav);background:var(--lane-nav-s)"></b> Navigation</span>
+    <span><b class="sw" style="border-color:var(--lane-out);background:var(--lane-out-s)"></b> Hardware and vendor</span>
+  </div>
+  <div class="g-key">
+    <span><i></i> a channel, one way</span>
+    <span><i class="act"></i> an action — a request that reports back</span>
+    <span><i class="hid"></i> publisher the bench scanner cannot see</span>
+    <span><i class="cut"></i> cut: nothing at one end</span>
+    <span><b class="sw" style="border-color:var(--ink-3);border-style:dashed"></b> program not started today</span>
+    <span><svg width="13" height="13" style="flex:none"><circle cx="6.5" cy="6.5" r="4" fill="var(--broken)"/></svg> dead end</span>
+  </div>
+
+  <section style="margin-top:34px">
+    <h3 style="margin-top:0">Why some publishers are invisible to the bench</h3>
+    <p>Sixteen channel names live in <code>shared/config.yaml</code> and reach the code through an
+      enum that is <strong>built at import time</strong> from that file
+      <span class="cite">src/config/ros2.py:12</span> <span class="tag t-code">code</span>. That is
+      good practice — one place to change a name. It has one cost, and it is the reason this graph
+      needed hand-checking:</p>
+    <ul>
+      <li><strong>You cannot tell what a node publishes by reading the node.</strong> The source
+        says <code>ROS2Topics.RGB_CAMERA_RAW.value</code>, not <code>/aria/rgb_camera/raw</code>.</li>
+      <li><strong>The bench's contract scanner cannot resolve it either.</strong> It reads source
+        text, not a running program, so those sixteen channels come out of
+        <code>bench/contracts.py</code> showing <em>zero publishers</em> — which looks exactly like
+        a channel nobody sends on.</li>
+      <li><strong>So the tool built to catch renames is blind to the sixteen channels that are
+        named most carefully.</strong> Every one of those edges is drawn here as a dotted blue
+        arrow, resolved by reading the code by hand.</li>
+    </ul>
+    <p>The fix is not to abandon the config file. It is to make the scanner resolve
+      <code>ROS2Topics.X.value</code> against <code>shared/config.yaml</code>, which is a short
+      addition to <code>bench/contracts.py</code> and turns sixteen blind spots into checked
+      contracts. See <a href="#next">Section 11</a>.</p>
+
+    <h3>Two entries in the scan are not channels at all</h3>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Name</th><th>What it really is</th><th>Where</th></tr></thead>
+        <tbody>
+          <tr><td><span class="topic">/home/iot22/maps/completed_map</span></td>
+            <td>A <strong>file path</strong> on the lab machine, picked up by the scanner because it
+              sits in a YAML field that usually holds a channel name. Not a channel. It also points
+              into another user's home folder, so it will not resolve from your account.</td>
+            <td><span class="cite">slam_toolbox_localization.yaml:14</span></td></tr>
+          <tr><td><span class="topic">/PLACEHOLDER/sam/mask</span></td>
+            <td>A leftover placeholder name. The test tool that fakes the segmenter publishes here,
+              while everything that would listen is on
+              <span class="topic">/camera/sam/mask</span>. The tool broadcasts into the void.</td>
+            <td><span class="cite">dummy_mask_publisher.py:14</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>So the honest count is <strong>53 real channels declared by code we own</strong>, of which
+      37 are written directly inside the node that uses them and 16 come from the config file.</p>
+
+    <div class="g-tally">
+      <div><span class="k">Programs we wrote</span><span class="v">24</span>
+        <span class="d">Across seven subsystems. Nine of them are not started today.</span></div>
+      <div><span class="k">Real channels</span><span class="v">53</span>
+        <span class="d">Declared by code we own. Vendor channels on top of that.</span></div>
+      <div><span class="k">Named in one place</span><span class="v">16</span>
+        <span class="d">In <code>shared/config.yaml</code>. Invisible to the bench scanner.</span></div>
+      <div><span class="k">Dead ends</span><span class="v">14</span>
+        <span class="d">Channels with nothing at one end. Nine have no publisher.</span></div>
+      <div><span class="k">Named four times over</span><span class="v">4</span>
+        <span class="d">The <code>/rm_driver/*</code> strings, written as loose literals in
+          three files. Nothing checks them.</span></div>
+    </div>
+
+    <h3>The dead ends, in one list</h3>
+    <p>A channel with nothing at one end is not an error at runtime. It is silence. These are the
+      ones this graph found <span class="tag t-code">code</span>:</p>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>Channel</th><th>What is missing</th><th>Why it matters</th></tr></thead>
+        <tbody>
+          <tr><td><span class="topic">/manipulator/release</span></td><td>No publisher</td>
+            <td>Two programs wait for "let go". Nothing in the repo ever says it, so the gripper
+              never opens on command.</td></tr>
+          <tr><td><span class="topic">/manipulation/done</span></td><td>No publisher</td>
+            <td>Navigation waits to hear the arm has finished. The arm never says so.</td></tr>
+          <tr><td><span class="topic">/goto_glasses/trigger</span></td><td>No publisher</td>
+            <td>The manual "go to the user now" switch. Only reachable by hand from a terminal.</td></tr>
+          <tr><td><span class="topic">/goto_glasses/cancel</span></td><td>No publisher</td>
+            <td>Same for cancelling the return trip.</td></tr>
+          <tr><td><span class="topic">/return_to_user/goal_reached</span></td><td>No subscriber</td>
+            <td>The return trip announces it is done and nobody is listening — the coordinator's
+              subscription is commented out. <span class="cite">orchestrator.py:60</span></td></tr>
+          <tr><td><span class="topic">/aria/vio_pose</span>,
+            <span class="topic">/aria/is_stationary</span></td><td>Neither end</td>
+            <td>Named in the config file, used by nothing. Left over from the motion-tracking work.</td></tr>
+          <tr><td><span class="topic">/object_map_pose</span>,
+            <span class="topic">/object_marker</span>,
+            <span class="topic">/aria/glasses_marker</span>,
+            <span class="topic">/aria/pose_initialized</span>,
+            <span class="topic">/aria/rgb_camera/view</span></td><td>No subscriber in the repo</td>
+            <td>These are for looking at in RViz, which subscribes from a config file rather than
+              from code. Expected, not broken — but the scanner cannot tell the difference.</td></tr>
+          <tr><td><span class="topic">/PLACEHOLDER/sam/mask</span></td><td>No subscriber</td>
+            <td>The misnamed test channel above.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
 <script>
 (function(){
   var q=document.getElementById('q'), tbl=document.getElementById('tt'), cnt=document.getElementById('cnt');
@@ -1717,16 +2069,18 @@ sensors_calib_json_str = self.config_queue.get()
 <script>
 (function(){
   var tabs=[].slice.call(document.querySelectorAll('[role="tab"]'));
+  var HASH={'tab-seq':'#sequence','tab-graph':'#graph'};
   function panelOf(t){return document.getElementById(t.getAttribute('aria-controls'));}
   function show(id){
     tabs.forEach(function(t){
       var on=t.getAttribute('aria-controls')===id;
       t.setAttribute('aria-selected',on?'true':'false'); t.tabIndex=on?0:-1; panelOf(t).hidden=!on;
     });
+    if(id==='tab-graph'&&window.__gapplerGraphFit) window.__gapplerGraphFit();
   }
   function setHash(h){try{history.replaceState(null,'',h||location.pathname+location.search);}catch(e){}}
   tabs.forEach(function(t,i){
-    t.addEventListener('click',function(){var id=t.getAttribute('aria-controls');show(id);setHash(id==='tab-seq'?'#sequence':'');window.scrollTo(0,0);});
+    t.addEventListener('click',function(){var id=t.getAttribute('aria-controls');show(id);setHash(HASH[id]||'');window.scrollTo(0,0);});
     t.addEventListener('keydown',function(e){
       if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;
       var n=tabs[(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length]; n.focus(); n.click();
@@ -1734,6 +2088,7 @@ sensors_calib_json_str = self.config_queue.get()
   });
   function open(hash,scroll){
     if(hash==='#sequence'){show('tab-seq');return;}
+    if(hash==='#graph'){show('tab-graph');return;}
     var el=hash&&hash.length>1?document.getElementById(hash.slice(1)):null;
     if(!el)return;
     var p=el.closest('[role="tabpanel"]');
@@ -1743,11 +2098,900 @@ sensors_calib_json_str = self.config_queue.get()
   document.addEventListener('click',function(e){
     var a=e.target.closest('a[href^="#"]'); if(!a)return;
     var h=a.getAttribute('href');
-    if(h==='#sequence'){e.preventDefault();show('tab-seq');setHash('#sequence');window.scrollTo(0,0);return;}
+    if(h==='#sequence'||h==='#graph'){e.preventDefault();show(h==='#graph'?'tab-graph':'tab-seq');setHash(h);window.scrollTo(0,0);return;}
     var el=document.getElementById(h.slice(1)); if(!el)return;
     var p=el.closest('[role="tabpanel"]');
     if(p&&p.hidden){e.preventDefault();show(p.id);el.scrollIntoView();setHash(h);}
   });
   open(location.hash,true);
+})();
+</script>
+
+<script>
+/* tab 3 - node and channel graph.
+   Every vertex and edge below was read out of the source. Channels named in
+   shared/config.yaml reach the code through an enum built at import time, so the
+   bench's static scanner reports them as having no publisher; those publishers
+   were resolved by hand and are drawn as hidden-publisher edges. */
+(function(){
+  var svg = document.getElementById('g-svg');
+  if(!svg) return;
+  var NS = 'http://www.w3.org/2000/svg';
+
+  /* ---------- data ---------- */
+  var V = {}, VL = [], E = [];
+  function n(id,label,sub,grp,st,cite,tags,note){
+    V[id]={id:id,kind:'node',label:label,sub:sub,grp:grp,st:st,cite:cite,
+           tags:tags||[],note:note||''}; VL.push(V[id]);
+  }
+  function t(id,grp,carries,cite,tags,note){
+    V[id]={id:id,kind:'topic',label:id,sub:carries,grp:grp,st:'ok',cite:cite||'',
+           tags:tags||[],note:note||''}; VL.push(V[id]);
+  }
+  function e(a,b,hid){ E.push({a:a,b:b,k:hid?'hid':'ln'}); }
+  function act(a,b,label){ E.push({a:a,b:b,k:'act',label:label}); }
+
+  /* -- programs: the glasses' own streams -- */
+  n('aria_hw','Aria glasses','7 mics, cameras, eye tracker','out','live','',['vendor'],
+    'The hardware itself. Not a ROS program: the stream pipelines below read it over the Aria SDK.');
+  n('aria_audio','Audio pipeline','Whisper then Qwen2.5','glass','live',
+    'audio_streaming_pipeline.py:49',[],
+    'Records continuously, transcribes, and pulls one object name out of the sentence. This part works.');
+  n('aria_rgb','Glasses camera stream','colour and marker sightings','glass','off',
+    'image_streaming_pipeline.py:80',[],
+    'Not started: the line that launches it is commented out at src/main.py:107. This is break 1.');
+  n('aria_et','Eye tracking stream','where you are looking','glass','off',
+    'image_streaming_pipeline.py:153',[],
+    'Runs inside the same pipeline as the camera stream, so it is off for the same reason.');
+  n('aria_slam','Glasses SLAM cameras','two side-facing cameras','glass','off',
+    'pose_streaming_pipeline.py:120',[],'Not started: src/main.py:108 is commented out.');
+  n('aria_imu','Glasses motion sensors','','glass','off','pose_streaming_pipeline.py:236',[],
+    'Same pipeline as the SLAM cameras, so also off.');
+  n('playback','Recording playback','replays a saved session','glass','alt',
+    'playback_controller.py:66',['alt'],
+    'An alternative source: replays a recorded session onto the same channels instead of the live glasses. Marked TODO: Fix Recording Mode.');
+
+  /* -- programs: what the glasses side computes -- */
+  n('recog','Recognition pipeline','SAM 3, your gaze, your words','brain','off',
+    'object_recognition_pipeline.py:122',[],
+    'The piece that should join everything: it takes your spoken word, your gaze and both cameras and produces the object position. Not started in live mode, src/main.py:106 is commented out.');
+  n('featmatch','Feature matching','LightGlue: do both views agree','brain','off',
+    'feature_matching.py:181',[],
+    'Not in the running pipeline. Its work is duplicated inside the recognition pipeline.');
+  n('fusion','Position fusion','where you are standing','brain','live','pose_fusion_node.py:141',[],
+    'Combines a printed-marker sighting with the robot pose. Its answer is measured against the robot, not the room. See break 4.');
+  n('viz','Glasses debug view','the on-screen preview','brain','off','ros_manager.py:65',['debug'],
+    'Listens to eight channels purely to draw them. Not started in live mode.');
+
+  /* -- programs: wrist camera and segmentation -- */
+  n('sam3','Segmenter','SAM 3 on the wrist camera','eye','live','sam3_ros_node.py:52',[],
+    'Works, but on the hardcoded word "box" rather than the word you said. This is break 2.');
+  n('dummy','Fake mask tool','tests the arm without the glasses','eye','dead',
+    'dummy_mask_publisher.py:21',['alt'],
+    'Publishes to /PLACEHOLDER/sam/mask while everything listens on /camera/sam/mask. It broadcasts into the void.');
+
+  /* -- programs: grasp planning -- */
+  n('ag_det','AnyGrasp','picks where to put the fingers','grasp','live',
+    'anygrasp_detection_node.py:59',[],
+    'Runs in its own Python environment. This is the copy that main.py launches.');
+  n('ag_alt','AnyGrasp (spare copy)','older duplicate','grasp','alt','anygrasp_node.py:49',['alt'],
+    'A second, near-identical AnyGrasp node on the same channels. Nothing launches it, but if it ever ran alongside the first there would be two publishers on /grasp_candidates.');
+  n('gviz','Grasp debug view','draws it all in RViz','grasp','live','grasp_viz.py:43',['debug'],
+    'Listens to four channels and republishes them as coloured markers.');
+
+  /* -- programs: arm control -- */
+  n('sm','Grasp state machine','approach, grip, hand back','arm','untested',
+    'grasp_state_machine.cpp:131',[],
+    'Moves the arm home within seconds of starting, before waiting for any input. Never run on hardware. Do not launch it. See section 5.');
+  n('orch','Coordinator','waits, then launches the robot side','arm','untested',
+    'orchestrator.py:49',[],
+    'Sits on /manipulation/start. The moment any message lands there it launches the robot side, which moves the arm. Treat a running coordinator as a loaded arm.');
+  n('estop','Emergency stop','estop.py, in its own terminal','arm','live','estop.py:25',[],
+    'The one safety net. Run it before anything else that touches the arm.');
+
+  /* -- programs: navigation -- */
+  n('approach','Approach planner','stops 0.6 m from the object','nav','live',
+    'object_approach_node.py:74',[],'The busiest program in the repo: nine channels.');
+  n('goto','Return-trip navigator','drives back to you','nav','live','goto_glasses.py:47',[],
+    'Also holds the manual trigger and cancel switches, which nothing publishes.');
+  n('reached','Arrival reporter','bridges /goal_pose to Nav2','nav','live',
+    'goal_reached_publisher.py:27',[],
+    'Turns a plain "drive here" message into a Nav2 action request, then reports arrival.');
+  n('posepub','Robot pose publisher','','nav','live','pose_publisher.py:12',[],'');
+  n('qos','Laser delivery relay','fixes a delivery-mode mismatch','nav','live','qos_relay.py:38',[],
+    'A whole program whose only job is to re-send the laser scan with a different delivery setting, because the scanner sends RELIABLE and the map builder demands BEST_EFFORT.');
+  n('relay','Glasses image relay','republishes for RViz','nav','live','aria_image_relay.py:27',[],'');
+
+  /* -- programs: hardware and vendor -- */
+  n('realsense','Wrist camera driver','RealSense colour and depth','out','live','main.py:90',
+    ['vendor'],'');
+  n('rm_driver','Arm driver','RealMan, about 197 channels','out','untested',
+    'background.launch.py:19',['vendor'],
+    'The manufacturer driver. We do not choose these channel names, but we do choose where they are written down, and right now that is four loose literals in three files.');
+  n('movegroup','MoveIt','plans the arm motion','out','untested','mtc_planner.cpp:16',['vendor'],
+    'Reached through MoveGroupInterface on the group "rm_group", which is an action, not a channel.');
+  n('nav2','Nav2','plans and drives the base','out','live','slam_localization.launch.py:196',
+    ['vendor'],'');
+  n('slamtb','Map builder','slam_toolbox','out','live','slam_localization.launch.py:133',
+    ['vendor'],'');
+  n('p2l','Cloud to laser scan','','out','live','slam_localization.launch.py:106',['vendor'],'');
+  n('livox','Laser driver','Livox spinning scanner','out','live',
+    'slam_localization.launch.py:65',['vendor'],'');
+  n('wheelbase','Wheelbase driver','xnode_vehicle','out','live','ros2_interface.cpp:165',
+    ['vendor'],'');
+  n('rviz','RViz','the debug window','out','live','main.py:145',['vendor','debug'],
+    'Subscribes from a saved config file rather than from code, so the bench scanner cannot see it. That is why so many debug channels look like they have no listener.');
+
+  /* -- channels: from the glasses -- */
+  t('/aria/audio/prompt','glass','The object name you spoke','shared/config.yaml:14');
+  t('/aria/rgb_camera/raw','glass','Glasses camera, straight off the sensor','shared/config.yaml:4');
+  t('/aria/rgb_camera/undistorted','glass','Glasses camera, lens distortion removed',
+    'shared/config.yaml:5');
+  t('/aria/aruco_pose','glass','Printed marker sighting','shared/config.yaml:16',[],
+    'Stamped with a frame called camera_rgb, which nothing in the repo defines.');
+  t('/aria/eye_tracking/gaze_estimate','glass','Where you are looking, as a screen position',
+    'shared/config.yaml:9',[],'Assumes everything is 1.5 m away. See section 10.');
+  t('/aria/eye_tracking/raw','glass','Eye camera image','shared/config.yaml:8');
+  t('/aria/slam_left/raw','glass','Left side camera','shared/config.yaml:6');
+  t('/aria/slam_right/raw','glass','Right side camera','shared/config.yaml:7');
+  t('/aria/imu','glass','Glasses motion sensors','shared/config.yaml:15');
+  t('/aria/vio_pose','glass','Motion-tracking pose','shared/config.yaml:17',[],
+    'Named in the config file and used by nothing at either end. Left over from the OpenVINS work.');
+  t('/aria/is_stationary','glass','Are you standing still','shared/config.yaml:19',[],
+    'Named in the config file and used by nothing at either end.');
+  t('/aria/rgb_camera/object_masks','brain','Glasses view with outlines drawn on',
+    'shared/config.yaml:10');
+  t('/realman/rgb_camera/object_masks','brain','Wrist view with outlines drawn on',
+    'shared/config.yaml:11');
+  t('/combined/object_masks','brain','Both views side by side','shared/config.yaml:12');
+  t('/aria/rgb_camera/feature_match','brain','Which features matched between the two views',
+    'shared/config.yaml:13');
+  t('/aria/fused_pose','brain','Where you are standing','shared/config.yaml:18',[],
+    'Measured against the robot body, not the room. See break 4.');
+  t('/aria/pose_initialized','brain','First fix obtained','pose_fusion_node.py:154');
+  t('/aria/glasses_marker','brain','A marker showing you, for RViz','pose_fusion_node.py:157');
+  t('/aria/rgb_camera/view','nav','Glasses image, re-sent for RViz','aria_image_relay.py:33');
+  t('/robot_pose','nav','Where the robot is','pose_publisher.py:12');
+
+  /* -- channels: wrist camera and segmentation -- */
+  t('/camera/camera/color/image_raw','eye','Wrist camera colour image',
+    'anygrasp_detection_node.py:86');
+  t('/camera/camera/color/camera_info','eye','Wrist camera lens numbers','sam3_ros_node.py:52');
+  t('/camera/camera/aligned_depth_to_color/image_raw','eye',
+    'Wrist camera depth, lined up with colour','sam3_ros_node.py:73');
+  t('/camera/sam/mask','eye','Black-and-white outline of the chosen object','sam3_ros_node.py:65',
+    [],'Two different programs publish here: the segmenter and the recognition pipeline. If both ever ran, the arm would receive two answers. This is break 5.');
+  t('/PLACEHOLDER/sam/mask','eye','Nothing, in practice','dummy_mask_publisher.py:21',['alt'],
+    'A leftover placeholder name. Nothing listens here.');
+  t('/object_centroid','eye','The object position in space','sam3_ros_node.py:67');
+  t('/object_centroid_2d','eye','Screen position plus distance','sam3_ros_node.py:66',[],
+    'Not an ordinary 3D point: x and y are pixels, z is metres.');
+
+  /* -- channels: grasp planning -- */
+  t('/grasp_candidates','grasp','Five suggested grips, scored','anygrasp_detection_node.py:81',[],
+    'The state machine subscribes but currently does nothing with it. See section 10.');
+  t('/pipeline_state','grasp','Which phase the arm is in','grasp_state_machine.cpp:156');
+  t('/grasp_candidate_markers','grasp','The grips, drawn','grasp_viz.py:46',['debug']);
+  t('/debug/sam_mask','grasp','The outline, drawn','grasp_viz.py:52',['debug']);
+  t('/debug/centroid_marker','grasp','The object position, drawn','grasp_viz.py:58',['debug']);
+  t('/debug/state_marker','grasp','The phase, drawn','grasp_viz.py:64',['debug']);
+
+  /* -- channels: the handover points -- */
+  t('/manipulation/goal_pose','brain','"The object is here"','object_recognition_pipeline.py:204');
+  t('/manipulation/start','nav','"In position, the arm may proceed"','object_approach_node.py:97',
+    [],'This message sets the arm in motion. Nothing confirms it with a human first.');
+  t('/manipulation/done','arm','"The arm has finished"','object_approach_node.py:83',[],
+    'Navigation waits for this. Nothing ever sends it.');
+  t('/manipulator/release','arm','"Let go"','orchestrator.py:63',[],
+    'Two programs wait for this. Nothing in the repo sends it.');
+  t('/manipulator/return_to_user','arm','"Got it, take me back"','grasp_state_machine.cpp:159');
+  t('/return_to_user/goal_reached','nav','Return trip finished','goto_glasses.py:68',[],
+    'Announced to nobody: the coordinator subscription is commented out at orchestrator.py:60.');
+
+  /* -- channels: base and arm hardware -- */
+  t('/goal_pose','nav','"Drive to this spot"','object_approach_node.py:90');
+  t('/goal_reached','nav','Arrival, used to reset the approach logic','goal_reached_publisher.py:27');
+  t('/goto_glasses/trigger','nav','"Go to the user now"','goto_glasses.py:51',[],
+    'A manual switch. Nothing publishes it, so it is only reachable by hand from a terminal.');
+  t('/goto_glasses/cancel','nav','"Cancel the return trip"','goto_glasses.py:55',[],
+    'A manual switch. Nothing publishes it.');
+  t('/object_map_pose','nav','The object, placed on the map','object_approach_node.py:92');
+  t('/object_marker','nav','The object, drawn','object_approach_node.py:91',['debug']);
+  t('/livox/lidar','out','Laser scan of the room','qos_relay.py:39');
+  t('/cloud_relay','out','The same scan, re-sent','qos_relay.py:38');
+  t('/scan','out','Flattened to a 2D scan line','nav2_params.yaml:96',['vendor']);
+  t('/odom','out','How far the wheels think they went','nav2_params.yaml:14',['vendor']);
+  t('/cmd_vel','out','"Drive at this speed"','',['vendor'],
+    'Three different programs can send this: Nav2, teleop and docking. See section 10.');
+  t('/joint_states','out','Current angle of each arm joint','',['vendor']);
+  t('/rm_driver/movej_canfd_cmd','arm','Streamed joint targets, 50 per second','',['vendor'],
+    'How the arm is actually driven, once MoveIt has planned.');
+  t('/rm_driver/set_gripper_position_cmd','arm','Open the fingers this far',
+    'grasp_state_machine.cpp:150',[],'Written as a loose string in two unrelated files.');
+  t('/rm_driver/set_gripper_pick_on_cmd','arm','Close on the object','grasp_state_machine.cpp:153');
+  t('/rm_driver/emergency_stop_cmd','arm','Emergency stop','estop.py:25',[],
+    'Named exactly once, in one file, with nothing checking the string is right.');
+  t('/rm_driver/move_stop_cmd','arm','Stop the current motion','estop.py:26');
+
+  /* -- edges: source hardware -- */
+  e('aria_hw','aria_audio'); e('aria_hw','aria_rgb'); e('aria_hw','aria_et');
+  e('aria_hw','aria_slam'); e('aria_hw','aria_imu');
+
+  /* -- edges: glasses streams out, all hidden from the scanner -- */
+  e('aria_audio','/aria/audio/prompt',1);
+  e('aria_rgb','/aria/rgb_camera/raw',1); e('aria_rgb','/aria/rgb_camera/undistorted',1);
+  e('aria_rgb','/aria/aruco_pose',1);
+  e('aria_et','/aria/eye_tracking/gaze_estimate',1); e('aria_et','/aria/eye_tracking/raw',1);
+  e('aria_slam','/aria/slam_left/raw',1); e('aria_slam','/aria/slam_right/raw',1);
+  e('aria_imu','/aria/imu',1);
+  e('playback','/aria/rgb_camera/raw',1); e('playback','/aria/rgb_camera/undistorted',1);
+  e('playback','/aria/eye_tracking/raw',1);
+
+  /* -- edges: into the glasses-side processing -- */
+  e('/aria/audio/prompt','recog',1); e('/aria/audio/prompt','approach');
+  e('/aria/audio/prompt','goto');
+  e('/aria/rgb_camera/undistorted','recog',1);
+  e('/aria/rgb_camera/undistorted','featmatch',1);
+  e('/aria/rgb_camera/undistorted','viz',1);
+  e('/aria/rgb_camera/undistorted','relay');
+  e('/aria/rgb_camera/raw','viz',1);
+  e('/aria/eye_tracking/gaze_estimate','recog',1);
+  e('/aria/eye_tracking/gaze_estimate','viz',1);
+  e('/aria/eye_tracking/raw','viz',1);
+  e('/aria/aruco_pose','fusion');
+  e('posepub','/robot_pose'); e('/robot_pose','fusion');
+  e('fusion','/aria/fused_pose'); e('fusion','/aria/pose_initialized');
+  e('fusion','/aria/glasses_marker'); e('/aria/glasses_marker','rviz');
+  e('/aria/fused_pose','goto');
+  e('relay','/aria/rgb_camera/view'); e('/aria/rgb_camera/view','rviz');
+
+  /* -- edges: the recognition pipeline outputs -- */
+  e('recog','/aria/rgb_camera/object_masks',1); e('recog','/realman/rgb_camera/object_masks',1);
+  e('recog','/combined/object_masks',1); e('recog','/aria/rgb_camera/feature_match',1);
+  e('featmatch','/aria/rgb_camera/feature_match',1);
+  e('/aria/rgb_camera/object_masks','viz',1); e('/realman/rgb_camera/object_masks','viz',1);
+  e('/combined/object_masks','viz',1); e('/aria/rgb_camera/feature_match','viz',1);
+  e('recog','/camera/sam/mask'); e('recog','/object_centroid_2d'); e('recog','/object_centroid');
+  e('recog','/manipulation/goal_pose');
+
+  /* -- edges: wrist camera -- */
+  e('realsense','/camera/camera/color/image_raw');
+  e('realsense','/camera/camera/color/camera_info');
+  e('realsense','/camera/camera/aligned_depth_to_color/image_raw');
+  e('/camera/camera/color/image_raw','sam3'); e('/camera/camera/color/camera_info','sam3');
+  e('/camera/camera/aligned_depth_to_color/image_raw','sam3');
+  e('/camera/camera/color/image_raw','recog'); e('/camera/camera/color/camera_info','recog');
+  e('/camera/camera/aligned_depth_to_color/image_raw','recog');
+  e('/camera/camera/color/image_raw','ag_det'); e('/camera/camera/color/camera_info','ag_det');
+  e('/camera/camera/aligned_depth_to_color/image_raw','ag_det');
+  e('/camera/camera/color/image_raw','ag_alt'); e('/camera/camera/color/camera_info','ag_alt');
+  e('/camera/camera/aligned_depth_to_color/image_raw','ag_alt');
+  e('/camera/camera/aligned_depth_to_color/image_raw','dummy');
+  e('/camera/camera/color/camera_info','sm');
+  e('sam3','/camera/sam/mask'); e('sam3','/object_centroid_2d'); e('sam3','/object_centroid');
+  e('dummy','/PLACEHOLDER/sam/mask');
+
+  /* -- edges: grasp planning -- */
+  e('/camera/sam/mask','ag_det'); e('/camera/sam/mask','ag_alt'); e('/camera/sam/mask','gviz');
+  e('ag_det','/grasp_candidates'); e('ag_alt','/grasp_candidates');
+  e('/grasp_candidates','sm'); e('/grasp_candidates','gviz');
+  e('/object_centroid_2d','sm'); e('/object_centroid','gviz');
+  e('sm','/pipeline_state');
+  e('/pipeline_state','ag_det'); e('/pipeline_state','ag_alt'); e('/pipeline_state','gviz');
+  e('gviz','/grasp_candidate_markers'); e('gviz','/debug/sam_mask');
+  e('gviz','/debug/centroid_marker'); e('gviz','/debug/state_marker');
+  e('/grasp_candidate_markers','rviz'); e('/debug/sam_mask','rviz');
+  e('/debug/centroid_marker','rviz'); e('/debug/state_marker','rviz');
+
+  /* -- edges: the handover points -- */
+  e('/manipulation/goal_pose','approach');
+  e('approach','/goal_pose'); e('approach','/object_map_pose'); e('approach','/object_marker');
+  e('approach','/manipulation/start');
+  e('/object_marker','rviz');
+  e('/manipulation/start','orch');
+  e('/manipulation/done','approach');
+  e('/manipulator/release','approach'); e('/manipulator/release','orch');
+  e('sm','/manipulator/return_to_user'); e('/manipulator/return_to_user','goto');
+  e('goto','/return_to_user/goal_reached');
+  e('/goto_glasses/trigger','goto'); e('/goto_glasses/cancel','goto');
+
+  /* -- edges: navigation and the base -- */
+  e('/goal_pose','reached'); e('/goal_pose','nav2');
+  e('reached','/goal_reached'); e('/goal_reached','approach');
+  e('livox','/livox/lidar'); e('/livox/lidar','qos'); e('qos','/cloud_relay');
+  e('/cloud_relay','p2l'); e('p2l','/scan'); e('/scan','slamtb'); e('/scan','nav2');
+  e('wheelbase','/odom'); e('/odom','slamtb'); e('/odom','nav2');
+  e('nav2','/cmd_vel'); e('/cmd_vel','wheelbase');
+
+  /* -- edges: the arm -- */
+  e('sm','/rm_driver/set_gripper_position_cmd'); e('orch','/rm_driver/set_gripper_position_cmd');
+  e('sm','/rm_driver/set_gripper_pick_on_cmd');
+  e('estop','/rm_driver/emergency_stop_cmd'); e('estop','/rm_driver/move_stop_cmd');
+  e('/rm_driver/set_gripper_position_cmd','rm_driver');
+  e('/rm_driver/set_gripper_pick_on_cmd','rm_driver');
+  e('/rm_driver/emergency_stop_cmd','rm_driver'); e('/rm_driver/move_stop_cmd','rm_driver');
+  e('movegroup','/rm_driver/movej_canfd_cmd'); e('/rm_driver/movej_canfd_cmd','rm_driver');
+  e('rm_driver','/joint_states'); e('/joint_states','movegroup');
+
+  /* -- actions: a request that reports progress back -- */
+  act('goto','nav2','navigate_to_pose');
+  act('reached','nav2','navigate_to_pose');
+  act('sm','movegroup','plan and execute');
+
+  /* ---------- derived: dead ends, lanes ---------- */
+  var LANES = {glass:'Glasses streams',brain:'Glasses processing',eye:'Wrist camera',
+    grasp:'Grasp planning',arm:'Arm control',nav:'Navigation',out:'Hardware and vendor'};
+  var inc={}, outg={};
+  E.forEach(function(x){
+    if(!V[x.a]||!V[x.b]) return;
+    (outg[x.a]=outg[x.a]||[]).push(x); (inc[x.b]=inc[x.b]||[]).push(x);
+  });
+  VL.forEach(function(v){
+    if(v.kind!=='topic') return;
+    var np=(inc[v.id]||[]).length, ns=(outg[v.id]||[]).length;
+    if(!np && !ns) v.st='dead';
+    else if(!np) v.st='nopub';
+    else if(!ns) v.st='nosub';
+    if((inc[v.id]||[]).some(function(x){ return x.k==='hid'; })) v.hid=true;
+  });
+  E.forEach(function(x){
+    var A=V[x.a], B=V[x.b];
+    if(!A||!B) return;
+    if((A.kind==='topic'&&(A.st==='nopub'||A.st==='dead')) ||
+       (B.kind==='topic'&&(B.st==='nosub'||B.st==='dead'))) x.cut=true;
+  });
+
+  /* ---------- filters and the two levels of detail ---------- */
+  var mode='group', focus=null;
+  var F={debug:false,vendor:true,off:true,alt:false};
+  function passes(v){
+    if(!F.debug && v.tags.indexOf('debug')>-1) return false;
+    if(!F.vendor && v.tags.indexOf('vendor')>-1) return false;
+    if(!F.alt && v.tags.indexOf('alt')>-1) return false;
+    if(!F.off && (v.st==='off'||v.st==='dead')) return false;
+    return true;
+  }
+  function visible(v){
+    if(!passes(v)) return false;
+    if(focus && v.kind==='node' && v.grp!==focus) return false;
+    return true;
+  }
+  function currentGraph(){
+    if(mode==='group') return grouped();
+    var keep={}, vs=[];
+    VL.forEach(function(v){ if(visible(v)) keep[v.id]=1; });
+    if(focus){
+      VL.forEach(function(v){
+        if(v.kind!=='topic'||keep[v.id]||!passes(v)) return;
+        var touch=(inc[v.id]||[]).concat(outg[v.id]||[]).some(function(x){
+          var o=V[x.a===v.id?x.b:x.a];
+          return o&&o.kind==='node'&&o.grp===focus&&keep[o.id];
+        });
+        if(touch) keep[v.id]=1;
+      });
+      VL.forEach(function(v){
+        if(v.kind!=='node'||keep[v.id]||!passes(v)) return;
+        var touch=(inc[v.id]||[]).concat(outg[v.id]||[]).some(function(x){
+          var o=V[x.a===v.id?x.b:x.a]; return o&&o.kind==='topic'&&keep[o.id];
+        });
+        if(touch) keep[v.id]=1;
+      });
+    }
+    VL.forEach(function(v){ if(keep[v.id]) vs.push(v); });
+    var es=E.filter(function(x){ return keep[x.a]&&keep[x.b]; });
+    return {vs:vs,es:es};
+  }
+  function grouped(){
+    var vs=[], seen={}, order=['glass','brain','eye','grasp','arm','nav','out'];
+    order.forEach(function(g){
+      var members=VL.filter(function(v){ return v.kind==='node'&&v.grp===g&&passes(v); });
+      if(!members.length) return;
+      var chans=VL.filter(function(v){ return v.kind==='topic'&&v.grp===g&&passes(v); });
+      seen[g]=1;
+      vs.push({id:'G:'+g,kind:'group',grp:g,label:LANES[g],
+        sub:members.length+' programs, '+chans.length+' channels',
+        st:members.every(function(m){ return m.st==='off'||m.st==='dead'; })?'off':'live',
+        tags:[],cite:'',members:members,chans:chans,
+        note:'Double-click to open just this subsystem. '+members.length+
+             ' programs live here, and '+chans.length+' channels are named from inside it.'});
+    });
+    var agg={};
+    function link(p,q,src){
+      if(!p||!q||p===q||!seen[p]||!seen[q]) return;
+      var k=p+'>'+q;
+      if(!agg[k]) agg[k]={a:'G:'+p,b:'G:'+q,k:'ln',n:0,cut:true};
+      agg[k].n++;
+      if(!src.cut) agg[k].cut=false;
+      if(src.k==='act') agg[k].k='act';
+    }
+    E.forEach(function(x){
+      var A=V[x.a], B=V[x.b];
+      if(!A||!B||!passes(A)||!passes(B)) return;
+      if(A.kind==='topic'){
+        (inc[A.id]||[]).forEach(function(y){
+          var P=V[y.a];
+          if(P&&P.kind==='node'&&passes(P)&&B.kind==='node') link(P.grp,B.grp,x);
+        });
+      } else if(B.kind==='node'){
+        link(A.grp,B.grp,x);
+      }
+    });
+    var es=Object.keys(agg).map(function(k){ return agg[k]; });
+    return {vs:vs,es:es};
+  }
+
+  /* ---------- layout: layered and deterministic ---------- */
+  var NW=196, NH=42, TH=27, COL=224, ROW=46, PAD=44;
+  var GW=264, GH=86;
+  var GPOS={glass:[40,54],brain:[350,54],nav:[660,54],out:[970,222],
+            eye:[40,336],grasp:[350,336],arm:[660,336]};
+  function layout(g){
+    var vs=g.vs, es=g.es, id={}, i;
+    if(vs.length && vs[0].kind==='group'){
+      var mx=0, my=0;
+      vs.forEach(function(v){
+        var p=GPOS[v.grp]||[40,54];
+        v.w=GW; v.h=GH; v.x=p[0]; v.y=p[1];
+        v.cx=v.x+GW/2; v.cy=v.y+GH/2;
+        mx=Math.max(mx,v.x+GW); my=Math.max(my,v.y+GH);
+      });
+      g.back={}; g.W=mx+44; g.H=my+54;
+      return g;
+    }
+    vs.forEach(function(v,k){ id[v.id]=k; });
+    var adj={}, radj={};
+    es.forEach(function(x){
+      if(!(x.a in id)||!(x.b in id)) return;
+      (adj[x.a]=adj[x.a]||[]).push(x.b); (radj[x.b]=radj[x.b]||[]).push(x.a);
+    });
+    var state={}, back={};
+    function dfs(u){
+      state[u]=1;
+      (adj[u]||[]).forEach(function(w){
+        if(state[w]===1) back[u+' '+w]=1;
+        else if(!state[w]) dfs(w);
+      });
+      state[u]=2;
+    }
+    vs.forEach(function(v){ if(!state[v.id] && !(radj[v.id]||[]).length) dfs(v.id); });
+    vs.forEach(function(v){ if(!state[v.id]) dfs(v.id); });
+    var fwd=es.filter(function(x){
+      return (x.a in id)&&(x.b in id)&&!back[x.a+' '+x.b];
+    });
+    var L={}, changed=true, guard=0;
+    vs.forEach(function(v){ L[v.id]=0; });
+    while(changed && guard++<300){
+      changed=false;
+      fwd.forEach(function(x){ if(L[x.b]<L[x.a]+1){ L[x.b]=L[x.a]+1; changed=true; } });
+    }
+    var cols={}, maxL=0;
+    vs.forEach(function(v){ (cols[L[v.id]]=cols[L[v.id]]||[]).push(v); maxL=Math.max(maxL,L[v.id]); });
+    var pos={};
+    for(i=0;i<=maxL;i++) (cols[i]||[]).forEach(function(v,k){ pos[v.id]=k; });
+    for(var s=0;s<12;s++){
+      var rev=s%2===1;
+      for(i=rev?maxL:0; rev?i>=0:i<=maxL; rev?i--:i++){
+        var col=cols[i]||[];
+        col.forEach(function(v){
+          var nb=(rev?(adj[v.id]||[]):(radj[v.id]||[])).filter(function(w){ return w in pos; });
+          if(!nb.length){ v._b=pos[v.id]; return; }
+          var sum=0; nb.forEach(function(w){ sum+=pos[w]; }); v._b=sum/nb.length;
+        });
+        col.sort(function(p,q){ return (p._b-q._b) || (id[p.id]-id[q.id]); });
+        col.forEach(function(v,k){ pos[v.id]=k; });
+      }
+    }
+    var tallest=0;
+    for(i=0;i<=maxL;i++) tallest=Math.max(tallest,(cols[i]||[]).length);
+    var H=tallest*ROW;
+    for(i=0;i<=maxL;i++){
+      var c=cols[i]||[], off=(H-c.length*ROW)/2;
+      c.forEach(function(v,k){
+        v.w=NW; v.h=(v.kind==='topic')?TH:NH;
+        v.x=PAD+i*COL; v.y=PAD+off+k*ROW+(ROW-v.h)/2;
+        v.cx=v.x+v.w/2; v.cy=v.y+v.h/2;
+      });
+    }
+    g.back=back;
+    g.W=PAD*2+maxL*COL+NW; g.H=PAD*2+H;
+    return g;
+  }
+
+  /* ---------- render ---------- */
+  var stage=document.getElementById('g-stage'), side=document.getElementById('g-side');
+  var G=null, vb=null, selected=null;
+  function el(tag,attrs){
+    var x=document.createElementNS(NS,tag);
+    for(var k in attrs) if(attrs[k]!==null&&attrs[k]!==undefined) x.setAttribute(k,attrs[k]);
+    return x;
+  }
+  function txt(s,x,y,cls,anchor){
+    var q=el('text',{x:x,y:y,'class':cls,'text-anchor':anchor||'start'});
+    q.textContent=s; return q;
+  }
+  function clip(s,max){ s=String(s); return s.length>max ? s.slice(0,max-1)+'…' : s; }
+  function edgePath(A,B,isBack){
+    var x1=A.x+A.w, y1=A.cy, x2=B.x, y2=B.cy;
+    if(isBack || x2<x1){
+      var dip=Math.max(A.h,B.h)+36;
+      return 'M'+A.cx+','+(A.y+A.h)+' C'+A.cx+','+(A.y+A.h+dip)+' '+
+             B.cx+','+(B.y+B.h+dip)+' '+B.cx+','+(B.y+B.h);
+    }
+    var dx=Math.max(30,(x2-x1)*0.5);
+    return 'M'+x1+','+y1+' C'+(x1+dx)+','+y1+' '+(x2-dx)+','+y2+' '+x2+','+y2;
+  }
+  function draw(){
+    G=layout(currentGraph());
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    var defs=el('defs');
+    [['ga','var(--line-2)'],['gb','var(--accent)'],['gc','var(--broken)'],['gd','var(--lane-arm)']]
+      .forEach(function(p){
+        var m=el('marker',{id:p[0],viewBox:'0 0 8 8',refX:7,refY:4,markerWidth:6,markerHeight:6,
+          orient:'auto'});
+        m.appendChild(el('path',{d:'M0 1 L7 4 L0 7 z',fill:p[1]}));
+        defs.appendChild(m);
+      });
+    svg.appendChild(defs);
+    var gEdge=el('g',{}), gNode=el('g',{});
+    svg.appendChild(gEdge); svg.appendChild(gNode);
+    var byId={};
+    G.vs.forEach(function(v){ byId[v.id]=v; });
+
+    G.es.forEach(function(x){
+      var A=byId[x.a], B=byId[x.b];
+      if(!A||!B) return;
+      var isBack=!!(G.back && G.back[x.a+' '+x.b]);
+      var cls='ln'+(x.cut?' cut':'')+(x.k==='act'?' act':'')+(x.k==='hid'?' hid':'');
+      var mk=x.cut?'gc':(x.k==='act'?'gd':(x.k==='hid'?'gb':'ga'));
+      var p=el('path',{d:edgePath(A,B,isBack),'class':cls,'marker-end':'url(#'+mk+')'});
+      gEdge.appendChild(p); x._el=p;
+      var mx=(A.x+A.w+B.x)/2, my=(A.cy+B.cy)/2;
+      if(x.n>1) gEdge.appendChild(txt(x.n+' channels',mx,my-6,'cnt','middle'));
+      if(x.k==='act' && x.label && mode!=='group')
+        gEdge.appendChild(txt(clip(x.label,22),mx,my-6,'cnt','middle'));
+    });
+
+    G.vs.forEach(function(v){
+      var g=el('g',{'class':'v',tabindex:0,role:'button'});
+      var lane='var(--lane-'+(v.grp||'out')+')', soft='var(--lane-'+(v.grp||'out')+'-s)';
+      var isT=(v.kind==='topic');
+      g.appendChild(el('rect',{x:v.x,y:v.y,width:v.w,height:v.h,rx:isT?3:9,
+        fill:soft,stroke:lane,
+        'class':'nb'+((v.st==='off'||v.st==='dead'||v.st==='alt')?' off':'')}));
+      g.appendChild(el('rect',{x:v.x,y:v.y,width:3.5,height:v.h,rx:1.5,fill:lane}));
+      if(v.kind==='group'){
+        g.appendChild(txt(clip(v.label,26),v.x+14,v.y+30,'tlg'));
+        g.appendChild(txt(clip(v.sub,32),v.x+14,v.y+51,'tsg'));
+        g.appendChild(txt('double-click to open',v.x+14,v.y+70,'cnt'));
+      } else if(isT){
+        g.appendChild(txt(clip(v.id,26),v.x+11,v.y+18,'tp'));
+      } else {
+        g.appendChild(txt(clip(v.label,24),v.x+11,v.y+(v.sub?17:26),'tl'));
+        if(v.sub) g.appendChild(txt(clip(v.sub,31),v.x+11,v.y+31,'ts'));
+      }
+      if(isT && (v.st==='nopub'||v.st==='nosub'||v.st==='dead'))
+        g.appendChild(el('circle',{cx:v.x+v.w-9,cy:v.y+v.h/2,r:3.6,'class':'dead'}));
+      g.addEventListener('click',function(ev){ ev.stopPropagation(); pick(v.id); });
+      g.addEventListener('keydown',function(ev){
+        if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); pick(v.id); }
+      });
+      g.addEventListener('dblclick',function(ev){
+        ev.stopPropagation();
+        if(v.kind==='group'){ focus=v.grp; mode='full'; selected=null; syncMode(); draw();
+          describe(null); }
+      });
+      gNode.appendChild(g); v._el=g;
+    });
+
+    vb={x:0,y:0,w:G.W,h:G.H};
+    fitView();
+    var np=G.vs.filter(function(v){ return v.kind!=='topic'; }).length;
+    var nt=G.vs.filter(function(v){ return v.kind==='topic'; }).length;
+    document.getElementById('g-count').textContent =
+      (mode==='group' ? np+' subsystems' : np+' programs, '+nt+' channels')+
+      (focus ? ' (in '+LANES[focus]+')' : '');
+    if(selected && byId[selected]) applyTrace(selected); else clearTrace();
+  }
+
+  /* ---------- pan and zoom ---------- */
+  function setVB(){ svg.setAttribute('viewBox',vb.x+' '+vb.y+' '+vb.w+' '+vb.h); }
+  var MINSCALE=0.7;
+  function fitView(whole){
+    var box=stage.getBoundingClientRect();
+    var pw=box.width||1040, ph=box.height||640, ar=pw/ph, w=G.W, h=G.H, clamped=false;
+    if(w/h<ar) w=h*ar; else h=w/ar;
+    if(!whole && w>pw/MINSCALE){ w=pw/MINSCALE; h=w/ar; clamped=true; }
+    vb = clamped ? {x:-24,y:Math.max(-24,(G.H-h)/2),w:w,h:h}
+                 : {x:(G.W-w)/2,y:(G.H-h)/2,w:w,h:h};
+    setVB();
+  }
+  function zoom(f,cx,cy){
+    if(!vb) return;
+    if(cx===undefined){ cx=vb.x+vb.w/2; cy=vb.y+vb.h/2; }
+    var nw=Math.min(G.W*5,Math.max(G.W*0.05,vb.w*f)), nh=nw*(vb.h/vb.w);
+    vb.x=cx-(cx-vb.x)*(nw/vb.w); vb.y=cy-(cy-vb.y)*(nh/vb.h);
+    vb.w=nw; vb.h=nh; setVB();
+  }
+  stage.addEventListener('wheel',function(ev){
+    if(!vb) return;
+    ev.preventDefault();
+    var b=svg.getBoundingClientRect();
+    zoom(ev.deltaY>0?1.14:0.88,
+      vb.x+(ev.clientX-b.left)/b.width*vb.w,
+      vb.y+(ev.clientY-b.top)/b.height*vb.h);
+  },{passive:false});
+  var drag=null;
+  svg.addEventListener('pointerdown',function(ev){
+    if(!vb) return;
+    drag={x:ev.clientX,y:ev.clientY,vx:vb.x,vy:vb.y};
+    svg.classList.add('drag');
+    try{ svg.setPointerCapture(ev.pointerId); }catch(err){}
+  });
+  svg.addEventListener('pointermove',function(ev){
+    if(!drag) return;
+    var b=svg.getBoundingClientRect();
+    vb.x=drag.vx-(ev.clientX-drag.x)/b.width*vb.w;
+    vb.y=drag.vy-(ev.clientY-drag.y)/b.height*vb.h;
+    setVB();
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(k){
+    svg.addEventListener(k,function(){ drag=null; svg.classList.remove('drag'); });
+  });
+  svg.addEventListener('click',function(ev){ if(ev.target===svg) pick(null); });
+  document.getElementById('g-zin').addEventListener('click',function(){ zoom(0.8); });
+  document.getElementById('g-zout').addEventListener('click',function(){ zoom(1.25); });
+  document.getElementById('g-fit').addEventListener('click',function(){ fitView(true); });
+
+  /* ---------- tracing ---------- */
+  function clearTrace(){
+    stage.classList.remove('sel');
+    if(!G) return;
+    G.vs.forEach(function(v){ if(v._el) v._el.classList.remove('on','root','hit'); });
+    G.es.forEach(function(x){ if(x._el) x._el.classList.remove('on'); });
+  }
+  function applyTrace(id){
+    clearTrace();
+    if(!id||!G) return;
+    G.es.forEach(function(x){ x._on=0; });
+    var seen={}; seen[id]=1;
+    [1,-1].forEach(function(dir){
+      var q=[id], mark={}; mark[id]=1;
+      while(q.length){
+        var u=q.shift();
+        G.es.forEach(function(x){
+          var from=dir>0?x.a:x.b, to=dir>0?x.b:x.a;
+          if(from!==u) return;
+          x._on=1;
+          if(!mark[to]){ mark[to]=1; seen[to]=1; q.push(to); }
+        });
+      }
+    });
+    stage.classList.add('sel');
+    G.vs.forEach(function(v){
+      if(seen[v.id]) v._el.classList.add('on');
+      if(v.id===id) v._el.classList.add('root');
+    });
+    G.es.forEach(function(x){ if(x._on && x._el) x._el.classList.add('on'); });
+  }
+  function pick(id){
+    stopPlay();
+    selected=id;
+    applyTrace(id);
+    describe(id);
+  }
+
+  /* ---------- the side panel ---------- */
+  var STATUS={live:['p-live','runs today'],off:['p-off','not started'],
+    untested:['p-untested','never run on hardware'],alt:['p-off','spare, nothing launches it'],
+    dead:['p-dead','broken'],ok:['p-live','in use'],nopub:['p-dead','nobody publishes'],
+    nosub:['p-dead','nobody listens']};
+  function esc(s){
+    return String(s).replace(/[&<>"]/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
+  }
+  function describe(id){
+    if(!id){
+      side.innerHTML='<p class="ph">Click a box to see what it is, where it is defined, and what '+
+        'is at the other end of every arrow. Click empty space to clear.</p>';
+      return;
+    }
+    var v=V[id];
+    if(!v && G) v=G.vs.filter(function(q){ return q.id===id; })[0];
+    if(!v) return;
+    var h='';
+    if(v.kind==='group'){
+      h+='<span class="kind">Subsystem</span><h4>'+esc(v.label)+'</h4>';
+      h+='<p class="note">'+esc(v.note)+'</p>';
+      h+='<div class="grp"><span class="gh">Programs</span>'+
+        v.members.map(function(m){
+          return '<button class="lnk" data-go="'+esc(m.id)+'">'+esc(m.label)+
+            '<span class="src">'+esc(m.cite||'')+'</span></button>';
+        }).join('')+'</div>';
+      h+='<div class="grp"><span class="gh">Channels named here</span>'+
+        (v.chans.length ? v.chans.map(function(m){
+          return '<button class="lnk" data-go="'+esc(m.id)+'">'+esc(m.id)+'</button>';
+        }).join('') : '<span class="none">none</span>')+'</div>';
+      side.innerHTML=h; wireSide(); return;
+    }
+    var st=STATUS[v.st]||['p-live',v.st];
+    h+='<span class="kind">'+(v.kind==='topic'?'Channel':'Program')+
+       (LANES[v.grp]?' in '+esc(LANES[v.grp]):'')+'</span>';
+    h+='<h4>'+esc(v.kind==='topic'?v.id:v.label)+'</h4>';
+    h+='<span class="pill '+st[0]+'">'+esc(st[1])+'</span>';
+    if(v.hid) h+='<span class="pill p-hidden">publisher hidden from the bench</span>';
+    if(v.sub) h+='<p class="note"><strong>'+esc(v.sub)+'</strong></p>';
+    if(v.note) h+='<p class="note">'+esc(v.note)+'</p>';
+    if(v.cite) h+='<p class="note"><span class="cite">'+esc(v.cite)+'</span></p>';
+    function list(arr,which,head){
+      var s='<div class="grp"><span class="gh">'+head+'</span>';
+      if(!arr.length) s+='<span class="none">nothing at this end</span>';
+      else s+=arr.map(function(x){
+        var o=V[which==='a'?x.a:x.b];
+        if(!o) return '';
+        var tail=(x.k==='act')
+          ? '<span class="src">action, '+esc(x.label||'')+'</span>'
+          : (o.cite?'<span class="src">'+esc(o.cite)+'</span>':'');
+        return '<button class="lnk" data-go="'+esc(o.id)+'">'+
+          esc(o.kind==='topic'?o.id:o.label)+tail+'</button>';
+      }).join('');
+      return s+'</div>';
+    }
+    h+=list(inc[v.id]||[],'a',v.kind==='topic'?'Sent by':'Listens to');
+    h+=list(outg[v.id]||[],'b',v.kind==='topic'?'Listened to by':'Sends on');
+    side.innerHTML=h; wireSide();
+  }
+  function wireSide(){
+    [].slice.call(side.querySelectorAll('[data-go]')).forEach(function(b){
+      b.addEventListener('click',function(){
+        var id=b.getAttribute('data-go');
+        var here=G && G.vs.some(function(q){ return q.id===id; });
+        if(!here){
+          mode='full'; focus=null;
+          F.debug=true; F.vendor=true; F.off=true; F.alt=true;
+          syncMode(); syncChips(); draw();
+        }
+        pick(id);
+        var v=G.vs.filter(function(q){ return q.id===id; })[0];
+        if(v){ vb.x=v.cx-vb.w/2; vb.y=v.cy-vb.h/2; setVB(); }
+      });
+    });
+  }
+
+  /* ---------- the guided walkthrough ---------- */
+  var STEPS=[
+    ['You speak',
+     'You say "grab that box". Seven microphones record it, Whisper turns it into text, and Qwen2.5 pulls out one object name. This part works today.',
+     ['aria_hw','aria_audio','/aria/audio/prompt','recog','approach','goto']],
+    ['Your eyes should settle which box',
+     'The glasses camera and eye tracker should tell the recognition pipeline which of the three boxes you meant. Both streams are switched off in src/main.py, so nothing arrives. This is break 1.',
+     ['aria_rgb','/aria/rgb_camera/undistorted','aria_et','/aria/eye_tracking/gaze_estimate','recog']],
+    ['Where is the object',
+     'The recognition pipeline combines the wrist camera colour and depth images with the outline it found, and publishes the object position as "the object is here".',
+     ['realsense','/camera/camera/color/image_raw',
+      '/camera/camera/aligned_depth_to_color/image_raw','recog','/manipulation/goal_pose','approach']],
+    ['Drive there',
+     'The approach planner works out a spot 0.6 m from the object and asks the base to drive to it. The arrival reporter turns that into a Nav2 action request, and Nav2 drives the wheels.',
+     ['approach','/goal_pose','reached','nav2','/cmd_vel','wheelbase']],
+    ['Arrived',
+     'Nav2 reports the trip finished. The approach planner hears it and says the arm may proceed. That one message sets the arm in motion, with no human in the loop.',
+     ['nav2','reached','/goal_reached','approach','/manipulation/start','orch']],
+    ['The robot side starts',
+     'The coordinator launches the robot side: the wrist camera driver, the segmenter and AnyGrasp. The segmenter outlines the object, still on the hardcoded word "box".',
+     ['orch','realsense','sam3','/camera/sam/mask','ag_det']],
+    ['Where to put the fingers',
+     'AnyGrasp proposes five scored grips. The state machine also reads the object position directly, and it is that position, not the grips, that it currently acts on.',
+     ['ag_det','/grasp_candidates','sm','/object_centroid_2d','sam3']],
+    ['The arm moves',
+     'The state machine asks MoveIt to plan, and MoveIt streams joint targets to the arm driver 50 times a second. Nothing in this chain has ever run on hardware.',
+     ['sm','movegroup','/rm_driver/movej_canfd_cmd','rm_driver','/joint_states']],
+    ['Grip',
+     'The state machine closes the gripper directly, bypassing MoveIt. The coordinator can send on the same channel.',
+     ['sm','orch','/rm_driver/set_gripper_pick_on_cmd','/rm_driver/set_gripper_position_cmd',
+      'rm_driver']],
+    ['Take me back',
+     'The state machine says "got it". The return-trip navigator drives back to where the glasses are, then announces it has arrived, to nobody: the coordinator subscription is commented out.',
+     ['sm','/manipulator/return_to_user','goto','nav2','/return_to_user/goal_reached']],
+    ['Let go',
+     'Two programs wait for "release". Nothing in the repository ever sends it, so the last step of the sequence cannot happen at all.',
+     ['/manipulator/release','orch','approach']]
+  ];
+  var step=-1;
+  var cap=document.getElementById('g-cap'),
+      capS=document.getElementById('g-cap-step'),
+      capT=document.getElementById('g-cap-text');
+  function showStep(i){
+    if(i<0||i>=STEPS.length) return;
+    step=i;
+    var s=STEPS[i], ids={};
+    s[2].forEach(function(x){ ids[x]=1; });
+    clearTrace();
+    stage.classList.add('sel');
+    var c=0,minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
+    G.vs.forEach(function(v){
+      if(!ids[v.id]) return;
+      v._el.classList.add('on','hit'); c++;
+      minx=Math.min(minx,v.x); miny=Math.min(miny,v.y);
+      maxx=Math.max(maxx,v.x+v.w); maxy=Math.max(maxy,v.y+v.h);
+    });
+    G.es.forEach(function(x){ if(ids[x.a]&&ids[x.b]&&x._el) x._el.classList.add('on'); });
+    capS.textContent='Step '+(i+1)+' of '+STEPS.length+' · '+s[0];
+    capT.textContent=s[1];
+    cap.hidden=false;
+    if(c){
+      var pad=120, ratio=vb.h/vb.w;
+      var w=Math.max(maxx-minx+pad*2,780), h=w*ratio;
+      if((maxy-miny+pad*2)>h){ h=maxy-miny+pad*2; w=h/ratio; }
+      vb.x=(minx+maxx)/2-w/2; vb.y=(miny+maxy)/2-h/2; vb.w=w; vb.h=h;
+      setVB();
+    }
+    describe(s[2][0]);
+  }
+  function startPlay(){
+    mode='full'; focus=null;
+    F.vendor=true; F.off=true;
+    syncMode(); syncChips(); draw();
+    selected=null;
+    showStep(0);
+  }
+  function stopPlay(){
+    if(step<0) return;
+    step=-1; cap.hidden=true; clearTrace();
+  }
+  document.getElementById('g-play').addEventListener('click',startPlay);
+  document.getElementById('g-next').addEventListener('click',function(){
+    if(step<STEPS.length-1) showStep(step+1);
+  });
+  document.getElementById('g-prev').addEventListener('click',function(){
+    if(step>0) showStep(step-1);
+  });
+  document.getElementById('g-stop').addEventListener('click',function(){
+    stopPlay(); describe(null);
+  });
+  document.getElementById('g-clear').addEventListener('click',function(){
+    stopPlay(); focus=null; selected=null; draw(); describe(null);
+  });
+
+  /* ---------- controls ---------- */
+  var bG=document.getElementById('g-mode-group'), bF=document.getElementById('g-mode-full');
+  function syncMode(){
+    bG.setAttribute('aria-pressed',mode==='group'?'true':'false');
+    bF.setAttribute('aria-pressed',mode==='full'?'true':'false');
+  }
+  bG.addEventListener('click',function(){
+    stopPlay(); mode='group'; focus=null; selected=null; syncMode(); draw(); describe(null);
+  });
+  bF.addEventListener('click',function(){
+    stopPlay(); mode='full'; focus=null; selected=null; syncMode(); draw(); describe(null);
+  });
+  var CHIPS={'g-f-debug':'debug','g-f-vendor':'vendor','g-f-off':'off','g-f-alt':'alt'};
+  function syncChips(){
+    Object.keys(CHIPS).forEach(function(k){
+      var b=document.getElementById(k);
+      if(b) b.setAttribute('aria-pressed',F[CHIPS[k]]?'true':'false');
+    });
+  }
+  Object.keys(CHIPS).forEach(function(k){
+    var b=document.getElementById(k);
+    if(!b) return;
+    b.addEventListener('click',function(){
+      stopPlay(); F[CHIPS[k]]=!F[CHIPS[k]]; syncChips(); draw();
+    });
+  });
+  var find=document.getElementById('g-find');
+  find.addEventListener('input',function(){
+    var q=find.value.trim().toLowerCase();
+    if(!q){ if(selected) applyTrace(selected); else clearTrace(); return; }
+    stopPlay(); clearTrace(); stage.classList.add('sel');
+    var hits=G.vs.filter(function(v){
+      return (v.id+' '+(v.label||'')+' '+(v.sub||'')).toLowerCase().indexOf(q)>-1;
+    });
+    hits.forEach(function(v){ v._el.classList.add('on','hit'); });
+    if(hits.length===1) describe(hits[0].id);
+  });
+
+  /* ---------- first paint ---------- */
+  syncMode(); syncChips(); draw();
+  window.__gapplerGraphFit=function(){ if(G) fitView(); };
 })();
 </script>

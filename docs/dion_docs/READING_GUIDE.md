@@ -12,7 +12,8 @@ most instructive parts, so they are kept rather than tidied away.
 >
 > **Round 1: complete** (2026-09-09) — questions answered and marked in §1.4.
 > **Round 2: complete** (2026-09-13) — all three check questions answered in §2.8.
-> **Next: Round 3** (§3), the robot path. Read ORIENTATION §8.1–§8.3 *before* starting it.
+> **Round 3: written 2026-09-13, walkthrough in §3.1–3.6. All three check questions still open (§3.7).**
+> Read ORIENTATION §8.1–§8.3 *before* starting it. Nothing in Round 3 should be run.
 >
 > Rounds 3 and 4 are outlined in §3 and §4; the per-file reading order is in ORIENTATION §4.
 
@@ -376,22 +377,102 @@ Three footnotes, since both alternatives are more real than they look:
 
 ## 3. Round 3 — the robot path (~2 h) ← **START HERE**
 
-Per-file order in ORIENTATION §4. Sequence and rationale:
+Read ORIENTATION §8.1, §8.2 and §8.3 **before** this round, not after. Nothing in this round should
+be run: launching the state machine moves the arm within about two seconds, before it waits for any
+input, and `homeWithRetry` retries forever until it succeeds.
 
-1. **`estop.py`** — 90 lines, read it *first* in this round. You will need it.
-2. **`sam3_ros_node.py`** — short. Compare against `object_recognition_pipeline.py` and notice they
-   do overlapping jobs differently. That gap is ORIENTATION §6.2 and §6.5.
-3. **`anygrasp_detection_node.py`** — RGB + depth + mask → grasp poses. Note the `/pipeline_state`
-   gate: it only runs during EXECUTING.
-4. **`mtc_planner.hpp`** — 60 lines = the *entire* arm-motion API, 5 methods. Plus the HOME and
-   RETURN joint angles.
-5. **`grasp_state_machine.cpp`** — ~760 lines, the hardest file here. Constructor (128-161, all
-   I/O) → `workerLoop` (590+) → `selectingStep` → `executingStep`. Skip the math helpers first pass.
+**The one thing to carry in.** `USE_SIMPLE_EXECUTE = true` (`grasp_state_machine.cpp:41`) means the
+AnyGrasp candidate-evaluation path is compiled but **not taken**. The arm does a blind 10 cm push
+and closes. `/grasp_candidates` is subscribed and unused in this mode.
 
-Read ORIENTATION §8.1, §8.2 and §8.3 **before** this round, not after. One item to carry in:
-`USE_SIMPLE_EXECUTE = true` (`:40`) means the AnyGrasp candidate-evaluation path is compiled but
-**not taken** — the arm does a blind 10 cm push and closes. `/grasp_candidates` is subscribed but
-unused in this mode.
+### 3.1 `estop.py` — 80 lines, read it *first*
+
+Three keys. `E` publishes `Stop(state=true)` to `/rm_driver/emergency_stop_cmd`, `R` the same with
+`state=false`, `S` an `Empty` to `/rm_driver/move_stop_cmd` (current motion only). Raw-terminal key
+reading at `:48-55`, so the stop only works while that window has focus.
+
+Two weaknesses before you ever rely on it, both CODE_AUDIT B2: it publishes and then immediately
+destroys the node (`:72-76`), and DDS may not have delivered by then — `orchestrator.py:121` sleeps
+1.5 s for exactly this reason and the e-stop does not; and the publisher is `depth=1` VOLATILE
+(`:25`), so a stop sent before `rm_driver` subscribes is dropped silently. Compare B1: the root
+`main.py` advertises a `q` stop key that does not exist.
+
+### 3.2 `sam3_ros_node.py` — 197 lines
+
+SAM 3 on every synced RealSense RGB+depth pair → best mask + centroid. Three things:
+
+- `TEXT_PROMPT = "box"` (`:40`) is a module constant. This node never subscribes to
+  `/aria/audio/prompt`. **Speaking to the glasses cannot change what it looks for.**
+- The checkpoint path (`:37-39`) is an absolute path that exists on no current machine (§8.4).
+- `/object_centroid_2d` carries **pixels in `x`/`y` and metres in `z`** (`:161-163`) while being
+  stamped `camera_color_optical_frame`, which makes it look like a 3D point. It is not (§8.3).
+
+Then compare against `object_recognition_pipeline.py`: same three topics, but no gaze, no Aria, no
+prompt subscription. That overlap is §6.5.
+
+### 3.3 `anygrasp_detection_node.py` — 246 lines
+
+RGB + depth + mask → `/grasp_candidates`.
+
+⚠️ **The gate is inverted, and an earlier version of this guide had it backwards.** `:182` reads
+`if self.pipeline_state != "IDLE": return`, so detection runs **only while IDLE**, not during
+EXECUTING as the docstring two lines above claims. Meanwhile `graspCallback`
+(`grasp_state_machine.cpp:183`) discards anything that is not EXECUTING. The producer's gate and the
+consumer's gate are mutually exclusive, so no candidate can ever be used. CODE_AUDIT A1.
+
+### 3.4 `mtc_planner.hpp` — 64 lines
+
+The entire arm-motion API in five methods: `moveToPose`, `moveToHome`, `moveToReturn`,
+`getCurrentPose`, `moveCartesianStep`. Plus `HOME_JOINTS` (`:46-53`) and `RETURN_JOINTS` (`:56-63`).
+Home is joint3 45°, joint5 and joint6 90°, the rest zero — the pose the arm swings to unprompted at
+launch, never validated on hardware (§8.1).
+
+### 3.5 `grasp_state_machine.cpp` — 802 lines, the hardest file here
+
+Order: constructor → `workerLoop` → `selectingStep` → the EXECUTING branch. Skip the quaternion
+helpers on the first pass.
+
+| Part | Line | What to notice |
+|---|---|---|
+| Constructor | 130-162 | ROS wiring only, no motion |
+| `workerLoop` start | 590-596 | sleep 2 s, `addSafetyWalls()`, `homeWithRetry()`, *then* IDLE. Motion before any input |
+| `homeWithRetry` | 342-351 | retries every second, forever |
+| IDLE wait | 613-620 | waits on `has_centroid_` alone; the staleness check is commented out at `:634-639` |
+| `selectingStep` | 367-421 | pixel error → lateral offset → 4 cm step. **Both TF calls guarded** |
+| Transition | 643-648 | when depth < `EXECUTE_DEPTH_THRESH_M` (0.18 m) |
+| EXECUTING (simple) | 671-722 | see below |
+| `executingSimple` | 580-585 | **is just `closeGripper()`** |
+| After success | 713-721 | `return`s out of `workerLoop` *before* `publishState(IDLE)` at `:740` |
+
+The EXECUTING branch is where the self-annotated bugs live: two **unguarded** TF calls at `:680` and
+`:700` (identical to the guarded ones in `selectingStep`), and the goal's z overwritten with the
+current z at `:702-704`, labelled "HARDCODING BRITTLE FIX", to stop the planner driving into the
+table. The failure branch at `:708-712` also `return`s out of the whole loop, silently halting the
+node with one `WARN`. The comment at `:706` is stale — the code below it does check the return value.
+
+C7: because the success path returns before publishing IDLE, `state_` stays EXECUTING forever and
+the node handles **exactly one object per launch**, despite the `while (true)`. Confirmed on the
+simulated arm, 2026-09-11.
+
+### 3.6 What to carry out of Round 3
+
+The grasp path that exists today is **centroid-driven, not grasp-driven**. SAM 3 looks for the fixed
+word "box", the pixel centroid and its depth drive a visual servo, and the gripper closes 10 cm
+later. Gaze, the Aria camera, feature matching and AnyGrasp are all bypassed in the path that
+actually runs.
+
+### 3.7 Round 3 check questions — ⬜ NOT YET ANSWERED
+
+**Q1.** With `USE_SIMPLE_EXECUTE = true`, name every input that has **no** influence on where the
+gripper ends up closing. ⬜ **open**
+
+**Q2.** You hit `E` on the e-stop during a SELECTING approach, then hit `R`. Trace what the state
+machine does. ⬜ **open**
+
+*(Hint: `homeWithRetry` at `:342-351`, and the two delivery weaknesses in CODE_AUDIT B2.)*
+
+**Q3.** Given C7, what is the smallest change that lets the node handle a second object, and why
+might that `return` at `:721` have been put there deliberately? ⬜ **open**
 
 ## 4. Round 4 — navigation (~1 h)
 
@@ -412,3 +493,4 @@ unused in this mode.
 |---|---|---|
 | 2026-09-10 | Claude (Opus 5) + Dion | Created, capturing the Round 1 and Round 2 walkthroughs that previously existed only in a chat session. Round 1 questions answered and marked; Round 2 written but unread; Rounds 3-4 outlined. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Re-verified every line number in §2 against source after comments shifted them (`_setup_ros_node` 112→115, `run` 267→266, `_find_closest_mask` 499→501, `_find_matching_ros_mask` 527→532, seam #2 call 384→389; §2.7 and §2.8 Q1 follow). Added the missing cites in §2.2, §2.3 and §2.4. Round 2 Q2 and Q3 answered; Round 2 marked complete and the START HERE marker moved to Round 3. **Baseline:** §2's numbers are against the *working tree*, which in `object_recognition_pipeline.py` is 8 lines ahead of the last commit (the added comments); every other file cited is clean. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Round 3 written out in full (§3.1–3.6) from the walkthrough, replacing the five-line outline: per-file notes, the state machine's key lines as a table, and §3.6's "centroid-driven, not grasp-driven". **Corrected an error in the old outline**, which said `anygrasp_detection_node.py` runs during EXECUTING — it gates on `!= "IDLE"` (`:182`), i.e. only while IDLE, which is CODE_AUDIT A1. Line counts and anchors re-verified. §3.7 added with three open check questions. |

@@ -456,6 +456,7 @@ subscription to `/return_to_user/goal_reached` is commented out (`orchestrator.p
 |---|---|---|
 | S1 | **No baseline**, so the 7 pre-existing owned-code findings (`xpkg_demo` ×3, `bringup_basic_ctrl.launch.py` ×2, `mtc_sim_test`, livox manifest) make `static` fail **permanently**. A permanent red gets ignored, and a new finding would hide among the old | add `bench/golden/static_known.json` — fail only on findings not in it; `--update-known` to accept |
 | S2 ✅ | `OWNED_PREFIXES` is duplicated in `contracts.py` and `static.py` — **fixed: now only in `bench/_common.py`**, used by all three tools | move into one `bench/_common.py`; **update it when the reorg moves code** or moved files get classified as vendor and stop failing |
+| S3 | **A filesystem path in a YAML value is extracted as a topic.** `slam_toolbox_localization.yaml:14` sets `map_file_name: /home/iot22/maps/completed_map`; because the value starts with `/` it lands in the topic inventory as an owned topic with 0 publishers and 0 subscribers, inflating the count and the orphan list | in the YAML topic pass, skip values that look like filesystem paths (contain `/home/`, `/opt/`, a file extension, or match the abs-path regex already in `contracts.py:416`) — they are already collected as abs paths |
 
 ---
 
@@ -634,3 +635,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-11 | Claude (Opus 5) + Dion | Box went offline (~19:40). On the Mac: **W4b prep** (`build.sh nav` Livox manifest + flags + SDK warning) and **W7 written** (`nav_nodes.sh`, 10 cases, 4 xfail); neither run. Decision: no contracts re-snapshot, no static baseline. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Preflight `aria-sdk` passed with the glasses unplugged (`aria auth check` exits 0 and prints "no devices connected"): now FAIL "no glasses connected". Test bench page rewritten in plain language, with a simulated-arm section. Wiring map: new tab "One grasp, start to finish". Confirmed CODE_AUDIT D1 (nothing publishes `/manipulator/release`) and corrected ORIENTATION §5, which said "voice → orchestrator". |
 | 2026-09-12 | Claude (Opus 5) + Dion | Cold-start refresh: box still offline, so Start here now opens with "check it's up" and the run order (preflight, W4b, W7). Added the two pages and the writing decision. |
+| 2026-09-13 | Claude (Opus 5) + Dion | New bench bug S3: YAML values that are filesystem paths are extracted as topics (`/home/iot22/maps/completed_map`). Found while inventorying the contract surface for CODE_AUDIT §K. |

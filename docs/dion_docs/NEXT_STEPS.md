@@ -407,6 +407,126 @@ is built against `/home/iot22/Ros2Workspaces/install`, so it is reference, not s
 generated/large ones, record the rest in [`ASSETS.md`](ASSETS.md), and after that nothing the robot
 needs should live only in someone's home folder.
 
+### 2.10 🟠 One config tree — state every channel and constant in one place
+
+`[code]` Raised by Dion, 2026-09-13, after finding that the `/rm_driver/*` topics are not in
+`shared/config.yaml`. The inventory is CODE_AUDIT §K: **38 of the 54 topics our code declares are
+written somewhere other than the shared config**, and the constants pattern in `src/config/` is not
+used outside `src/`.
+
+**The proposal:** a `GlobalConfig` composed of smaller typed groups — `PerceptionConfig`,
+`AriaConfig`, `ArmConfig`, `NavConfig` — so that channels and tuning values can be read in one
+place instead of being discovered file by file.
+
+**This is the right instinct, and the shape needs one adjustment.** Splitting it three ways:
+
+1. **Constants — do it, and the work is half done.** `src/config/` already holds exactly this
+   pattern. The gap is that `ros2_robot_ws/` and `Navigation_Module/` cannot import it. Fixing that
+   is packaging, not design: make `src/config` an installed package both colcon workspaces depend
+   on, or vendor a small shared module into each. `DEPTH_SCALE`, `CAMERA_X_OFFSET`, the approach
+   thresholds and the AnyGrasp tuning values all belong here.
+
+2. **Topic names — prefer ROS parameters over a shared constant.** Freezing a topic name in an
+   imported constant removes the ability to remap it at launch, which is ROS 2's own mechanism for
+   exactly this problem and the one thing every ROS developer will expect to work. The version that
+   gets both properties: each node *declares* the name as a ROS parameter with a sensible default,
+   one YAML per workspace supplies the values, and launch can still override. The name is then
+   explicit in the node, explicit in the YAML, and still remappable.
+
+3. **`/rm_driver/*` — name them in one place, but do not treat them as ours.** They are the vendor
+   driver's API (CODE_AUDIT §K1). A single `ArmDriverTopics` group naming all four is worth having,
+   with a comment saying the vendor owns these strings.
+
+**Two real constraints, both of which affect sequencing:**
+
+- **Three colcon workspaces, two languages, separate Python environments.** No single Python import
+  reaches all of it. C++ reads none of `shared/config.yaml` today (checked: no `.cpp` or `.hpp` we
+  own opens it). ROS parameters are the only mechanism that spans all of it natively.
+- **⚠️ Indirection currently blinds the bench.** `src/config/ros2.py:11-14` builds the topics enum
+  *dynamically at import time*, and the bench's static extractor cannot resolve `ROS2Topics.X.value`
+  (TESTBENCH_PLAN §4 C1). So every topic moved behind the enum today becomes invisible to the one
+  tool that catches renames. **Teach the extractor first, then consolidate**, or the refactor
+  removes its own safety net.
+
+**Suggested order:** teach the extractor (TESTBENCH_PLAN C1) → re-snapshot → collapse the
+duplicated constants (§2.4 step 2, already planned) → then topics as parameters, one subsystem at a
+time, re-running `./bench/run.sh` across each step.
+
+**Open decision for you:** whether the target is one repo-wide config tree, or one per subsystem
+with a shared constants package underneath. The second fits the three-workspace structure better and
+is less disruptive to the reorg; the first is what makes everything visible from one file. Worth
+settling before §2.4's rename pass, since both touch the same strings.
+
+### 2.11 🟡 Box vendor code off from ours, and depend on it instead of sitting next to it
+
+Raised by Dion, 2026-09-13: vendor code should be stated as vendor, nested inside its own folders,
+and imported or depended on, rather than placed among the code we write. Right now there is no
+separation, so it is hard to tell what is ours without already knowing.
+
+**This makes sense, and the ratio is the argument for it.** `[code]` Of 2,426 files tracked in git,
+**226 are ours** (excluding `docs/`) and **2,181 are vendor**. Ours is under 10% of the repo, spread
+across three workspaces, with nothing in the folder layout marking which is which.
+
+#### Where the boundary is invisible today `[code]`
+
+| Place | What you see | The problem |
+|---|---|---|
+| `ros2_robot_ws/src/` | 13 sibling folders, 11 of them RealMan's | Only `rm_mtc/` is ours. Nothing in the names says so, and `rm_mtc` sorts in the middle of the vendor `rm_*` packages |
+| `Navigation_Module/src/` | `robot_slam/`, `simple_teleop/`, `echo_plus_driver/` sitting beside `livox_ros_driver2/`, `Livox-SDk2/`, `base/`, `drivers/`, `urdf/` | Ours and the vendor base driver are siblings at the same depth |
+| `ros2_robot_ws/src/rm_mtc/src/perception/` | our four Python nodes, plus `gsnet`, `lib_cxx` and `tracker` `.so` files | Three compiled AnyGrasp binaries are **committed inside our own package**, in the same directory as code we edit. This is the literal case you described |
+| `ros2_robot_ws/src/rm_ros_interfaces/` | one package, 79 message definitions | **77 are the vendor's, 2 are ours** (`GraspCandidate.msg`, `GraspCandidateArray.msg`). One package, both owners, no marking |
+
+**The only place ownership is written down is `bench/_common.py`** (`OWNED_PREFIXES`, 12 entries) and
+that is a bench-side list, not something visible in the tree. It is also already wrong in one place:
+it claims all of `ros2_robot_ws/src/rm_ros_interfaces/`, so the bench counts 77 vendor message files
+as ours.
+
+#### The proposal
+
+1. **One `vendor/` folder per workspace.** Move vendor packages down one level, into
+   `ros2_robot_ws/src/vendor/`, `Navigation_Module/src/vendor/`. What remains at `src/` is ours and
+   is readable at a glance.
+2. **Mark the trees we never build.** Drop a `COLCON_IGNORE` file in vendor trees that are reference
+   only. There is **no `COLCON_IGNORE` anywhere in the repo today** `[code]`, so nothing currently
+   tells a build to skip anything.
+3. **Split `rm_ros_interfaces`.** Our two grasp messages move to our own interfaces package. This is
+   the one item that is a decision rather than a move, because it changes a package name that
+   `rm_mtc` depends on.
+4. **State it once, in `ORIENTATION.md` §2**, which already carries the "will you edit it?" column.
+   The folder layout and that table should agree.
+
+#### Why moving vendor code is safe `[code]`
+
+- **colcon finds packages by walking the tree for `package.xml`**, not by a fixed depth, so nesting
+  a package one level deeper still builds.
+- **ROS resolves dependencies by package name, never by path.** Verified in our own code: our launch
+  files use `get_package_share_directory("rm_driver")` and friends
+  (`rm_mtc/launch/background.launch.py:21,31,41,51`), and our manifests use `<depend>` by name
+  (`rm_mtc/package.xml:12-20`, `robot_slam/package.xml:11-15`). None of that changes when a folder
+  moves.
+
+#### What would actually break, and it is a short list `[code]`
+
+Three places hardcode a vendor path as a string, so a move invalidates them:
+
+| File | What it hardcodes |
+|---|---|
+| `src/main.py:303-304`, `:331` | an **external** OpenVINS workspace under `~/Ros2Workspaces/` (already broken, §2.5) |
+| `bench/static.py:85` | `BLOCKING_VENDOR = ("Navigation_Module/src/livox_ros_driver2/",)` |
+| `bench/preflight.py:299` | `deps_ws/install` overlay checks |
+
+#### Sequencing
+
+Do this as **step 1 of the modular reorg**, before code we own is moved, so the two kinds of move
+are not tangled in one diff. Update `OWNED_PREFIXES` in `bench/_common.py` in the same commit
+(§2.7), then re-snapshot: `python3 bench/contracts.py snapshot`. The bench is keyed by contract, not
+by file location, so a pure move should show as informational and fail nothing.
+
+⚠️ **Note a gap this exposes:** the "one folder per node" reorg is referred to in four places
+(`CLAUDE.md:5`, §2.7, §2.8, TESTBENCH_PLAN C2/S2) but **is not specified in any of them**. Before the
+reorg starts, it needs its own item saying what the target layout actually is. This section covers
+only the vendor half of it.
+
 ## 3. Bring-up (needs the lab machine)
 
 ### 3.1 🔴 Find `xpkg_demo` — `Navigation_Module` cannot launch without it
@@ -490,3 +610,5 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-11 | Claude (Opus 5) + Dion | Added §2.9: important state outside git, with a keep/drop list; `~iot22/Ros2Workspaces` (never committed) copied to `~/rcp-old-ros-wkspace`. §3.1: `xpkg_demo` found. |
 | 2026-09-11 | Claude (Opus 5) + Dion | §2.5: AnyGrasp runs in the project uv env (W5); the `conda run` launch in `main.py` is now the only reason for conda. |
 | 2026-09-11 | Claude (Opus 5) + Dion | §2.7 refreshed: the bench's lab-box tiers exist; pointer to TESTBENCH_PLAN's Start here; `OWNED_PREFIXES` lives in `bench/_common.py`. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Added §2.10: one config tree. Inventory in CODE_AUDIT §K (38 of 54 owned topics declared outside `shared/config.yaml`). Recommends ROS parameters for topic names rather than imported constants, and flags that the dynamic enum blinds the bench's extractor, so TESTBENCH_PLAN C1 must be fixed before consolidating. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Added §2.11: box vendor code off from ours. 226 of 2,426 tracked files are ours; vendor and owned packages are siblings in both colcon workspaces, three AnyGrasp `.so` binaries are committed inside `rm_mtc/`, and `rm_ros_interfaces` holds 77 vendor messages plus 2 of ours. Proposes a `vendor/` folder per workspace, checked that colcon and ROS resolve by package name so a move is safe, and listed the three hardcoded paths that would break. Also flags that the reorg itself is referenced in four places but never specified. |
