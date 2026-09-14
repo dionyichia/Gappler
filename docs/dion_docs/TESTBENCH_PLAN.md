@@ -15,21 +15,17 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 ## ▶ Start here — next session (updated 2026-09-12)
 
-**One paragraph (updated 2026-09-12):** the bench runs on the lab box in `~/rcp-Gappler`.
-Done there: tiers 0–1, preflight, Tier 2 for the arm workspace, and Tier 3 on a private ROS channel —
-MoveIt on a simulated arm, the e-stop, the whole grasp state machine on the simulated arm, and the
-AnyGrasp env probe. The project `.venv` is rebuilt with uv; a scratch env showed AnyGrasp runs in
-**one** env (W5). Nothing physical has moved; Aria, arm and base are unplugged, so their checks fail or
-skip **as expected**. **The box went offline ~19:40 on 2026-09-11** (someone at the lab turned it off —
-`tailscale status`: offline); while it was off, the W4b prep and all of W7 were written on the Mac,
-neither yet run. **Still offline on 2026-09-12** (`tailscale status`: last seen ~4 h earlier), so
-**first check it is up** (`tailscale ping 100.87.133.60`); if not, someone at the lab must switch it on.
-**Then, in order:** `cd ~/rcp-Gappler && git pull` → `./bench/run.sh preflight` (the fixed glasses check
-should now FAIL "no glasses connected", confirm it) → W4b `./bench/build.sh nav` → W7 `./bench/nav_nodes.sh`
-(expect a first-run fix or two, see W7) → record each in `bench-runs/`, update this table, the test bench
-page and its artifact. The nav build should stop, if anywhere, on Livox-SDK2 not being installed
-— `robot_navigation` / `xpkg_demo` are only `exec_depend`s (NEXT_STEPS §2.9). Dion's standing instruction: build the tests, survey, record —
-**no fixes yet** — in `~/rcp-Gappler`, no real-world movement.
+**One paragraph (updated 2026-09-14):** the bench runs on the lab box in `~/rcp-Gappler`, and
+**tiers 0 through 3 are now complete**. Done there: tiers 0–1, preflight, Tier 2 for **both**
+workspaces (arm 22/22, nav 10/10), and every Tier 3 script on a private ROS channel — MoveIt on a
+simulated arm, the e-stop, the whole grasp state machine on the simulated arm, the AnyGrasp env
+probe, and the five navigation nodes against a mock Nav2. Nothing physical has moved; Aria, arm and
+base are unplugged, so their checks fail or skip **as expected**. The 2026-09-14 session ran the two
+pieces that were written but never run (W4b, W7) and both passed first time. **What is left is not
+more test-writing:** W6 needs a decision from Dion (recording camera frames), W8 needs a person at
+the robot, and the real queue is now the **held findings** below — each one is a branch for review.
+Dion's standing instruction still holds: `~/rcp-Gappler` only, no real-world movement, and
+**no fixes without asking**.
 
 **Status at a glance:**
 
@@ -39,16 +35,20 @@ page and its artifact. The nav build should stop, if anywhere, on Livox-SDK2 not
 | W2 state machine, simulated arm | ✅ full cycle; **C7 reproduced**, B4 observed | [`…-w2-state-machine.txt`](bench-runs/2026-09-11-labbox-w2-state-machine.txt) |
 | W3 e-stop delivery | ✅ **B2a found** (Ctrl+C ignored); B2 loss not reproduced | [`…-w3-estop.txt`](bench-runs/2026-09-11-labbox-w3-estop.txt) |
 | W4a nav code vs `iot22` | ✅ repo newer; `robot_navigation`, `xpkg_demo` only outside git | [`…-w4a-nav-diff.txt`](bench-runs/2026-09-11-labbox-w4a-nav-diff.txt) |
-| **W4b nav build** | **next** — prep written (Livox manifest + CMake flags in `build.sh nav`), not run: box off | — |
+| W4b nav build | ✅ **PASS** 10/10 packages, 2 min 34 s. No blocker: Livox-SDK2 already installed | [`…-w4b-nav-build.txt`](bench-runs/2026-09-14-labbox-w4b-nav-build.txt) |
 | W5 AnyGrasp env | ✅ survey: one env works (licence passed, grasps found). Making it permanent is held | [`…-w5-anygrasp-env.txt`](bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt) |
-| W6 AnyGrasp gate + replay | needs recorded frames = starting the camera driver → **ask Dion first** | — |
-| W7 nav node tests | **written, not run** (box off): `./bench/nav_nodes.sh`, 10 cases, 4 xfail (F1 ×2, F2, E1). Doesn't need W4b | — |
+| W6 AnyGrasp gate + replay | **blocked on a replug.** Dion approved starting the camera 2026-09-14; the D435i was already faulty (colour stream dead) and a hardware reset took it off the USB bus. No frames recorded | [`…-w6-camera-attempt.txt`](bench-runs/2026-09-14-labbox-w6-camera-attempt.txt) |
+| W7 nav node tests | ✅ **PASS first run**, no fix needed: 6 controls pass, 4 xfail reproduced (F1 ×2, F2, E1), 0 skipped. **E1, F1, F2 now `[observed]`**; new finding F4 | [`…-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt) |
 | W8 Tier 4 | human at the robot; Dion schedules it | — |
-| Preflight glasses check | **fixed, not run on the box**: `aria-sdk` used to PASS with the glasses unplugged (`aria auth check` exits 0 and prints "no devices connected"). Now FAIL "no glasses connected" | `bench/preflight.py` |
+| Preflight glasses check | ✅ **fix confirmed on the box 2026-09-14**: `aria-sdk` now FAILs "aria CLI works, but no glasses are connected over USB". It used to wrongly PASS | `bench/preflight.py` |
+| Preflight camera check | ✅ **rewritten 2026-09-14 (bench bug S4)**: `realsense-usb` used to pass on the USB id alone — and on any "Intel" line, including the Bluetooth adapter. Now strict on `8086:0b3a`, plus a new `realsense-stream` check that actually grabs a frame | `bench/preflight.py` |
 
 **Found, not fixed (held — each becomes a branch for Dion's review):** `estop.py` ignores the Ctrl+C key
 and crashes on SIGINT (CODE_AUDIT B2, B2a) · the state machine never returns to IDLE after a grasp (C7)
-and homes to an unvalidated pose (B4) · `robot_navigation`, `xpkg_demo` and the livox `package.xml` are
+and homes to an unvalidated pose (B4) · all five nav nodes traceback on Ctrl+C (F4, new 2026-09-14) ·
+the approach node wedges after any nav failure (F1), a failed return leg can never be retried (F2) and
+`goto_glasses` reads a robot-relative pose as a map coordinate (E1) — **all three now `[observed]`, W7** ·
+`robot_navigation`, `xpkg_demo` and the livox `package.xml` are
 not in the repo (NEXT_STEPS §2.9, §3.1–3.2) · the AnyGrasp one-env recipe isn't in the repo and
 `main.py` still uses `conda run` (NEXT_STEPS §2.5) · 10 hardcoded `/home/iot22` paths (§2.5).
 
@@ -159,15 +159,26 @@ result is in `docs/dion_docs/bench-runs/` and the §8.15 fix (commit `package_RO
 > plan's list above assumed it was) and `demo/` = `xpkg_demo` (ORIENTATION §8.6). `iot22` also has the
 > generated ROS 2 livox `package.xml` that (b) needs. Importing the two packages is robot code → branch.
 
-> **(b) prep written 2026-09-11, not run (box off).** `./bench/build.sh nav` now copies
-> `bench/nodes/livox_package_ROS2.xml` (upstream Livox master's `package_ROS2.xml`, fetched 2026-09-11) to
-> the gitignored `livox_ros_driver2/package.xml` when it's missing — what the vendor `build.sh` does — and passes
-> `-DROS_EDITION=ROS2 -DHUMBLE_ROS=humble`. The livox launch files need no copy: its CMakeLists installs
-> `launch_ROS2/` directly (`CMakeLists.txt:326-329`) `[code]`. It warns up front if `liblivox_lidar_sdk_shared.so`
-> is missing (`find_library … REQUIRED`, `CMakeLists.txt:249`); installing Livox-SDK2 needs sudo, so the bench
-> doesn't. `Livox-SDk2/` has no `package.xml`, so colcon ignores it `[code]`. On the box: diff the template
-> against `~/rcp-old-ros-wkspace/src/livox_ros_driver2/package.xml` (`iot22`'s generated one, 29 lines)
-> `[unverified]`. Expect only `robot_slam`'s exec-depends (`xpkg_demo`) to be missing at run time, not at build.
+> ✅ **(b) done 2026-09-14** ([`bench-runs/2026-09-14-labbox-w4b-nav-build.txt`](bench-runs/2026-09-14-labbox-w4b-nav-build.txt)).
+> `./bench/build.sh nav`: **10 of 10 packages, 2 min 34 s, colcon exit 0.** Slowest were `xpkg_vehicle`
+> (2 min 28 s), `livox_sdk2` (2 min 9 s) and `xpkg_power` (1 min 51 s); `livox_ros_driver2` took 53.5 s.
+> The only stderr anywhere is the harmless CMake note about `HUMBLE_ROS` / `ROS_EDITION` being unused —
+> except in `livox_ros_driver2`, which lists only `HUMBLE_ROS`, so `ROS_EDITION=ROS2` **was** consumed by
+> the one package the flag exists for. `robot_slam` installed its 6 scripts.
+>
+> **Three things the prep expected that turned out otherwise, all in the build's favour** `[observed]`:
+> (1) **Livox-SDK2 is already installed** — `/usr/local/lib/liblivox_lidar_sdk_shared.so` exists, so
+> `find_library(… REQUIRED)` is satisfied and the build has **no sudo blocker at all**. The plan expected
+> it to stop here. (2) **`Livox-SDk2/` is built by colcon**, as `livox_sdk2` — it genuinely has no
+> `package.xml` (the tree holds only 9), but its `CMakeLists.txt` declares `project(livox_sdk2)` and
+> colcon's plain-CMake support picks it up without a manifest. The plan's `[code]` claim that colcon
+> ignores it is **wrong**. Which of the two SDK copies `livox_ros_driver2` linked against was not checked.
+> (3) The bench's `livox_package_ROS2.xml` is **byte-identical** to `iot22`'s generated one, comment header
+> aside — that clears its `[unverified]` tag.
+>
+> Still true: `robot_navigation` and `xpkg_demo` exist only in `iot22`'s workspace, so the base cannot be
+> brought up from this repo. They are `exec_depend`s, which is why the build did not need them
+> (NEXT_STEPS §2.9). Undo: `rm -rf build_nav install_nav log_nav Navigation_Module/src/livox_ros_driver2/package.xml`.
 
 **W5 — AnyGrasp env, reproducibly.** What `iot22`'s env actually is `[observed]`: conda, Python
 3.10, torch 2.7.0 (but at runtime `~iot22/.local`'s torch 2.10 wins), **numpy 1.21.2**,
@@ -198,35 +209,61 @@ in the repo builds the env from nothing and AnyGrasp prints `license passed` on 
 > scikit-learn 1.3.2, scipy 1.10.1 — all numpy-1 builds, so one env needs newer versions of them. Box toolchain:
 > nvcc 12.8, gcc 11.4, libopenblas-dev, python3.10-dev; no system `ninja` (pip-installed into the scratch env).
 
-**W6 — AnyGrasp gate test** (A1, expected-fail) and perception replay. Needs W5 + frames. The
-D435i *is* plugged in (preflight `realsense-usb` PASS): recording frames means starting the camera
-driver — passive, but **ask Dion first**.
+**W6 — AnyGrasp gate test** (A1, expected-fail) and perception replay. Needs W5 + frames.
+
+> **Attempted 2026-09-14 with Dion's go-ahead. Not done: no frames**
+> ([`bench-runs/2026-09-14-labbox-w6-camera-attempt.txt`](bench-runs/2026-09-14-labbox-w6-camera-attempt.txt)).
+> The camera was **already faulty before anything was launched**: depth opened at 640x480x30, colour
+> failed with `xioctl(VIDIOC_S_FMT) errno=5 Input/output error` then a loop of
+> `UVCIOC_CTRL_QUERY: Protocol error`. USB was 3.2 at 5000M and nothing else held the device, so this
+> was the camera wedged, not a configuration fault. Adding `initial_reset:=true` (librealsense's own
+> reset, the documented fix) made it worse: the device could not be created, and it then **dropped off
+> the USB bus entirely** — no `8086:0b3a`, no `/dev/video*`, no re-enumeration after 30 s. `[observed]`
+>
+> **It needs a physical replug** (or a root USB port power cycle; `rcp2026` has no sudo). Dion,
+> 2026-09-14: someone can replug it in about two hours. Isolation held throughout — private channel 78,
+> localhost only, nothing published to the real domain, no process left running.
+>
+> **Do not pass `initial_reset:=true` again unless someone is at the machine.** Order to follow after the
+> replug: `python3 bench/preflight.py -g net` (both realsense checks should pass) → depth only → add
+> colour → record frames.
 
 **W7 — The navigation node tests** (8, from Phase 5's table: approach far/near, nav-failure
 recovery F1, goal bridge F1, return retry F2, fused-pose frame E1, QoS relay J4, robot pose). Need
 W4's build; a mock `navigate_to_pose` action server replaces Nav2 — nothing drives.
 
-> **Written 2026-09-11, not run (box off)** — `./bench/nav_nodes.sh` + `bench/nodes/test_nav_nodes.py`. It
-> starts each node from `robot_slam/scripts/` (the files `install(PROGRAMS)` installs), so **it doesn't need
-> W4b**; it needs ROS + `nav2_msgs`, and `scipy` / `tf2_geometry_msgs` in the ROS Python (a case whose node
-> can't import is SKIP, not pass). TF as `slam_localization.launch.py:102` publishes it. The guard also checks
-> hidden topics, so a live `navigate_to_pose` server on the channel refuses the run. 10 cases:
+> ✅ **Done 2026-09-14, PASS on the first run, no fix needed** — `./bench/nav_nodes.sh`
+> ([`bench-runs/2026-09-14-labbox-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt)).
+> **6 controls pass, all 4 expected failures reproduced, 0 skipped.** It starts each node from
+> `robot_slam/scripts/`, so it did not need W4b; a mock `navigate_to_pose` server replaced Nav2 and
+> nothing drove. The `[inferred]` rclpy details (action-server teardown seen within 2.5 s,
+> `--include-hidden-topics` in the guard) all held.
 >
-> | Case | Kind | Asserts |
+> | Case | Kind | Result |
 > |---|---|---|
-> | approach, far object | control | object lands at the right map point through the yaw-π arm mount; one `/goal_pose` in `map` 0.78 m from it, facing it; no `/manipulation/start` |
-> | approach, near object | control | `/manipulation/start` true, no `/goal_pose` |
-> | approach, nav succeeds | control | approach → bridge → mock Nav2 succeeds → `"success"` → `/manipulation/start` |
-> | approach after nav failure | xfail F1 | Nav2 rejects goal 1; a second object still gets a `/goal_pose` |
-> | goal bridge, nav aborts | control | `/goal_reached` `"failed"` |
-> | goal bridge, server down | xfail F1 | `"failed"` within 6 s with no Nav2 |
-> | return retry | xfail F2 | return 1 with Nav2 down; return 2 with Nav2 back reaches Nav2 |
-> | fused pose frame | xfail E1 | a `robot_base_link`-stamped fused pose gives the goal the map pose implies, not the raw numbers |
-> | QoS relay | control (J4) | `/cloud_relay` publisher is BEST_EFFORT; ≥ 90 % of 50 frames of 20,000 points at 10 Hz arrive; latency printed |
-> | robot pose | control | `/robot_pose` 8–12 Hz, `map`, at the TF pose |
+> | approach, far object | control | ✅ goal (1.42, 0.31) in `map`, 0.780 m from the object, facing error **0.0°** |
+> | approach, near object | control | ✅ 1 `/manipulation/start`, 0 `/goal_pose` |
+> | approach, nav succeeds | control | ✅ approach → bridge → `"success"` → `/manipulation/start` |
+> | approach after nav failure | xfail F1 | **reproduced** — goal 1 rejected, bridge silent, second object got **0** `/goal_pose` |
+> | goal bridge, nav aborts | control | ✅ `/goal_reached` `"failed"` |
+> | goal bridge, server down | xfail F1 | **reproduced** — nothing on `/goal_reached` in 8 s |
+> | return retry | xfail F2 | **reproduced** — *"Return ignored — already returning to user"*; return 2 reached Nav2 **0** times |
+> | fused pose frame | xfail E1 | **reproduced** — goal (1.00, 0.60) in `map`; the wearer's real map pose puts it at (2.40, 2.00), **2.0 m out** |
+> | QoS relay | control (J4) | ✅ `/cloud_relay` BEST_EFFORT; **50/50** frames of 520 kB at 10 Hz, 1.9 ms mean latency |
+> | robot pose | control | ✅ 10.0 Hz, `map`, at the TF pose |
 >
-> Not verified by running: rclpy details (action-server teardown seen by a client's `wait_for_server` within
-> 2.5 s; `ros2 topic list --include-hidden-topics`) are `[inferred]` from Humble's API. Expect a first-run fix or two.
+> **What this changes.** **E1, F1 and F2 move from `[unverified]` to `[observed]`**, each matching the
+> mechanism CODE_AUDIT predicted, so the audit's reasoning on this subsystem is now evidence-backed.
+> **J4 is not a problem** at MID360 rates — nothing was dropped, so that case is a clean control rather
+> than a finding. The happy path works end to end, which localises F1 to failure handling only.
+> **New finding F4** (CODE_AUDIT): all five nav nodes exit with a traceback on Ctrl+C, in three shapes,
+> the first identical to B2's double-shutdown. `goto_glasses`'s `_cancel_navigation()` is never called on
+> shutdown, so Ctrl+C mid-leg would leave the Nav2 goal live and the base driving `[inferred]` — this
+> bench cannot test that.
+>
+> Not covered: the mock replaces only Nav2's accept/abort/reject, so there is no planner, costmap or
+> recovery behaviour, and F1's real-world trigger rate is still unknown. `/aria/fused_pose` was
+> synthesised; the real `pose_fusion_node` was not started.
 
 **W8 — Tier 4** (record + hardware smoke) — **human at the robot**; not before Dion schedules it.
 
@@ -244,11 +281,11 @@ ORIENTATION §8.16's decision (fix the config's simulated-arm launch, or keep it
 | Thing | State |
 |---|---|
 | Tiers 0–1 (contracts + static) | Working on the Mac and the box. Static: the same 7 pre-existing owned-code findings (no baseline yet — S1); contracts PASS |
-| Preflight | Runs on the box. `gpu`/`env`/`assets`: 12 of 13 pass — the fail is `anygrasp-env` on the project env (expected until W5 is made permanent). Arm, LiDAR and Aria checks fail or skip: unplugged. (The Aria check wrongly passed until the 2026-09-11 fix, not yet run on the box) |
-| Tier 2 (build) | Arm workspace 22/22 (27 min 41 s, CPU throttled). `Navigation_Module` not built yet (W4b); `build.sh nav` has the Livox prep |
-| Tier 3 (node behaviour) | `sim_moveit.sh` PASS · `estop_delivery.sh` PASS, found B2a · `state_machine_sim.sh` PASS, C7 XFAIL · `anygrasp_env.sh` PASS in the W5 scratch env. `nav_nodes.sh` (W7, 10 cases) written, not run |
+| Preflight | Runs on the box. `gpu`/`env`/`assets`: 12 of 13 pass — the fail is `anygrasp-env` on the project env (expected until W5 is made permanent). Arm, LiDAR and Aria checks fail or skip: unplugged. (The Aria check wrongly passed until the 2026-09-11 fix; **confirmed FAILing on the box 2026-09-14**) |
+| Tier 2 (build) | **Both workspaces build.** Arm 22/22 (27 min 41 s, CPU throttled); nav 10/10 (2 min 34 s, 2026-09-14) — no Livox blocker, the SDK is already installed on the box |
+| Tier 3 (node behaviour) | **All five scripts run.** `sim_moveit.sh` PASS · `estop_delivery.sh` PASS, found B2a · `state_machine_sim.sh` PASS, C7 XFAIL · `anygrasp_env.sh` PASS in the W5 scratch env · `nav_nodes.sh` PASS 2026-09-14, 6 controls + 4 XFAIL, found F4 |
 | Tier 4 (replay + hw smoke) | Not started — needs a person at the robot |
-| `docs/dion_docs/CODE_AUDIT.md` | 45 findings + B2a. B2, B4, C7 now observed; the rest `[unverified]`. Published privately: <https://claude.ai/code/artifact/63cc961e-e49a-4421-9132-fec0f3e35822> |
+| `docs/dion_docs/CODE_AUDIT.md` | **62 findings** (recounted 2026-09-14; the old running total of 51 never included sections D, H and J). 16 blocking/safety, 22 runtime, 21 debt. **7 `[observed]`**: B2a, B4, C7, E1, F1, F2, F4. B2's message loss was tested and not reproduced; the rest `[unverified]`. Page source is now `docs/dion_docs/code-audit-page.html`, published at <https://claude.ai/code/artifact/63cc961e-e49a-4421-9132-fec0f3e35822> |
 | Lab box access | tailscale (see Start here). All work in `~/rcp-Gappler`; `rcp-desktop` / `rcp-github` untouched |
 | Git | Everything on `main`; the box pulls from it. `bench/w1-setuptools-pin` is merged (the branch can go) |
 | Test bench page | <https://claude.ai/code/artifact/cb1f53f5-3154-4271-be1e-4daf46fca7fe> — source `bench/testbench-map.html`; republish after each result |
@@ -636,3 +673,5 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-11 | Claude (Opus 5) + Dion | Preflight `aria-sdk` passed with the glasses unplugged (`aria auth check` exits 0 and prints "no devices connected"): now FAIL "no glasses connected". Test bench page rewritten in plain language, with a simulated-arm section. Wiring map: new tab "One grasp, start to finish". Confirmed CODE_AUDIT D1 (nothing publishes `/manipulator/release`) and corrected ORIENTATION §5, which said "voice → orchestrator". |
 | 2026-09-12 | Claude (Opus 5) + Dion | Cold-start refresh: box still offline, so Start here now opens with "check it's up" and the run order (preflight, W4b, W7). Added the two pages and the writing decision. |
 | 2026-09-13 | Claude (Opus 5) + Dion | New bench bug S3: YAML values that are filesystem paths are extracted as topics (`/home/iot22/maps/completed_map`). Found while inventorying the contract surface for CODE_AUDIT §K. |
+| 2026-09-14 | Claude (Opus 5) + Dion | **The box came back up and the two written-but-unrun pieces both passed first time. Tiers 0–3 are now complete.** W4b nav build: 10/10 packages, 2 min 34 s, and **three prep expectations were wrong, all in the build's favour** — Livox-SDK2 is already installed on the box (no sudo blocker), `Livox-SDk2/` *is* built by colcon as plain CMake (correcting a `[code]` claim), and the bench's livox manifest is byte-identical to `iot22`'s. W7 nav nodes: 6 controls pass, 4 expected failures reproduced, 0 skipped, no fix needed — **E1, F1 and F2 move to `[observed]`**, J4 turns out to be a clean control (50/50 frames, 1.9 ms), and new finding **F4** (all five nav nodes traceback on Ctrl+C). Preflight's 2026-09-11 glasses fix confirmed FAILing on the box. What is left is a decision (W6), a person at the robot (W8), and the held findings. |
+| 2026-09-14 | Claude (Opus 5) + Dion | **Camera: attempted, not done** ([`bench-runs/2026-09-14-labbox-w6-camera-attempt.txt`](bench-runs/2026-09-14-labbox-w6-camera-attempt.txt)). With Dion's go-ahead the RealSense driver was started on private channel 78. The D435i was **already faulty**: depth opened, colour died with `VIDIOC_S_FMT errno=5`. `initial_reset:=true` then took it off the USB bus entirely, so it needs a physical replug (approved for ~2 h later). No frames recorded, nothing moved, no process left running. **New bench bug S4, fixed the same session:** preflight's `realsense-usb` PASSED that morning on this very camera, because it only grepped `lsusb` — and it matched any "Intel" line, so the box's AX201 Bluetooth adapter alone would have passed it `[code]`. Now two checks: `realsense-usb` (strict on `8086:0b3a` or a "RealSense" description) and a new `realsense-stream` that grabs one frame through `v4l2-ctl`, scoped by sysfs to the RealSense's own nodes so a stray webcam cannot satisfy it, and reporting a busy device as SKIP rather than PASS or FAIL. Verified: both SKIP on the Mac, and on the box `realsense-usb` FAILs with a replug hint while `realsense-stream` SKIPs. **The pass path and the colour-dead path are untested** until the camera is back. |

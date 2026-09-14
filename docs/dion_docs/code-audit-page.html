@@ -1,0 +1,943 @@
+<title>Gappler Code Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#EEF1F5;
+    --surface:#FFFFFF;
+    --surface-2:#F6F8FA;
+    --ink:#121821;
+    --ink-mid:#495566;
+    --ink-dim:#6E7B8C;
+    --rule:#D5DCE5;
+    --rule-soft:#E4EAF1;
+    --signal:#1F5F94;
+    --signal-soft:#E3EDF6;
+    --crit:#A82A17;
+    --crit-soft:#F7E4E0;
+    --warn:#8A5A05;
+    --warn-soft:#F8EEDC;
+    --debt:#2F6E62;
+    --debt-soft:#E2EFEC;
+    --shadow:0 1px 2px rgba(18,24,33,.06),0 6px 18px -10px rgba(18,24,33,.22);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#0D1117;
+      --surface:#151B24;
+      --surface-2:#1B222D;
+      --ink:#DFE5ED;
+      --ink-mid:#9AA6B6;
+      --ink-dim:#7A8698;
+      --rule:#28313D;
+      --rule-soft:#212A35;
+      --signal:#63A6DE;
+      --signal-soft:#16283A;
+      --crit:#E8735C;
+      --crit-soft:#2E1912;
+      --warn:#D9A63B;
+      --warn-soft:#2B2110;
+      --debt:#5FAE9E;
+      --debt-soft:#122622;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px -10px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0D1117;
+    --surface:#151B24;
+    --surface-2:#1B222D;
+    --ink:#DFE5ED;
+    --ink-mid:#9AA6B6;
+    --ink-dim:#7A8698;
+    --rule:#28313D;
+    --rule-soft:#212A35;
+    --signal:#63A6DE;
+    --signal-soft:#16283A;
+    --crit:#E8735C;
+    --crit-soft:#2E1912;
+    --warn:#D9A63B;
+    --warn-soft:#2B2110;
+    --debt:#5FAE9E;
+    --debt-soft:#122622;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px -10px rgba(0,0,0,.7);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:15.5px;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px 96px}
+
+  /* ---------- masthead ---------- */
+  header.mast{
+    border-bottom:2px solid var(--ink);
+    padding:44px 0 18px;
+    margin-bottom:0;
+  }
+  .eyebrow{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--ink-dim);display:flex;flex-wrap:wrap;gap:14px;align-items:center;
+  }
+  .eyebrow .sha{color:var(--signal)}
+  h1{
+    font-family:Archivo,"Helvetica Neue",sans-serif;
+    font-weight:700;font-size:clamp(34px,6vw,52px);line-height:1.02;
+    letter-spacing:-.022em;margin:14px 0 10px;text-wrap:balance;
+  }
+  .standfirst{
+    font-size:18px;line-height:1.5;color:var(--ink-mid);max-width:62ch;margin:0 0 22px;
+  }
+  .standfirst strong{color:var(--ink);font-weight:600}
+
+  /* ---------- caveat ---------- */
+  .caveat{
+    background:var(--warn-soft);
+    border:1px solid color-mix(in srgb,var(--warn) 32%,transparent);
+    border-left:4px solid var(--warn);
+    padding:16px 18px;margin:26px 0 0;
+    display:flex;gap:14px;align-items:flex-start;
+  }
+  .caveat .tag{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--warn);
+    white-space:nowrap;padding-top:2px;
+  }
+  .caveat p{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-mid)}
+  .caveat p strong{color:var(--ink);font-weight:600}
+
+  /* ---------- control strip ---------- */
+  .controls{
+    position:sticky;top:0;z-index:20;
+    background:color-mix(in srgb,var(--ground) 92%,transparent);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--rule);
+    margin:32px 0 0;padding:12px 0;
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  }
+  .controls .lbl{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-dim);margin-right:2px;
+  }
+  .chip{
+    font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:500;
+    border:1px solid var(--rule);background:var(--surface);color:var(--ink-mid);
+    padding:5px 12px;cursor:pointer;border-radius:2px;
+    display:inline-flex;align-items:center;gap:8px;
+    transition:background .12s,border-color .12s,color .12s;
+  }
+  .chip:hover{border-color:var(--ink-dim)}
+  .chip .n{font-weight:600;font-variant-numeric:tabular-nums}
+  .chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .chip[data-sev="crit"] .dot{background:var(--crit)}
+  .chip[data-sev="warn"] .dot{background:var(--warn)}
+  .chip[data-sev="debt"] .dot{background:var(--debt)}
+  .chip[data-sev="obs"] .dot{background:var(--signal)}
+  .chip[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+  .chip:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+
+  /* ---------- sections ---------- */
+  section.grp{padding-top:46px}
+  .grp-head{display:flex;gap:14px;align-items:baseline;margin-bottom:6px}
+  .grp-id{
+    font-family:Archivo,sans-serif;font-weight:700;font-size:15px;
+    color:var(--signal);letter-spacing:.04em;flex:none;
+    border:1.5px solid var(--signal);padding:1px 8px;line-height:1.5;
+  }
+  h2{
+    font-family:Archivo,sans-serif;font-weight:600;font-size:26px;
+    letter-spacing:-.014em;margin:0;line-height:1.2;text-wrap:balance;
+  }
+  .grp-note{color:var(--ink-mid);font-size:15px;margin:8px 0 0;max-width:66ch}
+
+  /* ---------- finding ---------- */
+  .find{
+    border-top:1px solid var(--rule-soft);
+    padding:22px 0 4px;
+    display:grid;grid-template-columns:64px 1fr;gap:0 20px;
+  }
+  .find.hide{display:none}
+  .find:first-of-type{border-top:1px solid var(--rule)}
+  .fid{
+    font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;
+    letter-spacing:.02em;padding-top:3px;
+  }
+  .fid .sev{
+    display:block;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+    font-weight:600;margin-top:5px;
+  }
+  .find[data-sev="crit"] .fid{color:var(--crit)}
+  .find[data-sev="warn"] .fid{color:var(--warn)}
+  .find[data-sev="debt"] .fid{color:var(--debt)}
+  .obs{
+    font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:600;
+    letter-spacing:.09em;text-transform:uppercase;color:var(--signal);
+    border:1px solid var(--signal);background:var(--signal-soft);
+    padding:1px 5px;border-radius:2px;white-space:nowrap;
+  }
+  .fid .obs{display:inline-block;margin-top:5px}
+  h3 .obs{vertical-align:2px;margin-left:7px;letter-spacing:.08em}
+  .evid{
+    background:var(--signal-soft);border-left:3px solid var(--signal);
+    padding:12px 16px;margin:0 0 14px;font-size:14px;line-height:1.55;
+  }
+  .evid b{font-weight:600;color:var(--signal)}
+  .find[data-sev="crit"]{
+    border-left:3px solid var(--crit);
+    padding-left:16px;margin-left:-19px;
+  }
+  h3{
+    font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:17.5px;
+    margin:0 0 6px;line-height:1.34;letter-spacing:-.006em;text-wrap:balance;
+  }
+  .find p{margin:0 0 10px;max-width:68ch}
+  .find p:last-child{margin-bottom:14px}
+  .loc{
+    font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-dim);
+    margin:0 0 10px;word-break:break-word;
+  }
+  .loc b{color:var(--signal);font-weight:500}
+  code{
+    font-family:"IBM Plex Mono",monospace;font-size:.875em;
+    background:var(--surface-2);border:1px solid var(--rule-soft);
+    padding:.06em .34em;border-radius:2px;white-space:nowrap;
+  }
+  pre{
+    font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.6;
+    background:var(--surface);border:1px solid var(--rule);
+    border-left:3px solid var(--rule);
+    padding:13px 15px;margin:0 0 12px;overflow-x:auto;
+  }
+  pre code{background:none;border:none;padding:0;white-space:pre;font-size:1em}
+  pre .cmt{color:var(--ink-dim)}
+  pre .bad{color:var(--crit);font-weight:600}
+
+  /* ---------- tables ---------- */
+  .tw{overflow-x:auto;margin:0 0 14px;border:1px solid var(--rule);background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:420px}
+  th,td{text-align:left;padding:8px 13px;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+  th{
+    font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--ink-dim);font-weight:600;
+    background:var(--surface-2);white-space:nowrap;
+  }
+  tr:last-child td{border-bottom:none}
+  td.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.mono{font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+  .zero{color:var(--crit);font-weight:600}
+
+  /* ---------- gate diagram ---------- */
+  figure.diag{margin:4px 0 18px;background:var(--surface);border:1px solid var(--rule);padding:20px 20px 14px}
+  figure.diag svg{display:block;width:100%;height:auto}
+  figcaption{
+    font-size:13px;color:var(--ink-mid);margin-top:12px;
+    padding-top:11px;border-top:1px solid var(--rule-soft);max-width:64ch;
+  }
+
+  /* ---------- callout ---------- */
+  .why{
+    background:var(--crit-soft);
+    border-left:3px solid var(--crit);
+    padding:13px 16px;margin:0 0 14px;font-size:14.5px;line-height:1.55;
+  }
+  .why b{font-weight:600}
+  .note{
+    background:var(--signal-soft);border-left:3px solid var(--signal);
+    padding:13px 16px;margin:0 0 14px;font-size:14.5px;line-height:1.55;
+  }
+
+  /* ---------- questions ---------- */
+  ol.q{list-style:none;counter-reset:q;padding:0;margin:0}
+  ol.q li{
+    counter-increment:q;position:relative;padding:16px 0 16px 46px;
+    border-top:1px solid var(--rule-soft);max-width:70ch;
+  }
+  ol.q li:first-child{border-top:1px solid var(--rule)}
+  ol.q li::before{
+    content:counter(q);position:absolute;left:0;top:15px;
+    font-family:Archivo,sans-serif;font-weight:700;font-size:15px;
+    color:var(--signal);border:1.5px solid var(--signal);
+    width:26px;height:26px;display:grid;place-items:center;
+  }
+  ul.plain{padding-left:20px;margin:0 0 14px;max-width:68ch}
+  ul.plain li{margin-bottom:7px}
+
+  footer{
+    margin-top:64px;padding-top:22px;border-top:2px solid var(--ink);
+    font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-dim);
+    display:flex;flex-wrap:wrap;gap:8px 26px;
+  }
+  a{color:var(--signal)}
+  @media (max-width:640px){
+    .find{grid-template-columns:1fr;gap:8px}
+    .fid{display:flex;gap:10px;align-items:baseline;padding-top:0}
+    .fid .sev{margin-top:0}
+    .find[data-sev="crit"]{margin-left:0;padding-left:13px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="eyebrow">
+    <span>Code audit</span>
+    <span>read 2026&#8209;09&#8209;10 &middot; updated 2026&#8209;09&#8209;14</span>
+    <span class="sha">main @ 2d36a89, since re&#8209;checked against the working tree</span>
+    <span>10,589 lines read</span>
+  </div>
+  <h1>Gappler Code Audit</h1>
+  <p class="standfirst">A line&#8209;by&#8209;line read of every file this project owns, traced publisher to subscriber. The first three findings interlock, and together they mean the grasp path cannot work as written. <strong>Seven findings have since been reproduced on the bench</strong>, which is what the badges below mark.</p>
+</header>
+
+<div class="caveat">
+  <span class="tag">Mostly unverified</span>
+  <p><strong>This began as a static read — no hardware, no ROS, nothing executed.</strong> That is still true of most of it, so treat an unmarked entry as something to check, not something to fix. <strong>The exception is the seven entries marked <span class="obs">observed</span></strong>, which the bench has since reproduced on the lab machine against real running nodes: B2a, B4, C7 (2026&#8209;09&#8209;11) and E1, F1, F2, F4 (2026&#8209;09&#8209;14). Each matched the mechanism predicted here, which is the best evidence available that the reasoning in the rest is sound. One entry was tested and <em>not</em> reproduced: B2's message loss, see its note.</p>
+</div>
+
+<div class="controls">
+  <span class="lbl">Filter</span>
+  <button class="chip" data-sev="all" aria-pressed="true">All <span class="n" data-count="all">0</span></button>
+  <button class="chip" data-sev="crit" aria-pressed="false"><span class="dot"></span>Blocks / safety <span class="n" data-count="crit">0</span></button>
+  <button class="chip" data-sev="warn" aria-pressed="false"><span class="dot"></span>Fails at runtime <span class="n" data-count="warn">0</span></button>
+  <button class="chip" data-sev="debt" aria-pressed="false"><span class="dot"></span>Debt <span class="n" data-count="debt">0</span></button>
+  <button class="chip" data-sev="obs" aria-pressed="false"><span class="dot"></span>Reproduced <span class="n" data-count="obs">0</span></button>
+</div>
+
+<div class="caveat" style="background:var(--signal-soft);border-color:var(--signal);border-left-color:var(--signal);margin-top:14px">
+  <span class="tag" style="color:var(--signal)">Scope</span>
+  <p>This page carries <strong>59 of the 62 findings</strong> in <code>docs/dion_docs/CODE_AUDIT.md</code>. Three live only in the document because they are inventory rather than defects: <b>B7</b>, the kill&#8209;word fallback firing on ordinary sentences, and <b>K1</b>/<b>K2</b>, which count how much of the channel and constant surface is declared outside the shared config. Counts in the filter bar are computed from this page, so they cannot drift out of step with it again.</p>
+</div>
+
+<!-- ============ A ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">A</span><h2>The grasp path cannot work</h2></div>
+  <p class="grp-note">One defect in three parts, spread across two languages and two Python environments. Read this section first.</p>
+
+  <figure class="diag">
+    <svg viewBox="0 0 640 168" role="img" aria-label="Timeline showing AnyGrasp publishes only during IDLE while the state machine accepts only during EXECUTING, with no overlap.">
+      <g font-family="IBM Plex Mono, monospace" font-size="11">
+        <text x="0" y="12" fill="var(--ink-dim)" letter-spacing="1.2">/PIPELINE_STATE</text>
+        <rect x="130" y="2" width="150" height="20" fill="var(--surface-2)" stroke="var(--rule)"/>
+        <rect x="280" y="2" width="170" height="20" fill="var(--surface-2)" stroke="var(--rule)"/>
+        <rect x="450" y="2" width="190" height="20" fill="var(--surface-2)" stroke="var(--rule)"/>
+        <text x="205" y="16" fill="var(--ink)" text-anchor="middle">IDLE</text>
+        <text x="365" y="16" fill="var(--ink)" text-anchor="middle">SELECTING</text>
+        <text x="545" y="16" fill="var(--ink)" text-anchor="middle">EXECUTING</text>
+
+        <text x="0" y="66" fill="var(--ink-mid)">A1 produces</text>
+        <text x="0" y="80" fill="var(--ink-dim)" font-size="10">anygrasp_detection</text>
+        <rect x="130" y="52" width="150" height="24" fill="var(--debt-soft)" stroke="var(--debt)"/>
+        <text x="205" y="68" fill="var(--debt)" text-anchor="middle" font-weight="600">publishes</text>
+        <rect x="280" y="52" width="360" height="24" fill="none" stroke="var(--rule)" stroke-dasharray="3 3"/>
+        <text x="460" y="68" fill="var(--ink-dim)" text-anchor="middle">returns early</text>
+
+        <text x="0" y="122" fill="var(--ink-mid)">A2 accepts</text>
+        <text x="0" y="136" fill="var(--ink-dim)" font-size="10">grasp_state_machine</text>
+        <rect x="130" y="108" width="320" height="24" fill="none" stroke="var(--rule)" stroke-dasharray="3 3"/>
+        <text x="290" y="124" fill="var(--ink-dim)" text-anchor="middle">discards</text>
+        <rect x="450" y="108" width="190" height="24" fill="var(--debt-soft)" stroke="var(--debt)"/>
+        <text x="545" y="124" fill="var(--debt)" text-anchor="middle" font-weight="600">accepts</text>
+
+        <line x1="130" y1="88" x2="640" y2="88" stroke="var(--rule)"/>
+        <text x="640" y="158" fill="var(--crit)" text-anchor="end" font-weight="600" font-size="11.5">overlap = 0 frames</text>
+      </g>
+    </svg>
+    <figcaption>The producer's gate and the consumer's gate never open at the same time. No grasp candidate can reach the arm.</figcaption>
+  </figure>
+
+  <article class="find" data-sev="crit">
+    <div class="fid">A1<span class="sev">Blocks</span></div>
+    <div>
+      <h3>The AnyGrasp gate is inverted</h3>
+      <p class="loc"><b>anygrasp_detection_node.py:182</b></p>
+      <pre><code>def synced_callback(self, rgb_msg, depth_msg):
+    if not self.intrinsics_received:
+        return
+    <span class="bad">if self.pipeline_state != "IDLE":   # runs ONLY when IDLE</span>
+        return</code></pre>
+      <p>Its own docstring three lines above the function, the file header at <code>:6</code>, and <code>ORIENTATION.md</code> §5 all say it runs <em>when pipeline state is EXECUTING</em>. The condition does the opposite.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="crit">
+    <div class="fid">A2<span class="sev">Blocks</span></div>
+    <div>
+      <h3>The state machine accepts candidates only in EXECUTING</h3>
+      <p class="loc"><b>grasp_state_machine.cpp:171</b></p>
+      <pre><code>if (state_ != State::EXECUTING || msg-&gt;grasps.empty())
+  return;</code></pre>
+      <p>Mutually exclusive with A1.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="crit">
+    <div class="fid">A3<span class="sev">Blocks</span></div>
+    <div>
+      <h3><code>USE_SIMPLE_EXECUTE = true</code> hides both</h3>
+      <p class="loc"><b>grasp_state_machine.cpp:41</b></p>
+      <p>With this flag set, the entire candidate&#8209;consuming path — <code>executingStep()</code>, <code>checkStability()</code>, <code>slerpQuat()</code>, <code>approachAngleDeg()</code>, the candidate queue — is unreachable. What runs instead is: snapshot the centroid, one Cartesian step, then <code>executingSimple()</code>, which does nothing but close the gripper.</p>
+      <p><strong>AnyGrasp's output is not used at all today.</strong> The arm closes at a position derived purely from the SAM&nbsp;3 centroid. The 3.4&nbsp;GB model, the machine&#8209;locked licence and the whole <code>/grasp_candidates</code> contract are, at runtime, decorative.</p>
+      <div class="why"><b>Why this matters more than any single bug here:</b> the moment anyone flips this flag to turn "real" grasping on, it fails 100&nbsp;% of the time with <code>EXECUTING: no candidates received</code> after a 3&#8209;second timeout — and the cause is in a different file, a different language and a different conda environment.</div>
+    </div>
+  </article>
+</section>
+
+<!-- ============ B ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">B</span><h2>Safety&#8209;relevant</h2></div>
+  <p class="grp-note">The arm homes unprompted within seconds of launch, and has never been commanded to move at all.</p>
+
+  <article class="find" data-sev="crit">
+    <div class="fid">B1<span class="sev">Safety</span></div>
+    <div>
+      <h3>The root launcher promises an emergency stop that does not exist</h3>
+      <p class="loc"><b>main.py:5</b> (docstring) · <b>main.py:67</b> (printed at runtime) — both say <em>"press 'q' for emergency stop"</em></p>
+      <pre><code>while True:
+    time.sleep(1000)</code></pre>
+      <p>There is no keyboard handling anywhere in the file. No <code>getch</code>, no <code>termios</code>, no thread reading stdin. Pressing <kbd>q</kbd> does nothing; only Ctrl+C works, via the <code>SIGINT</code> handler at <code>:50</code>.</p>
+      <p>This is the top&#8209;level entry point for a system that moves a robot arm, and it tells the operator they have a stop key they do not have.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="crit">
+    <div class="fid">B2<span class="sev">Safety</span></div>
+    <div>
+      <h3>The e&#8209;stop may not deliver its own message on Ctrl+C</h3>
+      <p class="loc"><b>estop.py:72&#8209;76</b></p>
+      <pre><code>except KeyboardInterrupt:
+    node.emergency_stop()   <span class="cmt"># publishes</span>
+finally:
+    node.destroy_node()     <span class="bad"># immediately</span>
+    rclpy.shutdown()</code></pre>
+      <p><code>publish()</code> hands the message to DDS asynchronously. Tearing the participant down on the next two lines can beat delivery.</p>
+      <p>The author knew this: <code>orchestrator.py:121</code> does <code>time.sleep(1.5)</code> with the comment <em>"allow topic to deliver before exit"</em> for the identical pattern. The e&#8209;stop — where it matters most — does not.</p>
+      <div class="evid"><b>Tested 2026&#8209;09&#8209;11, not reproduced.</b> <code>bench/estop_delivery.sh</code> sent the stop all five times and it arrived every time, so the race is real in principle but did not bite on this machine. The program still crashes on exit. What the same run <em>did</em> find is worse, and it is B2a below.</div>
+    </div>
+  </article>
+
+  <article class="find" data-sev="crit" data-observed="1">
+    <div class="fid">B2a<span class="sev">Safety</span><span class="obs">observed</span></div>
+    <div>
+      <h3>Ctrl+C in the e&#8209;stop terminal does nothing at all</h3>
+      <p class="loc"><b>estop.py:48&#8209;55</b></p>
+      <p><code>getch()</code> puts the terminal in raw mode while it waits for a key, which is nearly all the time. In raw mode Ctrl+C arrives as the character <code>0x03</code>, not as a signal, so it matches none of <kbd>e</kbd>/<kbd>r</kbd>/<kbd>s</kbd>/<kbd>q</kbd> and is silently ignored. <strong>No stop is sent and the script keeps running.</strong></p>
+      <p>So the <code>except KeyboardInterrupt</code> path that B2 worries about is only ever reached by a signal from outside, such as <code>kill -INT</code>. Closing the terminal window sends SIGHUP, which is not handled either.</p>
+      <div class="why"><b>An operator whose reflex is Ctrl+C gets nothing.</b> This is the emergency stop, and the key almost everyone would reach for first is the one key it ignores. Only <kbd>e</kbd> works.</div>
+      <div class="evid"><b>Reproduced 2026&#8209;09&#8209;11</b> — <code>bench/estop_delivery.sh</code> on the lab machine.</div>
+    </div>
+  </article>
+
+  <article class="find" data-sev="crit">
+    <div class="fid">B3<span class="sev">Safety</span></div>
+    <div>
+      <h3>The voice kill word cannot stop the arm</h3>
+      <p class="loc">subscribers of <b>/aria/audio/prompt</b>: <b>goto_glasses.py:59</b>, <b>object_approach_node.py:80</b> — both in <code>Navigation_Module</code></p>
+      <p>The LLM maps "stop", "end", "kill", "terminate", "quit", "cancel" to <code>"end"</code>, and <code>goto_glasses.py:94</code> cancels the Nav2 goal. <strong>Nothing in <code>rm_mtc</code> subscribes to that topic at all.</strong></p>
+      <p>So "stop the robot" stops the base and leaves the arm running. The only arm stop is <code>estop.py</code>, in its own terminal, with the window focused — see B2.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="crit" data-observed="1">
+    <div class="fid">B4<span class="sev">Safety</span><span class="obs">observed</span></div>
+    <div>
+      <h3>The home pose changed and the safety warning still quotes the old one</h3>
+      <p class="loc"><b>mtc_planner.hpp:40&#8209;47</b></p>
+      <div class="tw"><table>
+        <tr><th></th><th>joint1</th><th>joint2</th><th>joint3</th><th>joint4</th><th>joint5</th><th>joint6</th></tr>
+        <tr><td class="mono">main (now)</td><td class="num">0.0</td><td class="num">0.0</td><td class="num">0.7854</td><td class="num zero">0.0</td><td class="num">1.5708</td><td class="num">1.5708</td></tr>
+        <tr><td class="mono">realman_manip</td><td class="num">&minus;0.0175</td><td class="num">&minus;0.1745</td><td class="num">0.7854</td><td class="num zero">&minus;3.0718</td><td class="num">&minus;1.6930</td><td class="num">&minus;1.6057</td></tr>
+      </table></div>
+      <p><code>RCP_NEW_USER_STARTUP_GUIDE.md</code> §7 — the document that says <em>"clear the arm's path, keep the physical e&#8209;stop in reach"</em> — quotes the <code>realman_manip</code> values. <strong>joint4 differs by 176°.</strong> Only joint3 is unchanged.</p>
+      <p>The first motion this arm ever makes will be to a pose nobody has validated, and anyone who cleared space based on the guide cleared the wrong volume.</p>
+      <div class="evid"><b>Observed 2026&#8209;09&#8209;11.</b> Both values are on the lab machine: <code>~/rcp-desktop</code> holds the <code>realman_manip</code> row and <code>~/rcp-github</code> holds <code>main</code>'s. The one complete built overlay was built from the Desktop source, so the stack that ran on 2026&#8209;08&#8209;25 homed to the <code>realman_manip</code> pose. Any build of <code>main</code> homes to the new, unvalidated one. The simulated&#8209;arm run reached the home pose to within 0.0001&nbsp;rad, so the move itself is sound — it is the destination nobody has checked.</div>
+    </div>
+  </article>
+
+  <article class="find" data-sev="warn">
+    <div class="fid">B5<span class="sev">Runtime</span></div>
+    <div>
+      <h3>The orchestrator orphans the arm driver and state machine on exit</h3>
+      <p class="loc"><b>orchestrator.py:85&#8209;97</b> — the handler that terminated the children is commented out</p>
+      <p><code>main()</code>'s <code>finally</code> calls <code>destroy_node()</code> and prints "Terminated" without touching <code>processes</code>. When the orchestrator exits, <code>background.launch.py</code> and <code>main.py</code> keep running — the state machine is still live and will still move the arm on the next centroid.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="warn">
+    <div class="fid">B6<span class="sev">Runtime</span></div>
+    <div>
+      <h3>No in&#8209;position interlock inside the state machine</h3>
+      <p class="loc"><b>grasp_state_machine.cpp:604&#8209;612</b></p>
+      <p>IDLE→SELECTING waits on <code>has_centroid_</code> alone. The state machine never subscribes to <code>/manipulation/start</code>; the orchestrator only gates <em>launching</em> it. Once running, any centroid starts the approach whether or not navigation says the base is in position.</p>
+    </div>
+  </article>
+</section>
+
+<!-- ============ C ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">C</span><h2>Concurrency in <code>grasp_state_machine.cpp</code></h2></div>
+  <p class="grp-note">Two of these are undefined behaviour, not style — symptoms that come and go with timing and optimisation level.</p>
+
+  <article class="find" data-sev="crit">
+    <div class="fid">C1<span class="sev">Blocks</span></div>
+    <div>
+      <h3>One condition variable, two mutexes</h3>
+      <p class="loc"><b>:607</b> waits with <code>centroid_mutex_</code> · <b>:464</b> waits with <code>queue_mutex_</code> — same <code>queue_cv_</code></p>
+      <p><code>std::condition_variable</code> requires that all concurrent waiters use the same mutex. Using two is undefined behaviour. Expect lost wakeups and intermittent hangs.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="crit">
+    <div class="fid">C2<span class="sev">Blocks</span></div>
+    <div>
+      <h3>The centroid is read without its lock, in the loop that decides to close in</h3>
+      <p class="loc"><b>grasp_state_machine.cpp:633&#8209;641</b></p>
+      <pre><code>double object_depth;
+{
+  <span class="cmt">// auto age = this-&gt;now() - latest_centroid_.header.stamp;
+  // if (age &gt; rclcpp::Duration::from_seconds(1.0)) { ... }</span>
+  object_depth = latest_centroid_.point.z;   <span class="bad">// no lock</span>
+}</code></pre>
+      <p>The braces are left over from the <code>lock_guard</code> that was removed along with the commented&#8209;out staleness guard. <code>latest_centroid_</code> is a 40&#8209;byte struct written by the callback under <code>centroid_mutex_</code>. This is a data race on the single value that decides SELECTING → EXECUTING — whether the arm closes on the object.</p>
+      <div class="note"><code>ORIENTATION.md</code> §8.8 records the missing staleness guard. It does not record that removing it also removed the lock.</div>
+    </div>
+  </article>
+
+  <article class="find" data-sev="crit">
+    <div class="fid">C6<span class="sev">Blocks</span></div>
+    <div>
+      <h3>Reference cycle — neither destructor ever runs</h3>
+      <p class="loc"><b>grasp_state_machine.cpp:759</b> holds <code>shared_ptr&lt;MtcPlanner&gt;</code> · <b>mtc_planner.hpp:37</b> holds <code>Node::SharedPtr</code> to the same node</p>
+      <p>A <code>shared_ptr</code> cycle. The refcount never reaches zero, so <code>~GraspStateMachine</code> never runs (<code>shutdown_</code> never set, worker thread never joined) and <code>~MtcPlanner</code> never runs (<code>mtc_executor_-&gt;cancel()</code> never called, spin thread never joined). <code>main()</code> returns from <code>rclcpp::spin()</code> with two threads still live.</p>
+      <p><code>node_</code> is only used for logging — a <code>WeakPtr</code>, or just the logger, breaks the cycle.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="crit" data-observed="1">
+    <div class="fid">C7<span class="sev">Blocks</span><span class="obs">observed</span></div>
+    <div>
+      <h3>Unbounded queue growth after a successful grasp</h3>
+      <p class="loc"><b>grasp_state_machine.cpp:704&#8209;716</b> returns out of <code>workerLoop</code> without reaching <code>publishState(IDLE)</code> at <b>:721</b></p>
+      <p><code>state_</code> stays <code>EXECUTING</code> forever, so <code>graspCallback</code> keeps pushing into <code>candidate_queue_</code>, which nothing drains any more. The node also handles exactly <strong>one</strong> object per launch, despite the <code>while (true)</code> structure.</p>
+      <div class="evid"><b>Reproduced 2026&#8209;09&#8209;11</b> — <code>bench/state_machine_sim.sh</code> ran a full grasp on the simulated arm: home, approach, grip, carry. It then stayed in EXECUTING and never announced IDLE again, exactly as predicted.</div>
+    </div>
+  </article>
+
+  <article class="find" data-sev="warn" data-n="3">
+    <div class="fid">C3–C5<span class="sev">Runtime</span></div>
+    <div>
+      <h3>Three more unsynchronised shared variables</h3>
+      <div class="tw"><table>
+        <tr><th>ID</th><th>Variable</th><th>Written by</th><th>Read by</th></tr>
+        <tr><td class="mono">C3</td><td class="mono">has_centroid_ <span style="color:var(--ink-dim)">:604</span></td><td>worker, no mutex</td><td>CV predicate under mutex</td></tr>
+        <tr><td class="mono">C4</td><td class="mono">state_ <span style="color:var(--ink-dim)">:756</span></td><td>worker, <code>publishState</code> :206</td><td>executor, <code>graspCallback</code> :171</td></tr>
+        <tr><td class="mono">C5</td><td class="mono">shutdown_</td><td>destructor under mutex</td><td><code>homeWithRetry</code> :343, <code>returnWithRetry</code> :355 — no lock</td></tr>
+      </table></div>
+      <p>None are <code>std::atomic</code>.</p>
+    </div>
+  </article>
+</section>
+
+<!-- ============ D ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">D</span><h2>Dead edges in the contract graph</h2></div>
+  <p class="grp-note">Confirmed against the full publisher/subscriber inventory from <code>bench/contracts.py report</code>.</p>
+
+  <article class="find" data-sev="warn" data-n="4">
+    <div class="fid">D1–D4<span class="sev">Runtime</span></div>
+    <div>
+      <h3>Four topics with nothing on one end</h3>
+      <div class="tw"><table>
+        <tr><th>Topic</th><th>Pub</th><th>Sub</th><th>Consequence</th></tr>
+        <tr><td class="mono">/manipulator/release</td><td class="num zero">0</td><td class="num">2</td><td>Steps 5–6 of the orchestrator's documented flow can never fire. It has no normal termination path.</td></tr>
+        <tr><td class="mono">/manipulation/done</td><td class="num zero">0</td><td class="num">1</td><td><code>_tracking_robot</code> never becomes true; the marker never follows the robot. Dead feature.</td></tr>
+        <tr><td class="mono">/return_to_user/goal_reached</td><td class="num">1</td><td class="num zero">0</td><td>The orchestrator's subscription is commented out at <code>:57&#8209;59</code>. The return leg reports completion into the void.</td></tr>
+        <tr><td class="mono">/PLACEHOLDER/sam/mask</td><td class="num">1</td><td class="num zero">0</td><td>Known — <code>ORIENTATION.md</code> §0b.</td></tr>
+      </table></div>
+    </div>
+  </article>
+</section>
+
+<!-- ============ E ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">E</span><h2>Frames and coordinates</h2></div>
+
+  <article class="find" data-sev="crit" data-observed="1">
+    <div class="fid">E1<span class="sev">Blocks</span><span class="obs">observed</span></div>
+    <div>
+      <h3><code>goto_glasses</code> treats a robot&#8209;relative pose as a map coordinate</h3>
+      <p class="loc"><b>goto_glasses.py:170&#8209;184</b> and <b>:198&#8209;217</b></p>
+      <p>Both read <code>glasses_pose.pose.position.x/y</code> directly and stamp the result <code>frame_id = "map"</code>. There is no TF lookup, and <code>msg.header.frame_id</code> is never read.</p>
+      <p><code>/aria/fused_pose</code> is stamped <code>"robot_base_link"</code>. So a position expressed relative to the moving base is used as an absolute map coordinate — and the error changes every time the base moves.</p>
+      <div class="note"><code>ORIENTATION.md</code> §6.4 flags the frame mismatch. What it does not say is that the consumer never looks at the frame at all, so nothing would ever catch it.</div>
+      <div class="evid"><b>Reproduced 2026&#8209;09&#8209;14</b> — <code>bench/nav_nodes.sh</code>. Fed a <code>robot_base_link</code>&#8209;stamped fused pose, the node produced a goal at <code>(1.00, 0.60)</code> in <code>map</code>. The wearer's actual map position was <code>(2.40, 2.00)</code>. <strong>The robot would drive 2.0&nbsp;m to the wrong place</strong>, and the error changes with every base movement.</div>
+    </div>
+  </article>
+
+  <article class="find" data-sev="crit">
+    <div class="fid">E5<span class="sev">Blocks</span></div>
+    <div>
+      <h3>Two nodes race for Nav2 on the same spoken word</h3>
+      <p class="loc"><b>goto_glasses.py:59&#8209;61, 67, 88&#8209;100</b> · launched unconditionally by <b>slam_localization.launch.py:156&#8209;159</b></p>
+      <p><code>goto_glasses.py</code> is not the return&#8209;leg&#8209;only node its name suggests. Its own docstring says it handles "all user&#8209;directed navigation", and it has <strong>two</strong> paths that both send goals through the single <code>navigate_to_pose</code> action client created at <code>:67</code>:</p>
+      <div class="tw"><table>
+        <tr><th>Path</th><th>Trigger</th><th>Frame handling</th></tr>
+        <tr><td class="mono">Outbound</td><td><code>/aria/audio/prompt</code>, or <code>/goto_glasses/trigger</code></td><td>the <b>E1</b> defect, stamps <code>"map"</code> at <code>:174</code> with no TF lookup</td></tr>
+        <tr><td class="mono">Return</td><td><code>/manipulator/return_to_user</code></td><td>the <b>E1</b> defect, stamps <code>"map"</code> at <code>:204</code></td></tr>
+      </table></div>
+      <p><code>object_approach_node.py</code> runs the forward leg and is structurally independent — no topic of one feeds the other. <strong>The coupling is the shared action server, not a topic.</strong> Both nodes react to <code>/aria/audio/prompt</code>, so one spoken object name can make <code>goto_glasses</code> fire an E1&#8209;corrupted goal at the moment the forward leg needs Nav2 for its approach.</p>
+      <div class="why"><b>This changes a scoping decision.</b> <code>PROJECT_PLAN.md</code> §4.2 puts the return leg out of scope, which was taken to make E1 droppable. It does not: E1's outbound half is on the path we do use, and the launch file for normal operation starts this node every time. F2 below <em>is</em> genuinely return&#8209;leg only.</div>
+      <p>Checked repo&#8209;wide in the same pass: the E1 pattern, stamping <code>frame_id = "map"</code> on values that never went through a TF lookup, exists in exactly two places, both in this file. <code>object_approach_node.py:232</code> looks identical but is correct, because its values come from a real <code>lookup_transform</code> first.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="warn">
+    <div class="fid">E2<span class="sev">Runtime</span></div>
+    <div>
+      <h3>The naming says "map" while the maths is robot&#8209;relative</h3>
+      <p class="loc"><b>pose_fusion_node.py</b></p>
+      <pre><code>T_map_marker = T_map_marker = self._T_robot_marker()   <span class="bad"># double assignment</span>
+T_map_glasses = T_map_marker @ np.linalg.inv(T_camera_marker)
+...
+_T_to_pose_stamped(T_map_glasses, <span class="bad">"robot_base_link"</span>, msg.header.stamp)</code></pre>
+      <p>Three things at once: a double&#8209;assignment typo; a variable named <code>T_map_marker</code> assigned from a function named <code>_T_robot_marker()</code>; and <code>T_map_glasses</code> published in the <code>robot_base_link</code> frame. <strong>This naming is the root cause of E1</strong> — exactly the failure <code>ORIENTATION.md</code> §0b warns about.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="warn">
+    <div class="fid">E3<span class="sev">Runtime</span></div>
+    <div>
+      <h3>Timestamps are discarded twice on the perception→arm path</h3>
+      <p class="loc"><b>anygrasp_detection_node.py:152</b> · <b>grasp_state_machine.cpp:241</b></p>
+      <p>The first stamps candidates with <code>now()</code> rather than the frame they were computed from. The second asks TF for the transform <em>now</em> rather than when the observation was made. The camera is on the wrist and the arm moves in 4&nbsp;cm steps during SELECTING, so both interpret an older observation as if taken at the arm's current pose.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="debt">
+    <div class="fid">E4<span class="sev">Debt</span></div>
+    <div>
+      <h3>A fourth independent copy of the mount geometry</h3>
+      <p class="loc"><b>object_approach_node.py:143</b> — <code>+ 0.48  # arm height above base</code></p>
+      <p><code>ORIENTATION.md</code> §8.10 tracks three copies of <code>CAMERA_X_OFFSET = 0.18</code>. This is another constant from the same physical measurement, in a fifth place.</p>
+    </div>
+  </article>
+</section>
+
+<!-- ============ F ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">F</span><h2>Error paths that wedge the system permanently</h2></div>
+
+  <article class="find" data-sev="crit" data-observed="1">
+    <div class="fid">F1<span class="sev">Blocks</span><span class="obs">observed</span></div>
+    <div>
+      <h3><code>goal_reached_publisher</code> has three silent&#8209;failure paths</h3>
+      <div class="tw"><table>
+        <tr><th>Line</th><th>Situation</th><th>Publishes</th></tr>
+        <tr><td class="mono">:36&#8209;38</td><td>Nav2 action server unavailable</td><td class="zero">nothing</td></tr>
+        <tr><td class="mono">:44&#8209;46</td><td>Nav2 rejects the goal</td><td class="zero">nothing</td></tr>
+        <tr><td class="mono">:43</td><td><code>future.result()</code> raises, unguarded, inside a callback</td><td class="zero">nothing</td></tr>
+      </table></div>
+      <p>Only <code>_on_nav_result</code> ever publishes <code>/goal_reached</code>. Now pair that with the consumer:</p>
+      <pre><code>def _on_goal_reached(self, msg):
+    if msg.data.strip().lower() != "success":
+        return              <span class="bad"># returns WITHOUT resetting the guard</span>
+    self._approach_done = False</code></pre>
+      <p><code>_approach_done</code> is set <code>True</code> on every approach and reset <strong>only</strong> on a literal <code>"success"</code>. Any of the three paths above leaves it stuck, and <code>_on_object_pose</code> then discards every future object pose.</p>
+      <div class="why"><b>One nav hiccup and the system ignores all further detections until restarted.</b></div>
+      <div class="evid"><b>Reproduced 2026&#8209;09&#8209;14</b> — <code>bench/nav_nodes.sh</code>, two separate cases. With the first goal rejected, a second object got <strong>zero</strong> drive goals. With no Nav2 running at all, nothing appeared on <code>/goal_reached</code> within 8&nbsp;s. The happy path works end to end in the same run, which localises this to failure handling only.</div>
+    </div>
+  </article>
+
+  <article class="find" data-sev="warn" data-observed="1">
+    <div class="fid">F2<span class="sev">Runtime</span><span class="obs">observed</span></div>
+    <div>
+      <h3>A failed return leg can never be retried</h3>
+      <p class="loc"><b>goto_glasses.py:222&#8209;225</b></p>
+      <p>If Nav2 is unavailable it sets <code>_navigating = False</code> but leaves <code>_returning</code> as <code>True</code>, and publishes nothing to <code>/return_to_user/goal_reached</code>. <code>_on_manipulation_done</code> then rejects every subsequent return with <em>"already returning to user"</em>, forever.</p>
+      <div class="evid"><b>Reproduced 2026&#8209;09&#8209;14</b> — <code>bench/nav_nodes.sh</code>. One return attempted with Nav2 down, then a second with Nav2 back up: the node logged <em>"Return ignored — already returning to user"</em> and reached Nav2 <strong>zero</strong> times.</div>
+    </div>
+  </article>
+
+  <article class="find" data-sev="warn">
+    <div class="fid">F3<span class="sev">Runtime</span></div>
+    <div>
+      <h3>Another unguarded <code>future.result()</code></h3>
+      <p class="loc"><b>goto_glasses.py:247</b> — same class as F1.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="warn" data-observed="1">
+    <div class="fid">F4<span class="sev">Runtime</span><span class="obs">observed</span></div>
+    <div>
+      <h3>All five navigation nodes exit with a traceback on Ctrl+C</h3>
+      <p class="loc">all in <b>Navigation_Module/src/robot_slam/scripts/</b></p>
+      <div class="tw"><table>
+        <tr><th>Node</th><th>What <code>main()</code> does</th><th>On Ctrl+C</th></tr>
+        <tr><td class="mono">object_approach_node.py<br><span style="color:var(--ink-dim)">:306&#8209;315</span></td><td>catches <code>KeyboardInterrupt</code>, then <code>finally: rclpy.shutdown()</code></td><td><code>RCLError: rcl_shutdown already called</code></td></tr>
+        <tr><td class="mono">qos_relay.py</td><td><code>try</code>/<code>finally</code>, no <code>except</code></td><td>the bare <code>KeyboardInterrupt</code> <em>and</em> the <code>RCLError</code></td></tr>
+        <tr><td class="mono">goal_reached_publisher.py<br>goto_glasses.py<br>pose_publisher.py</td><td>bare <code>rclpy.spin(Node())</code> — no <code>try</code>, no <code>destroy_node()</code>, no <code>shutdown()</code></td><td>raw <code>KeyboardInterrupt</code> traceback</td></tr>
+      </table></div>
+      <p>The first is the same bug as <code>estop.py:76</code> in B2: rclpy installs its own signal handler and shuts the context down before user code runs, so a later <code>rclpy.shutdown()</code> always raises.</p>
+      <div class="why"><b>Noisy but harmless while the robot is parked. The concern is mid&#8209;leg.</b> <code>goto_glasses</code> has a <code>_cancel_navigation()</code> at <code>:231&#8209;244</code> that <strong>nothing calls on shutdown</strong>, so Ctrl+C during a navigation leg would leave the Nav2 goal live and the base driving with its commander gone. That last step is <code>[inferred]</code> — nothing drove in this run, and this bench cannot test it.</div>
+      <div class="evid"><b>Found 2026&#8209;09&#8209;14</b> while tearing down each case of <code>bench/nav_nodes.sh</code>, which sends SIGINT to every node it starts.</div>
+    </div>
+  </article>
+</section>
+
+<!-- ============ G ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">G</span><h2>Data integrity</h2></div>
+
+  <article class="find" data-sev="warn">
+    <div class="fid">G1<span class="sev">Runtime</span></div>
+    <div>
+      <h3>The SAM mask has no timestamp relationship to the frame it masks</h3>
+      <p class="loc"><b>anygrasp_detection_node.py:74&#8209;75, 125&#8209;126, 195</b></p>
+      <pre><code><span class="cmt"># Latest mask cache — decoupled from RGB/depth sync</span>
+def mask_callback(self, msg):
+    self.latest_mask = msg        <span class="bad"># no timestamp check, ever</span>
+...
+combined_mask = depth_mask &amp; sam_mask</code></pre>
+      <p>RGB and depth are synchronised to within 50&nbsp;ms. The mask is then combined from whatever arrived most recently — arbitrarily stale, from a camera on a moving wrist. The comment presents this as a design choice; the effect is masking the current frame with an older frame's segmentation. There is also no shape check before <code>&amp;</code>.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="warn">
+    <div class="fid">G2<span class="sev">Runtime</span></div>
+    <div>
+      <h3><code>bgr8</code> is silently reinterpreted as 16&#8209;bit</h3>
+      <p class="loc"><b>anygrasp_detection_node.py:132</b></p>
+      <pre><code>dtype = np.uint8 if msg.encoding in ("rgb8", "mono8") else np.uint16</code></pre>
+      <p>Any other encoding — <code>bgr8</code>, <code>rgba8</code>, <code>bgra8</code> — falls into the <code>uint16</code> branch and colour data is read as half&#8209;length garbage.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="warn">
+    <div class="fid">G7<span class="sev">Runtime</span></div>
+    <div>
+      <h3>Null dereference when joint states are absent</h3>
+      <p class="loc"><b>mtc_planner.cpp:120</b></p>
+      <pre><code>rt.setRobotTrajectoryMsg(<span class="bad">*move_group_-&gt;getCurrentState()</span>, trajectory);</code></pre>
+      <p><code>getCurrentState()</code> returns a null <code>shared_ptr</code> when the state monitor has not received <code>/joint_states</code>. Dereferenced with no check.</p>
+      <div class="why"><b>This is exactly the symptom of the wrong&#8209;host&#8209;IP trap</b> — <code>ORIENTATION.md</code> §9: <em>"wrong host IP → connects fine, zero feedback."</em> Instead of a diagnosable hang, you get a segfault in the planner.</div>
+    </div>
+  </article>
+
+  <article class="find" data-sev="debt" data-n="4">
+    <div class="fid">G3–G6<span class="sev">Debt</span></div>
+    <div>
+      <h3>Four smaller integrity gaps</h3>
+      <div class="tw"><table>
+        <tr><th>ID</th><th>Where</th><th>Finding</th></tr>
+        <tr><td class="mono">G3</td><td class="mono">sam3_ros_node.py:108</td><td>RGB parsed without checking <code>encoding</code>, reshaped with <code>-1</code> so a 4&#8209;channel image is accepted silently. Channel order into SAM&nbsp;3 unverified.</td></tr>
+        <tr><td class="mono">G4</td><td class="mono">sam3_ros_node.py:135<br>dummy_mask_publisher.py:41</td><td>mono8 masks carry 0/1, not 0/255. Consumers use <code>.astype(bool)</code> so it works — but the mask renders as pure black in RViz, indistinguishable from an empty detection.</td></tr>
+        <tr><td class="mono">G5</td><td class="mono">sam3_ros_node.py:12 vs :150&#8209;155</td><td>Docstring says <em>"depth at centroid pixel"</em>; the code publishes the <strong>median over the whole mask</strong>. The state machine back&#8209;projects the centroid pixel using it as that pixel's depth.</td></tr>
+        <tr><td class="mono">G6</td><td class="mono">anygrasp_detection_node.py:198</td><td>Only <code>sum() == 0</code> is checked. MinkowskiEngine <strong>segfaults rather than raising</strong> on an inadequate cloud — a handful of points is not zero but may still be fatal.</td></tr>
+      </table></div>
+    </div>
+  </article>
+</section>
+
+<!-- ============ H ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">H</span><h2>Ignored return values</h2></div>
+
+  <article class="find" data-sev="warn" data-n="2">
+    <div class="fid">H1–H2<span class="sev">Runtime</span></div>
+    <div>
+      <h3>Execution failures reported as success</h3>
+      <div class="tw"><table>
+        <tr><th>Where</th><th>Problem</th></tr>
+        <tr><td class="mono">mtc_planner.cpp:66</td><td><code>task.execute(...)</code> discarded; <code>moveToPose</code> returns <code>true</code> unconditionally. Currently unreachable per A3, but it is the "real" grasp path.</td></tr>
+        <tr><td class="mono">mtc_planner.cpp:82, 96</td><td><code>move_group_-&gt;execute(plan)</code> discarded in <code>moveToHome</code>/<code>moveToReturn</code>. <code>homeWithRetry</code> retries on <em>planning</em> failure only — an execution failure is reported as success and the state machine proceeds believing the arm is home.</td></tr>
+      </table></div>
+    </div>
+  </article>
+
+  <article class="find" data-sev="debt">
+    <div class="fid">H3<span class="sev">Doc fix</span></div>
+    <div>
+      <h3>Correction: <code>ORIENTATION.md</code> §8.2's third bullet is out of date</h3>
+      <p class="loc"><b>grasp_state_machine.cpp:706</b></p>
+      <p>§8.2 lists <em>"706 — LOGICAL ERROR: return value of moveCartesianStep ignored"</em>. <strong>The comment at <code>:706</code> is stale — the code below it does check the return value.</strong> The comment should be deleted and §8.2 amended.</p>
+      <p>The real problem there is different: the failure branch <code>return</code>s out of <code>workerLoop</code> entirely, silently bricking the node with only a <code>WARN</code>.</p>
+    </div>
+  </article>
+</section>
+
+<!-- ============ I ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">I</span><h2>Process and lifecycle</h2></div>
+
+  <article class="find" data-sev="crit">
+    <div class="fid">I1<span class="sev">Blocks</span></div>
+    <div>
+      <h3><code>background.launch.py</code> is launched twice</h3>
+      <p class="loc"><b>orchestrator.py:68</b> launches it in <code>__init__</code> · <b>orchestrator.py:82</b> launches <code>main.py</code>, which at <b>:106</b> launches it again</p>
+      <p>Two <code>rm_driver</code> instances, both opening TCP to <code>192.168.1.18:8080</code> and both asking the arm to send UDP state to <code>192.168.1.10:8089</code> — plus two <code>move_group</code> and two <code>robot_state_publisher</code> on the same topics and the same TF tree.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="warn">
+    <div class="fid">I2<span class="sev">Runtime</span></div>
+    <div>
+      <h3>The orchestrator fails silently on its one job</h3>
+      <p class="loc"><b>orchestrator.py:82</b>, with <code>MAIN_PY_DIR</code> hardcoded at <b>:23</b></p>
+      <p>On any machine that is not the original, <code>subprocess.Popen</code> raises <code>FileNotFoundError</code> <strong>inside a ROS subscription callback</strong>, where rclpy swallows it. The orchestrator logs <em>"Start received — launching main.py"</em> and then does nothing. It also invokes plain <code>python3</code>, not the project venv.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="warn">
+    <div class="fid">I3<span class="sev">Runtime</span></div>
+    <div>
+      <h3>The release handler no longer matches its documentation</h3>
+      <p class="loc"><b>orchestrator.py:63&#8209;64</b> vs docstring <b>:10</b></p>
+      <p>The code subscribes <code>Bool</code> to <code>/manipulator/release</code>; the docstring says <code>String</code> on <code>/aria/audio/prompt</code> containing "release". The handler is still called <code>_on_audio</code> and the string check is commented out at <code>:116&#8209;117</code>. Any <code>True</code> now opens the gripper and shuts the orchestrator down. Combined with D1, this path is both wrong and dead.</p>
+    </div>
+  </article>
+
+  <article class="find" data-sev="debt" data-n="3">
+    <div class="fid">I4–I6<span class="sev">Debt</span></div>
+    <div>
+      <h3>Three smaller lifecycle issues</h3>
+      <ul class="plain">
+        <li><b>I4</b> — <code>main.py:18</code> hardcodes <code>ARIA_PYTHON</code> even though <code>ROOT</code> is computed correctly three lines above and used for the other two paths. A one&#8209;line fix.</li>
+        <li><b>I5</b> — <code>main.py:70&#8209;71</code> sleeps 1000&nbsp;s per iteration, so a dead child is noticed roughly never. <code>ros2_robot_ws/src/main.py:165</code> polls every 2&nbsp;s.</li>
+        <li><b>I6</b> — <code>orchestrator.py:45&#8209;46</code>: <code>_goal_reached</code> and <code>_bringup_done</code> are set up and never read.</li>
+      </ul>
+    </div>
+  </article>
+</section>
+
+<!-- ============ J ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">J</span><h2>Lower priority</h2></div>
+
+  <article class="find" data-sev="debt" data-n="12">
+    <div class="fid">J1–J12<span class="sev">Debt</span></div>
+    <div>
+      <h3>Twelve smaller findings</h3>
+      <div class="tw"><table>
+        <tr><th>ID</th><th>Where</th><th>Finding</th></tr>
+        <tr><td class="mono">J1</td><td class="mono">audio_streaming_<br>pipeline.py:115</td><td>The prompt is republished even when the transcription is unchanged. <code>goto_glasses</code> re&#8209;triggers navigation on every message, and its guard clears on arrival — so a repeated transcription re&#8209;sends the robot to the user. No edge&#8209;triggering anywhere on this topic.</td></tr>
+        <tr><td class="mono">J2</td><td class="mono">prompt_extractor.py</td><td>The few&#8209;shot block ends with <code>"What time is it?" -&gt; </code> — an example with an <em>empty</em> completion — immediately before the user's turn. The model may continue that example instead of answering. Worth an eval before trusting the "end" kill word.</td></tr>
+        <tr><td class="mono">J3</td><td class="mono">prompt_extractor.py:1&#8209;6</td><td>Mutates <code>sys.path</code> at import time, duplicating what <code>PYTHONPATH</code> already does.</td></tr>
+        <tr><td class="mono">J4</td><td class="mono">qos_relay.py</td><td>Relays full <code>PointCloud2</code> through Python at LiDAR rate purely to change a QoS setting. <code>pointcloud_to_laserscan</code> takes a <code>qos_overrides</code> parameter; this node may be deletable. <b>Measured 2026&#8209;09&#8209;14 and it is not a performance problem:</b> 50 of 50 frames of 520&nbsp;kB relayed at 10&nbsp;Hz, 1.9&nbsp;ms mean latency, nothing dropped. It is redundancy, not a bottleneck.</td></tr>
+        <tr><td class="mono">J5</td><td class="mono">goto_glasses.py:91</td><td>Stray <code>print(object_name)</code>. Not in §8.9's list.</td></tr>
+        <tr><td class="mono">J6</td><td class="mono">grasp_state_machine<br>.cpp:296&#8209;302</td><td>Safety walls confine the arm to x&nbsp;&lt;&nbsp;0.15&nbsp;m, |y|&nbsp;&lt;&nbsp;0.30&nbsp;m, table plane at x&nbsp;=&nbsp;&minus;0.425&nbsp;m. A narrow slot for a ~650&nbsp;mm&#8209;reach arm. Wants physical verification before first motion.</td></tr>
+        <tr><td class="mono">J7</td><td class="mono">grasp_state_machine<br>.cpp:92&#8209;96</td><td><code>approachAngleDeg</code> computes <code>asin</code> of a <strong>cosine</strong>. It happens to yield the right quantity, but it reads like a bug and will be "fixed" into one eventually.</td></tr>
+        <tr><td class="mono">J8</td><td class="mono">grasp_state_machine.cpp</td><td>Dead code: <code>best_pose_cam</code> (:485, declared never assigned), <code>grasped_</code> (:783), plus everything in A3.</td></tr>
+        <tr><td class="mono">J9</td><td class="mono">goal_reached_publisher.py:52<br>goto_glasses.py:258</td><td><code>status == 4</code> as a magic number instead of <code>GoalStatus.STATUS_SUCCEEDED</code>.</td></tr>
+        <tr><td class="mono">J10</td><td class="mono">pose_publisher.py:22</td><td>Copies x, y and orientation but not z.</td></tr>
+        <tr><td class="mono">J11</td><td class="mono">sam3_ros_node.py</td><td>No <code>/pipeline_state</code> gate at all — full SAM&nbsp;3 inference on every synchronised frame pair, forever. The most expensive thing in the system, and the gate already exists next door.</td></tr>
+        <tr><td class="mono">J12</td><td class="mono">three nodes</td><td>Three different treatments of <code>/pipeline_state</code>: <code>anygrasp_detection_node</code> inverted (A1), <code>anygrasp_node.py:199</code> gate <strong>commented out</strong> so it runs unconditionally, <code>grasp_viz.py:65</code> display only.</td></tr>
+      </table></div>
+    </div>
+  </article>
+</section>
+
+<!-- ============ L ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">L</span><h2>The feature exists but the wiring stops short</h2></div>
+  <p class="grp-note">Not a broken line of code. A connection that was never made, so a whole capability is inert.</p>
+
+  <article class="find" data-sev="warn">
+    <div class="fid">L1<span class="sev">Runtime</span></div>
+    <div>
+      <h3>Voice cannot change what the arm looks for — the target word is fixed in the source</h3>
+      <p class="loc"><b>sam3_ros_node.py:40</b> — <code>TEXT_PROMPT = "box"</code> · the file has exactly one <code>create_subscription</code>, at <b>:52</b>, and it is for <code>CameraInfo</code></p>
+      <p>The segmentation node the arm actually uses <strong>never subscribes to <code>/aria/audio/prompt</code></strong>. RGB and depth reach it through two <code>message_filters</code> subscribers feeding a synchroniser, so that one <code>CameraInfo</code> subscription really is the only one. The target word is a module&#8209;level constant handed straight to <code>process_text_prompt</code> at <code>:114</code>, and the file's own docstring says so: <em>"Runs SAM3 inference with a fixed text prompt"</em>.</p>
+      <p><strong>The topic itself is live and correctly wired everywhere else.</strong> It is published by the Aria audio pipeline, named in <code>shared/config.yaml:14</code>, and subscribed by the object&#8209;recognition pipeline and both navigation nodes. The one consumer that feeds the arm is the one that does not listen.</p>
+      <div class="why"><b>Ask for a bottle and the base will drive to it, while the arm keeps hunting for a box — and nothing reports that the request was dropped.</b> The whole voice chain, microphone through transcription through the LLM object extractor, ends at the navigation nodes and at a segmentation call site that is commented out.</div>
+      <p>It compounds with <b>A3</b>: with <code>USE_SIMPLE_EXECUTE = true</code>, even a live prompt would only steer the visual servo. It would not select a grasp. <b>B3</b> is this same missing subscription seen from the safety side, where it means the spoken kill word cannot reach the arm.</p>
+      <div class="note">The two ways to fix this, and the open decision between them, are <code>NEXT_STEPS.md</code> §2.2 and <code>PROJECT_PLAN.md</code> T2.0. Read <code>ORIENTATION.md</code> §6.5 first: simply uncommenting the pipeline's call site while this node runs leaves two publishers racing on the same three topics.</div>
+    </div>
+  </article>
+</section>
+
+<!-- ============ scope ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">—</span><h2>What was not audited</h2></div>
+  <ul class="plain">
+    <li>Vendor trees: <code>rm_driver</code>, <code>rm_control</code>, <code>rm_example</code>, <code>rm_arm_examples</code>, <code>rm_description</code>, <code>rm_moveit2_config</code>, <code>rm_gazebo</code>, <code>eg2_4b_description</code>, <code>xpkg_*</code>, <code>livox_ros_driver2</code>, OpenVINS, MinkowskiEngine, MoveIt Task Constructor.</li>
+    <li><code>src/archive/</code>.</li>
+    <li><code>src/services/visualizer/</code> (951 lines) — read for topic contracts only, not logic. It is debug UI and cannot move the robot.</li>
+    <li><code>feature_matching.py</code>, <code>eye_tracking.py</code>, <code>arcuo.py</code> — skimmed for contracts, not audited for numerical correctness. <strong>The gaze→mask selection maths deserves its own pass.</strong></li>
+    <li><code>nav2_params.yaml</code>, <code>slam_toolbox*.yaml</code> — parameter <em>values</em> not sanity&#8209;checked against the physical robot.</li>
+  </ul>
+</section>
+
+<!-- ============ questions ============ -->
+<section class="grp">
+  <div class="grp-head"><span class="grp-id">?</span><h2>Open questions</h2></div>
+  <p class="grp-note">These are decisions, not fixes. Several of them change what the right fix is.</p>
+  <ol class="q">
+    <li><b>A3 — was <code>USE_SIMPLE_EXECUTE = true</code> a deliberate bring&#8209;up shortcut, or did someone forget to flip it back?</b> It changes what "the grasp pipeline" even means right now.</li>
+    <li><b>B4 — who changed <code>HOME_JOINTS</code>, and against what?</b> If nobody knows, the first hardware run should use the <code>realman_manip</code> values, since those are the ones the safety doc describes.</li>
+    <li><b>A1 — is the inverted gate a typo, or was there a reason to run detection during IDLE</b> (pre&#8209;computing candidates before the approach)? If the latter, A2 is the bug instead.</li>
+    <li><b>D1 — what was meant to publish <code>/manipulator/release</code>?</b> Voice — the LLM returns the word, not a Bool — a button, or the visualiser? The orchestrator has no other way to finish.</li>
+    <li><b>I1 — which launcher owns <code>background.launch.py</code>?</b> Removing it from one of the two is a two&#8209;line fix, but only once the ownership is decided.</li>
+    <li><b>E1/E2 — should <code>/aria/fused_pose</code> be in <code>map</code> or <code>robot_base_link</code>?</b> The publisher's variable names say <code>map</code>, its stamp says <code>robot_base_link</code>, and its only consumer assumes <code>map</code>. Two of those three have to change.</li>
+  </ol>
+</section>
+
+<footer>
+  <span>docs/dion_docs/CODE_AUDIT.md</span>
+  <span>read at main @ 2d36a89 · updated 2026&#8209;09&#8209;14</span>
+  <span>7 reproduced on the bench · the rest [unverified]</span>
+  <span>Companion: ORIENTATION.md · NEXT_STEPS.md · PROJECT_PLAN.md · bench/</span>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
+  var finds = Array.prototype.slice.call(document.querySelectorAll('.find'));
+  var groups = Array.prototype.slice.call(document.querySelectorAll('section.grp'));
+
+  function matches(f, sev){
+    if (sev === 'all') return true;
+    if (sev === 'obs') return f.getAttribute('data-observed') === '1';
+    return f.getAttribute('data-sev') === sev;
+  }
+
+  function apply(sev){
+    finds.forEach(function(f){
+      f.classList.toggle('hide', !matches(f, sev));
+    });
+    // hide a section heading when every finding under it is filtered out
+    groups.forEach(function(g){
+      var inGroup = g.querySelectorAll('.find');
+      if (!inGroup.length) { g.hidden = (sev !== 'all'); return; }
+      var anyVisible = Array.prototype.some.call(inGroup, function(f){
+        return !f.classList.contains('hide');
+      });
+      g.hidden = !anyVisible;
+    });
+    chips.forEach(function(c){
+      c.setAttribute('aria-pressed', String(c.getAttribute('data-sev') === sev));
+    });
+  }
+
+  chips.forEach(function(c){
+    c.addEventListener('click', function(){ apply(c.getAttribute('data-sev')); });
+  });
+
+  // Counts are derived from the page, never typed in: a block that covers a
+  // range of findings carries data-n, everything else counts as one.
+  function weight(f){ return parseInt(f.getAttribute('data-n') || '1', 10); }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-count]'), function(el){
+    var sev = el.getAttribute('data-count');
+    el.textContent = finds.reduce(function(a, f){
+      return a + (matches(f, sev) ? weight(f) : 0);
+    }, 0);
+  });
+})();
+</script>

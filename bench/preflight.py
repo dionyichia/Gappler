@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import glob
 import json
 import os
 import platform
@@ -56,6 +57,14 @@ ARIA_SERIAL = "1WM10350101291"
 TF_EXPECT = {("base_link", "camera_color_optical_frame"): (-0.100, -0.049, 0.728)}
 TF_TOL = 0.05
 CAMERA_HZ_RANGE = (8.0, 20.0)          # guide says 13-14 Hz
+
+# The D435i's own USB product id. Matching "Intel" or "8086" alone is wrong: the
+# box's AX201 Bluetooth adapter is also "8087:0026 Intel Corp." and would pass.
+RS_USB_IDS = ("8086:0b3a",)            # D435i. Other RealSense models would be added here
+RS_USB_NAME = "realsense"              # the description, lower-cased
+# V4L2 pixel formats, by what the D435i exposes them for
+RS_V4L2_COLOUR = ("YUYV", "MJPG")
+RS_V4L2_DEPTH = ("Z16 ",)              # trailing space: 'Z16 ' is the fourcc, 'Z16' matches nothing else
 
 PASS, FAIL, WARN, SKIP = "PASS", "FAIL", "WARN", "SKIP"
 
@@ -560,16 +569,128 @@ def g_net() -> list[Check]:
                   else c.warn(f"{LIDAR_IP} unreachable",
                               f"LiDAR powered off, or host lacks {LIDAR_HOST_IP}"))
 
-    c = Check("net", "realsense-usb", "D435i, eye-in-hand on Link6 -- the only camera on the robot")
-    if not linux or not shutil.which("lsusb"):
-        cs.append(c.skip("lsusb not available -- not a Linux host"))
-    else:
-        rc, out = sh(["lsusb"], timeout=8)
-        hits = [l for l in out.splitlines() if "8086" in l or "RealSense" in l or "Intel" in l]
-        cs.append(c.ok(hits[0].strip()) if hits
-                  else c.bad("no Intel RealSense on USB",
-                             "every grasp transform depends on this camera's optical frames"))
+    cs.extend(realsense_checks(linux))
     return cs
+
+
+def rs_v4l2_nodes() -> dict[str, list[str]]:
+    """Sort the RealSense's own /dev/video* nodes by what they can capture.
+
+    The D435i exposes one node per stream plus a metadata node for each. Which
+    number lands on which stream is not fixed, so ask each node what pixel
+    formats it offers instead of assuming an order.
+
+    Only nodes the kernel attributes to a RealSense are considered: this box is
+    shared, and any USB webcam someone plugs in also offers YUYV, which would
+    otherwise let this check pass on the wrong camera. Returns
+    {"colour": [...], "depth": [...]}; anything else is left out.
+    """
+    found: dict[str, list[str]] = {"colour": [], "depth": []}
+    for node in sorted(glob.glob("/dev/video*")):
+        try:
+            name = Path(f"/sys/class/video4linux/{Path(node).name}/name").read_text()
+        except OSError:
+            continue                      # no sysfs entry: cannot attribute it, so skip it
+        if RS_USB_NAME not in name.lower():
+            continue
+        rc, out = sh(["v4l2-ctl", "-d", node, "--list-formats"], timeout=6)
+        if rc != 0:
+            continue
+        if any(f in out for f in RS_V4L2_COLOUR):
+            found["colour"].append(node)
+        elif any(f in out for f in RS_V4L2_DEPTH):
+            found["depth"].append(node)
+    return found
+
+
+def rs_grab(node: str) -> tuple[str, str]:
+    """Try to capture one frame from a V4L2 node. Returns (verdict, detail).
+
+    verdict is "ok", "busy" (someone else holds the camera -- not our answer to
+    give) or "fail". This is the only part of preflight that opens a device
+    rather than just reading about it, so "busy" is deliberately not a failure.
+    """
+    rc, out = sh(["v4l2-ctl", "-d", node, "--stream-mmap", "--stream-count=1",
+                  "--stream-to=/dev/null"], timeout=15)
+    low = out.lower()
+    if rc == 0:
+        return "ok", ""
+    if "busy" in low or "resource temporarily unavailable" in low:
+        return "busy", out.strip().splitlines()[-1] if out.strip() else "device busy"
+    if rc == 124:
+        return "fail", "no frame within 15 s (the camera answers but never delivers)"
+    return "fail", out.strip().splitlines()[-1] if out.strip() else f"v4l2-ctl exit {rc}"
+
+
+def realsense_checks(linux: bool) -> list[Check]:
+    """Two questions, because they fail separately and for different reasons:
+    is the camera on the USB bus, and can it actually deliver a frame.
+
+    Both were one check until 2026-09-14, which passed on nothing more than the
+    USB id. That morning it PASSED on a camera whose colour stream could not be
+    opened at all (xioctl(VIDIOC_S_FMT) errno=5), and it would also have passed
+    on the Bluetooth adapter alone -- see RS_USB_IDS.
+    """
+    why_usb = "D435i, eye-in-hand on Link6 -- the only camera on the robot"
+    why_str = "a camera on the bus is not a camera that streams -- every grasp transform needs its frames"
+    usb = Check("net", "realsense-usb", why_usb)
+    stream = Check("net", "realsense-stream", why_str)
+
+    if not linux or not shutil.which("lsusb"):
+        return [usb.skip("lsusb not available -- not a Linux host"),
+                stream.skip("lsusb not available -- not a Linux host")]
+
+    rc, out = sh(["lsusb"], timeout=8)
+    hits = [l.strip() for l in out.splitlines()
+            if any(i in l for i in RS_USB_IDS) or RS_USB_NAME in l.lower()]
+    if not hits:
+        usb.bad("no RealSense on USB",
+                "check the camera's USB cable. A wedged camera can drop off the bus entirely: "
+                "seen 2026-09-14 after a librealsense hardware reset, and only a replug brought it back")
+        return [usb, stream.skip("no camera on the bus to stream from")]
+    usb.ok(hits[0])
+
+    # On the bus, but does it work? Needs the V4L2 nodes and v4l2-ctl.
+    if not shutil.which("v4l2-ctl"):
+        return [usb, stream.skip("v4l2-ctl not installed (apt install v4l-utils)")]
+    if not glob.glob("/dev/video*"):
+        stream.bad("on the USB bus, but there are no /dev/video* nodes at all",
+                   "the camera is enumerated but its UVC interfaces did not come up -- replug it")
+        return [usb, stream]
+
+    nodes = rs_v4l2_nodes()
+    if not nodes["colour"] and not nodes["depth"]:
+        stream.bad("/dev/video* nodes exist, but the kernel attributes none of them to a RealSense",
+                   "the camera is half up, or those nodes belong to another camera -- replug it")
+        return [usb, stream]
+    if not nodes["colour"]:
+        stream.bad(f"no RealSense node offers a colour format ({'/'.join(RS_V4L2_COLOUR)}); "
+                   f"depth nodes found: {', '.join(nodes['depth'])}",
+                   "the camera is half up. Replug it, then re-run")
+        return [usb, stream]
+
+    verdict, detail = rs_grab(nodes["colour"][0])
+    node = nodes["colour"][0]
+    if verdict == "busy":
+        return [usb, stream.skip(f"{node} is held by another process -- "
+                                 f"stop the camera driver, or leave it: {detail}")]
+    if verdict == "fail":
+        stream.bad(f"{node} is a colour node but delivered no frame: {detail}",
+                   "this is the 2026-09-14 state: enumerated, colour stream dead. A replug fixed it")
+        return [usb, stream]
+
+    # Colour works. Depth is reported alongside, but its failure is the same finding.
+    extra = ""
+    if nodes["depth"]:
+        d_verdict, d_detail = rs_grab(nodes["depth"][0])
+        extra = (f"; depth {nodes['depth'][0]} ok" if d_verdict == "ok"
+                 else f"; depth {nodes['depth'][0]} {d_verdict}: {d_detail}")
+        if d_verdict == "fail":
+            stream.bad(f"colour {node} delivers frames, but depth failed{extra[1:]}",
+                       "grasping needs depth. Replug the camera, then re-run")
+            return [usb, stream]
+    stream.ok(f"one frame from colour {node}{extra}")
+    return [usb, stream]
 
 
 # ===========================================================================

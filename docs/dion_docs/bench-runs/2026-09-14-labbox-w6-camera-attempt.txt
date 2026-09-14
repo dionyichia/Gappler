@@ -1,0 +1,60 @@
+W6 prerequisite -- starting the camera (NOT a bench script)   lab box, ~/rcp-Gappler @ b4d6774, 2026-09-14 15:05-15:12
+===========================================================================================
+Dion's go-ahead, this session. Goal: start the RealSense driver and record colour + depth
+frames so the AnyGrasp gate test (A1) and perception replay have something to replay.
+
+  RESULT: NOT DONE. No frames recorded. The camera was already broken before the driver
+  started, and the documented recovery for that fault took it off the USB bus entirely.
+  It needs a physical replug. Nothing moved, nothing reached the real ROS domain.
+
+Isolation held throughout: ROS_DOMAIN_ID=78, ROS_LOCALHOST_ONLY=1, channel verified empty
+(hidden topics included) before launching. No arm or base topic was published. No process
+left running (verified: `ps -eo pid,etime,comm | grep -i realsen` returns nothing).
+
+What happened, in order [observed]
+
+1. Camera present and unclaimed. `lsusb`: 8086:0b3a, serial 243222074878, FW 5.13.0.50.
+   USB 3.2 at 5000M (`/sys/bus/usb/devices/2-3/speed=5000 version=3.20`), so bandwidth was
+   never the issue. `fuser` on /dev/video0-2 showed no holder. The two heavy processes on the
+   box belong to iot22 (IsaacLab `franka_openpi_closed_loop.py` and an openpi
+   `serve_policy.py --env LIBERO`, load average ~14) and touch neither the camera nor ROS.
+
+2. First launch, `rs_launch.py align_depth.enable:=true` at 640x480x30 for both streams.
+   Depth opened: "Open profile: stream_type: Depth(0), Format: Z16, Width: 640, Height: 480,
+   FPS: 30". **Colour did not:**
+       backend-v4l2.cpp:1858  Frames didn't arrived within 5 seconds
+       xioctl(UVCIOC_CTRL_QUERY) failed Last Error: Connection timed out
+       xioctl(VIDIOC_S_FMT) failed, errno=5 Last Error: Input/output error
+       rs_node_setup.cpp:511 An exception has been thrown ... Failed to start device
+   Then a continuous loop of `set_xu(...) xioctl(UVCIOC_CTRL_QUERY) failed: Protocol error`
+   from the time_diff_keeper thread. That is a camera wedged at the USB level, not a
+   configuration fault.
+
+3. Second launch added `initial_reset:=true` -- librealsense's own hardware reset, and the
+   documented fix for exactly this error. After it the device could not be created at all:
+       rs2_create_device(...) set_xu(...) xioctl(UVCIOC_CTRL_QUERY) failed: Protocol error
+       Device 1/1 failed with exception ... The requested device with is NOT found.
+
+4. The camera then **disappeared from the USB bus**: no 8086:0b3a in `lsusb`, and
+   `/dev/video*` gone entirely. It did not re-enumerate after 30 s of waiting.
+
+Cause and cost. The camera was faulty before anything was launched (step 2 proves it: colour
+could not be opened on a first, clean start). The hardware reset in step 3 is what took it off
+the bus. No damage: a USB replug brings a D435i back from this state. A root-level port power
+cycle would also do it, but `rcp2026` has no sudo on this box. Dion, 2026-09-14: someone can
+replug it in about two hours.
+
+What this found that is worth keeping: **bench bug S4.** Preflight's `realsense-usb` check
+PASSED this morning, 14 Sep, on this camera -- the same camera that could not open a single
+colour frame hours later with nothing changed in between. The check only grepped `lsusb`, so
+"the camera exists" was being reported as "the camera works". Worse, it matched any line
+containing "Intel" or "8086", and this box's AX201 Bluetooth adapter is "8087:0026 Intel Corp."
+`[code]` -- so with the camera unplugged and Bluetooth on, the check would still have passed.
+Fixed this session, see the changelog. A false pass in a preflight check is the most expensive
+kind of bench bug: everything downstream trusts it.
+
+Next, once the cable is replugged: `python3 bench/preflight.py -g net` (expect both realsense
+checks to pass), then start depth only to confirm it streams, then add colour, then record
+frames. Do not use `initial_reset:=true` again unless someone is standing at the machine.
+Logs kept on the box: ~/rcp-Gappler/log/w6/driver.log (first launch, 254 kB),
+log/w6/driver2.log (second launch, with the reset). Both gitignored.

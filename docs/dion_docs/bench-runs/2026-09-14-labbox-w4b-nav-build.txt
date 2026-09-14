@@ -1,0 +1,54 @@
+W4b -- Navigation_Module build (./bench/build.sh nav)     lab box, ~/rcp-Gappler @ b4d6774, 2026-09-14 14:43
+===========================================================================================
+Tier 2. Compiles into this checkout only: build_nav/ install_nav/. No node launched, no
+hardware, no sudo. Fresh shell, only /opt/ros/humble sourced (the script checks
+AMENT_PREFIX_PATH and sources it itself).
+
+  prep: Navigation_Module/src/livox_ros_driver2/package.xml was missing (gitignored,
+        ORIENTATION 8.15) -> copied bench/nodes/livox_package_ROS2.xml there
+  prep: Livox-SDK2 library found
+  RESULT: PASS -- 10 of 10 packages built, 2 min 34 s, colcon exit 0
+  Overlay: /home/rcp2026/rcp-Gappler/install_nav/setup.bash
+
+  Finished <<< xpkg_urdf_echo_plus   1.15 s
+  Finished <<< echo_plus_driver      1.22 s
+  Finished <<< simple_teleop         1.30 s
+  Finished <<< xpkg_msgs             6.12 s
+  Finished <<< livox_ros_driver2    53.5  s
+  Finished <<< robot_slam            6.55 s
+  Finished <<< xpkg_comm             1 min 45 s
+  Finished <<< xpkg_power            1 min 51 s
+  Finished <<< livox_sdk2            2 min  9 s
+  Finished <<< xpkg_vehicle          2 min 28 s
+
+Three things the plan expected that turned out otherwise -- all in the build's favour [observed]
+
+1. Livox-SDK2 is already installed on this box: /usr/local/lib/liblivox_lidar_sdk_shared.so
+   exists, so livox_ros_driver2's find_library(... REQUIRED) (CMakeLists.txt:249) is satisfied
+   and the build has no sudo blocker at all. The plan expected the build to stop here.
+
+2. Livox-SDk2/ IS built by colcon, as the package livox_sdk2 (2 min 9 s). The plan said colcon
+   would ignore it because it has no package.xml. It has none -- confirmed, the whole tree holds
+   only 9 package.xml files -- but its CMakeLists.txt declares project(livox_sdk2) and colcon's
+   plain-CMake support picks it up without a manifest. So the source SDK is compiled into
+   install_nav/livox_sdk2 alongside the system copy point 1 found. Which of the two
+   livox_ros_driver2 linked against was not checked.
+
+3. bench/nodes/livox_package_ROS2.xml is byte-identical to iot22's generated
+   ~/rcp-old-ros-wkspace/src/livox_ros_driver2/package.xml -- the only diff is the bench's own
+   8-line comment header. That clears the [unverified] tag the template carried.
+
+Warnings: 8 of 10 packages produced stderr, every one of them the same harmless CMake note
+("Manually-specified variables were not used by the project: HUMBLE_ROS ROS_EDITION"). The
+exception is livox_ros_driver2, which lists only HUMBLE_ROS -- so ROS_EDITION=ROS2 WAS consumed
+there, which is the one package the flag is for. No compile errors anywhere.
+
+robot_slam installed 6 scripts: aria_image_relay.py, goal_reached_publisher.py, goto_glasses.py,
+object_approach_node.py, pose_publisher.py, qos_relay.py.
+
+Not tested: running any of it. robot_navigation (the Nav2 launch + nav2_params.yaml) and
+xpkg_demo still exist only in iot22's workspace, so the base cannot actually be brought up from
+this repo -- NEXT_STEPS 2.9, W4a's record. They are exec_depends, which is why the build did not
+need them. Disk after the build: 14 GB free at /home (unchanged to the GB).
+Undo: rm -rf build_nav install_nav log_nav Navigation_Module/src/livox_ros_driver2/package.xml
+Log: ~/rcp-Gappler/log/bench_build_nav_2026-09-14_1443.txt (gitignored).

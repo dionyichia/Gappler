@@ -20,7 +20,7 @@ milestone. That is 79 percent of capacity, which for a project with this much un
 full. Section 8 says what we drop first.
 
 **The visual version** of this plan is [`next-steps-map.html`](next-steps-map.html), published at
-<https://claude.ai/code/artifact/72753a73-2ffc-4bb7-acfb-75ab297bed17>. It carries the milestone
+<https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>. It carries the milestone
 schedule as a picture and the task tree as something you can click through to see who is waiting on
 whom. Republish it to the same link after any change here.
 
@@ -69,6 +69,23 @@ and evidence in section 4.
 
 ---
 
+### 1.1 Open decisions, for whoever picks this up next
+
+These are live and unsettled as of 2026-09-14. A new session should start here.
+
+| # | Decision | Why it is open | Where the evidence is |
+|---|---|---|---|
+| D1 | Does Sherman take the platform stream, meaning M0 portability and M3 mapping, with Zongzhe moving to the memory graph from week 3? | It pulls M6 six weeks earlier, which de-risks M8. But §2.5 shows M3 is thinner than budgeted, so the stream may still be too small | §2.5, §3.5 |
+| D2 | Does Dion keep T5.5 to T5.7, or does the error study move to Zongzhe? | T5.7 and T6.4 measure the same thing from two ends. Merging them frees about 12 hours on the critical path, but reverses a call Dion already made | §6.7, §6.8 |
+| D3 | Drop the milestone Lead column, or replace it with a single "accepted by" name? | Per-task owners already exist and M5 needed two leads, which is the proof the column does not fit | §5.1 |
+| D4 | Is FAST-LIVO2 still out of scope, or does it become the escalation path of a measured pose-source study? | The Livox IMU turns out to be publishing already, so the stated blocker was wrong. The remaining blocker is no time-synchronised camera | §2.5, §4.2, S4 |
+| D5 | Fix E1 now? | It is on the live path, not the return leg, and it races the forward leg for Nav2 | `CODE_AUDIT` E5 |
+| D6 | Rework the M1 and M2 hour estimates on the repair evidence? | The code volume is far smaller than budgeted, but verification time may absorb the difference | §2.5, §6.3, §6.4 |
+| D7 | Zongzhe's pronouns | This document guesses at "he" and nobody has confirmed it | — |
+| D8 | If the wrist D435i does not survive a replug, do we repair it, buy a replacement, or fold it into the D455 purchase? | It is the arm's only camera, so M1's live-mask step and every fallback that used it are blocked until this is answered. The D455 decision in T0.1 is already open, and buying both at once is cheaper in lead time than twice | §2.6, §8.2, T0.1 |
+
+---
+
 ## 2. Current state
 
 Condensed from `ORIENTATION`, `CODE_AUDIT`, `TESTBENCH_PLAN` and the HiCo-Nav paper review. Nothing
@@ -83,7 +100,9 @@ here is new. It is here so the plan can be read without the other five documents
 | MoveIt plans and executes against a simulated arm | `bench/sim_moveit.sh` passes |
 | The grasp state machine runs a full cycle against a simulated arm | `bench/state_machine_sim.sh`, W2 |
 | AnyGrasp runs in the project's single Python environment, licence passes, grasps found | W5 survey |
-| The regression bench catches renamed channels, frames and parameters | `bench/` tiers 0 to 3 |
+| The navigation workspace compiles, 10 packages, 2 min 34 s | `TESTBENCH_PLAN` W4b, lab box, 2026-09-14 |
+| The five navigation nodes run against a stand-in Nav2 and behave as the audit predicted | `bench/nav_nodes.sh`, W7, 2026-09-14 |
+| The regression bench catches renamed channels, frames and parameters, and all of tiers 0 to 3 now run on the box | `bench/` tiers 0 to 3 |
 
 ### 2.2 What does not work today
 
@@ -91,8 +110,9 @@ here is new. It is here so the plan can be read without the other five documents
 |---|---|---|
 | Nothing runs from a fresh clone | No second machine, no second person | `NEXT_STEPS` 2.5 |
 | The grasp path cannot produce a grasp as written, for three interlocking reasons | The arm cannot pick anything up under its own perception | `CODE_AUDIT` A |
-| The navigation workspace has never been compiled | Navigation is at zero | `ORIENTATION` 3 |
+| The navigation code compiles and its nodes run, but nothing has ever driven the base from this repository | Navigation is untested above the node level | `TESTBENCH_PLAN` W4b, W7 |
 | Four things the robot needs are in nobody's repository | The navigation launch fails at run time | `NEXT_STEPS` 2.9 |
+| The wrist D435i is faulty. Its colour stream fails with an I/O error, and a reset took it off the USB bus entirely | No live mask for the arm, and no recorded frames for anything else, until someone replugs it and it is confirmed working | `TESTBENCH_PLAN` W6, 2026-09-14 `[observed]` |
 | The glasses publish only the spoken word. Images, gaze, and pose are switched off | Gaze cannot reach the robot | `ORIENTATION` 6.1 |
 | Two different programs claim the same three segmentation channels | Turning one on collides with the other | `ORIENTATION` 6.5 |
 | The segmentation program the arm actually uses never listens for the spoken word. It looks for the literal word "box", fixed in the source | Speech cannot change what the arm looks for, and nothing reports that the request was dropped | `CODE_AUDIT` L1 |
@@ -109,6 +129,103 @@ here is new. It is here so the plan can be read without the other five documents
 | Mobile base and LiDAR | 1 | Same |
 | Aria glasses | 1 | Cannot leave the lab `[reported]` |
 | Travel to the lab | 20 minutes each way | Lab work should be batched into planned sessions with a written agenda, not done ad hoc |
+
+---
+
+## 2.5 What four code checks established, 2026-09-14
+
+Four read-only passes over the working tree, run to test whether the estimates in section 6 matched
+what the code actually is. All `[code]` unless marked. They change how several tasks should be read.
+
+**Navigation is retrieval, not development.** The `robot_slam` package in this repo is the code that
+actually drove the base, and it is the newer copy: W4a diffed it against `~iot22/Ros2Workspaces` and
+found the repo's version tidier and functionally equal, with `qos_relay.py` fixing a shutdown crash
+the working copy still has. What is missing is not code but four artifacts that live in nobody's git:
+`xpkg_demo`, `robot_navigation` (the Nav2 launch), the generated Livox manifest, and the saved map.
+`Navigation_Module` has since been compiled here for the first time, 10 of 10 packages, 2026-09-14: see 2.6.
+
+**The perception and arm work is overwhelmingly repair.** Roughly 3,000 lines of written, largely
+complete code across the nine files that matter. The blocking defects total 100 to 150 lines of
+change and none of them imply a redesign. Specifically: A1 is one inverted condition at
+`anygrasp_detection_node.py:182`, and fixing it correctly makes **A2 a no-op**, because
+`grasp_state_machine.cpp:178-179` already gates on the state A1 should have used. A3 is a flag at
+`grasp_state_machine.cpp:41`; flipping it is trivial, but it exposes about 150 lines of complete,
+never-executed candidate-handling code, and that debugging is the real cost. C1 to C7 come to 15 to
+25 lines changed.
+
+**The glasses are not missing features, they are switched off.** Four of six stages are commented out
+in `src/main.py:102-113`, which is four comment characters. Behind them sit `rgb_worker` (71 lines),
+`et_worker` (42 lines), a 184-line `EyeTrackingPipeline` and its weights on disk at
+`src/models/projectaria_eyetracking/weights.pth`. Gaze estimation is complete and publishes to a real
+topic declared in `shared/config.yaml:11`. **What is absent is the consumer:** nothing in
+`ros2_robot_ws/` subscribes to it. T2.2 is therefore much smaller than budgeted and the real work is
+on the arm side.
+
+**Segmentation is already half-unified.** Both call sites already share one `SAM3Model` and one
+`ObjectMaskVisualizer.get_best_mask()`. The duplication is about 40 lines of ROS message-building
+glue. One service is 50 to 100 lines of new code, not a rewrite.
+
+**The memory graph is genuinely from scratch.** No graph structure, no embedding of any kind, no CLIP
+in `pyproject.toml`, no solver, no VLM call anywhere in the repository. `src/services/feature_matching.py:1-77`
+looks close but is SuperPoint plus LightGlue producing geometric keypoint descriptors, which answers
+"where is this point in the other image", not "is this the same object". It cannot substitute. The
+nearest precedent for a model call is `src/services/prompt_extractor.py:31-36`, which loads
+Qwen2.5-0.5B-Instruct locally. It is text-only and has never been given an image.
+
+**Two facts that change the pose-source question.** The LiDAR's own inertial sensor is already
+publishing: `livox_lidar_callback.cpp:107` enables it unconditionally and `lddc.cpp:664-687` always
+creates the publisher, so `livox/imu` is live and nothing subscribes. That closes the open question in
+the paper review §6.2. And the vendored OpenVINS copy is not the shortcut it looks like: it has never
+been built, it sits in a nested `src/` the built workspace never sees, and its only calibration is
+`config/aria/`, tuned to the glasses rather than to a base camera.
+
+**One new defect, recorded as `CODE_AUDIT` E5.** `goto_glasses.py` has an outbound path on
+`/aria/audio/prompt`, the same spoken command that starts the forward leg, and both send goals to the
+one Nav2 action server. It launches unconditionally in `slam_localization.launch.py:156-159`. This
+means the out-of-scope decision on the return leg in §4.2 does **not** make E1 droppable.
+
+---
+
+## 2.6 What the bench established on the box, 2026-09-14
+
+The bench backlog that had been waiting since the lab box went off is cleared. Full detail and the
+raw output are in `TESTBENCH_PLAN` "▶ Start here" and `docs/dion_docs/bench-runs/`. Four results
+change something in this plan.
+
+**Tiers 0 to 3 are complete. Both workspaces build.** `./bench/build.sh nav` compiled
+`Navigation_Module` for the first time: **10 of 10 packages, 2 min 34 s, colcon exit 0**
+`[observed]`. The blocker the plan expected did not exist. Livox-SDK2 is already installed on the
+box at `/usr/local/lib/`, so there was no sudo step, and `Livox-SDk2/` is itself built by colcon as
+`livox_sdk2` through plain-CMake support despite having no manifest. That corrects an earlier
+`[code]` claim that colcon ignores it. The bench's Livox manifest template turned out byte-identical
+to `iot22`'s generated one. **T3.1 is done before M3 started.**
+
+**The navigation nodes behave exactly as the audit predicted.** `./bench/nav_nodes.sh` passed on the
+first run with no fix: 6 controls pass, all 4 expected failures reproduced, nothing skipped
+`[observed]`. **E1, F1 and F2 move from `[unverified]` to `[observed]`**, which means the audit's
+reasoning about this subsystem is now evidence-backed rather than static analysis. E1's goal landed
+2.0 metres from where the wearer actually was. F1 wedged the approach node so a second object got no
+goal at all. F2's latch refused every later return. J4, the point cloud relay, is **not** a problem
+at this LiDAR's rates: 50 of 50 frames of 520 kB at 10 Hz, 1.9 ms mean latency, nothing dropped.
+New finding **F4**: all five navigation nodes exit with a traceback on Ctrl+C, and
+`goto_glasses`'s cancel is never called on shutdown, so an interrupt mid-leg would leave the Nav2
+goal live and the base driving `[inferred]`. The audit now holds **51 findings**.
+
+**The wrist camera is faulty, and this is the one result that costs us something.** With Dion's
+go-ahead the D435i was started to record frames for W6. It was already broken before anything was
+launched: depth opened, colour failed with `xioctl(VIDIOC_S_FMT) errno=5 Input/output error`
+followed by a loop of protocol errors, on a healthy USB 3.2 link with nothing else holding the
+device. Passing librealsense's own documented `initial_reset` made it worse and the camera dropped
+off the USB bus entirely, with no re-enumeration. It **needs a physical replug**, and whether it
+survives one is unknown `[observed]`. Until then there is no live mask for the arm and no recorded
+frames for anything. This touches T1.12, the M5 fallback and T6.2. It is now a named risk in §8.2
+and a new open decision, D8.
+
+**Two bench bugs found and fixed.** The glasses check used to pass with no glasses plugged in, and
+the camera check used to pass on the USB vendor id alone, matching even the Bluetooth adapter. Both
+are corrected and confirmed on the box, and a new check now grabs an actual frame rather than
+trusting an id. Worth noting as a pattern: **a check that cannot fail is worse than no check**, and
+two of them survived in a bench built specifically to catch silent failures.
 
 ---
 
@@ -152,7 +269,7 @@ shared are the physical arm, base and glasses.
 
 **Most of the open work needs no hardware at all.** Counting the open items in `NEXT_STEPS` and
 `CODE_AUDIT`, roughly two thirds can be done from a laptop or over the network: path portability,
-the configuration tree, the vendor and owned-code separation, most of the 45 audit findings, the
+the configuration tree, the vendor and owned-code separation, most of the 49 audit findings, the
 HiCo-Nav memory graph built from recorded data, and the goal-ordering work which is LiDAR-only and
 testable in a simulator.
 
@@ -297,9 +414,11 @@ Mitigation: measure the error against known distances before relying on it, and 
 range as a number in the results.
 
 **M3. The base navigates.** Accept on ten drives to a commanded point with the position error
-recorded. Risk: the navigation workspace has never been compiled and depends on packages that were
-never in any repository. Mitigation: M0 brings those in, and the build preparation is already
-written and waiting to run.
+recorded. Risk: **lowered on 2026-09-14.** The workspace now compiles, 10 of 10 packages, and the
+five nodes pass the bench against a stand-in Nav2, so T3.1 and T3.2 are done before M3 opens. What
+is left is the part that was always the real risk, which is that nothing in this repository has ever
+driven the base, and that `robot_navigation` and `xpkg_demo` still live in nobody's git. M0 brings
+those in.
 
 **M4. The current system, closed loop.** Accept on one complete recorded run. Risk: this is the
 first time the arm and the base are powered together, which is exactly what obstacle 2 prevents
@@ -352,47 +471,96 @@ which case it is the total across both.
 The point of the tree is not the estimates. It is the "after" column. If your task has nothing in
 that column and nobody has started it, you are free to pick it up.
 
+### 6.1b What kind of work each task is
+
+Every task carries a **type** as well as an owner. The type says what the work actually is, which
+turns out to matter more for estimating than who does it.
+
+| Type | Means | Count |
+|---|---|---|
+| `build` | New code. None of it exists today | 16 |
+| `fix` | Repair of existing code that is written but defective | 6 |
+| `rewire` | Existing, complete code reconnected, re-enabled or consolidated. No new logic | 3 |
+| `bring-up` | Make existing things run: retrieve, compile, install, mount, power on | 13 |
+| `measure` | Trials, calibration, error characterisation, tests. Produces numbers, not code | 18 |
+| `decide` | A decision to settle, or a document to write | 12 |
+
+**Read that table before the schedule.** Sixteen of sixty-eight tasks are new code and nine are
+repair or rewiring. The remaining forty-three are bring-up, measurement and decisions. This is not a
+project that builds a robot. It repairs one, measures it, and adds one new component, which is the
+memory graph.
+
+Two consequences for the hours in the tables below. Where the work is `fix`, the code change is
+usually small and almost all the time goes into verifying it, so an estimate that looks large for the
+line count is not necessarily wrong. Where the work is `measure`, the time is lab hours and travel
+and cannot be compressed by working harder.
+
 ### 6.2 M0. Everyone can build and run (weeks 1 to 2)
 
-| ID | Task | Owner | Hours | Where | After |
-|---|---|---|---|---|---|
-| T0.1 | Find the D455 in the lab. Confirm the model, that it works, and that we may use it. If it is not there, raise the purchase the same day | Sherman | 2 | lab | none |
-| T0.2 | Get a network switch. Add the second host address to the wired port. Prove the arm and the LiDAR both answer in one session | Sherman, Dion | 5 | lab | none |
-| T0.3 | Make the repository run from a fresh clone. Paths inside the repository are computed from the repository root. Paths outside it move to one configuration file with sensible defaults | Zongzhe | 12 | off | none |
-| T0.4 | Bring into git the four things the robot needs that live in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR package manifest, and the saved map | Zongzhe | 6 | box | T0.3 |
-| T0.5 | Zongzhe and Sherman each clone the repository on their own machine, build it and run the bench. This is the acceptance test for M0 | Zongzhe, Sherman | 8 | off | T0.3 |
-| T0.6 | ROS 2 ramp, all three of us. Reading guide round 1, then run the simulated arm test and read what it printed | All | 24 | box | T0.5 |
-| T0.7 | Write the channel contract: which stream owns which message channels, and the exact three handover points between streams. One page | Dion | 4 | off | none |
-| T0.8 | Clear the bench backlog that has been waiting since the box went off: environment check, navigation build, ten navigation node tests | Dion | 5 | box | none |
-| T0.9 | Measure the real base footprint and compare it with the 0.2 metre radius the navigation configuration assumes | Sherman | 3 | lab | none |
+| ID | Task | Type | Owner | Hours | Where | After |
+|---|---|---|---|---|---|---|
+| **T0.0** | **Cherry-pick what is worth keeping off the `realman_manip` branch onto `main`, then stop treating that branch as live.** Four files, plus one candidate. See the note below | bring-up | Dion | 3 | off | none |
+| T0.1 | Find the D455 in the lab. Confirm the model, that it works, and that we may use it. If it is not there, raise the purchase the same day | decide | Sherman | 2 | lab | none |
+| T0.2 | Get a network switch. Add the second host address to the wired port. Prove the arm and the LiDAR both answer in one session | bring-up | Sherman, Dion | 5 | lab | none |
+| T0.3 | Make the repository run from a fresh clone. Paths inside the repository are computed from the repository root. Paths outside it move to one configuration file with sensible defaults | fix | Zongzhe | 12 | off | none |
+| T0.4 | Bring into git the four things the robot needs that live in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR package manifest, and the saved map | bring-up | Zongzhe | 6 | box | T0.3 |
+| T0.5 | Zongzhe and Sherman each clone the repository on their own machine, build it and run the bench. This is the acceptance test for M0 | bring-up | Zongzhe, Sherman | 8 | off | T0.3 |
+| T0.6 | ROS 2 ramp, all three of us. Reading guide round 1, then run the simulated arm test and read what it printed | bring-up | All | 24 | box | T0.5 |
+| T0.7 | Write the channel contract: which stream owns which message channels, and the exact three handover points between streams. One page | decide | Dion | 4 | off | none |
+| T0.8 | ~~Clear the bench backlog that has been waiting since the box went off~~ **Done 2026-09-14.** Environment check, navigation build and the ten navigation node tests all ran, all passed, no fix needed. What is left of this task is W6, which is blocked on the faulty camera, and W8, which needs a person at the robot. See §2.6 | measure | Dion | 5 of 5 spent | box | none |
+| T0.9 | Measure the real base footprint and compare it with the 0.2 metre radius the navigation configuration assumes | measure | Sherman | 3 | lab | none |
+
+**T0.0 in detail. This is the first thing to do.** `origin/realman_manip` shares no commit history
+with `main`, so this is a file copy, not a merge `[code]` `ORIENTATION` 7. **Exactly 15 files exist
+there and not on `main`**, and 10 of them are the pre-reorg flat layout `main` already reorganised
+into subpackages. `main` is later on every shared arm file. **No code comes across.**
+
+| File | Size | Take it? | Why |
+|---|---|---|---|
+| `RCP_NEW_USER_STARTUP_GUIDE.md` | 15.7 kB | **Yes** | The only written account of the 2026-08-25 session that actually ran the arm |
+| `docs/SETUP.md` | 21.2 kB | **Yes** | Same. It lands in `docs/`, so move it into `docs/dion_docs/` rather than the shared root, per the per-person rule |
+| `env.sh` | 635 B | **Yes, with a check** | It already computes its own repo root from `BASH_SOURCE`, so it is portable as written. What needs re-checking on this clone is its claim that a repo-root `install/` is one complete overlay covering both workspaces |
+| `calibration.json` | 9.1 kB | **Yes** | The Aria factory calibration dump for device `1WM10350101291`. `main` has only the derived kalibr chains, and this doubles as an offline test fixture for calibration parsing |
+| `ros2_robot_ws/src/rm_mtc/src/perception/anygrasp_node.sh` | 1 line | **Probably** | Not named in the earlier audit. It records the invocation the verified session used: `--checkpoint_path log/checkpoint_tracking.tar --filter oneeuro`. `main` launches the **other** checkpoint, `checkpoint_detection.tar` (`ros2_robot_ws/src/main.py:28`). The bench already knows both exist (`bench/preflight.py:421-422`). Taking it costs nothing, nothing calls it, and it is the only written record of which checkpoint was proven to work. It feeds T1.10 |
+| the other 10 | — | **No** | Pre-reorg duplicates: `src/config.py`, `src/services/eye_tracking.py`, `sam3.py`, `playback.py`, `ros_subscriber.py`, `realman_camera_subscriber.py`, `visualizer_archive.py`, `streaming_client_observer.py`, `model_inference_demo.py`, `temp.txt` |
+
+⚠️ **Do not take `sensors_3d.yaml`.** It looks like a gain at `+25/-1` but the added content is
+MoveIt Setup Assistant boilerplate pointing at a PR2 Kinect topic that does not exist on this robot.
+`main`'s empty value is correct `[code]` `ORIENTATION` 7.
+
+**Why this is first.** It is three hours, it needs no hardware and no lab box, it unblocks nobody
+else so it cannot go wrong for anyone, and it closes a branch that four documents currently have to
+explain. It also settles one thing T1.10 will otherwise have to rediscover, which is that two
+different AnyGrasp checkpoints are in play and only one of them has ever been seen to work. Doing it
+now means the startup guide and `SETUP.md` are on `main` before Zongzhe and Sherman clone in T0.5.
 
 ### 6.3 M1. The arm picks something up (weeks 3 to 6)
 
-| ID | Task | Owner | Hours | Where | After |
-|---|---|---|---|---|---|
-| T1.1 | Answer the six open questions in the code audit and record the decisions. Several are choices, not fixes | Dion | 3 | off | T0.7 |
-| T1.2 | Safety fixes before any power: the emergency stop key that the launcher promises but does not exist, the stop program ignoring Ctrl+C, and the arm driver being launched twice | Dion | 8 | off | T1.1 |
-| T1.3 | Decide which home pose is correct and validate it on the simulated arm before using it on the real one | Dion | 4 | box | T1.1 |
-| T1.4 | Physical safety setup at the robot: clear working volume, stop button within reach, mount and cable check | Sherman | 3 | lab | none |
-| T1.5 | Write the bring-up runbook. Power on to ready, in order, with the check at each step and what a failure looks like | Sherman | 8 | lab | T1.6 |
-| T1.6 | First powered arm session. Driver handshake, joint feedback arriving, no motion commanded | Dion, Sherman | 3 | lab | T0.2, T1.2, T1.4 |
-| T1.7 | First commanded motion, to the validated home pose, with a hand on the stop | Dion, Sherman | 3 | lab | T1.3, T1.6 |
-| T1.8 | Fix the three interlocking defects that stop the grasp path working: the inverted state condition in the grasp predictor, the consumer that only accepts candidates in one state, and the flag that makes the whole path unreachable | Dion | 10 | off, box | T1.1 |
-| T1.9 | Fix the concurrency defects in the state machine. One condition variable with two locks, and an unlocked read, are undefined behaviour rather than untidiness | Dion | 8 | off, box | T1.8 |
-| T1.10 | Decide which grasp prediction program is authoritative and make its Python environment reproducible from a script in the repository | Dion | 6 | box | T1.1 |
-| T1.11 | Grasp using the stand-in mask publisher, on hardware. Fix its wrong channel name first | Dion, Sherman | 4 | lab | T1.7, T1.8, T1.9, T1.10 |
-| T1.12 | Grasp using a live mask from the wrist camera with a fixed prompt word. Five attempts, success rate recorded | Dion, Sherman | 4 | lab | T1.11 |
+| ID | Task | Type | Owner | Hours | Where | After |
+|---|---|---|---|---|---|---|
+| T1.1 | Answer the six open questions in the code audit and record the decisions. Several are choices, not fixes | decide | Dion | 3 | off | T0.7 |
+| T1.2 | Safety fixes before any power: the emergency stop key that the launcher promises but does not exist, the stop program ignoring Ctrl+C, and the arm driver being launched twice | fix | Dion | 8 | off | T1.1 |
+| T1.3 | Decide which home pose is correct and validate it on the simulated arm before using it on the real one | decide | Dion | 4 | box | T1.1 |
+| T1.4 | Physical safety setup at the robot: clear working volume, stop button within reach, mount and cable check | bring-up | Sherman | 3 | lab | none |
+| T1.5 | Write the bring-up runbook. Power on to ready, in order, with the check at each step and what a failure looks like | decide | Sherman | 8 | lab | T1.6 |
+| T1.6 | First powered arm session. Driver handshake, joint feedback arriving, no motion commanded | bring-up | Dion, Sherman | 3 | lab | T0.2, T1.2, T1.4 |
+| T1.7 | First commanded motion, to the validated home pose, with a hand on the stop | bring-up | Dion, Sherman | 3 | lab | T1.3, T1.6 |
+| T1.8 | Fix the three interlocking defects that stop the grasp path working: the inverted state condition in the grasp predictor, the consumer that only accepts candidates in one state, and the flag that makes the whole path unreachable | fix | Dion | 10 | off, box | T1.1 |
+| T1.9 | Fix the concurrency defects in the state machine. One condition variable with two locks, and an unlocked read, are undefined behaviour rather than untidiness | fix | Dion | 8 | off, box | T1.8 |
+| T1.10 | Decide which grasp prediction program is authoritative and make its Python environment reproducible from a script in the repository | decide | Dion | 6 | box | T1.1 |
+| T1.11 | Grasp using the stand-in mask publisher, on hardware. Fix its wrong channel name first | bring-up | Dion, Sherman | 4 | lab | T1.7, T1.8, T1.9, T1.10 |
+| T1.12 | Grasp using a live mask from the wrist camera with a fixed prompt word. Five attempts, success rate recorded | measure | Dion, Sherman | 4 | lab | T1.11 |
 
 ### 6.4 M2. Voice and gaze reach the arm (weeks 6 to 9)
 
-| ID | Task | Owner | Hours | Where | After |
-|---|---|---|---|---|---|
-| T2.0 | Settle the open decision in `NEXT_STEPS` 2.2: patch the spoken word into the existing arm-side segmentation program, or retire it and restore the pipeline call site. Recommendation below | Dion | 2 | off | T1.1 |
-| T2.1 | Build one segmentation service that owns the model and is the only publisher of the three mask channels. Both current call sites become clients of it | Dion | 12 | off, box | T1.12, T2.0 |
-| T2.2 | Switch the glasses image stream back on, one stage at a time so failures are attributable | Dion | 6 | lab | T0.3 |
-| T2.3 | Verify the gaze path and measure the error introduced by the fixed 1.5 metre depth assumption. Record the usable distance range | Dion | 6 | lab | T2.2 |
-| T2.4 | Decide when segmentation runs, instead of on every frame, and add an age limit so the arm never moves toward a stale position | Dion | 8 | off | T2.1 |
-| T2.5 | Voice and gaze to grasp, on hardware. Two boxes, pick the one you looked at | Dion, Sherman | 5 | lab | T1.12, T2.3, T2.4 |
+| ID | Task | Type | Owner | Hours | Where | After |
+|---|---|---|---|---|---|---|
+| T2.0 | Settle the open decision in `NEXT_STEPS` 2.2: patch the spoken word into the existing arm-side segmentation program, or retire it and restore the pipeline call site. Recommendation below | decide | Dion | 2 | off | T1.1 |
+| T2.1 | Build one segmentation service that owns the model and is the only publisher of the three mask channels. Both current call sites become clients of it | rewire | Dion | 12 | off, box | T1.12, T2.0 |
+| T2.2 | Switch the glasses image stream back on, one stage at a time so failures are attributable | rewire | Dion | 6 | lab | T0.3 |
+| T2.3 | Verify the gaze path and measure the error introduced by the fixed 1.5 metre depth assumption. Record the usable distance range | measure | Dion | 6 | lab | T2.2 |
+| T2.4 | Decide when segmentation runs, instead of on every frame, and add an age limit so the arm never moves toward a stale position | build | Dion | 8 | off | T2.1 |
+| T2.5 | Voice and gaze to grasp, on hardware. Two boxes, pick the one you looked at | measure | Dion, Sherman | 5 | lab | T1.12, T2.3, T2.4 |
 
 **Recommendation on T2.0: option 2, retire the arm-side program.** The reasoning is that M2's
 acceptance test needs gaze, and gaze disambiguation exists only in the pipeline, not in the arm-side
@@ -404,83 +572,83 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 
 ### 6.5 M3. The base navigates (weeks 4 to 8)
 
-| ID | Task | Owner | Hours | Where | After |
-|---|---|---|---|---|---|
-| T3.1 | Compile the navigation workspace. Eight packages, never built | Zongzhe | 4 | box | T0.4 |
-| T3.2 | Run the ten navigation node tests. Four are expected to fail against known defects. Explain any others | Zongzhe | 5 | box | T3.1 |
-| T3.3 | Fix the missing arm-to-base transform during a mapping run, which today leaves the arm unconnected to the position tree | Zongzhe | 2 | off | T3.2 |
-| T3.4 | Drive the base under keyboard control. Confirm the LiDAR publishes | Zongzhe, Sherman | 4 | lab | T0.2, T3.1 |
-| T3.5 | Build a map of the lab and localise in it | Zongzhe, Sherman | 6 | lab | T3.4 |
-| T3.6 | Drive to a commanded point ten times. Record the position error each time | Zongzhe, Sherman | 5 | lab | T3.5 |
-| T3.7 | The navigation to arm handover on hardware: object position in, drive, arrived signal out | Zongzhe, Dion | 6 | lab | T1.12, T3.6 |
+| ID | Task | Type | Owner | Hours | Where | After |
+|---|---|---|---|---|---|---|
+| T3.1 | ~~Compile the navigation workspace~~ **Done 2026-09-14**, 10 of 10 packages in 2 min 34 s, and it needed neither `xpkg_demo` nor `robot_navigation` because both are run-time dependencies. What remains for Zongzhe is to repeat it on his own machine as part of T0.5 | bring-up | Zongzhe | 1 of 4 left | box | T0.4 |
+| T3.2 | ~~Run the ten navigation node tests~~ **Done 2026-09-14**, passed first run: 6 controls, 4 expected failures reproduced, 0 skipped. E1, F1 and F2 are now `[observed]`, F4 is new. Read the result before starting T3.3 | measure | Zongzhe | 0 of 5 left | box | T3.1 |
+| T3.3 | Fix the missing arm-to-base transform during a mapping run, which today leaves the arm unconnected to the position tree | fix | Zongzhe | 2 | off | T3.2 |
+| T3.4 | Drive the base under keyboard control. Confirm the LiDAR publishes | bring-up | Zongzhe, Sherman | 4 | lab | T0.2, T3.1 |
+| T3.5 | Build a map of the lab and localise in it | bring-up | Zongzhe, Sherman | 6 | lab | T3.4 |
+| T3.6 | Drive to a commanded point ten times. Record the position error each time | measure | Zongzhe, Sherman | 5 | lab | T3.5 |
+| T3.7 | The navigation to arm handover on hardware: object position in, drive, arrived signal out | rewire | Zongzhe, Dion | 6 | lab | T1.12, T3.6 |
 
 ### 6.6 M4. The current system, closed loop (weeks 9 to 11)
 
-| ID | Task | Owner | Hours | Where | After |
-|---|---|---|---|---|---|
-| T4.1 | One complete run, recorded on video: speak, look, drive, grasp | All | 8 | lab | T2.5, T3.7 |
-| T4.2 | Measure how long each stage takes. Report the 99th percentile, not the average | Dion | 6 | lab | T4.1 |
-| T4.3 | Keep the defect log from the first powered session onward. One line per bug: symptom, guess, actual cause | All | ongoing | off | T1.6 |
+| ID | Task | Type | Owner | Hours | Where | After |
+|---|---|---|---|---|---|---|
+| T4.1 | One complete run, recorded on video: speak, look, drive, grasp | measure | All | 8 | lab | T2.5, T3.7 |
+| T4.2 | Measure how long each stage takes. Report the 99th percentile, not the average | measure | Dion | 6 | lab | T4.1 |
+| T4.3 | Keep the defect log from the first powered session onward. One line per bug: symptom, guess, actual cause | measure | All | ongoing | off | T1.6 |
 
 ### 6.7 M5. The base has a calibrated forward camera (weeks 3 to 11)
 
-| ID | Task | Owner | Hours | Where | After |
-|---|---|---|---|---|---|
-| T5.1 | Camera secured. Found in the lab, or ordered with a date | Sherman | 2 | lab | T0.1 |
-| T5.2 | Design the mount. Forward facing, rigid, clear of the arm's swept volume, not looking at the robot's own body. The arm is mounted facing backward, which makes this a real constraint rather than a formality | Sherman | 10 | off | T5.1 |
-| T5.3 | Fabricate and fit the mount | Sherman | 8 | lab | T5.2 |
-| T5.4 | Measure the mount geometry and make it one source of truth. Today the same 0.18 metre offset is written in three independent places and the robot model carries a fourth | Sherman, Zongzhe | 5 | off, lab | T5.3 |
-| T5.5 | Calibrate the position of the camera relative to the LiDAR. Dion owns the procedure and the numbers, Sherman owns the rig and the target | Dion, Sherman | 12 | lab | T5.3 |
-| T5.6 | Verify the calibration by projecting LiDAR points into the camera image. Keep the picture, it goes in the paper | Dion | 4 | box | T5.5 |
-| T5.7 | Choose where camera poses come from and characterise the error: drift over a run, and the duplicate-object rate it causes in the graph. Start with the existing 2D localisation because it is free. This is a measurement study, not a configuration choice | Dion | 12 | box | T3.5, T5.6 |
-| T5.8 | Build a trial fixture: marked object positions and marked robot start positions, so a trial can be repeated exactly | Sherman | 8 | lab | T5.3 |
+| ID | Task | Type | Owner | Hours | Where | After |
+|---|---|---|---|---|---|---|
+| T5.1 | Camera secured. Found in the lab, or ordered with a date | decide | Sherman | 2 | lab | T0.1 |
+| T5.2 | Design the mount. Forward facing, rigid, clear of the arm's swept volume, not looking at the robot's own body. The arm is mounted facing backward, which makes this a real constraint rather than a formality | build | Sherman | 10 | off | T5.1 |
+| T5.3 | Fabricate and fit the mount | build | Sherman | 8 | lab | T5.2 |
+| T5.4 | Measure the mount geometry and make it one source of truth. Today the same 0.18 metre offset is written in three independent places and the robot model carries a fourth | fix | Sherman, Zongzhe | 5 | off, lab | T5.3 |
+| T5.5 | Calibrate the position of the camera relative to the LiDAR. Dion owns the procedure and the numbers, Sherman owns the rig and the target | measure | Dion, Sherman | 12 | lab | T5.3 |
+| T5.6 | Verify the calibration by projecting LiDAR points into the camera image. Keep the picture, it goes in the paper | measure | Dion | 4 | box | T5.5 |
+| T5.7 | Choose where camera poses come from and characterise the error: drift over a run, and the duplicate-object rate it causes in the graph. Start with the existing 2D localisation because it is free. This is a measurement study, not a configuration choice | measure | Dion | 12 | box | T3.5, T5.6 |
+| T5.8 | Build a trial fixture: marked object positions and marked robot start positions, so a trial can be repeated exactly | build | Sherman | 8 | lab | T5.3 |
 
 ### 6.8 M6. The memory graph, offline (weeks 9 to 14)
 
-| ID | Task | Owner | Hours | Where | After |
-|---|---|---|---|---|---|
-| T6.1 | Read the upstream HiCo-Nav code. Settle which solvers it needs and whether their licences are acceptable | Zongzhe | 4 | off | none |
-| T6.2 | Record data of the lab with the base camera: images, depth, LiDAR, positions | Sherman | 4 | lab | T5.6 |
-| T6.3 | Build object entries from recorded data: mask, depth, camera position, image feature | Zongzhe | 14 | off | T6.2 |
-| T6.4 | The merge test, so the same physical object seen twice becomes one entry: 3D overlap combined with image feature similarity | Zongzhe | 10 | off | T6.3 |
-| T6.5 | The two-stage trigger. A cheap detector runs always, the expensive one runs only when a new object class appears or the robot has moved enough. This also closes the "when should segmentation run" question from M2 | Zongzhe | 8 | off | T2.4, T6.3 |
-| T6.6 | Decide the reasoning model endpoint, cloud or local, and check whether sending lab images off site is permitted. A procurement and policy question of the same kind as T0.1 | Sherman | 4 | off | none |
-| T6.7 | The reasoning layer. Called once at the start of a task, off the control loop, expanding the instruction into related objects | Zongzhe | 10 | off | T6.4, T6.6 |
-| T6.8 | Query the graph with a sentence and get an object position back | Zongzhe, Dion | 8 | off | T6.4 |
+| ID | Task | Type | Owner | Hours | Where | After |
+|---|---|---|---|---|---|---|
+| T6.1 | Read the upstream HiCo-Nav code. Settle which solvers it needs and whether their licences are acceptable | decide | Zongzhe | 4 | off | none |
+| T6.2 | Record data of the lab with the base camera: images, depth, LiDAR, positions | measure | Sherman | 4 | lab | T5.6 |
+| T6.3 | Build object entries from recorded data: mask, depth, camera position, image feature | build | Zongzhe | 14 | off | T6.2 |
+| T6.4 | The merge test, so the same physical object seen twice becomes one entry: 3D overlap combined with image feature similarity | build | Zongzhe | 10 | off | T6.3 |
+| T6.5 | The two-stage trigger. A cheap detector runs always, the expensive one runs only when a new object class appears or the robot has moved enough. This also closes the "when should segmentation run" question from M2 | build | Zongzhe | 8 | off | T2.4, T6.3 |
+| T6.6 | Decide the reasoning model endpoint, cloud or local, and check whether sending lab images off site is permitted. A procurement and policy question of the same kind as T0.1 | decide | Sherman | 4 | off | none |
+| T6.7 | The reasoning layer. Called once at the start of a task, off the control loop, expanding the instruction into related objects | build | Zongzhe | 10 | off | T6.4, T6.6 |
+| T6.8 | Query the graph with a sentence and get an object position back | build | Zongzhe, Dion | 8 | off | T6.4 |
 
 ### 6.9 M7. The graph drives the robot (weeks 14 to 17)
 
-| ID | Task | Owner | Hours | Where | After |
-|---|---|---|---|---|---|
-| T7.1 | Publish the approach goal from the graph instead of from live perception. The channel and its meaning do not change, only who writes to it. **Write this node in C++ with rclcpp**, not Python. `object_approach_node.py` is a working reference for the same behaviour, so you can diff against it and know when the C++ one is right | Dion | 16 | box | T3.7, T6.8 |
-| T7.2 | Build the graph while the robot drives, rather than from a recording | Zongzhe | 10 | lab | T5.7, T7.1 |
-| T7.3 | Spoken instruction to arrival at the right object, on hardware, with the object not in view when the instruction is given | All | 8 | lab | T7.2 |
+| ID | Task | Type | Owner | Hours | Where | After |
+|---|---|---|---|---|---|---|
+| T7.1 | Publish the approach goal from the graph instead of from live perception. The channel and its meaning do not change, only who writes to it. **Write this node in C++ with rclcpp**, not Python. `object_approach_node.py` is a working reference for the same behaviour, so you can diff against it and know when the C++ one is right | build | Dion | 16 | box | T3.7, T6.8 |
+| T7.2 | Build the graph while the robot drives, rather than from a recording | build | Zongzhe | 10 | lab | T5.7, T7.1 |
+| T7.3 | Spoken instruction to arrival at the right object, on hardware, with the object not in view when the instruction is given | measure | All | 8 | lab | T7.2 |
 
 ### 6.10 M8. Gaze picks the instance (weeks 15 to 19). Protected
 
-| ID | Task | Owner | Hours | Where | After |
-|---|---|---|---|---|---|
-| T8.1 | Produce an image feature from the gaze-cropped region of the glasses frame | Dion | 8 | off | T2.3 |
-| T8.2 | Carry that feature into the graph query so it selects an instance rather than a class | Dion | 10 | off | T6.8, T8.1 |
-| T8.3 | Run the ablation. N trials with the feature and N without, same objects, same start positions, using the fixture | Dion, Sherman | 18 | lab | T5.8, T7.3, T8.2 |
-| T8.4 | Re-measure the cross-camera matching baseline so the comparison number is ours rather than remembered | Dion | 4 | box | T2.1 |
+| ID | Task | Type | Owner | Hours | Where | After |
+|---|---|---|---|---|---|---|
+| T8.1 | Produce an image feature from the gaze-cropped region of the glasses frame | build | Dion | 8 | off | T2.3 |
+| T8.2 | Carry that feature into the graph query so it selects an instance rather than a class | build | Dion | 10 | off | T6.8, T8.1 |
+| T8.3 | Run the ablation. N trials with the feature and N without, same objects, same start positions, using the fixture | measure | Dion, Sherman | 18 | lab | T5.8, T7.3, T8.2 |
+| T8.4 | Re-measure the cross-camera matching baseline so the comparison number is ours rather than remembered | measure | Dion | 4 | box | T2.1 |
 
 ### 6.11 M9. Frontier scoring and visit ordering (weeks 7 to 16). Optional
 
-| ID | Task | Owner | Hours | Where | After |
-|---|---|---|---|---|---|
-| T9.1 | Get the upstream simulator evaluation running as a baseline | Zongzhe | 8 | off | T6.1 |
-| T9.2 | Implement frontier scoring | Zongzhe | 12 | off | T9.1 |
-| T9.3 | Implement visit ordering with an openly licensed solver | Zongzhe | 10 | off | T9.2 |
-| T9.4 | A node that emits drive goals, sitting beside the existing bridge, with Nav2 unchanged | Zongzhe, Dion | 8 | box | T9.3 |
+| ID | Task | Type | Owner | Hours | Where | After |
+|---|---|---|---|---|---|---|
+| T9.1 | Get the upstream simulator evaluation running as a baseline | bring-up | Zongzhe | 8 | off | T6.1 |
+| T9.2 | Implement frontier scoring | build | Zongzhe | 12 | off | T9.1 |
+| T9.3 | Implement visit ordering with an openly licensed solver | build | Zongzhe | 10 | off | T9.2 |
+| T9.4 | A node that emits drive goals, sitting beside the existing bridge, with Nav2 unchanged | build | Zongzhe, Dion | 8 | box | T9.3 |
 
 ### 6.12 M10. Demonstration and paper (weeks 18 to 20)
 
-| ID | Task | Owner | Hours | Where | After |
-|---|---|---|---|---|---|
-| T10.1 | Full demonstration run, recorded | All | 8 | lab | T8.3 |
-| T10.2 | Paper draft. The central table is T8.3's ablation | All | 24 | off | T8.3 |
-| T10.3 | Reproducibility artifacts: the bench, the recorded data, this plan, the defect log | Dion | 6 | off | T10.2 |
+| ID | Task | Type | Owner | Hours | Where | After |
+|---|---|---|---|---|---|---|
+| T10.1 | Full demonstration run, recorded | measure | All | 8 | lab | T8.3 |
+| T10.2 | Paper draft. The central table is T8.3's ablation | decide | All | 24 | off | T8.3 |
+| T10.3 | Reproducibility artifacts: the bench, the recorded data, this plan, the defect log | decide | Dion | 6 | off | T10.2 |
 
 ### 6.13 The critical path
 
@@ -504,42 +672,74 @@ Zongzhe's outright. T7.1 stays on the chain and is written in C++ on purpose.
 
 ## 7. Assignment and load
 
-### 7.1 Why each person has what they have
+### 7.1 What each person owns
 
-**Zongzhe, computer science.** Starts with two pure software tasks that need no
-robot and no ROS knowledge: path portability and bringing the missing packages in. Both force him to
-read the repository layout, which is the fastest way to learn it. Then navigation, which is the most
-self-contained subsystem and gives him ROS experience on a stack that cannot damage anything while it
-is being built. Then the memory graph, which is algorithm work of the kind a computer science student
-is best placed to do, and which sits on the critical path so his time is not spent off to one side.
+Each entry says what the person is accountable for, what they get out of it, why the work suits
+them, and what is open enough to be worth digging into. Task-level ownership is in section 6.
 
-**Sherman, mechanical engineering.** Owns the physical layer, which is genuinely
-separate work rather than made-up work. The network switch is the single change that unblocks arm and
-navigation running together. The camera mount is on the critical path. The mount geometry task fixes a
-real defect, which is that one physical measurement is written down in four places that can disagree.
-He is also the person most often in the lab, so he owns the bring-up runbook and the trial fixture,
-and he runs the ablation trials in M8. Running trials to a fixed procedure is a large part of the
-experimental work and needs no code at all.
+**Dion. Perception, the arm, and the research claim.**
 
-**Dion, computer engineering and perception.** The arm, the perception chain and the contribution.
-This is the critical path and it is also the part that matches his background. The mitigation for him
-being the contention point is T0.7, writing the channel contract in week 1, so the other two can build
-against an agreed interface instead of against Dion's availability.
+Owns everything between a camera frame and the arm closing on an object, plus the contribution
+itself. That means arm bring-up through to a working grasp, one segmentation service instead of two
+competing ones, the glasses stream reaching the arm, the calibration of the base camera and what its
+accuracy costs, and the gaze-conditioned query that M8 measures.
 
-Three deliberate choices inside Dion's share, all of which keep the total the same:
+*Takeaway.* An end-to-end perception system on real hardware, from raw frames to an executed motion,
+and a measured result with an ablation table behind it. Production ROS 2 in both Python and C++,
+since T7.1 is written with rclcpp against a working Python reference.
 
-- **T7.1 is written in C++ with rclcpp, not Python.** It costs about a week more than the Python
-  version and it costs nobody else anything, because nothing downstream cares which language publishes
-  the channel. `object_approach_node.py` already implements the same behaviour, so there is a working
-  reference to diff against. It is the highest single-item return in the plan.
-- **T5.5 to T5.7 are a calibration and localisation-error workstream, not mount support.** Dion owns
-  the procedure, the numbers and the error characterisation. Sherman owns the rig, the target and the
-  mount. Framed that way it produces a measured result rather than a setup step, which is a section of
-  the paper.
-- **T6.5 and T6.6 move off Dion.** The two-stage trigger is graph-adjacent and sits naturally with
-  Zongzhe, who owns the graph. The endpoint decision is procurement and policy, which is the kind of
-  item Sherman already carries. That is twelve hours back, which pays for the C++ premium on T7.1 and
-  the expanded T5.7 without adding to anyone's load.
+*Why it fits.* This is the most vision-heavy and the most systems-heavy stream in the project. Most
+of it is repair rather than authorship, and the skill it rewards is reading an unfamiliar system
+accurately enough to find the five lines that matter.
+
+*Worth exploring.* Image embeddings. Nothing in this repository computes one today, so the feature
+extractor is genuinely new code, and both the memory graph and the gaze crop consume it. Owning it
+means the interface between perception and the graph is a deliverable rather than a conversation.
+
+**Zongzhe. The memory graph and the reasoning layer.**
+
+Owns the one part of this project that does not already exist in some form: object entries built
+from images, depth and camera pose; the merge rule that stops one physical object being registered
+twice; the sentence query that returns a place to drive to; and, if the schedule allows, the frontier
+scoring and visit ordering in M9.
+
+*Takeaway.* A published method taken from the paper to working, evaluated code, with the design
+decisions owned rather than inherited. This is the most paper-shaped work on the board and the part a
+reader of the write-up will ask about first.
+
+*Why it fits.* Well-posed problems with a right answer, most of them geometric or statistical, and
+the core of it runs on a laptop against recorded data. Progress does not depend on the robot being
+free, the lab being open, or anyone else finishing first.
+
+*Worth exploring.* The merge rule itself, which is 3D overlap combined with embedding similarity and
+a threshold nobody has tuned for this room. It is the decision the graph's correctness turns on and
+it is directly measurable. The reasoning layer is the other one, and it is the only place in the
+project with real research risk, because no model in this repository has ever been given an image.
+
+**Sherman. The platform, and where its poses come from.**
+
+Owns the robot as a working machine: it powers on, it drives, it maps, it localises, it answers on
+the network, and a runbook exists that says how. Owns the physical build the rest depends on, meaning
+the forward camera mount, the calibration rig and target, and the trial fixture that makes M8's runs
+repeatable. Owns the open question of which pose source the memory graph needs, and the measurement
+that answers it.
+
+*Takeaway.* SLAM and localisation on real hardware, ending in a comparison with a number attached
+rather than a preference. Plus a mechanical design that is genuinely on the critical path rather than
+a bracket bolted on at the end.
+
+*Why it fits.* Bring-up rewards resourcefulness with unfamiliar tooling far more than it rewards
+knowing the internals first, and most of what stands between this repository and a running robot is
+retrieval and assembly rather than development. The mount is a real design problem, because the arm
+is mounted facing backward and its swept volume constrains where a forward camera can sit.
+
+*Worth exploring.* The pose-source question is open and nobody has the answer. Start with the 2D
+localisation already running, because it is free, and escalate only if the measurement says to. Two
+findings make this more interesting than it looks. The LiDAR's own inertial sensor is already
+publishing on `livox/imu` and nothing subscribes to it `[code]`, and the vendored OpenVINS copy is
+calibrated for the glasses rather than for a base camera `[code]`, so neither of the two obvious
+shortcuts is quite the shortcut it appears to be. The failure mode is visible as duplicated objects
+in the graph, which makes this a study with a result rather than a configuration choice.
 
 ### 7.2 What each person is expected to put in
 
@@ -597,7 +797,8 @@ to tell the supervisor early rather than late.
 | Risk | Likelihood | Effect | What we do about it |
 |---|---|---|---|
 | The first powered arm sessions take far longer than estimated. The arm has never moved | High | M1 slips into week 7 or 8, pushing everything | Three short sessions rather than one long one. M3 runs in parallel and is not blocked by it |
-| The camera is not in the lab and procurement takes weeks | Medium | M5 slips, M6 loses its input | Confirm in week 1. Fall back to the wrist camera in a parked pose for M6's offline work |
+| The camera is not in the lab and procurement takes weeks | Medium | M5 slips, M6 loses its input | Confirm in week 1. The wrist-camera fallback below is no longer safe to assume |
+| **The wrist D435i is faulty and may not survive a replug** `[observed]` 2026-09-14 | **Certain that it is faulty. Unknown whether it recovers** | T1.12 has no live mask, T6.2 has no recorded frames, and the M5 fallback of parking the arm is gone, so a single camera fault removes both camera paths at once | Replug it and re-run `python3 bench/preflight.py -g net` before booking any session that needs it. Settle D8 in week 1 and buy alongside the D455 if it is dead, since one order beats two |
 | Camera position accuracy from 2D localisation is too poor and the graph registers duplicates | Medium | M6 quality drops | The duplication rate is directly measurable. Measure it in T5.7 before building on it |
 | The reasoning model does not fit in graphics memory alongside the segmentation model | Medium | T6.7 blocked | Cut item 2 on the list above, or use a cloud endpoint if the imagery policy permits |
 | Dion is the contention point on thirteen consecutive tasks | High | Everything | T0.7 in week 1. Navigation handed to Zongzhe outright. Sherman runs the trials |
@@ -681,9 +882,42 @@ Recorded so nobody spends time on it twice. All of this is from the existing doc
 
 ---
 
-## 12. Changelog
+## 12. Stretch goals
+
+Section 8 says what we cut if we run late. This says what we pick up if we run early, so that the
+answer is decided in advance either way. These are ordered by how much they add to the result, not by
+how hard they are.
+
+Nothing here is promised to anyone. None of it is a dependency of M8. If you find yourself ahead,
+take from the top of this list, and say so in the weekly note so the others know where you went.
+
+| # | Stretch goal | Owner | Why it is worth doing | What it needs first |
+|---|---|---|---|---|
+| S1 | **Candidate-based grasping instead of the simple path** | Dion | `grasp_state_machine.cpp:41` sets `USE_SIMPLE_EXECUTE = true`, which routes every grasp through one Cartesian step and a gripper close. The real path, with the candidate queue, the stability window and orientation interpolation, is about 150 lines of written but never-executed code in the same file `[code]`. Turning it on is the difference between a demonstration and a grasp policy | M1 complete, and the concurrency fixes in T1.9 landed first, because this path is what makes them reachable |
+| S2 | **The reasoning layer, if it was cut** | Zongzhe | Cut item 2 in section 8. It is what turns "find the mug" into "look near the sink as well", and it is the piece a reviewer will expect from a paper that claims a memory graph | M6 through T6.4, plus the endpoint decision in T6.6 |
+| S3 | **Graph pruning with a real solver** | Zongzhe | Cut item 3. Bounded graph growth over a long run. A weighted set multicover problem with mature open solvers, so it is a known quantity rather than a research question | T6.4, and a licence check on the solver |
+| S4 | **A second pose source, measured against the first** | Sherman | If T5.7 says 2D localisation is the limiting factor, this stops being a stretch goal and becomes required work. Either way the comparison is a paper section. The LiDAR's inertial sensor already publishes on `livox/imu` with no subscriber `[code]`, so the input exists | T5.7, and the duplicate-object rate measured on the existing source first |
+| S5 | **The return-to-user leg** | Dion | Out of scope in section 4.2, but `goto_glasses.py` has to be corrected regardless, because its outbound half fires on the same spoken command as the forward leg and competes for the same Nav2 action server `[code]`. Once that is fixed the return leg is closer than the scope decision assumes | The frame defect fixed, and the pose fusion node reconciled with its own documentation |
+| S6 | **Frontier scoring and visit ordering, if M9 was cut** | Zongzhe | Cut item 1. The largest reported benefit in the paper. It is not ours and it is not on the path to our claim, which is why it was cut, but it is the most complete second result available | M6 done, and the upstream evaluation running as a baseline |
+| S7 | **Replay a recording as a regression test** | Dion | The bench catches renamed channels but nothing catches a perception regression. A recorded drive replayed through the graph would. It is also the cheapest way to make the results reproducible by someone else | A recorded run from T6.2 |
+| S8 | **One configuration tree** | anyone with a spare week | Channel names declared as parameters rather than constants, so they stay overridable at launch. Today 38 of 54 owned channel names are declared outside `shared/config.yaml` `[code]` `CODE_AUDIT` K1 | The naming pass, and `TESTBENCH_PLAN` C1 fixed so the bench can still read them |
+
+**How to use this list.** If a milestone lands early, the default is not to start the next one early.
+It is to take the top item here that your own stream unblocks. That keeps the slack where the
+schedule can still absorb it, and it means an early finish produces something rather than evaporating.
+
+---
+
+## 13. Changelog
 
 | Date | Who | Change |
 |---|---|---|
-| 2026-09-13 | Claude (Opus 5) + Dion | Created. Milestone spine M0 to M10, task tree with 60 nodes and their dependencies, three-way split validated against the constraints, scope written down with reasons for what is out, cut list decided in advance, Linear structure proposed. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Created. Milestone spine M0 to M10, task tree with 67 nodes and their dependencies, three-way split validated against the constraints, scope written down with reasons for what is out, cut list decided in advance, Linear structure proposed. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Dion's revisions: T7.1 written in C++ with rclcpp, T5.5 to T5.7 reframed as Dion's calibration and localisation-error workstream rather than mount support, and T6.5 and T6.6 handed to Zongzhe and Sherman. Per-person hour totals replaced by a weekly expectation. Removed the skill labels on individual people, since nobody here has deep ROS 2 experience yet and T0.6 now covers all three. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Checked this file against the published map. Corrected two stale counts: the audit now holds 49 findings, not 45 (`CODE_AUDIT` changelog, after L1), and the task tree has 67 nodes, not 60. The map at the artifact link was already current and needed no republish. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Republished the task tree map under Dion's own account, so its link is `.../65c7784d-...` and the old `.../72753a73-...` one is dead. The page content did not change. |
+| 2026-09-14 | Claude (Opus 5) + Dion | Rewrote 7.1 as what each person owns, takes away, why it fits and what is worth exploring, replacing the reasoning about how the split was arrived at. Added section 12, stretch goals, as the counterpart to the cut list. Changelog renumbered to 13. |
+| 2026-09-14 | Claude (Opus 5) + Dion | Added a work type to all 67 tasks (`build`, `fix`, `rewire`, `bring-up`, `measure`, `decide`) as a new column in section 6 and a new 6.1b explaining it. The map carries the same types as a chip, the right-hand edge colour of each node, a filter axis and a proportion bar. Counts: 16 build, 6 fix, 3 rewire, 12 bring-up, 18 measure, 12 decide. |
+| 2026-09-14 | Claude (Opus 5) + Dion | **Added T0.0, the `realman_manip` cherry-pick, as the first task in M0 and the first thing to do.** Checked the branch rather than trusting the earlier audit: exactly 15 files exist there and not on `main`, the four already scoped in `NEXT_STEPS` §3.3 plus `anygrasp_node.sh`, which is new to this list and records that the verified session ran `checkpoint_tracking.tar` while `main` launches `checkpoint_detection.tar`. Ten of the fifteen are pre-reorg duplicates. Task count 67 to 68, `bring-up` 12 to 13. |
+| 2026-09-14 | Claude (Opus 5) + Dion | **Folded the 2026-09-14 bench results in as §2.6, and corrected the current-state tables against them.** The navigation workspace compiles (10/10, no Livox blocker, the SDK was already installed), the five nav nodes pass the bench first run, E1/F1/F2 are now `[observed]` and F4 is new, so the audit holds 51 findings. T0.8, T3.1 and T3.2 marked done, M3's risk lowered. The wrist D435i is faulty and off the USB bus: recorded as a new risk, a new open decision D8, and a row in §2.2, because it removes both the live-mask path in T1.12 and the parked-arm fallback for M5 and T6.2 at the same time. |
+| 2026-09-14 | Claude (Opus 5) + Dion | Added §2.5 recording four read-only code checks: navigation is retrieval not development, the arm and perception work is repair at 100 to 150 lines, the glasses gaze and image producers are complete and only the consumer is missing, segmentation already shares its model, the memory graph is genuinely from scratch, the Livox IMU already publishes, and the vendored OpenVINS is calibrated for the glasses. New defect recorded as `CODE_AUDIT` E5. |

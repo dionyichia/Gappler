@@ -191,7 +191,7 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
 
 <header class="masthead">
   <div class="inner">
-    <p class="eyebrow">Gappler · updated 11 Sep 2026</p>
+    <p class="eyebrow">Gappler · updated 14 Sep 2026</p>
     <h1>Gappler Test Bench</h1>
     <p class="dek">The test bench is a set of automatic checks for the robot's software. It never moves the
       robot. It tells us which parts of the software work, which are broken, and which haven't been tested yet.</p>
@@ -218,24 +218,25 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
 
 <section id="status">
   <h2>Where things stand</h2>
-  <p class="sub">Most checks now run on the lab computer. They have already found real bugs, listed in the next
-    section. The lab computer was switched off on the evening of 11 Sep, so the newest navigation tests are
-    written but haven't run yet.</p>
+  <p class="sub">Every check that can run without the robot now runs on the lab computer, and they have found
+    real bugs, listed in the next section. The last two waiting on the lab computer, the navigation build and
+    the 10 navigation tests, both ran on 14 Sep and both passed first time. What is left needs either a
+    decision from Dion or a person standing at the robot.</p>
   <div class="kv">
     <div><span class="k">Arm software</span><span class="v"><b>Builds</b>all 22 parts compile</span></div>
     <div><span class="k">Simulated arm</span><span class="v"><b>Moves correctly</b>reaches both home positions and zero</span></div>
     <div><span class="k">Grasp controller</span><span class="v"><b>1 grasp, then stuck</b>on the simulated arm</span></div>
     <div><span class="k">Emergency stop</span><span class="v"><b>Stop is sent</b>but Ctrl+C does nothing</span></div>
     <div><span class="k">Grasp finder (AnyGrasp)</span><span class="v"><b>Runs</b>in a test copy of the Python setup</span></div>
-    <div><span class="k">Navigation</span><span class="v"><b>10 tests written</b>not run yet, and never built</span></div>
+    <div><span class="k">Navigation software</span><span class="v"><b>Builds</b>all 10 parts compile, first time</span></div>
+    <div><span class="k">Navigation programs</span><span class="v"><b>Work, until a drive fails</b>6 of 6 good-weather tests pass</span></div>
+    <div><span class="k">Camera</span><span class="v"><b>Needs replugging</b>off the USB bus since 14 Sep</span></div>
   </div>
 
   <h3>Next steps</h3>
   <ol class="next">
-    <li><div>Turn the lab computer back on and update its copy of the code (<code>git pull</code>).</div></li>
-    <li><div>Build the navigation software. <span class="who">This is the first time anyone has built it from this repo.</span></div></li>
-    <li><div>Run the 10 navigation tests.</div></li>
-    <li><div>Record a few camera frames so the grasp finder can be tested. <span class="who">Ask Dion first: it means starting the camera.</span></div></li>
+    <li><div>Someone at the lab unplugs and replugs the camera's USB cable. <span class="who">It dropped off the bus on 14 Sep.</span></div></li>
+    <li><div>Record a few camera frames so the grasp finder can be tested. <span class="who">Depth first, then colour, then record.</span></div></li>
     <li><div>Test at the robot with a person present. <span class="who">Dion schedules this.</span></div></li>
   </ol>
 </section>
@@ -260,24 +261,46 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
         <tr><td><b>The emergency stop program crashes when it closes</b> <span class="tag">B2</span></td>
           <td>The stop message was sent all 5 times, so the arm would stop. The program then crashes on exit.</td>
           <td><span class="chip s-flag">Seen</span></td></tr>
+        <tr><td><b>One failed drive stops the robot noticing anything again</b> <span class="tag">F1</span></td>
+          <td>If a drive target is refused or Nav2 is not answering, nothing is reported back. The program that
+            spots objects is left waiting for a "success" that never comes, and ignores every object after that.
+            It has to be restarted.</td>
+          <td><span class="chip s-flag">Seen</span></td></tr>
+        <tr><td><b>A failed return trip can never be retried</b> <span class="tag">F2</span></td>
+          <td>The program marks itself "returning to the user" before checking Nav2 is there. If Nav2 is not,
+            it stays marked forever and refuses every later attempt, so the arm can't be brought back.</td>
+          <td><span class="chip s-flag">Seen</span></td></tr>
+        <tr><td><b>The robot drives to the wrong place when fetching the glasses</b> <span class="tag">E1</span></td>
+          <td>The wearer's position is measured relative to the robot, but used as if it were a place on the map.
+            In the test the target was 2.0 m out, and the error changes every time the base moves.</td>
+          <td><span class="chip s-flag">Seen</span></td></tr>
+        <tr><td><b>A check said the camera was fine when it was not</b> <span class="tag">S4</span></td>
+          <td>The camera check only looked for the camera in the computer's list of USB devices. On the
+            morning of 14 Sep it passed, and hours later the camera could not produce a single colour
+            picture. It would also have passed on the Bluetooth adapter, which reports the same maker name.
+            A check that passes when the thing is broken is the worst kind, so it now takes a real frame
+            from the camera. Fixed the same day.</td>
+          <td><span class="chip s-ok">Fixed</span></td></tr>
+        <tr><td><b>The camera is off the USB bus and needs replugging</b></td>
+          <td>The colour picture was already broken when we started the camera on 14 Sep. The standard
+            recovery, a software reset, made the camera disappear from the computer entirely. Someone at
+            the lab needs to unplug and replug its USB cable. No damage, and nothing else was affected.</td>
+          <td><span class="chip s-blocked">Needs a person</span></td></tr>
+        <tr><td><b>All five navigation programs crash on Ctrl+C</b> <span class="tag">F4</span></td>
+          <td>Harmless while parked, just an error message on screen. The concern is pressing Ctrl+C while the
+            base is driving: nothing cancels the drive target, so the base would keep going with the program
+            that commands it gone. Not tested, since nothing in the bench drives.</td>
+          <td><span class="chip s-flag">Seen</span></td></tr>
         <tr><td><b>Two navigation packages are missing from the repo</b></td>
           <td>The files that start driving (<code>robot_navigation</code>, <code>xpkg_demo</code>) exist only on an old user's copy. Without them the base can't navigate from this repo.</td>
           <td><span class="chip s-flag">Seen</span></td></tr>
         <tr><td><b>The LiDAR driver can't be built from a fresh copy</b></td>
-          <td>One setup file is made during the build and was never saved in the repo. The bench now supplies it.</td>
+          <td>One setup file is made during the build and was never saved in the repo. The bench now supplies it,
+            and with that the whole navigation build works.</td>
           <td><span class="chip s-flag">Seen</span></td></tr>
         <tr><td><b>10 file paths point to an old user's folder</b></td>
           <td>They point into <code>/home/iot22</code>, so they break for anyone else.</td>
           <td><span class="chip s-flag">Seen</span></td></tr>
-        <tr><td><b>After one failed drive, the robot ignores every new object</b> <span class="tag">F1</span></td>
-          <td>If a drive fails, the navigation code never resets. Every later object is ignored until a restart.</td>
-          <td><span class="chip s-ready">Test written</span></td></tr>
-        <tr><td><b>A failed return trip can't be retried</b> <span class="tag">F2</span></td>
-          <td>If the drive back to the user fails to start, the robot refuses every later "come back" request.</td>
-          <td><span class="chip s-ready">Test written</span></td></tr>
-        <tr><td><b>The robot drives to the wrong place when going to the user</b> <span class="tag">E1</span></td>
-          <td>The glasses' position is measured from the robot, but the code treats it as a position on the map.</td>
-          <td><span class="chip s-ready">Test written</span></td></tr>
         <tr><td><b>A software update broke the glasses tool</b></td>
           <td>A newer version of one Python package stopped the Aria tool from starting. Pinned to an older version.</td>
           <td><span class="chip s-ok">Fixed</span></td></tr>
@@ -435,11 +458,11 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
       <tbody>
         <tr><td class="nm">./bench/run.sh</td><td>Tiers 0 and 1, plus the preflight check. Runs on any computer.</td><td><span class="chip s-flag">7 known problems</span></td></tr>
         <tr><td class="nm">./bench/build.sh</td><td>Builds the arm software.</td><td><span class="chip s-ok">22 of 22</span></td></tr>
-        <tr><td class="nm">./bench/build.sh nav</td><td>Builds the navigation software.</td><td><span class="chip s-ready">Not run yet</span></td></tr>
+        <tr><td class="nm">./bench/build.sh nav</td><td>Builds the navigation software.</td><td><span class="chip s-ok">10 of 10</span></td></tr>
         <tr><td class="nm">./bench/sim_moveit.sh</td><td>Moves the simulated arm to its home positions.</td><td><span class="chip s-ok">Passes</span></td></tr>
         <tr><td class="nm">./bench/state_machine_sim.sh</td><td>Runs a full grasp on the simulated arm.</td><td><span class="chip s-flag">Found C7</span></td></tr>
         <tr><td class="nm">./bench/estop_delivery.sh</td><td>Checks the emergency stop sends its message.</td><td><span class="chip s-flag">Found B2a</span></td></tr>
-        <tr><td class="nm">./bench/nav_nodes.sh</td><td>Tests the navigation programs against a fake Nav2.</td><td><span class="chip s-ready">Not run yet</span></td></tr>
+        <tr><td class="nm">./bench/nav_nodes.sh</td><td>Tests the navigation programs against a fake Nav2.</td><td><span class="chip s-flag">Found F4, confirmed 3 more</span></td></tr>
         <tr><td class="nm">./bench/anygrasp_env.sh</td><td>Checks a Python setup can run the grasp finder.</td><td><span class="chip s-ok">Passes in test copy</span></td></tr>
       </tbody>
     </table>
@@ -457,7 +480,7 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
   </div>
 </section>
 
-<footer>Details: <code>bench/README.md</code> and <code>docs/dion_docs/TESTBENCH_PLAN.md</code>. States as of 11 Sep 2026.</footer>
+<footer>Details: <code>bench/README.md</code> and <code>docs/dion_docs/TESTBENCH_PLAN.md</code>. States as of 14 Sep 2026.</footer>
 </main>
 </div>
 
@@ -493,8 +516,8 @@ const CELLS = {
   anygrasp:{t0:["ok","Its channels are checked"],t1:["ok","Files readable, links work"],pf:["blocked","Model files and licence pass. Only runs in a test copy of the Python setup"],t2:["na","Supplied ready-made"],t3:["plan","Needs recorded camera frames first"],t4:["plan","First real frame gives grip points"]},
   planner:{t0:["ok","Its channels and settings are checked"],t1:["flag","A start-up file launches a program that doesn't exist"],pf:["na","Can only be checked while running"],t2:["ok","Builds"],t3:["flag","One full grasp on the simulated arm, then stuck (C7)"],t4:["na","Moving the real arm is past the line"]},
   driver:{t0:["gap","Supplier's code. Only checked through what we send it"],t1:["ok","Emergency stop file readable"],pf:["hw","Arm cable unplugged, so these checks can't pass. Expected"],t2:["ok","Builds, with warnings"],t3:["flag","Stop is sent, but Ctrl+C is ignored (B2a)"],t4:["plan","Driver confirms the arm model, RM65-BI"]},
-  camera:{t0:["ok","Its channels and mount position are checked"],t1:["na","Supplier's software"],pf:["ok","Camera found on USB"],t2:["na","Installed ready-made"],t3:["na","Provides inputs for other tests"],t4:["plan","Record 30 s of colour and depth"]},
-  nav:{t0:["ok","Its channels and positions are checked"],t1:["flag","Two packages missing. LiDAR setup file not saved"],pf:["hw","LiDAR unreachable. Saved map found"],t2:["ready","Never built. Ready to try"],t3:["ready","10 tests with a fake Nav2"],t4:["plan","Record LiDAR and positions"]},
+  camera:{t0:["ok","Its channels and mount position are checked"],t1:["na","Supplier's software"],pf:["flag","The camera has dropped off the USB bus and needs replugging. The check that missed this is fixed"],t2:["na","Installed ready-made"],t3:["na","Provides inputs for other tests"],t4:["plan","Record 30 s of colour and depth"]},
+  nav:{t0:["ok","Its channels and positions are checked"],t1:["flag","Two packages missing. LiDAR setup file not saved"],pf:["hw","LiDAR unreachable. Saved map found"],t2:["ok","All 10 parts build. The LiDAR library was already installed"],t3:["flag","6 of 6 good-weather tests pass. Every failure path is broken (F1, F2, E1, F4)"],t4:["plan","Record LiDAR and positions"]},
   glue:{t0:["ok","Every start-up file entry is checked"],t1:["ok","Start-up files point at real programs"],pf:["ready","Lists running programs. Nothing running yet"],t2:["na","Nothing to build"],t3:["na","Never started here: they move the arm"],t4:["na","Past the line"]},
 };
 const ALL = COMPS.map(c=>c[0]);
@@ -525,7 +548,7 @@ const CHECKS = [
   ["other users' folders",["machine"],"pf","Code that points into another user's home folder. All 10 point into /home/iot22.","flag"],
   ["GPU from Python",["sam3"],"pf","A setting that quietly swaps in a slower version of the maths library without graphics card support.","ok"],
   ["SAM 3 model file",["sam3"],"pf","The 3.4 GB model file is missing. It isn't stored in the repo.","ok"],
-  ["glasses connected",["aria"],"pf","Glasses software starts, is paired, and finds the glasses over USB. Today the software works but the glasses are unplugged. (This check used to pass without the glasses. Fixed 11 Sep.)","hw"],
+  ["glasses connected",["aria"],"pf","Glasses software starts, is paired, and finds the glasses over USB. Today the software works but the glasses are unplugged. (This check used to pass without the glasses. Fixed 11 Sep, confirmed failing correctly on 14 Sep.)","hw"],
   ["AnyGrasp setup",["anygrasp"],"pf","AnyGrasp's extra packages missing from the main Python setup. They work in a test copy.","blocked"],
   ["AnyGrasp files",["anygrasp"],"pf","AnyGrasp's model files, licence (locked to this computer) and ready-made libraries.","ok"],
   ["AnyGrasp demo",["anygrasp"],"pf","Every AnyGrasp package loads, the licence passes and the demo finds grip points. Passes in the test copy.","ok"],
@@ -533,21 +556,22 @@ const CHECKS = [
   ["arm joint readings",["driver"],"pf","Arm connected but sending no joint positions. Usually a wrong network address.","hw"],
   ["arm and LiDAR network",["nav","driver"],"pf","The computer needs network addresses for both the arm and the LiDAR on one port. The saved setting has neither.","hw"],
   ["map and base link",["nav"],"pf","Saved map missing, or the arm's position not linked to the base's.","ok"],
-  ["camera",["camera"],"pf","Camera missing, too slow, or mounted somewhere other than the model says.","ok"],
+  ["camera on USB",["camera"],"pf","The camera is not plugged in, or has dropped off the USB bus. Today it has dropped off and needs replugging.","flag"],
+  ["camera streams",["camera"],"pf","The camera is plugged in but cannot actually produce a picture. New on 14 Sep: the old check only looked for the camera in the list of USB devices, so it passed on a camera whose colour picture was dead. This one takes a real frame.","flag"],
   ["running programs",["glue"],"pf","Lists what is running before judging anything.","ready"],
   ["arm software build",["planner","driver"],"t2","Any arm software part that no longer builds. 22 of 22 pass (27 min, the lab computer's processor is slowed by heat).","ok"],
-  ["navigation build",["nav"],"t2","Never built. The bench now supplies the LiDAR setup file. The LiDAR's own library may still be missing.","ready"],
+  ["navigation build",["nav"],"t2","All 10 parts build, 2 min 34 s. The bench supplies the LiDAR setup file. The LiDAR's own library turned out to be installed already.","ok"],
   ["built programs match",["planner","glue"],"t2","Start-up files checked against what was really built.","plan"],
-  ["object far away",["nav"],"t3","Object 2 m away: sends one drive target 0.78 m from it, facing it.","ready"],
-  ["object close",["nav"],"t3","Object within reach: starts the grasp instead of driving.","ready"],
-  ["drive succeeds",["nav"],"t3","After a successful drive, the grasp starts.","ready"],
-  ["drive fails, next object",["nav"],"t3","After a failed drive, a new object still gets a drive target.","ready","F1"],
-  ["drive fails, reported",["nav"],"t3","A failed drive is reported as failed.","ready"],
-  ["Nav2 not running",["nav"],"t3","With no Nav2, reports failed within 6 s instead of staying silent.","ready","F1"],
-  ["return trip retry",["nav"],"t3","A return trip that failed because Nav2 was down can be tried again.","ready","F2"],
-  ["glasses position",["nav"],"t3","The glasses' position is converted to map coordinates before the robot drives there.","ready","E1"],
-  ["LiDAR relay",["nav"],"t3","LiDAR data is passed on in the form the mapping software needs, without dropping frames.","ready"],
-  ["robot position",["nav"],"t3","The robot's position on the map is sent about 10 times a second.","ready"],
+  ["object far away",["nav"],"t3","Object 2 m away: sends one drive target 0.78 m from it, facing it. Correct to within 1 cm and 0 degrees.","ok"],
+  ["object close",["nav"],"t3","Object within reach: starts the grasp instead of driving. Correct.","ok"],
+  ["drive succeeds",["nav"],"t3","After a successful drive, the grasp starts. Correct, so the good-weather path works end to end.","ok"],
+  ["drive fails, next object",["nav"],"t3","Bug confirmed: after one refused drive, a second object got no drive target at all. The program has to be restarted.","flag","F1"],
+  ["drive fails, reported",["nav"],"t3","A failed drive is reported as failed. Correct.","ok"],
+  ["Nav2 not running",["nav"],"t3","Bug confirmed: with no Nav2 it stays silent. Nothing is reported in 8 s, so the rest of the system waits forever.","flag","F1"],
+  ["return trip retry",["nav"],"t3","Bug confirmed: one failed return trip and every later attempt is refused with \u201calready returning to user\u201d, even with Nav2 back up.","flag","F2"],
+  ["glasses position",["nav"],"t3","Bug confirmed: it is not converted. The robot would drive 2.0 m away from the wearer, and the error changes every time the base moves.","flag","E1"],
+  ["LiDAR relay",["nav"],"t3","Correct, and fast: 50 of 50 frames of 520 kB passed on at 10 per second, arriving in 1.9 ms. Nothing dropped.","ok"],
+  ["robot position",["nav"],"t3","Correct: 10.0 times a second, at the right place on the map.","ok"],
   ["grasp finder timing",["anygrasp"],"t3","Grip points produced only while the arm is grasping. Needs recorded camera frames.","plan","A1"],
   ["emergency stop",["driver"],"t3","Keys E, R and S send their messages. A system stop signal sends the stop, then the program crashes. Ctrl+C does nothing (B2a).","flag","B2"],
   ["simulated arm moves",["planner"],"t3","The simulated arm reaches both home positions and zero. Refuses to start if the real arm's driver is running.","ok"],

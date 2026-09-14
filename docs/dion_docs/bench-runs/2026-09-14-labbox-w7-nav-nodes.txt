@@ -1,0 +1,73 @@
+W7 -- navigation nodes vs synthetic inputs (./bench/nav_nodes.sh)   lab box, ~/rcp-Gappler @ b4d6774, 2026-09-14 14:46
+===========================================================================================
+Tier 3. Private channel 77, ROS_LOCALHOST_ONLY=1. Guards before any node started: domain != 0,
+and the channel empty INCLUDING hidden topics (a live navigate_to_pose server hides behind
+/navigate_to_pose/_action/*, so the plain topic list would miss it). Nothing can drive: no Nav2
+and no base driver on the channel. The test's MockNav2 only records goals and returns a status.
+Each case starts its node fresh from Navigation_Module/src/robot_slam/scripts/, so the W4b build
+is not needed. Ran first time, no fix required -- the plan expected one or two.
+
+  [PASS ] approach, far object            goal (1.42, 0.31) in 'map', 0.780 m from the object, facing error 0.0 deg
+  [PASS ] approach, near object           1 /manipulation/start, 0 /goal_pose (want 1, 0)
+  [PASS ] approach, nav succeeds          Nav2 got 1 goal, /goal_reached ['success'], 1 /manipulation/start
+  [XFAIL] approach after nav failure (F1) Nav2 rejected goal 1; /goal_reached silent; second object -> 0 /goal_pose
+  [PASS ] goal bridge, nav aborts         Nav2 got 1 goal; /goal_reached ['failed']
+  [XFAIL] goal bridge, server down (F1)   no Nav2 on the channel; /goal_reached in 8 s: nothing
+  [XFAIL] return retry (F2)               return 1 with Nav2 down; return 2 with Nav2 back -> 0 goals; silent
+  [XFAIL] fused pose frame (E1)           goal (1.00, 0.60) in 'map'; the wearer in map is at (2.40, 2.00)
+  [PASS ] QoS relay (J4)                  /cloud_relay BEST_EFFORT; 50/50 frames of 520 kB at 10 Hz; mean latency 1.9 ms
+  [PASS ] robot pose                      10.0 Hz, 'map', at (2.00, -1.00) yaw 0.50
+  RESULT: PASS (exit 0) -- all 6 controls pass, all 4 expected failures reproduced, 0 skipped
+
+What the controls establish [observed]
+- The approach geometry is right, including the part most likely to be wrong: the object arrives
+  in base_link (the arm frame, mounted 0.18 m forward, 0.48 m up and turned 180 degrees) and comes
+  out at the correct map point, then the goal is placed 0.78 m from it (0.6 m approach + 0.18 m
+  camera offset) facing it, to 0.0 degrees. Near objects (0.43 m) correctly skip navigation and
+  publish /manipulation/start instead.
+- The happy path end to end works: approach -> /goal_pose -> bridge -> Nav2 succeeds ->
+  /goal_reached "success" -> /manipulation/start. So the wedge below is specific to failures.
+- J4 is not a problem at MID360 rates: /cloud_relay really is BEST_EFFORT, and 50/50 frames of
+  520 kB at 10 Hz arrived with a 1.9 ms mean latency. Nothing was dropped.
+- /robot_pose is at 10.0 Hz in map, at the TF pose.
+
+What the expected failures confirm -- each one matches the mechanism CODE_AUDIT predicted, so
+these three findings move from [unverified] to [observed]
+
+- F1, both halves. The bridge stays silent when Nav2 rejects a goal
+  (goal_reached_publisher.py:44-46, log: "Goal rejected by Nav2.") and when no server answers
+  within 5 s (:36-38). object_approach_node.py:243 has already set _approach_done = True, and
+  :148-150 clears it only on a literal "success", so _on_object_pose:160 then discards every
+  later object. Observed exactly: a second object, 1.5 m away at a different bearing, produced
+  0 /goal_pose. One nav hiccup and the node ignores all further detections until restarted.
+  Note the same wedge also follows a plain "failed" outcome, which the bridge DOES publish (the
+  abort control proves it) -- F1 already says so; this run did not exercise that variant.
+- F2. goto_glasses.py:128 sets _returning = True before sending; :222-225 clears _navigating on
+  "Nav2 action server not available." but not _returning. Log, in order: "Returning to user.
+  Goal: x=1.68 y=1.00" -> 5 s -> "[ERROR] Nav2 action server not available." -> next attempt
+  "[WARN] Return ignored -- already returning to user." With Nav2 back up, return 2 reached it
+  0 times. One failed return and the wearer can never be returned to without a restart.
+- E1. The wearer's pose was published as the fusion node stamps it, in robot_base_link, with the
+  robot at (3, 1) in map facing +y. goto_glasses read the numbers raw and stamped the goal "map":
+  (1.00, 0.60). Where the wearer actually is puts the goal at (2.40, 2.00) -- 2.0 m out, and the
+  error moves with the base.
+
+New finding this run: F4 -- every one of the five nav nodes exits with a traceback on Ctrl+C
+[observed], in three shapes:
+  object_approach_node.py:306-315   catches KeyboardInterrupt, then finally: rclpy.shutdown()
+                                    -> RCLError "rcl_shutdown already called". Identical to
+                                    estop.py:76 (B2): rclpy's own SIGINT handler shut the
+                                    context down first.
+  qos_relay.py                      try/finally with no except -- gets both the bare
+                                    KeyboardInterrupt and the RCLError.
+  goal_reached_publisher.py,        bare rclpy.spin(Node()): no try, no destroy_node, no
+  goto_glasses.py, pose_publisher.py  shutdown -> raw KeyboardInterrupt traceback.
+Harmless while parked. But goto_glasses has a _cancel_navigation() that nothing calls on
+shutdown, so Ctrl+C during a leg would leave the Nav2 goal live and the base driving with its
+commander gone [inferred -- nothing drove here, and this bench cannot test it].
+
+Not verified by running: nothing in this run touched the real channel, Nav2, or the base. The
+mock replaces Nav2's accept/abort/reject behaviour only -- no planner, no costmap, no recovery
+behaviours, so F1's real-world trigger rate is still unknown. /aria/fused_pose was synthesised;
+the real pose_fusion_node was not started. Node output (per-case, with the tracebacks):
+~/rcp-Gappler/log/bench_nav_nodes_2026-09-14_1446.txt (gitignored).

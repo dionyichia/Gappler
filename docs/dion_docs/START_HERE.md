@@ -65,7 +65,7 @@ flight; they are not your to-do list unless you are working with Dion on that it
 | **[`ORIENTATION.md`](ORIENTATION.md)** | **What the system *is*.** Repo map, ROS 2 primer, the full topic reference, the five severed seams, known defects and traps, hardware facts, the HiCo-Nav integration surface. | **First.** The main reference. Stays stable. |
 | **[`ARCHITECTURE.md`](ARCHITECTURE.md)** | The same information as **diagrams** — 9 Mermaid diagrams, L0 system down to L2 module level. Renders on GitHub. | Alongside ORIENTATION. Prose there, pictures here. |
 | **[`READING_GUIDE.md`](READING_GUIDE.md)** | A **guided walk through the code**, round by round, for someone new to ROS 2. What to notice in each file and why. Has check-yourself questions. | When you actually sit down to read the code. |
-| **[`PROJECT_PLAN.md`](PROJECT_PLAN.md)** | **The plan the team works to** — 11 milestones and 67 tasks over the 20 weeks from 2026-09-14, who owns each, what blocks what, what is in scope and what is not, and the cut list decided in advance. Answers whether three people can work in parallel (yes, from week 3, after two specific obstacles go). | **Before planning your own week.** Visual version: [`next-steps-map.html`](next-steps-map.html). |
+| **[`PROJECT_PLAN.md`](PROJECT_PLAN.md)** | **The plan the team works to** — 11 milestones and 68 tasks over the 20 weeks from 2026-09-14, who owns each, what blocks what, what is in scope and what is not, and the cut list decided in advance. Answers whether three people can work in parallel (yes, from week 3, after two specific obstacles go). | **Before planning your own week.** Visual version: [`next-steps-map.html`](next-steps-map.html). |
 | **[`NEXT_STEPS.md`](NEXT_STEPS.md)** | **What we intend to *do*** — prioritised work register with the open decisions. | Planning. Churns; expect it to change. |
 | **[`CODE_AUDIT.md`](CODE_AUDIT.md)** | A **line-by-line read of every file we own**, publisher to subscriber. 45 findings, all `[unverified]` — static analysis only, nothing was run. Starts with the three interlocking defects that stop the grasp path working. | Before touching the grasp path, and before the first hardware run. |
 | **[`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md)** | **The cold-start handoff for building the test bench.** State at handoff, safety rules for the lab machine, known bench bugs, and a phased plan from "establish which machine this is" through build, node-behaviour and replay tiers. | **When you pick up bench work.** Read §0–§3 before touching the lab machine. |
@@ -82,7 +82,7 @@ machine on a simulated arm, the e-stop, the AnyGrasp env. See [`bench/README.md`
 
 Plus [`next-steps-map.html`](next-steps-map.html), the visual version of the project plan: the
 milestone schedule as a picture and a task tree you can click through to see who is waiting on whom.
-Published at <https://claude.ai/code/artifact/72753a73-2ffc-4bb7-acfb-75ab297bed17>. **It needs no
+Published at <https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>. **It needs no
 Claude account to read** — it is one self-contained file, so open it straight off disk, or serve the
 folder with `cd docs/dion_docs && python3 -m http.server 8000` and open
 `http://localhost:8000/next-steps-map.html`.
@@ -126,12 +126,24 @@ Honour the provenance tags: `[code]` verified by reading source · `[reported]` 
 `[inferred]`, promote it and say how. If you are Dion's session and something here is wrong, delete it — a
 confidently wrong doc is worse than none. Anyone else: rule 3 above.
 
-## Where work stands (2026-09-13)
+## Where work stands (2026-09-14)
 
 - **The project plan now exists:** [`PROJECT_PLAN.md`](PROJECT_PLAN.md). 20 weeks from 2026-09-14,
   a checkpoint demonstration on 2026-12-06 and the finish on 2027-01-31. Milestone M0 (two weeks) is
   what lets Zongzhe and Sherman work in parallel: making the repo run from a fresh clone, and getting
   the arm and the LiDAR onto the network together.
+- **Planning is mid-flight. Start at [`PROJECT_PLAN.md`](PROJECT_PLAN.md) §1.1, "Open decisions".**
+  Seven decisions are live and unsettled, covering who owns which stream, whether the hour estimates
+  survive the code evidence, and whether the milestone Lead column stays. Nothing below §1.1 should be
+  treated as settled until those are answered.
+- **Four code checks were run on 2026-09-14 and are recorded in `PROJECT_PLAN.md` §2.5.** The headline
+  is that this project is mostly not a build. Of 68 tasks, 16 are new code, 9 are repair or rewiring,
+  and 42 are bring-up, measurement and decisions. Every task now carries that type in section 6 and on
+  the map. Navigation is retrieval rather than development, the glasses gaze and image code is complete
+  and merely switched off, and the memory graph is the one genuinely new component.
+- **One new defect came out of those checks:** `CODE_AUDIT` E5. Two nodes react to the same spoken
+  word and compete for the same Nav2 action server, and the node at fault launches unconditionally in
+  normal operation. It also means E1 cannot be dropped as return-leg-only.
 
 
 - **Test bench, Dion's current work:** [`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md) → "▶ Start here". Tiers 0–3
@@ -163,3 +175,5 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 | 2026-09-11 | Claude (Opus 5) + Dion | Folder moved to `docs/dion_docs/`; per-person folders now live under `docs/`. "Where work stands" refreshed for a cold start; `bench-runs/` added to the table. |
 | 2026-09-12 | Claude (Opus 5) + Dion | "Where work stands" refreshed: box off, three things waiting to run. `wiring-map.html` entry updated for the new tab and both page links. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Added `PROJECT_PLAN.md` and `next-steps-map.html`: the team plan, its milestones, the task tree and the assignment across Dion, Zongzhe and Sherman. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Republished the task tree map under Dion's own account, so its link is `.../65c7784d-...` and the old `.../72753a73-...` one is dead. The page content did not change. |
+| 2026-09-14 | Claude (Opus 5) + Dion | "Where work stands" refreshed for a cold start: pointer to the seven open decisions in `PROJECT_PLAN` §1.1, the four code checks in §2.5, the work-type split across the 67 tasks, and the new `CODE_AUDIT` E5. |

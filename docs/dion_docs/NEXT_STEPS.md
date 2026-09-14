@@ -16,11 +16,12 @@ session · `[inferred]` reasoning, not fact · `[open]` genuinely undecided ·
 **Priority key:** 🔴 blocks other work · 🟠 needed for the HiCo-Nav milestone · 🟡 quality/debt
 
 > ➡️ **This file is the register of everything we *could* do. What we *will* do, in what order and
-> who owns it, is now in [`PROJECT_PLAN.md`](PROJECT_PLAN.md)** — 11 milestones and 67 tasks over 20
+> who owns it, is now in [`PROJECT_PLAN.md`](PROJECT_PLAN.md)** — 11 milestones and 68 tasks over 20
 > weeks from 2026-09-14, with the three-way split validated, the scope written down, and the cut list
 > decided in advance. Visual version: [`next-steps-map.html`](next-steps-map.html)
-> (<https://claude.ai/code/artifact/72753a73-2ffc-4bb7-acfb-75ab297bed17>). Items here map onto task
-> IDs there — for example §2.5 is T0.3, §2.9 is T0.4, §2.2 is T2.0 and T2.1, §3.2 is T3.1.
+> (<https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>). Items here map onto task
+> IDs there — for example §2.5 is T0.3, §2.9 is T0.4, §2.2 is T2.0 and T2.1, §3.2 is T3.1, and
+> §3.3 is **T0.0, now the first task in the plan**.
 
 ---
 
@@ -566,7 +567,18 @@ dependency — but launching will fail. **Ask whoever set up the base before boo
 > **Found 2026-09-11** `[observed]`: in `~iot22/Ros2Workspaces/src/demo/` (never committed, no remote); now also in
 > `~/rcp-old-ros-wkspace/src/demo/` on the lab box. Bringing it into this repo is part of §2.9.
 
-### 3.2 🟠 Build `Navigation_Module` (8 packages, never built)
+### 3.2 ✅ Build `Navigation_Module` — **done 2026-09-14**
+
+> ✅ **Done on the lab box 2026-09-14** `[observed]` — `./bench/build.sh nav`, **10 of 10 packages,
+> 2 min 34 s, colcon exit 0**
+> ([`bench-runs/2026-09-14-labbox-w4b-nav-build.txt`](bench-runs/2026-09-14-labbox-w4b-nav-build.txt)).
+> **Neither blocker below was real.** Livox-SDK2 is already installed at `/usr/local/lib/`, so there
+> was no sudo step, and the bench's generated manifest turned out byte-identical to `iot22`'s. Two
+> corrections to what is written below: there are **10 packages, not 8**, because `Livox-SDk2/` is
+> built by colcon as `livox_sdk2` through plain-CMake support **despite having no `package.xml`**, so
+> the `[code]` claim that colcon ignores it is **wrong**. `robot_navigation` and `xpkg_demo` were not
+> needed for the build, only for the launch, because they are `exec_depend`s. Undo with
+> `rm -rf build_nav install_nav log_nav Navigation_Module/src/livox_ros_driver2/package.xml`.
 
 No `install/` exists for it anywhere. Pure compile, touches no hardware, safe remotely. Blocked on
 3.1 for actually *running* it, but the build itself is independent and worth doing first.
@@ -577,16 +589,36 @@ No `install/` exists for it anywhere. Pure compile, touches no hardware, safe re
 ORIENTATION §8.15 and §2.6 item 4. Check `ls Navigation_Module/src/livox_ros_driver2/package*.xml`
 on the lab clone before booking time for this.
 
-### 3.3 🟡 Consolidate the `realman_manip` docs onto `main`
+### 3.3 🔴 Consolidate the `realman_manip` docs onto `main` — **this is now T0.0, the first task in the plan**
+
+> ➡️ **Promoted 2026-09-14 by Dion to first order of business.** It is `PROJECT_PLAN` **T0.0**, 3
+> hours, Dion, no dependencies. Full file-by-file table and the reasoning are there. This section
+> keeps the evidence.
 
 `[code]` **Scoped 2026-09-10 by a full branch audit — see ORIENTATION §7.** It is a file copy, not a
 merge: the branches have no common ancestor, and `main` is later than `realman_manip` on every
 shared arm file. **No code should come across.**
 
+`[code]` **Re-checked 2026-09-14 against `origin/realman_manip`.** Exactly **15 files** exist on
+that branch and not on `main`. Ten are the pre-reorg flat layout `main` already reorganised
+(`src/config.py`, `src/services/eye_tracking.py`, `sam3.py`, `playback.py`, `ros_subscriber.py`,
+`realman_camera_subscriber.py`, `visualizer_archive.py`, `streaming_client_observer.py`,
+`model_inference_demo.py`, `temp.txt`) and are not wanted. The four below are. **One file the
+2026-09-10 audit did not name is worth adding:**
+`ros2_robot_ws/src/rm_mtc/src/perception/anygrasp_node.sh`, a single line reading
+`python anygrasp_node.py --checkpoint_path log/checkpoint_tracking.tar --filter oneeuro`. `main`
+launches the **other** checkpoint, `checkpoint_detection.tar` (`ros2_robot_ws/src/main.py:28`), so
+this is the only written record of which of the two was actually proven to work, and it feeds §2.6
+item 3 and `PROJECT_PLAN` T1.10. Nothing calls it, so taking it changes no behaviour.
+
 ```bash
 git checkout origin/realman_manip -- \
-    RCP_NEW_USER_STARTUP_GUIDE.md docs/SETUP.md env.sh calibration.json
+    RCP_NEW_USER_STARTUP_GUIDE.md docs/SETUP.md env.sh calibration.json \
+    ros2_robot_ws/src/rm_mtc/src/perception/anygrasp_node.sh
 ```
+
+⚠️ `docs/SETUP.md` lands in the shared `docs/` root, which `CLAUDE.md` forbids. **Move it into
+`docs/dion_docs/` in the same commit.**
 
 `env.sh` needs its `REPO_ROOT` re-pointed and its assumption of a repo-root `install/` re-checked
 on this clone. `calibration.json` is the Aria factory calibration dump for device
@@ -626,6 +658,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-09-14 | Claude (Opus 5) + Dion | §3.3 promoted to 🔴 and re-checked against the branch: exactly 15 files exist on `realman_manip` and not on `main`, ten of them pre-reorg duplicates. Added a fifth file to take, `anygrasp_node.sh`, which records that the verified session ran `checkpoint_tracking.tar` while `main` launches `checkpoint_detection.tar`. It is now `PROJECT_PLAN` T0.0, the first task in the plan. §3.2 marked done: the nav workspace built 10/10 on 2026-09-14, with two corrections — 10 packages not 8, and colcon does build `Livox-SDk2/` without a manifest. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added the pointer under §2.7 to the new `TESTBENCH_PLAN.md` handoff, and a root `CLAUDE.md` so a fresh session loads context automatically. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §2.6b pointing at the new `CODE_AUDIT.md` — a line-by-line read of all owned code. Headline finding: the grasp path cannot work, for three interlocking reasons. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added `bench/` (§2.7) and §2.6, the four `[unverified]` findings to confirm at the machine. Scoped §3.3 from a full branch audit — it is a four-file copy, no code, and `sensors_3d.yaml` must not come across. Added the second `Navigation_Module` build blocker to §3.2. |
@@ -641,3 +674,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-13 | Claude (Opus 5) + Dion | Added §2.11: box vendor code off from ours. 226 of 2,426 tracked files are ours; vendor and owned packages are siblings in both colcon workspaces, three AnyGrasp `.so` binaries are committed inside `rm_mtc/`, and `rm_ros_interfaces` holds 77 vendor messages plus 2 of ours. Proposes a `vendor/` folder per workspace, checked that colcon and ROS resolve by package name so a move is safe, and listed the three hardcoded paths that would break. Also flags that the reorg itself is referenced in four places but never specified. |
 | 2026-09-13 | Claude (Opus 5) + Dion | §2.2: added the open decision on whether to patch the `/aria/audio/prompt` subscription into `sam3_ros_node.py` now or retire the node first, with the trade-off table. Evidence is the new `CODE_AUDIT.md` L1. Also fixed the stale call-site citation `object_recognition_pipeline.py:384`→`:389` in both places it appears in §2.2 (the comparison table and hazard 1). ORIENTATION §6.5 and READING_GUIDE were re-pointed on 2026-09-13 and §2.2 was missed. Line numbers are against the working tree, which is ahead of the last commit in that file by some added comments. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Added the pointer to the new `PROJECT_PLAN.md`, which decides what of this register we actually do, in what order, and who owns it. This file stays the full register. |
+| 2026-09-13 | Claude (Opus 5) + Dion | Republished the task tree map under Dion's own account, so its link is `.../65c7784d-...` and the old `.../72753a73-...` one is dead. The page content did not change. |

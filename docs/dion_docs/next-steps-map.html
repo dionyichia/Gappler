@@ -13,6 +13,12 @@
   --broken:#b02a2a; --broken-soft:#fbeced;
   --caution:#96620d; --caution-soft:#fdf3e3;
   --working:#1c7048; --working-soft:#e7f4ed;
+  --build:#1f5fa8; --build-soft:#e8f0f9;
+  --fix:#b02a2a; --fix-soft:#fbeced;
+  --wire:#96620d; --wire-soft:#fdf3e3;
+  --bringup:#0d6a66; --bringup-soft:#e2f1f0;
+  --measure:#1c7048; --measure-soft:#e7f4ed;
+  --plan:#5b6472; --plan-soft:#eceef2;
   --display:'Archivo','Helvetica Neue',Arial,sans-serif;
   --body:'IBM Plex Sans',-apple-system,'Segoe UI',sans-serif;
   --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
@@ -31,6 +37,12 @@
     --broken:#e8797a; --broken-soft:#2c1c1e;
     --caution:#d9a353; --caution-soft:#2a2118;
     --working:#5fb98a; --working-soft:#17271f;
+    --build:#6aa6e8; --build-soft:#1b2836;
+    --fix:#e8797a; --fix-soft:#2c1c1e;
+    --wire:#d9a353; --wire-soft:#2a2118;
+    --bringup:#4fb5ad; --bringup-soft:#14292a;
+    --measure:#5fb98a; --measure-soft:#17271f;
+    --plan:#9aa4b2; --plan-soft:#242830;
     --shadow:0 1px 2px rgba(0,0,0,.3);
   }
 }
@@ -46,6 +58,12 @@
   --broken:#e8797a; --broken-soft:#2c1c1e;
   --caution:#d9a353; --caution-soft:#2a2118;
   --working:#5fb98a; --working-soft:#17271f;
+  --build:#6aa6e8; --build-soft:#1b2836;
+  --fix:#e8797a; --fix-soft:#2c1c1e;
+  --wire:#d9a353; --wire-soft:#2a2118;
+  --bringup:#4fb5ad; --bringup-soft:#14292a;
+  --measure:#5fb98a; --measure-soft:#17271f;
+  --plan:#9aa4b2; --plan-soft:#242830;
   --shadow:0 1px 2px rgba(0,0,0,.3);
 }
 
@@ -198,6 +216,27 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .node .mark:hover{border-color:var(--working);color:var(--working)}
 .node.done .mark{border-color:var(--working);color:var(--working);background:var(--working-soft)}
 
+/* ---------- work type ---------- */
+.wt{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  padding:1px 6px;border-radius:2px;white-space:nowrap;border:1px solid;font-weight:500}
+.wt-build{background:var(--build-soft);color:var(--build);border-color:var(--build)}
+.wt-fix{background:var(--fix-soft);color:var(--fix);border-color:var(--fix)}
+.wt-wire{background:var(--wire-soft);color:var(--wire);border-color:var(--wire)}
+.wt-bringup{background:var(--bringup-soft);color:var(--bringup);border-color:var(--bringup)}
+.wt-measure{background:var(--measure-soft);color:var(--measure);border-color:var(--measure)}
+.wt-plan{background:var(--plan-soft);color:var(--plan);border-color:var(--plan)}
+.node{border-right:4px solid transparent}
+.node.wk-build{border-right-color:var(--build)}
+.node.wk-fix{border-right-color:var(--fix)}
+.node.wk-wire{border-right-color:var(--wire)}
+.node.wk-bringup{border-right-color:var(--bringup)}
+.node.wk-measure{border-right-color:var(--measure)}
+.node.wk-plan{border-right-color:var(--plan)}
+.mix{display:flex;flex-wrap:wrap;gap:2px;margin:0 0 18px;border:1px solid var(--line);
+  border-radius:5px;overflow:hidden;background:var(--surface)}
+.mix .seg{flex:1 1 auto;padding:9px 11px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.06em;text-transform:uppercase;color:#fff;text-align:center;min-width:90px}
+.mix .seg b{display:block;font-size:17px;letter-spacing:0;margin-bottom:1px}
 .legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--ink-3);margin:0 0 18px}
 .legend span{display:flex;gap:6px;align-items:center}
 .swatch{width:12px;height:12px;border-radius:2px;display:inline-block}
@@ -221,7 +260,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 
 <header class="masthead"><div class="inner">
-  <p class="eyebrow">Gappler &middot; project plan &middot; 13 September 2026</p>
+  <p class="eyebrow">Gappler &middot; project plan &middot; 14 September 2026</p>
   <h1>Gappler Task Tree</h1>
   <p class="dek">Twenty weeks, three people, one robot. What we build, in what order, and who is
   waiting on whom. The companion to the wiring map: that one says how the system is put together,
@@ -231,7 +270,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="fact">Checkpoint <b>2026-12-06</b></span>
     <span class="fact">Finish <b>2027-01-31</b></span>
     <span class="fact">Milestones <b>11</b></span>
-    <span class="fact">Tasks <b>67</b></span>
+    <span class="fact">Tasks <b>68</b></span>
     <span class="fact">Effort available <b>~515 h</b></span>
   </div>
 </div></header>
@@ -244,14 +283,30 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <li><a href="#streams"><span class="n">2</span><span>The three streams</span></a></li>
     <li><a href="#map"><span class="n">3</span><span>The milestone map</span></a></li>
     <li><a href="#tree"><span class="n">4</span><span>The task tree</span></a></li>
-    <li><a href="#people"><span class="n">5</span><span>Who does what</span></a></li>
+    <li><a href="#people"><span class="n">5</span><span>What each person owns</span></a></li>
     <li><a href="#scope"><span class="n">6</span><span>In scope, out of scope</span></a></li>
     <li><a href="#cut"><span class="n">7</span><span>What we cut first</span></a></li>
-    <li><a href="#track"><span class="n">8</span><span>How we track it</span></a></li>
+    <li><a href="#stretch"><span class="n">8</span><span>If we run early</span></a></li>
+    <li><a href="#track"><span class="n">9</span><span>How we track it</span></a></li>
   </ol>
 </nav>
 
 <main>
+<div class="callout c-note" style="margin-bottom:34px">
+  <span class="ct">What changed on 14 September</span>
+  <p><strong>The first task is now T0.0</strong>, taking the four documents worth keeping off the
+  old <code>realman_manip</code> branch onto the main one, plus one file nobody had noticed: a
+  one-line script recording that the session which actually worked used a different grasp checkpoint
+  from the one the code launches today. Three hours, no hardware, nothing waiting on it.</p>
+  <p><strong>The test bench finished its backlog.</strong> The navigation software compiles for the
+  first time, all 10 parts, and the five navigation programs passed their tests on the first run.
+  Three suspected defects are now confirmed by observation rather than by reading the code, and one
+  new one turned up. T0.8, T3.1 and T3.2 are done.</p>
+  <p><strong>One thing got worse.</strong> The arm's camera is faulty and is currently off the USB
+  bus entirely. It needs someone to unplug and replug it, and it is not known whether it survives
+  that. It was also the fallback for the base camera, so a single fault removes both camera paths
+  at once.</p>
+</div>
 <section id="split">
   <h2><span class="sn">Section 1</span>Can we split the work three ways</h2>
   <p class="sub">Dion's question was whether there is any obvious way to divide this between three
@@ -297,7 +352,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     navigation server that can be told to fail, synthetic camera publishers, and a private message
     channel so two people on the same workstation cannot see each other's traffic.</li>
     <li><strong>About two thirds of the open work needs no hardware at all.</strong> Path portability,
-    the configuration work, most of the 49 audit findings, the memory graph built from recordings,
+    the configuration work, most of the 51 audit findings, the memory graph built from recordings,
     and the goal-ordering work which is LiDAR only.</li>
     <li><strong>Mechanical work does not contend with code at all.</strong> The mount, the switch, the
     physical measurements that four places currently disagree about, the trial fixture.</li>
@@ -558,9 +613,34 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 <section id="tree">
   <h2><span class="sn">Section 4</span>The task tree</h2>
-  <p class="sub">Sixty-seven tasks. Each one lists what has to finish before it can start. Click any
-  task to trace it: what it is waiting on turns amber, what is waiting on it turns green. Filter by
-  person to see one lane at a time.</p>
+  <p class="sub">Sixty-eight tasks. Each one lists what has to finish before it can start, and what
+  kind of work it is. Click any task to trace it: what it is waiting on turns amber, what is waiting
+  on it turns green. Filter by person or by kind of work to see one slice at a time.</p>
+
+  <h3>What kind of work this project actually is</h3>
+  <p>Every task carries a work type, shown as a chip and as the colour of its right-hand edge. The
+  bar below is the whole project by that measure, sized by task count.</p>
+  <div class="mix" id="mix"></div>
+  <div class="scroller"><table>
+    <thead><tr><th>Type</th><th>Means</th></tr></thead>
+    <tbody>
+      <tr><td><span class="wt wt-build">build</span></td><td>New code. None of it exists today</td></tr>
+      <tr><td><span class="wt wt-fix">fix</span></td><td>Repair of existing code that is written but defective</td></tr>
+      <tr><td><span class="wt wt-wire">rewire</span></td><td>Existing, complete code reconnected, re-enabled or consolidated. No new logic</td></tr>
+      <tr><td><span class="wt wt-bringup">bring-up</span></td><td>Make existing things run: retrieve, compile, install, mount, power on</td></tr>
+      <tr><td><span class="wt wt-measure">measure</span></td><td>Trials, calibration, error characterisation, tests. Produces numbers, not code</td></tr>
+      <tr><td><span class="wt wt-plan">decide</span></td><td>A decision to settle or a document to write</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout c-note">
+    <span class="ct">Read the bar before you read the schedule</span>
+    <p>Only sixteen of sixty-eight tasks are new code, and nine are repair or rewiring. The rest is
+    bring-up, measurement and decisions. This is not a project that builds a robot. It is a project
+    that repairs one, measures it, and adds one new component, which is the memory graph.</p>
+    <p>That matters for estimates. Where the work is repair, the code change is usually small and the
+    time goes into verifying it. Where the work is measurement, the time is lab hours and cannot be
+    compressed by working harder.</p>
+  </div>
 
   <div class="toolbar">
     <span class="lbl">Show</span>
@@ -569,6 +649,14 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <button class="f" data-filter="Z" aria-pressed="false">Zongzhe</button>
     <button class="f" data-filter="S" aria-pressed="false">Sherman</button>
     <button class="f" data-filter="free" aria-pressed="false">Nothing blocking it</button>
+    <span class="lbl" style="margin-left:14px">Work</span>
+    <button class="f" data-work="all" aria-pressed="true">Any</button>
+    <button class="f" data-work="build" aria-pressed="false">Build</button>
+    <button class="f" data-work="fix" aria-pressed="false">Fix</button>
+    <button class="f" data-work="wire" aria-pressed="false">Rewire</button>
+    <button class="f" data-work="bringup" aria-pressed="false">Bring-up</button>
+    <button class="f" data-work="measure" aria-pressed="false">Measure</button>
+    <button class="f" data-work="plan" aria-pressed="false">Decide</button>
     <button class="f" id="clearsel">Clear trace</button>
     <span class="note">Marking a task done is saved in this browser only. Linear holds the shared record.</span>
   </div>
@@ -577,6 +665,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span><i class="swatch" style="background:var(--caution-soft);border:1px solid var(--caution)"></i> waiting on the selected task, upstream</span>
     <span><i class="swatch" style="background:var(--working-soft);border:1px solid var(--working)"></i> blocked by the selected task, downstream</span>
     <span><i class="swatch" style="background:var(--accent-soft);border:1px solid var(--accent)"></i> selected</span>
+    <span>left edge is the owner, right edge is the kind of work</span>
   </div>
 
   <div id="tree-root"></div>
@@ -601,46 +690,74 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </section>
 
 <section id="people">
-  <h2><span class="sn">Section 5</span>Who does what, and why</h2>
-  <p class="sub">The assignment follows from what each person is best placed to do and from keeping
-  the critical path as short as possible.</p>
+  <h2><span class="sn">Section 5</span>What each person owns</h2>
+  <p class="sub">What you are accountable for, what you get out of it, why the work suits you, and
+  what is open enough to be worth digging into. Task-level ownership is in the tree above.</p>
 
-  <h3>Zongzhe, computer science</h3>
-  <p>Starts with two pure software tasks that need no robot and no ROS knowledge: making the
-  repository run from a fresh clone, and bringing in the packages the robot needs that are in nobody's
-  repository. Both force a careful read of the layout, which is the fastest way to learn it. Then
-  navigation, which is the most self-contained subsystem and gives ROS experience on a stack that
-  cannot damage anything while it is being built. Then the memory graph, which is algorithm work and
-  sits on the critical path, so his time is not spent off to one side.</p>
-
-  <h3>Sherman, mechanical engineering</h3>
-  <p>Owns the physical layer, which is genuinely separate work rather than invented work. The network
-  switch is the single change that lets the arm and the base run together. The camera mount is on the
-  critical path. The mount geometry task fixes a real defect, which is that one physical measurement
-  is written down in four places that can disagree. He is also the person most often in the lab, so he
-  owns the bring-up runbook and the trial fixture, and he runs the ablation trials in M8. Running
-  trials to a fixed procedure is a large part of the experimental work and needs no code.</p>
-
-  <h3>Dion, computer engineering and perception</h3>
-  <p>The arm, the perception chain and the contribution. This is the critical path and it is also the
-  part that matches the background. The mitigation for being the contention point is writing the
-  channel contract in week 1, so the other two build against an agreed interface rather than against
-  Dion's availability.</p>
-  <p>Three deliberate choices inside that share, which between them keep the total the same:</p>
-  <ul>
-    <li><strong>T7.1 is written in C++ with rclcpp, not Python.</strong> It costs about a week more
-    and it costs nobody else anything, because nothing downstream cares which language publishes the
-    channel. <code>object_approach_node.py</code> already implements the same behaviour, so there is a
-    working reference to diff against.</li>
-    <li><strong>T5.5 to T5.7 are a calibration and localisation-error workstream, not mount
-    support.</strong> Dion owns the procedure, the numbers and the error characterisation. Sherman
-    owns the rig, the target and the mount. Framed that way it produces a measured result rather than
-    a setup step.</li>
-    <li><strong>T6.5 and T6.6 move off Dion.</strong> The two-stage trigger is graph-adjacent and
-    belongs with whoever owns the graph. The endpoint decision is procurement and policy. That is
-    twelve hours back, which pays for the C++ premium on T7.1 and the expanded T5.7.</li>
-  </ul>
-
+  <div class="lanes">
+    <div class="lane L-D">
+      <h4>Dion</h4>
+      <p class="role">Perception, the arm, and the research claim</p>
+      <p><strong>Owns</strong> everything between a camera frame and the arm closing on an object,
+      plus the contribution itself. Arm bring-up through to a working grasp, one segmentation service
+      instead of two competing ones, the glasses stream reaching the arm, the calibration of the base
+      camera and what its accuracy costs, and the gaze-conditioned query that M8 measures.</p>
+      <p><strong>Takeaway.</strong> An end-to-end perception system on real hardware, from raw frames
+      to an executed motion, and a measured result with an ablation table behind it. Production
+      ROS&nbsp;2 in both Python and C++, since T7.1 is written with rclcpp against a working Python
+      reference.</p>
+      <p><strong>Why it fits.</strong> The most vision-heavy and the most systems-heavy stream in the
+      project. Most of it is repair rather than authorship, and the skill it rewards is reading an
+      unfamiliar system accurately enough to find the five lines that matter.</p>
+      <p><strong>Worth exploring.</strong> Image embeddings. Nothing in this repository computes one
+      today, so the feature extractor is genuinely new code, and both the memory graph and the gaze
+      crop consume it. Owning it makes the interface between perception and the graph a deliverable
+      rather than a conversation.</p>
+    </div>
+    <div class="lane L-Z">
+      <h4>Zongzhe</h4>
+      <p class="role">The memory graph and the reasoning layer</p>
+      <p><strong>Owns</strong> the one part of this project that does not already exist in some form:
+      object entries built from images, depth and camera pose; the merge rule that stops one physical
+      object being registered twice; the sentence query that returns a place to drive to; and, if the
+      schedule allows, the frontier scoring and visit ordering in M9.</p>
+      <p><strong>Takeaway.</strong> A published method taken from the paper to working, evaluated
+      code, with the design decisions owned rather than inherited. The most paper-shaped work on the
+      board, and the part a reader of the write-up will ask about first.</p>
+      <p><strong>Why it fits.</strong> Well-posed problems with a right answer, most of them geometric
+      or statistical, and the core of it runs on a laptop against recorded data. Progress does not
+      depend on the robot being free, the lab being open, or anyone else finishing first.</p>
+      <p><strong>Worth exploring.</strong> The merge rule itself, which is 3D overlap combined with
+      embedding similarity and a threshold nobody has tuned for this room. It is the decision the
+      graph's correctness turns on and it is directly measurable. The reasoning layer is the other
+      one, and it carries the only real research risk in the project, because no model here has ever
+      been given an image.</p>
+    </div>
+    <div class="lane L-S">
+      <h4>Sherman</h4>
+      <p class="role">The platform, and where its poses come from</p>
+      <p><strong>Owns</strong> the robot as a working machine: it powers on, it drives, it maps, it
+      localises, it answers on the network, and a runbook exists that says how. Owns the physical
+      build the rest depends on, meaning the forward camera mount, the calibration rig and target, and
+      the trial fixture that makes M8's runs repeatable. Owns the open question of which pose source
+      the memory graph needs, and the measurement that answers it.</p>
+      <p><strong>Takeaway.</strong> SLAM and localisation on real hardware, ending in a comparison
+      with a number attached rather than a preference. Plus a mechanical design that is genuinely on
+      the critical path rather than a bracket bolted on at the end.</p>
+      <p><strong>Why it fits.</strong> Bring-up rewards resourcefulness with unfamiliar tooling far
+      more than it rewards knowing the internals first, and most of what stands between this
+      repository and a running robot is retrieval and assembly rather than development. The mount is a
+      real design problem, because the arm is mounted facing backward and its swept volume constrains
+      where a forward camera can sit.</p>
+      <p><strong>Worth exploring.</strong> The pose-source question is open and nobody has the answer.
+      Start with the 2D localisation already running, because it is free, and escalate only if the
+      measurement says to. Two findings make it more interesting than it looks: the LiDAR's own
+      inertial sensor is already publishing on <code>livox/imu</code> with nothing subscribing, and
+      the vendored OpenVINS copy is calibrated for the glasses rather than for a base camera. Neither
+      obvious shortcut is quite the shortcut it appears to be.</p>
+    </div>
+  </div>
+  
   <h3>What each person is expected to put in</h3>
   <div class="scroller"><table>
     <thead><tr><th>Person</th><th>Hours a week</th></tr></thead>
@@ -742,8 +859,58 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </div>
 </section>
 
+<section id="stretch">
+  <h2><span class="sn">Section 8</span>What we pick up if we run early</h2>
+  <p class="sub">The counterpart to the cut list. Decided in advance so an early finish produces
+  something instead of evaporating. Nothing here is promised to anyone and none of it is a dependency
+  of M8.</p>
+  <div class="scroller"><table>
+    <thead><tr><th>ID</th><th>Stretch goal</th><th>Owner</th><th>Why it is worth doing</th><th>Needs first</th></tr></thead>
+    <tbody>
+      <tr><td class="num">S1</td><td>Candidate-based grasping instead of the simple path</td>
+        <td><span class="who w-D">Dion</span></td>
+        <td>A flag in the state machine routes every grasp through one Cartesian step and a gripper close. The real path, with the candidate queue, the stability window and orientation interpolation, is about 150 lines of written but never-executed code in the same file. Turning it on is the difference between a demonstration and a grasp policy</td>
+        <td>M1, and the concurrency fixes landed first, because this path is what makes them reachable</td></tr>
+      <tr><td class="num">S2</td><td>The reasoning layer, if it was cut</td>
+        <td><span class="who w-Z">Zongzhe</span></td>
+        <td>Turns "find the mug" into "look near the sink as well". A reviewer will expect it from a paper that claims a memory graph</td>
+        <td>M6 through the merge test, plus the endpoint decision</td></tr>
+      <tr><td class="num">S3</td><td>Graph pruning with a real solver</td>
+        <td><span class="who w-Z">Zongzhe</span></td>
+        <td>Bounded graph growth over a long run. A weighted set multicover problem with mature open solvers, so it is a known quantity rather than a research question</td>
+        <td>The merge test, and a licence check on the solver</td></tr>
+      <tr><td class="num">S4</td><td>A second pose source, measured against the first</td>
+        <td><span class="who w-S">Sherman</span></td>
+        <td>If the error study says 2D localisation is the limiting factor this stops being optional. Either way the comparison is a paper section. The LiDAR's inertial sensor already publishes with no subscriber, so the input exists</td>
+        <td>The duplicate-object rate measured on the existing source first</td></tr>
+      <tr><td class="num">S5</td><td>The return-to-user leg</td>
+        <td><span class="who w-D">Dion</span></td>
+        <td>Out of scope, but <code>goto_glasses.py</code> has to be corrected regardless, because its outbound half fires on the same spoken command as the forward leg and competes for the same Nav2 action server. Once that is fixed the return leg is closer than the scope decision assumes</td>
+        <td>The frame defect fixed, and the pose fusion node reconciled with its own documentation</td></tr>
+      <tr><td class="num">S6</td><td>Frontier scoring and visit ordering, if M9 was cut</td>
+        <td><span class="who w-Z">Zongzhe</span></td>
+        <td>The largest reported benefit in the paper. Not ours and not on the path to our claim, which is why it was cut, but it is the most complete second result available</td>
+        <td>M6 done, and the upstream evaluation running as a baseline</td></tr>
+      <tr><td class="num">S7</td><td>Replay a recording as a regression test</td>
+        <td><span class="who w-D">Dion</span></td>
+        <td>The bench catches renamed channels but nothing catches a perception regression. It is also the cheapest way to make the results reproducible by someone else</td>
+        <td>A recorded run</td></tr>
+      <tr><td class="num">S8</td><td>One configuration tree</td>
+        <td><span class="who w-A">whoever has a spare week</span></td>
+        <td>Channel names declared as parameters rather than constants, so they stay overridable at launch. Today 38 of 54 owned channel names are declared outside the shared config</td>
+        <td>The naming pass, and the bench's extractor fixed so it can still read them</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout c-note">
+    <span class="ct">How to use this list</span>
+    <p>If a milestone lands early, the default is not to start the next one early. It is to take the
+    top item here that your own stream unblocks. That keeps the slack where the schedule can still
+    absorb it.</p>
+  </div>
+</section>
+
 <section id="track">
-  <h2><span class="sn">Section 8</span>How we track it</h2>
+  <h2><span class="sn">Section 9</span>How we track it</h2>
   <p class="sub">This page and the plan hold the reasoning and the dependencies. Linear holds state,
   assignment and what moved this week. The two stay in step because the task identifiers are the same
   in both.</p>
@@ -784,6 +951,9 @@ tell us what the estimates were worth.</p>
 
 var NAME = {D:"Dion", Z:"Zongzhe", S:"Sherman", A:"all three"};
 var WHERE = {off:"anywhere", box:"lab box", lab:"at the robot", mix:"mixed"};
+var WT = {build:"build", fix:"fix", wire:"rewire", bringup:"bring-up",
+          measure:"measure", plan:"decide"};
+var WT_ORDER = ["build","fix","wire","bringup","measure","plan"];
 
 var MS = [
  ["M0","Everyone can build and run","1-2","Z","Two people who are not Dion can clone, build and run the bench, and the arm and the LiDAR answer together",""],
@@ -800,83 +970,84 @@ var MS = [
 ];
 
 var T = [
- ["T0.1","M0","S",2,"lab","Find the D455 in the lab. Confirm the model, that it works, and that we may use it. If it is not there, raise the purchase the same day",[]],
- ["T0.2","M0","SD",5,"lab","Get a network switch. Add the second host address to the wired port. Prove the arm and the LiDAR both answer in one session",[]],
- ["T0.3","M0","Z",12,"off","Make the repository run from a fresh clone. Paths inside it computed from the repository root, paths outside it in one configuration file",[]],
- ["T0.4","M0","Z",6,"box","Bring into git the four things the robot needs that are in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR manifest, the saved map",["T0.3"]],
- ["T0.5","M0","ZS",8,"off","Zongzhe and Sherman each clone the repository on their own machine, build it and run the bench. This is the acceptance test for M0",["T0.3"]],
- ["T0.6","M0","A",24,"box","ROS 2 ramp, all three of us. Reading guide round 1, then run the simulated arm test and read what it printed",["T0.5"]],
- ["T0.7","M0","D",4,"off","Write the channel contract: which stream owns which message channels, and the three handover points between streams. One page",[]],
- ["T0.8","M0","D",5,"box","Clear the bench backlog waiting since the box went off: environment check, navigation build, ten navigation node tests",[]],
- ["T0.9","M0","S",3,"lab","Measure the real base footprint and compare it with the 0.2 metre radius the navigation configuration assumes",[]],
+ ["T0.0","M0","D",3,"off","Cherry-pick what is worth keeping off the realman_manip branch onto main, then stop treating that branch as live. Four files plus anygrasp_node.sh, which records that the verified session ran checkpoint_tracking.tar while main launches checkpoint_detection.tar. No code comes across. This is the first thing to do",[],"bringup"],
+ ["T0.1","M0","S",2,"lab","Find the D455 in the lab. Confirm the model, that it works, and that we may use it. If it is not there, raise the purchase the same day",[],"plan"],
+ ["T0.2","M0","SD",5,"lab","Get a network switch. Add the second host address to the wired port. Prove the arm and the LiDAR both answer in one session",[],"bringup"],
+ ["T0.3","M0","Z",12,"off","Make the repository run from a fresh clone. Paths inside it computed from the repository root, paths outside it in one configuration file",[],"fix"],
+ ["T0.4","M0","Z",6,"box","Bring into git the four things the robot needs that are in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR manifest, the saved map",["T0.3"],"bringup"],
+ ["T0.5","M0","ZS",8,"off","Zongzhe and Sherman each clone the repository on their own machine, build it and run the bench. This is the acceptance test for M0",["T0.3"],"bringup"],
+ ["T0.6","M0","A",24,"box","ROS 2 ramp, all three of us. Reading guide round 1, then run the simulated arm test and read what it printed",["T0.5"],"bringup"],
+ ["T0.7","M0","D",4,"off","Write the channel contract: which stream owns which message channels, and the three handover points between streams. One page",[],"plan"],
+ ["T0.8","M0","D",5,"box","DONE 2026-09-14. The environment check, the navigation build and the ten navigation node tests all ran and all passed. What is left is W6, blocked on a faulty camera, and W8, which needs a person at the robot",[],"measure"],
+ ["T0.9","M0","S",3,"lab","Measure the real base footprint and compare it with the 0.2 metre radius the navigation configuration assumes",[],"measure"],
 
- ["T1.1","M1","D",3,"off","Answer the six open questions in the code audit and record the decisions. Several are choices, not fixes",["T0.7"]],
- ["T1.2","M1","D",8,"off","Safety fixes before any power: the stop key the launcher promises but does not have, the stop program ignoring Ctrl+C, and the arm driver being launched twice",["T1.1"]],
- ["T1.3","M1","D",4,"box","Decide which home pose is correct and validate it on the simulated arm before using it on the real one",["T1.1"]],
- ["T1.4","M1","S",3,"lab","Physical safety setup at the robot: clear working volume, stop button within reach, mount and cable check",[]],
- ["T1.5","M1","S",8,"lab","Write the bring-up runbook. Power on to ready, in order, with the check at each step and what a failure looks like",["T1.6"]],
- ["T1.6","M1","DS",3,"lab","First powered arm session. Driver handshake, joint feedback arriving, no motion commanded",["T0.2","T1.2","T1.4"]],
- ["T1.7","M1","DS",3,"lab","First commanded motion, to the validated home pose, with a hand on the stop",["T1.3","T1.6"]],
- ["T1.8","M1","D",10,"mix","Fix the three interlocking defects that stop the grasp path working: the inverted state condition in the grasp predictor, the consumer that accepts candidates in one state only, and the flag that makes the whole path unreachable",["T1.1"]],
- ["T1.9","M1","D",8,"mix","Fix the concurrency defects in the state machine. One condition variable with two locks, and an unlocked read, are undefined behaviour rather than untidiness",["T1.8"]],
- ["T1.10","M1","D",6,"box","Decide which grasp prediction program is authoritative and make its Python environment reproducible from a script in the repository",["T1.1"]],
- ["T1.11","M1","DS",4,"lab","Grasp using the stand-in mask publisher, on hardware. Fix its wrong channel name first",["T1.7","T1.8","T1.9","T1.10"]],
- ["T1.12","M1","DS",4,"lab","Grasp using a live mask from the wrist camera with a fixed prompt word. Five attempts, success rate recorded",["T1.11"]],
+ ["T1.1","M1","D",3,"off","Answer the six open questions in the code audit and record the decisions. Several are choices, not fixes",["T0.7"],"plan"],
+ ["T1.2","M1","D",8,"off","Safety fixes before any power: the stop key the launcher promises but does not have, the stop program ignoring Ctrl+C, and the arm driver being launched twice",["T1.1"],"fix"],
+ ["T1.3","M1","D",4,"box","Decide which home pose is correct and validate it on the simulated arm before using it on the real one",["T1.1"],"plan"],
+ ["T1.4","M1","S",3,"lab","Physical safety setup at the robot: clear working volume, stop button within reach, mount and cable check",[],"bringup"],
+ ["T1.5","M1","S",8,"lab","Write the bring-up runbook. Power on to ready, in order, with the check at each step and what a failure looks like",["T1.6"],"plan"],
+ ["T1.6","M1","DS",3,"lab","First powered arm session. Driver handshake, joint feedback arriving, no motion commanded",["T0.2","T1.2","T1.4"],"bringup"],
+ ["T1.7","M1","DS",3,"lab","First commanded motion, to the validated home pose, with a hand on the stop",["T1.3","T1.6"],"bringup"],
+ ["T1.8","M1","D",10,"mix","Fix the three interlocking defects that stop the grasp path working: the inverted state condition in the grasp predictor, the consumer that accepts candidates in one state only, and the flag that makes the whole path unreachable",["T1.1"],"fix"],
+ ["T1.9","M1","D",8,"mix","Fix the concurrency defects in the state machine. One condition variable with two locks, and an unlocked read, are undefined behaviour rather than untidiness",["T1.8"],"fix"],
+ ["T1.10","M1","D",6,"box","Decide which grasp prediction program is authoritative and make its Python environment reproducible from a script in the repository",["T1.1"],"plan"],
+ ["T1.11","M1","DS",4,"lab","Grasp using the stand-in mask publisher, on hardware. Fix its wrong channel name first",["T1.7","T1.8","T1.9","T1.10"],"bringup"],
+ ["T1.12","M1","DS",4,"lab","Grasp using a live mask from the wrist camera with a fixed prompt word. Five attempts, success rate recorded",["T1.11"],"measure"],
 
- ["T2.0","M2","D",2,"off","Settle the open decision in NEXT_STEPS 2.2: patch the spoken word into the arm-side segmentation program, or retire it and restore the pipeline call site. Recommendation is to retire it, because M2 needs gaze and only the pipeline has gaze",["T1.1"]],
- ["T2.1","M2","D",12,"mix","Build one segmentation service that owns the model and is the only publisher of the three mask channels. Both current call sites become clients",["T1.12","T2.0"]],
- ["T2.2","M2","D",6,"lab","Switch the glasses image stream back on, one stage at a time so failures are attributable",["T0.3"]],
- ["T2.3","M2","D",6,"lab","Verify the gaze path and measure the error introduced by the fixed 1.5 metre depth assumption. Record the usable distance range",["T2.2"]],
- ["T2.4","M2","D",8,"off","Decide when segmentation runs, instead of on every frame, and add an age limit so the arm never moves toward a stale position",["T2.1"]],
- ["T2.5","M2","DS",5,"lab","Voice and gaze to grasp, on hardware. Two boxes, pick the one you looked at",["T1.12","T2.3","T2.4"]],
+ ["T2.0","M2","D",2,"off","Settle the open decision in NEXT_STEPS 2.2: patch the spoken word into the arm-side segmentation program, or retire it and restore the pipeline call site. Recommendation is to retire it, because M2 needs gaze and only the pipeline has gaze",["T1.1"],"plan"],
+ ["T2.1","M2","D",12,"mix","Build one segmentation service that owns the model and is the only publisher of the three mask channels. Both current call sites become clients",["T1.12","T2.0"],"wire"],
+ ["T2.2","M2","D",6,"lab","Switch the glasses image stream back on, one stage at a time so failures are attributable",["T0.3"],"wire"],
+ ["T2.3","M2","D",6,"lab","Verify the gaze path and measure the error introduced by the fixed 1.5 metre depth assumption. Record the usable distance range",["T2.2"],"measure"],
+ ["T2.4","M2","D",8,"off","Decide when segmentation runs, instead of on every frame, and add an age limit so the arm never moves toward a stale position",["T2.1"],"build"],
+ ["T2.5","M2","DS",5,"lab","Voice and gaze to grasp, on hardware. Two boxes, pick the one you looked at",["T1.12","T2.3","T2.4"],"measure"],
 
- ["T3.1","M3","Z",4,"box","Compile the navigation workspace. Eight packages, never built",["T0.4"]],
- ["T3.2","M3","Z",5,"box","Run the ten navigation node tests. Four are expected to fail against known defects. Explain any others",["T3.1"]],
- ["T3.3","M3","Z",2,"off","Fix the missing arm-to-base transform during a mapping run, which today leaves the arm unconnected to the position tree",["T3.2"]],
- ["T3.4","M3","ZS",4,"lab","Drive the base under keyboard control. Confirm the LiDAR publishes",["T0.2","T3.1"]],
- ["T3.5","M3","ZS",6,"lab","Build a map of the lab and localise in it",["T3.4"]],
- ["T3.6","M3","ZS",5,"lab","Drive to a commanded point ten times. Record the position error each time",["T3.5"]],
- ["T3.7","M3","ZD",6,"lab","The navigation to arm handover on hardware: object position in, drive, arrived signal out",["T1.12","T3.6"]],
+ ["T3.1","M3","Z",4,"box","DONE 2026-09-14. The navigation workspace compiles: 10 of 10 packages in 2 min 34 s, no Livox blocker. What remains is repeating it on Zongzhe's own machine as part of T0.5",["T0.4"],"bringup"],
+ ["T3.2","M3","Z",5,"box","DONE 2026-09-14. Passed on the first run: 6 controls pass, all 4 expected failures reproduced, 0 skipped. E1, F1 and F2 are now observed rather than inferred, and F4 is new",["T3.1"],"measure"],
+ ["T3.3","M3","Z",2,"off","Fix the missing arm-to-base transform during a mapping run, which today leaves the arm unconnected to the position tree",["T3.2"],"fix"],
+ ["T3.4","M3","ZS",4,"lab","Drive the base under keyboard control. Confirm the LiDAR publishes",["T0.2","T3.1"],"bringup"],
+ ["T3.5","M3","ZS",6,"lab","Build a map of the lab and localise in it",["T3.4"],"bringup"],
+ ["T3.6","M3","ZS",5,"lab","Drive to a commanded point ten times. Record the position error each time",["T3.5"],"measure"],
+ ["T3.7","M3","ZD",6,"lab","The navigation to arm handover on hardware: object position in, drive, arrived signal out",["T1.12","T3.6"],"wire"],
 
- ["T4.1","M4","A",8,"lab","One complete run, recorded on video: speak, look, drive, grasp",["T2.5","T3.7"]],
- ["T4.2","M4","D",6,"lab","Measure how long each stage takes. Report the 99th percentile, not the average",["T4.1"]],
- ["T4.3","M4","A",0,"off","Keep the defect log from the first powered session onward. One line per bug: symptom, guess, actual cause. Ongoing, not a block",["T1.6"]],
+ ["T4.1","M4","A",8,"lab","One complete run, recorded on video: speak, look, drive, grasp",["T2.5","T3.7"],"measure"],
+ ["T4.2","M4","D",6,"lab","Measure how long each stage takes. Report the 99th percentile, not the average",["T4.1"],"measure"],
+ ["T4.3","M4","A",0,"off","Keep the defect log from the first powered session onward. One line per bug: symptom, guess, actual cause. Ongoing, not a block",["T1.6"],"measure"],
 
- ["T5.1","M5","S",2,"lab","Camera secured. Found in the lab, or ordered with a date",["T0.1"]],
- ["T5.2","M5","S",10,"off","Design the mount. Forward facing, rigid, clear of the arm's swept volume, not looking at the robot's own body. The arm is mounted facing backward, which makes this a real constraint",["T5.1"]],
- ["T5.3","M5","S",8,"lab","Fabricate and fit the mount",["T5.2"]],
- ["T5.4","M5","SZ",5,"mix","Measure the mount geometry and make it one source of truth. Today the same 0.18 metre offset is written in three independent places and the robot model carries a fourth",["T5.3"]],
- ["T5.5","M5","DS",12,"lab","Calibrate the position of the camera relative to the LiDAR. Dion owns the procedure and the numbers, Sherman owns the rig and the target",["T5.3"]],
- ["T5.6","M5","D",4,"box","Verify the calibration by projecting LiDAR points into the camera image. Keep the picture, it goes in the paper",["T5.5"]],
- ["T5.7","M5","D",12,"box","Choose where camera poses come from and characterise the error: drift over a run, and the duplicate-object rate it causes in the graph. Start with the existing 2D localisation because it is free. A measurement study, not a configuration choice",["T3.5","T5.6"]],
- ["T5.8","M5","S",8,"lab","Build a trial fixture: marked object positions and marked robot start positions, so a trial can be repeated exactly",["T5.3"]],
+ ["T5.1","M5","S",2,"lab","Camera secured. Found in the lab, or ordered with a date",["T0.1"],"plan"],
+ ["T5.2","M5","S",10,"off","Design the mount. Forward facing, rigid, clear of the arm's swept volume, not looking at the robot's own body. The arm is mounted facing backward, which makes this a real constraint",["T5.1"],"build"],
+ ["T5.3","M5","S",8,"lab","Fabricate and fit the mount",["T5.2"],"build"],
+ ["T5.4","M5","SZ",5,"mix","Measure the mount geometry and make it one source of truth. Today the same 0.18 metre offset is written in three independent places and the robot model carries a fourth",["T5.3"],"fix"],
+ ["T5.5","M5","DS",12,"lab","Calibrate the position of the camera relative to the LiDAR. Dion owns the procedure and the numbers, Sherman owns the rig and the target",["T5.3"],"measure"],
+ ["T5.6","M5","D",4,"box","Verify the calibration by projecting LiDAR points into the camera image. Keep the picture, it goes in the paper",["T5.5"],"measure"],
+ ["T5.7","M5","D",12,"box","Choose where camera poses come from and characterise the error: drift over a run, and the duplicate-object rate it causes in the graph. Start with the existing 2D localisation because it is free. A measurement study, not a configuration choice",["T3.5","T5.6"],"measure"],
+ ["T5.8","M5","S",8,"lab","Build a trial fixture: marked object positions and marked robot start positions, so a trial can be repeated exactly",["T5.3"],"build"],
 
- ["T6.1","M6","Z",4,"off","Read the upstream HiCo-Nav code. Settle which solvers it needs and whether their licences are acceptable",[]],
- ["T6.2","M6","S",4,"lab","Record data of the lab with the base camera: images, depth, LiDAR, positions",["T5.6"]],
- ["T6.3","M6","Z",14,"off","Build object entries from recorded data: mask, depth, camera position, image feature",["T6.2"]],
- ["T6.4","M6","Z",10,"off","The merge test, so the same physical object seen twice becomes one entry: 3D overlap combined with image feature similarity",["T6.3"]],
- ["T6.5","M6","Z",8,"off","The two-stage trigger. A cheap detector runs always, the expensive one only when a new object class appears or the robot has moved enough. This also closes the when-should-segmentation-run question",["T2.4","T6.3"]],
- ["T6.6","M6","S",4,"off","Decide the reasoning model endpoint, cloud or local, and check whether sending lab images off site is permitted. A procurement and policy question of the same kind as T0.1",[]],
- ["T6.7","M6","Z",10,"off","The reasoning layer. Called once at the start of a task, off the control loop, expanding the instruction into related objects",["T6.4","T6.6"]],
- ["T6.8","M6","ZD",8,"off","Query the graph with a sentence and get an object position back",["T6.4"]],
+ ["T6.1","M6","Z",4,"off","Read the upstream HiCo-Nav code. Settle which solvers it needs and whether their licences are acceptable",[],"plan"],
+ ["T6.2","M6","S",4,"lab","Record data of the lab with the base camera: images, depth, LiDAR, positions",["T5.6"],"measure"],
+ ["T6.3","M6","Z",14,"off","Build object entries from recorded data: mask, depth, camera position, image feature",["T6.2"],"build"],
+ ["T6.4","M6","Z",10,"off","The merge test, so the same physical object seen twice becomes one entry: 3D overlap combined with image feature similarity",["T6.3"],"build"],
+ ["T6.5","M6","Z",8,"off","The two-stage trigger. A cheap detector runs always, the expensive one only when a new object class appears or the robot has moved enough. This also closes the when-should-segmentation-run question",["T2.4","T6.3"],"build"],
+ ["T6.6","M6","S",4,"off","Decide the reasoning model endpoint, cloud or local, and check whether sending lab images off site is permitted. A procurement and policy question of the same kind as T0.1",[],"plan"],
+ ["T6.7","M6","Z",10,"off","The reasoning layer. Called once at the start of a task, off the control loop, expanding the instruction into related objects",["T6.4","T6.6"],"build"],
+ ["T6.8","M6","ZD",8,"off","Query the graph with a sentence and get an object position back",["T6.4"],"build"],
 
- ["T7.1","M7","D",16,"box","Publish the approach goal from the graph instead of from live perception. The channel and its meaning do not change, only who writes to it. Written in C++ with rclcpp, not Python. object_approach_node.py is a working reference for the same behaviour, so you can diff against it and know when the C++ one is right",["T3.7","T6.8"]],
- ["T7.2","M7","Z",10,"lab","Build the graph while the robot drives, rather than from a recording",["T5.7","T7.1"]],
- ["T7.3","M7","A",8,"lab","Spoken instruction to arrival at the right object, on hardware, with the object not in view when the instruction is given",["T7.2"]],
+ ["T7.1","M7","D",16,"box","Publish the approach goal from the graph instead of from live perception. The channel and its meaning do not change, only who writes to it. Written in C++ with rclcpp, not Python. object_approach_node.py is a working reference for the same behaviour, so you can diff against it and know when the C++ one is right",["T3.7","T6.8"],"build"],
+ ["T7.2","M7","Z",10,"lab","Build the graph while the robot drives, rather than from a recording",["T5.7","T7.1"],"build"],
+ ["T7.3","M7","A",8,"lab","Spoken instruction to arrival at the right object, on hardware, with the object not in view when the instruction is given",["T7.2"],"measure"],
 
- ["T8.1","M8","D",8,"off","Produce an image feature from the gaze-cropped region of the glasses frame",["T2.3"]],
- ["T8.2","M8","D",10,"off","Carry that feature into the graph query so it selects an instance rather than a class",["T6.8","T8.1"]],
- ["T8.3","M8","DS",18,"lab","Run the ablation. N trials with the feature and N without, same objects, same start positions, using the fixture",["T5.8","T7.3","T8.2"]],
- ["T8.4","M8","D",4,"box","Re-measure the cross-camera matching baseline so the comparison number is ours rather than remembered",["T2.1"]],
+ ["T8.1","M8","D",8,"off","Produce an image feature from the gaze-cropped region of the glasses frame",["T2.3"],"build"],
+ ["T8.2","M8","D",10,"off","Carry that feature into the graph query so it selects an instance rather than a class",["T6.8","T8.1"],"build"],
+ ["T8.3","M8","DS",18,"lab","Run the ablation. N trials with the feature and N without, same objects, same start positions, using the fixture",["T5.8","T7.3","T8.2"],"measure"],
+ ["T8.4","M8","D",4,"box","Re-measure the cross-camera matching baseline so the comparison number is ours rather than remembered",["T2.1"],"measure"],
 
- ["T9.1","M9","Z",8,"off","Get the upstream simulator evaluation running as a baseline",["T6.1"]],
- ["T9.2","M9","Z",12,"off","Implement frontier scoring",["T9.1"]],
- ["T9.3","M9","Z",10,"off","Implement visit ordering with an openly licensed solver",["T9.2"]],
- ["T9.4","M9","ZD",8,"box","A node that emits drive goals, sitting beside the existing bridge, with Nav2 unchanged",["T9.3"]],
+ ["T9.1","M9","Z",8,"off","Get the upstream simulator evaluation running as a baseline",["T6.1"],"bringup"],
+ ["T9.2","M9","Z",12,"off","Implement frontier scoring",["T9.1"],"build"],
+ ["T9.3","M9","Z",10,"off","Implement visit ordering with an openly licensed solver",["T9.2"],"build"],
+ ["T9.4","M9","ZD",8,"box","A node that emits drive goals, sitting beside the existing bridge, with Nav2 unchanged",["T9.3"],"build"],
 
- ["T10.1","M10","A",8,"lab","Full demonstration run, recorded",["T8.3"]],
- ["T10.2","M10","A",24,"off","Paper draft. The central table is the ablation from T8.3",["T8.3"]],
- ["T10.3","M10","D",6,"off","Reproducibility artifacts: the bench, the recorded data, this plan, the defect log",["T10.2"]]
+ ["T10.1","M10","A",8,"lab","Full demonstration run, recorded",["T8.3"],"measure"],
+ ["T10.2","M10","A",24,"off","Paper draft. The central table is the ablation from T8.3",["T8.3"],"plan"],
+ ["T10.3","M10","D",6,"off","Reproducibility artifacts: the bench, the recorded data, this plan, the defect log",["T10.2"],"plan"]
 ];
 
 var byId = {}, kids = {};
@@ -915,10 +1086,12 @@ MS.forEach(function(m){
     var depHtml = deps.length
       ? '<span class="k">after</span>' + deps.map(function(d){ return '<span class="dep">' + d + "</span>"; }).join("")
       : '<span class="free">nothing blocking it</span>';
-    html += '<div class="node own-' + primary(t[2]) + (DONE[t[0]] ? " done" : "") +
-            '" data-id="' + t[0] + '" data-owner="' + t[2] + '" data-free="' + (deps.length ? "0" : "1") +
-            '" tabindex="0" role="button" aria-label="Task ' + t[0] + '">';
+    html += '<div class="node own-' + primary(t[2]) + " wk-" + t[7] + (DONE[t[0]] ? " done" : "") +
+            '" data-id="' + t[0] + '" data-owner="' + t[2] + '" data-wt="' + t[7] +
+            '" data-free="' + (deps.length ? "0" : "1") +
+            '" tabindex="0" role="button" aria-label="Task ' + t[0] + ', ' + WT[t[7]] + '">';
     html += '<div class="top"><span class="tid">' + t[0] + "</span>" + ownerChips(t[2]) +
+            '<span class="wt wt-' + t[7] + '">' + WT[t[7]] + "</span>" +
             '<span class="loc">' + WHERE[t[4]] + "</span>" +
             '<span class="hrs">' + (t[3] ? t[3] + " h" : "ongoing") + "</span></div>";
     html += '<p class="title">' + t[5] + "</p>";
@@ -931,7 +1104,7 @@ MS.forEach(function(m){
 root.innerHTML = html;
 
 var nodes = Array.prototype.slice.call(root.querySelectorAll(".node"));
-var selected = null, filter = "all";
+var selected = null, filter = "all", wfilter = "all";
 
 function upstream(id, acc){
   acc = acc || {};
@@ -950,10 +1123,11 @@ function paint(){
   nodes.forEach(function(n){
     var id = n.dataset.id;
     n.classList.remove("sel","up","down","dim");
-    var shown = filter === "all"
+    var byWho = filter === "all"
       || (filter === "free" && n.dataset.free === "1")
       || (filter !== "free" && (n.dataset.owner === "A" || n.dataset.owner.indexOf(filter) !== -1));
-    if(!shown){ n.classList.add("dim"); return; }
+    var byWork = wfilter === "all" || n.dataset.wt === wfilter;
+    if(!(byWho && byWork)){ n.classList.add("dim"); return; }
     if(!selected) return;
     if(id === selected) n.classList.add("sel");
     else if(up[id]) n.classList.add("up");
@@ -991,6 +1165,15 @@ root.addEventListener("keydown", function(e){
   paint();
 });
 
+var wbuttons = Array.prototype.slice.call(document.querySelectorAll("button.f[data-work]"));
+wbuttons.forEach(function(b){
+  b.addEventListener("click", function(){
+    wfilter = b.dataset.work;
+    wbuttons.forEach(function(o){ o.setAttribute("aria-pressed", String(o === b)); });
+    paint();
+  });
+});
+
 var buttons = Array.prototype.slice.call(document.querySelectorAll("button.f[data-filter]"));
 buttons.forEach(function(b){
   b.addEventListener("click", function(){
@@ -1002,9 +1185,24 @@ buttons.forEach(function(b){
 document.getElementById("clearsel").addEventListener("click", function(){
   selected = null;
   filter = "all";
+  wfilter = "all";
   buttons.forEach(function(o){ o.setAttribute("aria-pressed", String(o.dataset.filter === "all")); });
+  wbuttons.forEach(function(o){ o.setAttribute("aria-pressed", String(o.dataset.work === "all")); });
   paint();
 });
+
+(function(){
+  var counts = {}, total = T.length;
+  T.forEach(function(t){ counts[t[7]] = (counts[t[7]] || 0) + 1; });
+  var el = document.getElementById("mix");
+  if(!el) return;
+  el.innerHTML = WT_ORDER.map(function(k){
+    var n = counts[k] || 0;
+    return '<span class="seg" style="background:var(--' + k + ');flex-grow:' + n +
+           '" title="' + n + ' of ' + total + ' tasks">' +
+           "<b>" + n + "</b>" + WT[k] + "</span>";
+  }).join("");
+})();
 
 paint();
 })();

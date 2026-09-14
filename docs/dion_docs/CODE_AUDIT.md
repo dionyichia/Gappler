@@ -329,7 +329,7 @@ Confirmed against the full publisher/subscriber inventory (`bench/contracts.py r
 
 ## E. Frame and coordinate errors
 
-### E1. 🔴 `goto_glasses` treats a robot-relative pose as a map coordinate
+### E1. 🔴 `goto_glasses` treats a robot-relative pose as a map coordinate `[observed]`
 
 `goto_glasses.py:170-184` (`_compute_goal`) and `:198-217` (`_compute_return_goal`) read
 `glasses_pose.pose.position.x/y` **directly** and stamp the result `frame_id = "map"` (`:174`,
@@ -342,6 +342,12 @@ and the error changes every time the base moves.
 
 `ORIENTATION.md` §6.4 flags the frame mismatch. What it does not say is that the consumer never
 looks at the frame at all, so nothing would ever catch it.
+
+**Confirmed on the box 2026-09-14** (`bench/nav_nodes.sh`, case "fused pose frame",
+[`bench-runs/2026-09-14-labbox-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt)).
+A wearer pose stamped `robot_base_link`, with the robot at (3, 1) in map facing +y, produced the
+goal (1.00, 0.60) stamped `"map"` — the raw numbers. Where the wearer actually is puts the goal at
+(2.40, 2.00): **2.0 m out**, and the error moves with the base. `[observed]`
 
 ### E2. 🟠 The naming in `pose_fusion_node` says "map" while the maths is robot-relative
 
@@ -374,11 +380,52 @@ interpret an older observation as if it were taken at the arm's current pose.
 tracks three copies of `CAMERA_X_OFFSET = 0.18`; this is a fourth constant from the same physical
 measurement, in a fifth place.
 
+**Recount 2026-09-14 `[code]`.** The full set is larger than "three plus a fourth". Six source
+literals plus a test fixture carry the same two measurements: `slam_localization.launch.py:90` and
+`:102`, `slam_mapping.launch.py:97`, `object_approach_node.py:53` and `:143`, `goto_glasses.py:35`,
+and `bench/nodes/test_nav_nodes.py:52`. Note `slam_mapping.launch.py` has the LiDAR offset but **no**
+`robot_base_to_arm` transform at all, which is the defect T3.3 addresses.
+
+### E5. 🔴 Two nodes race for Nav2 on the same spoken word `[code]`
+
+**Verified 2026-09-14 against the working tree.** `goto_glasses.py` is not a return-leg-only node.
+Its own docstring (`:7-15`) says it handles "all user-directed navigation", and it has two
+independent paths that both send goals to the single `navigate_to_pose` action client created at
+`:67`:
+
+| Path | Trigger | Computes via | Frame handling |
+|---|---|---|---|
+| Outbound | `/aria/audio/prompt` (`:59-61`, handler `:88-100`) or `/goto_glasses/trigger` (`:51-52`) | `_compute_goal()` `:161-184` | **E1 defect**, stamps `"map"` at `:174` with no TF lookup |
+| Return | `/manipulator/return_to_user` (`:63-64`, handler `:112-134`) | `_compute_return_goal()` `:186-217` | **E1 defect**, stamps `"map"` at `:204` |
+
+`object_approach_node.py` runs the forward leg and is structurally independent: no topic of one
+feeds the other, and the forward loop
+(`/manipulation/goal_pose` → `/goal_pose` → `goal_reached_publisher` → Nav2 → `/goal_reached` →
+`/manipulation/start`) never references `goto_glasses.py`. **The coupling is the shared action
+server, not a topic.** Both nodes react to `/aria/audio/prompt`, so one spoken object name can make
+`goto_glasses` fire an E1-corrupted goal at the same moment the forward leg needs Nav2 for its
+approach goal.
+
+`slam_localization.launch.py:156-159` starts `goto_glasses.py` unconditionally, and that is the
+launch file for normal operation. So this is live whenever the robot is, regardless of whether the
+return leg is in scope.
+
+**Consequence for planning.** `PROJECT_PLAN.md` §4.2 puts the return leg out of scope. That decision
+does **not** make E1 safe to leave: its outbound half is on the path we do use. F2 is genuinely
+return-leg only (`:222-225` resets `_navigating` but never `_returning`, and the outbound leg uses
+`_navigating`, which is reset correctly).
+
+**Also confirmed in the same pass:** the E1 bug pattern, stamping `frame_id = "map"` on values that
+never went through a TF lookup, exists in exactly two places repo-wide, both in `goto_glasses.py`
+(`:174`, `:204`). `object_approach_node.py:232` looks identical but is correct, because its values
+come from `do_transform_pose_stamped` (`:176`) after a real `lookup_transform` (`:167-174`).
+`pose_publisher.py:21` is correct for the same reason.
+
 ---
 
 ## F. Error paths that wedge the system permanently
 
-### F1. 🔴 `goal_reached_publisher` has three silent-failure paths
+### F1. 🔴 `goal_reached_publisher` has three silent-failure paths `[observed]`
 
 `Navigation_Module/src/robot_slam/scripts/goal_reached_publisher.py`
 
@@ -404,7 +451,19 @@ def _on_goal_reached(self, msg: String) -> None:
 `_on_object_pose` (`:160-161`) discards every future object pose. **One nav hiccup and the system
 ignores all further detections until restarted.**
 
-### F2. 🟠 A failed return leg can never be retried
+**Confirmed on the box 2026-09-14** (`bench/nav_nodes.sh`, two cases,
+[`bench-runs/2026-09-14-labbox-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt)).
+Both silent paths reproduced against a mock Nav2: on a rejected goal the bridge logged only
+*"Goal rejected by Nav2."* and published nothing, and a second object 1.5 m away at a different
+bearing then produced **0** `/goal_pose` — the node was wedged. With no server at all, nothing
+reached `/goal_reached` in 8 s. The happy path is fine (a control case took approach → bridge →
+success → `/manipulation/start`), so the defect is specific to failures. `[observed]`
+
+The same wedge follows a plain `"failed"` outcome, which the bridge *does* publish (a control case
+confirms it) — `:148` returns early for anything but `"success"`. That variant was not exercised
+separately. `[inferred from the same two lines]`
+
+### F2. 🟠 A failed return leg can never be retried `[observed]`
 
 `goto_glasses.py:222-225` — if Nav2 is unavailable, it sets `self._navigating = False` but leaves
 `self._returning` as `True`, and publishes nothing to `/return_to_user/goal_reached`.
@@ -412,7 +471,35 @@ ignores all further detections until restarted.**
 `_on_manipulation_done:116-118` then rejects every subsequent return attempt with
 *"already returning to user"*, forever.
 
+**Confirmed on the box 2026-09-14** (`bench/nav_nodes.sh`, case "return retry",
+[`bench-runs/2026-09-14-labbox-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt)).
+The node's own log, in order: *"Manipulation done. Returning to user. Goal: x=1.68 y=1.00"* → 5 s →
+*"[ERROR] Nav2 action server not available."* → next attempt *"[WARN] Return ignored — already
+returning to user."* With Nav2 back up, the second return reached it **0** times, and
+`/return_to_user/goal_reached` stayed silent throughout. `[observed]`
+
 ### F3. 🟠 `goto_glasses.py:247` — `future.result()` unguarded, same class as F1.
+
+### F4. 🟠 All five nav nodes exit with a traceback on Ctrl+C `[observed]`
+
+Found while tearing down each case of `bench/nav_nodes.sh` on 2026-09-14 (the bench SIGINTs the
+node it started), [`bench-runs/2026-09-14-labbox-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt).
+Three shapes, in `Navigation_Module/src/robot_slam/scripts/`:
+
+| Node | `main()` | On SIGINT |
+|---|---|---|
+| `object_approach_node.py:306-315` | catches `KeyboardInterrupt`, then `finally: rclpy.shutdown()` | `RCLError: rcl_shutdown already called` |
+| `qos_relay.py` | `try`/`finally`, no `except` | the bare `KeyboardInterrupt` **and** the `RCLError` |
+| `goal_reached_publisher.py`, `goto_glasses.py`, `pose_publisher.py` | bare `rclpy.spin(Node())` — no `try`, no `destroy_node()`, no `shutdown()` | raw `KeyboardInterrupt` traceback |
+
+The first is the same bug as `estop.py:76` ([B2](#b2-the-e-stop-may-not-deliver-its-own-message-on-ctrlc)):
+rclpy installs its own SIGINT handler and shuts the context down before user code runs, so a later
+`rclpy.shutdown()` always raises.
+
+Noisy but harmless while the robot is parked. The concern is mid-leg: `goto_glasses` has a
+`_cancel_navigation()` (`:231-244`) that **nothing calls on shutdown**, so Ctrl+C during a
+navigation leg would leave the Nav2 goal live and the base driving with its commander gone.
+`[inferred]` — nothing drove in this run, and this bench cannot test it.
 
 ---
 
@@ -730,3 +817,6 @@ publishers racing on the same three topics.
 | 2026-09-13 | Claude (Opus 5) + Dion | G5 citation `object_recognition_pipeline.py:435-441`→`:440-446`, shifted by uncommitted comments in that file. |
 | 2026-09-13 | Claude (Opus 5) + Dion | New section K: the contract surface is not stated in one place. K1 (38 of 54 owned topics declared outside `shared/config.yaml`, with the breakdown by subsystem and the `/rm_driver/*` distinction), K2 (the `src/config/` constants pattern stops at `src/`). Measured with `bench/contracts.py extract`. |
 | 2026-09-13 | Claude (Opus 5) + Dion | New section L and finding L1: `sam3_ros_node.py` never subscribes to `/aria/audio/prompt`, so the segmentation target is the hardcoded `TEXT_PROMPT = "box"` (`:40`). `[code]`, verified against the working tree. Cross-referenced both ways with B3 (same missing subscription, safety side), and to `NEXT_STEPS.md` §2.2 and `ORIENTATION.md` §6.5. The audit now holds **49** findings (the "45" in the 2026-09-10 row is left as the count on the day it was written). |
+| 2026-09-14 | Claude (Opus 5) + Dion | New finding E5: `goto_glasses.py` has an outbound path triggered by `/aria/audio/prompt`, the same topic that starts the forward leg, and both send goals to the one `navigate_to_pose` server. It is launched unconditionally by `slam_localization.launch.py:156-159`. This corrects a scoping assumption that E1 was return-leg only and therefore droppable: its outbound half is on the live path. F2 is confirmed return-leg only. Repo-wide check found the E1 frame pattern in exactly two places, both in `goto_glasses.py`. E4 recounted: six source literals plus a test fixture, not three plus one. The audit now holds **50** findings. |
+| 2026-09-14 | Claude (Opus 5) + Dion | **Recounted the findings, and the running total in this changelog was wrong.** Counting the actual entries gives **62**, not 51: 43 with their own heading, plus the four rows of D, the two rows of H and its doc correction, and the twelve bullets of J. Those three table-and-bullet sections were never in the total, and the 45 → 49 → 50 → 51 arithmetic carried the omission forward. By severity: 16 blocking or safety, 22 fail at runtime, 21 debt, of which **7 are now `[observed]`** (B2a, B4, C7, E1, F1, F2, F4). B2's message loss was tested and **not** reproduced. The published page is now generated from `code-audit-page.html`, committed alongside this file, and computes its own counts from its own entries so they cannot drift again. It carries 59 of the 62: B7, K1 and K2 are inventory rather than defects and stay here only. |
+| 2026-09-14 | Claude (Opus 5) + Dion | **W7 ran on the box** (`bench/nav_nodes.sh`, 10 cases, [`bench-runs/2026-09-14-labbox-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt)): 6 controls pass, 4 expected failures reproduced, nothing skipped, no fix needed on the first run. **E1, F1 and F2 move from `[unverified]` to `[observed]`**, each matching the mechanism this audit predicted — E1's goal landed 2.0 m out; F1 wedged the approach node so a second object got no goal; F2's `_returning` latch refused every later return. J4 is *not* a problem at MID360 rates (50/50 frames of 520 kB at 10 Hz, 1.9 ms mean latency), so the QoS relay case is a clean control, not a finding. New finding **F4**: all five nav nodes exit with a traceback on Ctrl+C, in three shapes, the first identical to B2's double-shutdown; `goto_glasses`'s `_cancel_navigation()` is never called on shutdown (`[inferred]`). The audit now holds **51** findings. |

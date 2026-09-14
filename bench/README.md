@@ -107,8 +107,11 @@ the arm within seconds of start, unprompted (`ORIENTATION.md` §8.1).
 
 Everything short of that is checked: GPU and VRAM, RAM, disk, the `PYTHONNOUSERSITE` trap, ROS
 overlay completeness and the double-source trap, the venv and AnyGrasp's env (MinkowskiEngine), Aria auth,
-whether the glasses are plugged in, model weights and AnyGrasp licences, NIC addressing, arm ping and port 8080, LiDAR ping, RealSense
-USB, and — when a ROS graph is already running — node list, camera frame rates, `/joint_states`,
+whether the glasses are plugged in, model weights and AnyGrasp licences, NIC addressing, arm ping and port 8080, LiDAR ping, the RealSense
+on USB **and whether it can actually deliver a frame** (two checks since 2026-09-14: the old
+single one passed on the USB id alone, so it reported a camera with a dead colour stream as
+fine, and would also have passed on the box's Intel Bluetooth adapter), and — when a ROS graph
+is already running — node list, camera frame rates, `/joint_states`,
 and the two TF links that gate every grasp.
 
 What it deliberately does not and cannot test is listed at the end of every run:
