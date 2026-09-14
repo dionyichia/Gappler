@@ -12,6 +12,7 @@ OWNED_PREFIXES = (
     "main.py",
     "bench/",
     "ros2_robot_ws/src/rm_mtc/",
+    "ros2_robot_ws/install.sh",
     "ros2_robot_ws/src/main.py",
     "ros2_robot_ws/src/orchestrator.py",
     "ros2_robot_ws/src/estop.py",
