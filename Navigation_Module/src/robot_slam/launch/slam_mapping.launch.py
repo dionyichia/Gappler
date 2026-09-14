@@ -10,6 +10,14 @@ from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
+# Where saved maps live. This is outside the repository and differs per machine,
+# so it is a setting rather than something we can work out. Override by exporting
+# GAPPLER_MAP_DIR before launching.
+#   mapping writes  <GAPPLER_MAP_DIR>/current_map
+#   localisation reads <GAPPLER_MAP_DIR>/completed_map
+MAP_DIR = os.path.expanduser(os.environ.get("GAPPLER_MAP_DIR", "~/maps"))
+
+
 def generate_launch_description():
     network_setup = ExecuteProcess(
         cmd=[
@@ -27,7 +35,7 @@ def generate_launch_description():
             "bash",
             "-c",
             "while true; do sleep 30; "
-            "ros2 run nav2_map_server map_saver_cli -f ~/maps/current_map "
+            f"ros2 run nav2_map_server map_saver_cli -f {MAP_DIR}/current_map "
             "--ros-args -p save_map_timeout:=5.0; done",
         ],
         output="screen",

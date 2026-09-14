@@ -11,6 +11,14 @@ from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
+# Where saved maps live. This is outside the repository and differs per machine,
+# so it is a setting rather than something we can work out. Override by exporting
+# GAPPLER_MAP_DIR before launching.
+#   mapping writes  <GAPPLER_MAP_DIR>/current_map
+#   localisation reads <GAPPLER_MAP_DIR>/completed_map
+MAP_DIR = os.path.expanduser(os.environ.get("GAPPLER_MAP_DIR", "~/maps"))
+
+
 def generate_launch_description():
     network_setup = ExecuteProcess(
         cmd=[
@@ -134,7 +142,12 @@ def generate_launch_description():
         executable="localization_slam_toolbox_node",
         name="slam_toolbox",
         output="screen",
-        parameters=[slam_params_file],
+        # The params file carries a default; this override is what actually
+        # decides, because a ROS params file cannot read an environment variable.
+        parameters=[
+            slam_params_file,
+            {"map_file_name": os.path.join(MAP_DIR, "completed_map")},
+        ],
         remappings=[("scan", "/scan")],
         arguments=["--ros-args", "--log-level", "WARN"],
     )
