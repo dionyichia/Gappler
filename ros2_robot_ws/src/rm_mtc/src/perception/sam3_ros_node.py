@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SAM3 ROS2 mask publisher node.
-Runs inside the uv venv rooted at /home/iot22/GitHub/Renaissance-Capstone-Project.
+Runs inside the project's uv venv, with src/ on PYTHONPATH.
 Working directory: .../src/services/object_recognition/
 
 Subscribes to RGB + depth image topics.
@@ -19,6 +19,7 @@ from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo, Image
 
+from config import ModelPaths
 from services.object_recognition.sam3_model import SAM3Model
 from services.visualizer.renderers.object_mask_visualizer import ObjectMaskVisualizer
 
@@ -34,9 +35,8 @@ TOPIC_CAMERA_INFO = "/camera/camera/color/camera_info"
 
 DEPTH_SCALE = 0.001  # metres per depth unit
 
-SAM3_CHECKPOINT = (
-    "/home/iot22/GitHub/Renaissance-Capstone-Project/src/models/sam3/sam3.pt"
-)
+# One definition of this path lives in src/config/models.py. Do not add a second.
+SAM3_CHECKPOINT = str(ModelPaths.SAM3_PATH)
 TEXT_PROMPT = "box"
 CONFIDENCE = 0.5
 

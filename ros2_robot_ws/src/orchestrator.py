@@ -14,13 +14,15 @@ Flow:
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 import rclpy
 from rclpy.node import Node
 from rm_ros_interfaces.msg import Gripperset
 from std_msgs.msg import Bool, String
 
-MAIN_PY_DIR = "/home/iot22/GitHub/Renaissance-Capstone-Project/ros2_robot_ws/src"
+# main.py sits next to this file, so the folder we want is our own.
+MAIN_PY_DIR = str(Path(__file__).resolve().parent)
 MAIN_PY_PATH = f"{MAIN_PY_DIR}/main.py"
 
 processes: list[tuple[str, subprocess.Popen]] = []
