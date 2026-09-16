@@ -91,7 +91,7 @@ These are live and unsettled as of 2026-09-16. A new session should start here.
 | D5 | Fix E1 now? | It is on the live path, not the return leg, and it races the forward leg for Nav2 | `CODE_AUDIT` E5 |
 | D6 | Rework the M1 and M2 hour estimates on the repair evidence? | The code volume is far smaller than budgeted, but verification time may absorb the difference | §2.5, §6.3, §6.4 |
 | D7 | Zongzhe's pronouns | This document guesses at "he" and nobody has confirmed it | — |
-| D8 | If the wrist D435i does not survive a replug, do we repair it, buy a replacement, or fold it into the D455 purchase? | It is the arm's only camera, so M1's live-mask step and every fallback that used it are blocked until this is answered. The D455 decision in T0.1 is already open, and buying both at once is cheaper in lead time than twice | §2.6, §8.2, T0.1 |
+| D8 | If the wrist D435i does not survive a replug, do we repair it or buy a replacement? | It is the arm's only camera, so M1's live-mask step and every fallback that used it are blocked until this is answered. A provided base D455 does not settle the wrist-camera decision | §2.6, §8.2, T0.1 |
 
 ---
 
@@ -475,10 +475,9 @@ today. Mitigation: obstacle 2 is removed in week 1.
 **M5. The base has a calibrated forward camera.** Accept when LiDAR points projected into the
 camera image land on the right objects, shown as a picture, and when the camera-pose error over a run
 is written down as a number. The mount half is Sherman's. The calibration and error half, T5.5 to
-T5.7, is Dion's and is the part that produces a result rather than a setup step. Risk: procurement. The supervisor
-believes a D455 already exists in the lab, unconfirmed `[reported]`. Mitigation: confirm in week 1.
-If it is not there, order immediately and use the wrist camera in a parked pose as a stand-in for
-M6's offline work, which is explicitly allowed as a bring-up path by the paper review.
+T5.7, is Dion's and is the part that produces a result rather than a setup step. Risk: a project D455
+is provided, but its USB 3 connection and live RGB-D stream remain unverified. The mount CAD is
+complete; physical fabrication, fit, and calibration remain.
 
 **M6. The memory graph is built offline.** Accept when a recorded drive through the lab produces
 object entries, the same physical object is not registered twice, and a sentence query returns it.
@@ -548,15 +547,15 @@ and cannot be compressed by working harder.
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
 | **T0.0** | **Cherry-pick what is worth keeping off the `realman_manip` branch onto `main`, then stop treating that branch as live.** Four files, plus one candidate. See the note below | bring-up | Dion | 3 | off | none |
-| T0.1 | Find the D455 in the lab. Confirm the model, that it works, and that we may use it. If it is not there, raise the purchase the same day | decide | Sherman | 2 | lab | none |
-| T0.2 | Get a network switch. Add the second host address to the wired port. Prove the arm and the LiDAR both answer in one session | bring-up | Sherman, Dion | 5 | lab | none |
+| T0.1 | **Progress 2026-09-16:** an Intel RealSense D455 is provided to the project. USB 3 connection and live RGB-D stream remain unverified | decide | Sherman | 2 | lab | none |
+| T0.2 | ~~Get a network switch. Add the second host address to the wired port. Prove the arm and the LiDAR both answer in one session~~ **Done 2026-09-16.** Switch wired: workstation port 1, LiDAR port 2, arm port 3. NetworkManager persists `.100`, `.10`, and `.5`; RM65 and MID-360 each replied from their required host address after a connection cycle | bring-up | Sherman, Dion | 5 | lab | none |
 | T0.3 | Make the repository run from a fresh clone. Paths inside the repository are computed from the repository root. Paths outside it move to one configuration file with sensible defaults | fix | Zongzhe | 12 | off | none |
 | T0.4 | Bring into git the four things the robot needs that live in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR package manifest, and the saved map | bring-up | Zongzhe | 6 | box | T0.3 |
 | T0.5 | Zongzhe and Sherman each clone the repository on their own machine, build it and run the bench. This is the acceptance test for M0 | bring-up | Zongzhe, Sherman | 8 | off | T0.3 |
 | T0.6 | ROS 2 ramp, all three of us. Reading guide round 1, then run the simulated arm test and read what it printed | bring-up | All | 24 | box | T0.5 |
 | T0.7 | Write the channel contract: which stream owns which message channels, and the exact three handover points between streams. One page | decide | Dion | 4 | off | none |
 | T0.8 | ~~Clear the bench backlog that has been waiting since the box went off~~ **Done 2026-09-14.** Environment check, navigation build and the ten navigation node tests all ran, all passed, no fix needed. What is left of this task is W6, which is blocked on the faulty camera, and W8, which needs a person at the robot. See §2.6 | measure | Dion | 5 of 5 spent | box | none |
-| T0.9 | Measure the real base footprint and compare it with the 0.2 metre radius the navigation configuration assumes | measure | Sherman | 3 | lab | none |
+| T0.9 | ~~Measure the real base footprint and compare it with the 0.2 metre radius the navigation configuration assumes~~ **Done 2026-09-16 for the manufacturer chassis.** The Hexman Robotics ECHO-PLUS manual specifies `460 x 380 x 140 mm` and a `265 mm` stated rotation radius, so the `200 mm` Nav2 radius is not supported as conservative. Recheck the integrated footprint after mount fabrication | measure | Sherman | 3 | lab | none |
 
 **T0.0 in detail. This is the first thing to do.** `origin/realman_manip` shares no commit history
 with `main`, so this is a file copy, not a merge `[code]` `ORIENTATION` 7. **Exactly 15 files exist
@@ -642,9 +641,9 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
-| T5.1 | Camera secured. Found in the lab, or ordered with a date | decide | Sherman | 2 | lab | T0.1 |
-| T5.2 | Design the mount. Forward facing, rigid, clear of the arm's swept volume, not looking at the robot's own body. The arm is mounted facing backward, which makes this a real constraint rather than a formality | build | Sherman | 10 | off | T5.1 |
-| T5.3 | Fabricate and fit the mount | build | Sherman | 8 | lab | T5.2 |
+| T5.1 | ~~Camera secured. Found in the lab, or ordered with a date~~ **Done 2026-09-16.** An Intel RealSense D455 is provided to the project. USB 3 connection and live RGB-D stream verification remain T0.1 | decide | Sherman | 2 | lab | T0.1 |
+| T5.2 | ~~Design the mount. Forward facing, rigid, clear of the arm's swept volume, not looking at the robot's own body. The arm is mounted facing backward, which makes this a real constraint rather than a formality~~ **Done 2026-09-16 `[reported]`.** Sherman completed the forward-facing D455 mount CAD and measurements: `20 x 20 mm` aluminum extrusion, `190 mm` required length. Physical fabrication and fit verification remain T5.3 | build | Sherman | 10 | off | T5.1 |
+| T5.3 | Fabricate, fit, and verify the mount's rigidity, arm clearance, cable route, and camera view | build | Sherman | 8 | lab | T5.2 |
 | T5.4 | Measure the mount geometry and make it one source of truth. Today the same 0.18 metre offset is written in three independent places and the robot model carries a fourth | fix | Sherman, Zongzhe | 5 | off, lab | T5.3 |
 | T5.5 | Calibrate the position of the camera relative to the LiDAR. Dion owns the procedure and the numbers, Sherman owns the rig and the target | measure | Dion, Sherman | 12 | lab | T5.3 |
 | T5.6 | Verify the calibration by projecting LiDAR points into the camera image. Keep the picture, it goes in the paper | measure | Dion | 4 | box | T5.5 |
@@ -971,3 +970,4 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-14 | Claude (Opus 5) + Dion | **Folded the 2026-09-14 bench results in as §2.6, and corrected the current-state tables against them.** The navigation workspace compiles (10/10, no Livox blocker, the SDK was already installed), the five nav nodes pass the bench first run, E1/F1/F2 are now `[observed]` and F4 is new, so the audit holds 51 findings. T0.8, T3.1 and T3.2 marked done, M3's risk lowered. The wrist D435i is faulty and off the USB bus: recorded as a new risk, a new open decision D8, and a row in §2.2, because it removes both the live-mask path in T1.12 and the parked-arm fallback for M5 and T6.2 at the same time. |
 | 2026-09-14 | Claude (Opus 5) + Dion | Added §2.5 recording four read-only code checks: navigation is retrieval not development, the arm and perception work is repair at 100 to 150 lines, the glasses gaze and image producers are complete and only the consumer is missing, segmentation already shares its model, the memory graph is genuinely from scratch, the Livox IMU already publishes, and the vendored OpenVINS is calibrated for the glasses. New defect recorded as `CODE_AUDIT` E5. |
 | 2026-09-16 | Claude (Sonnet 5) + Dion | Replaced the 20-week internal schedule with the real academic calendar: the four fixed capstone deadlines (plan/Gantt due 2026-10-05, interim presentation 2026-11-10 to 2026-11-13, final report due 2027-03-28, oral presentation 2027-04-05 to 2027-04-16), the end-of-September recess, the November exam period plus early December, and the winter break split into two off weeks and two half-speed buffer weeks. The same 20 weeks of work now spans 31 calendar weeks to 2027-04-18, which raised available capacity from about 515 to about 620 hours and dropped named work from 79 to about 65 percent of it. Milestone dates in §5.1 and the §6 section headers, the checkpoints in §5.2, and the Gantt in §5.3 were all recomputed; task hours, ownership and dependencies are unchanged. |
+| 2026-09-16 | OpenCode (GPT-5.6 Terra) + Sherman | Updated task evidence from the lab session. T0.2 is done: switch wiring and a persistent `.100`/`.10`/`.5` profile let RM65 and MID-360 reply from their required host addresses after a connection cycle. T0.9 is done for the manufacturer ECHO-PLUS chassis: its manual gives a `265 mm` stated rotation radius, so the `200 mm` Nav2 radius is not conservative; the fitted-robot footprint remains a T5.3/T5.4 check. An Intel RealSense D455 is provided but untested, so T5.1 is done while T0.1 retains USB 3 and live-stream verification. T5.2 mount CAD and measurements are reported complete; fabrication and fit remain T5.3. |

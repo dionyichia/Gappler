@@ -872,19 +872,18 @@ cheap and would give the project a hardware-free MoveIt smoke test, which it cur
 
 ---
 
-### 8.13 `[unverified]` The arm and the LiDAR both claim the same NIC, with different host IPs
+### 8.13 `[observed]` The arm and the LiDAR share one NIC through a switch, with different host IPs
 
-Found by reading configs; **the two have never been on the network at the same time**, so this has
-never had a chance to surface.
+Found by reading configs, then verified on the lab box on 2026-09-16.
 
-**Checked on the box 2026-09-11 (read-only):** `enp2s0` is confirmed as the only wired port
+**Before the fix, checked on the box 2026-09-11 (read-only):** `enp2s0` is confirmed as the only wired port
 (`ip link`: `lo`, `enp2s0`, `wlo1`, `tailscale0`, `docker0`). It was `NO-CARRIER` at the time,
 so nothing was plugged in or powered. Its saved NetworkManager profile, *Wired connection 1*, is
 **manual `192.168.1.100/24`** — neither the arm's `.10` nor the LiDAR's `.5`. If that profile is
 what comes up when the cable goes in, the arm connects but sends no feedback (the §9 "presents as
 a hang" symptom), unless someone adds `.10` by hand each session. The old preflight IP check
 would have reported this as PASS: `"192.168.1.10" in "…192.168.1.100/24…"` (TESTBENCH_PLAN §4
-P3, now fixed). Whether both devices can coexist is still `[unverified]` — never tried.
+P3, now fixed).
 
 **It gets worse** `[code]`: `~iot22/start_robot.sh` and `start_everything.sh` (the base's real
 start-up scripts) run `sudo ip addr flush dev enp2s0` and then add only `192.168.1.5/24`. That
@@ -900,17 +899,20 @@ Both are on `192.168.1.0/24`, and `[reported]` `enp2s0` is *the only physical Et
 workstation. So to run navigation and manipulation together the host must answer to **both**
 `.10` and `.5` simultaneously.
 
-`[inferred]` The likely fix is a second address on the same interface —
-`sudo ip addr add 192.168.1.5/24 dev enp2s0` alongside the existing `.10` — plus a switch, since
-one port cannot physically reach two devices. Neither is in any launch file or setup doc.
+**Observed fix, 2026-09-16:** a powered Ethernet switch connects workstation `enp2s0` on port 1,
+MID-360 on port 2, and RM65 on port 3. NetworkManager profile `Wired connection 1` now persistently
+carries `192.168.1.100/24`, `192.168.1.10/24`, and `192.168.1.5/24`. After bringing that connection
+down and up, the RM65 replied to three pings sourced from `.10` and the MID-360 replied to three pings
+sourced from `.5`. No ROS nodes, arm commands, or base commands ran during this proof. Evidence:
+[`../sherman_docs/T0.2_SESSION.md`](../sherman_docs/T0.2_SESSION.md).
 
-Why it was invisible until now: the arm was verified on the `realman_manip` clone, which has no
-`Navigation_Module` at all (§7), and `Navigation_Module` has never been built (§3). Each half was
-brought up alone.
+Why it was invisible: the arm was verified on the `realman_manip` clone, which has no
+`Navigation_Module` at all (§7), while navigation and LiDAR were previously brought up separately.
 
-**To check at the machine:** `ip -4 addr show enp2s0` — does it carry both addresses? Then
-`ping 192.168.1.3` and `ping 192.168.1.18` with both devices powered. `bench/preflight.py -g net`
-runs exactly this and names the missing alias.
+**Regression check:** `ip -4 addr show enp2s0` must show `.10` and `.5`, then source-addressed pings
+to `.18` and `.3` must succeed with both devices powered. `bench/preflight.py -g net` checks the
+address requirement. Do not run `start_robot.sh` or `start_everything.sh` unchanged; they still flush
+the arm address.
 
 ---
 
@@ -1114,22 +1116,29 @@ to integrate navigation against a half-working grasp stack.
 
 > ✅ **Confirmed against the paper, 2026-09-10.** Promoted from `[inferred]` to `[paper]`. The
 > visual anchors in the memory graph *are* RGB keyframes and depth is what gives objects 3D
-> position, so three separate mechanisms depend on the camera. Option 1 (**buy a D455**, not
+> position, so three separate mechanisms depend on the camera. Option 1 (**use a D455**, not
 > another D435i) is the recommendation; option 2 is now rated worse than assumed below — the
 > paper's own small-object success rate falls to 65 % from vibration blur on a *rigidly* mounted
 > camera; option 3 discards Tier B entirely. See
 > [`hico-nav/PAPER_REPORT.md`](hico-nav/PAPER_REPORT.md) §6.1.
 
-`[paper]` HiCo-Nav's Cognitive Memory Graph needs a **continuous forward-facing RGB-D stream**. This platform has no such sensor (§9). Three
-options, none free:
+`[paper]` HiCo-Nav's Cognitive Memory Graph needs a **continuous forward-facing RGB-D stream**. A
+Intel RealSense D455 is provided to the project, but its USB 3 connection and live RGB-D stream remain
+unverified. This platform therefore still has no proven forward-facing RGB-D sensor. The immediate
+task is to test the D455 before mount fabrication.
 
-1. **Buy a base-mounted D455** (~$400 + NTU lead time). Cleanest; procurement lead time makes it
-   urgent, not deferrable.
+1. **Test and mount the provided base-mounted D455.** It is the cleanest option; stream verification
+   decides whether the supplied unit is usable.
 2. **Use the wrist D435i with the arm parked in a fixed observation pose.** Degraded field of view
    and it conflicts with grasping, but zero cost and probably enough for a first integration.
 3. **Substitute the 2D LiDAR scan** and adapt the memory graph. Largest deviation from the paper.
 
 **This decision should be made early** — it is the one that costs weeks if it turns out wrong.
+
+`[manual]` The Hexman Robotics ECHO-PLUS manufacturer manual specifies a `460 x 380 x 140 mm`
+chassis and a `265 mm` stated rotation radius. The current `0.20 m` Nav2 radius is therefore not
+demonstrated to be conservative. This is a manufacturer-chassis result, not a fitted-robot footprint:
+recheck it after the camera mount is fabricated and installed.
 
 ---
 
@@ -1150,12 +1159,13 @@ options, none free:
 | 2026-09-09 | Claude (Opus 5), from agent-assisted deep pass on `src/` and `Navigation_Module/` | **Corrected** `/aria/fused_pose` frame (`robot_base_link`, not `map`). Added §6.4 (pose fusion README vs code), §8.6 (missing `xpkg_demo`), §8.7 (three `/cmd_vel` claimants), Nav2 plugin table in §10, and the `base_link`/`robot_base_link` static-TF caveat in §5. |
 | 2026-09-09 | Claude (Opus 5), folding in the vendor-arm agent pass | Added §8.8 (fixed 1.5 m gaze depth assumption, external `realsense2_description` dependency, missing staleness guard) and §8.9 (dead code / debug leftovers). Expanded the contract table with `object_approach_node`'s full five-topic subscription list. |
 | 2026-09-12 | Claude (Opus 5) + Dion | §5: `/manipulator/release` has no publisher anywhere in the repo (CODE_AUDIT D1). The table said "voice → orchestrator", which is the intent, not the code. |
+| 2026-09-16 | OpenCode (GPT-5.6 Terra) + Sherman | §8.13 is now `[observed]`: a switch connects workstation, RM65, and MID-360; persistent `.10` and `.5` host addresses survived a NetworkManager connection cycle and both devices replied from their required source address. The old base scripts remain unsafe because they flush `.10`. §10 now records a provided Intel RealSense D455 that is untested, plus the ECHO-PLUS manufacturer chassis dimensions and Nav2-radius caveat. |
 
 ### Open questions for the team
 
 1. ~~HiCo-Nav: goals or velocities?~~ **Answered: velocities**, but take only the goal-level layer.
    `hico-nav/PAPER_REPORT.md` §5.1.
-2. RGB-D camera — **recommendation is buy a D455**; needs a decision and a purchase order. (§10)
+2. RGB-D camera — provided Intel RealSense D455; confirm USB 3 connection and live RGB-D stream before mount fabrication. (§10)
 3. Which SAM3 node becomes authoritative, `object_recognition_pipeline.py` or `sam3_ros_node.py`?
    (§6.2)
 4. ~~Cherry-pick `env.sh` + the two docs from `realman_manip` onto `main`?~~ **Answered by the

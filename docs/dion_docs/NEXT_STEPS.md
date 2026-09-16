@@ -29,24 +29,25 @@ session · `[inferred]` reasoning, not fact · `[open]` genuinely undecided ·
 
 ## 1. Decide before writing code
 
-### 1.1 🔴 HiCo-Nav's RGB-D requirement — procurement lead time makes this urgent
+### 1.1 🔴 HiCo-Nav's RGB-D requirement — D455 provided, stream verification still urgent
 
 > ✅ **Answered 2026-09-10 by reading the paper — see [`hico-nav/PAPER_REPORT.md`](hico-nav/PAPER_REPORT.md) §6.1.**
 > Confirmed, and stronger than assumed: the memory graph's nodes *are* RGB keyframes, so there is
-> no camera-free variant. **Recommendation: buy a base-mounted RealSense D455** (not another
-> D435i — wider FOV, longer depth range, and it is what the paper deployed). Option 2 (park the
+> no camera-free variant. **Recommendation: use a base-mounted RealSense D455** (not another
+> D435i — wider FOV, longer depth range, and it is what the paper deployed). An Intel RealSense D455
+> is now provided to the project, but its USB 3 connection and live RGB-D stream remain unverified. Option 2 (park the
 > arm) is now rated worse than this item originally supposed — the paper's own small-object success
 > rate falls to 65 % from vibration blur on a *rigidly* mounted camera. Option 3 (LiDAR only)
-> discards the entire reason to adopt the paper. **Start the mount design in parallel with the
-> purchase.** The original reasoning below is kept for the record.
+> discards the entire reason to adopt the paper. **Verify the provided D455 before mount fabrication.**
+> The original reasoning below is kept for the record.
 
 `[open]` HiCo-Nav's Cognitive Memory Graph is understood to need a continuous forward-facing RGB-D
-stream. This robot has **one** camera, a D435i on the arm's wrist (`Link6`), and
-`Navigation_Module` is LiDAR-only. Options: buy a base-mounted D455 (~$400 + NTU lead time), park
-the arm in a fixed observation pose, or substitute the 2D LiDAR scan and adapt the graph.
+stream. An Intel RealSense D455 is provided but not yet connected or stream-tested. The only known
+working camera path remains the D435i on the arm's wrist (`Link6`), and `Navigation_Module` is
+LiDAR-only. The immediate task is to test the D455 before fabricating its mount.
 
-**Why it is first:** it is the only item whose wrong answer costs weeks rather than days. Raise
-with Dr. Yuan before scoping anything else. See ORIENTATION §10.
+**Why it is first:** it is the only item whose wrong answer costs weeks rather than days. Confirm the
+provided D455's USB 3 connection and RGB-D stream before mount fabrication. See ORIENTATION §10.
 
 ### 1.2 🟠 Does HiCo-Nav emit goals or velocities?
 
@@ -319,7 +320,7 @@ in the first ten minutes of the next lab session, before anything else — they 
 | # | Finding | Check | If true |
 |---|---|---|---|
 | 1 | `mtc_sim_test.launch.py` names an executable `rm_mtc` does not build (ORIENTATION §8.12) | `ros2 launch rm_mtc mtc_sim_test.launch.py` | The project has no hardware-free MoveIt test. Wire up `trivial_mtc.cpp`, or delete the launch file. |
-| 2 | Arm needs host `.10`, LiDAR needs host `.5`, one NIC (§8.13) | `ip -4 addr show enp2s0`, then ping both devices powered | Needs an IP alias **and a switch**. Blocks ever running nav + manipulation together. Raise with whoever set up the base. |
+| 2 | ~~Arm needs host `.10`, LiDAR needs host `.5`, one NIC (§8.13)~~ **Done 2026-09-16.** Switch connected; persistent `Wired connection 1` profile carries `.100`, `.10`, and `.5`; RM65 and MID-360 each replied from the required source address after a connection cycle | | Resolved. Do not use the old base scripts unchanged: they flush the arm's `.10` address. |
 | 3 | `main` launches an AnyGrasp node/checkpoint that was never verified (§8.14) | `ls .../perception/log/` — is `checkpoint_detection.tar` even there? | Decide which node is authoritative before closing seam §6.2. |
 | 4 | `livox_ros_driver2` has no ROS 2 manifest, so §3.2 cannot compile (§8.15) | `ls Navigation_Module/src/livox_ros_driver2/package*.xml` | Commit `package_ROS2.xml` from upstream. Unblocks §3.2. |
 
@@ -652,7 +653,9 @@ tidiness item, and it does not need the lab machine. See §2.5.
 
 ## 5. Done
 
-*(nothing yet — move items here with their outcome as they complete)*
+- **2026-09-16, T0.2:** installed switch topology and persistent host addresses. RM65 and MID-360
+  each replied from their required host address after a NetworkManager connection cycle. Evidence:
+  [`../sherman_docs/T0.2_SESSION.md`](../sherman_docs/T0.2_SESSION.md).
 
 ---
 
@@ -676,4 +679,5 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-13 | Claude (Opus 5) + Dion | Added §2.11: box vendor code off from ours. 226 of 2,426 tracked files are ours; vendor and owned packages are siblings in both colcon workspaces, three AnyGrasp `.so` binaries are committed inside `rm_mtc/`, and `rm_ros_interfaces` holds 77 vendor messages plus 2 of ours. Proposes a `vendor/` folder per workspace, checked that colcon and ROS resolve by package name so a move is safe, and listed the three hardcoded paths that would break. Also flags that the reorg itself is referenced in four places but never specified. |
 | 2026-09-13 | Claude (Opus 5) + Dion | §2.2: added the open decision on whether to patch the `/aria/audio/prompt` subscription into `sam3_ros_node.py` now or retire the node first, with the trade-off table. Evidence is the new `CODE_AUDIT.md` L1. Also fixed the stale call-site citation `object_recognition_pipeline.py:384`→`:389` in both places it appears in §2.2 (the comparison table and hazard 1). ORIENTATION §6.5 and READING_GUIDE were re-pointed on 2026-09-13 and §2.2 was missed. Line numbers are against the working tree, which is ahead of the last commit in that file by some added comments. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Added the pointer to the new `PROJECT_PLAN.md`, which decides what of this register we actually do, in what order, and who owns it. This file stays the full register. |
+| 2026-09-16 | OpenCode (GPT-5.6 Terra) + Sherman | Closed the one-NIC arm/LiDAR finding with observed switch, address-persistence, and source-addressed-ping evidence. Updated the RGB-D wording: an Intel RealSense D455 is provided, but USB 3 connection and live RGB-D stream remain unverified. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Republished the task tree map under Dion's own account, so its link is `.../65c7784d-...` and the old `.../72753a73-...` one is dead. The page content did not change. |
