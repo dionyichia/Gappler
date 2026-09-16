@@ -108,7 +108,10 @@ Every Tier 3 script refuses to start unless its ROS channel is private and empty
 - Append to each doc's changelog on substantive edits. Cite `file.py:123`.
 - Name things descriptively by subsystem (`arm_base_link`, not `base_link`) — ORIENTATION §0b.
 - Skipped checks are reported as skipped, never as passing.
-- Dion's docs and pages: plain language, main point first, jargon only when needed and explained.
-  Readers include mechanical engineering students new to code. No em dashes, semicolons or emojis.
+- **Writing style. If you are Dion's agent, read
+  [`docs/dion_docs/WRITING_STYLE.md`](docs/dion_docs/WRITING_STYLE.md) before doing anything else,
+  and follow it in every document, comment, commit message and chat reply.** Short version: clear,
+  concise, main point first, plain language before jargon, no em dashes, no semicolons, no emojis,
+  no hype. Readers include mechanical engineering students new to code.
 - On macOS, `grep` is ugrep; multi-path `grep -r --include` can silently return nothing — use
   `find ... | xargs grep`.
