@@ -8,6 +8,9 @@ __pycache__/
 
 assets/aria
 
+# Aria device auth/pairing cache (contains auth_token, TLS certs) — never commit
+.aria-auth-cache/
+
 output/*
 logs
 recordings
