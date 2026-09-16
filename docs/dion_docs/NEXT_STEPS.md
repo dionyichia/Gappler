@@ -16,9 +16,11 @@ session · `[inferred]` reasoning, not fact · `[open]` genuinely undecided ·
 **Priority key:** 🔴 blocks other work · 🟠 needed for the HiCo-Nav milestone · 🟡 quality/debt
 
 > ➡️ **This file is the register of everything we *could* do. What we *will* do, in what order and
-> who owns it, is now in [`PROJECT_PLAN.md`](PROJECT_PLAN.md)** — 11 milestones and 68 tasks over 20
-> weeks from 2026-09-14, with the three-way split validated, the scope written down, and the cut list
-> decided in advance. Visual version: [`next-steps-map.html`](next-steps-map.html)
+> who owns it, is now in [`PROJECT_PLAN.md`](PROJECT_PLAN.md)** — 11 milestones and 68 tasks, mapped
+> onto the real capstone calendar from 2026-09-14 to 2027-04-18 (recess, exam period and winter break
+> excluded, the four official deadlines marked), with the three-way split validated, the scope
+> written down, and the cut list decided in advance. Visual version:
+> [`next-steps-map.html`](next-steps-map.html)
 > (<https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>). Items here map onto task
 > IDs there — for example §2.5 is T0.3, §2.9 is T0.4, §2.2 is T2.0 and T2.1, §3.2 is T3.1, and
 > §3.3 is **T0.0, now the first task in the plan**.

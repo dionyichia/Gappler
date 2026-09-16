@@ -8,16 +8,25 @@ same time without blocking each other.
 **Who this is for.** Dion, Zongzhe and Sherman. Written so a reader who has never used ROS 2 can
 follow it. Where a term is needed, it is explained on first use.
 
-**Horizon.** 20 weeks, week 1 starting Monday 2026-09-14, week 20 ending Sunday 2027-01-31.
-A working demonstration is expected at the end, and a checkpoint demonstration at the end of week 12
-(2026-12-06). The goal of the whole effort is a published result, so the plan protects the one
-milestone that carries a research claim and treats several other milestones as droppable.
+**Horizon.** Four fixed dates set by the university anchor this plan, not a week count we chose:
+the project plan and Gantt chart are due **2026-10-05**, the interim presentation falls between
+**2026-10-26 and 2026-11-13**, the final report is due **2027-03-28**, and the oral presentation and
+demonstration run **2027-04-05 to 2027-04-16**. Section 5.2 has the detail and who each goes to.
+Mapped onto the same 20 weeks of work the first version of this plan estimated, and with the
+end-of-September recess, the November exam period plus the first days of December, and half the
+winter break removed as non-working time, that work now spans **31 calendar weeks**: week 1 starting
+Monday 2026-09-14, week 31 ending Sunday 2027-04-18. The goal of the whole effort is a published
+result, so the plan protects the one milestone that carries a research claim and treats several other
+milestones as droppable.
 
 **Effort available.** Dion about 12 hours a week, Sherman 8 to 10, Zongzhe 8 to 10. Call it 30
-person-hours a week, about 570 after two reduced weeks over the December holidays, about 515 after
-travel and meetings. Named work in this plan comes to roughly 406 hours excluding the optional
-milestone. That is 79 percent of capacity, which for a project with this much unknown bring-up is
-full. Section 8 says what we drop first.
+person-hours a week. Of the 31 calendar weeks, 22 are full working weeks and 2 (the back half of the
+winter break) run at half speed; the rest — the recess, the exam period, and the front half of the
+winter break — are not working time at all. That is about 690 nominal person-hours, roughly 620 once
+travel and meetings are taken out at the same ratio the original 20-week estimate used. Named work in
+this plan comes to roughly 406 hours excluding the optional milestone, which is about 65 percent of
+capacity — more slack than the original 79 percent, because the real deadline is mid-April, not the
+end of January. Section 8 says what we drop first if that slack does not hold.
 
 **The visual version** of this plan is [`next-steps-map.html`](next-steps-map.html), published at
 <https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>. It carries the milestone
@@ -71,7 +80,7 @@ and evidence in section 4.
 
 ### 1.1 Open decisions, for whoever picks this up next
 
-These are live and unsettled as of 2026-09-14. A new session should start here.
+These are live and unsettled as of 2026-09-16. A new session should start here.
 
 | # | Decision | Why it is open | Where the evidence is |
 |---|---|---|---|
@@ -334,7 +343,7 @@ not relitigated later, and so a supervisor cannot reasonably expect both.
 | The full repository reorganisation into one folder per node | Referenced in four documents and specified in none. Do the vendor separation only, as part of M0, and leave the rest | `NEXT_STEPS` 2.11 |
 | The Habitat simulator baseline | Only needed to evaluate goal ordering, which is the optional milestone | Paper review 5.6 |
 
-### 4.3 Deferred, meaning wanted but after week 20
+### 4.3 Deferred, meaning wanted but after this plan ends (mid-April 2027)
 
 Naming things descriptively across the whole repository, the full configuration tree, replaying
 recorded data as a regression test, and a continuous integration job.
@@ -348,47 +357,86 @@ recorded data as a regression test, and a continuous integration job.
 Eleven milestones. M0 is a tax. M1 to M4 make the system we already have work. M5 to M7 are the
 integration. M8 is the claim. M9 is optional. M10 is the write-up.
 
-| # | Milestone | Done means | Weeks | Lead | Priority |
+| # | Milestone | Done means | Dates | Lead | Priority |
 |---|---|---|---|---|---|
-| **M0** | Everyone can build and run | Two people who are not Dion have cloned the repository on their own machine, built it, run the bench and got the same result. The arm and the LiDAR answer on the network at the same time | 1 to 2 | Zongzhe | P0 |
-| **M1** | The arm picks something up | With the emergency stop verified and a validated home pose, the arm grasps a box from a table using a mask from its own camera. Five attempts, success rate recorded | 3 to 6 | Dion | P0 |
-| **M2** | Voice and gaze reach the arm | You say "grab the box", you look at one of two boxes, and the arm picks the one you looked at | 6 to 9 | Dion | P1 |
-| **M3** | The base navigates | A map of the lab exists, the robot localises in it, and it drives to a commanded point and reports arrival. Ten runs, repeatability recorded | 4 to 8 | Zongzhe | P1 |
-| **M4** | The current system, closed loop | One run: speak, look, the base drives, the arm grasps. Per-stage timing recorded | 9 to 11 | Dion | P1 |
-| **M5** | The base has a calibrated forward camera | A RealSense D455 is mounted on the base, its position relative to the LiDAR is calibrated, LiDAR points project onto the right pixels in its image, and the camera-pose error is written down as a number | 3 to 11 | Sherman mount, Dion calibration | P0 |
-| **M6** | The memory graph is built offline | From recorded data, the system produces a set of object entries with a 3D position and an image feature each, merged so the same physical object appears once. Querying it with a sentence returns sensible objects | 9 to 14 | Zongzhe | P1 |
-| **M7** | The graph drives the robot | A spoken instruction produces an approach goal read out of the graph rather than from live perception, the base drives there, and close-range perception takes over | 14 to 17 | Dion | P1 |
-| **M8** | Gaze picks the instance | The gaze-cropped image feature is carried into the graph query. Ablation with and without, N trials each, success rate reported | 15 to 19 | Dion | **P1, protected** |
-| **M9** | Frontier scoring and visit ordering | The robot chooses where to explore next using the paper's scoring, measured against a baseline | 7 to 16 | Zongzhe | P2, optional |
-| **M10** | Demonstration and paper | A recorded end-to-end run and a paper draft whose claim is M8's number | 18 to 20 | All | P1 |
+| **M0** | Everyone can build and run | Two people who are not Dion have cloned the repository on their own machine, built it, run the bench and got the same result. The arm and the LiDAR answer on the network at the same time | 14–27 Sep 2026 | Zongzhe | P0 |
+| **M1** | The arm picks something up | With the emergency stop verified and a validated home pose, the arm grasps a box from a table using a mask from its own camera. Five attempts, success rate recorded | 5 Oct – 1 Nov 2026 | Dion | P0 |
+| **M2** | Voice and gaze reach the arm | You say "grab the box", you look at one of two boxes, and the arm picks the one you looked at | 26 Oct 2026 – 3 Jan 2027 | Dion | P1 |
+| **M3** | The base navigates | A map of the lab exists, the robot localises in it, and it drives to a commanded point and reports arrival. Ten runs, repeatability recorded | 12 Oct – 27 Dec 2026 | Zongzhe | P1 |
+| **M4** | The current system, closed loop | One run: speak, look, the base drives, the arm grasps. Per-stage timing recorded | 28 Dec 2026 – 17 Jan 2027 | Dion | P1 |
+| **M5** | The base has a calibrated forward camera | A RealSense D455 is mounted on the base, its position relative to the LiDAR is calibrated, LiDAR points project onto the right pixels in its image, and the camera-pose error is written down as a number | 5 Oct 2026 – 17 Jan 2027 | Sherman mount, Dion calibration | P0 |
+| **M6** | The memory graph is built offline | From recorded data, the system produces a set of object entries with a 3D position and an image feature each, merged so the same physical object appears once. Querying it with a sentence returns sensible objects | 28 Dec 2026 – 7 Feb 2027 | Zongzhe | P1 |
+| **M7** | The graph drives the robot | A spoken instruction produces an approach goal read out of the graph rather than from live perception, the base drives there, and close-range perception takes over | 1–28 Feb 2027 | Dion | P1 |
+| **M8** | Gaze picks the instance | The gaze-cropped image feature is carried into the graph query. Ablation with and without, N trials each, success rate reported | 8 Feb – 14 Mar 2027 | Dion | **P1, protected** |
+| **M9** | Frontier scoring and visit ordering | The robot chooses where to explore next using the paper's scoring, measured against a baseline | 2 Nov 2026 – 21 Feb 2027 | Zongzhe | P2, optional |
+| **M10** | Demonstration and paper | A recorded end-to-end run and a paper draft whose claim is M8's number | 1–21 Mar 2027 | All | P1 |
 
-### 5.2 Two checkpoints
+Several milestones (M2, M3, M5, M9) run calendar-long because the exam period and the winter break
+sit inside their span, not because the work itself takes that long — see 5.3 for how many of those
+weeks are actually working weeks.
 
-| Date | Week | What should exist |
+### 5.2 The four dates that are not negotiable, and two internal checkpoints
+
+Set by the university, not by us. Miss one and there is no recovering the mark, so everything else in
+this section is built to protect them.
+
+| Deliverable | Due | Goes to |
 |---|---|---|
-| **2026-12-06** | end of 12 | M0 to M5 done. A recorded run of the current system: speak, look, drive, grasp. A camera on the base with a calibration you can show a picture of. An offline memory graph you can query. This is the thing to talk about in December |
-| **2027-01-31** | end of 20 | M6 to M8 and M10. A recorded run driven by the memory graph, and an ablation table |
+| Project plan, Gantt chart and budget | **Monday 2026-10-05** | Supervisor |
+| Interim presentation | **2026-11-10 to 2026-11-13** (university window: 2026-10-26 to 2026-11-13) | Panel |
+| Final report, softcopy plus similarity report | **Sunday 2027-03-28** | Main supervisor and the REP Office (Ms Yang Huixin) |
+| Oral presentation and demonstration | **2027-04-05 to 2027-04-16** | Panel |
+
+Have the finished, similarity-checked report with the supervisor at least a week or two before
+2027-03-28 — that date is when the final copy is due, not when a draft may first reach them, and the
+plan should leave time for review and amendments before it.
+
+The interim presentation lands seven working weeks in, well before this plan's own "system working
+end to end" milestone (M5, done means a calibrated camera and a recorded speak-look-drive-grasp run)
+is anywhere near finished. What gets shown there is necessarily a progress report, not a demo — the
+table below keeps the original December checkpoint concept, moved to fit the real calendar:
+
+| Date | What should exist |
+|---|---|
+| **2026-11-10 to 2026-11-13**, interim presentation | M0 done. M1 and M3 under way. A progress report, not a working demo |
+| **2027-01-17**, internal checkpoint | M0 to M5 done. A recorded run of the current system: speak, look, drive, grasp. A camera on the base with a calibration you can show a picture of |
+| **2027-03-28**, final report due | M6 to M8 and M10 done. A recorded run driven by the memory graph, and an ablation table, written up |
+| **2027-04-05 to 2027-04-16**, oral presentation | The same result, presented and demonstrated live |
 
 ### 5.3 Calendar
 
-Week 1 is 2026-09-14. Weeks 15 and 16 (2026-12-21 to 2027-01-03) are planned at half velocity for the
-holidays.
+Week 1 is Monday 2026-09-14. Four spans of calendar time are not working time and nobody should plan
+to touch this project in them: the recess in the last week of September (2026-09-28 to 2026-10-04),
+the November exam period plus the first days of December (2026-11-09 to 2026-12-06), and the front
+half of the winter break (2026-12-07 to 2026-12-20). The back half of the winter break (2026-12-21 to
+2027-01-03) is kept as working buffer at half speed, the same treatment the original plan gave those
+two weeks. Stretched over those gaps, the original 20 weeks of work now spans 31 calendar weeks,
+ending Sunday 2027-04-18.
 
 ```
-week   1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
-M0    ###
-M1          ############
-M2                   ##########
-M3             ###########
-M4                            ######
-M5          ###########################
-M6                            ################
-M7                                          ##########
-M8                                             ############
-M9                   ...........................
-M10                                                    #######
-             ^ split opens                 ^ Dec 6 checkpoint     ^ Jan 31
+wk    1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+M0    #  #
+M1             #  #  #  #
+M2                      #  #  #  #  #  #  #  #  #  #
+M3                #  #  #  #  #  #  #  #  #  #  #
+M4                                                 #  #  #
+M5             #  #  #  #  #  #  #  #  #  #  #  #  #  #  #
+M6                                                 #  #  #  #  #  #
+M7                                                                #  #  #  #
+M8                                                                   #  #  #  #  #
+M9                         .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+M10                                                                           #  #  #
+key         R                 E  E  E  E  O  O  B  B
+               ^              ^                                                        ^     ^  ^
+            plan due       interim pres.                                          report due  oral pres.
 ```
+
+`R` recess, no work · `E` exam period including the first days of December, no work · `O` winter
+break, off, no work · `B` winter break kept as buffer, half speed · `#` a milestone with a lead
+already named · `.` M9, optional and the first thing cut. The four carets are the dates in 5.2: the
+plan and Gantt chart due at the start of week 4 (2026-10-05), the interim presentation in week 9
+(2026-11-10 to 2026-11-13), the final report due at the end of week 28 (2027-03-28), and the oral
+presentation across weeks 30 to 31 (2027-04-05 to 2027-04-16).
 
 ### 5.4 Milestone detail
 
@@ -495,7 +543,7 @@ usually small and almost all the time goes into verifying it, so an estimate tha
 line count is not necessarily wrong. Where the work is `measure`, the time is lab hours and travel
 and cannot be compressed by working harder.
 
-### 6.2 M0. Everyone can build and run (weeks 1 to 2)
+### 6.2 M0. Everyone can build and run (14–27 Sep 2026)
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
@@ -534,7 +582,7 @@ explain. It also settles one thing T1.10 will otherwise have to rediscover, whic
 different AnyGrasp checkpoints are in play and only one of them has ever been seen to work. Doing it
 now means the startup guide and `SETUP.md` are on `main` before Zongzhe and Sherman clone in T0.5.
 
-### 6.3 M1. The arm picks something up (weeks 3 to 6)
+### 6.3 M1. The arm picks something up (5 Oct – 1 Nov 2026)
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
@@ -551,7 +599,7 @@ now means the startup guide and `SETUP.md` are on `main` before Zongzhe and Sher
 | T1.11 | Grasp using the stand-in mask publisher, on hardware. Fix its wrong channel name first | bring-up | Dion, Sherman | 4 | lab | T1.7, T1.8, T1.9, T1.10 |
 | T1.12 | Grasp using a live mask from the wrist camera with a fixed prompt word. Five attempts, success rate recorded | measure | Dion, Sherman | 4 | lab | T1.11 |
 
-### 6.4 M2. Voice and gaze reach the arm (weeks 6 to 9)
+### 6.4 M2. Voice and gaze reach the arm (26 Oct 2026 – 3 Jan 2027)
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
@@ -570,7 +618,7 @@ depends on segmentation ownership being settled first, which is T2.1, so the two
 M1 runs late and a quick demonstration is needed in November, option 1 is the fallback: it is small,
 local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 
-### 6.5 M3. The base navigates (weeks 4 to 8)
+### 6.5 M3. The base navigates (12 Oct – 27 Dec 2026)
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
@@ -582,7 +630,7 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 | T3.6 | Drive to a commanded point ten times. Record the position error each time | measure | Zongzhe, Sherman | 5 | lab | T3.5 |
 | T3.7 | The navigation to arm handover on hardware: object position in, drive, arrived signal out | rewire | Zongzhe, Dion | 6 | lab | T1.12, T3.6 |
 
-### 6.6 M4. The current system, closed loop (weeks 9 to 11)
+### 6.6 M4. The current system, closed loop (28 Dec 2026 – 17 Jan 2027)
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
@@ -590,7 +638,7 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 | T4.2 | Measure how long each stage takes. Report the 99th percentile, not the average | measure | Dion | 6 | lab | T4.1 |
 | T4.3 | Keep the defect log from the first powered session onward. One line per bug: symptom, guess, actual cause | measure | All | ongoing | off | T1.6 |
 
-### 6.7 M5. The base has a calibrated forward camera (weeks 3 to 11)
+### 6.7 M5. The base has a calibrated forward camera (5 Oct 2026 – 17 Jan 2027)
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
@@ -603,7 +651,7 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 | T5.7 | Choose where camera poses come from and characterise the error: drift over a run, and the duplicate-object rate it causes in the graph. Start with the existing 2D localisation because it is free. This is a measurement study, not a configuration choice | measure | Dion | 12 | box | T3.5, T5.6 |
 | T5.8 | Build a trial fixture: marked object positions and marked robot start positions, so a trial can be repeated exactly | build | Sherman | 8 | lab | T5.3 |
 
-### 6.8 M6. The memory graph, offline (weeks 9 to 14)
+### 6.8 M6. The memory graph, offline (28 Dec 2026 – 7 Feb 2027)
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
@@ -616,7 +664,7 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 | T6.7 | The reasoning layer. Called once at the start of a task, off the control loop, expanding the instruction into related objects | build | Zongzhe | 10 | off | T6.4, T6.6 |
 | T6.8 | Query the graph with a sentence and get an object position back | build | Zongzhe, Dion | 8 | off | T6.4 |
 
-### 6.9 M7. The graph drives the robot (weeks 14 to 17)
+### 6.9 M7. The graph drives the robot (1–28 Feb 2027)
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
@@ -624,7 +672,7 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 | T7.2 | Build the graph while the robot drives, rather than from a recording | build | Zongzhe | 10 | lab | T5.7, T7.1 |
 | T7.3 | Spoken instruction to arrival at the right object, on hardware, with the object not in view when the instruction is given | measure | All | 8 | lab | T7.2 |
 
-### 6.10 M8. Gaze picks the instance (weeks 15 to 19). Protected
+### 6.10 M8. Gaze picks the instance (8 Feb – 14 Mar 2027). Protected
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
@@ -633,7 +681,7 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 | T8.3 | Run the ablation. N trials with the feature and N without, same objects, same start positions, using the fixture | measure | Dion, Sherman | 18 | lab | T5.8, T7.3, T8.2 |
 | T8.4 | Re-measure the cross-camera matching baseline so the comparison number is ours rather than remembered | measure | Dion | 4 | box | T2.1 |
 
-### 6.11 M9. Frontier scoring and visit ordering (weeks 7 to 16). Optional
+### 6.11 M9. Frontier scoring and visit ordering (2 Nov 2026 – 21 Feb 2027). Optional
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
@@ -642,7 +690,7 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 | T9.3 | Implement visit ordering with an openly licensed solver | build | Zongzhe | 10 | off | T9.2 |
 | T9.4 | A node that emits drive goals, sitting beside the existing bridge, with Nav2 unchanged | build | Zongzhe, Dion | 8 | box | T9.3 |
 
-### 6.12 M10. Demonstration and paper (weeks 18 to 20)
+### 6.12 M10. Demonstration and paper (1–21 Mar 2027)
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
@@ -749,10 +797,11 @@ in the graph, which makes this a study with a result rather than a configuration
 | Zongzhe | 8 to 10 |
 | Sherman | 8 to 10 |
 
-That is about 30 person-hours a week, and about 515 over the twenty weeks once the December holidays
-and travel are taken out. The named work in section 6 comes to roughly 406 hours, so the plan runs at
-about 79 percent of capacity. Sherman's share carries more slack than the task list suggests, because
-the travel and the lab session overhead land on him and none of the estimates capture them.
+That is about 30 person-hours a week, and about 620 over the 31 calendar weeks once the recess, the
+exam period, the winter break and travel are taken out (5.3 has the working-week count). The named
+work in section 6 comes to roughly 406 hours, so the plan runs at about 65 percent of capacity.
+Sherman's share carries more slack than the task list suggests, because the travel and the lab
+session overhead land on him and none of the estimates capture them.
 
 ### 7.3 Working agreements
 
@@ -777,8 +826,8 @@ the travel and the lab session overhead land on him and none of the estimates ca
 
 ### 8.1 The cut list, in order
 
-If the schedule slips, cut from the top of this list. Decided in advance so it is not an argument
-in week 16.
+If the schedule slips, cut from the top of this list. Decided in advance so it is not an argument in
+March, with the final report due.
 
 | Order | What we cut | What we lose | What survives |
 |---|---|---|---|
@@ -796,7 +845,7 @@ to tell the supervisor early rather than late.
 
 | Risk | Likelihood | Effect | What we do about it |
 |---|---|---|---|
-| The first powered arm sessions take far longer than estimated. The arm has never moved | High | M1 slips into week 7 or 8, pushing everything | Three short sessions rather than one long one. M3 runs in parallel and is not blocked by it |
+| The first powered arm sessions take far longer than estimated. The arm has never moved | High | M1 slips past 1 Nov and collides with the November exam period, which is no-work time regardless of how the team is running | Three short sessions rather than one long one. M3 runs in parallel and is not blocked by it |
 | The camera is not in the lab and procurement takes weeks | Medium | M5 slips, M6 loses its input | Confirm in week 1. The wrist-camera fallback below is no longer safe to assume |
 | **The wrist D435i is faulty and may not survive a replug** `[observed]` 2026-09-14 | **Certain that it is faulty. Unknown whether it recovers** | T1.12 has no live mask, T6.2 has no recorded frames, and the M5 fallback of parking the arm is gone, so a single camera fault removes both camera paths at once | Replug it and re-run `python3 bench/preflight.py -g net` before booking any session that needs it. Settle D8 in week 1 and buy alongside the D455 if it is dead, since one order beats two |
 | Camera position accuracy from 2D localisation is too poor and the graph registers duplicates | Medium | M6 quality drops | The duplication rate is directly measurable. Measure it in T5.7 before building on it |
@@ -845,7 +894,7 @@ one pass, and kept in step afterwards.
 
 ## 10. Future work
 
-Beyond week 20, in the order they would become worth doing.
+Beyond this plan, in the order they would become worth doing.
 
 1. The return-to-user leg, which needs the pose fusion node rewritten to match its own documentation,
    the marker path restored, and the frame disagreement settled.
@@ -921,3 +970,4 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-14 | Claude (Opus 5) + Dion | **Added T0.0, the `realman_manip` cherry-pick, as the first task in M0 and the first thing to do.** Checked the branch rather than trusting the earlier audit: exactly 15 files exist there and not on `main`, the four already scoped in `NEXT_STEPS` §3.3 plus `anygrasp_node.sh`, which is new to this list and records that the verified session ran `checkpoint_tracking.tar` while `main` launches `checkpoint_detection.tar`. Ten of the fifteen are pre-reorg duplicates. Task count 67 to 68, `bring-up` 12 to 13. |
 | 2026-09-14 | Claude (Opus 5) + Dion | **Folded the 2026-09-14 bench results in as §2.6, and corrected the current-state tables against them.** The navigation workspace compiles (10/10, no Livox blocker, the SDK was already installed), the five nav nodes pass the bench first run, E1/F1/F2 are now `[observed]` and F4 is new, so the audit holds 51 findings. T0.8, T3.1 and T3.2 marked done, M3's risk lowered. The wrist D435i is faulty and off the USB bus: recorded as a new risk, a new open decision D8, and a row in §2.2, because it removes both the live-mask path in T1.12 and the parked-arm fallback for M5 and T6.2 at the same time. |
 | 2026-09-14 | Claude (Opus 5) + Dion | Added §2.5 recording four read-only code checks: navigation is retrieval not development, the arm and perception work is repair at 100 to 150 lines, the glasses gaze and image producers are complete and only the consumer is missing, segmentation already shares its model, the memory graph is genuinely from scratch, the Livox IMU already publishes, and the vendored OpenVINS is calibrated for the glasses. New defect recorded as `CODE_AUDIT` E5. |
+| 2026-09-16 | Claude (Sonnet 5) + Dion | Replaced the 20-week internal schedule with the real academic calendar: the four fixed capstone deadlines (plan/Gantt due 2026-10-05, interim presentation 2026-11-10 to 2026-11-13, final report due 2027-03-28, oral presentation 2027-04-05 to 2027-04-16), the end-of-September recess, the November exam period plus early December, and the winter break split into two off weeks and two half-speed buffer weeks. The same 20 weeks of work now spans 31 calendar weeks to 2027-04-18, which raised available capacity from about 515 to about 620 hours and dropped named work from 79 to about 65 percent of it. Milestone dates in §5.1 and the §6 section headers, the checkpoints in §5.2, and the Gantt in §5.3 were all recomputed; task hours, ownership and dependencies are unchanged. |
