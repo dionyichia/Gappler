@@ -2,8 +2,8 @@
 
 > **Status 2026-09-12:** tiers 0–1 and preflight work on the Mac and on the lab box; Tier 2
 > (build) and four Tier 3 scripts run on the box; a fifth, `nav_nodes.sh`, is written but not yet run. Latest results, known gaps and the next work are in
-> [`docs/dion_docs/TESTBENCH_PLAN.md`](../docs/dion_docs/TESTBENCH_PLAN.md) → "▶ Start here"; raw results
-> in [`docs/dion_docs/bench-runs/`](../docs/dion_docs/bench-runs/). Read its §3 (safety) before running
+> [`docs/TESTBENCH_PLAN.md`](../docs/TESTBENCH_PLAN.md) → "▶ Start here"; raw results
+> in [`docs/bench-runs/`](../docs/bench-runs/). Read its §3 (safety) before running
 > anything on the lab machine.
 
 A safety net for refactoring this repo **without** the robot, the glasses, ROS,

@@ -198,7 +198,7 @@ means the out-of-scope decision on the return leg in §4.2 does **not** make E1 
 ## 2.6 What the bench established on the box, 2026-09-14
 
 The bench backlog that had been waiting since the lab box went off is cleared. Full detail and the
-raw output are in `TESTBENCH_PLAN` "▶ Start here" and `docs/dion_docs/bench-runs/`. Four results
+raw output are in `TESTBENCH_PLAN` "▶ Start here" and `docs/bench-runs/`. Four results
 change something in this plan.
 
 **Tiers 0 to 3 are complete. Both workspaces build.** `./bench/build.sh nav` compiled
@@ -345,8 +345,13 @@ not relitigated later, and so a supervisor cannot reasonably expect both.
 
 ### 4.3 Deferred, meaning wanted but after this plan ends (mid-April 2027)
 
-Naming things descriptively across the whole repository, the full configuration tree, replaying
-recorded data as a regression test, and a continuous integration job.
+Naming things descriptively across the whole repository, the full configuration tree, and replaying
+recorded data as a regression test.
+
+**No longer deferred, as of 2026-09-16:** a continuous integration job running the bench on push.
+It is now `T0.10` in the task tree below, gated on `T0.5` (M0's acceptance test, a second clone
+building and passing the bench) rather than on the whole plan finishing — see `NEXT_STEPS.md` §2.12
+for the reasoning and scope.
 
 ---
 
@@ -525,17 +530,17 @@ turns out to matter more for estimating than who does it.
 
 | Type | Means | Count |
 |---|---|---|
-| `build` | New code. None of it exists today | 16 |
+| `build` | New code. None of it exists today | 17 |
 | `fix` | Repair of existing code that is written but defective | 6 |
 | `rewire` | Existing, complete code reconnected, re-enabled or consolidated. No new logic | 3 |
 | `bring-up` | Make existing things run: retrieve, compile, install, mount, power on | 13 |
 | `measure` | Trials, calibration, error characterisation, tests. Produces numbers, not code | 18 |
 | `decide` | A decision to settle, or a document to write | 12 |
 
-**Read that table before the schedule.** Sixteen of sixty-eight tasks are new code and nine are
+**Read that table before the schedule.** Seventeen of sixty-nine tasks are new code and nine are
 repair or rewiring. The remaining forty-three are bring-up, measurement and decisions. This is not a
 project that builds a robot. It repairs one, measures it, and adds one new component, which is the
-memory graph.
+memory graph. (`T0.10`, the CI job added 2026-09-16, is the seventeenth `build` task.)
 
 Two consequences for the hours in the tables below. Where the work is `fix`, the code change is
 usually small and almost all the time goes into verifying it, so an estimate that looks large for the
@@ -556,6 +561,7 @@ and cannot be compressed by working harder.
 | T0.7 | Write the channel contract: which stream owns which message channels, and the exact three handover points between streams. One page | decide | Dion | 4 | off | none |
 | T0.8 | ~~Clear the bench backlog that has been waiting since the box went off~~ **Done 2026-09-14.** Environment check, navigation build and the ten navigation node tests all ran, all passed, no fix needed. What is left of this task is W6, which is blocked on the faulty camera, and W8, which needs a person at the robot. See §2.6 | measure | Dion | 5 of 5 spent | box | none |
 | T0.9 | ~~Measure the real base footprint and compare it with the 0.2 metre radius the navigation configuration assumes~~ **Done 2026-09-16 for the manufacturer chassis.** The Hexman Robotics ECHO-PLUS manual specifies `460 x 380 x 140 mm` and a `265 mm` stated rotation radius, so the `200 mm` Nav2 radius is not supported as conservative. Recheck the integrated footprint after mount fabrication | measure | Sherman | 3 | lab | none |
+| T0.10 | **Added 2026-09-16.** CI: wire up `./bench/run.sh` (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. See `NEXT_STEPS.md` §2.12 for scope, provider choice, and what a green run does and does not prove | build | Dion | 6 | off | T0.5 |
 
 **T0.0 in detail. This is the first thing to do.** `origin/realman_manip` shares no commit history
 with `main`, so this is a file copy, not a merge `[code]` `ORIENTATION` 7. **Exactly 15 files exist
@@ -565,7 +571,7 @@ into subpackages. `main` is later on every shared arm file. **No code comes acro
 | File | Size | Take it? | Why |
 |---|---|---|---|
 | `RCP_NEW_USER_STARTUP_GUIDE.md` | 15.7 kB | **Yes** | The only written account of the 2026-08-25 session that actually ran the arm |
-| `docs/SETUP.md` | 21.2 kB | **Yes** | Same. It lands in `docs/`, so move it into `docs/dion_docs/` rather than the shared root, per the per-person rule |
+| `docs/SETUP.md` | 21.2 kB | **Yes** | Same. It lands in `docs/`, so move it into `docs/` rather than the shared root, per the per-person rule |
 | `env.sh` | 635 B | **Yes, with a check** | It already computes its own repo root from `BASH_SOURCE`, so it is portable as written. What needs re-checking on this clone is its claim that a repo-root `install/` is one complete overlay covering both workspaces |
 | `calibration.json` | 9.1 kB | **Yes** | The Aria factory calibration dump for device `1WM10350101291`. `main` has only the derived kalibr chains, and this doubles as an offline test fixture for calibration parsing |
 | `ros2_robot_ws/src/rm_mtc/src/perception/anygrasp_node.sh` | 1 line | **Probably** | Not named in the earlier audit. It records the invocation the verified session used: `--checkpoint_path log/checkpoint_tracking.tar --filter oneeuro`. `main` launches the **other** checkpoint, `checkpoint_detection.tar` (`ros2_robot_ws/src/main.py:28`). The bench already knows both exist (`bench/preflight.py:421-422`). Taking it costs nothing, nothing calls it, and it is the only written record of which checkpoint was proven to work. It feeds T1.10 |
@@ -901,11 +907,13 @@ Beyond this plan, in the order they would become worth doing.
    renames last and done with somebody at the robot.
 3. One configuration tree, with channel names declared as parameters rather than as constants so they
    stay overridable at launch.
-4. Replaying recorded data as a regression test, and a continuous integration job running the offline
-   bench tiers on every change.
+4. Replaying recorded data as a regression test.
 5. The paper's motion layer, only if Nav2's controller proves inadequate around moving obstacles.
 6. Better localisation, only if the duplication rate measured in T5.7 says the current one is the
    limiting factor.
+
+**CI moved out of this list on 2026-09-16** — see §4.3: it is now `T0.10`, gated on `T0.5` rather
+than on the rest of the plan.
 
 ---
 
@@ -970,4 +978,6 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-14 | Claude (Opus 5) + Dion | **Folded the 2026-09-14 bench results in as §2.6, and corrected the current-state tables against them.** The navigation workspace compiles (10/10, no Livox blocker, the SDK was already installed), the five nav nodes pass the bench first run, E1/F1/F2 are now `[observed]` and F4 is new, so the audit holds 51 findings. T0.8, T3.1 and T3.2 marked done, M3's risk lowered. The wrist D435i is faulty and off the USB bus: recorded as a new risk, a new open decision D8, and a row in §2.2, because it removes both the live-mask path in T1.12 and the parked-arm fallback for M5 and T6.2 at the same time. |
 | 2026-09-14 | Claude (Opus 5) + Dion | Added §2.5 recording four read-only code checks: navigation is retrieval not development, the arm and perception work is repair at 100 to 150 lines, the glasses gaze and image producers are complete and only the consumer is missing, segmentation already shares its model, the memory graph is genuinely from scratch, the Livox IMU already publishes, and the vendored OpenVINS is calibrated for the glasses. New defect recorded as `CODE_AUDIT` E5. |
 | 2026-09-16 | Claude (Sonnet 5) + Dion | Replaced the 20-week internal schedule with the real academic calendar: the four fixed capstone deadlines (plan/Gantt due 2026-10-05, interim presentation 2026-11-10 to 2026-11-13, final report due 2027-03-28, oral presentation 2027-04-05 to 2027-04-16), the end-of-September recess, the November exam period plus early December, and the winter break split into two off weeks and two half-speed buffer weeks. The same 20 weeks of work now spans 31 calendar weeks to 2027-04-18, which raised available capacity from about 515 to about 620 hours and dropped named work from 79 to about 65 percent of it. Milestone dates in §5.1 and the §6 section headers, the checkpoints in §5.2, and the Gantt in §5.3 were all recomputed; task hours, ownership and dependencies are unchanged. |
+| 2026-09-16 | Claude (Sonnet 5) + Dion | This file moved from `docs/dion_docs/PROJECT_PLAN.md` to `docs/PROJECT_PLAN.md` as part of moving all global docs out of the per-person folder (see `docs/START_HERE.md` and `CLAUDE.md`). Content unchanged by the move; all in-repo links updated. |
+| 2026-09-16 | Claude (Sonnet 5) + Dion | Added `T0.10`, a CI task, to the M0 table in §6.2: wire up `./bench/run.sh` on every push, gated on `T0.5` rather than left as an after-the-plan idea. Moved "a continuous integration job" out of §4.3 (deferred) and §10 (future work) accordingly. Task count 68 to 69, `build` 16 to 17; counts and the "sixteen of sixty-eight" sentence in §6.1b updated to match, and the new task added to `next-steps-map.html`'s data with the same DONE-prefix convention. Full reasoning and scope in `NEXT_STEPS.md` §2.12. |
 | 2026-09-16 | OpenCode (GPT-5.6 Terra) + Sherman | Updated task evidence from the lab session. T0.2 is done: switch wiring and a persistent `.100`/`.10`/`.5` profile let RM65 and MID-360 reply from their required host addresses after a connection cycle. T0.9 is done for the manufacturer ECHO-PLUS chassis: its manual gives a `265 mm` stated rotation radius, so the `200 mm` Nav2 radius is not conservative; the fitted-robot footprint remains a T5.3/T5.4 check. An Intel RealSense D455 is provided but untested, so T5.1 is done while T0.1 retains USB 3 and live-stream verification. T5.2 mount CAD and measurements are reported complete; fabrication and fit remain T5.3. |

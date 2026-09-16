@@ -1,7 +1,7 @@
 # Sherman's Work Log
 
 This is an append-only index of Sherman's Gappler work. Team task status, scheduling, and ownership
-remain in [`../dion_docs/PROJECT_PLAN.md`](../dion_docs/PROJECT_PLAN.md).
+remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-09-16] T0.2 | Network switch proof
 

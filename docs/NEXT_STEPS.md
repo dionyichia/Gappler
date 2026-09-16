@@ -16,7 +16,7 @@ session · `[inferred]` reasoning, not fact · `[open]` genuinely undecided ·
 **Priority key:** 🔴 blocks other work · 🟠 needed for the HiCo-Nav milestone · 🟡 quality/debt
 
 > ➡️ **This file is the register of everything we *could* do. What we *will* do, in what order and
-> who owns it, is now in [`PROJECT_PLAN.md`](PROJECT_PLAN.md)** — 11 milestones and 68 tasks, mapped
+> who owns it, is now in [`PROJECT_PLAN.md`](PROJECT_PLAN.md)** — 11 milestones and 69 tasks, mapped
 > onto the real capstone calendar from 2026-09-14 to 2027-04-18 (recess, exam period and winter break
 > excluded, the four official deadlines marked), with the three-way split validated, the scope
 > written down, and the cut list decided in advance. Visual version:
@@ -558,6 +558,48 @@ by file location, so a pure move should show as informational and fail nothing.
 reorg starts, it needs its own item saying what the target layout actually is. This section covers
 only the vendor half of it.
 
+### 2.12 🟡 CI: run the bench automatically on every push, once M0 is done
+
+Dion, 2026-09-16. Raised as a task rather than left as the "deferred, after this plan ends" item
+`PROJECT_PLAN.md` §4.3 used to call it — a running CI job now has real value once there is more
+than one clone of this repo to break.
+
+**Gated on M0, not on anything about the arm or the base.** CI needs exactly the property M0's
+acceptance test proves by hand — `./bench/run.sh` giving the same verdict on a machine that is not
+this one — so it makes no sense to automate the check before a human has confirmed it works at
+all. Once `T0.5` passes (Zongzhe and Sherman each clone, build and get the same bench result), the
+CI job is close to writing itself: it runs the same command they just ran manually, on push.
+
+**What it can and cannot cover.** Tiers 0–1 need only Python stdlib and run anywhere. Tier 2
+(`./bench/build.sh`) needs ROS 2 Humble and colcon, which a container image can provide with no
+real hardware. Tier 3's simulated-arm and mock-Nav2 scripts (`sim_moveit.sh`,
+`state_machine_sim.sh`, `nav_nodes.sh`, `estop_delivery.sh`) also use no real hardware — mock
+components and a private ROS channel are the whole point — so they are candidates too, once someone
+has confirmed they behave the same in a container as on the lab box. **The real arm, the real base
+and the real glasses can never be in CI** — nothing here changes the "no fixes yet" or hardware
+safety rules elsewhere in this doc and in `CLAUDE.md`.
+
+**What "breaking changes" means for this check:** a push that fails `bench/run.sh` — a renamed
+topic/frame/param that the contract snapshot catches, a static-analysis regression, or (once wired
+in) a build or simulated-arm failure. It does not mean "the robot still works" — nothing here can
+observe real hardware, so a green CI run is a floor, not a guarantee. Say so in the CI job's own
+description so nobody over-reads a passing badge.
+
+**Action, once T0.5 is done:**
+
+1. Pick a CI provider (GitHub Actions is the default choice for a repo already on GitHub; no other
+   option has been evaluated).
+2. Container image with ROS 2 Humble + the project's Python env, close enough to the lab box to run
+   Tiers 0–2 (and Tier 3 against the simulated arm, if that survives running outside the lab box —
+   verify this before wiring it in, don't assume).
+3. Workflow: run `./bench/run.sh` (and whichever Tier 3 scripts prove containerizable) on every push
+   and every PR; fail the check on a non-zero exit.
+4. Document the CI badge and what it does and does not prove in `docs/README` or `bench/README.md`,
+   so a reader doesn't mistake "CI passing" for "verified on hardware".
+
+Owner: Dion, since he owns `bench/` itself. Depends on `T0.5` (both other clones build and pass the
+bench) — see `PROJECT_PLAN.md` §6.2, task `T0.10`.
+
 ## 3. Bring-up (needs the lab machine)
 
 ### 3.1 🔴 Find `xpkg_demo` — `Navigation_Module` cannot launch without it
@@ -621,7 +663,7 @@ git checkout origin/realman_manip -- \
 ```
 
 ⚠️ `docs/SETUP.md` lands in the shared `docs/` root, which `CLAUDE.md` forbids. **Move it into
-`docs/dion_docs/` in the same commit.**
+`docs/` in the same commit.**
 
 `env.sh` needs its `REPO_ROOT` re-pointed and its assumption of a repo-root `install/` re-checked
 on this clone. `calibration.json` is the Aria factory calibration dump for device
@@ -681,3 +723,5 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-13 | Claude (Opus 5) + Dion | Added the pointer to the new `PROJECT_PLAN.md`, which decides what of this register we actually do, in what order, and who owns it. This file stays the full register. |
 | 2026-09-16 | OpenCode (GPT-5.6 Terra) + Sherman | Closed the one-NIC arm/LiDAR finding with observed switch, address-persistence, and source-addressed-ping evidence. Updated the RGB-D wording: an Intel RealSense D455 is provided, but USB 3 connection and live RGB-D stream remain unverified. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Republished the task tree map under Dion's own account, so its link is `.../65c7784d-...` and the old `.../72753a73-...` one is dead. The page content did not change. |
+| 2026-09-16 | Claude (Sonnet 5) + Dion | This file moved from `docs/dion_docs/NEXT_STEPS.md` to `docs/NEXT_STEPS.md` — all global docs moved out of the per-person folder, see `docs/START_HERE.md` and `CLAUDE.md`. Content unchanged by the move; in-repo links updated. |
+| 2026-09-16 | Claude (Sonnet 5) + Dion | Added §2.12: a CI task, wiring `./bench/run.sh` to run on every push, gated on `T0.5` (M0's fresh-clone acceptance test) rather than deferred past the whole plan. Assigned to Dion as `PROJECT_PLAN` `T0.10`. Removed "a continuous integration job" from `PROJECT_PLAN` §4.3 and §10 accordingly. |

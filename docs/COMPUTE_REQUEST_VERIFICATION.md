@@ -5,7 +5,7 @@ actually runs, done before the request goes to the supervisor. Three corrections
 fix before submitting. The three tables in section 3 are the requested end state: one row per
 requirement, with the memory or resource it needs.
 
-**Status tags**, as in the rest of `docs/dion_docs/`: `[code]` read from source in this repo ·
+**Status tags**, as in the rest of `docs/`: `[code]` read from source in this repo ·
 `[reported]` the 2026-08-25 hardware session, or a bench run on the box · `[inferred]` reasoning ·
 `[unverified]` not confirmed at the machine this session.
 
@@ -29,8 +29,8 @@ The draft's §5.1 "4060 shortfall" argument rests on an 8 GB card. The box is ac
   MiB free, 3% util` — only two processes hold GPU memory at idle: the remote-desktop daemon
   (120 MiB) and an Isaac Sim Python process under `/home/iot22/robot-learning/` (362 MiB), neither
   belonging to this project.
-- `docs/dion_docs/ORIENTATION.md:1039` — "Machine | `iot22-Computer` ... RTX 4060 Ti 16 GB"
-- `docs/dion_docs/TESTBENCH_PLAN.md:309` — same box, driver 575.57, confirmed again 2026-09-14
+- `docs/ORIENTATION.md:1039` — "Machine | `iot22-Computer` ... RTX 4060 Ti 16 GB"
+- `docs/TESTBENCH_PLAN.md:309` — same box, driver 575.57, confirmed again 2026-09-14
 - `bench-runs/2026-09-11-labbox-w1-venv.txt` — preflight measured 15.5 GB free of 16.0 GB at idle,
   plus `sam3-weights 3.21 GB`, `anygrasp-detection 283 MB`, `anygrasp-tracking 23 MB` on disk
 
@@ -49,7 +49,7 @@ Also resolved while checking this: the draft's §7 flags **system RAM as unconfi
 None of §4.2's components are in this repo: no YOLO-World, no MobileSAM, no CLIP descriptors, no
 cognitive memory graph, no FAST-LIVO2. Checked directly: `pyproject.toml` lists only
 `faster-whisper`, `lightglue`, `projectaria-client-sdk`, `projectaria-eyetracking`, `sam3`,
-`transformers` — nothing HiCo-Nav-specific. `docs/dion_docs/hico-nav/PAPER_REPORT.md` is explicit
+`transformers` — nothing HiCo-Nav-specific. `docs/hico-nav/PAPER_REPORT.md` is explicit
 that this is still reconnaissance: "No integration plan has been written" (§7.1), and the upstream
 release itself has no ROS layer, only a Habitat benchmark harness (§5.6).
 

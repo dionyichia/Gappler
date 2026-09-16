@@ -2,11 +2,11 @@
 
 This folder holds Sherman's work on Gappler: session evidence, handoffs, investigation notes,
 and bench-run reports. It is one of the per-person folders described in
-[`../dion_docs/START_HERE.md`](../dion_docs/START_HERE.md).
+[`../START_HERE.md`](../START_HERE.md).
 
 **If you are new to the project, do not start here.** Start at
-[`../dion_docs/START_HERE.md`](../dion_docs/START_HERE.md) for the reading order, then
-[`../dion_docs/ORIENTATION.md`](../dion_docs/ORIENTATION.md) for what the system actually is.
+[`../START_HERE.md`](../START_HERE.md) for the reading order, then
+[`../ORIENTATION.md`](../ORIENTATION.md) for what the system actually is.
 Those are the shared reference. This folder does not repeat them, it links to them.
 
 ## Shared source of truth
@@ -14,12 +14,12 @@ Those are the shared reference. This folder does not repeat them, it links to th
 The following Dion-owned documents are authoritative for team task status, priorities, schedules,
 and system contracts:
 
-- [`../dion_docs/PROJECT_PLAN.md`](../dion_docs/PROJECT_PLAN.md) — task tree, dependencies, owners,
+- [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md) — task tree, dependencies, owners,
   and milestone dates.
-- [`../dion_docs/NEXT_STEPS.md`](../dion_docs/NEXT_STEPS.md) — open work register and decisions.
-- [`../dion_docs/ORIENTATION.md`](../dion_docs/ORIENTATION.md) — system facts, network contract,
+- [`../NEXT_STEPS.md`](../NEXT_STEPS.md) — open work register and decisions.
+- [`../ORIENTATION.md`](../ORIENTATION.md) — system facts, network contract,
   and safety constraints.
-- [`../dion_docs/TESTBENCH_PLAN.md`](../dion_docs/TESTBENCH_PLAN.md) — lab test evidence and safe
+- [`../TESTBENCH_PLAN.md`](../TESTBENCH_PLAN.md) — lab test evidence and safe
   bench procedures.
 
 This folder records what Sherman observed or did. It does not independently declare a team task
@@ -45,9 +45,9 @@ evidence into the shared documents.
 
 ## Rules this folder follows
 
-From [`../dion_docs/START_HERE.md`](../dion_docs/START_HERE.md) and the root `CLAUDE.md`:
+From [`../START_HERE.md`](../START_HERE.md) and the root `CLAUDE.md`:
 
-1. **Write here, not in someone else's folder.** If something in `../dion_docs/` is wrong or
+1. **Write here, not in someone else's folder.** If something in `../` is wrong or
    incomplete, the correction is written here, citing the file and section, and the owner is told.
 2. **Tag where a claim came from.** `[code]` means it was read from the source at the cited line.
    `[reported]` means a person said it, and the doc names who and when. `[inferred]` means it is

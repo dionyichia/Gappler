@@ -57,8 +57,8 @@ engineering students. Republish after each change, to the same link.
 
 | Page | Source | Link |
 |---|---|---|
-| Test bench: what each check covers, what it found, the simulated arm explained | `bench/testbench-map.html` | <https://claude.ai/code/artifact/cb1f53f5-3154-4271-be1e-4daf46fca7fe> |
-| Wiring map, with the tab "One grasp, start to finish" (17 steps: program, method, message, status today) | `docs/dion_docs/wiring-map.html` | <https://claude.ai/code/artifact/837635d4-0107-4248-83cc-ce1d7536d0ea> |
+| Test bench: what each check covers, what it found, the simulated arm explained | `testbench-map.html` | <https://claude.ai/code/artifact/cb1f53f5-3154-4271-be1e-4daf46fca7fe> |
+| Wiring map, with the tab "One grasp, start to finish" (17 steps: program, method, message, status today) | `docs/wiring-map.html` | <https://claude.ai/code/artifact/837635d4-0107-4248-83cc-ce1d7536d0ea> |
 
 **Box facts a session should know:** `/home` is **96 % full (14 GB free)** — the W5 scratch env
 `log/w5/` (~2 GB) and `~/rcp-old-ros-wkspace` (4.5 GB) are today's additions; ask before deleting
@@ -90,7 +90,7 @@ verified for the campus address — same machine, checked 2026-09-11). Is it up?
 `ssh rcp2026@10.91.242.76` works only on the NTU network. Then `cd ~/rcp-Gappler && git pull` → read §3
 (safety). Edit on the Mac, commit, push, pull on the box — the box's tree stays clean. Push work that
 changes robot code (`pyproject.toml`, configs, nodes) to a **branch** for Dion's review; `bench/` and
-`docs/dion_docs/` go to `main`.
+`docs/` go to `main`.
 
 ### Work queue, in order
 
@@ -149,7 +149,7 @@ actually ran on the base (ORIENTATION §8.6). Record which is newer. (b) `./benc
 first teach it the Livox prep: copy a ROS 2 `package.xml` into the (untracked) livox folder and pass
 `--cmake-args -DROS_EDITION=ROS2 -DHUMBLE_ROS=humble` (from `livox_ros_driver2/build.sh:50-67`).
 `xpkg_demo` is only an `exec_depend`, so the build should not need it. **Done when** the nav build
-result is in `docs/dion_docs/bench-runs/` and the §8.15 fix (commit `package_ROS2.xml`) is proposed on a branch.
+result is in `docs/bench-runs/` and the §8.15 fix (commit `package_ROS2.xml`) is proposed on a branch.
 
 > ✅ **(a) done 2026-09-11** ([`bench-runs/2026-09-11-labbox-w4a-nav-diff.txt`](bench-runs/2026-09-11-labbox-w4a-nav-diff.txt)).
 > The repo's copies are the **newer** ones (tidied rewrites, git 2026-04-20; `iot22`'s are Feb–Apr) and do the
@@ -267,7 +267,7 @@ W4's build; a mock `navigate_to_pose` action server replaces Nav2 — nothing dr
 
 **W8 — Tier 4** (record + hardware smoke) — **human at the robot**; not before Dion schedules it.
 
-**Bench chores alongside:** C1 Aria publishers; add every new test to `bench/testbench-map.html` and
+**Bench chores alongside:** C1 Aria publishers; add every new test to `testbench-map.html` and
 republish (artifact `cb1f53f5-3154-4271-be1e-4daf46fca7fe`). (C3's re-snapshot and S1's static baseline are
 dropped — Dion, 2026-09-11; see Decisions.)
 
@@ -285,10 +285,10 @@ ORIENTATION §8.16's decision (fix the config's simulated-arm launch, or keep it
 | Tier 2 (build) | **Both workspaces build.** Arm 22/22 (27 min 41 s, CPU throttled); nav 10/10 (2 min 34 s, 2026-09-14) — no Livox blocker, the SDK is already installed on the box |
 | Tier 3 (node behaviour) | **All five scripts run.** `sim_moveit.sh` PASS · `estop_delivery.sh` PASS, found B2a · `state_machine_sim.sh` PASS, C7 XFAIL · `anygrasp_env.sh` PASS in the W5 scratch env · `nav_nodes.sh` PASS 2026-09-14, 6 controls + 4 XFAIL, found F4 |
 | Tier 4 (replay + hw smoke) | Not started — needs a person at the robot |
-| `docs/dion_docs/CODE_AUDIT.md` | **62 findings** (recounted 2026-09-14; the old running total of 51 never included sections D, H and J). 16 blocking/safety, 22 runtime, 21 debt. **7 `[observed]`**: B2a, B4, C7, E1, F1, F2, F4. B2's message loss was tested and not reproduced; the rest `[unverified]`. Page source is now `docs/dion_docs/code-audit-page.html`, published at <https://claude.ai/code/artifact/63cc961e-e49a-4421-9132-fec0f3e35822> |
+| `docs/CODE_AUDIT.md` | **62 findings** (recounted 2026-09-14; the old running total of 51 never included sections D, H and J). 16 blocking/safety, 22 runtime, 21 debt. **7 `[observed]`**: B2a, B4, C7, E1, F1, F2, F4. B2's message loss was tested and not reproduced; the rest `[unverified]`. Page source is now `docs/code-audit-page.html`, published at <https://claude.ai/code/artifact/63cc961e-e49a-4421-9132-fec0f3e35822> |
 | Lab box access | tailscale (see Start here). All work in `~/rcp-Gappler`; `rcp-desktop` / `rcp-github` untouched |
 | Git | Everything on `main`; the box pulls from it. `bench/w1-setuptools-pin` is merged (the branch can go) |
-| Test bench page | <https://claude.ai/code/artifact/cb1f53f5-3154-4271-be1e-4daf46fca7fe> — source `bench/testbench-map.html`; republish after each result |
+| Test bench page | <https://claude.ai/code/artifact/cb1f53f5-3154-4271-be1e-4daf46fca7fe> — source `testbench-map.html`; republish after each result |
 
 ---
 
@@ -296,7 +296,7 @@ ORIENTATION §8.16's decision (fix the config's simulated-arm launch, or keep it
 
 | What | Where | Confidence |
 |---|---|---|
-| Local clone (where `bench/` and `docs/dion_docs/` were written) | `/Users/Dion/sch_repo/Gappler` on Dion's Mac, branch `main` @ `2d36a89` + uncommitted work | `[code]` |
+| Local clone (where `bench/` and `docs/` were written) | `/Users/Dion/sch_repo/Gappler` on Dion's Mac, branch `main` @ `2d36a89` + uncommitted work | `[code]` |
 | GitHub remote | `git@github.com:dionyichia/Gappler.git` | `[code]` |
 | Lab machine SSH | **tailscale** (from anywhere): `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60`. Campus: `ssh rcp2026@10.91.242.76` — NTU network / VPN only. Key auth from the Mac | observed 2026-09-11 |
 | The code on the lab machine | `~/rcp-desktop` = `realman_manip`; `~/rcp-github/Renaissance-Capstone-Project` = `combined` = **this Mac's `main`** — see Phase 0 results below | read on the box 2026-09-11 |
@@ -324,7 +324,7 @@ ORIENTATION §8.16's decision (fix the config's simulated-arm launch, or keep it
 | What | Result |
 |---|---|
 | Working repo | `~/rcp-Gappler`, `git clone --branch main git@github.com:dionyichia/Gappler.git` (60 s, 669 MB). Builds go to its own `build/ install/ log/` (gitignored) |
-| Bench run (`./bench/run.sh`) | preflight 17 pass / 5 fail / 1 warn / 13 skip; static the same 5 known findings; contracts pass. Report: `docs/dion_docs/bench-runs/2026-09-11-labbox-bench.txt` |
+| Bench run (`./bench/run.sh`) | preflight 17 pass / 5 fail / 1 warn / 13 skip; static the same 5 known findings; contracts pass. Report: `docs/bench-runs/2026-09-11-labbox-bench.txt` |
 | Tier 2 (`./bench/build.sh`) | **PASS** — 22 packages, 27 min 41 s. stderr (warnings) from `moveit_task_constructor_core`, `rm_driver`. Old overlay had 23: the difference is `pointnet2` (AnyGrasp's CUDA op in `grasp_module/`, built against the conda torch — not part of the arm workspace) |
 | Tier 3 (`./bench/sim_moveit.sh`) | **PASS** — both home poses (`main`, `realman_manip`) and zero, SUCCESS, max joint error ≤ 0.0045 rad, on `mock_components`, channel 77, `enp2s0` NO-CARRIER throughout. `move_group` segfaults (−11) **on shutdown**, after all motions `[inferred]` known Humble shutdown behaviour; harmless to the result |
 | The config's own simulated-arm launch | **Cannot start** — see ORIENTATION §8.16. The bench carries its own model (`bench/nodes/sim_arm.urdf.xacro`) instead of editing the robot config |
@@ -378,8 +378,8 @@ ORIENTATION §8.16's decision (fix the config's simulated-arm launch, or keep it
 
 ## 2. Decisions Dion needed to make — all answered 2026-09-11 (see "Start here"); kept for the record
 
-1. **Commit and push `bench/` + `docs/dion_docs/`?** They exist only on the Mac, uncommitted. The lab box can
-   only get them by `git pull` (after a push) or `scp`. Suggested: two commits — `docs/dion_docs/` + root
+1. **Commit and push `bench/` + `docs/`?** They exist only on the Mac, uncommitted. The lab box can
+   only get them by `git pull` (after a push) or `scp`. Suggested: two commits — `docs/` + root
    `README.md` + `CLAUDE.md` first, `bench/` second — then push, then `git pull` on the box into a
    **separate** checkout (see §3 rule 5). Also pending in the working tree:
    - `ros2_robot_ws/src/main.py` — Dion's own edit: adds the `# TODO: Change this to fit new repo
@@ -434,7 +434,7 @@ python3 bench/preflight.py -g net --json   # one group, machine-readable
 ```
 
 Stdlib-only Python 3.8+. No ROS or pip install needed. Full design rationale in
-[`bench/README.md`](../../bench/README.md).
+[`bench/README.md`](../bench/README.md).
 
 | File | Job | Needs a baseline? |
 |---|---|---|
@@ -535,7 +535,7 @@ camera per the startup guide — again with a live graph:
 ```bash
 cd ~/bench_work/gappler
 source /opt/ros/humble/setup.bash && source <verified overlay>/setup.bash
-./bench/run.sh preflight | tee docs/dion_docs/preflight-$(date +%F).txt
+./bench/run.sh preflight | tee docs/preflight-$(date +%F).txt
 ```
 
 **Done when** the output is committed and every FAIL/WARN is either explained or turned into a
@@ -660,15 +660,15 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-11 | Claude (Opus 5) + Dion | Created as the cold-start handoff. Records three preflight bugs found on review (P1–P3: `topic hz` / `tf2_echo` output discarded on timeout; substring IP match), the contracts extractor's blind spot for every Aria-side publisher (C1), and the static tier's missing baseline (S1). Re-confirmed CODE_AUDIT §D with plain grep. Phases 0–6 planned; nothing yet run on the lab machine. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Second session. SSH attempted: host reachable, login refused (no key for `rcp2026`). Host key identical to `10.91.155.97`, so §1 point 2 is settled. Recorded Dion's account of the `iot22`→`rcp2026` copy (`rcp-desktop`, `rcp-github`). Fixed P1–P5 and S2 in `bench/`; added preflight `home` group, which found 10 `/home/iot22` paths in owned code. Bench verdicts on the Mac unchanged apart from that. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Phase 0 done over SSH, read-only; results table in §1. **Corrected:** the Mac's `main` is `rcp-github`'s `combined`, not `rcp-desktop`. Found: no copied overlay works for `rcp2026`; no conda/AnyGrasp env for `rcp2026`; `rcp-desktop/.venv` has working CUDA torch; `enp2s0`'s saved profile is `192.168.1.100`; `iot22` is still logged in (added §3 rule 4b). Phase 3 findings retagged in ORIENTATION and CODE_AUDIT. |
-| 2026-09-11 | Claude (Opus 5) + Dion | Phases 1, 2, 4 (arm) done in `~/rcp-Gappler`; first Tier 3 test (`sim_moveit.sh`) passes. Recorded CPU throttling, the broken config simulated-arm launch (ORIENTATION §8.16), bench bugs P7–P9. Reports in `docs/dion_docs/bench-runs/`. |
-| 2026-09-11 | Claude (Opus 5) + Dion | End of day: added **Start here** with Dion's decisions and the ordered work queue W1–W8 for the next session. Model files copied into `~/rcp-Gappler` (docs/dion_docs/ASSETS.md). Recorded the AnyGrasp env facts (numpy 1 vs 2, MinkowskiEngine) behind the one-env-first plan. |
-| 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed `dion_docs/`, later moved to `docs/dion_docs/` (per-person doc folders as more people join; rules in START_HERE). Paths here and in `bench/` updated; preflight's home scan skips any `*_docs/`. Root `.gitignore` extended for weights, recordings, archives, `*.swp`. |
+| 2026-09-11 | Claude (Opus 5) + Dion | Phases 1, 2, 4 (arm) done in `~/rcp-Gappler`; first Tier 3 test (`sim_moveit.sh`) passes. Recorded CPU throttling, the broken config simulated-arm launch (ORIENTATION §8.16), bench bugs P7–P9. Reports in `docs/bench-runs/`. |
+| 2026-09-11 | Claude (Opus 5) + Dion | End of day: added **Start here** with Dion's decisions and the ordered work queue W1–W8 for the next session. Model files copied into `~/rcp-Gappler` (docs/ASSETS.md). Recorded the AnyGrasp env facts (numpy 1 vs 2, MinkowskiEngine) behind the one-env-first plan. |
+| 2026-09-11 | Claude (Opus 5) + Dion | `docs/` renamed ``, later moved to `docs/` (per-person doc folders as more people join; rules in START_HERE). Paths here and in `bench/` updated; preflight's home scan skips any `*_docs/`. Root `.gitignore` extended for weights, recordings, archives, `*.swp`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W1 done** on the box (over tailscale): `.venv` rebuilt with uv; preflight `torch-cuda` uses the venv, `conda-anygrasp` → `anygrasp-env`, `aria-sdk` reports CLI crashes. Found setuptools 82 breaks the `aria` CLI; pin on branch `bench/w1-setuptools-pin` for review. Record: `bench-runs/2026-09-11-labbox-w1-venv.txt`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W4a done** (read-only): repo nav code is newer and equivalent; `robot_navigation` and `xpkg_demo` exist only in `iot22`'s workspace. Record in `bench-runs/`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W3 done**: `bench/estop_delivery.sh`. Ctrl+C key ignored by `estop.py` (new, B2a); SIGINT stop delivered 5/5 (B2 not reproduced on localhost) but exits via a double-shutdown traceback. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W2 done**: full grasp cycle on the simulated arm, C7 reproduced. W5 test written, scratch MinkowskiEngine build under way (survey only). `~iot22/Ros2Workspaces` copied to `~/rcp-old-ros-wkspace`. Decisions recorded: W2 allowed (sim only), no fixes yet. |
 | 2026-09-11 | Claude (Opus 5) + Dion | **W5 survey answered**: one uv env runs AnyGrasp (licence passed, demo grasps found) on torch 2.10 / numpy 2 — recipe in `bench-runs/`. Productising it is held. |
-| 2026-09-11 | Claude (Opus 5) + Dion | Cold-start refresh: docs now at `docs/dion_docs/`; Start here rewritten (status table, held fixes, box facts), tailscale as the default route, §0 updated. |
+| 2026-09-11 | Claude (Opus 5) + Dion | Cold-start refresh: docs now at `docs/`; Start here rewritten (status table, held fixes, box facts), tailscale as the default route, §0 updated. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Box went offline (~19:40). On the Mac: **W4b prep** (`build.sh nav` Livox manifest + flags + SDK warning) and **W7 written** (`nav_nodes.sh`, 10 cases, 4 xfail); neither run. Decision: no contracts re-snapshot, no static baseline. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Preflight `aria-sdk` passed with the glasses unplugged (`aria auth check` exits 0 and prints "no devices connected"): now FAIL "no glasses connected". Test bench page rewritten in plain language, with a simulated-arm section. Wiring map: new tab "One grasp, start to finish". Confirmed CODE_AUDIT D1 (nothing publishes `/manipulator/release`) and corrected ORIENTATION §5, which said "voice → orchestrator". |
 | 2026-09-12 | Claude (Opus 5) + Dion | Cold-start refresh: box still offline, so Start here now opens with "check it's up" and the run order (preflight, W4b, W7). Added the two pages and the writing decision. |

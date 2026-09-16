@@ -273,7 +273,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="fact">Final report due <b>28 Mar 2027</b></span>
     <span class="fact">Oral presentation <b>5&ndash;16 Apr 2027</b></span>
     <span class="fact">Milestones <b>11</b></span>
-    <span class="fact">Tasks <b>68</b></span>
+    <span class="fact">Tasks <b>69</b></span>
     <span class="fact">Effort available <b>~620 h</b></span>
   </div>
 </div></header>
@@ -311,6 +311,17 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   capacity usage drops from 79 to about 65 percent. See section 3 below for the full calendar, and
   the deadlines highlighted in the chart. Task ownership, hours and dependencies did not change,
   only which calendar week each one falls in.</p>
+</div>
+<div class="callout c-note" style="margin-bottom:20px">
+  <span class="ct">Also on 16 September &mdash; a CI task added, and DONE now means done for everyone</span>
+  <p><strong>New task, T0.10.</strong> Once a second clone has actually proven the fresh-clone story
+  works (T0.5), CI wires up <code>./bench/run.sh</code> to run on every push, so a breaking change to
+  a topic, frame or contract name fails loudly instead of waiting for someone to notice. It cannot
+  touch the real arm, base or glasses. Owner: Dion. Full scope in <code>NEXT_STEPS.md</code> &sect;2.12.</p>
+  <p><strong>The done state on every task node below is no longer just per-browser.</strong> A task
+  whose description starts with "DONE" is struck through and shown green for every viewer, derived
+  from the data itself rather than from a click saved in one person's <code>localStorage</code>. The
+  mark button still lets you track anything else locally, same as before.</p>
 </div>
 <div class="callout c-note" style="margin-bottom:34px">
   <span class="ct">What changed on 14 September</span>
@@ -651,7 +662,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 <section id="tree">
   <h2><span class="sn">Section 4</span>The task tree</h2>
-  <p class="sub">Sixty-eight tasks. Each one lists what has to finish before it can start, and what
+  <p class="sub">Sixty-nine tasks. Each one lists what has to finish before it can start, and what
   kind of work it is. Click any task to trace it: what it is waiting on turns amber, what is waiting
   on it turns green. Filter by person or by kind of work to see one slice at a time.</p>
 
@@ -672,7 +683,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </table></div>
   <div class="callout c-note">
     <span class="ct">Read the bar before you read the schedule</span>
-    <p>Only sixteen of sixty-eight tasks are new code, and nine are repair or rewiring. The rest is
+    <p>Only seventeen of sixty-nine tasks are new code, and nine are repair or rewiring. The rest is
     bring-up, measurement and decisions. This is not a project that builds a robot. It is a project
     that repairs one, measures it, and adds one new component, which is the memory graph.</p>
     <p>That matters for estimates. Where the work is repair, the code change is usually small and the
@@ -696,7 +707,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <button class="f" data-work="measure" aria-pressed="false">Measure</button>
     <button class="f" data-work="plan" aria-pressed="false">Decide</button>
     <button class="f" id="clearsel">Clear trace</button>
-    <span class="note">Marking a task done is saved in this browser only. Linear holds the shared record.</span>
+    <span class="note">Tasks the source data marks "DONE" show struck through and green for everyone. Anything else you mark done here is saved in this browser only. Linear holds the shared record.</span>
   </div>
 
   <div class="legend">
@@ -970,15 +981,15 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </section>
 
 <p class="foot"><strong>Reading this without Claude.</strong> The page is one self-contained file in
-the repository at <code>docs/dion_docs/next-steps-map.html</code>. No build step, no server needed,
+the repository at <code>docs/next-steps-map.html</code>. No build step, no server needed,
 nothing loaded from Claude. Open it straight off disk, or if your browser is fussy about local files,
-serve the folder: <code>cd docs/dion_docs &amp;&amp; python3 -m http.server 8000</code> then open
+serve the folder: <code>cd docs &amp;&amp; python3 -m http.server 8000</code> then open
 <code>http://localhost:8000/next-steps-map.html</code>. The only thing it fetches from the internet is
 the web font, and it falls back to system fonts without it. Everything works offline, including the
 task filters and the dependency trace.</p>
 
-<p class="foot">Source: <code>docs/dion_docs/next-steps-map.html</code>. The full written plan with the
-evidence and the risk register is <code>docs/dion_docs/PROJECT_PLAN.md</code>. The system it plans
+<p class="foot">Source: <code>docs/next-steps-map.html</code>. The full written plan with the
+evidence and the risk register is <code>docs/PROJECT_PLAN.md</code>. The system it plans
 work on is described in <code>ORIENTATION.md</code> and drawn in the wiring map. Everything on this
 page is a decision, not a measurement, and it is expected to change as the first hardware sessions
 tell us what the estimates were worth.</p>
@@ -1020,6 +1031,7 @@ var T = [
  ["T0.7","M0","D",4,"off","Write the channel contract: which stream owns which message channels, and the three handover points between streams. One page",[],"plan"],
  ["T0.8","M0","D",5,"box","DONE 2026-09-14. The environment check, the navigation build and the ten navigation node tests all ran and all passed. What is left is W6, blocked on a faulty camera, and W8, which needs a person at the robot",[],"measure"],
   ["T0.9","M0","S",3,"lab","DONE 2026-09-16 for the manufacturer chassis. The Hexman Robotics ECHO-PLUS manual specifies 460 x 380 x 140 mm and a 265 mm stated rotation radius, so the 200 mm Nav2 radius is not conservative. Recheck the integrated footprint after mount fabrication",[],"measure"],
+ ["T0.10","M0","D",6,"off","Added 2026-09-16. CI: wire up ./bench/run.sh (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. The real arm, base and glasses can never be in CI",["T0.5"],"build"],
 
  ["T1.1","M1","D",3,"off","Answer the six open questions in the code audit and record the decisions. Several are choices, not fixes",["T0.7"],"plan"],
  ["T1.2","M1","D",8,"off","Safety fixes before any power: the stop key the launcher promises but does not have, the stop program ignoring Ctrl+C, and the arm driver being launched twice",["T1.1"],"fix"],
@@ -1106,6 +1118,9 @@ function primary(o){ return o === "A" ? "A" : o.charAt(0); }
 var root = document.getElementById("tree-root");
 var DONE = {};
 try { DONE = JSON.parse(localStorage.getItem("gappler.tasks.done") || "{}"); } catch(e) { DONE = {}; }
+// A task whose title in T starts with "DONE" is done for every viewer, from the source data itself
+// -- not just in whoever's browser clicked the button. Re-seeded on every load so it can't drift.
+T.forEach(function(t){ if(/^DONE\b/.test(t[5])) DONE[t[0]] = 1; });
 function save(){ try { localStorage.setItem("gappler.tasks.done", JSON.stringify(DONE)); } catch(e) {} }
 
 var html = "";
@@ -1136,7 +1151,8 @@ MS.forEach(function(m){
             '<span class="hrs">' + (t[3] ? t[3] + " h" : "ongoing") + "</span></div>";
     html += '<p class="title">' + t[5] + "</p>";
     html += '<div class="deps">' + depHtml + "</div>";
-    html += '<span class="mark" data-mark="' + t[0] + '">done</span>';
+    var srcDone = /^DONE\b/.test(t[5]);
+    html += '<span class="mark" data-mark="' + t[0] + '">' + (srcDone ? "done" : "mark done") + "</span>";
     html += "</div>";
   });
   html += "</div></div>";
@@ -1183,6 +1199,7 @@ function paint(){
 }
 
 function toggle(id, n){
+  if(/^DONE\b/.test(byId[id][5])) return; // done in the source data -- not a per-viewer toggle
   if(DONE[id]){ delete DONE[id]; n.classList.remove("done"); }
   else { DONE[id] = 1; n.classList.add("done"); }
   save();

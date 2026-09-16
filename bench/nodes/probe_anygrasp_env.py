@@ -72,7 +72,7 @@ def main(argv):
         return 3
     ckpt = PERCEPTION / "log/checkpoint_detection.tar"
     if not ckpt.exists():
-        print(f"SKIP: {ckpt.relative_to(REPO)} missing (gitignored; see docs/dion_docs/ASSETS.md)")
+        print(f"SKIP: {ckpt.relative_to(REPO)} missing (gitignored; see docs/ASSETS.md)")
         return 3
     prepare_scratch()
     env = dict(os.environ, PYTHONNOUSERSITE="")   # never set it (ORIENTATION 8.5); empty = unset
