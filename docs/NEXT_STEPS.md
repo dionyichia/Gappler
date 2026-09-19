@@ -161,7 +161,7 @@ the HiCo-Nav scope lands would be wasted effort.
 
 #### `[open]` Decision: patch the prompt into `sam3_ros_node.py` now, or retire the node first?
 
-**Dion decides this later. No code changes until then** (the standing "no fixes yet" rule).
+**Dion decides this later. No code changes until then.**
 
 What forces the question: `sam3_ros_node.py` never subscribes to `/aria/audio/prompt`, so on the
 path that runs today the arm only ever looks for the hardcoded word "box"
@@ -218,7 +218,24 @@ reverted cleanly. Suggested order — cheapest and safest first:
 ⚠️ Wait on the HiCo-Nav scoping decision (§1.3) before renaming any of the seven contract topics —
 if HiCo-Nav takes some of them over, their names are its business, not ours.
 
-### 2.5 🔴 Paths and environment assumptions — nothing runs on a fresh clone
+### 2.5 ✅ Paths and environment assumptions — fixed by T0.3
+
+**Status 2026-09-19: done, merged from branch `t0.3-fresh-clone-paths`.** Full record in
+[`zongzhe_docs/T0.3_SESSION.md`](zongzhe_docs/T0.3_SESSION.md). The survey below is kept as history,
+and its line numbers are from before the fix.
+
+- `[code]` Group A (inside the repo) is derived from the repo root. `sam3_ros_node.py` imports
+  `ModelPaths.SAM3_PATH` instead of keeping its own copy, and the `sam3_model.py` demo block is
+  deleted. `install.sh` finds the repo from its own location.
+- `[code]` Group B map paths use one environment variable, `GAPPLER_MAP_DIR`, default `~/maps`. This
+  settles the `[open]` question below in favour of environment variables. It also fixed a real bug:
+  mapping saved to `~/maps/current_map` but localisation read `/home/iot22/maps/completed_map`, so
+  the two launch files never shared a map.
+- **Still open:** the OpenVINS paths (`src/main.py`, the decision below is unchanged) and the
+  `conda run` launch of AnyGrasp. Neither is a T0.3 item.
+- `[unverified]` Nothing was launched. T0.5 is the real test. On the lab box, set
+  `GAPPLER_MAP_DIR=/home/iot22/maps` or copy the map, since the default now resolves to the running
+  user's home.
 
 `[code]` **Surveyed 2026-09-10 after a fresh clone. This is worse than "seven wrong paths".**
 
@@ -576,7 +593,7 @@ real hardware. Tier 3's simulated-arm and mock-Nav2 scripts (`sim_moveit.sh`,
 `state_machine_sim.sh`, `nav_nodes.sh`, `estop_delivery.sh`) also use no real hardware — mock
 components and a private ROS channel are the whole point — so they are candidates too, once someone
 has confirmed they behave the same in a container as on the lab box. **The real arm, the real base
-and the real glasses can never be in CI** — nothing here changes the "no fixes yet" or hardware
+and the real glasses can never be in CI** — nothing here changes the hardware
 safety rules elsewhere in this doc and in `CLAUDE.md`.
 
 **What "breaking changes" means for this check:** a push that fails `bench/run.sh` — a renamed
@@ -844,3 +861,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.12: CI started. `.github/workflows/bench.yml` runs Tiers 0-1 strictly on PRs into `main`, red until the 7 known static findings are fixed. Noted the planned `dev`/`main` split and new task `T0.11`. Task count 69 to 70. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.12: CI blocks merges only after T0.4 turns the bench green. Added the Monday and Wednesday night full-suite run, and deferred the runner question to T0.11. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.12: first CI run recorded. Fixed preflight reporting FAIL for lab hardware on any non-lab Linux host. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §2.5 marked done after T0.3 merged. Status block added above the original survey. The OpenVINS paths and the AnyGrasp `conda run` launch stay open. Dropped two mentions of the retired "no fixes yet" rule. |

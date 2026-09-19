@@ -61,8 +61,9 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
   `/object_centroid_2d` on the real ROS domain. Isolate tests with `ROS_DOMAIN_ID` + `ROS_LOCALHOST_ONLY=1`.
   Other users (`iot22`, and other people logged in as `rcp2026`) share the box; localhost-only does
   not separate you from their processes — a unique, empty domain id does.
-- **No fixes yet** (Dion, 2026-09-11): survey, record findings, build tests. Fixes come later, on
-  branches for review.
+- **Fixes go on branches for review** (Dion, 2026-09-19, replacing the 2026-09-11 "no fixes yet"
+  rule). The project is in implementation. Each fix lands through a PR into `main`, where CI runs the
+  bench.
 
 ## The lab machine
 

@@ -173,7 +173,8 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
   then run those three.**
 - **Pages:** the wiring map and the test bench page are rewritten in plain language for readers new to
   code (links above). Dion's docs follow the same rule.
-- **Standing rule: no fixes yet.** Findings are recorded; fixes come later, on branches for review.
+- **Standing rule: fixes go on branches for review.** Since 2026-09-19 the project is in
+  implementation. Each fix lands through a PR into `main`, where CI runs the bench.
 - **Things the robot needs that live outside git** — `robot_navigation`, `xpkg_demo`, the SLAM map and
   more: [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.9. The lab box now has a copy of `iot22`'s navigation
   workspace at `~/rcp-old-ros-wkspace`.
@@ -197,3 +198,4 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 | 2026-09-16 | Claude (Sonnet 5) + Dion | Global-docs reorg: moved everything global out of `docs/dion_docs/` into `docs/` directly (`ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `NEXT_STEPS`, `PROJECT_PLAN`, `TESTBENCH_PLAN`, `hico-nav/`, `bench-runs/`, and the three published HTML pages, `testbench-map.html` also moving out of `bench/`). `docs/dion_docs/` is now Dion's personal folder, matching everyone else's. Rewrote "How the docs are organised" and the rules for every session — global docs are now everyone's to keep current, not just Dion's. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Added `docs/archive/` to the layout table. It holds the 2026-08-25 startup guide, moved from the `realman_manip` branch in T0.0. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Task count 69 to 70 after `T0.11` was added to `PROJECT_PLAN`. |
+| 2026-09-19 | Claude (Opus 5) + Dion | Replaced the "no fixes yet" rule. Fixes now go on branches, through a PR into `main`. |

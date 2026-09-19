@@ -13,7 +13,7 @@ Those are the shared reference. This folder does not repeat them, it links to th
 
 | File | What it is | When to read it |
 |---|---|---|
-| [`T0.3_SESSION.md`](T0.3_SESSION.md) | The 2026-09-15 session that made the repository run from a fresh clone. What changed, what the evidence is, what was deliberately left, and five items for Dion. | Before T0.4 or T0.5, and before trusting `../dion_docs/NEXT_STEPS.md` section 2.5, which this supersedes. |
+| [`T0.3_SESSION.md`](T0.3_SESSION.md) | The 2026-09-15 session that made the repository run from a fresh clone. What changed, what the evidence is, what was deliberately left, and five items for Dion. | Before T0.4 or T0.5, and before trusting `../NEXT_STEPS.md` section 2.5, which this supersedes. |
 | [`BUILD_WORKSPACES.md`](BUILD_WORKSPACES.md) | Why `deps_ws` and `ros2_robot_ws` are built separately instead of together, answered by Puneet on 2026-08-25, checked against the code. Explains the underlay and overlay idea for anyone who has not used colcon. | Before your first build, and before changing anything about how the project is built. |
 
 ## Rules this folder follows
