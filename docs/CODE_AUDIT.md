@@ -168,7 +168,7 @@ the `realman_manip` pose. Any build of `main` homes to the new, unvalidated one.
 | `main` (now) | 0.0 | 0.0 | 0.7854 | **0.0** | 1.5708 | 1.5708 |
 | `realman_manip` | -0.0175 | -0.1745 | 0.7854 | **-3.0718** | -1.6930 | -1.6057 |
 
-`RCP_NEW_USER_STARTUP_GUIDE.md` §7 — the document that says *"Clear the arm's path, keep the
+`archive/RCP_NEW_USER_STARTUP_GUIDE.md` §7 — the document that says *"Clear the arm's path, keep the
 physical e-stop in reach"* — quotes the `realman_manip` values. **joint4 differs by 176°.** Only
 joint3 is unchanged.
 
@@ -560,7 +560,7 @@ Same code, same mismatch, in `object_recognition_pipeline.py:440-446`.
 ### G6. 🟡 No minimum-point guard before AnyGrasp
 
 `anygrasp_detection_node.py:198` checks only `combined_mask.sum() == 0`. Per
-`RCP_NEW_USER_STARTUP_GUIDE.md` §5.1, MinkowskiEngine **segfaults rather than raising** on an
+`archive/RCP_NEW_USER_STARTUP_GUIDE.md` §5.1, MinkowskiEngine **segfaults rather than raising** on an
 inadequate cloud. A handful of surviving points is not zero but may still be fatal.
 
 ### G7. 🟠 Null dereference when joint states are absent
@@ -820,3 +820,4 @@ publishers racing on the same three topics.
 | 2026-09-14 | Claude (Opus 5) + Dion | New finding E5: `goto_glasses.py` has an outbound path triggered by `/aria/audio/prompt`, the same topic that starts the forward leg, and both send goals to the one `navigate_to_pose` server. It is launched unconditionally by `slam_localization.launch.py:156-159`. This corrects a scoping assumption that E1 was return-leg only and therefore droppable: its outbound half is on the live path. F2 is confirmed return-leg only. Repo-wide check found the E1 frame pattern in exactly two places, both in `goto_glasses.py`. E4 recounted: six source literals plus a test fixture, not three plus one. The audit now holds **50** findings. |
 | 2026-09-14 | Claude (Opus 5) + Dion | **Recounted the findings, and the running total in this changelog was wrong.** Counting the actual entries gives **62**, not 51: 43 with their own heading, plus the four rows of D, the two rows of H and its doc correction, and the twelve bullets of J. Those three table-and-bullet sections were never in the total, and the 45 → 49 → 50 → 51 arithmetic carried the omission forward. By severity: 16 blocking or safety, 22 fail at runtime, 21 debt, of which **7 are now `[observed]`** (B2a, B4, C7, E1, F1, F2, F4). B2's message loss was tested and **not** reproduced. The published page is now generated from `code-audit-page.html`, committed alongside this file, and computes its own counts from its own entries so they cannot drift again. It carries 59 of the 62: B7, K1 and K2 are inventory rather than defects and stay here only. |
 | 2026-09-14 | Claude (Opus 5) + Dion | **W7 ran on the box** (`bench/nav_nodes.sh`, 10 cases, [`bench-runs/2026-09-14-labbox-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt)): 6 controls pass, 4 expected failures reproduced, nothing skipped, no fix needed on the first run. **E1, F1 and F2 move from `[unverified]` to `[observed]`**, each matching the mechanism this audit predicted — E1's goal landed 2.0 m out; F1 wedged the approach node so a second object got no goal; F2's `_returning` latch refused every later return. J4 is *not* a problem at MID360 rates (50/50 frames of 520 kB at 10 Hz, 1.9 ms mean latency), so the QoS relay case is a clean control, not a finding. New finding **F4**: all five nav nodes exit with a traceback on Ctrl+C, in three shapes, the first identical to B2's double-shutdown; `goto_glasses`'s `_cancel_navigation()` is never called on shutdown (`[inferred]`). The audit now holds **51** findings. |
+| 2026-09-19 | Claude (Opus 5) + Dion | Repointed citations of `RCP_NEW_USER_STARTUP_GUIDE.md` to its new home, `docs/archive/`, after T0.0 brought it onto `main`. |

@@ -50,10 +50,10 @@ ARM_UDP_HOST, ARM_UDP_PORT = "192.168.1.10", 8089
 # livox_ros_driver2/config/MID360_config.json
 LIDAR_IP = "192.168.1.3"
 LIDAR_HOST_IP = "192.168.1.5"
-# RCP_NEW_USER_STARTUP_GUIDE.md 1
+# docs/archive/RCP_NEW_USER_STARTUP_GUIDE.md 1
 ARM_NIC = "enp2s0"
 ARIA_SERIAL = "1WM10350101291"
-# RCP_NEW_USER_STARTUP_GUIDE.md 4, T5 -- the expected arm->camera transform
+# docs/archive/RCP_NEW_USER_STARTUP_GUIDE.md 4, T5 -- the expected arm->camera transform
 TF_EXPECT = {("base_link", "camera_color_optical_frame"): (-0.100, -0.049, 0.728)}
 TF_TOL = 0.05
 CAMERA_HZ_RANGE = (8.0, 20.0)          # guide says 13-14 Hz
@@ -263,7 +263,7 @@ def g_gpu() -> list[Check]:
               "PYTHONNOUSERSITE=1 forces conda's CPU-only torch -> libc10_cuda.so ImportError")
     v = os.environ.get("PYTHONNOUSERSITE")
     cs.append(c.bad(f"PYTHONNOUSERSITE={v}",
-                    "unset it -- see RCP_NEW_USER_STARTUP_GUIDE.md 5.2") if v
+                    "unset it -- see docs/archive/RCP_NEW_USER_STARTUP_GUIDE.md 5.2") if v
               else c.ok("not set (correct)"))
 
     c = Check("gpu", "torch-cuda", "the interpreter that runs SAM 3 must see CUDA")

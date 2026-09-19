@@ -950,6 +950,10 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         <td><span class="who w-A">whoever has a spare week</span></td>
         <td>Channel names declared as parameters rather than constants, so they stay overridable at launch. Today 38 of 54 owned channel names are declared outside the shared config</td>
         <td>The naming pass, and the bench's extractor fixed so it can still read them</td></tr>
+      <tr><td class="num">S9</td><td>Pick the gazed object by geometry</td>
+        <td><span class="who w-D">Dion</span></td>
+        <td>Two identical objects defeat matching by appearance, and so does M8's image feature as planned. Casting the gaze ray in the robot's frame does not care what the objects look like. Three methods, cheapest first: map the gaze point using the whole scene's matches, solve the glasses pose from the shared scene against the robot's depth, or full pose fusion. Could strengthen M8's claim. Added 19 September</td>
+        <td>An identical pair in the T2.5 two-box test, so today's failure is measured first. <code>NEXT_STEPS.md</code> &sect;2.13</td></tr>
     </tbody>
   </table></div>
   <div class="callout c-note">
@@ -1021,7 +1025,7 @@ var MS = [
 ];
 
 var T = [
- ["T0.0","M0","D",3,"off","Cherry-pick what is worth keeping off the realman_manip branch onto main, then stop treating that branch as live. Four files plus anygrasp_node.sh, which records that the verified session ran checkpoint_tracking.tar while main launches checkpoint_detection.tar. No code comes across. This is the first thing to do",[],"bringup"],
+ ["T0.0","M0","D",3,"off","PROGRESS 2026-09-19. calibration.json taken, startup guide archived to docs/archive/, SETUP.md skipped. Only env.sh and anygrasp_node.sh remain, held for a box check. Cherry-pick what is worth keeping off the realman_manip branch onto main, then stop treating that branch as live. Four files plus anygrasp_node.sh, which records that the verified session ran checkpoint_tracking.tar while main launches checkpoint_detection.tar. No code comes across. This is the first thing to do",[],"bringup"],
   ["T0.1","M0","S",2,"lab","PROGRESS 2026-09-16. An Intel RealSense D455 is provided to the project. USB 3 connection and live RGB-D stream remain unverified",[],"plan"],
   ["T0.2","M0","SD",5,"lab","DONE 2026-09-16. Switch wired: workstation port 1, LiDAR port 2, arm port 3. NetworkManager persists .100, .10, and .5; RM65 and MID-360 each replied from their required host address after a connection cycle",[],"bringup"],
  ["T0.3","M0","Z",12,"off","Make the repository run from a fresh clone. Paths inside it computed from the repository root, paths outside it in one configuration file",[],"fix"],

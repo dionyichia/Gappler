@@ -15,6 +15,21 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 ## ▶ Start here — next session (updated 2026-09-12)
 
+**When the box is next up, run these three checks first (added 2026-09-19, T0.0).** Each is
+read-only. They decide what happens to the three files held back from `realman_manip`.
+
+1. **Does the Aria calibration file parse?** From `~/rcp-Gappler`:
+   `.venv/bin/python -c "from projectaria_tools.core.calibration import device_calibration_from_json_string as f; print(f(open('src/services/aria_device/calibration/aria_factory_calibration.json').read()).get_camera_calib('camera-rgb'))"`.
+   Done when it prints the RGB camera instead of raising.
+2. **Are these the same glasses?** With the glasses plugged in, read the serial from the `aria`
+   CLI and compare it with `1WM10350101291`, the serial in the file. If it differs, the file is for
+   another pair and only good as a parsing fixture.
+3. **Does `env.sh` work in `~/rcp-Gappler`?** `git show origin/realman_manip:env.sh > /tmp/env.sh`,
+   then in a fresh shell `source /tmp/env.sh && ros2 pkg list | grep -c moveit_task_constructor`.
+   `bench/build.sh` builds the arm workspace into a repo-root `install/` (`bench/build.sh:23`), the
+   layout `env.sh` assumes, so this should pass `[code]`. `env.sh` does not source `install_nav/`.
+   Also look at `anygrasp_node.sh` against T1.10 (see `NEXT_STEPS` §3.3).
+
 **One paragraph (updated 2026-09-14):** the bench runs on the lab box in `~/rcp-Gappler`, and
 **tiers 0 through 3 are now complete**. Done there: tiers 0–1, preflight, Tier 2 for **both**
 workspaces (arm 22/22, nav 10/10), and every Tier 3 script on a private ROS channel — MoveIt on a
@@ -675,3 +690,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-13 | Claude (Opus 5) + Dion | New bench bug S3: YAML values that are filesystem paths are extracted as topics (`/home/iot22/maps/completed_map`). Found while inventorying the contract surface for CODE_AUDIT §K. |
 | 2026-09-14 | Claude (Opus 5) + Dion | **The box came back up and the two written-but-unrun pieces both passed first time. Tiers 0–3 are now complete.** W4b nav build: 10/10 packages, 2 min 34 s, and **three prep expectations were wrong, all in the build's favour** — Livox-SDK2 is already installed on the box (no sudo blocker), `Livox-SDk2/` *is* built by colcon as plain CMake (correcting a `[code]` claim), and the bench's livox manifest is byte-identical to `iot22`'s. W7 nav nodes: 6 controls pass, 4 expected failures reproduced, 0 skipped, no fix needed — **E1, F1 and F2 move to `[observed]`**, J4 turns out to be a clean control (50/50 frames, 1.9 ms), and new finding **F4** (all five nav nodes traceback on Ctrl+C). Preflight's 2026-09-11 glasses fix confirmed FAILing on the box. What is left is a decision (W6), a person at the robot (W8), and the held findings. |
 | 2026-09-14 | Claude (Opus 5) + Dion | **Camera: attempted, not done** ([`bench-runs/2026-09-14-labbox-w6-camera-attempt.txt`](bench-runs/2026-09-14-labbox-w6-camera-attempt.txt)). With Dion's go-ahead the RealSense driver was started on private channel 78. The D435i was **already faulty**: depth opened, colour died with `VIDIOC_S_FMT errno=5`. `initial_reset:=true` then took it off the USB bus entirely, so it needs a physical replug (approved for ~2 h later). No frames recorded, nothing moved, no process left running. **New bench bug S4, fixed the same session:** preflight's `realsense-usb` PASSED that morning on this very camera, because it only grepped `lsusb` — and it matched any "Intel" line, so the box's AX201 Bluetooth adapter alone would have passed it `[code]`. Now two checks: `realsense-usb` (strict on `8086:0b3a` or a "RealSense" description) and a new `realsense-stream` that grabs one frame through `v4l2-ctl`, scoped by sysfs to the RealSense's own nodes so a stray webcam cannot satisfy it, and reporting a busy device as SKIP rather than PASS or FAIL. Verified: both SKIP on the Mac, and on the box `realsense-usb` FAILs with a replug hint while `realsense-stream` SKIPs. **The pass path and the colour-dead path are untested** until the camera is back. |
+| 2026-09-19 | Claude (Opus 5) + Dion | Added three read-only box checks to the top of "Start here", from T0.0: does the Aria calibration file parse, are these the same glasses, and does `env.sh` work in `~/rcp-Gappler`. |

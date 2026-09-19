@@ -19,6 +19,7 @@ haven't been folded into the shared docs yet.
 |---|---|---|
 | **`docs/`** (this folder, directly) | **Global — shared by everyone** | What the system is (`ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `hico-nav/`), the team plan (`PROJECT_PLAN`, `NEXT_STEPS`), the bench handoff (`TESTBENCH_PLAN`, `bench-runs/`), and the three published HTML pages (`next-steps-map.html`, `wiring-map.html`, `testbench-map.html`). |
 | `docs/<name>_docs/` | Personal to that contributor | Their own plans, session notes, handoffs and evidence records not yet folded into the shared docs above. |
+| `docs/archive/` | Global, historical | Old documents kept as evidence, not as instructions. Today: the 2026-08-25 startup guide from `realman_manip`. |
 | `bench/` | Shared | The regression bench — tooling, not docs. |
 | root `README.md` | — | Stale (a different upstream project). Ignore it. |
 
@@ -194,3 +195,4 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 | 2026-09-13 | Claude (Opus 5) + Dion | Republished the task tree map under Dion's own account, so its link is `.../65c7784d-...` and the old `.../72753a73-...` one is dead. The page content did not change. |
 | 2026-09-14 | Claude (Opus 5) + Dion | "Where work stands" refreshed for a cold start: pointer to the seven open decisions in `PROJECT_PLAN` §1.1, the four code checks in §2.5, the work-type split across the 67 tasks, and the new `CODE_AUDIT` E5. |
 | 2026-09-16 | Claude (Sonnet 5) + Dion | Global-docs reorg: moved everything global out of `docs/dion_docs/` into `docs/` directly (`ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `NEXT_STEPS`, `PROJECT_PLAN`, `TESTBENCH_PLAN`, `hico-nav/`, `bench-runs/`, and the three published HTML pages, `testbench-map.html` also moving out of `bench/`). `docs/dion_docs/` is now Dion's personal folder, matching everyone else's. Rewrote "How the docs are organised" and the rules for every session — global docs are now everyone's to keep current, not just Dion's. |
+| 2026-09-19 | Claude (Opus 5) + Dion | Added `docs/archive/` to the layout table. It holds the 2026-08-25 startup guide, moved from the `realman_manip` branch in T0.0. |

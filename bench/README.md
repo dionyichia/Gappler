@@ -44,7 +44,7 @@ bug is there, **XPASS** once it isn't — then retag the finding.
 
 **It does not test behaviour.** It cannot: there is no hardware here, and for
 much of this system there is no observed behaviour to regress against in the
-first place — `RCP_NEW_USER_STARTUP_GUIDE.md` §7 records that the arm has never
+first place — `docs/archive/RCP_NEW_USER_STARTUP_GUIDE.md` §7 records that the arm has never
 been commanded to move, and `ORIENTATION.md` §6 lists four seams that are
 commented out. You cannot regression-test something that has never once run.
 
@@ -214,7 +214,7 @@ Deliberately out of scope for now, in rough order of value:
    and it makes the bench useful forever afterwards offline.
 4. **The rest of hardware smoke.** `preflight.py` already asserts the camera rate
    and the `base_link → camera_color_optical_frame` transform against the values
-   in `RCP_NEW_USER_STARTUP_GUIDE.md` §4. Still unchecked, because each needs a
+   in `docs/archive/RCP_NEW_USER_STARTUP_GUIDE.md` §4. Still unchecked, because each needs a
    node launched rather than merely observed: the driver's
    `product_version = RM65-BI` handshake line, and AnyGrasp's
    `Frame 0: selected 5 seed grasps`.

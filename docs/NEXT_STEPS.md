@@ -600,6 +600,72 @@ description so nobody over-reads a passing badge.
 Owner: Dion, since he owns `bench/` itself. Depends on `T0.5` (both other clones build and pass the
 bench) — see `PROJECT_PLAN.md` §6.2, task `T0.10`.
 
+### 2.13 🟡 Explore: pick the gazed object by geometry, not by appearance
+
+Raised by Dion, 2026-09-19. A possible direction, not a committed task. Decision `D9` and stretch
+goal `S9` in `PROJECT_PLAN`.
+
+**The problem.** Two identical objects on the table, say two apples. The current cross-camera step
+cannot reliably tell them apart `[inferred]`. `_find_matching_ros_mask`
+(`object_recognition_pipeline.py:532-610`) keeps only the keypoint matches that fall inside the gazed
+mask in the glasses image (`:572-573`), then votes for whichever robot-side mask those keypoints land
+in (`:587-596`). A keypoint on one apple can match either apple, and the background matches that
+would say which one is which are discarded. M8 as planned has the same blind spot: T8.1 and T8.2
+select by an image feature of the gazed region, and two identical objects give the same feature.
+
+**Three candidate methods, cheapest first:**
+
+| Method | Idea | Needs | Rough cost |
+|---|---|---|---|
+| A. Scene transfer | Keep the background matches too. Fit a homography between the two views and map the gaze point straight into the robot image, then take the mask it lands in | Only what exists today | Hours. Assumes a roughly flat tabletop scene |
+| B. Pose from the shared scene | Lift robot-side keypoints to 3D with RealSense depth, solve the glasses camera pose with `cv2.solvePnPRansac`, move it into the robot frame by TF, cast the gaze ray and pick the object nearest to it. The room acts as the marker | LightGlue (exists), robot depth and intrinsics (exist), glasses intrinsics from the live calibration (exist). New: the 3D lift, the pose solve, the ray test. About 100 to 200 lines `[inferred]` | Days. No marker, no OpenVINS, no drift, because the pose comes from the same frame as the gaze |
+| C. Full pose fusion | ArUco fix plus OpenVINS tracking between fixes, as `src/services/pose_fusion/README.md` describes. Then the same gaze ray test as B | OpenVINS brought up for the first time. Its VIO half is commented out today (`pose_fusion_node.py:135-140`, `src/main.py:112`) and the `kalibr_*.yaml` files were derived by hand from the live calibration | Weeks. Also serves return-to-user |
+
+**What limits B** `[inferred]`, all worth measuring: very different viewpoints between head and
+wrist camera, too little shared scene, textureless surfaces, and time skew between the two frames
+(the matcher pairs the latest frame of each with no time check, the same class as `CODE_AUDIT` G1).
+Gaze error of about 2° is about 5 cm at 1.5 m, so objects about 10 cm apart should separate and
+touching objects may not.
+
+**Why this is worth doing, not a niche problem.** Use this answer when someone asks. Two truly
+identical objects are fairly rare, so they are best used as the **hardest test case, not the
+pitch**. The real capability is working out **where the user is looking in the robot's own 3D
+space**. That helps with:
+
+- similar but not identical objects
+- partly hidden objects
+- cases where the image feature is uncertain
+- handing an object back to the user
+- confirming the robot and the user are attending to the same thing, which matters because the
+  robot may not see what the user sees. The base camera is mounted at about knee height.
+
+Where it matters in practice: assistive use (a user who can look but cannot easily point or speak,
+in scenes full of near-duplicates such as mugs, pill bottles and cans), warehouse and retail shelves,
+kitchens and workshops. Speech ("the left one", "the red one") separates many pairs, so gaze earns
+its place when objects are hard to describe or the user cannot easily speak. A reviewer will ask
+how the method copes with identical objects. A geometric method has an answer, an appearance-only
+method does not.
+
+**Parked open problem: the robot cannot see what the user sees.** Research and think about this
+later. If something blocks the apple from the robot's view entirely while the user can still see
+it, how does the robot know to look from another angle or reposition itself?
+Starting thoughts `[inferred]`, none checked:
+- The LiDAR is there, but it serves navigation and gives no object identity.
+- The wrist camera could look around. The arm can move it to a new viewpoint.
+- Methods B and C give the gaze ray in the robot's frame even when the robot cannot see the object.
+  The ray says *where* to look, so the robot could move the wrist camera, or the base, to view the
+  ray's end from the side. This is the "next best view" problem in active perception.
+
+**Suggested order.** Try A inside M2. Include an identical pair in T2.5's two-box test so the
+failure, if there is one, is measured rather than assumed. Only if A fails, try B. C only if
+return-to-user comes back into scope.
+
+**Related, and the true "continuous calibration" case.** Targetless calibration, where natural scene
+features correct a camera's extrinsics over time, fits sensors that are bolted together. Here that is
+T5.5, the D455 against the LiDAR, not the glasses. Targetless LiDAR-to-camera tools exist (for
+example Koide's `direct_visual_lidar_calibration`, ICRA 2023) and may save building a calibration
+target. Worth a look at T5.5.
+
 ## 3. Bring-up (needs the lab machine)
 
 ### 3.1 🔴 Find `xpkg_demo` — `Navigation_Module` cannot launch without it
@@ -639,6 +705,33 @@ on the lab clone before booking time for this.
 > ➡️ **Promoted 2026-09-14 by Dion to first order of business.** It is `PROJECT_PLAN` **T0.0**, 3
 > hours, Dion, no dependencies. Full file-by-file table and the reasoning are there. This section
 > keeps the evidence.
+
+**Progress 2026-09-19.** File by file, decided with Dion:
+
+| File | Decision | Why |
+|---|---|---|
+| `calibration.json` | ✅ **Taken**, as `src/services/aria_device/calibration/aria_factory_calibration.json` | Live mode reads calibration from the glasses (`aria_device_controller.py:240` → `main.py:110`), but the image and eye pipelines take it as a JSON string (`image_streaming_pipeline.py:96,163`). Without glasses this file is the only source, since playback mode is broken (`main.py:116`) and no `.vrs` recording is in the repo. It is for one pair of glasses, `1WM10350101291` |
+| `env.sh` | **Held** until the box check | No secrets. It sources ROS, the repo-root `install/` and `.venv`. `bench/build.sh:23` builds that same layout, but it is unchecked on the box |
+| `anygrasp_node.sh` | **Held** until the box check | See the two-node note below |
+| `RCP_NEW_USER_STARTUP_GUIDE.md` | ✅ **Taken** into `docs/archive/`, unchanged except a header marking it historical | Paths and IPs are stale, but `bench/` and four docs cite it by section. Citations repointed to the new path |
+| `docs/SETUP.md` | ✅ **Skipped** | Reviewed 2026-09-19. Everything in it is already covered by `CODE_AUDIT`, `ORIENTATION`, `TESTBENCH_PLAN` and this file. It stays readable on the branch |
+
+**What is left of T0.0:** the two held files, decided by the box checks at the top of `TESTBENCH_PLAN` "Start here". After that the branch can be treated as closed.
+
+**The two AnyGrasp nodes are two methods, not two cameras** `[code]`. Both subscribe to the same
+RealSense topics (`/camera/camera/color/image_raw`, `.../aligned_depth_to_color/image_raw`,
+`/camera/sam/mask`) and publish the same `GraspCandidateArray`. Nothing on the Aria side runs
+AnyGrasp.
+
+| | `anygrasp_node.py` | `anygrasp_detection_node.py` |
+|---|---|---|
+| Method | Tracker (`AnyGraspTracker`, `tracker.so`). Follows grasps across frames, smoothed by a one-euro filter | Detector (`AnyGrasp`, `gsnet.so`). Fresh prediction every frame, no memory |
+| Checkpoint | `checkpoint_tracking.tar` | `checkpoint_detection.tar` |
+| Launched by | only `anygrasp_node.sh` on `realman_manip` | `ros2_robot_ws/src/main.py:28-32` |
+| Added | 2026-03-27, `52c8ce9` | 2026-04-03, `9b8676f` "Approach till final grasp", same commit that switched `main.py` to it |
+
+So the original authors moved to the detector in April `[code]`, yet the 2026-08-25 guide ran the
+tracker `[reported]`. Which one is authoritative is T1.10's question.
 
 `[code]` **Scoped 2026-09-10 by a full branch audit — see ORIENTATION §7.** It is a file copy, not a
 merge: the branches have no common ancestor, and `main` is later than `realman_manip` on every
@@ -725,3 +818,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-13 | Claude (Opus 5) + Dion | Republished the task tree map under Dion's own account, so its link is `.../65c7784d-...` and the old `.../72753a73-...` one is dead. The page content did not change. |
 | 2026-09-16 | Claude (Sonnet 5) + Dion | This file moved from `docs/dion_docs/NEXT_STEPS.md` to `docs/NEXT_STEPS.md` — all global docs moved out of the per-person folder, see `docs/START_HERE.md` and `CLAUDE.md`. Content unchanged by the move; in-repo links updated. |
 | 2026-09-16 | Claude (Sonnet 5) + Dion | Added §2.12: a CI task, wiring `./bench/run.sh` to run on every push, gated on `T0.5` (M0's fresh-clone acceptance test) rather than deferred past the whole plan. Assigned to Dion as `PROJECT_PLAN` `T0.10`. Removed "a continuous integration job" from `PROJECT_PLAN` §4.3 and §10 accordingly. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §3.3: T0.0 progress. Added the per-file decision table. `calibration.json` taken, `env.sh` and `anygrasp_node.sh` held for a box check. Added the two AnyGrasp nodes comparison: tracker vs detector on the same RealSense topics, with the commits that added each. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §3.3: startup guide archived to `docs/archive/`, `SETUP.md` skipped. T0.0 now waits only on the box checks for `env.sh` and `anygrasp_node.sh`. |
+| 2026-09-19 | Claude (Opus 5) + Dion | Added §2.13, an exploration item: picking the gazed object by geometry rather than appearance, so two identical objects can be told apart. Three candidate methods (scene transfer, pose from the shared scene, full pose fusion) with costs and limits. Recorded as `PROJECT_PLAN` D9 and S9. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §2.13: added the "why this is worth doing" answer (identical objects are the hardest test case, not the pitch) and a parked open problem: the robot cannot see what the user sees, for example when the object is blocked from the knee-height base camera. |
