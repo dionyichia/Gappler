@@ -1,39 +1,105 @@
 #!/usr/bin/env bash
-# The whole bench, in the order you want it: can this machine run the stack at
-# all, then is the code internally sound, then did the refactor move a contract.
+# The whole bench, one level at a time. Each level only runs if this machine can
+# run it, and a level that cannot run is reported as SKIPPED, never as a pass.
 #
-#   ./bench/run.sh              everything
-#   ./bench/run.sh preflight    hardware / environment only
+#   L0  Static checks    code parses, imports and launch names resolve   any machine
+#   L1  Contracts        no topic, frame or param name moved             any machine
+#   L2  Lab box check    preflight: can this machine run L3-L4?          any machine
+#   L3  Build            colcon build, arm and nav workspaces            needs ROS 2 Humble
+#   L4  Simulation       simulated arm, mock Nav2, e-stop, AnyGrasp env  needs ROS + L3
+#   L5  Hardware         the real robot. Never run by this script        a person at the robot
+#
+#   ./bench/run.sh              every level this machine can run
+#   ./bench/run.sh quick        L0-L2 only (skips the ~30 min build on the lab box)
+#   ./bench/run.sh preflight    L2 only
 #   ./bench/run.sh report       contract inventory + orphan analysis
 #
-# Read-only throughout. Never commands the arm -- see bench/preflight.py SAFETY.
+# Exit 0 when every level that ran passed. Skipped levels do not fail the run.
+# Nothing here commands the arm -- see bench/preflight.py SAFETY.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-case "${1:-all}" in
+mode="${1:-all}"
+case "$mode" in
   report)    exec python3 bench/contracts.py report ;;
   preflight) exec python3 bench/preflight.py ;;
+  all|quick) ;;
+  *) echo "usage: $0 [quick|preflight|report]"; exit 2 ;;
 esac
 
-pf=0; st=0; ct=0
+# In GitHub Actions, fold each level's output so the log reads as a list of levels.
+gh=${GITHUB_ACTIONS:-}
+open()  { if [ -n "$gh" ]; then echo "::group::$1"; else printf '\n######## %s ########\n' "$1"; fi; }
+close() { [ -n "$gh" ] && echo "::endgroup::"; return 0; }
 
-echo "######################## 1/3  PREFLIGHT ########################"
-python3 bench/preflight.py || pf=1
+rows=()      # "level|name|status|note" for the summary
+failed=0
+row() { rows+=("$1|$2|$3|$4"); [ "$3" = FAIL ] && failed=1; return 0; }
 
-echo; echo "######################## 2/3  STATIC ###########################"
-python3 bench/static.py || st=1
+# Run one script, map its exit code: 0 PASS, 3 SKIPPED, anything else FAIL.
+# The level's own output goes to stderr so that $(step ...) captures only the status word.
+step() {
+  local label="$1"; shift
+  { open "$label"; "$@"; } >&2; local rc=$?; close >&2
+  case $rc in 0) echo PASS ;; 3) echo SKIPPED ;; *) echo FAIL ;; esac
+}
 
-echo; echo "######################## 3/3  CONTRACTS ########################"
-python3 bench/contracts.py check || ct=1
+s=$(step "L0  Static checks" python3 bench/static.py)
+row L0 "Static checks" "$s" ""
+
+s=$(step "L1  Contracts" python3 bench/contracts.py check)
+row L1 "Contracts" "$s" ""
+
+s=$(step "L2  Lab box check (preflight)" python3 bench/preflight.py)
+# ponytail: "lab box" = ROS 2 Humble installed, the same test every L3-L4 script makes.
+if [ -f /opt/ros/humble/setup.bash ]; then lab=1; note="ROS 2 Humble found, L3-L4 will run"
+else lab=0; note="no ROS 2 Humble, so not the lab box. L3-L4 skipped"; fi
+row L2 "Lab box check" "$s" "$note"
+
+if [ "$mode" = quick ]; then
+  row L3 "Build" SKIPPED "quick mode"
+  row L4 "Simulation" SKIPPED "quick mode"
+elif [ $lab = 0 ]; then
+  row L3 "Build" SKIPPED "needs the lab box (see L2)"
+  row L4 "Simulation" SKIPPED "needs the lab box (see L2)"
+else
+  arm=$(step "L3  Build: arm workspace" ./bench/build.sh arm)
+  row L3 "Build: arm" "$arm" ""
+  s=$(step "L3  Build: nav workspace" ./bench/build.sh nav)
+  row L3 "Build: nav" "$s" ""
+  if [ "$arm" != PASS ]; then
+    row L4 "Simulation" SKIPPED "arm build did not pass (see L3)"
+  else
+    for t in sim_moveit estop_delivery state_machine_sim nav_nodes anygrasp_env; do
+      s=$(step "L4  Simulation: $t" ./bench/$t.sh)
+      row L4 "Sim: $t" "$s" ""
+    done
+  fi
+fi
+row L5 "Hardware" "NOT RUN" "needs a person at the robot, never automated"
 
 echo
-echo "================================================================"
-printf "  preflight  %s\n" "$([ $pf -eq 0 ] && echo 'ok (see its skip list)' || echo 'FAIL')"
-printf "  static     %s\n" "$([ $st -eq 0 ] && echo 'ok' || echo 'FAIL')"
-printf "  contracts  %s\n" "$([ $ct -eq 0 ] && echo 'ok' || echo 'FAIL')"
-echo "================================================================"
-echo "Reminder: a green bench means no contract moved and the environment is"
-echo "sane. It does NOT mean the robot works. Everything from 'arm moves'"
-echo "onward is untested by design and needs a human with the e-stop."
+echo "======================================================================"
+echo "  BENCH SUMMARY"
+echo "----------------------------------------------------------------------"
+for r in "${rows[@]}"; do
+  IFS='|' read -r l n st note <<<"$r"
+  printf "  %-3s %-26s %-8s %s\n" "$l" "$n" "$st" "$note"
+done
+echo "----------------------------------------------------------------------"
+[ $failed = 0 ] && echo "  RESULT: PASS (every level that ran passed)" \
+                || echo "  RESULT: FAIL (open the failing level's output above)"
+echo "======================================================================"
+echo "A green bench means no contract moved and the code is consistent. It does"
+echo "NOT mean the robot works. L5 needs a human with the e-stop."
 
-[ $((pf + st + ct)) -eq 0 ]
+if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+  {
+    echo "### Bench: $([ $failed = 0 ] && echo PASS || echo FAIL)"
+    echo; echo "| Level | Check | Result | Note |"; echo "|---|---|---|---|"
+    for r in "${rows[@]}"; do IFS='|' read -r l n st note <<<"$r"; echo "| $l | $n | $st | $note |"; done
+    echo; echo "A green bench does not mean the robot works. L5 (hardware) is never run by CI."
+  } >>"$GITHUB_STEP_SUMMARY"
+fi
+
+[ $failed = 0 ]

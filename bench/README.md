@@ -10,13 +10,31 @@ A safety net for refactoring this repo **without** the robot, the glasses, ROS,
 or any Python dependencies. Runs on a laptop in about a second.
 
 ```bash
-./bench/run.sh              # preflight -> static checks -> contract diff
-./bench/run.sh preflight    # environment + hardware only
+./bench/run.sh              # every level this machine can run (L0-L4), then a summary table
+./bench/run.sh quick        # L0-L2 only: skips the ~30 min build on the lab box
+./bench/run.sh preflight    # L2 only: environment + hardware
 ./bench/run.sh report       # inventory of every contract, plus orphan analysis
 python3 bench/contracts.py snapshot   # re-baseline after a deliberate change
 ```
 
 Python 3.8+, stdlib only. Nothing to install.
+
+### Levels (renamed 2026-09-19)
+
+`run.sh` runs these in order. A level that this machine cannot run is reported as SKIPPED, never
+as a pass, and skipped levels do not fail the run.
+
+| Level | Name | What it checks | Runs on | Was |
+|---|---|---|---|---|
+| L0 | Static checks | code parses, imports and launch file names resolve (`static.py`) | any machine | Tier 0-1 |
+| L1 | Contracts | no topic, frame or parameter name moved since the snapshot (`contracts.py`) | any machine | Tier 0-1 |
+| L2 | Lab box check | preflight: the machine, and whether it can run L3-L4 (`preflight.py`) | any machine | preflight |
+| L3 | Build | colcon build of the arm and nav workspaces (`build.sh`) | ROS 2 Humble | Tier 2 |
+| L4 | Simulation | simulated arm, e-stop, state machine, nav nodes vs mock Nav2, AnyGrasp env | ROS 2 Humble + L3 | Tier 3 |
+| L5 | Hardware | the real robot | a person with the e-stop, never automated | Tier 4 |
+
+L3-L4 run when L2 finds ROS 2 Humble. L4 runs only if the arm build in L3 passed. Older docs and
+`docs/bench-runs/` use the Tier names.
 
 ### On the lab box: tiers 2–3
 

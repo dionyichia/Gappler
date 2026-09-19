@@ -1,9 +1,9 @@
-# Runs the stdlib bench (Tiers 0-1: preflight, static, contracts) on every PR
-# into main and every push to main. See NEXT_STEPS.md 2.12 and PROJECT_PLAN T0.10.
+# Runs the bench on every PR into main and every push to main. See NEXT_STEPS.md
+# 2.12 and PROJECT_PLAN T0.10. Levels are defined in bench/README.md.
 #
-# A green run means no contract moved and the code is internally consistent.
-# It does NOT mean the robot works. No arm, base or glasses are reachable here.
-# Tiers 2-3 (colcon build, sim arm, mock Nav2) are not wired in yet.
+# GitHub's machine has no ROS, so L0-L2 run and L3-L4 report SKIPPED. That is
+# allowed for now. A self-hosted runner on the lab box is T0.11.
+# A green run does NOT mean the robot works. L5 (hardware) is never run here.
 name: bench
 
 on:
