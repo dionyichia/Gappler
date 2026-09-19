@@ -531,17 +531,17 @@ turns out to matter more for estimating than who does it.
 
 | Type | Means | Count |
 |---|---|---|
-| `build` | New code. None of it exists today | 17 |
+| `build` | New code. None of it exists today | 18 |
 | `fix` | Repair of existing code that is written but defective | 6 |
 | `rewire` | Existing, complete code reconnected, re-enabled or consolidated. No new logic | 3 |
 | `bring-up` | Make existing things run: retrieve, compile, install, mount, power on | 13 |
 | `measure` | Trials, calibration, error characterisation, tests. Produces numbers, not code | 18 |
 | `decide` | A decision to settle, or a document to write | 12 |
 
-**Read that table before the schedule.** Seventeen of sixty-nine tasks are new code and nine are
+**Read that table before the schedule.** Eighteen of seventy tasks are new code and nine are
 repair or rewiring. The remaining forty-three are bring-up, measurement and decisions. This is not a
 project that builds a robot. It repairs one, measures it, and adds one new component, which is the
-memory graph. (`T0.10`, the CI job added 2026-09-16, is the seventeenth `build` task.)
+memory graph. (`T0.10`, the CI job added 2026-09-16, and `T0.11`, per-subsystem tests added 2026-09-19, are the seventeenth and eighteenth `build` tasks.)
 
 Two consequences for the hours in the tables below. Where the work is `fix`, the code change is
 usually small and almost all the time goes into verifying it, so an estimate that looks large for the
@@ -556,13 +556,14 @@ and cannot be compressed by working harder.
 | T0.1 | **Progress 2026-09-16:** an Intel RealSense D455 is provided to the project. USB 3 connection and live RGB-D stream remain unverified | decide | Sherman | 2 | lab | none |
 | T0.2 | ~~Get a network switch. Add the second host address to the wired port. Prove the arm and the LiDAR both answer in one session~~ **Done 2026-09-16.** Switch wired: workstation port 1, LiDAR port 2, arm port 3. NetworkManager persists `.100`, `.10`, and `.5`; RM65 and MID-360 each replied from their required host address after a connection cycle | bring-up | Sherman, Dion | 5 | lab | none |
 | T0.3 | Make the repository run from a fresh clone. Paths inside the repository are computed from the repository root. Paths outside it move to one configuration file with sensible defaults | fix | Zongzhe | 12 | off | none |
-| T0.4 | Bring into git the four things the robot needs that live in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR package manifest, and the saved map | bring-up | Zongzhe | 6 | box | T0.3 |
+| T0.4 | Bring into git the four things the robot needs that live in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR package manifest, and the saved map. **Added 2026-09-19, to turn CI green:** also settle `rm_mtc/launch/mtc_sim_test.launch.py`, which starts an executable `rm_mtc` never builds. Either add the build target (`src/trivial_mtc.cpp` may be the missing source `[inferred]`) or delete the launch file. With that, all 7 static findings CI fails on today are cleared. **Done means `./bench/run.sh` exits 0, then Dion turns on branch protection for `main`** (require the `bench` check), so a red bench blocks merges from then on | bring-up | Zongzhe | 6 | box | T0.3 |
 | T0.5 | Zongzhe and Sherman each clone the repository on their own machine, build it and run the bench. This is the acceptance test for M0 | bring-up | Zongzhe, Sherman | 8 | off | T0.3 |
 | T0.6 | ROS 2 ramp, all three of us. Reading guide round 1, then run the simulated arm test and read what it printed | bring-up | All | 24 | box | T0.5 |
 | T0.7 | Write the channel contract: which stream owns which message channels, and the exact three handover points between streams. One page | decide | Dion | 4 | off | none |
 | T0.8 | ~~Clear the bench backlog that has been waiting since the box went off~~ **Done 2026-09-14.** Environment check, navigation build and the ten navigation node tests all ran, all passed, no fix needed. What is left of this task is W6, which is blocked on the faulty camera, and W8, which needs a person at the robot. See §2.6 | measure | Dion | 5 of 5 spent | box | none |
 | T0.9 | ~~Measure the real base footprint and compare it with the 0.2 metre radius the navigation configuration assumes~~ **Done 2026-09-16 for the manufacturer chassis.** The Hexman Robotics ECHO-PLUS manual specifies `460 x 380 x 140 mm` and a `265 mm` stated rotation radius, so the `200 mm` Nav2 radius is not supported as conservative. Recheck the integrated footprint after mount fabrication | measure | Sherman | 3 | lab | none |
-| T0.10 | **Added 2026-09-16.** CI: wire up `./bench/run.sh` (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. See `NEXT_STEPS.md` §2.12 for scope, provider choice, and what a green run does and does not prove | build | Dion | 6 | off | T0.5 |
+| T0.10 | **Added 2026-09-16.** CI: wire up `./bench/run.sh` (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. See `NEXT_STEPS.md` §2.12 for scope, provider choice, and what a green run does and does not prove. **Progress 2026-09-19:** started ahead of T0.5 on purpose, to test it on the next merge. `.github/workflows/bench.yml` runs Tiers 0-1 on every PR into `main` and every push to `main`. It fails strictly, so it is red until the 7 known static findings are fixed (T0.4 clears 6 of them). Tiers 2-3 still open. Later, with a `dev` branch: fast per-subsystem tests on PRs into `dev`, the full suite on `dev` into `main`. Merges are not blocked yet: branch protection goes on when T0.4 turns the bench green | build | Dion | 6 | off | T0.5 |
+| T0.11 | **Added 2026-09-19.** Split the bench into one test suite per subsystem: glasses (`aria`), arm (`rm_mtc`), grasp (AnyGrasp and MinkowskiEngine), and navigation. Each suite covers its own code plus the channels it shares with other subsystems. CI then runs only the suites whose files a PR touched, plus the contract check. Do it alongside the one-folder-per-node refactor, since the folder layout decides how files map to suites. Also add a scheduled run of the full suite on `dev` every Monday and Wednesday night, so a break is traced to a few days of commits rather than a whole release. **Open, decide when this task starts:** Tiers 2-3 need ROS Humble and today only run on the lab box. Either register the lab box as a self-hosted GitHub runner (free, but tied to a box we may lose after 2026-11-16) or build a Docker image of the environment (portable, may cost image storage) | build | Dion | 8 | off | T0.10 |
 
 **T0.0 in detail. This is the first thing to do.** `origin/realman_manip` shares no commit history
 with `main`, so this is a file copy, not a merge `[code]` `ORIENTATION` 7. **Exactly 15 files exist
@@ -986,3 +987,5 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-19 | Claude (Opus 5) + Dion | T0.0 progress. `calibration.json` taken, as `src/services/aria_device/calibration/aria_factory_calibration.json`: it is the only calibration source when testing without the glasses. `env.sh` and `anygrasp_node.sh` held until a box check, listed at the top of `TESTBENCH_PLAN` "Start here". Found that the two AnyGrasp nodes differ in method (tracker vs detector), not only in checkpoint. Per-file decisions in `NEXT_STEPS` §3.3. |
 | 2026-09-19 | Claude (Opus 5) + Dion | T0.0: startup guide archived to `docs/archive/` with citations repointed, `SETUP.md` skipped. Only the two held files remain. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Added open decision D9 and stretch goal S9: pick the gazed object by geometry, so two identical objects can be told apart. Exploration only. No task, hour or dependency changed. Detail in `NEXT_STEPS` §2.13. |
+| 2026-09-19 | Claude (Opus 5) + Dion | T0.10 progress: `.github/workflows/bench.yml` added, running Tiers 0-1 strictly on PRs into and pushes to `main`, started before T0.5 on purpose. Added `T0.11`, one test suite per subsystem so CI runs only what a PR touched. Task count 69 to 70, `build` 17 to 18, §6.1b counts updated. |
+| 2026-09-19 | Claude (Opus 5) + Dion | T0.4 now also covers the `mtc_sim_test` executable decision, and its done condition turns on branch protection so the bench blocks merges into `main`. T0.11 gained the Monday and Wednesday night full-suite run and the open lab-box-runner-or-Docker question, deferred to that task. |

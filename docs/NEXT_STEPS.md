@@ -16,7 +16,7 @@ session · `[inferred]` reasoning, not fact · `[open]` genuinely undecided ·
 **Priority key:** 🔴 blocks other work · 🟠 needed for the HiCo-Nav milestone · 🟡 quality/debt
 
 > ➡️ **This file is the register of everything we *could* do. What we *will* do, in what order and
-> who owns it, is now in [`PROJECT_PLAN.md`](PROJECT_PLAN.md)** — 11 milestones and 69 tasks, mapped
+> who owns it, is now in [`PROJECT_PLAN.md`](PROJECT_PLAN.md)** — 11 milestones and 70 tasks, mapped
 > onto the real capstone calendar from 2026-09-14 to 2027-04-18 (recess, exam period and winter break
 > excluded, the four official deadlines marked), with the three-way split validated, the scope
 > written down, and the cut list decided in advance. Visual version:
@@ -597,6 +597,17 @@ description so nobody over-reads a passing badge.
 4. Document the CI badge and what it does and does not prove in `docs/README` or `bench/README.md`,
    so a reader doesn't mistake "CI passing" for "verified on hardware".
 
+**Progress 2026-09-19.** Started before T0.5 on purpose, so the next merge tests it.
+`.github/workflows/bench.yml` runs `./bench/run.sh` (Tiers 0-1) on `ubuntu-22.04` for every PR into
+`main` and every push to `main`. It fails on any finding, so it stays red until the 7 known static
+findings are fixed `[code]`: 6 of them come from `xpkg_demo` and the livox `package_ROS2.xml` being
+absent (both are T0.4), and 1 is `mtc_sim_test.launch.py` naming an executable `rm_mtc` does not
+build. T0.4 now covers all three. Merges are not blocked yet. Branch protection for `main` goes on
+once T0.4 turns the bench green. Tiers 2-3 are not wired in. Planned branch model: a `dev` branch gets fast per-subsystem
+tests (`T0.11`), `dev` into `main` runs the full suite, and the full suite also runs on `dev` every
+Monday and Wednesday night. Where Tiers 2-3 run (lab box as a self-hosted runner, or a Docker image)
+is deferred to T0.11.
+
 Owner: Dion, since he owns `bench/` itself. Depends on `T0.5` (both other clones build and pass the
 bench) — see `PROJECT_PLAN.md` §6.2, task `T0.10`.
 
@@ -822,3 +833,5 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-19 | Claude (Opus 5) + Dion | §3.3: startup guide archived to `docs/archive/`, `SETUP.md` skipped. T0.0 now waits only on the box checks for `env.sh` and `anygrasp_node.sh`. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Added §2.13, an exploration item: picking the gazed object by geometry rather than appearance, so two identical objects can be told apart. Three candidate methods (scene transfer, pose from the shared scene, full pose fusion) with costs and limits. Recorded as `PROJECT_PLAN` D9 and S9. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.13: added the "why this is worth doing" answer (identical objects are the hardest test case, not the pitch) and a parked open problem: the robot cannot see what the user sees, for example when the object is blocked from the knee-height base camera. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §2.12: CI started. `.github/workflows/bench.yml` runs Tiers 0-1 strictly on PRs into `main`, red until the 7 known static findings are fixed. Noted the planned `dev`/`main` split and new task `T0.11`. Task count 69 to 70. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §2.12: CI blocks merges only after T0.4 turns the bench green. Added the Monday and Wednesday night full-suite run, and deferred the runner question to T0.11. |

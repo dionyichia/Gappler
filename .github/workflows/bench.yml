@@ -1,0 +1,22 @@
+# Runs the stdlib bench (Tiers 0-1: preflight, static, contracts) on every PR
+# into main and every push to main. See NEXT_STEPS.md 2.12 and PROJECT_PLAN T0.10.
+#
+# A green run means no contract moved and the code is internally consistent.
+# It does NOT mean the robot works. No arm, base or glasses are reachable here.
+# Tiers 2-3 (colcon build, sim arm, mock Nav2) are not wired in yet.
+name: bench
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  bench:
+    # 22.04 ships Python 3.10, the same as ROS 2 Humble on the lab box.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./bench/run.sh

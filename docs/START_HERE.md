@@ -82,7 +82,7 @@ to notice.
 | **[`ORIENTATION.md`](ORIENTATION.md)** | **What the system *is*.** Repo map, ROS 2 primer, the full topic reference, the five severed seams, known defects and traps, hardware facts, the HiCo-Nav integration surface. | **First.** The main reference. Stays stable. |
 | **[`ARCHITECTURE.md`](ARCHITECTURE.md)** | The same information as **diagrams** — 9 Mermaid diagrams, L0 system down to L2 module level. Renders on GitHub. | Alongside ORIENTATION. Prose there, pictures here. |
 | **[`READING_GUIDE.md`](READING_GUIDE.md)** | A **guided walk through the code**, round by round, for someone new to ROS 2. What to notice in each file and why. Has check-yourself questions. | When you actually sit down to read the code. |
-| **[`PROJECT_PLAN.md`](PROJECT_PLAN.md)** | **The plan the team works to** — 11 milestones and 69 tasks over the 20 weeks from 2026-09-14, who owns each, what blocks what, what is in scope and what is not, and the cut list decided in advance. Answers whether three people can work in parallel (yes, from week 3, after two specific obstacles go). | **Before planning your own week.** Visual version: [`next-steps-map.html`](next-steps-map.html). |
+| **[`PROJECT_PLAN.md`](PROJECT_PLAN.md)** | **The plan the team works to** — 11 milestones and 70 tasks over the 20 weeks from 2026-09-14, who owns each, what blocks what, what is in scope and what is not, and the cut list decided in advance. Answers whether three people can work in parallel (yes, from week 3, after two specific obstacles go). | **Before planning your own week.** Visual version: [`next-steps-map.html`](next-steps-map.html). |
 | **[`NEXT_STEPS.md`](NEXT_STEPS.md)** | **What we intend to *do*** — prioritised work register with the open decisions. | Planning. Churns; expect it to change. |
 | **[`CODE_AUDIT.md`](CODE_AUDIT.md)** | A **line-by-line read of every file we own**, publisher to subscriber. 45 findings, all `[unverified]` — static analysis only, nothing was run. Starts with the three interlocking defects that stop the grasp path working. | Before touching the grasp path, and before the first hardware run. |
 | **[`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md)** | **The cold-start handoff for building the test bench.** State at handoff, safety rules for the lab machine, known bench bugs, and a phased plan from "establish which machine this is" through build, node-behaviour and replay tiers. | **When you pick up bench work.** Read §0–§3 before touching the lab machine. |
@@ -154,7 +154,7 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
   survive the code evidence, and whether the milestone Lead column stays. Nothing below §1.1 should be
   treated as settled until those are answered.
 - **Four code checks were run on 2026-09-14 and are recorded in `PROJECT_PLAN.md` §2.5.** The headline
-  is that this project is mostly not a build. Of 69 tasks, 17 are new code, 9 are repair or rewiring,
+  is that this project is mostly not a build. Of 70 tasks, 18 are new code, 9 are repair or rewiring,
   and 43 are bring-up, measurement and decisions. Every task now carries that type in section 6 and on
   the map. Navigation is retrieval rather than development, the glasses gaze and image code is complete
   and merely switched off, and the memory graph is the one genuinely new component.
@@ -196,3 +196,4 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 | 2026-09-14 | Claude (Opus 5) + Dion | "Where work stands" refreshed for a cold start: pointer to the seven open decisions in `PROJECT_PLAN` §1.1, the four code checks in §2.5, the work-type split across the 67 tasks, and the new `CODE_AUDIT` E5. |
 | 2026-09-16 | Claude (Sonnet 5) + Dion | Global-docs reorg: moved everything global out of `docs/dion_docs/` into `docs/` directly (`ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `NEXT_STEPS`, `PROJECT_PLAN`, `TESTBENCH_PLAN`, `hico-nav/`, `bench-runs/`, and the three published HTML pages, `testbench-map.html` also moving out of `bench/`). `docs/dion_docs/` is now Dion's personal folder, matching everyone else's. Rewrote "How the docs are organised" and the rules for every session — global docs are now everyone's to keep current, not just Dion's. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Added `docs/archive/` to the layout table. It holds the 2026-08-25 startup guide, moved from the `realman_manip` branch in T0.0. |
+| 2026-09-19 | Claude (Opus 5) + Dion | Task count 69 to 70 after `T0.11` was added to `PROJECT_PLAN`. |

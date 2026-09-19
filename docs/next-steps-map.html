@@ -273,7 +273,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="fact">Final report due <b>28 Mar 2027</b></span>
     <span class="fact">Oral presentation <b>5&ndash;16 Apr 2027</b></span>
     <span class="fact">Milestones <b>11</b></span>
-    <span class="fact">Tasks <b>69</b></span>
+    <span class="fact">Tasks <b>70</b></span>
     <span class="fact">Effort available <b>~620 h</b></span>
   </div>
 </div></header>
@@ -662,7 +662,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 <section id="tree">
   <h2><span class="sn">Section 4</span>The task tree</h2>
-  <p class="sub">Sixty-nine tasks. Each one lists what has to finish before it can start, and what
+  <p class="sub">Seventy tasks. Each one lists what has to finish before it can start, and what
   kind of work it is. Click any task to trace it: what it is waiting on turns amber, what is waiting
   on it turns green. Filter by person or by kind of work to see one slice at a time.</p>
 
@@ -683,7 +683,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </table></div>
   <div class="callout c-note">
     <span class="ct">Read the bar before you read the schedule</span>
-    <p>Only seventeen of sixty-nine tasks are new code, and nine are repair or rewiring. The rest is
+    <p>Only eighteen of seventy tasks are new code, and nine are repair or rewiring. The rest is
     bring-up, measurement and decisions. This is not a project that builds a robot. It is a project
     that repairs one, measures it, and adds one new component, which is the memory graph.</p>
     <p>That matters for estimates. Where the work is repair, the code change is usually small and the
@@ -1029,13 +1029,14 @@ var T = [
   ["T0.1","M0","S",2,"lab","PROGRESS 2026-09-16. An Intel RealSense D455 is provided to the project. USB 3 connection and live RGB-D stream remain unverified",[],"plan"],
   ["T0.2","M0","SD",5,"lab","DONE 2026-09-16. Switch wired: workstation port 1, LiDAR port 2, arm port 3. NetworkManager persists .100, .10, and .5; RM65 and MID-360 each replied from their required host address after a connection cycle",[],"bringup"],
  ["T0.3","M0","Z",12,"off","Make the repository run from a fresh clone. Paths inside it computed from the repository root, paths outside it in one configuration file",[],"fix"],
- ["T0.4","M0","Z",6,"box","Bring into git the four things the robot needs that are in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR manifest, the saved map",["T0.3"],"bringup"],
+ ["T0.4","M0","Z",6,"box","Bring into git the four things the robot needs that are in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR manifest, the saved map. Added 2026-09-19: also settle mtc_sim_test.launch.py, which starts an executable rm_mtc never builds (add the target or delete the launch file). Done means ./bench/run.sh exits 0 and Dion turns on branch protection so CI blocks merges into main",["T0.3"],"bringup"],
  ["T0.5","M0","ZS",8,"off","Zongzhe and Sherman each clone the repository on their own machine, build it and run the bench. This is the acceptance test for M0",["T0.3"],"bringup"],
  ["T0.6","M0","A",24,"box","ROS 2 ramp, all three of us. Reading guide round 1, then run the simulated arm test and read what it printed",["T0.5"],"bringup"],
  ["T0.7","M0","D",4,"off","Write the channel contract: which stream owns which message channels, and the three handover points between streams. One page",[],"plan"],
  ["T0.8","M0","D",5,"box","DONE 2026-09-14. The environment check, the navigation build and the ten navigation node tests all ran and all passed. What is left is W6, blocked on a faulty camera, and W8, which needs a person at the robot",[],"measure"],
   ["T0.9","M0","S",3,"lab","DONE 2026-09-16 for the manufacturer chassis. The Hexman Robotics ECHO-PLUS manual specifies 460 x 380 x 140 mm and a 265 mm stated rotation radius, so the 200 mm Nav2 radius is not conservative. Recheck the integrated footprint after mount fabrication",[],"measure"],
- ["T0.10","M0","D",6,"off","Added 2026-09-16. CI: wire up ./bench/run.sh (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. The real arm, base and glasses can never be in CI",["T0.5"],"build"],
+ ["T0.10","M0","D",6,"off","Added 2026-09-16. CI: wire up ./bench/run.sh (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. The real arm, base and glasses can never be in CI. Progress 2026-09-19: .github/workflows/bench.yml runs Tiers 0-1 strictly on PRs into main. Red until the 7 known static findings are fixed, all covered by T0.4. Not blocking merges until then. Tiers 2-3 still open",["T0.5"],"build"],
+ ["T0.11","M0","D",8,"off","Added 2026-09-19. Split the bench into one test suite per subsystem: glasses, arm, grasp (AnyGrasp and MinkowskiEngine), navigation. Each covers its own code plus the channels it shares. CI then runs only the suites a PR touched, plus the contract check. Do it with the one-folder-per-node refactor. Also run the full suite on dev every Monday and Wednesday night. Open: Tiers 2-3 need ROS and run only on the lab box today, so decide then between a self-hosted runner on the box and a Docker image",["T0.10"],"build"],
 
  ["T1.1","M1","D",3,"off","Answer the six open questions in the code audit and record the decisions. Several are choices, not fixes",["T0.7"],"plan"],
  ["T1.2","M1","D",8,"off","Safety fixes before any power: the stop key the launcher promises but does not have, the stop program ignoring Ctrl+C, and the arm driver being launched twice",["T1.1"],"fix"],
