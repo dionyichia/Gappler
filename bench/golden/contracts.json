@@ -1,37 +1,5 @@
 {
   "abs_paths": {
-    "/home/iot22/GitHub/Renaissance-Capstone-Project": [
-      "ros2_robot_ws/src/main.py:36",
-      "ros2_robot_ws/src/rm_mtc/src/perception/sam3_ros_node.py:4"
-    ],
-    "/home/iot22/GitHub/Renaissance-Capstone-Project/.venv/bin/python": [
-      "main.py:18"
-    ],
-    "/home/iot22/GitHub/Renaissance-Capstone-Project/assets/images.jpeg": [
-      "src/services/object_recognition/sam3_model.py:96"
-    ],
-    "/home/iot22/GitHub/Renaissance-Capstone-Project/ros2_robot_ws/src": [
-      "ros2_robot_ws/src/orchestrator.py:23"
-    ],
-    "/home/iot22/GitHub/Renaissance-Capstone-Project/ros2_robot_ws/src/rm_mtc/src/perception": [
-      "ros2_robot_ws/src/main.py:29"
-    ],
-    "/home/iot22/GitHub/Renaissance-Capstone-Project/src": [
-      "ros2_robot_ws/src/main.py:120"
-    ],
-    "/home/iot22/GitHub/Renaissance-Capstone-Project/src/models/sam3/sam3.pt": [
-      "ros2_robot_ws/src/rm_mtc/src/perception/sam3_ros_node.py:38",
-      "src/services/object_recognition/sam3_model.py:91"
-    ],
-    "/home/iot22/GitHub/Renaissance-Capstone-Project/src/services/aria_device/calibration/estimator_config.yaml": [
-      "src/main.py:306"
-    ],
-    "/home/iot22/GitHub/Renaissance-Capstone-Project/src/services/object_recognition": [
-      "ros2_robot_ws/src/main.py:41"
-    ],
-    "/home/iot22/maps/completed_map": [
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:14"
-    ],
     "/home/livox/livox_test.lvx": [
       "Navigation_Module/src/livox_ros_driver2/launch_ROS2/msg_HAP_launch.py:14",
       "Navigation_Module/src/livox_ros_driver2/launch_ROS2/msg_MID360_launch.py:14",
@@ -44,16 +12,13 @@
       "ros2_robot_ws/src/rm_driver/src/rm_driver.cpp:114"
     ],
     "~/Ros2Workspaces/OpenVINS/install/ov_msckf/lib/ov_msckf/run_subscribe_msckf": [
-      "src/main.py:304"
+      "src/main.py:310"
     ],
     "~/Ros2Workspaces/OpenVINS/install/setup.bash": [
-      "src/main.py:303"
+      "src/main.py:309"
     ],
     "~/Ros2Workspaces/OpenVINS/src/open_vins/ov_msckf/launch/display_ros2.rviz": [
-      "src/main.py:331"
-    ],
-    "~/maps/current_map": [
-      "Navigation_Module/src/robot_slam/launch/slam_mapping.launch.py:30"
+      "src/main.py:337"
     ]
   },
   "divergent_constants": {
@@ -80,7 +45,7 @@
       "\"/camera/sam/mask\"": [
         "ros2_robot_ws/src/rm_mtc/src/perception/anygrasp_detection_node.py:42",
         "ros2_robot_ws/src/rm_mtc/src/perception/anygrasp_node.py:35",
-        "ros2_robot_ws/src/rm_mtc/src/perception/sam3_ros_node.py:30",
+        "ros2_robot_ws/src/rm_mtc/src/perception/sam3_ros_node.py:31",
         "src/services/object_recognition/object_recognition_pipeline.py:34"
       ]
     }
@@ -282,8 +247,8 @@
       "ros2_robot_ws/src/rm_mtc/src/perception/anygrasp_node.py:164",
       "ros2_robot_ws/src/rm_mtc/src/perception/sam3_ros_node.py:160",
       "ros2_robot_ws/src/rm_mtc/src/perception/sam3_ros_node.py:169",
-      "src/services/object_recognition/object_recognition_pipeline.py:446",
-      "src/services/object_recognition/object_recognition_pipeline.py:455"
+      "src/services/object_recognition/object_recognition_pipeline.py:451",
+      "src/services/object_recognition/object_recognition_pipeline.py:460"
     ],
     "camera_rgb": [
       "src/services/aria_device/stream/image_streaming_pipeline.py:60"
@@ -455,7 +420,7 @@
       "ros2_robot_ws/src/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "2d36a89-dirty",
+  "git": "1ef47f3",
   "launch_includes": [
     {
       "from": "Navigation_Module/src/robot_slam/launch/slam_localization.launch.py",
@@ -1361,7 +1326,7 @@
     ],
     "debug_logging": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:16",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:16"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:19"
     ],
     "default_server_timeout": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:16"
@@ -1457,14 +1422,14 @@
       "Navigation_Module/src/drivers/xpkg_power/src/ROS_INF/ros2_interface.cpp:121"
     ],
     "map_file_name": [
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:14"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:17"
     ],
     "map_frame": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:11",
       "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:10"
     ],
     "map_start_at_dock": [
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:15"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:18"
     ],
     "map_subscribe_transient_local": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:107",
@@ -1472,7 +1437,7 @@
     ],
     "map_update_interval": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:19",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:19"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:22"
     ],
     "mark_threshold": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:93"
@@ -1525,7 +1490,7 @@
     ],
     "max_laser_range": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:21",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:21"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:24"
     ],
     "max_lookahead_dist": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:48"
@@ -1551,7 +1516,7 @@
     ],
     "min_laser_range": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:22",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:22"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:25"
     ],
     "min_lookahead_dist": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:47"
@@ -1573,15 +1538,15 @@
     ],
     "minimum_time_interval": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:23",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:23"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:26"
     ],
     "minimum_travel_distance": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:27",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:27"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:30"
     ],
     "minimum_travel_heading": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:28",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:28"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:31"
     ],
     "mode": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:14",
@@ -1708,7 +1673,7 @@
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:119",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:78",
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:20",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:20"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:23"
     ],
     "robot_base_frame": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:116",
@@ -1760,7 +1725,7 @@
     ],
     "stack_size_to_use": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:26",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:26"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:29"
     ],
     "stateful": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:42"
@@ -1790,11 +1755,11 @@
     ],
     "tf_buffer_duration": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:25",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:25"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:28"
     ],
     "throttle_scans": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:17",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:17"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:20"
     ],
     "tolerance": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:138",
@@ -1812,11 +1777,11 @@
     ],
     "transform_publish_period": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:18",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:18"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:21"
     ],
     "transform_timeout": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:24",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:24"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:27"
     ],
     "transform_tolerance": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:168"
@@ -2501,19 +2466,6 @@
       ],
       "yaml_refs": []
     },
-    "/home/iot22/maps/completed_map": {
-      "n_publishers": 0,
-      "n_subscribers": 0,
-      "owned": true,
-      "publishers": [],
-      "subscribers": [],
-      "types": [
-        "?"
-      ],
-      "yaml_refs": [
-        "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:14"
-      ]
-    },
     "/livox/lidar": {
       "n_publishers": 0,
       "n_subscribers": 1,
@@ -2563,7 +2515,7 @@
         "Navigation_Module/src/robot_slam/scripts/object_approach_node.py:97"
       ],
       "subscribers": [
-        "ros2_robot_ws/src/orchestrator.py:54"
+        "ros2_robot_ws/src/orchestrator.py:56"
       ],
       "types": [
         "std_msgs/Bool"
@@ -2577,7 +2529,7 @@
       "publishers": [],
       "subscribers": [
         "Navigation_Module/src/robot_slam/scripts/object_approach_node.py:86",
-        "ros2_robot_ws/src/orchestrator.py:63"
+        "ros2_robot_ws/src/orchestrator.py:65"
       ],
       "types": [
         "std_msgs/Bool"
@@ -3078,7 +3030,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "ros2_robot_ws/src/orchestrator.py:49",
+        "ros2_robot_ws/src/orchestrator.py:51",
         "ros2_robot_ws/src/rm_mtc/src/grasp_state_machine.cpp:150"
       ],
       "subscribers": [],

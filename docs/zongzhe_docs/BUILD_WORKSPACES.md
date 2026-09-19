@@ -53,10 +53,10 @@ the fastest way to see the design.
 
 | Line | What it does | Why it matters |
 |---|---|---|
-| `install.sh:8-14` | Builds `deps_ws` **only if** `deps_ws/install/setup.bash` is missing | This is the "built the first time and never again" behaviour. On a machine that already has it, this block is skipped entirely. |
-| `install.sh:17` | `source "$DEPS_WS/install/setup.bash"` | Makes the underlay available before the overlay is built. This one line is what makes the split work. |
-| `install.sh:22` | `rm -rf ./log ./build ./install`, inside the robot workspace only | Wipes the overlay for a clean rebuild. `deps_ws` is deliberately untouched, which is the whole point. |
-| `install.sh:24-32` | Builds `rm_ros_interfaces` first, sources the result, then builds everything | The custom grasp messages (`GraspCandidate.msg`) have to exist before the packages that use them compile. |
+| `install.sh:12-18` | Builds `deps_ws` **only if** `deps_ws/install/setup.bash` is missing | This is the "built the first time and never again" behaviour. On a machine that already has it, this block is skipped entirely. |
+| `install.sh:21` | `source "$DEPS_WS/install/setup.bash"` | Makes the underlay available before the overlay is built. This one line is what makes the split work. |
+| `install.sh:26` | `rm -rf ./log ./build ./install`, inside the robot workspace only | Wipes the overlay for a clean rebuild. `deps_ws` is deliberately untouched, which is the whole point. |
+| `install.sh:28-36` | Builds `rm_ros_interfaces` first, sources the result, then builds everything | The custom grasp messages (`GraspCandidate.msg`) have to exist before the packages that use them compile. |
 
 `[code]` The split is also what actually ran on the lab box.
 [`../TESTBENCH_PLAN.md`](../TESTBENCH_PLAN.md) line 313 records `deps_ws/install`
@@ -81,7 +81,7 @@ runtime in confusing ways".
 
 `[inferred]` **These are not in conflict, and the missing piece is the sourcing step.** The failure
 ORIENTATION warns about is what happens when you build inside one workspace *without sourcing the
-other one first*. `install.sh:17` sources the underlay before it builds anything. That single line is
+other one first*. `install.sh:21` sources the underlay before it builds anything. That single line is
 the difference between a working split and the broken partial overlay ORIENTATION describes. The
 current wording does not mention it, so a reader takes away "per-workspace builds are a mistake",
 when the accurate version is "per-workspace builds need the underlay sourced first".
@@ -103,7 +103,7 @@ rule and rule 3 on not editing another person's folder.
 
 1. **`ORIENTATION.md:296-302` could gain one sentence.** Something to the effect that a
    per-workspace build is fine as long as the underlay is sourced first, pointing at
-   `ros2_robot_ws/install.sh:17` as the worked example. As written, the section reads as though the
+   `ros2_robot_ws/install.sh:21` as the worked example. As written, the section reads as though the
    root build is the only correct approach, which leaves the repo's own build script looking like a
    mistake rather than the intended design. `install.sh` is currently named in the docs exactly once,
    at `NEXT_STEPS.md:243`, only as a file with a broken hardcoded path.
@@ -114,13 +114,16 @@ rule and rule 3 on not editing another person's folder.
    Tier 2 should mirror `install.sh` and keep the underlay in its own install base. Your call, since
    it is your bench and the tradeoff depends on how often Tier 2 gets re-run from scratch.
 
-Either way there is a blocker in front of both. `install.sh:4-5` hardcodes
-`$HOME/GitHub/Renaissance-Capstone-Project/`, the old repo name, so the script cannot run on any
-current clone (`ORIENTATION.md` section 8.4, `NEXT_STEPS.md` section 2.5). Whatever gets decided
-about the build layout, that path has to be fixed first.
+~~Either way there is a blocker in front of both.~~ **Fixed 2026-09-15**, see
+[`T0.3_SESSION.md`](T0.3_SESSION.md). `install.sh:4-5` used to hardcode
+`$HOME/GitHub/Renaissance-Capstone-Project/`, the old repo name, so the script could not run on any
+current clone (`ORIENTATION.md` section 8.4, `NEXT_STEPS.md` section 2.5). `install.sh:7` now derives
+the repo root from the script's own location, so the build layout decision above is no longer blocked
+on it.
 
 ## Changelog
 
 | Date | Who | Change |
 |---|---|---|
 | 2026-09-15 | Claude (Opus 5) + Zongzhe | First version. Puneet's answer recorded, checked against `install.sh`, `TESTBENCH_PLAN` line 313 and the 2026-09-11 bench build. Added the reconciliation with ORIENTATION section 3 and two questions for Dion. |
+| 2026-09-15 | Claude (Opus 5) + Zongzhe | Renumbered every `install.sh` citation (+4 lines) after T0.3 fixed its repo root, and retagged the `install.sh:4-5` blocker as fixed. No claim changed, only line numbers and that one status. |

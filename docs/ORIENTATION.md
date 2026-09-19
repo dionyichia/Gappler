@@ -673,8 +673,8 @@ intrinsics. Treating it as a 3D point will silently produce nonsense.
 
 ### 8.4 Hardcoded absolute paths — nothing runs on a fresh clone `[code]`
 
-⚠️ **Surveyed 2026-09-10. Full inventory and the recommended fix are in
-[`NEXT_STEPS.md`](NEXT_STEPS.md) §2.5** — it is a 🔴 blocker, not a tidiness item.
+✅ **Fixed 2026-09-19 by T0.3**, except the OpenVINS paths and the AnyGrasp `conda run` launch. See
+[`NEXT_STEPS.md`](NEXT_STEPS.md) §2.5. The notes below describe the state before the fix.
 
 Two things the list below does not convey:
 
@@ -1229,3 +1229,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-13 | Claude (Opus 5) + Dion | New §8.17: 16 of 54 owned topics are in `shared/config.yaml`, the rest are declared in the nodes; no C++ we own reads the shared config; the dynamic enum hides Aria publishers from static analysis. Qualified the two rows that called the file a single source of truth. Detail in CODE_AUDIT §K, fix in NEXT_STEPS §2.10. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Repointed citations of `RCP_NEW_USER_STARTUP_GUIDE.md` to its new home, `docs/archive/`, after T0.0 brought it onto `main`. |
 | 2026-09-19 | Claude (Opus 5) + Dion | New §8.18: the glasses pose chain explained. The glasses send no gaze and no pose. OpenVINS tracks the glasses only. The `kalibr_*.yaml` files are a hand copy of the live calibration, not a Kalibr run `[inferred]`. OpenVINS sits in `Navigation_Module` by accident. ArUco consumes intrinsics rather than producing them. §8.14: the two AnyGrasp nodes differ in method (tracker vs detector), not only checkpoint. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §8.4 marked fixed by T0.3, pointing at NEXT_STEPS §2.5 for what is still open. |

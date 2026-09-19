@@ -21,29 +21,25 @@ import sys
 import time
 
 # ---------------------------------------------------------------------------
-# Placeholders — fill in before running
+# Paths — derived from this file's own location, so a fresh clone works anywhere
 # ---------------------------------------------------------------------------
+# HERE is ros2_robot_ws/src, so the repo root is two folders up.
+HERE = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(os.path.dirname(HERE))
+
 ANYGRASP_CONDA_ENV = "anygrasp"
-ANYGRASP_DIR = "/home/iot22/GitHub/Renaissance-Capstone-Project/ros2_robot_ws/src/rm_mtc/src/perception"
-ANYGRASP_CHECKPOINT = "log/checkpoint_detection.tar"
+ANYGRASP_DIR = os.path.join(HERE, "rm_mtc/src/perception")
+ANYGRASP_CHECKPOINT = "log/checkpoint_detection.tar"  # relative to ANYGRASP_DIR
 
 
 ANYGRASP_NODE_PATH = os.path.join(
-    os.path.dirname(__file__), "rm_mtc/src/perception/anygrasp_detection_node.py"
+    HERE, "rm_mtc/src/perception/anygrasp_detection_node.py"
 )
-SAM3_PROJECT_ROOT = "/home/iot22/GitHub/Renaissance-Capstone-Project"
-SAM3_NODE_PATH = os.path.join(
-    os.path.dirname(__file__), "rm_mtc/src/perception/sam3_ros_node.py"
-)
-SAM3_WORK_DIR = (
-    "/home/iot22/GitHub/Renaissance-Capstone-Project/src/services/object_recognition"
-)
-GRASP_VIZ_NODE_PATH = os.path.join(
-    os.path.dirname(__file__), "rm_mtc/src/perception/grasp_viz.py"
-)
-RVIZ_CONFIG_PATH = os.path.join(
-    os.path.dirname(__file__), "rm_mtc/src/perception/rviz_config.rviz"
-)
+SAM3_PROJECT_ROOT = REPO_ROOT
+SAM3_NODE_PATH = os.path.join(HERE, "rm_mtc/src/perception/sam3_ros_node.py")
+SAM3_WORK_DIR = os.path.join(REPO_ROOT, "src/services/object_recognition")
+GRASP_VIZ_NODE_PATH = os.path.join(HERE, "rm_mtc/src/perception/grasp_viz.py")
+RVIZ_CONFIG_PATH = os.path.join(HERE, "rm_mtc/src/perception/rviz_config.rviz")
 
 # ---------------------------------------------------------------------------
 # Process registry
@@ -115,7 +111,8 @@ if __name__ == "__main__":
         cwd=SAM3_WORK_DIR,
         env={
             **os.environ,
-            "PYTHONPATH": "/home/iot22/GitHub/Renaissance-Capstone-Project/src:"
+            "PYTHONPATH": os.path.join(REPO_ROOT, "src")
+            + os.pathsep
             + os.environ.get("PYTHONPATH", ""),
         },
     )

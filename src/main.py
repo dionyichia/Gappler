@@ -14,6 +14,7 @@ from typing import Optional
 
 import rclpy
 
+from config import Settings
 from schemas.application import ApplicationConfig
 from services.process_manager import ProcessManager
 from utils import exit_keypress, safe_update_iptables, setup_logging
@@ -21,6 +22,11 @@ from utils import exit_keypress, safe_update_iptables, setup_logging
 # Logging setup
 setup_logging()
 logger = logging.getLogger(__name__)
+
+# Our own calibration file, handed to the external OpenVINS binary.
+ESTIMATOR_CONFIG = (
+    Settings.PROJECT_ROOT / "src/services/aria_device/calibration/estimator_config.yaml"
+)
 
 if not rclpy.ok():
     rclpy.init()
@@ -303,7 +309,7 @@ class AriaApplication:
                     "source ~/Ros2Workspaces/OpenVINS/install/setup.bash && "
                     "~/Ros2Workspaces/OpenVINS/install/ov_msckf/lib/ov_msckf/run_subscribe_msckf "
                     "--ros-args "
-                    "-p config_path:=/home/iot22/GitHub/Renaissance-Capstone-Project/src/services/aria_device/calibration/estimator_config.yaml "
+                    f"-p config_path:={ESTIMATOR_CONFIG} "
                     "-r __ns:=/ov_msckf",
                 ],
                 stdout=subprocess.DEVNULL,

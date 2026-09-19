@@ -81,30 +81,3 @@ class SAM3Model:
         self.current_inference_state = inference_state
         return inference_state
 
-
-# Usage example
-if __name__ == "__main__":
-    import cv2
-
-    # Initialize segmenter
-    segmenter = SAM3Model(
-        checkpoint_path="/home/iot22/GitHub/Renaissance-Capstone-Project/src/models/sam3/sam3.pt",
-        confidence_threshold=0.5,
-    )
-
-    # Load image as numpy array using OpenCV
-    image_path = "/home/iot22/GitHub/Renaissance-Capstone-Project/assets/images.jpeg"
-    image = cv2.imread(image_path)  # Returns numpy array in BGR format (H, W, C)
-
-    print(f"Loaded image shape: {image.shape}")
-    print(f"Image dtype: {image.dtype}")
-
-    # Process image with text prompt
-    inference_state = segmenter.process_text_prompt(image, "table")
-
-    # Check results
-    if inference_state:
-        masks = inference_state.get("masks")
-        if masks is not None:
-            print(f"Mask shape: {masks.shape}")
-            print(f"Number of detections: {len(masks)}")
