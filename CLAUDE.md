@@ -83,21 +83,24 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
 ## The bench
 
 ```bash
-./bench/run.sh                         # preflight → static → contracts (any machine)
+./bench/run.sh                         # L0 static → L1 contracts → L2 preflight → L3 build → L4 sim
+                                       # (L3-L4 only where ROS 2 Humble exists, else SKIPPED)
+./bench/run.sh quick                   # L0-L2 only
 ./bench/run.sh report                  # contract inventory + orphan analysis
 python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract change
 # lab box only (ROS + the built overlay):
-./bench/build.sh [nav]                 # Tier 2: colcon build into this checkout
-./bench/sim_moveit.sh                  # Tier 3: MoveIt on a simulated arm
-./bench/estop_delivery.sh              # Tier 3: does estop.py's stop message leave
-./bench/state_machine_sim.sh           # Tier 3: grasp state machine on the simulated arm
-./bench/nav_nodes.sh                   # Tier 3: the five nav nodes vs a mock Nav2 (nothing drives)
+./bench/build.sh [nav]                 # L3: colcon build into this checkout
+./bench/sim_moveit.sh                  # L4: MoveIt on a simulated arm
+./bench/estop_delivery.sh              # L4: does estop.py's stop message leave
+./bench/state_machine_sim.sh           # L4: grasp state machine on the simulated arm
+./bench/nav_nodes.sh                   # L4: the five nav nodes vs a mock Nav2 (nothing drives)
 ./bench/anygrasp_env.sh [PYTHON]       # can this env run AnyGrasp (imports + SDK demo)
 ```
 
-Tiers 0–1 are stdlib-only and need no ROS. Run them before and after any refactor. When the reorg
-moves code, update `OWNED_PREFIXES` in `bench/_common.py` (the one copy, shared by all three tools).
-Every Tier 3 script refuses to start unless its ROS channel is private and empty. Results go in
+Levels L0-L5 are defined in `bench/README.md` (renamed from Tiers 0-4 on 2026-09-19). L0-L2 are
+stdlib-only and need no ROS. Run them before and after any refactor. L5 is the real robot and is
+never automated. When the reorg moves code, update `OWNED_PREFIXES` in `bench/_common.py` (the one copy, shared by all three tools).
+Every L4 (simulation) script refuses to start unless its ROS channel is private and empty. Results go in
 `docs/bench-runs/`; status and next work in TESTBENCH_PLAN "▶ Start here".
 
 ## Conventions

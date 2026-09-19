@@ -616,6 +616,12 @@ failed, not only static. Preflight gated its network and camera checks on "is Li
 non-lab Linux host: all seven checks skip. The lab box still runs them, since it has
 `/opt/ros/humble`. With this fix, T0.4 alone should turn CI green `[inferred]`.
 
+**Levels, 2026-09-19.** The tiers are renamed L0-L5 and `run.sh` now runs them in order, running
+each level the machine can and reporting the rest as SKIPPED: L0 static, L1 contracts, L2 preflight
+(lab box check), L3 build, L4 simulation, L5 hardware (never automated). It ends with a summary
+table, which CI also writes to the run's summary page. Definitions in `bench/README.md`. On GitHub,
+L3-L4 skip. Runner on the lab box and the `dev`/`main` rules are T0.11.
+
 Owner: Dion, since he owns `bench/` itself. Depends on `T0.5` (both other clones build and pass the
 bench) — see `PROJECT_PLAN.md` §6.2, task `T0.10`.
 
@@ -844,3 +850,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.12: CI started. `.github/workflows/bench.yml` runs Tiers 0-1 strictly on PRs into `main`, red until the 7 known static findings are fixed. Noted the planned `dev`/`main` split and new task `T0.11`. Task count 69 to 70. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.12: CI blocks merges only after T0.4 turns the bench green. Added the Monday and Wednesday night full-suite run, and deferred the runner question to T0.11. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.12: first CI run recorded. Fixed preflight reporting FAIL for lab hardware on any non-lab Linux host. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §2.12: bench levels renamed L0-L5, `run.sh` runs every level it can and prints a summary table. |
