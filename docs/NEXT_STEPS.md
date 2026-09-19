@@ -608,6 +608,14 @@ tests (`T0.11`), `dev` into `main` runs the full suite, and the full suite also 
 Monday and Wednesday night. Where Tiers 2-3 run (lab box as a self-hosted runner, or a Docker image)
 is deferred to T0.11.
 
+**First run, 2026-09-19** (run 35433250227, commit `5fa91ee`): red, as expected, but preflight also
+failed, not only static. Preflight gated its network and camera checks on "is Linux" rather than
+"is the lab box", so any Linux machine without `enp2s0` or a RealSense got FAIL instead of SKIP
+`[code]`. That includes a teammate's laptop in T0.5, not just CI. Fixed in `bench/preflight.py`
+`g_net` and `realsense_checks`, which now gate on `on_lab_machine()`. Checked by simulating a
+non-lab Linux host: all seven checks skip. The lab box still runs them, since it has
+`/opt/ros/humble`. With this fix, T0.4 alone should turn CI green `[inferred]`.
+
 Owner: Dion, since he owns `bench/` itself. Depends on `T0.5` (both other clones build and pass the
 bench) — see `PROJECT_PLAN.md` §6.2, task `T0.10`.
 
@@ -835,3 +843,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.13: added the "why this is worth doing" answer (identical objects are the hardest test case, not the pitch) and a parked open problem: the robot cannot see what the user sees, for example when the object is blocked from the knee-height base camera. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.12: CI started. `.github/workflows/bench.yml` runs Tiers 0-1 strictly on PRs into `main`, red until the 7 known static findings are fixed. Noted the planned `dev`/`main` split and new task `T0.11`. Task count 69 to 70. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.12: CI blocks merges only after T0.4 turns the bench green. Added the Monday and Wednesday night full-suite run, and deferred the runner question to T0.11. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §2.12: first CI run recorded. Fixed preflight reporting FAIL for lab hardware on any non-lab Linux host. |
