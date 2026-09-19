@@ -2,11 +2,11 @@
 
 This folder holds Zongzhe's work on Gappler: plans, session notes, handoffs, investigation
 write-ups and bench-run reports. It is one of the per-person folders described in
-[`../dion_docs/START_HERE.md`](../dion_docs/START_HERE.md).
+[`../START_HERE.md`](../START_HERE.md).
 
 **If you are new to the project, do not start here.** Start at
-[`../dion_docs/START_HERE.md`](../dion_docs/START_HERE.md) for the reading order, then
-[`../dion_docs/ORIENTATION.md`](../dion_docs/ORIENTATION.md) for what the system actually is.
+[`../START_HERE.md`](../START_HERE.md) for the reading order, then
+[`../ORIENTATION.md`](../ORIENTATION.md) for what the system actually is.
 Those are the shared reference. This folder does not repeat them, it links to them.
 
 ## What is in here
@@ -18,9 +18,9 @@ Those are the shared reference. This folder does not repeat them, it links to th
 
 ## Rules this folder follows
 
-From [`../dion_docs/START_HERE.md`](../dion_docs/START_HERE.md) and the root `CLAUDE.md`:
+From [`../START_HERE.md`](../START_HERE.md) and the root `CLAUDE.md`:
 
-1. **Write here, not in someone else's folder.** If something in `../dion_docs/` is wrong or
+1. **Write here, not in someone else's folder.** If something in `../` is wrong or
    incomplete, the correction is written here, citing the file and section, and the owner is told.
    `BUILD_WORKSPACES.md` has a "For Dion" section that exists for exactly that reason.
 2. **Tag where a claim came from.** `[code]` means it was read from the source at the cited line.

@@ -260,18 +260,21 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 
 <header class="masthead"><div class="inner">
-  <p class="eyebrow">Gappler &middot; project plan &middot; 14 September 2026</p>
+  <p class="eyebrow">Gappler &middot; project plan &middot; 16 September 2026</p>
   <h1>Gappler Task Tree</h1>
-  <p class="dek">Twenty weeks, three people, one robot. What we build, in what order, and who is
-  waiting on whom. The companion to the wiring map: that one says how the system is put together,
-  this one says what we do about it.</p>
+  <p class="dek">Thirty-one calendar weeks, three people, one robot &mdash; the same 20 weeks of work
+  the first version of this page planned, now mapped onto the real capstone calendar: a recess, an
+  exam period, a winter break, and four dates the university sets rather than us. The companion to
+  the wiring map: that one says how the system is put together, this one says what we do about it.</p>
   <div class="facts">
-    <span class="fact">Week 1 starts <b>2026-09-14</b></span>
-    <span class="fact">Checkpoint <b>2026-12-06</b></span>
-    <span class="fact">Finish <b>2027-01-31</b></span>
+    <span class="fact">Week 1 starts <b>14 Sep 2026</b></span>
+    <span class="fact">Plan &amp; Gantt due <b>5 Oct 2026</b></span>
+    <span class="fact">Interim presentation <b>10&ndash;13 Nov 2026</b></span>
+    <span class="fact">Final report due <b>28 Mar 2027</b></span>
+    <span class="fact">Oral presentation <b>5&ndash;16 Apr 2027</b></span>
     <span class="fact">Milestones <b>11</b></span>
-    <span class="fact">Tasks <b>68</b></span>
-    <span class="fact">Effort available <b>~515 h</b></span>
+    <span class="fact">Tasks <b>70</b></span>
+    <span class="fact">Effort available <b>~620 h</b></span>
   </div>
 </div></header>
 
@@ -292,6 +295,34 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </nav>
 
 <main>
+<div class="callout c-warn" style="margin-bottom:20px">
+  <span class="ct">What changed on 16 September &mdash; the schedule is now the real one</span>
+  <p>This page used to plan in a straight 20 weeks ending 31 January. That was never the actual
+  deadline. The capstone has four fixed dates: the project plan and Gantt chart are due
+  <strong>5 October 2026</strong>, the interim presentation falls <strong>10&ndash;13 November
+  2026</strong>, the final report is due <strong>28 March 2027</strong>, and the oral presentation
+  and demonstration run <strong>5&ndash;16 April 2027</strong>. None of that time was free either:
+  the last week of September is a recess, the last three weeks of November plus the first few days
+  of December are the exam period, and of the four-week winter break only the back two weeks are
+  usable as working buffer.</p>
+  <p>The same 20 weeks of milestone work now spans <strong>31 calendar weeks</strong>, finishing
+  mid-April instead of end of January. That is not a delay &mdash; it is more accurate slack: about
+  620 person-hours are now available against the 406 hours of named work, versus 515 before, so
+  capacity usage drops from 79 to about 65 percent. See section 3 below for the full calendar, and
+  the deadlines highlighted in the chart. Task ownership, hours and dependencies did not change,
+  only which calendar week each one falls in.</p>
+</div>
+<div class="callout c-note" style="margin-bottom:20px">
+  <span class="ct">Also on 16 September &mdash; a CI task added, and DONE now means done for everyone</span>
+  <p><strong>New task, T0.10.</strong> Once a second clone has actually proven the fresh-clone story
+  works (T0.5), CI wires up <code>./bench/run.sh</code> to run on every push, so a breaking change to
+  a topic, frame or contract name fails loudly instead of waiting for someone to notice. It cannot
+  touch the real arm, base or glasses. Owner: Dion. Full scope in <code>NEXT_STEPS.md</code> &sect;2.12.</p>
+  <p><strong>The done state on every task node below is no longer just per-browser.</strong> A task
+  whose description starts with "DONE" is struck through and shown green for every viewer, derived
+  from the data itself rather than from a click saved in one person's <code>localStorage</code>. The
+  mark button still lets you track anything else locally, same as before.</p>
+</div>
 <div class="callout c-note" style="margin-bottom:34px">
   <span class="ct">What changed on 14 September</span>
   <p><strong>The first task is now T0.0</strong>, taking the four documents worth keeping off the
@@ -301,7 +332,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <p><strong>The test bench finished its backlog.</strong> The navigation software compiles for the
   first time, all 10 parts, and the five navigation programs passed their tests on the first run.
   Three suspected defects are now confirmed by observation rather than by reading the code, and one
-  new one turned up. T0.8, T3.1 and T3.2 are done.</p>
+   new one turned up. T0.2, T0.8, T0.9, T3.1, T3.2 and T5.2 are done.</p>
   <p><strong>One thing got worse.</strong> The arm's camera is faulty and is currently off the USB
   bus entirely. It needs someone to unplug and replug it, and it is not known whether it survives
   that. It was also the fallback for the base camera, so a single fault removes both camera paths
@@ -451,7 +482,23 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </section>
 <section id="map">
   <h2><span class="sn">Section 3</span>The milestone map</h2>
-  <p class="sub">Eleven milestones across twenty weeks, coloured by who leads them. Milestones overlap because their tasks interleave, so the exact blocking is in the tree below, not here. What this picture is for is seeing that after week 2 there are always three things running at once.</p>
+  <p class="sub">Eleven milestones, coloured by who leads them, drawn against the real capstone
+  calendar rather than a plain week count. Four dates are fixed by the university, not by us &mdash;
+  they are marked in red below &mdash; and four spans of the calendar are not working time at all:
+  a recess, an exam period, and half the winter break. Milestones overlap because their tasks
+  interleave, so the exact blocking is in the tree below, not here. What this picture is for is
+  seeing that after week 2 there are always three things running at once, and that the gap between
+  the interim presentation and the next real checkpoint is mostly exams, not slippage.</p>
+
+  <div class="callout c-warn" style="margin-bottom:22px">
+    <span class="ct">Four dates we do not control</span>
+    <p><strong>5 October 2026</strong> &mdash; project plan, Gantt chart and budget due to the
+    supervisor. <strong>10&ndash;13 November 2026</strong> &mdash; interim presentation (university
+    window: 26 October to 13 November). <strong>28 March 2027</strong> &mdash; final report, softcopy
+    plus similarity report, due to the main supervisor and the REP Office (Ms Yang Huixin); get the
+    finished copy to the supervisor a week or two earlier for review and amendments. <strong>5&ndash;16
+    April 2027</strong> &mdash; oral presentation and demonstration.</p>
+  </div>
   <style>
   .g-D{fill:var(--dion)} .g-Z{fill:var(--zz)} .g-S{fill:var(--sherman)} .g-A{fill:var(--all)}
   .gt{fill:var(--ink-3);font-family:var(--mono);font-size:10.5px;letter-spacing:.08em}
@@ -463,115 +510,104 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .critrule{stroke:var(--ink);stroke-width:2;opacity:.55}
   .conn{stroke:var(--all);stroke-width:1.5;fill:none;opacity:.75}
   .cpline{stroke:var(--broken);stroke-width:1.5;stroke-dasharray:3 3}
-  .cptext{fill:var(--broken);font-family:var(--mono);font-size:10.5px;letter-spacing:.08em}
+  .cptext{fill:var(--broken);font-family:var(--mono);font-size:10px;letter-spacing:.05em}
   .hol{fill:var(--surface-3);opacity:.8}
+  .buf{fill:var(--surface-3);opacity:.4}
+  .win{fill:var(--broken-soft);opacity:.6}
+  .bandtext{fill:var(--ink-3);font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase}
   </style>
   <figure><div class="chart">
-  <svg viewBox="0 0 980 470" role="img" aria-label="Milestone schedule across twenty weeks">
+  <svg viewBox="0 0 1000 494" role="img" aria-label="Milestone schedule across 31 calendar weeks, 14 September 2026 to 18 April 2027, with the recess, exam period, winter break and four fixed capstone deadlines marked">
     <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="var(--all)"/></marker></defs>
-    <rect class="hol" x="733" y="42" width="74" height="406"/>
-    <text class="gt" x="770" y="442" text-anchor="middle">holidays</text>
+    <rect class="hol" x="263" y="42" width="24" height="386"/>
+    <rect class="hol" x="407" y="42" width="96" height="386"/>
+    <rect class="hol" x="503" y="42" width="48" height="386"/>
+    <rect class="buf" x="551" y="42" width="48" height="386"/>
+    <rect class="win" x="410" y="42" width="11" height="386"/>
+    <rect class="win" x="911" y="42" width="38" height="386"/>
     <line class="gridm" x1="215" y1="42" x2="215" y2="428"/>
-    <line class="grid" x1="252" y1="42" x2="252" y2="428"/>
-    <line class="grid" x1="289" y1="42" x2="289" y2="428"/>
-    <line class="grid" x1="326" y1="42" x2="326" y2="428"/>
-    <line class="grid" x1="363" y1="42" x2="363" y2="428"/>
-    <line class="grid" x1="400" y1="42" x2="400" y2="428"/>
-    <line class="grid" x1="437" y1="42" x2="437" y2="428"/>
-    <line class="grid" x1="474" y1="42" x2="474" y2="428"/>
-    <line class="grid" x1="511" y1="42" x2="511" y2="428"/>
-    <line class="grid" x1="548" y1="42" x2="548" y2="428"/>
-    <line class="grid" x1="585" y1="42" x2="585" y2="428"/>
-    <line class="grid" x1="622" y1="42" x2="622" y2="428"/>
-    <line class="grid" x1="659" y1="42" x2="659" y2="428"/>
-    <line class="grid" x1="696" y1="42" x2="696" y2="428"/>
-    <line class="grid" x1="733" y1="42" x2="733" y2="428"/>
-    <line class="grid" x1="770" y1="42" x2="770" y2="428"/>
-    <line class="grid" x1="807" y1="42" x2="807" y2="428"/>
-    <line class="grid" x1="844" y1="42" x2="844" y2="428"/>
-    <line class="grid" x1="881" y1="42" x2="881" y2="428"/>
-    <line class="grid" x1="918" y1="42" x2="918" y2="428"/>
-    <line class="gridm" x1="955" y1="42" x2="955" y2="428"/>
-    <text class="gt" x="234" y="34" text-anchor="middle">1</text>
-    <text class="gt" x="270" y="34" text-anchor="middle">2</text>
-    <text class="gt" x="308" y="34" text-anchor="middle">3</text>
-    <text class="gt" x="344" y="34" text-anchor="middle">4</text>
-    <text class="gt" x="382" y="34" text-anchor="middle">5</text>
-    <text class="gt" x="418" y="34" text-anchor="middle">6</text>
-    <text class="gt" x="456" y="34" text-anchor="middle">7</text>
-    <text class="gt" x="492" y="34" text-anchor="middle">8</text>
-    <text class="gt" x="530" y="34" text-anchor="middle">9</text>
-    <text class="gt" x="566" y="34" text-anchor="middle">10</text>
-    <text class="gt" x="604" y="34" text-anchor="middle">11</text>
-    <text class="gt" x="640" y="34" text-anchor="middle">12</text>
-    <text class="gt" x="678" y="34" text-anchor="middle">13</text>
-    <text class="gt" x="714" y="34" text-anchor="middle">14</text>
-    <text class="gt" x="752" y="34" text-anchor="middle">15</text>
-    <text class="gt" x="788" y="34" text-anchor="middle">16</text>
-    <text class="gt" x="826" y="34" text-anchor="middle">17</text>
-    <text class="gt" x="862" y="34" text-anchor="middle">18</text>
-    <text class="gt" x="900" y="34" text-anchor="middle">19</text>
-    <text class="gt" x="936" y="34" text-anchor="middle">20</text>
-    <text class="gt" x="215" y="18">WEEK</text>
-    <text class="gt" x="219" y="18">SEP</text>
-    <text class="gt" x="330" y="18">OCT</text>
-    <text class="gt" x="478" y="18">NOV</text>
-    <text class="gt" x="626" y="18">DEC</text>
-    <text class="gt" x="811" y="18">JAN</text>
-    <line class="cpline" x1="659" y1="26" x2="659" y2="428"/>
-    <text class="cptext" x="654" y="440" text-anchor="end">6 DEC CHECKPOINT</text>
-    <line class="cpline" x1="955" y1="26" x2="955" y2="428"/>
-    <text class="cptext" x="950" y="440" text-anchor="end">31 JAN</text>
-    <rect class="g-A" x="215" y="59" width="74" height="22" rx="3"/>
-    <line class="critrule" x1="215" y1="84" x2="289" y2="84"/>
+    <line class="grid" x1="273" y1="42" x2="273" y2="428"/>
+    <line class="grid" x1="380" y1="42" x2="380" y2="428"/>
+    <line class="grid" x1="482" y1="42" x2="482" y2="428"/>
+    <line class="grid" x1="589" y1="42" x2="589" y2="428"/>
+    <line class="grid" x1="695" y1="42" x2="695" y2="428"/>
+    <line class="grid" x1="791" y1="42" x2="791" y2="428"/>
+    <line class="grid" x1="897" y1="42" x2="897" y2="428"/>
+    <line class="gridm" x1="959" y1="42" x2="959" y2="428"/>
+    <text class="gt" x="244" y="34" text-anchor="middle">SEP</text>
+    <text class="gt" x="326" y="34" text-anchor="middle">OCT</text>
+    <text class="gt" x="431" y="34" text-anchor="middle">NOV</text>
+    <text class="gt" x="535" y="34" text-anchor="middle">DEC</text>
+    <text class="gt" x="642" y="34" text-anchor="middle">JAN</text>
+    <text class="gt" x="743" y="34" text-anchor="middle">FEB</text>
+    <text class="gt" x="844" y="34" text-anchor="middle">MAR</text>
+    <text class="gt" x="928" y="34" text-anchor="middle">APR</text>
+    <text class="bandtext" x="275" y="442" text-anchor="middle">recess</text>
+    <text class="bandtext" x="455" y="442" text-anchor="middle">exams</text>
+    <text class="bandtext" x="527" y="442" text-anchor="middle">break</text>
+    <text class="bandtext" x="575" y="442" text-anchor="middle">buffer</text>
+    <line class="cpline" x1="287" y1="26" x2="287" y2="428"/>
+    <text class="cptext" x="283" y="458" text-anchor="end">5 OCT PLAN DUE</text>
+    <text class="cptext" x="425" y="472">10&ndash;13 NOV INTERIM PRES.</text>
+    <line class="cpline" x1="887" y1="26" x2="887" y2="428"/>
+    <text class="cptext" x="883" y="458" text-anchor="end">28 MAR REPORT DUE</text>
+    <text class="cptext" x="915" y="472">5&ndash;16 APR ORAL PRES.</text>
+    <rect class="g-A" x="215" y="59" width="48" height="22" rx="3"/>
+    <line class="critrule" x1="215" y1="84" x2="263" y2="84"/>
     <text class="gid" x="14" y="74">M0</text>
     <text class="gl" x="48" y="74">Everyone can build and run</text>
-    <rect class="g-S" x="289" y="95" width="333" height="22" rx="3"/>
-    <line class="critrule" x1="289" y1="120" x2="622" y2="120"/>
+    <rect class="g-S" x="287" y="95" width="360" height="22" rx="3"/>
+    <line class="critrule" x1="287" y1="120" x2="647" y2="120"/>
     <text class="gid" x="14" y="110">M5</text>
     <text class="gl" x="48" y="110">A calibrated camera on the base</text>
-    <rect class="g-D" x="289" y="131" width="148" height="22" rx="3"/>
-    <line class="critrule" x1="289" y1="156" x2="437" y2="156"/>
+    <rect class="g-D" x="287" y="131" width="96" height="22" rx="3"/>
+    <line class="critrule" x1="287" y1="156" x2="383" y2="156"/>
     <text class="gid" x="14" y="146">M1</text>
     <text class="gl" x="48" y="146">The arm picks something up</text>
-    <rect class="g-Z" x="326" y="167" width="185" height="22" rx="3"/>
+    <rect class="g-Z" x="311" y="167" width="264" height="22" rx="3"/>
     <text class="gid" x="14" y="182">M3</text>
     <text class="gl" x="48" y="182">The base navigates</text>
-    <rect class="g-D" x="400" y="203" width="148" height="22" rx="3"/>
-    <line class="critrule" x1="400" y1="228" x2="548" y2="228"/>
+    <rect class="g-D" x="359" y="203" width="240" height="22" rx="3"/>
+    <line class="critrule" x1="359" y1="228" x2="599" y2="228"/>
     <text class="gid" x="14" y="218">M2</text>
     <text class="gl" x="48" y="218">Voice and gaze reach the arm</text>
-    <rect class="g-Z" x="437" y="239" width="370" height="22" rx="3" stroke-dasharray="4 3" stroke="var(--zz)" stroke-width="1.5" fill-opacity="0.28"/>
+    <rect class="g-Z" x="383" y="239" width="384" height="22" rx="3" stroke-dasharray="4 3" stroke="var(--zz)" stroke-width="1.5" fill-opacity="0.28"/>
     <text class="gid" x="14" y="254">M9</text>
     <text class="gl" x="48" y="254">Frontier scoring, visit ordering</text>
-    <text class="gt" x="813" y="254" fill="var(--caution)">OPTIONAL</text>
-    <rect class="g-D" x="511" y="275" width="111" height="22" rx="3"/>
+    <text class="gt" x="700" y="254" fill="var(--caution)">OPTIONAL</text>
+    <rect class="g-D" x="575" y="275" width="72" height="22" rx="3"/>
     <text class="gid" x="14" y="290">M4</text>
     <text class="gl" x="48" y="290">The current system, closed loop</text>
-    <rect class="g-Z" x="511" y="311" width="222" height="22" rx="3"/>
-    <line class="critrule" x1="511" y1="336" x2="733" y2="336"/>
+    <rect class="g-Z" x="575" y="311" width="144" height="22" rx="3"/>
+    <line class="critrule" x1="575" y1="336" x2="719" y2="336"/>
     <text class="gid" x="14" y="326">M6</text>
     <text class="gl" x="48" y="326">The memory graph, offline</text>
-    <rect class="g-D" x="696" y="347" width="148" height="22" rx="3"/>
-    <line class="critrule" x1="696" y1="372" x2="844" y2="372"/>
+    <rect class="g-D" x="695" y="347" width="96" height="22" rx="3"/>
+    <line class="critrule" x1="695" y1="372" x2="791" y2="372"/>
     <text class="gid" x="14" y="362">M7</text>
     <text class="gl" x="48" y="362">The graph drives the robot</text>
-    <rect class="g-D" x="733" y="383" width="185" height="22" rx="3"/>
-    <line class="critrule" x1="733" y1="408" x2="918" y2="408"/>
+    <rect class="g-D" x="719" y="383" width="120" height="22" rx="3"/>
+    <line class="critrule" x1="719" y1="408" x2="839" y2="408"/>
     <text class="gid" x="14" y="398">M8</text>
     <text class="gl" x="48" y="398">Gaze picks the instance</text>
-    <rect class="g-A" x="844" y="419" width="111" height="22" rx="3"/>
-    <line class="critrule" x1="844" y1="444" x2="955" y2="444"/>
+    <rect class="g-A" x="791" y="419" width="72" height="22" rx="3"/>
+    <line class="critrule" x1="791" y1="444" x2="863" y2="444"/>
     <text class="gid" x="14" y="434">M10</text>
     <text class="gl" x="48" y="434">Demonstration and paper</text>
-    <path class="conn" d="M 289 70 V 178 H 320" marker-end="url(#ah)"/>
-    <path class="conn" d="M 289 70 V 106" />
-    <path class="conn" d="M 288 106 H 294" marker-end="url(#ah)"/>
-    <path class="conn" d="M 289 70 V 142" />
-    <path class="conn" d="M 288 142 H 294" marker-end="url(#ah)"/>
+    <path class="conn" d="M 263 70 V 142 H 287" marker-end="url(#ah)"/>
+    <path class="conn" d="M 263 70 V 178 H 311" marker-end="url(#ah)"/>
+    <path class="conn" d="M 263 70 V 106 H 287" marker-end="url(#ah)"/>
   </svg>
   </div>
-  <figcaption>Bar colour is the lead: blue Dion, violet Zongzhe, teal Sherman, grey all three. A dark rule under a bar means the milestone is on the critical path to the research result. M9 is dashed because it is optional and the first thing we cut. The shaded band is the December holidays, planned at half velocity.</figcaption>
+  <figcaption>Bar colour is the lead: blue Dion, violet Zongzhe, teal Sherman, grey all three. A dark
+  rule under a bar means the milestone is on the critical path to the research result. M9 is dashed
+  because it is optional and the first thing we cut. The grey bands are the recess (last week of
+  September), the November exam period through early December, and the winter break &mdash; its first
+  two weeks off, its last two kept as half-speed buffer. The red dashed lines and the two red bands
+  are the four dates the university sets: the plan and Gantt chart due 5 October, the interim
+  presentation 10&ndash;13 November, the final report due 28 March, and the oral presentation
+  5&ndash;16 April. A milestone bar that runs through a grey band is elapsed calendar time, not
+  working time &mdash; M2, M3, M5 and M9 all cross the exam period or the winter break.</figcaption>
   </figure>
 
   <div class="legend">
@@ -583,21 +619,34 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
   <h3>What each milestone means by "done"</h3>
   <div class="scroller"><table>
-    <thead><tr><th>ID</th><th>Milestone</th><th>Done means</th><th>Weeks</th><th>Lead</th></tr></thead>
+    <thead><tr><th>ID</th><th>Milestone</th><th>Done means</th><th>Dates</th><th>Lead</th></tr></thead>
     <tbody>
-      <tr><td>M0</td><td>Everyone can build and run</td><td>Two people who are not Dion have cloned the repository on their own machine, built it, run the bench and got the same result. The arm and the LiDAR answer on the network in the same session</td><td class="num">1&ndash;2</td><td><span class="who w-Z">Zongzhe</span></td></tr>
-      <tr><td>M1</td><td>The arm picks something up</td><td>With the emergency stop verified and a validated home pose, the arm grasps a box using a mask from its own camera. Five attempts, success rate recorded</td><td class="num">3&ndash;6</td><td><span class="who w-D">Dion</span></td></tr>
-      <tr><td>M2</td><td>Voice and gaze reach the arm</td><td>You say "grab the box", you look at one of two boxes, and the arm picks the one you looked at. Three times out of four</td><td class="num">6&ndash;9</td><td><span class="who w-D">Dion</span></td></tr>
-      <tr><td>M3</td><td>The base navigates</td><td>A map of the lab exists, the robot localises in it, and it drives to a commanded point and reports arrival. Ten runs, position error recorded</td><td class="num">4&ndash;8</td><td><span class="who w-Z">Zongzhe</span></td></tr>
-      <tr><td>M4</td><td>The current system, closed loop</td><td>One recorded run: speak, look, the base drives, the arm grasps. Per-stage timing recorded at the 99th percentile</td><td class="num">9&ndash;11</td><td><span class="who w-D">Dion</span></td></tr>
-      <tr><td>M5</td><td>A calibrated camera on the base</td><td>A RealSense D455 is mounted forward facing on the base, LiDAR points projected into its image land on the right objects, and the camera-pose error is written down as a number</td><td class="num">3&ndash;11</td><td><span class="who w-S">Sherman</span> <span class="who w-D">Dion</span></td></tr>
-      <tr><td>M6</td><td>The memory graph, offline</td><td>From a recorded drive, the system produces object entries with a 3D position and an image feature each, the same object is not registered twice, and a sentence query returns it</td><td class="num">9&ndash;14</td><td><span class="who w-Z">Zongzhe</span></td></tr>
-      <tr><td>M7</td><td>The graph drives the robot</td><td>A spoken instruction with the object not in view produces an approach goal read out of the graph, the base drives there, and close-range perception takes over</td><td class="num">14&ndash;17</td><td><span class="who w-D">Dion</span></td></tr>
-      <tr><td>M8</td><td>Gaze picks the instance</td><td>The gaze-cropped image feature is carried into the graph query. Ablation with and without, N trials each, success rates side by side</td><td class="num">15&ndash;19</td><td><span class="who w-D">Dion</span></td></tr>
-      <tr><td>M9</td><td>Frontier scoring, visit ordering</td><td>The robot's chosen exploration order beats a nearest-first baseline on a measured metric. Optional</td><td class="num">7&ndash;16</td><td><span class="who w-Z">Zongzhe</span></td></tr>
-      <tr><td>M10</td><td>Demonstration and paper</td><td>A recorded end-to-end run, and a draft whose central table is M8's ablation</td><td class="num">18&ndash;20</td><td><span class="who w-A">all</span></td></tr>
+      <tr><td>M0</td><td>Everyone can build and run</td><td>Two people who are not Dion have cloned the repository on their own machine, built it, run the bench and got the same result. The arm and the LiDAR answer on the network in the same session</td><td class="num">14&ndash;27 Sep 2026</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td>M1</td><td>The arm picks something up</td><td>With the emergency stop verified and a validated home pose, the arm grasps a box using a mask from its own camera. Five attempts, success rate recorded</td><td class="num">5 Oct&ndash;1 Nov 2026</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M2</td><td>Voice and gaze reach the arm</td><td>You say "grab the box", you look at one of two boxes, and the arm picks the one you looked at. Three times out of four</td><td class="num">26 Oct 2026&ndash;3 Jan 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M3</td><td>The base navigates</td><td>A map of the lab exists, the robot localises in it, and it drives to a commanded point and reports arrival. Ten runs, position error recorded</td><td class="num">12 Oct&ndash;27 Dec 2026</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td>M4</td><td>The current system, closed loop</td><td>One recorded run: speak, look, the base drives, the arm grasps. Per-stage timing recorded at the 99th percentile</td><td class="num">28 Dec 2026&ndash;17 Jan 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M5</td><td>A calibrated camera on the base</td><td>A RealSense D455 is mounted forward facing on the base, LiDAR points projected into its image land on the right objects, and the camera-pose error is written down as a number</td><td class="num">5 Oct 2026&ndash;17 Jan 2027</td><td><span class="who w-S">Sherman</span> <span class="who w-D">Dion</span></td></tr>
+      <tr><td>M6</td><td>The memory graph, offline</td><td>From a recorded drive, the system produces object entries with a 3D position and an image feature each, the same object is not registered twice, and a sentence query returns it</td><td class="num">28 Dec 2026&ndash;7 Feb 2027</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td>M7</td><td>The graph drives the robot</td><td>A spoken instruction with the object not in view produces an approach goal read out of the graph, the base drives there, and close-range perception takes over</td><td class="num">1&ndash;28 Feb 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M8</td><td>Gaze picks the instance</td><td>The gaze-cropped image feature is carried into the graph query. Ablation with and without, N trials each, success rates side by side</td><td class="num">8 Feb&ndash;14 Mar 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M9</td><td>Frontier scoring, visit ordering</td><td>The robot's chosen exploration order beats a nearest-first baseline on a measured metric. Optional</td><td class="num">2 Nov 2026&ndash;21 Feb 2027</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td>M10</td><td>Demonstration and paper</td><td>A recorded end-to-end run, and a draft whose central table is M8's ablation</td><td class="num">1&ndash;21 Mar 2027</td><td><span class="who w-A">all</span></td></tr>
     </tbody>
   </table></div>
+
+  <h3>The four official deliverables</h3>
+  <div class="scroller"><table>
+    <thead><tr><th>Deliverable</th><th>Due</th><th>Goes to</th></tr></thead>
+    <tbody>
+      <tr><td>Project plan, Gantt chart and budget</td><td class="num">Mon 5 Oct 2026</td><td>Supervisor</td></tr>
+      <tr><td>Interim presentation</td><td class="num">10&ndash;13 Nov 2026</td><td>Panel (university window 26 Oct&ndash;13 Nov)</td></tr>
+      <tr><td>Final report, softcopy plus similarity report</td><td class="num">Sun 28 Mar 2027</td><td>Main supervisor and the REP Office (Ms Yang Huixin)</td></tr>
+      <tr><td>Oral presentation and demonstration</td><td class="num">5&ndash;16 Apr 2027</td><td>Panel</td></tr>
+    </tbody>
+  </table></div>
+  <p>Have the finished, similarity-checked report with the supervisor a week or two before 28 March
+  &mdash; that date is when the final copy is due, not when a draft may first reach them.</p>
 
   <div class="callout c-note">
     <span class="ct">Two things to notice about this shape</span>
@@ -613,7 +662,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 <section id="tree">
   <h2><span class="sn">Section 4</span>The task tree</h2>
-  <p class="sub">Sixty-eight tasks. Each one lists what has to finish before it can start, and what
+  <p class="sub">Seventy tasks. Each one lists what has to finish before it can start, and what
   kind of work it is. Click any task to trace it: what it is waiting on turns amber, what is waiting
   on it turns green. Filter by person or by kind of work to see one slice at a time.</p>
 
@@ -634,7 +683,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </table></div>
   <div class="callout c-note">
     <span class="ct">Read the bar before you read the schedule</span>
-    <p>Only sixteen of sixty-eight tasks are new code, and nine are repair or rewiring. The rest is
+    <p>Only eighteen of seventy tasks are new code, and nine are repair or rewiring. The rest is
     bring-up, measurement and decisions. This is not a project that builds a robot. It is a project
     that repairs one, measures it, and adds one new component, which is the memory graph.</p>
     <p>That matters for estimates. Where the work is repair, the code change is usually small and the
@@ -658,7 +707,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <button class="f" data-work="measure" aria-pressed="false">Measure</button>
     <button class="f" data-work="plan" aria-pressed="false">Decide</button>
     <button class="f" id="clearsel">Clear trace</button>
-    <span class="note">Marking a task done is saved in this browser only. Linear holds the shared record.</span>
+    <span class="note">Tasks the source data marks "DONE" show struck through and green for everyone. Anything else you mark done here is saved in this browser only. Linear holds the shared record.</span>
   </div>
 
   <div class="legend">
@@ -767,11 +816,11 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <tr><td><span class="who w-S">Sherman</span></td><td class="num">8 to 10</td></tr>
     </tbody>
   </table></div>
-  <p>That is about 30 person-hours a week and about 515 over the twenty weeks once the December
-  holidays and travel are taken out. The named work adds up to roughly 406 hours, so the plan runs at
-  about 79 percent of capacity. Sherman's share carries more slack than the task list suggests,
-  because the travel and the lab session overhead land on him and none of the estimates capture
-  them.</p>
+  <p>That is about 30 person-hours a week and about 620 over the 31 calendar weeks once the recess,
+  the exam period, the winter break and travel are taken out. The named work adds up to roughly 406
+  hours, so the plan runs at about 65 percent of capacity. Sherman's share carries more slack than
+  the task list suggests, because the travel and the lab session overhead land on him and none of the
+  estimates capture them.</p>
 
   <h3>Working agreements</h3>
   <ol class="body">
@@ -853,9 +902,11 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     on this page as a lower bound.</p>
   </div>
   <div class="callout c-warn">
-    <span class="ct">Named work is about 79 percent of capacity</span>
-    <p>406 hours of listed work against about 515 hours available. For a project with this much
-    unknown bring-up, that is full. The cut list above is not a formality.</p>
+    <span class="ct">Named work is about 65 percent of capacity</span>
+    <p>406 hours of listed work against about 620 hours available now that the calendar runs to
+    mid-April rather than end of January. That is more slack than the original 79 percent, but for a
+    project with this much unknown bring-up it is still worth guarding rather than spending on scope
+    creep. The cut list above is not a formality.</p>
   </div>
 </section>
 
@@ -899,6 +950,10 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
         <td><span class="who w-A">whoever has a spare week</span></td>
         <td>Channel names declared as parameters rather than constants, so they stay overridable at launch. Today 38 of 54 owned channel names are declared outside the shared config</td>
         <td>The naming pass, and the bench's extractor fixed so it can still read them</td></tr>
+      <tr><td class="num">S9</td><td>Pick the gazed object by geometry</td>
+        <td><span class="who w-D">Dion</span></td>
+        <td>Two identical objects defeat matching by appearance, and so does M8's image feature as planned. Casting the gaze ray in the robot's frame does not care what the objects look like. Three methods, cheapest first: map the gaze point using the whole scene's matches, solve the glasses pose from the shared scene against the robot's depth, or full pose fusion. Could strengthen M8's claim. Added 19 September</td>
+        <td>An identical pair in the T2.5 two-box test, so today's failure is measured first. <code>NEXT_STEPS.md</code> &sect;2.13</td></tr>
     </tbody>
   </table></div>
   <div class="callout c-note">
@@ -930,15 +985,15 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </section>
 
 <p class="foot"><strong>Reading this without Claude.</strong> The page is one self-contained file in
-the repository at <code>docs/dion_docs/next-steps-map.html</code>. No build step, no server needed,
+the repository at <code>docs/next-steps-map.html</code>. No build step, no server needed,
 nothing loaded from Claude. Open it straight off disk, or if your browser is fussy about local files,
-serve the folder: <code>cd docs/dion_docs &amp;&amp; python3 -m http.server 8000</code> then open
+serve the folder: <code>cd docs &amp;&amp; python3 -m http.server 8000</code> then open
 <code>http://localhost:8000/next-steps-map.html</code>. The only thing it fetches from the internet is
 the web font, and it falls back to system fonts without it. Everything works offline, including the
 task filters and the dependency trace.</p>
 
-<p class="foot">Source: <code>docs/dion_docs/next-steps-map.html</code>. The full written plan with the
-evidence and the risk register is <code>docs/dion_docs/PROJECT_PLAN.md</code>. The system it plans
+<p class="foot">Source: <code>docs/next-steps-map.html</code>. The full written plan with the
+evidence and the risk register is <code>docs/PROJECT_PLAN.md</code>. The system it plans
 work on is described in <code>ORIENTATION.md</code> and drawn in the wiring map. Everything on this
 page is a decision, not a measurement, and it is expected to change as the first hardware sessions
 tell us what the estimates were worth.</p>
@@ -956,30 +1011,32 @@ var WT = {build:"build", fix:"fix", wire:"rewire", bringup:"bring-up",
 var WT_ORDER = ["build","fix","wire","bringup","measure","plan"];
 
 var MS = [
- ["M0","Everyone can build and run","1-2","Z","Two people who are not Dion can clone, build and run the bench, and the arm and the LiDAR answer together",""],
- ["M1","The arm picks something up","3-6","D","Five grasp attempts on a box, success rate recorded, with the stop verified first",""],
- ["M2","Voice and gaze reach the arm","6-9","D","Two boxes on the table, the arm picks the one you looked at, three times in four",""],
- ["M3","The base navigates","4-8","Z","A map exists, the robot localises, and ten drives to a point have their error recorded",""],
- ["M4","The current system, closed loop","9-11","D","One recorded run: speak, look, drive, grasp, with per-stage timing",""],
- ["M5","A calibrated camera on the base","3-11","SD","LiDAR points projected into the camera image land on the right objects, and the camera-pose error is written down as a number. Sherman owns the mount, Dion owns the calibration",""],
- ["M6","The memory graph, offline","9-14","Z","Object entries from a recorded drive, no duplicates, and a sentence query returns the right one",""],
- ["M7","The graph drives the robot","14-17","D","A spoken instruction with the object out of view gets the robot there, then close-range perception takes over",""],
- ["M8","Gaze picks the instance","15-19","D","The ablation: N trials with the gaze feature and N without, success rates side by side","prot"],
- ["M9","Frontier scoring, visit ordering","7-16","Z","Exploration order beats a nearest-first baseline on a measured metric","opt"],
- ["M10","Demonstration and paper","18-20","A","A recorded end-to-end run and a draft whose central table is M8's number",""]
+ ["M0","Everyone can build and run","14\u201327 Sep 2026","Z","Two people who are not Dion can clone, build and run the bench, and the arm and the LiDAR answer together",""],
+ ["M1","The arm picks something up","5 Oct\u20131 Nov 2026","D","Five grasp attempts on a box, success rate recorded, with the stop verified first",""],
+ ["M2","Voice and gaze reach the arm","26 Oct 2026\u20133 Jan 2027","D","Two boxes on the table, the arm picks the one you looked at, three times in four",""],
+ ["M3","The base navigates","12 Oct\u201327 Dec 2026","Z","A map exists, the robot localises, and ten drives to a point have their error recorded",""],
+ ["M4","The current system, closed loop","28 Dec 2026\u201317 Jan 2027","D","One recorded run: speak, look, drive, grasp, with per-stage timing",""],
+ ["M5","A calibrated camera on the base","5 Oct 2026\u201317 Jan 2027","SD","LiDAR points projected into the camera image land on the right objects, and the camera-pose error is written down as a number. Sherman owns the mount, Dion owns the calibration",""],
+ ["M6","The memory graph, offline","28 Dec 2026\u20137 Feb 2027","Z","Object entries from a recorded drive, no duplicates, and a sentence query returns the right one",""],
+ ["M7","The graph drives the robot","1\u201328 Feb 2027","D","A spoken instruction with the object out of view gets the robot there, then close-range perception takes over",""],
+ ["M8","Gaze picks the instance","8 Feb\u201314 Mar 2027","D","The ablation: N trials with the gaze feature and N without, success rates side by side","prot"],
+ ["M9","Frontier scoring, visit ordering","2 Nov 2026\u201321 Feb 2027","Z","Exploration order beats a nearest-first baseline on a measured metric","opt"],
+ ["M10","Demonstration and paper","1\u201321 Mar 2027","A","A recorded end-to-end run and a draft whose central table is M8's number",""]
 ];
 
 var T = [
- ["T0.0","M0","D",3,"off","Cherry-pick what is worth keeping off the realman_manip branch onto main, then stop treating that branch as live. Four files plus anygrasp_node.sh, which records that the verified session ran checkpoint_tracking.tar while main launches checkpoint_detection.tar. No code comes across. This is the first thing to do",[],"bringup"],
- ["T0.1","M0","S",2,"lab","Find the D455 in the lab. Confirm the model, that it works, and that we may use it. If it is not there, raise the purchase the same day",[],"plan"],
- ["T0.2","M0","SD",5,"lab","Get a network switch. Add the second host address to the wired port. Prove the arm and the LiDAR both answer in one session",[],"bringup"],
+ ["T0.0","M0","D",3,"off","PROGRESS 2026-09-19. calibration.json taken, startup guide archived to docs/archive/, SETUP.md skipped. Only env.sh and anygrasp_node.sh remain, held for a box check. Cherry-pick what is worth keeping off the realman_manip branch onto main, then stop treating that branch as live. Four files plus anygrasp_node.sh, which records that the verified session ran checkpoint_tracking.tar while main launches checkpoint_detection.tar. No code comes across. This is the first thing to do",[],"bringup"],
+  ["T0.1","M0","S",2,"lab","PROGRESS 2026-09-16. An Intel RealSense D455 is provided to the project. USB 3 connection and live RGB-D stream remain unverified",[],"plan"],
+  ["T0.2","M0","SD",5,"lab","DONE 2026-09-16. Switch wired: workstation port 1, LiDAR port 2, arm port 3. NetworkManager persists .100, .10, and .5; RM65 and MID-360 each replied from their required host address after a connection cycle",[],"bringup"],
  ["T0.3","M0","Z",12,"off","Make the repository run from a fresh clone. Paths inside it computed from the repository root, paths outside it in one configuration file",[],"fix"],
- ["T0.4","M0","Z",6,"box","Bring into git the four things the robot needs that are in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR manifest, the saved map",["T0.3"],"bringup"],
+ ["T0.4","M0","Z",6,"box","Bring into git the four things the robot needs that are in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR manifest, the saved map. Added 2026-09-19: also settle mtc_sim_test.launch.py, which starts an executable rm_mtc never builds (add the target or delete the launch file). Done means ./bench/run.sh exits 0 and Dion turns on branch protection so CI blocks merges into main",["T0.3"],"bringup"],
  ["T0.5","M0","ZS",8,"off","Zongzhe and Sherman each clone the repository on their own machine, build it and run the bench. This is the acceptance test for M0",["T0.3"],"bringup"],
  ["T0.6","M0","A",24,"box","ROS 2 ramp, all three of us. Reading guide round 1, then run the simulated arm test and read what it printed",["T0.5"],"bringup"],
  ["T0.7","M0","D",4,"off","Write the channel contract: which stream owns which message channels, and the three handover points between streams. One page",[],"plan"],
  ["T0.8","M0","D",5,"box","DONE 2026-09-14. The environment check, the navigation build and the ten navigation node tests all ran and all passed. What is left is W6, blocked on a faulty camera, and W8, which needs a person at the robot",[],"measure"],
- ["T0.9","M0","S",3,"lab","Measure the real base footprint and compare it with the 0.2 metre radius the navigation configuration assumes",[],"measure"],
+  ["T0.9","M0","S",3,"lab","DONE 2026-09-16 for the manufacturer chassis. The Hexman Robotics ECHO-PLUS manual specifies 460 x 380 x 140 mm and a 265 mm stated rotation radius, so the 200 mm Nav2 radius is not conservative. Recheck the integrated footprint after mount fabrication",[],"measure"],
+ ["T0.10","M0","D",6,"off","Added 2026-09-16. CI: wire up ./bench/run.sh (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. The real arm, base and glasses can never be in CI. Progress 2026-09-19: .github/workflows/bench.yml runs Tiers 0-1 strictly on PRs into main. Red until the 7 known static findings are fixed, all covered by T0.4. Not blocking merges until then. Tiers 2-3 still open",["T0.5"],"build"],
+ ["T0.11","M0","D",8,"off","Added 2026-09-19. Split the bench into one test suite per subsystem: glasses, arm, grasp (AnyGrasp and MinkowskiEngine), navigation. Each covers its own code plus the channels it shares. CI then runs only the suites a PR touched, plus the contract check. Do it with the one-folder-per-node refactor. Also run the full suite on dev every Monday and Wednesday night. Open: Tiers 2-3 need ROS and run only on the lab box today, so decide then between a self-hosted runner on the box and a Docker image",["T0.10"],"build"],
 
  ["T1.1","M1","D",3,"off","Answer the six open questions in the code audit and record the decisions. Several are choices, not fixes",["T0.7"],"plan"],
  ["T1.2","M1","D",8,"off","Safety fixes before any power: the stop key the launcher promises but does not have, the stop program ignoring Ctrl+C, and the arm driver being launched twice",["T1.1"],"fix"],
@@ -1013,9 +1070,9 @@ var T = [
  ["T4.2","M4","D",6,"lab","Measure how long each stage takes. Report the 99th percentile, not the average",["T4.1"],"measure"],
  ["T4.3","M4","A",0,"off","Keep the defect log from the first powered session onward. One line per bug: symptom, guess, actual cause. Ongoing, not a block",["T1.6"],"measure"],
 
- ["T5.1","M5","S",2,"lab","Camera secured. Found in the lab, or ordered with a date",["T0.1"],"plan"],
- ["T5.2","M5","S",10,"off","Design the mount. Forward facing, rigid, clear of the arm's swept volume, not looking at the robot's own body. The arm is mounted facing backward, which makes this a real constraint",["T5.1"],"build"],
- ["T5.3","M5","S",8,"lab","Fabricate and fit the mount",["T5.2"],"build"],
+  ["T5.1","M5","S",2,"lab","DONE 2026-09-16. An Intel RealSense D455 is provided to the project. USB 3 connection and live RGB-D stream verification remain T0.1",["T0.1"],"plan"],
+  ["T5.2","M5","S",10,"off","DONE 2026-09-16 [reported]. Sherman completed the forward-facing D455 mount CAD and measurements: 20 x 20 mm aluminum extrusion, 190 mm required length. Physical fabrication and fit verification remain T5.3",["T5.1"],"build"],
+  ["T5.3","M5","S",8,"lab","Fabricate, fit, and verify the mount's rigidity, arm clearance, cable route, and camera view",["T5.2"],"build"],
  ["T5.4","M5","SZ",5,"mix","Measure the mount geometry and make it one source of truth. Today the same 0.18 metre offset is written in three independent places and the robot model carries a fourth",["T5.3"],"fix"],
  ["T5.5","M5","DS",12,"lab","Calibrate the position of the camera relative to the LiDAR. Dion owns the procedure and the numbers, Sherman owns the rig and the target",["T5.3"],"measure"],
  ["T5.6","M5","D",4,"box","Verify the calibration by projecting LiDAR points into the camera image. Keep the picture, it goes in the paper",["T5.5"],"measure"],
@@ -1066,6 +1123,9 @@ function primary(o){ return o === "A" ? "A" : o.charAt(0); }
 var root = document.getElementById("tree-root");
 var DONE = {};
 try { DONE = JSON.parse(localStorage.getItem("gappler.tasks.done") || "{}"); } catch(e) { DONE = {}; }
+// A task whose title in T starts with "DONE" is done for every viewer, from the source data itself
+// -- not just in whoever's browser clicked the button. Re-seeded on every load so it can't drift.
+T.forEach(function(t){ if(/^DONE\b/.test(t[5])) DONE[t[0]] = 1; });
 function save(){ try { localStorage.setItem("gappler.tasks.done", JSON.stringify(DONE)); } catch(e) {} }
 
 var html = "";
@@ -1076,7 +1136,7 @@ MS.forEach(function(m){
            : m[5] === "opt"  ? '<span class="flag flag-opt">optional, cut first</span>' : "";
   html += '<div class="ms' + (m[5] === "opt" ? " opt" : "") + '" data-ms="' + m[0] + '">';
   html += "<header><span class=\"mid\">" + m[0] + "</span><h4>" + m[1] + "</h4>";
-  html += '<span class="wks">weeks ' + m[2] + "</span>";
+  html += '<span class="wks">' + m[2] + "</span>";
   html += '<span class="wks">' + hrs + " h</span>";
   html += ownerChips(m[3]) + flag;
   html += '<p class="goal">Done means: ' + m[4] + ".</p></header>";
@@ -1096,7 +1156,8 @@ MS.forEach(function(m){
             '<span class="hrs">' + (t[3] ? t[3] + " h" : "ongoing") + "</span></div>";
     html += '<p class="title">' + t[5] + "</p>";
     html += '<div class="deps">' + depHtml + "</div>";
-    html += '<span class="mark" data-mark="' + t[0] + '">done</span>';
+    var srcDone = /^DONE\b/.test(t[5]);
+    html += '<span class="mark" data-mark="' + t[0] + '">' + (srcDone ? "done" : "mark done") + "</span>";
     html += "</div>";
   });
   html += "</div></div>";
@@ -1143,6 +1204,7 @@ function paint(){
 }
 
 function toggle(id, n){
+  if(/^DONE\b/.test(byId[id][5])) return; // done in the source data -- not a per-viewer toggle
   if(DONE[id]){ delete DONE[id]; n.classList.remove("done"); }
   else { DONE[id] = 1; n.classList.add("done"); }
   save();

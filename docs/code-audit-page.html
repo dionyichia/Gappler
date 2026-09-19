@@ -312,7 +312,7 @@
 
 <div class="caveat" style="background:var(--signal-soft);border-color:var(--signal);border-left-color:var(--signal);margin-top:14px">
   <span class="tag" style="color:var(--signal)">Scope</span>
-  <p>This page carries <strong>59 of the 62 findings</strong> in <code>docs/dion_docs/CODE_AUDIT.md</code>. Three live only in the document because they are inventory rather than defects: <b>B7</b>, the kill&#8209;word fallback firing on ordinary sentences, and <b>K1</b>/<b>K2</b>, which count how much of the channel and constant surface is declared outside the shared config. Counts in the filter bar are computed from this page, so they cannot drift out of step with it again.</p>
+  <p>This page carries <strong>59 of the 62 findings</strong> in <code>docs/CODE_AUDIT.md</code>. Three live only in the document because they are inventory rather than defects: <b>B7</b>, the kill&#8209;word fallback firing on ordinary sentences, and <b>K1</b>/<b>K2</b>, which count how much of the channel and constant surface is declared outside the shared config. Counts in the filter bar are computed from this page, so they cannot drift out of step with it again.</p>
 </div>
 
 <!-- ============ A ============ -->
@@ -454,7 +454,7 @@ finally:
         <tr><td class="mono">main (now)</td><td class="num">0.0</td><td class="num">0.0</td><td class="num">0.7854</td><td class="num zero">0.0</td><td class="num">1.5708</td><td class="num">1.5708</td></tr>
         <tr><td class="mono">realman_manip</td><td class="num">&minus;0.0175</td><td class="num">&minus;0.1745</td><td class="num">0.7854</td><td class="num zero">&minus;3.0718</td><td class="num">&minus;1.6930</td><td class="num">&minus;1.6057</td></tr>
       </table></div>
-      <p><code>RCP_NEW_USER_STARTUP_GUIDE.md</code> §7 — the document that says <em>"clear the arm's path, keep the physical e&#8209;stop in reach"</em> — quotes the <code>realman_manip</code> values. <strong>joint4 differs by 176°.</strong> Only joint3 is unchanged.</p>
+      <p><code>docs/archive/RCP_NEW_USER_STARTUP_GUIDE.md</code> §7 — the document that says <em>"clear the arm's path, keep the physical e&#8209;stop in reach"</em> — quotes the <code>realman_manip</code> values. <strong>joint4 differs by 176°.</strong> Only joint3 is unchanged.</p>
       <p>The first motion this arm ever makes will be to a pose nobody has validated, and anyone who cleared space based on the guide cleared the wrong volume.</p>
       <div class="evid"><b>Observed 2026&#8209;09&#8209;11.</b> Both values are on the lab machine: <code>~/rcp-desktop</code> holds the <code>realman_manip</code> row and <code>~/rcp-github</code> holds <code>main</code>'s. The one complete built overlay was built from the Desktop source, so the stack that ran on 2026&#8209;08&#8209;25 homed to the <code>realman_manip</code> pose. Any build of <code>main</code> homes to the new, unvalidated one. The simulated&#8209;arm run reached the home pose to within 0.0001&nbsp;rad, so the move itself is sound — it is the destination nobody has checked.</div>
     </div>
@@ -888,7 +888,7 @@ combined_mask = depth_mask &amp; sam_mask</code></pre>
 </section>
 
 <footer>
-  <span>docs/dion_docs/CODE_AUDIT.md</span>
+  <span>docs/CODE_AUDIT.md</span>
   <span>read at main @ 2d36a89 · updated 2026&#8209;09&#8209;14</span>
   <span>7 reproduced on the bench · the rest [unverified]</span>
   <span>Companion: ORIENTATION.md · NEXT_STEPS.md · PROJECT_PLAN.md · bench/</span>

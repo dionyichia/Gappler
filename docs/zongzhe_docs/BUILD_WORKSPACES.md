@@ -59,12 +59,12 @@ the fastest way to see the design.
 | `install.sh:28-36` | Builds `rm_ros_interfaces` first, sources the result, then builds everything | The custom grasp messages (`GraspCandidate.msg`) have to exist before the packages that use them compile. |
 
 `[code]` The split is also what actually ran on the lab box.
-[`../dion_docs/TESTBENCH_PLAN.md`](../dion_docs/TESTBENCH_PLAN.md) line 313 records `deps_ws/install`
+[`../TESTBENCH_PLAN.md`](../TESTBENCH_PLAN.md) line 313 records `deps_ws/install`
 and `ros2_robot_ws/install` sitting side by side in both clones on that machine.
 
 `[reported]` The slow half is genuinely slow. The bench's own build, which compiles both source trees
 together, finished 22 packages in **27 minutes 40 seconds** from cold
-([`../dion_docs/bench-runs/2026-09-11-labbox-build-sim.txt`](../dion_docs/bench-runs/2026-09-11-labbox-build-sim.txt)
+([`../bench-runs/2026-09-11-labbox-build-sim.txt`](../bench-runs/2026-09-11-labbox-build-sim.txt)
 line 4). Puneet's 10 to 15 minutes is the dependency half of that on its own.
 
 One honest qualification. colcon is incremental, so a second build of an unchanged workspace is fast
@@ -74,7 +74,7 @@ you is insulation: when the overlay gets into a bad state and you want to delete
 
 ## How this squares with ORIENTATION section 3
 
-[`../dion_docs/ORIENTATION.md`](../dion_docs/ORIENTATION.md) lines 296 to 302 gives different advice.
+[`../ORIENTATION.md`](../ORIENTATION.md) lines 296 to 302 gives different advice.
 It says to run `colcon build` from the repo root so colcon finds both source trees and produces one
 overlay, and warns that "building from inside either workspace gives you a partial one that fails at
 runtime in confusing ways".

@@ -50,10 +50,10 @@ ARM_UDP_HOST, ARM_UDP_PORT = "192.168.1.10", 8089
 # livox_ros_driver2/config/MID360_config.json
 LIDAR_IP = "192.168.1.3"
 LIDAR_HOST_IP = "192.168.1.5"
-# RCP_NEW_USER_STARTUP_GUIDE.md 1
+# docs/archive/RCP_NEW_USER_STARTUP_GUIDE.md 1
 ARM_NIC = "enp2s0"
 ARIA_SERIAL = "1WM10350101291"
-# RCP_NEW_USER_STARTUP_GUIDE.md 4, T5 -- the expected arm->camera transform
+# docs/archive/RCP_NEW_USER_STARTUP_GUIDE.md 4, T5 -- the expected arm->camera transform
 TF_EXPECT = {("base_link", "camera_color_optical_frame"): (-0.100, -0.049, 0.728)}
 TF_TOL = 0.05
 CAMERA_HZ_RANGE = (8.0, 20.0)          # guide says 13-14 Hz
@@ -263,7 +263,7 @@ def g_gpu() -> list[Check]:
               "PYTHONNOUSERSITE=1 forces conda's CPU-only torch -> libc10_cuda.so ImportError")
     v = os.environ.get("PYTHONNOUSERSITE")
     cs.append(c.bad(f"PYTHONNOUSERSITE={v}",
-                    "unset it -- see RCP_NEW_USER_STARTUP_GUIDE.md 5.2") if v
+                    "unset it -- see docs/archive/RCP_NEW_USER_STARTUP_GUIDE.md 5.2") if v
               else c.ok("not set (correct)"))
 
     c = Check("gpu", "torch-cuda", "the interpreter that runs SAM 3 must see CUDA")
@@ -493,11 +493,16 @@ def _tcp(host: str, port: int, timeout=3.0) -> str:
 def g_net() -> list[Check]:
     cs = []
     linux = is_linux()
+    # Gate on the lab box, not on Linux: a teammate's laptop or a CI runner is
+    # Linux too, and "no enp2s0" there is not a failure (on_lab_machine docstring).
+    lab = on_lab_machine()
     subnet = on_arm_subnet()
 
     c = Check("net", "arm-nic", f"{ARM_NIC} carries both the arm and (per config) the LiDAR")
-    if not linux or not shutil.which("ip"):
-        cs.append(c.skip("`ip` not available -- not a Linux host"))
+    if not lab:
+        cs.append(c.skip(NOT_LAB))
+    elif not shutil.which("ip"):
+        cs.append(c.skip("`ip` not available"))
     else:
         rc, out = sh(["ip", "addr", "show", ARM_NIC], timeout=8)
         if rc != 0:
@@ -513,8 +518,10 @@ def g_net() -> list[Check]:
     # demands the host be .5, both on 192.168.1.0/24, on one physical port.
     c = Check("net", "arm-lidar-coexist",
               f"arm needs host {ARM_UDP_HOST}, LiDAR needs host {LIDAR_HOST_IP} -- same /24, one NIC")
-    if not linux or not shutil.which("ip"):
-        cs.append(c.skip("`ip` not available -- not a Linux host"))
+    if not lab:
+        cs.append(c.skip(NOT_LAB))
+    elif not shutil.which("ip"):
+        cs.append(c.skip("`ip` not available"))
     else:
         has_arm, has_lidar = _has_ip(ARM_UDP_HOST), _has_ip(LIDAR_HOST_IP)
         if has_arm and has_lidar:
@@ -569,7 +576,7 @@ def g_net() -> list[Check]:
                   else c.warn(f"{LIDAR_IP} unreachable",
                               f"LiDAR powered off, or host lacks {LIDAR_HOST_IP}"))
 
-    cs.extend(realsense_checks(linux))
+    cs.extend(realsense_checks(lab))
     return cs
 
 
@@ -622,7 +629,7 @@ def rs_grab(node: str) -> tuple[str, str]:
     return "fail", out.strip().splitlines()[-1] if out.strip() else f"v4l2-ctl exit {rc}"
 
 
-def realsense_checks(linux: bool) -> list[Check]:
+def realsense_checks(lab: bool) -> list[Check]:
     """Two questions, because they fail separately and for different reasons:
     is the camera on the USB bus, and can it actually deliver a frame.
 
@@ -636,9 +643,10 @@ def realsense_checks(linux: bool) -> list[Check]:
     usb = Check("net", "realsense-usb", why_usb)
     stream = Check("net", "realsense-stream", why_str)
 
-    if not linux or not shutil.which("lsusb"):
-        return [usb.skip("lsusb not available -- not a Linux host"),
-                stream.skip("lsusb not available -- not a Linux host")]
+    if not lab:
+        return [usb.skip(NOT_LAB), stream.skip(NOT_LAB)]
+    if not shutil.which("lsusb"):
+        return [usb.skip("lsusb not available"), stream.skip("lsusb not available")]
 
     rc, out = sh(["lsusb"], timeout=8)
     hits = [l.strip() for l in out.splitlines()

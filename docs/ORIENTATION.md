@@ -7,7 +7,7 @@ which parts are currently connected versus severed.
 **Status:** written 2026-09-09 against branch `main` @ `2d36a89` ("WIP: pre-integration snapshot
 of combined branch"), by reading the code only. **No hardware was running.** Every claim tagged
 `[code]` was verified by reading the file at the cited line. Claims tagged `[reported]` come from
-`RCP_NEW_USER_STARTUP_GUIDE.md` on the `realman_manip` branch, written by someone with the machine
+`RCP_NEW_USER_STARTUP_GUIDE.md` (from the `realman_manip` branch, archived on `main` at [`archive/RCP_NEW_USER_STARTUP_GUIDE.md`](archive/RCP_NEW_USER_STARTUP_GUIDE.md)), written by someone with the machine
 in front of them on 2026-08-25. Claims tagged `[inferred]` are my reading of intent, not fact.
 Claims tagged **`[unverified]`** were found mechanically by `bench/` (static analysis of the repo,
 no hardware) and **have not been confirmed by a human at the machine.** Treat every one of them as
@@ -18,7 +18,7 @@ refute one, retag it and say how.
 
 ## 0. How to use this document
 
-**Doc index:** [`docs/dion_docs/START_HERE.md`](START_HERE.md) — what each document is for and where work stands.
+**Doc index:** [`docs/START_HERE.md`](START_HERE.md) — what each document is for and where work stands.
 
 **Companion documents:** [`ARCHITECTURE.md`](ARCHITECTURE.md) has the same information as
 diagrams (Mermaid, renders on GitHub) — prose here, pictures there.
@@ -302,7 +302,7 @@ The trick that makes it work: run `colcon build` **from the repo root**, so it d
 either workspace gives you a partial one that fails at runtime in confusing ways.
 
 `[code]` **`Navigation_Module` has never been built.** There is no `install/` for it anywhere in
-this repo, and `RCP_NEW_USER_STARTUP_GUIDE.md` §7 confirms it. Eight packages
+this repo, and `archive/RCP_NEW_USER_STARTUP_GUIDE.md` §7 confirms it. Eight packages
 (`robot_slam`, `simple_teleop`, `echo_plus_driver`, `xpkg_vehicle`, `xpkg_power`, `xpkg_msgs`,
 `xpkg_comm`, `xpkg_urdf_echo_plus`). Building it is a high-value task — **but see §8.6 first: a
 package it depends on is missing from this repo.**
@@ -327,7 +327,7 @@ Follow this with the files open. Times are rough.
 |---|---|---|
 | 1 | `shared/config.yaml` | 20 lines. Every Aria-side topic name in one place. Read this first — it *is* the interface for that side. The other 38 owned topics are declared in the nodes themselves (§8.17). |
 | 2 | `src/config/ros2.py` | Shows how that YAML becomes the `ROS2Topics` enum used everywhere. |
-| 3 | `docs/dion_docs/ORIENTATION.md` §5 | The full topic table below. Skim, don't memorise. |
+| 3 | `docs/ORIENTATION.md` §5 | The full topic table below. Skim, don't memorise. |
 | 4 | `src/main.py` | The Aria entry point. Focus on `ProcessPipelineBuilder` (lines 30–113): each `add_*` method starts one subsystem. **Note which are commented out at 107–112.** |
 | 5 | `ros2_robot_ws/src/main.py` | The robot entry point. A plain sequential launcher — read the numbered comments. |
 | 6 | `ros2_robot_ws/src/orchestrator.py` | 146 lines. The highest-level state logic: wait for start → launch → wait for release. Note most subscriptions are commented out. |
@@ -872,19 +872,18 @@ cheap and would give the project a hardware-free MoveIt smoke test, which it cur
 
 ---
 
-### 8.13 `[unverified]` The arm and the LiDAR both claim the same NIC, with different host IPs
+### 8.13 `[observed]` The arm and the LiDAR share one NIC through a switch, with different host IPs
 
-Found by reading configs; **the two have never been on the network at the same time**, so this has
-never had a chance to surface.
+Found by reading configs, then verified on the lab box on 2026-09-16.
 
-**Checked on the box 2026-09-11 (read-only):** `enp2s0` is confirmed as the only wired port
+**Before the fix, checked on the box 2026-09-11 (read-only):** `enp2s0` is confirmed as the only wired port
 (`ip link`: `lo`, `enp2s0`, `wlo1`, `tailscale0`, `docker0`). It was `NO-CARRIER` at the time,
 so nothing was plugged in or powered. Its saved NetworkManager profile, *Wired connection 1*, is
 **manual `192.168.1.100/24`** — neither the arm's `.10` nor the LiDAR's `.5`. If that profile is
 what comes up when the cable goes in, the arm connects but sends no feedback (the §9 "presents as
 a hang" symptom), unless someone adds `.10` by hand each session. The old preflight IP check
 would have reported this as PASS: `"192.168.1.10" in "…192.168.1.100/24…"` (TESTBENCH_PLAN §4
-P3, now fixed). Whether both devices can coexist is still `[unverified]` — never tried.
+P3, now fixed).
 
 **It gets worse** `[code]`: `~iot22/start_robot.sh` and `start_everything.sh` (the base's real
 start-up scripts) run `sudo ip addr flush dev enp2s0` and then add only `192.168.1.5/24`. That
@@ -900,21 +899,31 @@ Both are on `192.168.1.0/24`, and `[reported]` `enp2s0` is *the only physical Et
 workstation. So to run navigation and manipulation together the host must answer to **both**
 `.10` and `.5` simultaneously.
 
-`[inferred]` The likely fix is a second address on the same interface —
-`sudo ip addr add 192.168.1.5/24 dev enp2s0` alongside the existing `.10` — plus a switch, since
-one port cannot physically reach two devices. Neither is in any launch file or setup doc.
+**Observed fix, 2026-09-16:** a powered Ethernet switch connects workstation `enp2s0` on port 1,
+MID-360 on port 2, and RM65 on port 3. NetworkManager profile `Wired connection 1` now persistently
+carries `192.168.1.100/24`, `192.168.1.10/24`, and `192.168.1.5/24`. After bringing that connection
+down and up, the RM65 replied to three pings sourced from `.10` and the MID-360 replied to three pings
+sourced from `.5`. No ROS nodes, arm commands, or base commands ran during this proof. Evidence:
+[`../sherman_docs/T0.2_SESSION.md`](../sherman_docs/T0.2_SESSION.md).
 
-Why it was invisible until now: the arm was verified on the `realman_manip` clone, which has no
-`Navigation_Module` at all (§7), and `Navigation_Module` has never been built (§3). Each half was
-brought up alone.
+Why it was invisible: the arm was verified on the `realman_manip` clone, which has no
+`Navigation_Module` at all (§7), while navigation and LiDAR were previously brought up separately.
 
-**To check at the machine:** `ip -4 addr show enp2s0` — does it carry both addresses? Then
-`ping 192.168.1.3` and `ping 192.168.1.18` with both devices powered. `bench/preflight.py -g net`
-runs exactly this and names the missing alias.
+**Regression check:** `ip -4 addr show enp2s0` must show `.10` and `.5`, then source-addressed pings
+to `.18` and `.3` must succeed with both devices powered. `bench/preflight.py -g net` checks the
+address requirement. Do not run `start_robot.sh` or `start_everything.sh` unchanged; they still flush
+the arm address.
 
 ---
 
 ### 8.14 `[unverified]` The AnyGrasp node that was verified is not the one `main` launches
+
+**They differ in method, not only in checkpoint** `[code]`, checked 2026-09-19. `anygrasp_node.py`
+is a tracker (`AnyGraspTracker` from `tracker.so`, follows grasps across frames, one-euro smoothing,
+added `52c8ce9` 2026-03-27). `anygrasp_detection_node.py` is a detector (`AnyGrasp` from `gsnet.so`,
+a fresh prediction every frame, added `9b8676f` 2026-04-03 in the same commit that switched
+`ros2_robot_ws/src/main.py` to it). Both read the same RealSense topics and publish the same
+`GraspCandidateArray`. Nothing on the Aria side runs AnyGrasp. Full table in `NEXT_STEPS` §3.3.
 
 **Checked on the box 2026-09-11:** `checkpoint_detection.tar` (296 MB, dated 2 Apr) exists only
 in `~/rcp-github` (the `main` checkout); `~/rcp-desktop` has only `checkpoint_tracking.tar`. So
@@ -926,7 +935,7 @@ have the licence files. **New blocker:** the `anygrasp` conda env lived in `iot2
 |---|---|---|
 | Node | `anygrasp_node.py` | `anygrasp_detection_node.py` |
 | Checkpoint | `log/checkpoint_tracking.tar` | `log/checkpoint_detection.tar` |
-| Source | `RCP_NEW_USER_STARTUP_GUIDE.md` §4 T6 + "WHAT WORKED" | `ros2_robot_ws/src/main.py:30,34` |
+| Source | `archive/RCP_NEW_USER_STARTUP_GUIDE.md` §4 T6 + "WHAT WORKED" | `ros2_robot_ws/src/main.py:30,34` |
 
 The only AnyGrasp invocation anyone has observed produce `Frame 0: selected 5 seed grasps` used the
 **tracking** node and the **tracking** weights. `main`'s launcher uses the detection variant, which
@@ -996,6 +1005,46 @@ it: MoveIt plans and executes to both home poses and zero on the simulated arm (
 the simulation in `bench/`.
 
 ---
+
+### 8.18 `[code]` The glasses pose chain: what each piece is, and what it is not
+
+Easy to mix up, so stated plainly. Checked 2026-09-19.
+
+**Three separate problems, three separate pieces of code.** None of them involves the robot's own
+cameras.
+
+| Problem | Question it answers | Code | Status |
+|---|---|---|---|
+| Calibration | How is each camera on the glasses built and placed? | Sent by the glasses once at stream start (`aria_device_controller.py:240`) | Works. Offline copy at `src/services/aria_device/calibration/aria_factory_calibration.json` |
+| Gaze | Where in the image are the eyes looking? | A model on the eye cameras, `eye_tracking.py` | Off (§6.1) |
+| Glasses pose | Where is the head in the room? | OpenVINS and ArUco, `pose_fusion/` | ArUco half only (§6.4) |
+
+- **The glasses send raw sensor data only:** images (RGB, two SLAM cameras, eye cameras), IMU,
+  audio, and the calibration. **They send no gaze and no pose.** Our code computes both.
+- **OpenVINS tracks the glasses, not gaze and not the robot cameras.** `pose_streaming_pipeline.py`
+  undistorts the two SLAM camera images and forwards them with the IMU on `/aria/slam_left/raw`,
+  `/aria/slam_right/raw` and `/aria/imu` for OpenVINS. That pipeline is off (`src/main.py:112`).
+- **The `kalibr_*.yaml` files were not made by running Kalibr** `[inferred]`. Kalibr is a
+  calibration tool, and its YAML layout is what OpenVINS reads. `pose_streaming_pipeline.py:60-110`
+  writes the live device calibration into `temp.txt`, laid out for OpenVINS, and the values in
+  `kalibr_imucam_chain.yaml` match what that code computes (for example focal 241.5, the pinhole
+  camera of the undistorted images, not the raw fisheye). So the files are a one-off hand copy of
+  the factory calibration. They are fixed to one pair of glasses and could instead be generated at
+  startup.
+- **`estimator_config.yaml` is OpenVINS's own tuning** (camera count, feature counts, start-up
+  thresholds). It points at the two Kalibr files.
+- **OpenVINS sits in `Navigation_Module/` by accident, not design.** It serves the Aria side. The
+  copy in the repo has never been built, and `src/main.py:302-307` runs a different copy from
+  `~/Ros2Workspaces/OpenVINS` (§8.4). Part of the vendor separation in `NEXT_STEPS` §2.11.
+- **ArUco consumes camera intrinsics, it does not produce them.** `arcuo.py:47` solves where a
+  printed 13.25 cm marker is relative to the RGB camera with `solvePnP`, given a camera matrix
+  built from the live calibration (`image_streaming_pipeline.py:118`). Printed targets used *for*
+  calibration, such as checkerboards, are a different thing.
+
+**Why it matters:** for gaze work (M2, M8) only calibration, the eye-tracking model and the RGB
+image are needed. OpenVINS, the Kalibr files and `pose_fusion` matter only for the glasses pose,
+which today serves return-to-user. `NEXT_STEPS` §2.13 records a second possible use: picking the
+gazed object by geometry.
 
 ### 8.17 `[code]` Most channel names are not in the shared config
 
@@ -1114,22 +1163,29 @@ to integrate navigation against a half-working grasp stack.
 
 > ✅ **Confirmed against the paper, 2026-09-10.** Promoted from `[inferred]` to `[paper]`. The
 > visual anchors in the memory graph *are* RGB keyframes and depth is what gives objects 3D
-> position, so three separate mechanisms depend on the camera. Option 1 (**buy a D455**, not
+> position, so three separate mechanisms depend on the camera. Option 1 (**use a D455**, not
 > another D435i) is the recommendation; option 2 is now rated worse than assumed below — the
 > paper's own small-object success rate falls to 65 % from vibration blur on a *rigidly* mounted
 > camera; option 3 discards Tier B entirely. See
 > [`hico-nav/PAPER_REPORT.md`](hico-nav/PAPER_REPORT.md) §6.1.
 
-`[paper]` HiCo-Nav's Cognitive Memory Graph needs a **continuous forward-facing RGB-D stream**. This platform has no such sensor (§9). Three
-options, none free:
+`[paper]` HiCo-Nav's Cognitive Memory Graph needs a **continuous forward-facing RGB-D stream**. A
+Intel RealSense D455 is provided to the project, but its USB 3 connection and live RGB-D stream remain
+unverified. This platform therefore still has no proven forward-facing RGB-D sensor. The immediate
+task is to test the D455 before mount fabrication.
 
-1. **Buy a base-mounted D455** (~$400 + NTU lead time). Cleanest; procurement lead time makes it
-   urgent, not deferrable.
+1. **Test and mount the provided base-mounted D455.** It is the cleanest option; stream verification
+   decides whether the supplied unit is usable.
 2. **Use the wrist D435i with the arm parked in a fixed observation pose.** Degraded field of view
    and it conflicts with grasping, but zero cost and probably enough for a first integration.
 3. **Substitute the 2D LiDAR scan** and adapt the memory graph. Largest deviation from the paper.
 
 **This decision should be made early** — it is the one that costs weeks if it turns out wrong.
+
+`[manual]` The Hexman Robotics ECHO-PLUS manufacturer manual specifies a `460 x 380 x 140 mm`
+chassis and a `265 mm` stated rotation radius. The current `0.20 m` Nav2 radius is therefore not
+demonstrated to be conservative. This is a manufacturer-chassis result, not a fitted-robot footprint:
+recheck it after the camera mount is fabricated and installed.
 
 ---
 
@@ -1150,12 +1206,13 @@ options, none free:
 | 2026-09-09 | Claude (Opus 5), from agent-assisted deep pass on `src/` and `Navigation_Module/` | **Corrected** `/aria/fused_pose` frame (`robot_base_link`, not `map`). Added §6.4 (pose fusion README vs code), §8.6 (missing `xpkg_demo`), §8.7 (three `/cmd_vel` claimants), Nav2 plugin table in §10, and the `base_link`/`robot_base_link` static-TF caveat in §5. |
 | 2026-09-09 | Claude (Opus 5), folding in the vendor-arm agent pass | Added §8.8 (fixed 1.5 m gaze depth assumption, external `realsense2_description` dependency, missing staleness guard) and §8.9 (dead code / debug leftovers). Expanded the contract table with `object_approach_node`'s full five-topic subscription list. |
 | 2026-09-12 | Claude (Opus 5) + Dion | §5: `/manipulator/release` has no publisher anywhere in the repo (CODE_AUDIT D1). The table said "voice → orchestrator", which is the intent, not the code. |
+| 2026-09-16 | OpenCode (GPT-5.6 Terra) + Sherman | §8.13 is now `[observed]`: a switch connects workstation, RM65, and MID-360; persistent `.10` and `.5` host addresses survived a NetworkManager connection cycle and both devices replied from their required source address. The old base scripts remain unsafe because they flush `.10`. §10 now records a provided Intel RealSense D455 that is untested, plus the ECHO-PLUS manufacturer chassis dimensions and Nav2-radius caveat. |
 
 ### Open questions for the team
 
 1. ~~HiCo-Nav: goals or velocities?~~ **Answered: velocities**, but take only the goal-level layer.
    `hico-nav/PAPER_REPORT.md` §5.1.
-2. RGB-D camera — **recommendation is buy a D455**; needs a decision and a purchase order. (§10)
+2. RGB-D camera — provided Intel RealSense D455; confirm USB 3 connection and live RGB-D stream before mount fabrication. (§10)
 3. Which SAM3 node becomes authoritative, `object_recognition_pipeline.py` or `sam3_ros_node.py`?
    (§6.2)
 4. ~~Cherry-pick `env.sh` + the two docs from `realman_manip` onto `main`?~~ **Answered by the
@@ -1170,3 +1227,5 @@ options, none free:
 | 2026-09-11 | Claude (Opus 5) + Dion | §8.6: `Ros2Workspaces` never committed; copied to `~/rcp-old-ros-wkspace`. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Re-pointed citations shifted by the uncommitted comments in `object_recognition_pipeline.py`: §6.2 and §6.5 seam #2 call `:384`→`:389`, §8.9 raw `print()` `:343`→`:345`. Numbers are against the working tree, not HEAD. |
 | 2026-09-13 | Claude (Opus 5) + Dion | New §8.17: 16 of 54 owned topics are in `shared/config.yaml`, the rest are declared in the nodes; no C++ we own reads the shared config; the dynamic enum hides Aria publishers from static analysis. Qualified the two rows that called the file a single source of truth. Detail in CODE_AUDIT §K, fix in NEXT_STEPS §2.10. |
+| 2026-09-19 | Claude (Opus 5) + Dion | Repointed citations of `RCP_NEW_USER_STARTUP_GUIDE.md` to its new home, `docs/archive/`, after T0.0 brought it onto `main`. |
+| 2026-09-19 | Claude (Opus 5) + Dion | New §8.18: the glasses pose chain explained. The glasses send no gaze and no pose. OpenVINS tracks the glasses only. The `kalibr_*.yaml` files are a hand copy of the live calibration, not a Kalibr run `[inferred]`. OpenVINS sits in `Navigation_Module` by accident. ArUco consumes intrinsics rather than producing them. §8.14: the two AnyGrasp nodes differ in method (tracker vs detector), not only checkpoint. |
