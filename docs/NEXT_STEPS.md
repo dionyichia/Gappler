@@ -103,7 +103,12 @@ synchronised RGB+depth pair**, against a hardcoded prompt. SAM3 is the most expe
 system (3.4 GB checkpoint). The other implementation has a related guard commented out
 (`object_recognition_pipeline.py:323-324`), so it re-infers every Aria frame too.
 
-There is no triggering *policy* anywhere — just "on frame".
+There is no triggering *policy* anywhere, just "on frame".
+
+> **Update 2026-09-20.** The HiCo-Nav paper answers most of this with its four-stage cascade
+> ([`hico-nav/PAPER_REPORT.md`](hico-nav/PAPER_REPORT.md) §4.4a), and §2.14 below works out which of
+> its three models we actually need. The "graph-driven" and "event-driven" rows below turn out to be
+> the same row.
 
 Candidate approaches, cheapest first:
 
@@ -159,9 +164,31 @@ is the sole publisher of the mask/centroid topics. Both current call sites becom
 identity both change what this service's interface should be. Unifying now and re-doing it after
 the HiCo-Nav scope lands would be wasted effort.
 
-#### `[open]` Decision: patch the prompt into `sam3_ros_node.py` now, or retire the node first?
+#### `[decided 2026-09-20]` Decision: retire `sam3_ros_node.py` (Option 2)
 
-**Dion decides this later. No code changes until then.**
+**Dion decided 2026-09-20: Option 2. Retire `sam3_ros_node.py` and restore the pipeline call site
+at `object_recognition_pipeline.py:389`.** The trade-off table below is kept as the record of why.
+
+Two things settled it, beyond the gains already listed in the table:
+
+1. **The unified service is mostly already written.** `object_recognition_pipeline.py` already
+   subscribes to *both* cameras: the Aria feed (`:127-135`) and the synchronised RealSense
+   RGB+depth pair (`:137-143`), which are the same two topics `sam3_ros_node.py` uses. It also
+   already holds the `FeatureMatcher` for cross-view confirmation (`:117`). The "one model, two sources" target in
+   this section is not a build from scratch. What blocks it is the commented-out call site and the
+   topic-ownership hazard, not missing capability.
+2. **VRAM.** Two processes × 3.21 GB of the same weights, each with its own CUDA context, on a
+   16 GB card that HiCo-Nav will add ~5 GB of models to. This is the single largest saving
+   available anywhere in the system. See §2.14.
+
+Retiring the node also closes **L1** and the segmentation half of **B3** for free: the hardcoded
+`TEXT_PROMPT = "box"` disappears with the file, and the surviving path already handles the spoken
+prompt and the stop keyword through `_on_prompt` (`:250`).
+
+**Sequencing is unchanged.** The *decision* is settled, the *build* still waits on §1.3 (scope) and
+§2.1 (trigger policy), for the reason in the sequencing note above. §2.1 is now largely answered by
+the HiCo-Nav cascade. See [`hico-nav/PAPER_REPORT.md`](hico-nav/PAPER_REPORT.md) §4.4a and §2.14
+below.
 
 What forces the question: `sam3_ros_node.py` never subscribes to `/aria/audio/prompt`, so on the
 path that runs today the arm only ever looks for the hardcoded word "box"
@@ -362,9 +389,9 @@ Sequenced by what blocks what:
 
 | Order | Do | Audit § |
 |---|---|---|
-| 1 | Settle the six open questions — several are decisions, not fixes | §"Open questions" |
+| 1 | Settle the open questions, several of which are decisions rather than fixes. Question 5 answered 2026-09-20, five left | §"Open questions" |
 | 2 | Safety: the phantom `q` key (`main.py:67`), the e-stop's missing delivery delay, the changed `HOME_JOINTS` | B1, B2, B4 |
-| 3 | Fix the double `background.launch.py` launch — two `rm_driver` on one arm | I1 |
+| 3 | Fix the double `background.launch.py` launch, two `rm_driver` on one arm. **Ownership decided 2026-09-20: `main.py` owns it, delete `orchestrator.py:69-74`.** See §2.14 for the larger design this sits inside | I1 |
 | 4 | The `/pipeline_state` gate inversion, and decide on `USE_SIMPLE_EXECUTE` | A1–A3 |
 | 5 | Concurrency in `grasp_state_machine.cpp` — the two-mutex condvar and the unlocked centroid read are undefined behaviour, not style | C1–C7 |
 | 6 | The deadlock paths in `goal_reached_publisher` / `object_approach_node` | F1–F3 |
@@ -708,6 +735,146 @@ T5.5, the D455 against the LiDAR, not the glasses. Targetless LiDAR-to-camera to
 example Koide's `direct_visual_lidar_calibration`, ICRA 2023) and may save building a calibration
 target. Worth a look at T5.5.
 
+### 2.14 🟠 GPU budget: phase-gated model residency, and which HiCo-Nav models we actually need
+
+**Decided in principle 2026-09-20 (Dion). Four threads still open, listed at the end.**
+
+The problem in one line: every model in this system shares one 16 GB card, and HiCo-Nav adds three
+more.
+
+#### The design: boot every process, do not boot every model
+
+Today `/manipulation/start` does not "turn the arm on". It cold-starts seven processes, including a
+second SAM3 and AnyGrasp, from nothing, at the moment the robot has already parked in front of the
+object (`orchestrator.py:84` launches `ros2_robot_ws/src/main.py`, which launches the rest at
+`:85-149`). Launching *is* the interlock, because `grasp_state_machine.cpp` never subscribes to
+`/manipulation/start` at all (**CODE_AUDIT B6**). Process lifetime is doing the job a gate should do.
+
+What that costs:
+
+* Startup latency at the worst moment. RealSense enumeration, a 3.21 GB model load, a conda
+  environment, an AnyGrasp checkpoint and `move_group`, all after the robot has parked.
+* Late failures. A missing conda env or a bad checkpoint path surfaces post-navigation, and the
+  `Popen` that would raise runs inside a ROS callback where rclpy swallows it (**CODE_AUDIT I2**).
+* Fixed sleeps instead of readiness checks. The state machine starts at `+5s`
+  (`ros2_robot_ws/src/main.py:144-148`). If `move_group` takes six seconds that day, it loses.
+* No supervision, and no cleanup. Nothing restarts a dead node, and the orchestrator exits leaving
+  its children running (**CODE_AUDIT B5**).
+
+**Target design.** Every node starts at boot, subscribed and idle, holding no GPU memory. A phase
+signal decides which models are resident. Each GPU-heavy node loads and unloads on phase change.
+The state machine subscribes to `/manipulation/start` as an explicit arm and disarm gate, which
+closes B6 at the same time.
+
+The distinction that matters: **processes are cheap, weights are not.** An idle ROS node costs a few
+hundred MB of host RAM and nothing on the GPU. Boot all of them. Gate the weights.
+
+#### Budget `[inferred unless marked]`
+
+Card: RTX 4060 Ti, 16 GB total, **15.3 GB free at idle `[observed 2026-09-15]`**
+([`COMPUTE_REQUEST_VERIFICATION.md`](COMPUTE_REQUEST_VERIFICATION.md) §1.1).
+
+| Phase | Resident | GB |
+|---|---|---|
+| Phase 1 today (Aria + nav) | SAM3 human view, Qwen2.5-0.5B, faster-whisper int8, LightGlue + SuperPoint, gaze | ~7-9 |
+| Phase 1 + HiCo-Nav | the above, plus YOLO-World ~2, MobileSAM ~1, CLIP ~2 | **~12-14** |
+| Phase 2 (grasp) | SAM3 robot view, AnyGrasp + MinkowskiEngine | ~5-7, AnyGrasp runtime `[unverified]` |
+
+Two conclusions, both the opposite of the intuitive answer:
+
+1. **The tight phase is navigation, not grasping.** Once the duplicate SAM3 goes (§2.2), phase 2 is
+   the cheap phase. All three HiCo-Nav additions land on phase 1, which was already the heavier one.
+2. **A local Qwen3-Omni does not fit.** 20-24 GB against a 16 GB card
+   ([`hico-nav/PAPER_REPORT.md`](hico-nav/PAPER_REPORT.md) §6.4 and its line on VRAM contention).
+   That section treats cloud-versus-local as an open policy decision. On this hardware it is decided
+   by the constraint. Record it as such rather than leaving it to be rediscovered.
+
+#### How to actually avoid the OOM
+
+**The peak is at the transition, not in either steady state.** This is the one that bites. If the
+navigation models unload lazily while the grasp models are already loading, both are briefly
+resident, and that moment is exactly when the robot is standing in front of a person. Make the
+handoff explicit: arrived fires, nav models unload, the node publishes an unloaded acknowledgement,
+only then does the grasp side load. Acknowledge, do not overlap.
+
+Three supporting mechanics, cheapest first:
+
+1. `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`. One environment variable. This workload
+   repeatedly frees and reallocates multi-GB blocks, which is what the default caching allocator
+   fragments on.
+2. `torch.cuda.set_per_process_memory_fraction()` per node. Turns "something ran out of memory" into
+   "node X exceeded its budget". Without it the crash lands in whichever process allocated last,
+   which is rarely the one at fault.
+3. Measure before trusting the table above. Log
+   `nvidia-smi --query-gpu=memory.used --format=csv -l 1` across a full run, and have each node
+   print `torch.cuda.max_memory_allocated()` on exit. This is a bench script, not a research task.
+
+**Return-to-user is out of scope** ([`PROJECT_PLAN.md`](PROJECT_PLAN.md) §4), so the phase change is
+one-way. Reload latency is a one-time cost, not something to engineer around. If the return leg ever
+comes back into scope, this changes: the phases cycle, and the unload/reload cost is paid twice per
+task.
+
+#### Do we need all three HiCo-Nav models? `[inferred]`
+
+The paper's cascade uses YOLO-World (detect, every frame, 10 fps), MobileSAM (segment, keyframes
+only, one per 1-2 s) and CLIP (per-object descriptor). See
+[`hico-nav/PAPER_REPORT.md`](hico-nav/PAPER_REPORT.md) §4.4a. They do three different jobs and only
+two of them overlap with SAM3.
+
+| Model | Verdict | Why |
+|---|---|---|
+| **MobileSAM** | **Drop it.** SAM3 replaces it directly | Its job is stage 4, mask from box, on anchors only at 0.5-1 Hz. That is what SAM3 does, and SAM3 is already loaded. `PAPER_REPORT.md` line 493 already notes our cascade saves proportionally more than theirs because we escalate to the bigger model |
+| **YOLO-World** | **Probably keep.** Not a swap, a deletion | It is the always-on 10 fps gate feeding the semantic half of the anchor test. SAM3 cannot run at 10 fps on this card. Its ~2 GB is a *latency* budget item, not the thing that causes an OOM |
+| **CLIP** | **Investigate, do not assume** | It produces a stored descriptor queried repeatedly against text: the merge cosine (Eq. 4) and the goal score `s(o_i, T)`. SAM3 answers the opposite question, "where is X in this image now". Drop CLIP naively and every query means re-running SAM3 over stored keyframes |
+
+**The CLIP lead worth chasing.** SAM3 loads `bpe_simple_vocab_16e6.txt.gz`
+(`src/services/object_recognition/sam3_model.py:37`), the CLIP BPE vocabulary, so it has a
+text-image aligned encoder inside it. If that package exposes a per-instance image embedding, it can
+serve as the descriptor `f_j` and one model covers stage 4 plus descriptors. Unverified: `sam3` is a
+git dependency (`pyproject.toml:23`) and is not installed outside the box. This is a short check on
+the box that decides a 2 GB line item. If it works, note that the merge weights λ₁, λ₂ and the
+threshold are tuned for CLIP's embedding space and would need retuning. A cost, not a blocker.
+
+**The YOLO-World argument that is specific to us.** The anchor test fires on semantic novelty *or*
+geometric novelty, and the geometric half costs no inference at all, it is pure odometry from
+FAST-LIVO2. HiCo-Nav needs the semantic half because they do open-ended exploration. We have a human
+wearing glasses who says what they want and looks at it, so gaze and voice already supply the
+semantic trigger. The catch: register only what the user looked at and the cognitive memory graph is
+much poorer for later queries. **This depends entirely on §1.3**, full memory graph or
+navigate-to-named-object, which is still open.
+
+#### What this is worth
+
+| Change | Saved | Confidence |
+|---|---|---|
+| Retire `sam3_ros_node.py` (§2.2) | ~3.2 GB plus a CUDA context | High, the code is mostly there |
+| Drop MobileSAM, escalate to SAM3 | ~1 GB | High |
+| Drop YOLO-World, geometric anchors only | ~2 GB | Depends on §1.3 |
+| SAM3 embeddings replace CLIP | ~2 GB | Unverified, needs the API check |
+
+Phase 1 goes from ~12-14 GB to ~9-11 with the two safe rows, or ~7-9 if all four land. Against
+15.3 GB free that is the difference between tight and comfortable.
+
+Ranking honestly: **the duplicate SAM3 is still the biggest single item**, and it is the only one
+that needs no research, no retuning and no HiCo-Nav decisions. The other three optimise a phase that
+the first row has already made fit.
+
+#### Open threads
+
+1. **Can AnyGrasp unload cleanly?** It runs in a separate conda environment with MinkowskiEngine.
+   Do not assume `empty_cache()` returns the memory. It may be the one component that stays a
+   start-and-stop process rather than a load-and-unload node. Dion to test on the box.
+2. **CPU budget.** FAST-LIVO2 real-time, plus the anchor test, plus Nav2. Separate from everything
+   above, and unanswered. Sensor bandwidth (two RGB-D cameras and a LiDAR on one host) belongs in
+   the same column, not in the GPU numbers. They fail differently and are fixed differently.
+3. **Does `sam3` expose per-instance embeddings?** Short check on the box. Decides the CLIP row.
+4. **§1.3 scope**, full memory graph or navigate-to-named-object. Decides the YOLO-World row.
+
+**Not yet in the plan.** This section is not in [`PROJECT_PLAN.md`](PROJECT_PLAN.md) or the task map.
+Nothing here is scheduled work until Dion adds it.
+
+---
+
 ## 3. Bring-up (needs the lab machine)
 
 ### 3.1 🔴 Find `xpkg_demo` — `Navigation_Module` cannot launch without it
@@ -819,6 +986,11 @@ tidiness item, and it does not need the lab machine. See §2.5.
 
 ⚠️ **One at a time, so failures are attributable.** All four are described in ORIENTATION §6.
 
+> **Scope conflict, 2026-09-19.** The "Yes" rows for §6.3 and §6.4 below predate the scope decision
+> in [`PROJECT_PLAN.md`](PROJECT_PLAN.md) §4, which puts the return-to-user leg and the pose fusion
+> node **out of scope**. `PROJECT_PLAN` §4 is the source of truth for scope. The rows are kept for
+> history until Dion confirms the scope call in T0.7.
+
 | Seam | Restore for the HiCo-Nav milestone? | Note |
 |---|---|---|
 | §6.1 Aria stages disabled | **Partly** — pose/image streaming yes (`/aria/fused_pose` feeds the return leg) | Restoring will surface whatever made someone disable them |
@@ -832,7 +1004,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 
 - **2026-09-16, T0.2:** installed switch topology and persistent host addresses. RM65 and MID-360
   each replied from their required host address after a NetworkManager connection cycle. Evidence:
-  [`../sherman_docs/T0.2_SESSION.md`](../sherman_docs/T0.2_SESSION.md).
+  [`sherman_docs/T0.2_SESSION.md`](sherman_docs/T0.2_SESSION.md).
 
 ---
 
@@ -869,3 +1041,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.12: first CI run recorded. Fixed preflight reporting FAIL for lab hardware on any non-lab Linux host. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.12: bench levels renamed L0-L5, `run.sh` runs every level it can and prints a summary table. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.5 marked done after T0.3 merged. Status block added above the original survey. The OpenVINS paths and the AnyGrasp `conda run` launch stay open. Dropped two mentions of the retired "no fixes yet" rule. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §4: flagged the scope conflict with `PROJECT_PLAN` §4 (return leg and pose fusion out of scope), `PROJECT_PLAN` wins. Fixed the broken link to `sherman_docs/T0.2_SESSION.md` in §5. |
+| 2026-09-20 | Claude (Opus 5) + Dion | **§2.2 decided: retire `sam3_ros_node.py` (Option 2).** Two reasons added: `object_recognition_pipeline.py` already subscribes to both cameras and holds the cross-view matcher, so the unified service is mostly written, and the duplicate 3.21 GB model is the largest VRAM saving in the system. Retiring it also closes L1 and the segmentation half of B3. Sequencing behind §1.3 and §2.1 is unchanged. |
+| 2026-09-20 | Claude (Opus 5) + Dion | **Added §2.14: GPU budget, phase-gated model residency, and which HiCo-Nav models we need.** Target design is every process booted and idle with the models gated by phase, and the state machine subscribing to `/manipulation/start` as a real gate, which closes CODE_AUDIT B6. Key finding: navigation is the tight phase, not grasping, and a local Qwen3-Omni does not fit on a 16 GB card at all. MobileSAM is replaceable by SAM3, YOLO-World probably is not, CLIP needs an API check. The OOM risk is at the phase transition, not in either steady state. Four open threads recorded. Not yet in `PROJECT_PLAN` or the task map. |
+| 2026-09-20 | Claude (Opus 5) + Dion | §2.6b: CODE_AUDIT open question 5 answered, so the I1 row now names the owner (`ros2_robot_ws/src/main.py`) and the deletion (`orchestrator.py:69-74`). Five open questions left. §2.1: pointer to the HiCo-Nav cascade and §2.14. |

@@ -437,15 +437,17 @@ pixel-registered to colour.
 ### The nav ↔ manipulation contract ★
 
 **This is the boundary that matters for HiCo-Nav integration.** Everything above is internal to
-one subsystem; these six topics are the seams between them.
+one subsystem; these eight topics are the seams between them. Who owns each one is being settled
+in `PROJECT_PLAN` T0.7 (the channel contract). Once that lands, the contract is the single source
+and this table points to it.
 
 | Topic | Type | Direction | Meaning |
 |---|---|---|---|
 | `/manipulation/goal_pose` | `PoseStamped` (base_link) | perception → nav | "the object is here" |
 | `/goal_pose` | `PoseStamped` (map) | nav-internal → Nav2 | "drive here" |
-| `/manipulation/start` | `Bool` | nav → orchestrator | "in position, go grasp" |
+| `/manipulation/start` | `Bool` | nav → orchestrator | "in position, go grasp". `[code]` It makes the orchestrator launch `main.py` as a new process (`orchestrator.py:84`), not signal a running state machine |
 | `/manipulator/return_to_user` | `Bool` | arm → nav | "got it, take me back" |
-| `/return_to_user/goal_reached` | `String` `"success"`/`"failed"` | nav → orchestrator | return leg done |
+| `/return_to_user/goal_reached` | `String` `"success"`/`"failed"` | nav → **nothing today** `[code]`. The orchestrator's subscription is commented out (`orchestrator.py:57-59`) | return leg done |
 | `/goal_reached` | `String` | nav → approach node | resets the approach guard |
 | `/manipulator/release` | `Bool` | **nothing publishes it** `[code]` (CODE_AUDIT D1). Intended: voice → orchestrator | "let go" |
 | `/manipulation/done` | `Empty` | → approach node | cycle finished |
@@ -841,6 +843,9 @@ was verified against running hardware. Most relevant to this section:
 - **Undefined behaviour** in the state machine's threading: one condition variable waited on with
   two different mutexes, and the centroid read without its lock (§C1, §C2).
 - **`background.launch.py` is launched twice**, giving two `rm_driver` on one arm (§I1).
+  **Ownership decided 2026-09-20: `ros2_robot_ws/src/main.py` owns it, delete the launch at
+  `orchestrator.py:69-74`.** Reasoning in CODE_AUDIT open question 5. The larger question of
+  whether anything should launch processes mid-task is `NEXT_STEPS.md` §2.14.
 
 ---
 
@@ -904,7 +909,7 @@ MID-360 on port 2, and RM65 on port 3. NetworkManager profile `Wired connection 
 carries `192.168.1.100/24`, `192.168.1.10/24`, and `192.168.1.5/24`. After bringing that connection
 down and up, the RM65 replied to three pings sourced from `.10` and the MID-360 replied to three pings
 sourced from `.5`. No ROS nodes, arm commands, or base commands ran during this proof. Evidence:
-[`../sherman_docs/T0.2_SESSION.md`](../sherman_docs/T0.2_SESSION.md).
+[`sherman_docs/T0.2_SESSION.md`](sherman_docs/T0.2_SESSION.md).
 
 Why it was invisible: the arm was verified on the `realman_manip` clone, which has no
 `Navigation_Module` at all (§7), while navigation and LiDAR were previously brought up separately.
@@ -1230,3 +1235,5 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-19 | Claude (Opus 5) + Dion | Repointed citations of `RCP_NEW_USER_STARTUP_GUIDE.md` to its new home, `docs/archive/`, after T0.0 brought it onto `main`. |
 | 2026-09-19 | Claude (Opus 5) + Dion | New §8.18: the glasses pose chain explained. The glasses send no gaze and no pose. OpenVINS tracks the glasses only. The `kalibr_*.yaml` files are a hand copy of the live calibration, not a Kalibr run `[inferred]`. OpenVINS sits in `Navigation_Module` by accident. ArUco consumes intrinsics rather than producing them. §8.14: the two AnyGrasp nodes differ in method (tracker vs detector), not only checkpoint. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §8.4 marked fixed by T0.3, pointing at NEXT_STEPS §2.5 for what is still open. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §5 contract table: count corrected to eight topics. `/return_to_user/goal_reached` has no consumer today (orchestrator subscription commented out). `/manipulation/start` launches `main.py` as a process. Pointer to T0.7 as the future single source. Fixed the broken link to `sherman_docs/T0.2_SESSION.md`. |
+| 2026-09-20 | Claude (Opus 5) + Dion | §8.11b: the double `background.launch.py` launch now names its owner. CODE_AUDIT open question 5 is answered: `ros2_robot_ws/src/main.py` owns it, delete `orchestrator.py:69-74`. Pointer to the new `NEXT_STEPS.md` §2.14 on whether anything should launch processes mid-task at all. |

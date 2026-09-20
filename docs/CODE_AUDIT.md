@@ -606,6 +606,10 @@ That is two `rm_driver` instances, both opening TCP to `192.168.1.18:8080` and b
 to send UDP state to `192.168.1.10:8089` — plus two `move_group` and two `robot_state_publisher`
 publishing to the same topics and the same TF tree.
 
+**Ownership decided 2026-09-20: `main.py` owns it, delete `orchestrator.py:69-74`.** Reasoning in
+open question 5 below. Line numbers above are as written on 2026-09-10; against the working tree on
+2026-09-20 they are `orchestrator.py:70` and `:84`, and `ros2_robot_ws/src/main.py:101`.
+
 ### I2. 🟠 The orchestrator fails silently on its one job
 
 `orchestrator.py:82` — `launch(["python3", MAIN_PY_PATH], cwd=MAIN_PY_DIR)` where `MAIN_PY_DIR` is
@@ -797,8 +801,25 @@ publishers racing on the same three topics.
    (e.g. pre-computing candidates before the approach)? If the latter, A2 is the bug instead.
 4. **D1 — what was meant to publish `/manipulator/release`?** Voice ("release" → the LLM returns the
    word, not a Bool), a button, or the visualiser? The orchestrator has no other way to finish.
-5. **I1 — which launcher owns `background.launch.py`?** Removing it from one of the two is a
-   two-line fix, but only if the ownership is decided.
+5. ✅ **I1 — which launcher owns `background.launch.py`? Answered 2026-09-20:
+   `ros2_robot_ws/src/main.py` owns it.** Delete the launch in `orchestrator.py:69-74`.
+
+   Three reasons. `main.py` is the only launcher that needs the bringup present, because it starts
+   the state machine five seconds later (`ros2_robot_ws/src/main.py:144-148`) and `move_group` has
+   to exist by then, so removing it there would stop `main.py` being runnable on its own. The
+   orchestrator's only use of `rm_driver` is the open-gripper publish at the end
+   (`orchestrator.py:51-53`, `:127-132`), which happens after `main.py` is already up. And the
+   orchestrator's copy is vestigial: its docstring puts bringup at step 4, after `goal_reached`
+   (`:9`), and that handler is now commented out (`:102-112`), so the `__init__` launch is what is
+   left of a step that moved and was never cleaned up.
+
+   Side effect, stated so it is not a surprise: with this gone, no `rm_driver` exists until
+   `/manipulation/start` arrives. That is an improvement, not a regression. The arm driver no
+   longer comes up merely because someone started the orchestrator.
+
+   **This sits inside a larger decision.** See [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.14. If the
+   phase-gated design lands, the orchestrator stops launching processes at all and the duplicate
+   disappears by construction. The deletion above is correct either way, so it is not wasted work.
 6. **E1/E2 — should `/aria/fused_pose` be in `map` or in `robot_base_link`?** The publisher's
    variable names say `map`, its stamp says `robot_base_link`, and its only consumer assumes `map`.
    Two of those three have to change.
@@ -821,3 +842,4 @@ publishers racing on the same three topics.
 | 2026-09-14 | Claude (Opus 5) + Dion | **Recounted the findings, and the running total in this changelog was wrong.** Counting the actual entries gives **62**, not 51: 43 with their own heading, plus the four rows of D, the two rows of H and its doc correction, and the twelve bullets of J. Those three table-and-bullet sections were never in the total, and the 45 → 49 → 50 → 51 arithmetic carried the omission forward. By severity: 16 blocking or safety, 22 fail at runtime, 21 debt, of which **7 are now `[observed]`** (B2a, B4, C7, E1, F1, F2, F4). B2's message loss was tested and **not** reproduced. The published page is now generated from `code-audit-page.html`, committed alongside this file, and computes its own counts from its own entries so they cannot drift again. It carries 59 of the 62: B7, K1 and K2 are inventory rather than defects and stay here only. |
 | 2026-09-14 | Claude (Opus 5) + Dion | **W7 ran on the box** (`bench/nav_nodes.sh`, 10 cases, [`bench-runs/2026-09-14-labbox-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt)): 6 controls pass, 4 expected failures reproduced, nothing skipped, no fix needed on the first run. **E1, F1 and F2 move from `[unverified]` to `[observed]`**, each matching the mechanism this audit predicted — E1's goal landed 2.0 m out; F1 wedged the approach node so a second object got no goal; F2's `_returning` latch refused every later return. J4 is *not* a problem at MID360 rates (50/50 frames of 520 kB at 10 Hz, 1.9 ms mean latency), so the QoS relay case is a clean control, not a finding. New finding **F4**: all five nav nodes exit with a traceback on Ctrl+C, in three shapes, the first identical to B2's double-shutdown; `goto_glasses`'s `_cancel_navigation()` is never called on shutdown (`[inferred]`). The audit now holds **51** findings. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Repointed citations of `RCP_NEW_USER_STARTUP_GUIDE.md` to its new home, `docs/archive/`, after T0.0 brought it onto `main`. |
+| 2026-09-20 | Claude (Opus 5) + Dion | **Open question 5 answered: `ros2_robot_ws/src/main.py` owns `background.launch.py`, delete `orchestrator.py:69-74`.** Reasoning recorded under the question and pointed to from I1. Refreshed I1's line citations against the working tree (`orchestrator.py:70`, `:84`, `ros2_robot_ws/src/main.py:101`). Flagged that the fix sits inside the larger phase-gating decision now in `NEXT_STEPS.md` §2.14, and is correct either way. Five open questions remain. |

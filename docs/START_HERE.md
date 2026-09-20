@@ -94,8 +94,10 @@ in order: whether this machine can run the stack at all (GPU, RAM, ROS, weights,
 and LiDAR answer), whether the code is internally consistent, and whether a refactor moved any
 topic / frame / parameter contract. Stdlib-only, ~1 s, no ROS or hardware needed — and every run
 ends with an explicit list of what it could **not** check and why. Run it before and after any
-refactor. On the lab box it also has Tier 2–3 scripts — the arm build, MoveIt and the grasp state
-machine on a simulated arm, the e-stop, the AnyGrasp env. See [`bench/README.md`](../bench/README.md).
+refactor. On the lab box it also has L3-L4 scripts (build and simulation) — the arm build, MoveIt and the grasp state
+machine on a simulated arm, the e-stop, the AnyGrasp env. See [`bench/README.md`](../bench/README.md). The bench levels were renamed from
+"Tiers" on 2026-09-19. Older docs and `bench-runs/` still say Tier. The mapping table is in
+`bench/README.md` "Levels": Tier 0-1 is L0-L1, Tier 2 is L3, Tier 3 is L4, Tier 4 is L5.
 
 Plus [`next-steps-map.html`](next-steps-map.html), the visual version of the project plan: the
 milestone schedule as a picture and a task tree you can click through to see who is waiting on whom.
@@ -163,7 +165,7 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
   normal operation. It also means E1 cannot be dropped as return-leg-only.
 
 
-- **Test bench, Dion's current work:** [`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md) → "▶ Start here". Tiers 0–3
+- **Test bench, Dion's current work:** [`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md) → "▶ Start here". Levels L0-L4
   run on the lab box (reach it over tailscale). The tests have found real bugs: the e-stop ignores
   Ctrl+C (CODE_AUDIT B2a), and the grasp state machine handles one object per launch (C7). AnyGrasp runs
   in the project's single uv env, no conda needed.
@@ -199,3 +201,4 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 | 2026-09-19 | Claude (Opus 5) + Dion | Added `docs/archive/` to the layout table. It holds the 2026-08-25 startup guide, moved from the `realman_manip` branch in T0.0. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Task count 69 to 70 after `T0.11` was added to `PROJECT_PLAN`. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Replaced the "no fixes yet" rule. Fixes now go on branches, through a PR into `main`. |
+| 2026-09-19 | Claude (Opus 5) + Dion | Tier wording changed to bench Levels, with the old-to-new mapping so older docs still read correctly. |
