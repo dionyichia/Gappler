@@ -1313,6 +1313,16 @@ sensors_calib_json_str = self.config_queue.get()
       <p class="sub">Seven channels carry the whole conversation between seeing, driving and
       grasping. If you are replacing a part, this is the contract you must honour.</p>
 
+      <div class="callout c-note">
+        <span class="ct">Who owns each of these, as of 20 September 2026</span>
+        <p>Ownership, message types, frames, delivery settings and the four channels parked with the
+        out-of-scope return leg now live in one file, <code>docs/CHANNEL_CONTRACT.md</code>. It is
+        the single source. This page explains what the channels mean; that file says who may change
+        them. In short: Dion owns the object position, Zongzhe owns the drive goal and the arrived
+        signal, Sherman owns everything below the goal, meaning the drivers, the map and the
+        transforms.</p>
+      </div>
+
       <p>Everything else in <a href="#channels">Section 7</a> is internal to one part. These seven
       are the seams between them — marked <span class="star">★</span> in that table. The full
       sequence, in order:</p>

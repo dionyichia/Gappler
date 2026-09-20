@@ -82,17 +82,20 @@ and evidence in section 4.
 
 These are live and unsettled as of 2026-09-16. A new session should start here.
 
+> **Seven of these were settled on 2026-09-20** in `T0.7`, the channel contract. The reasoning for
+> each is in [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) §6. The rows below say what was decided.
+
 | # | Decision | Why it is open | Where the evidence is |
 |---|---|---|---|
-| D1 | Does Sherman take the platform stream, meaning M0 portability and M3 mapping, with Zongzhe moving to the memory graph from week 3? | It pulls M6 six weeks earlier, which de-risks M8. But §2.5 shows M3 is thinner than budgeted, so the stream may still be too small | §2.5, §3.5 |
-| D2 | Does Dion keep T5.5 to T5.7, or does the error study move to Zongzhe? | T5.7 and T6.4 measure the same thing from two ends. Merging them frees about 12 hours on the critical path, but reverses a call Dion already made | §6.7, §6.8 |
+| ✅ D1 | **Answered 2026-09-20.** Sherman takes nav bring-up (T3.3 to T3.6) and the pose-source study, not M0 portability. Zongzhe keeps the memory graph and the bridge nodes. The line between them is the goal: Sherman gets the robot to a commanded point, Zongzhe decides which point | `CHANNEL_CONTRACT` §1, §6 T-1 |
+| ✅ D2 | **Answered 2026-09-20.** Dion keeps T5.5 to T5.7 | `CHANNEL_CONTRACT` §6 T-2 |
 | D3 | Drop the milestone Lead column, or replace it with a single "accepted by" name? | Per-task owners already exist and M5 needed two leads, which is the proof the column does not fit | §5.1 |
-| D4 | Is FAST-LIVO2 still out of scope, or does it become the escalation path of a measured pose-source study? | The Livox IMU turns out to be publishing already, so the stated blocker was wrong. The remaining blocker is no time-synchronised camera | §2.5, §4.2, S4 |
-| D5 | Fix E1 now? | It is on the live path, not the return leg, and it races the forward leg for Nav2 | `CODE_AUDIT` E5 |
+| ✅ D4 | **Answered 2026-09-20.** In scope, staged: 2D localisation first, then T5.7's error study, then FAST-LIVO2 if the evidence says 2D localisation is the limit. Sherman owns it, now T5.9. Stretch goal S4 becomes planned work | `CHANNEL_CONTRACT` §6 N-5 |
+| ✅ D5 | **Answered 2026-09-20.** No fix. `goto_glasses` comes out of the launch file, commented out with the reason, since the return leg is out of scope. That removes the race | `CHANNEL_CONTRACT` §6 N-1 |
 | D6 | Rework the M1 and M2 hour estimates on the repair evidence? | The code volume is far smaller than budgeted, but verification time may absorb the difference | §2.5, §6.3, §6.4 |
 | D7 | Zongzhe's pronouns | This document guesses at "he" and nobody has confirmed it | — |
-| D9 | Should gaze pick the object by geometry as well as by appearance? Raised by Dion 2026-09-19 | Today's cross-camera step, and M8's image feature as planned, cannot tell two identical objects apart `[inferred]`. A geometric method can, and it would strengthen the M8 claim. Try the cheap option in M2 first and decide on the evidence. If asked "isn't this niche?", the answer is in §2.13 under "Why this is worth doing" | `NEXT_STEPS` §2.13, S9 |
-| D8 | If the wrist D435i does not survive a replug, do we repair it or buy a replacement? | It is the arm's only camera, so M1's live-mask step and every fallback that used it are blocked until this is answered. A provided base D455 does not settle the wrist-camera decision | §2.6, §8.2, T0.1 |
+| ✅ D9 | **Answered 2026-09-20: build the appearance baseline in M2 first, then decide on the evidence.** Original question kept below. Should gaze pick the object by geometry as well as by appearance? Raised by Dion 2026-09-19 | Today's cross-camera step, and M8's image feature as planned, cannot tell two identical objects apart `[inferred]`. A geometric method can, and it would strengthen the M8 claim. Try the cheap option in M2 first and decide on the evidence. If asked "isn't this niche?", the answer is in §2.13 under "Why this is worth doing" | `NEXT_STEPS` §2.13, S9 |
+| ✅ D8 | **Answered 2026-09-20: buy a replacement, replacements are available `[reported]`.** Original question kept below. If the wrist D435i does not survive a replug, do we repair it or buy a replacement? | It is the arm's only camera, so M1's live-mask step and every fallback that used it are blocked until this is answered. A provided base D455 does not settle the wrist-camera decision | §2.6, §8.2, T0.1 |
 
 ---
 
@@ -299,16 +302,25 @@ repository.
 
 ### 3.5 The three streams
 
-After M0, these three run in parallel and touch each other only at named handover points.
+**Revised 2026-09-20 (`T0.7`).** The streams are named after kinds of work, not after subsystems.
+That matters because navigation is not one person's: it has a software half and a physical half, and
+they suit different people.
 
-| Stream | Owner | What it covers | Where the work happens | Hands over at |
-|---|---|---|---|---|
-| **Arm and perception** | Dion | Arm bring-up, the grasp path defects, one segmentation service, gaze, the calibration and localisation-error study, the contribution | Lab plus the box | The approach-goal channel, and the arrived signal |
-| **Navigation and algorithms** | Zongzhe | Navigation build and bring-up, mapping, the memory graph, the segmentation trigger, goal ordering | Laptop and the box, lab for mapping only | The approach-goal channel, and the drive-here channel |
-| **Hardware and experiments** | Sherman | Network, camera mount, the calibration rig and target, physical measurements, the bring-up runbook, trial fixtures, running trials, the procurement and policy decisions | Lab | Measured geometry, recorded data, trial results |
+| Stream | Owner | What it covers | Where the work happens |
+|---|---|---|---|
+| **Arm and perception** | Dion | Arm bring-up, the grasp path defects, one segmentation service, gaze, the calibration and localisation-error study, the contribution | Lab plus the box |
+| **Algorithms and graph** | Zongzhe | The memory graph, the reasoning layer, goal ordering, the nav bridge nodes and the goal-emitting node | Laptop and the box |
+| **Platform and experiments** | Sherman | Network, nav bring-up, mapping and localisation, the pose-source and FAST-LIVO2 study, camera mount, the calibration rig, physical measurements, the runbook, trial fixtures, running trials | Lab plus the box |
 
-The handover points are three channel names and one measurement. That is a small enough interface
-for three people to agree on in an hour and then not talk about for a month.
+**The line inside navigation is the goal.** Sherman owns everything that gets the robot to a
+commanded point: drivers, SLAM, Nav2 configuration, the static transforms, mapping, localisation and
+the pose source. Zongzhe owns everything that decides which point: the memory graph, goal ordering,
+and the bridge nodes that turn an object position into a drive goal.
+
+**The handover points are written down.** Twelve live channels, four planned ones, five measurements
+and the hidden channels are in [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md), which is the single
+source for all of it. The three headline ones remain the approach goal, the drive-here goal and the
+arrived signal.
 
 ---
 
@@ -559,11 +571,11 @@ and cannot be compressed by working harder.
 | T0.4 | Bring into git the four things the robot needs that live in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR package manifest, and the saved map. **Added 2026-09-19, to turn CI green:** also settle `rm_mtc/launch/mtc_sim_test.launch.py`, which starts an executable `rm_mtc` never builds. Either add the build target (`src/trivial_mtc.cpp` may be the missing source `[inferred]`) or delete the launch file. With that, all 7 static findings CI fails on today are cleared. **Done means `./bench/run.sh` exits 0, then Dion turns on branch protection for `main`** (require the `bench` check), so a red bench blocks merges from then on | bring-up | Zongzhe | 6 | box | T0.3 |
 | T0.5 | Zongzhe and Sherman each clone the repository on their own machine, build it and run the bench. This is the acceptance test for M0 | bring-up | Zongzhe, Sherman | 8 | off | T0.3 |
 | T0.6 | ROS 2 ramp, all three of us. Reading guide round 1, then run the simulated arm test and read what it printed | bring-up | All | 24 | box | T0.5 |
-| T0.7 | Write the channel contract: which stream owns which message channels, and the exact three handover points between streams. One page | decide | Dion | 4 | off | none |
+| T0.7 | ~~Write the channel contract: which stream owns which message channels, and the exact handover points between streams~~ **DONE 2026-09-20.** [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md): 12 live handovers, 4 parked with the return leg, 4 planned, 5 measurements, 11 hidden channels, the TF edge table, and 28 decisions including the nav split and the rename targets. It is the single source. `ORIENTATION` §5, §3.5 above and both HTML pages point to it | decide | Dion | 4 | off | none |
 | T0.8 | ~~Clear the bench backlog that has been waiting since the box went off~~ **Done 2026-09-14.** Environment check, navigation build and the ten navigation node tests all ran, all passed, no fix needed. What is left of this task is W6, which is blocked on the faulty camera, and W8, which needs a person at the robot. See §2.6 | measure | Dion | 5 of 5 spent | box | none |
 | T0.9 | ~~Measure the real base footprint and compare it with the 0.2 metre radius the navigation configuration assumes~~ **Done 2026-09-16 for the manufacturer chassis.** The Hexman Robotics ECHO-PLUS manual specifies `460 x 380 x 140 mm` and a `265 mm` stated rotation radius, so the `200 mm` Nav2 radius is not supported as conservative. Recheck the integrated footprint after mount fabrication | measure | Sherman | 3 | lab | none |
-| T0.10 | **Added 2026-09-16.** CI: wire up `./bench/run.sh` (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. See `NEXT_STEPS.md` §2.12 for scope, provider choice, and what a green run does and does not prove. **Progress 2026-09-19:** started ahead of T0.5 on purpose, to test it on the next merge. `.github/workflows/bench.yml` runs Tiers 0-1 on every PR into `main` and every push to `main`. It fails strictly, so it is red until the 7 known static findings are fixed (T0.4 clears 6 of them). Tiers 2-3 still open. Later, with a `dev` branch: fast per-subsystem tests on PRs into `dev`, the full suite on `dev` into `main`. Merges are not blocked yet: branch protection goes on when T0.4 turns the bench green | build | Dion | 6 | off | T0.5 |
-| T0.11 | **Added 2026-09-19.** Split the bench into one test suite per subsystem: glasses (`aria`), arm (`rm_mtc`), grasp (AnyGrasp and MinkowskiEngine), and navigation. Each suite covers its own code plus the channels it shares with other subsystems. CI then runs only the suites whose files a PR touched, plus the contract check. Do it alongside the one-folder-per-node refactor, since the folder layout decides how files map to suites. Also add a scheduled run of the full suite on `dev` every Monday and Wednesday night, so a break is traced to a few days of commits rather than a whole release. **Open, decide when this task starts:** Tiers 2-3 need ROS Humble and today only run on the lab box. Either register the lab box as a self-hosted GitHub runner (free, but tied to a box we may lose after 2026-11-16) or build a Docker image of the environment (portable, may cost image storage). **Decided 2026-09-19: self-hosted runner on the lab box, running L0-L4 only, never L5 (hardware).** Then create the `dev` branch: PRs into `dev` may pass with L3-L4 skipped, PRs into `main` must run L0-L4 with no level skipped. `run.sh` already runs every level a machine can and skips the rest; what remains is the runner, the branch, a no-skips switch for `main`, and branch protection. Before registering the runner, check the fork-PR risk: the repo is public | build | Dion | 8 | off | T0.10 |
+| T0.10 | **Stays with Dion (2026-09-20).** Briefly reassigned to Zongzhe in the rebalance, then kept: Dion wrote the bench and already has the design in mind, so it is faster with him even though it is not on the critical path. **Added 2026-09-16.** CI: wire up `./bench/run.sh` (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. See `NEXT_STEPS.md` §2.12 for scope, provider choice, and what a green run does and does not prove. **Progress 2026-09-19:** started ahead of T0.5 on purpose, to test it on the next merge. `.github/workflows/bench.yml` runs Tiers 0-1 on every PR into `main` and every push to `main`. It fails strictly, so it is red until the 7 known static findings are fixed (T0.4 clears 6 of them). Tiers 2-3 still open. Later, with a `dev` branch: fast per-subsystem tests on PRs into `dev`, the full suite on `dev` into `main`. Merges are not blocked yet: branch protection goes on when T0.4 turns the bench green | build | Dion | 6 | off | T0.5 |
+| T0.11 | **Added 2026-09-19.** Split the bench into one test suite per subsystem: glasses (`aria`), arm (`rm_mtc`), grasp (AnyGrasp and MinkowskiEngine), and navigation. Each suite covers its own code plus the channels it shares with other subsystems. CI then runs only the suites whose files a PR touched, plus the contract check. Do it alongside the one-folder-per-node refactor, since the folder layout decides how files map to suites. Also add a scheduled run of the full suite on `dev` every Monday and Wednesday night, so a break is traced to a few days of commits rather than a whole release. **Open, decide when this task starts:** Tiers 2-3 need ROS Humble and today only run on the lab box. Either register the lab box as a self-hosted GitHub runner (free, but tied to a box we may lose after 2026-11-16) or build a Docker image of the environment (portable, may cost image storage). **Decided 2026-09-19: self-hosted runner on the lab box, running L0-L4 only, never L5 (hardware).** Then create the `dev` branch: PRs into `dev` may pass with L3-L4 skipped, PRs into `main` must run L0-L4 with no level skipped. `run.sh` already runs every level a machine can and skips the rest; what remains is the runner, the branch, a no-skips switch for `main`, and branch protection. Before registering the runner, check the fork-PR risk: the repo is public. **Stays with Dion (2026-09-20)**, same reason as T0.10 | build | Dion | 8 | off | T0.10 |
 
 **T0.0 in detail. This is the first thing to do.** `origin/realman_manip` shares no commit history
 with `main`, so this is a file copy, not a merge `[code]` `ORIENTATION` 7. **Exactly 15 files exist
@@ -631,18 +643,18 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 |---|---|---|---|---|---|---|
 | T3.1 | ~~Compile the navigation workspace~~ **Done 2026-09-14**, 10 of 10 packages in 2 min 34 s, and it needed neither `xpkg_demo` nor `robot_navigation` because both are run-time dependencies. What remains for Zongzhe is to repeat it on his own machine as part of T0.5 | bring-up | Zongzhe | 1 of 4 left | box | T0.4 |
 | T3.2 | ~~Run the ten navigation node tests~~ **Done 2026-09-14**, passed first run: 6 controls, 4 expected failures reproduced, 0 skipped. E1, F1 and F2 are now `[observed]`, F4 is new. Read the result before starting T3.3 | measure | Zongzhe | 0 of 5 left | box | T3.1 |
-| T3.3 | Fix the missing arm-to-base transform during a mapping run, which today leaves the arm unconnected to the position tree | fix | Zongzhe | 2 | off | T3.2 |
-| T3.4 | Drive the base under keyboard control. Confirm the LiDAR publishes | bring-up | Zongzhe, Sherman | 4 | lab | T0.2, T3.1 |
-| T3.5 | Build a map of the lab and localise in it | bring-up | Zongzhe, Sherman | 6 | lab | T3.4 |
-| T3.6 | Drive to a commanded point ten times. Record the position error each time | measure | Zongzhe, Sherman | 5 | lab | T3.5 |
-| T3.7 | The navigation to arm handover on hardware: object position in, drive, arrived signal out | rewire | Zongzhe, Dion | 6 | lab | T1.12, T3.6 |
+| T3.3 | Fix the missing arm-to-base transform during a mapping run, which today leaves the arm unconnected to the position tree. **Owner changed to Sherman 2026-09-20**, Zongzhe reviews the change | fix | Sherman | 2 | off | T3.2 |
+| T3.4 | Drive the base under keyboard control. Confirm the LiDAR publishes. **Owner changed to Sherman 2026-09-20** | bring-up | Sherman | 4 | lab | T0.2, T3.1 |
+| T3.5 | Build a map of the lab and localise in it. **Owner changed 2026-09-20:** Sherman leads, Dion joins, since he is at the robot for the camera and LiDAR calibration anyway (T5.5) | bring-up | Sherman, Dion | 6 | lab | T3.4 |
+| T3.6 | Drive to a commanded point ten times. Record the position error each time. **Owner changed to Sherman 2026-09-20** | measure | Sherman | 5 | lab | T3.5 |
+| T3.7 | The navigation to arm handover on hardware: object position in, drive, arrived signal out. The channels are `CHANNEL_CONTRACT` H2, H3 and H9 | rewire | Dion, Sherman | 6 | lab | T1.12, T3.6 |
 
 ### 6.6 M4. The current system, closed loop (28 Dec 2026 – 17 Jan 2027)
 
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
 | T4.1 | One complete run, recorded on video: speak, look, drive, grasp | measure | All | 8 | lab | T2.5, T3.7 |
-| T4.2 | Measure how long each stage takes. Report the 99th percentile, not the average | measure | Dion | 6 | lab | T4.1 |
+| T4.2 | Measure how long each stage takes. Report the 99th percentile, not the average. **Owner changed to Sherman 2026-09-20** | measure | Sherman | 6 | lab | T4.1 |
 | T4.3 | Keep the defect log from the first powered session onward. One line per bug: symptom, guess, actual cause | measure | All | ongoing | off | T1.6 |
 
 ### 6.7 M5. The base has a calibrated forward camera (5 Oct 2026 – 17 Jan 2027)
@@ -657,6 +669,7 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 | T5.6 | Verify the calibration by projecting LiDAR points into the camera image. Keep the picture, it goes in the paper | measure | Dion | 4 | box | T5.5 |
 | T5.7 | Choose where camera poses come from and characterise the error: drift over a run, and the duplicate-object rate it causes in the graph. Start with the existing 2D localisation because it is free. This is a measurement study, not a configuration choice | measure | Dion | 12 | box | T3.5, T5.6 |
 | T5.8 | Build a trial fixture: marked object positions and marked robot start positions, so a trial can be repeated exactly | build | Sherman | 8 | lab | T5.3 |
+| T5.9 | **Added 2026-09-20 (decision D4).** The escalation half of the pose-source study: if T5.7 says 2D localisation is the limiting factor, bring up FAST-LIVO2 and measure it against the same drift and duplicate-object metrics. Staged deliberately: do not start it before T5.7 has a number. The known blocker is a time-synchronised camera, so the first hour is spent on sensor synchronisation, not on the algorithm. Sherman owns the hardware, the recording and the evaluation runs; pair with Zongzhe for the software bring-up | measure | Sherman | 24 | box, lab | T5.7 |
 
 ### 6.8 M6. The memory graph, offline (28 Dec 2026 – 7 Feb 2027)
 
@@ -716,12 +729,27 @@ T0.3 -> T0.4 -> T3.1 -> T3.2 -> T3.5 -> T5.7 -> T7.2 -> T7.3 -> T8.3 -> T10.2
 and the second chain, which is the one that runs through Dion:
 
 ```
-T0.7 -> T1.1 -> T1.8 -> T1.9 -> T1.11 -> T1.12 -> T2.1 -> T2.4 -> T2.5 -> T3.7 -> T7.1 -> T8.2 -> T8.3
+T1.1 -> T1.8 -> T1.9 -> T1.11 -> T1.12 -> T2.1 -> T2.4 -> T2.5 -> T3.7 -> T7.1 -> T8.2 -> T8.3
 ```
 
-Thirteen tasks, almost all of them Dion's. That is the schedule risk in one line. Anything that can
-be moved off that chain should be, which is why T6.5 and T6.6 were moved and why navigation is
-Zongzhe's outright. T7.1 stays on the chain and is written in C++ on purpose.
+Twelve tasks, almost all of them Dion's, now that T0.7 is done. That is the schedule risk in one
+line. Anything that can be moved off that chain should be, which is why T6.5 and T6.6 moved earlier
+and why T4.2 moved on 2026-09-20. T0.10 and T0.11 stay with Dion by his own call: he wrote the
+bench, so they go faster with him even though they sit beside the chain. T7.1 stays on the chain and is written in C++ on
+purpose.
+
+**Load after the 2026-09-20 rebalance**, counting open hours against the weekly hours in the
+"Effort available" note at the top and roughly 21 working weeks left:
+
+| Person | Open hours | Hours a week | Weeks needed |
+|---|---|---|---|
+| Dion | about 210 | 12 | 17 to 18 |
+| Zongzhe | about 130 | 8 to 10 | 13 to 16 |
+| Sherman | about 139 | 8 to 10 | 14 to 17 |
+
+Dion is still the heaviest and still sits on the whole critical chain. What moved was work beside
+the chain, not on it, because nobody else can pick up the arm and perception repairs faster than
+they can learn them.
 
 ---
 
@@ -753,6 +781,11 @@ means the interface between perception and the graph is a deliverable rather tha
 
 **Zongzhe. The memory graph and the reasoning layer.**
 
+*Revised 2026-09-20.* Navigation bring-up moved to Sherman. What stays here is the software half of
+navigation: the bridge nodes (`object_approach_node.py`, `goal_reached_publisher.py`), the node that
+emits drive goals, and everything above the goal. CI and the per-subsystem bench, T0.10 and T0.11,
+were briefly moved here and then kept with Dion, who wrote the bench.
+
 Owns the one part of this project that does not already exist in some form: object entries built
 from images, depth and camera pose; the merge rule that stops one physical object being registered
 twice; the sentence query that returns a place to drive to; and, if the schedule allows, the frontier
@@ -772,6 +805,12 @@ it is directly measurable. The reasoning layer is the other one, and it is the o
 project with real research risk, because no model in this repository has ever been given an image.
 
 **Sherman. The platform, and where its poses come from.**
+
+*Revised 2026-09-20.* This now includes navigation bring-up outright (T3.3 to T3.6), the Nav2 and
+SLAM configuration, the static transforms, and the FAST-LIVO2 escalation in T5.9. The rule is that
+Sherman owns everything that gets the robot to a commanded point, and Zongzhe owns what decides
+which point. Sherman also owns the lab session itself: the agenda, the setup, the recording and
+running the trials, whoever else is in the room.
 
 Owns the robot as a working machine: it powers on, it drives, it maps, it localises, it answers on
 the network, and a runbook exists that says how. Owns the physical build the rest depends on, meaning
@@ -991,3 +1030,4 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-19 | Claude (Opus 5) + Dion | T0.4 now also covers the `mtc_sim_test` executable decision, and its done condition turns on branch protection so the bench blocks merges into `main`. T0.11 gained the Monday and Wednesday night full-suite run and the open lab-box-runner-or-Docker question, deferred to that task. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Bench levels renamed L0-L5 (`bench/README.md`). T0.11: runner decided (self-hosted on the lab box, L0-L4 only), plus the `dev`/`main` skip rules. |
 | 2026-09-19 | Claude (Opus 5) + Dion | T0.3 marked DONE, and in `next-steps-map.html`'s task data. |
+| 2026-09-20 | Claude (Opus 5) + Dion | **T0.7 done: [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) is the single source for channel ownership**, and §3.5 points to it. Streams renamed to kinds of work: arm and perception, algorithms and graph, platform and experiments. Navigation split at the goal: Sherman owns motion and sensing (T3.3 to T3.6, Nav2 and SLAM config, the static transforms, the pose source), Zongzhe owns goals and algorithms. New T5.9, the FAST-LIVO2 escalation, from decision D4. T4.2 to Sherman, off Dion's chain. T0.10 and T0.11 stay with Dion, who wrote the bench. T3.5 gains Dion, since he is at the robot for T5.5 anyway. D1, D2, D4, D5, D8 and D9 answered. |

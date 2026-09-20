@@ -99,6 +99,12 @@ machine on a simulated arm, the e-stop, the AnyGrasp env. See [`bench/README.md`
 "Tiers" on 2026-09-19. Older docs and `bench-runs/` still say Tier. The mapping table is in
 `bench/README.md` "Levels": Tier 0-1 is L0-L1, Tier 2 is L3, Tier 3 is L4, Tier 4 is L5.
 
+[`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) is the one place that says **which subsystem owns which
+message channel**, what passes between subsystems, and who decides when a name, type or frame
+changes. Read it before renaming anything or adding a channel another subsystem reads. It also
+records the decisions settled on 2026-09-20, including how navigation is split between Sherman and
+Zongzhe.
+
 Plus [`next-steps-map.html`](next-steps-map.html), the visual version of the project plan: the
 milestone schedule as a picture and a task tree you can click through to see who is waiting on whom.
 Published at <https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>. **It needs no
@@ -202,3 +208,4 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 | 2026-09-19 | Claude (Opus 5) + Dion | Task count 69 to 70 after `T0.11` was added to `PROJECT_PLAN`. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Replaced the "no fixes yet" rule. Fixes now go on branches, through a PR into `main`. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Tier wording changed to bench Levels, with the old-to-new mapping so older docs still read correctly. |
+| 2026-09-20 | Claude (Opus 5) + Dion | Added `CHANNEL_CONTRACT.md` to the global docs, the single source for channel ownership (T0.7). |

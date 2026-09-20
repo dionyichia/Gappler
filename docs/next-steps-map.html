@@ -273,7 +273,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <span class="fact">Final report due <b>28 Mar 2027</b></span>
     <span class="fact">Oral presentation <b>5&ndash;16 Apr 2027</b></span>
     <span class="fact">Milestones <b>11</b></span>
-    <span class="fact">Tasks <b>70</b></span>
+    <span class="fact">Tasks <b>71</b></span>
     <span class="fact">Effort available <b>~620 h</b></span>
   </div>
 </div></header>
@@ -291,6 +291,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <li><a href="#cut"><span class="n">7</span><span>What we cut first</span></a></li>
     <li><a href="#stretch"><span class="n">8</span><span>If we run early</span></a></li>
     <li><a href="#track"><span class="n">9</span><span>How we track it</span></a></li>
+    <li><a href="#owns"><span class="n">10</span><span>Who owns what</span></a></li>
   </ol>
 </nav>
 
@@ -311,6 +312,21 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   capacity usage drops from 79 to about 65 percent. See section 3 below for the full calendar, and
   the deadlines highlighted in the chart. Task ownership, hours and dependencies did not change,
   only which calendar week each one falls in.</p>
+</div>
+<div class="callout c-key" style="margin-bottom:20px">
+  <span class="ct">What changed on 20 September &mdash; the channel contract, and navigation has two owners</span>
+  <p><strong>T0.7 is done.</strong> <code>docs/CHANNEL_CONTRACT.md</code> now says which subsystem
+  owns which message channel, what passes between subsystems, and who decides when a name, type or
+  frame changes. It records twelve live handover channels, four parked with the out-of-scope return
+  leg, four planned ones, five measurements and the hidden channels most people forget: the Nav2 goal
+  server, the transform tree edge by edge, the launch files and the vendor drivers. It is the single
+  source, and this page, <code>ORIENTATION</code> and the wiring map point at it.</p>
+  <p><strong>Navigation is split at the goal.</strong> Sherman owns everything that gets the robot to
+  a commanded point, Zongzhe owns everything that decides which point. Tasks T3.3 to T3.6 and the new
+  T5.9, the FAST-LIVO2 escalation, move to Sherman, along with T4.2. T0.10 and T0.11, the CI and bench
+  work, stay with Dion, who wrote the bench. See <a href="#owns">Section 10</a>.</p>
+  <p><strong>Twenty-eight decisions were settled</strong>, including five of the six open questions in
+  the code audit. The reasoning is in the contract, section 6.</p>
 </div>
 <div class="callout c-note" style="margin-bottom:20px">
   <span class="ct">Also on 16 September &mdash; a CI task added, and DONE now means done for everyone</span>
@@ -398,9 +414,10 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <tr><td>One wired port, two devices, two required addresses</td>
       <td>Until obstacle 2 is gone, arm sessions and navigation sessions are mutually exclusive.
       This is the least appreciated blocker in the project</td></tr>
-      <tr><td>Dion sits on thirteen consecutive tasks of the critical path</td>
-      <td>The contention point is Dion, not the hardware. Handled by writing the channel contract in
-      week 1 and handing navigation to Zongzhe outright</td></tr>
+      <tr><td>Dion sits on twelve consecutive tasks of the critical path</td>
+      <td>The contention point is Dion, not the hardware. Handled by the channel contract, written in
+      week 1, and by handing navigation out: the software half to Zongzhe, the physical half to
+      Sherman</td></tr>
       <tr><td>The lab workstation is shared, thermally throttled and 96 percent full</td>
       <td>Builds take about four times as long as they should. Check free space before large builds</td></tr>
     </tbody>
@@ -426,27 +443,38 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <p class="load">about 12 hours a week</p>
     </div>
     <div class="lane L-Z">
-      <h4>Navigation and algorithms</h4>
+      <h4>Algorithms and graph</h4>
       <p class="role">Zongzhe &middot; computer science</p>
-      <p>Path portability, the navigation build and bring-up, mapping, the memory graph, the
-      segmentation trigger, and goal ordering if we get to it.</p>
+      <p>The memory graph, the reasoning layer, goal ordering, and the bridge nodes that turn an
+      object position into a drive goal.</p>
       <ul>
-        <li>Milestones M0, M3, M6, M9</li>
-        <li>Laptop and the workstation. Lab only for mapping</li>
+        <li>Milestones M6, M9, and the software half of M3</li>
+        <li>Laptop and the workstation</li>
       </ul>
       <p class="load">8 to 10 hours a week</p>
     </div>
     <div class="lane L-S">
-      <h4>Hardware and experiments</h4>
+      <h4>Platform and experiments</h4>
       <p class="role">Sherman &middot; mechanical engineering</p>
-      <p>Network, camera mount, the calibration rig and target, physical measurements, the bring-up
-      runbook, the trial fixture, running the trials, and the procurement and policy decisions.</p>
+      <p>Network, navigation bring-up, mapping and localisation, where the robot's poses come from,
+      the camera mount, the calibration rig, physical measurements, the runbook, the trial fixture
+      and running the trials.</p>
       <ul>
-        <li>The mount half of M5, plus the lab half of M1, M3 and M8</li>
-        <li>Lab</li>
+        <li>Milestone M3, the mount half of M5, plus the lab half of M1 and M8</li>
+        <li>Lab plus the workstation</li>
       </ul>
       <p class="load">8 to 10 hours a week</p>
     </div>
+  </div>
+
+  <div class="callout c-note">
+    <span class="ct">Updated 20 September 2026 &mdash; navigation now has two owners</span>
+    <p>Navigation is not one person's job. It has a software half and a physical half.
+    <strong>The line between them is the goal.</strong> Sherman owns everything that gets the robot
+    to a commanded point: the drivers, SLAM, the Nav2 settings, the transforms, mapping,
+    localisation and the pose source. Zongzhe owns everything that decides which point: the memory
+    graph, goal ordering, and the bridge nodes. Full ownership list in
+    <a href="#owns">Section 10</a>.</p>
   </div>
 
   <h3>The handover points</h3>
@@ -726,16 +754,29 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <thead><tr><th>Chain</th><th>Tasks</th></tr></thead>
     <tbody>
       <tr><td>Through the arm and perception</td>
-      <td><code>T0.7 &rarr; T1.1 &rarr; T1.8 &rarr; T1.9 &rarr; T1.11 &rarr; T1.12 &rarr; T2.1 &rarr;
-      T2.4 &rarr; T2.5 &rarr; T3.7 &rarr; T7.1 &rarr; T8.2 &rarr; T8.3</code></td></tr>
+      <td><code>T1.1 &rarr; T1.8 &rarr; T1.9 &rarr; T1.11 &rarr; T1.12 &rarr; T2.1 &rarr;
+      T2.4 &rarr; T2.5 &rarr; T3.7 &rarr; T7.1 &rarr; T8.2 &rarr; T8.3</code> &mdash; T0.7 came off
+      the front of this chain on 20 September</td></tr>
       <tr><td>Through the camera and the graph</td>
       <td><code>T0.1 &rarr; T5.1 &rarr; T5.2 &rarr; T5.3 &rarr; T5.5 &rarr; T5.6 &rarr; T6.2 &rarr;
       T6.3 &rarr; T6.4 &rarr; T6.8 &rarr; T8.2 &rarr; T8.3</code></td></tr>
     </tbody>
   </table></div>
-  <p>Anything that can be moved off the first chain should be. That is why navigation is handed to
-  Zongzhe outright, why the trials are run by Sherman, and why T6.5 and T6.6 moved off Dion. T7.1
-  stays on the chain and is written in C++ on purpose.</p>
+  <p>Anything that can be moved off the first chain should be. That is why navigation is handed out,
+  why the trials are run by Sherman, and why T6.5, T6.6 and then, on 20 September, T4.2 moved off
+  Dion. T7.1 stays on the chain and is written in C++ on purpose.</p>
+
+  <div class="scroller"><table>
+    <thead><tr><th>Person</th><th>Open hours</th><th>Hours a week</th><th>Weeks of work left</th></tr></thead>
+    <tbody>
+      <tr><td><span class="who w-D">Dion</span></td><td class="num">about 210</td><td class="num">12</td><td class="num">17 to 18</td></tr>
+      <tr><td><span class="who w-Z">Zongzhe</span></td><td class="num">about 130</td><td class="num">8 to 10</td><td class="num">13 to 16</td></tr>
+      <tr><td><span class="who w-S">Sherman</span></td><td class="num">about 139</td><td class="num">8 to 10</td><td class="num">14 to 17</td></tr>
+    </tbody>
+  </table></div>
+  <p>Dion is still the heaviest and still sits on the whole chain. What moved on 20 September was work
+  beside the chain, not on it, because nobody else can pick up the arm and perception repairs faster
+  than they can learn them.</p>
 </section>
 
 <section id="people">
@@ -766,6 +807,9 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <div class="lane L-Z">
       <h4>Zongzhe</h4>
       <p class="role">The memory graph and the reasoning layer</p>
+      <p><strong>Updated 20 September.</strong> Navigation bring-up moved to Sherman. What stays
+      here is the software half: the two bridge nodes, the node that emits drive goals, and
+      everything above the goal.</p>
       <p><strong>Owns</strong> the one part of this project that does not already exist in some form:
       object entries built from images, depth and camera pose; the merge rule that stops one physical
       object being registered twice; the sentence query that returns a place to drive to; and, if the
@@ -785,6 +829,10 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <div class="lane L-S">
       <h4>Sherman</h4>
       <p class="role">The platform, and where its poses come from</p>
+      <p><strong>Updated 20 September.</strong> This now includes navigation bring-up outright,
+      tasks T3.3 to T3.6, the Nav2 and SLAM settings, the static transforms, and the FAST-LIVO2
+      escalation in T5.9. Sherman also owns the lab session itself: the agenda, the setup, the
+      recording and running the trials, whoever else is in the room.</p>
       <p><strong>Owns</strong> the robot as a working machine: it powers on, it drives, it maps, it
       localises, it answers on the network, and a runbook exists that says how. Owns the physical
       build the rest depends on, meaning the forward camera mount, the calibration rig and target, and
@@ -984,6 +1032,80 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   </table></div>
 </section>
 
+<section id="owns">
+  <h2><span class="sn">Section 10</span>Who owns what</h2>
+  <p class="sub">Settled on 20 September 2026 in task T0.7, the channel contract. This is the short
+  version so that everyone can see, on one page, what they are accountable for. The full version,
+  including message types, frames, delivery settings and the parked channels, is
+  <code>docs/CHANNEL_CONTRACT.md</code> in the repository, which is the single source. If this page
+  and that file ever disagree, that file wins.</p>
+
+  <h3>The four subsystems</h3>
+  <div class="scroller"><table>
+    <thead><tr><th>Subsystem</th><th>What it is</th><th>Owner</th></tr></thead>
+    <tbody>
+      <tr><td>Aria</td><td>The glasses: voice, gaze, images, pose</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>Grasp</td><td>Segmentation and grasp prediction: SAM 3, AnyGrasp</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>Bot</td><td>The arm: driver, MoveIt, the grasp state machine, the coordinator, the stop</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>Nav</td><td>The mobile base: LiDAR, SLAM, Nav2, the bridge nodes, later the memory graph</td><td><span class="who w-S">Sherman</span> <span class="who w-Z">Zongzhe</span>, split below</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>The line inside navigation is the goal</h3>
+  <div class="lanes">
+    <div class="lane L-S">
+      <h4>Sherman: getting there</h4>
+      <p class="role">Motion and sensing</p>
+      <p>Base driver, LiDAR, the message-rate relay, SLAM and Nav2 settings, the static transforms,
+      mapping, localisation, the base camera driver, the pose-source and FAST-LIVO2 study, the drive
+      commands, and the Nav2 goal server.</p>
+      <ul><li>Tasks T3.3 to T3.6, T4.2, T5.1 to T5.4, T5.8, T5.9</li></ul>
+    </div>
+    <div class="lane L-Z">
+      <h4>Zongzhe: deciding where</h4>
+      <p class="role">Goals and algorithms</p>
+      <p>The memory graph, the reasoning layer, goal ordering, the node that emits drive goals, the
+      graph query service, and the two bridge nodes that turn an object position into a drive goal.</p>
+      <ul><li>Tasks T0.4, T6.1 to T6.8, T9.1 to T9.4</li></ul>
+    </div>
+    <div class="lane L-D">
+      <h4>Dion: the object and the arm</h4>
+      <p class="role">Arm and perception</p>
+      <p>Everything between a camera frame and the gripper closing, the glasses, the segmentation
+      service and its trigger, the calibration numbers, the test bench and CI, and the research
+      claim.</p>
+      <ul><li>Tasks T0.0, T0.10, T0.11, T1.x, T2.x, T5.5 to T5.7, T7.1, T8.x</li></ul>
+    </div>
+  </div>
+
+  <h3>The channels that cross between us</h3>
+  <p>These are the contract. Everything else belongs to whichever subsystem it sits inside, and its
+  owner can change it without asking. Change one of these and you tell the other side first.</p>
+  <div class="scroller"><table>
+    <thead><tr><th>Channel</th><th>Means</th><th>From</th><th>To</th><th>Owner</th></tr></thead>
+    <tbody>
+      <tr><td><span class="chan">/aria/audio/prompt</span></td><td>The object word you spoke</td><td>Aria</td><td>Nav, and segmentation once it listens</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td><span class="chan">/manipulation/goal_pose</span></td><td>The object is here</td><td>Grasp, later the graph</td><td>Nav</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td><span class="chan">/goal_pose</span></td><td>Drive to this point on the map</td><td>Nav bridge</td><td>Nav2</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td><span class="chan">/manipulation/start</span></td><td>In position, the arm may go</td><td>Nav</td><td>Bot</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td><span class="chan">/manipulation/done</span></td><td>Grasp cycle finished</td><td>Bot, once it is written</td><td>Nav</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td><span class="chan">/manipulator/release</span></td><td>Let go</td><td>Aria, once it is written</td><td>Bot and Nav</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td><span class="chan">/object_centroid_2d</span>, <span class="chan">/grasp_candidates</span>, <span class="chan">/pipeline_state</span></td><td>Inside the grasp path, between perception and the arm</td><td>Grasp and Bot</td><td>each other</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>The measured geometry</td><td>Where the arm, the LiDAR and the camera sit on the base</td><td>Sherman</td><td>everyone</td><td><span class="who w-S">Sherman</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout c-warn">
+    <span class="ct">Two rules that keep this working</span>
+    <p><strong>One publisher per channel, one owner per channel.</strong> Three channels have two
+    publishers today and each one is a known defect. If you need a second source, that is a
+    conversation, not a commit.</p>
+    <p><strong>Run <code>./bench/run.sh</code> before and after any change that touches a name.</strong>
+    Names are matched as plain text when the robot runs, so a rename applied to four places out of
+    five starts cleanly and quietly does nothing.</p>
+  </div>
+</section>
+
 <p class="foot"><strong>Reading this without Claude.</strong> The page is one self-contained file in
 the repository at <code>docs/next-steps-map.html</code>. No build step, no server needed,
 nothing loaded from Claude. Open it straight off disk, or if your browser is fussy about local files,
@@ -1014,7 +1136,7 @@ var MS = [
  ["M0","Everyone can build and run","14\u201327 Sep 2026","Z","Two people who are not Dion can clone, build and run the bench, and the arm and the LiDAR answer together",""],
  ["M1","The arm picks something up","5 Oct\u20131 Nov 2026","D","Five grasp attempts on a box, success rate recorded, with the stop verified first",""],
  ["M2","Voice and gaze reach the arm","26 Oct 2026\u20133 Jan 2027","D","Two boxes on the table, the arm picks the one you looked at, three times in four",""],
- ["M3","The base navigates","12 Oct\u201327 Dec 2026","Z","A map exists, the robot localises, and ten drives to a point have their error recorded",""],
+ ["M3","The base navigates","12 Oct\u201327 Dec 2026","S","A map exists, the robot localises, and ten drives to a point have their error recorded",""],
  ["M4","The current system, closed loop","28 Dec 2026\u201317 Jan 2027","D","One recorded run: speak, look, drive, grasp, with per-stage timing",""],
  ["M5","A calibrated camera on the base","5 Oct 2026\u201317 Jan 2027","SD","LiDAR points projected into the camera image land on the right objects, and the camera-pose error is written down as a number. Sherman owns the mount, Dion owns the calibration",""],
  ["M6","The memory graph, offline","28 Dec 2026\u20137 Feb 2027","Z","Object entries from a recorded drive, no duplicates, and a sentence query returns the right one",""],
@@ -1032,7 +1154,7 @@ var T = [
  ["T0.4","M0","Z",6,"box","Bring into git the four things the robot needs that are in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR manifest, the saved map. Added 2026-09-19: also settle mtc_sim_test.launch.py, which starts an executable rm_mtc never builds (add the target or delete the launch file). Done means ./bench/run.sh exits 0 and Dion turns on branch protection so CI blocks merges into main",["T0.3"],"bringup"],
  ["T0.5","M0","ZS",8,"off","Zongzhe and Sherman each clone the repository on their own machine, build it and run the bench. This is the acceptance test for M0",["T0.3"],"bringup"],
  ["T0.6","M0","A",24,"box","ROS 2 ramp, all three of us. Reading guide round 1, then run the simulated arm test and read what it printed",["T0.5"],"bringup"],
- ["T0.7","M0","D",4,"off","Write the channel contract: which stream owns which message channels, and the three handover points between streams. One page",[],"plan"],
+ ["T0.7","M0","D",4,"off","DONE 2026-09-20. The channel contract is written: docs/CHANNEL_CONTRACT.md. 12 live handover channels, 4 parked with the out-of-scope return leg, 4 planned, 5 measurements, 11 hidden channels, the transform tree edge by edge, and 28 decisions including how navigation splits between Sherman and Zongzhe. It is the single source, everything else points to it",[],"plan"],
  ["T0.8","M0","D",5,"box","DONE 2026-09-14. The environment check, the navigation build and the ten navigation node tests all ran and all passed. What is left is W6, blocked on a faulty camera, and W8, which needs a person at the robot",[],"measure"],
   ["T0.9","M0","S",3,"lab","DONE 2026-09-16 for the manufacturer chassis. The Hexman Robotics ECHO-PLUS manual specifies 460 x 380 x 140 mm and a 265 mm stated rotation radius, so the 200 mm Nav2 radius is not conservative. Recheck the integrated footprint after mount fabrication",[],"measure"],
  ["T0.10","M0","D",6,"off","Added 2026-09-16. CI: wire up ./bench/run.sh (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. The real arm, base and glasses can never be in CI. Progress 2026-09-19: .github/workflows/bench.yml runs Tiers 0-1 strictly on PRs into main. Red until the 7 known static findings are fixed, all covered by T0.4. Not blocking merges until then. Tiers 2-3 still open",["T0.5"],"build"],
@@ -1060,14 +1182,14 @@ var T = [
 
  ["T3.1","M3","Z",4,"box","DONE 2026-09-14. The navigation workspace compiles: 10 of 10 packages in 2 min 34 s, no Livox blocker. What remains is repeating it on Zongzhe's own machine as part of T0.5",["T0.4"],"bringup"],
  ["T3.2","M3","Z",5,"box","DONE 2026-09-14. Passed on the first run: 6 controls pass, all 4 expected failures reproduced, 0 skipped. E1, F1 and F2 are now observed rather than inferred, and F4 is new",["T3.1"],"measure"],
- ["T3.3","M3","Z",2,"off","Fix the missing arm-to-base transform during a mapping run, which today leaves the arm unconnected to the position tree",["T3.2"],"fix"],
- ["T3.4","M3","ZS",4,"lab","Drive the base under keyboard control. Confirm the LiDAR publishes",["T0.2","T3.1"],"bringup"],
- ["T3.5","M3","ZS",6,"lab","Build a map of the lab and localise in it",["T3.4"],"bringup"],
- ["T3.6","M3","ZS",5,"lab","Drive to a commanded point ten times. Record the position error each time",["T3.5"],"measure"],
- ["T3.7","M3","ZD",6,"lab","The navigation to arm handover on hardware: object position in, drive, arrived signal out",["T1.12","T3.6"],"wire"],
+ ["T3.3","M3","S",2,"off","Owner changed to Sherman 2026-09-20, Zongzhe reviews. Fix the missing arm-to-base transform during a mapping run, which today leaves the arm unconnected to the position tree",["T3.2"],"fix"],
+ ["T3.4","M3","S",4,"lab","Owner changed to Sherman 2026-09-20. Drive the base under keyboard control. Confirm the LiDAR publishes",["T0.2","T3.1"],"bringup"],
+ ["T3.5","M3","SD",6,"lab","Owner changed 2026-09-20: Sherman leads, Dion joins because he is at the robot for the camera and LiDAR calibration anyway. Build a map of the lab and localise in it",["T3.4"],"bringup"],
+ ["T3.6","M3","S",5,"lab","Owner changed to Sherman 2026-09-20. Drive to a commanded point ten times. Record the position error each time",["T3.5"],"measure"],
+ ["T3.7","M3","DS",6,"lab","The navigation to arm handover on hardware: object position in, drive, arrived signal out. The channels are CHANNEL_CONTRACT H2, H3 and H9",["T1.12","T3.6"],"wire"],
 
  ["T4.1","M4","A",8,"lab","One complete run, recorded on video: speak, look, drive, grasp",["T2.5","T3.7"],"measure"],
- ["T4.2","M4","D",6,"lab","Measure how long each stage takes. Report the 99th percentile, not the average",["T4.1"],"measure"],
+ ["T4.2","M4","S",6,"lab","Owner changed to Sherman 2026-09-20. Measure how long each stage takes. Report the 99th percentile, not the average",["T4.1"],"measure"],
  ["T4.3","M4","A",0,"off","Keep the defect log from the first powered session onward. One line per bug: symptom, guess, actual cause. Ongoing, not a block",["T1.6"],"measure"],
 
   ["T5.1","M5","S",2,"lab","DONE 2026-09-16. An Intel RealSense D455 is provided to the project. USB 3 connection and live RGB-D stream verification remain T0.1",["T0.1"],"plan"],
@@ -1078,6 +1200,7 @@ var T = [
  ["T5.6","M5","D",4,"box","Verify the calibration by projecting LiDAR points into the camera image. Keep the picture, it goes in the paper",["T5.5"],"measure"],
  ["T5.7","M5","D",12,"box","Choose where camera poses come from and characterise the error: drift over a run, and the duplicate-object rate it causes in the graph. Start with the existing 2D localisation because it is free. A measurement study, not a configuration choice",["T3.5","T5.6"],"measure"],
  ["T5.8","M5","S",8,"lab","Build a trial fixture: marked object positions and marked robot start positions, so a trial can be repeated exactly",["T5.3"],"build"],
+ ["T5.9","M5","S",24,"mix","Added 2026-09-20. The escalation half of the pose-source study: if T5.7 says 2D localisation is the limiting factor, bring up FAST-LIVO2 and measure it on the same drift and duplicate-object metrics. Staged on purpose, do not start before T5.7 has a number. The known blocker is a time-synchronised camera, so the first hour goes on sensor synchronisation, not the algorithm. Sherman owns the hardware, recording and evaluation runs, paired with Zongzhe for the software bring-up",["T5.7"],"measure"],
 
  ["T6.1","M6","Z",4,"off","Read the upstream HiCo-Nav code. Settle which solvers it needs and whether their licences are acceptable",[],"plan"],
  ["T6.2","M6","S",4,"lab","Record data of the lab with the base camera: images, depth, LiDAR, positions",["T5.6"],"measure"],

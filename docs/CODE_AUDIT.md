@@ -793,14 +793,26 @@ publishers racing on the same three topics.
 
 ## Open questions for you
 
-1. **A3 — was `USE_SIMPLE_EXECUTE = true` a deliberate bring-up shortcut, or did someone forget to
-   flip it back?** It changes what "the grasp pipeline" even means right now.
-2. **B4 — who changed `HOME_JOINTS`, and against what?** If nobody knows, the first hardware run
-   should use the `realman_manip` values, since those are the ones the safety doc describes.
-3. **A1 — is the inverted gate a typo, or was there a reason to run detection during IDLE**
-   (e.g. pre-computing candidates before the approach)? If the latter, A2 is the bug instead.
-4. **D1 — what was meant to publish `/manipulator/release`?** Voice ("release" → the LLM returns the
-   word, not a Bool), a button, or the visualiser? The orchestrator has no other way to finish.
+1. ✅ **A3 — was `USE_SIMPLE_EXECUTE = true` a deliberate bring-up shortcut? Answered 2026-09-20:
+   treat it as deliberate and leave it `true` for now.** Bring-up proceeds step by step, and the
+   previous team most likely set it for a reason. It hides A1 and A2, so both are fixed before
+   anyone flips it. `CHANNEL_CONTRACT` §6 B-1.
+2. ✅ **B4 — who changed `HOME_JOINTS`? Answered 2026-09-20: use the `realman_manip` values**, the
+   ones the safety document describes. ⚠️ **Trust neither set.** Dion's instruction is to
+   recalibrate and validate the pose on the simulated arm before any powered run.
+   `CHANNEL_CONTRACT` §6 B-2, task T1.3.
+3. ✅ **A1 — typo. Answered 2026-09-20: AnyGrasp runs during `EXECUTING`, so A1 is the bug and A2
+   is correct.** `[code]` The sequence is `SELECTING` (step the arm toward the segmentation centroid
+   4 cm at a time until the object is under 0.18 m away), then `EXECUTING` (AnyGrasp proposes, wait
+   for a pose stable across 5 frames, then plan and execute the final move),
+   `grasp_state_machine.cpp:625-716`. Candidates are therefore computed after the object is
+   identified and approached and before the final planned move. Pre-computing while idle is not
+   useful: candidates are in the camera frame and the wrist camera moves during the approach.
+   `CHANNEL_CONTRACT` §6 G-4.
+4. ✅ **D1 — what publishes `/manipulator/release`? Answered 2026-09-20: the Aria side**, publishing
+   `Bool(true)` when the spoken word is "release". With the return leg out of scope the order is:
+   the grasp finishes, the state machine publishes `/manipulation/done` (B-5), then release is
+   accepted. ⚠️ The keyword path has its own defect, B7. `CHANNEL_CONTRACT` §3 H10 and §6 A-1.
 5. ✅ **I1 — which launcher owns `background.launch.py`? Answered 2026-09-20:
    `ros2_robot_ws/src/main.py` owns it.** Delete the launch in `orchestrator.py:69-74`.
 
@@ -820,9 +832,12 @@ publishers racing on the same three topics.
    **This sits inside a larger decision.** See [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.14. If the
    phase-gated design lands, the orchestrator stops launching processes at all and the duplicate
    disappears by construction. The deletion above is correct either way, so it is not wasted work.
-6. **E1/E2 — should `/aria/fused_pose` be in `map` or in `robot_base_link`?** The publisher's
-   variable names say `map`, its stamp says `robot_base_link`, and its only consumer assumes `map`.
-   Two of those three have to change.
+6. ⏸ **E1/E2 — should `/aria/fused_pose` be in `map` or in `robot_base_link`? Parked 2026-09-20.**
+   Its only consumer is the return-to-user leg, which `PROJECT_PLAN` §4 puts out of scope, so the
+   frame is not fixed now. Pose fusion is parked rather than dropped: a later gaze-in-3D method
+   would want the glasses transform. If it comes back, this question comes back with it.
+   `CHANNEL_CONTRACT` §3 H13 and §6 A-2. The publisher's variable names say `map`, its stamp says
+   `robot_base_link`, and its only consumer assumes `map`. Two of those three have to change.
 
 ---
 
@@ -843,3 +858,4 @@ publishers racing on the same three topics.
 | 2026-09-14 | Claude (Opus 5) + Dion | **W7 ran on the box** (`bench/nav_nodes.sh`, 10 cases, [`bench-runs/2026-09-14-labbox-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt)): 6 controls pass, 4 expected failures reproduced, nothing skipped, no fix needed on the first run. **E1, F1 and F2 move from `[unverified]` to `[observed]`**, each matching the mechanism this audit predicted — E1's goal landed 2.0 m out; F1 wedged the approach node so a second object got no goal; F2's `_returning` latch refused every later return. J4 is *not* a problem at MID360 rates (50/50 frames of 520 kB at 10 Hz, 1.9 ms mean latency), so the QoS relay case is a clean control, not a finding. New finding **F4**: all five nav nodes exit with a traceback on Ctrl+C, in three shapes, the first identical to B2's double-shutdown; `goto_glasses`'s `_cancel_navigation()` is never called on shutdown (`[inferred]`). The audit now holds **51** findings. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Repointed citations of `RCP_NEW_USER_STARTUP_GUIDE.md` to its new home, `docs/archive/`, after T0.0 brought it onto `main`. |
 | 2026-09-20 | Claude (Opus 5) + Dion | **Open question 5 answered: `ros2_robot_ws/src/main.py` owns `background.launch.py`, delete `orchestrator.py:69-74`.** Reasoning recorded under the question and pointed to from I1. Refreshed I1's line citations against the working tree (`orchestrator.py:70`, `:84`, `ros2_robot_ws/src/main.py:101`). Flagged that the fix sits inside the larger phase-gating decision now in `NEXT_STEPS.md` §2.14, and is correct either way. Five open questions remain. |
+| 2026-09-20 | Claude (Opus 5) + Dion | **Five more open questions answered in `T0.7`** (see [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) §6): A3 stays `true` for bring-up, B4 uses the `realman_manip` home pose but recalibrate first, A1 is a typo so AnyGrasp runs during `EXECUTING`, `/manipulator/release` comes from the Aria side after `/manipulation/done`, and E1/E2 is parked with the out-of-scope return leg. All six open questions are now answered or parked. |

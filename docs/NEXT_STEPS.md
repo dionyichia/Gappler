@@ -77,6 +77,13 @@ Answer by reading the paper. Plugin table in ORIENTATION §10.
 > here". That is a smaller change than this item feared. Still `[open]`: which of the seven contract
 > topics change ownership.
 
+> ✅ **Answered for the contract topics, 2026-09-20 (`T0.7`).** The graph answers queries, it does
+> not drive. Dion's `T7.1` node reads the graph and writes `/manipulation/goal_pose`, keeping that
+> channel's meaning unchanged. The frontier layer, if M9 happens, writes `/goal_pose`. The graph is
+> reached through a ROS service. See [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) §4 P2 and §6 N-2,
+> N-3. What is still open is the research-scope half of this question: full memory graph, or
+> navigate-to-named-object. That one decides the YOLO-World line in §2.14.
+
 `[open]` **This may shrink the work below substantially.** HiCo-Nav registers observed objects
 into a memory graph. If that graph becomes the source of "where is the thing I was asked for",
 then several things change at once:
@@ -109,6 +116,18 @@ There is no triggering *policy* anywhere, just "on frame".
 > ([`hico-nav/PAPER_REPORT.md`](hico-nav/PAPER_REPORT.md) §4.4a), and §2.14 below works out which of
 > its three models we actually need. The "graph-driven" and "event-driven" rows below turn out to be
 > the same row.
+
+> ✅ **Trigger policy decided 2026-09-20 (Dion, `T0.7`).** Which camera's detection runs in which
+> phase:
+>
+> | Phase | Glasses | Base camera | Wrist camera |
+> |---|---|---|---|
+> | 1, navigating | yes | yes | no |
+> | 2, grasping | yes today, probably no once the graph carries the instance | no | yes |
+>
+> Dion owns both the segmentation service and its trigger, so `T6.5` shrinks to publishing the
+> trigger. The channel is [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) §4 P4, and the phase table
+> lines up with the model residency plan in §2.14 below.
 
 Candidate approaches, cheapest first:
 
@@ -220,6 +239,12 @@ the perception stack, it is worth 30 seconds to fix — retarget it to `/camera/
 them. Renaming is cheap individually but **risky piecemeal**: ROS matches topic and frame names as
 plain strings at runtime, so a rename that misses one occurrence fails silently on the robot
 rather than at build time.
+
+> **Target names are frozen, 2026-09-20.** [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) §7 holds the
+> today-name to target-name table, including `/object_centroid_2d` (G-6), the `/manipulation` versus
+> `/manipulator` prefix (B-6), the bare `/goal_pose` and `/goal_reached` (N-6) and the wrist camera
+> becoming `/arm_camera/*` (N-4). The decision was to freeze today's names in the contract and rename
+> in one pass later, not now.
 
 Do it as one pass, with `grep -rn` on each old string, and land it as its own commit so it can be
 reverted cleanly. Suggested order — cheapest and safest first:
@@ -527,7 +552,12 @@ place instead of being discovered file by file.
 duplicated constants (§2.4 step 2, already planned) → then topics as parameters, one subsystem at a
 time, re-running `./bench/run.sh` across each step.
 
-**Open decision for you:** whether the target is one repo-wide config tree, or one per subsystem
+> ✅ **Decided 2026-09-20 (Dion):** one config tree **per subsystem**, with a shared constants
+> package underneath. It fits the three-workspace structure and the four-folder layout in
+> [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) §6 G-2. Sequencing below is unchanged: teach the
+> bench's extractor first, or the refactor removes its own safety net.
+
+**The original question:** whether the target is one repo-wide config tree, or one per subsystem
 with a shared constants package underneath. The second fits the three-workspace structure better and
 is less disruptive to the reorg; the first is what makes everything visible from one file. Worth
 settling before §2.4's rename pass, since both touch the same strings.
@@ -986,10 +1016,11 @@ tidiness item, and it does not need the lab machine. See §2.5.
 
 ⚠️ **One at a time, so failures are attributable.** All four are described in ORIENTATION §6.
 
-> **Scope conflict, 2026-09-19.** The "Yes" rows for §6.3 and §6.4 below predate the scope decision
-> in [`PROJECT_PLAN.md`](PROJECT_PLAN.md) §4, which puts the return-to-user leg and the pose fusion
-> node **out of scope**. `PROJECT_PLAN` §4 is the source of truth for scope. The rows are kept for
-> history until Dion confirms the scope call in T0.7.
+> ✅ **Settled 2026-09-20 in `T0.7`.** The return-to-user leg is **out of scope**, so the "Yes" rows
+> for §6.3 and §6.4 below are history, not plan. The four return-leg channels have no owner
+> ([`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) §3). Pose fusion is **parked rather than dropped**,
+> because a later gaze-in-3D method would want the glasses transform. Out-of-scope code is commented
+> out with a note saying why, not deleted, so it can come back (N-1).
 
 | Seam | Restore for the HiCo-Nav milestone? | Note |
 |---|---|---|
@@ -1045,3 +1076,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-20 | Claude (Opus 5) + Dion | **§2.2 decided: retire `sam3_ros_node.py` (Option 2).** Two reasons added: `object_recognition_pipeline.py` already subscribes to both cameras and holds the cross-view matcher, so the unified service is mostly written, and the duplicate 3.21 GB model is the largest VRAM saving in the system. Retiring it also closes L1 and the segmentation half of B3. Sequencing behind §1.3 and §2.1 is unchanged. |
 | 2026-09-20 | Claude (Opus 5) + Dion | **Added §2.14: GPU budget, phase-gated model residency, and which HiCo-Nav models we need.** Target design is every process booted and idle with the models gated by phase, and the state machine subscribing to `/manipulation/start` as a real gate, which closes CODE_AUDIT B6. Key finding: navigation is the tight phase, not grasping, and a local Qwen3-Omni does not fit on a 16 GB card at all. MobileSAM is replaceable by SAM3, YOLO-World probably is not, CLIP needs an API check. The OOM risk is at the phase transition, not in either steady state. Four open threads recorded. Not yet in `PROJECT_PLAN` or the task map. |
 | 2026-09-20 | Claude (Opus 5) + Dion | §2.6b: CODE_AUDIT open question 5 answered, so the I1 row now names the owner (`ros2_robot_ws/src/main.py`) and the deletion (`orchestrator.py:69-74`). Five open questions left. §2.1: pointer to the HiCo-Nav cascade and §2.14. |
+| 2026-09-20 | Claude (Opus 5) + Dion | `T0.7` landed as [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md). §1.3 answered for the contract topics, §2.1 gains the decided phase-based trigger policy, §2.4 points at the frozen rename targets, §2.10's config question answered (one tree per subsystem plus a shared constants package), §4's scope conflict settled: return leg out, pose fusion parked. |

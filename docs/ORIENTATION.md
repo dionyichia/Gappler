@@ -436,26 +436,25 @@ pixel-registered to colour.
 
 ### The nav ↔ manipulation contract ★
 
-**This is the boundary that matters for HiCo-Nav integration.** Everything above is internal to
-one subsystem; these eight topics are the seams between them. Who owns each one is being settled
-in `PROJECT_PLAN` T0.7 (the channel contract). Once that lands, the contract is the single source
-and this table points to it.
+**Moved 2026-09-20.** The handover list, who owns each channel, its type, frame and QoS, and what is
+parked with the return leg now live in one place: [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md),
+written as `T0.7`. This section used to carry a second copy and they drifted, so it no longer does.
 
-| Topic | Type | Direction | Meaning |
-|---|---|---|---|
-| `/manipulation/goal_pose` | `PoseStamped` (base_link) | perception → nav | "the object is here" |
-| `/goal_pose` | `PoseStamped` (map) | nav-internal → Nav2 | "drive here" |
-| `/manipulation/start` | `Bool` | nav → orchestrator | "in position, go grasp". `[code]` It makes the orchestrator launch `main.py` as a new process (`orchestrator.py:84`), not signal a running state machine |
-| `/manipulator/return_to_user` | `Bool` | arm → nav | "got it, take me back" |
-| `/return_to_user/goal_reached` | `String` `"success"`/`"failed"` | nav → **nothing today** `[code]`. The orchestrator's subscription is commented out (`orchestrator.py:57-59`) | return leg done |
-| `/goal_reached` | `String` | nav → approach node | resets the approach guard |
-| `/manipulator/release` | `Bool` | **nothing publishes it** `[code]` (CODE_AUDIT D1). Intended: voice → orchestrator | "let go" |
-| `/manipulation/done` | `Empty` | → approach node | cycle finished |
+The short version, for reading the rest of this document:
+
+- Perception says where the object is on `/manipulation/goal_pose`, in the **arm's** frame.
+- Navigation turns that into a map-frame goal on `/goal_pose` and drives there.
+- Navigation says it has arrived on `/manipulation/start`.
+- Four more channels exist for the return-to-user leg. `PROJECT_PLAN` §4 puts that leg out of scope,
+  so they have no owner. `[code]` They are still wired, and `/manipulator/return_to_user` still
+  fires on every successful grasp.
+- `[code]` Two of the contract's channels have **no publisher at all**: `/manipulation/done` and
+  `/manipulator/release`. Contract §3 says who will publish them.
 
 `[code]` `object_approach_node` subscribes to **five** topics, not the two you would guess:
 `/manipulation/goal_pose`, `/goal_reached`, `/aria/audio/prompt`, `/manipulation/done`,
 `/manipulator/release` (`object_approach_node.py:74-88`). It listens to the raw voice prompt
-directly — so voice reaches navigation even while §6.2 keeps it out of segmentation.
+directly, so voice reaches navigation even while §6.2 keeps it out of segmentation.
 
 ### Nav-internal
 
@@ -1237,3 +1236,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-19 | Claude (Opus 5) + Dion | §8.4 marked fixed by T0.3, pointing at NEXT_STEPS §2.5 for what is still open. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §5 contract table: count corrected to eight topics. `/return_to_user/goal_reached` has no consumer today (orchestrator subscription commented out). `/manipulation/start` launches `main.py` as a process. Pointer to T0.7 as the future single source. Fixed the broken link to `sherman_docs/T0.2_SESSION.md`. |
 | 2026-09-20 | Claude (Opus 5) + Dion | §8.11b: the double `background.launch.py` launch now names its owner. CODE_AUDIT open question 5 is answered: `ros2_robot_ws/src/main.py` owns it, delete `orchestrator.py:69-74`. Pointer to the new `NEXT_STEPS.md` §2.14 on whether anything should launch processes mid-task at all. |
+| 2026-09-20 | Claude (Opus 5) + Dion | §5's nav ↔ manipulation table replaced by a pointer to the new [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md), which is now the single source for channel ownership, types, frames and QoS (T0.7, decision T-5). A four-line summary stays here for reading the rest of §5. |
