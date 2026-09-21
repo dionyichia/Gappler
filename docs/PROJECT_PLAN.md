@@ -1,5 +1,10 @@
 # PROJECT PLAN: milestones, task tree and who does what
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **What this is.** The layer above [`NEXT_STEPS.md`](NEXT_STEPS.md). `NEXT_STEPS` is a register of
 everything we could do. This file decides what we *will* do, in what order, by when, and who owns
 each piece. It also answers one question Dion raised directly: can three people work on this at the
@@ -1041,3 +1046,4 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-21 | Claude (Opus 5) + Dion | §4.2: the full reorg moved into scope. Spec in `NEXT_STEPS` §2.15. No new task ID: it rides with T0.11, whose suites follow the folder layout. |
 | 2026-09-21 | Claude (Opus 5) + Dion | T3.5 points to the nav map findings in `NEXT_STEPS` §2.15 "For Sherman". `next-steps-map.html` task data updated to match, republish owed (the refactor is still going). |
 | 2026-09-21 | Claude (Opus 5) + Dion | `shared/config.yaml` renamed to `shared/global_config.yaml` in the two current mentions (reorg step 2). The gaze topic's line cite corrected to `:13`. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |

@@ -96,9 +96,9 @@ def owned(msg: str) -> bool:
     return path.startswith(OWNED_PREFIXES) or path.startswith(BLOCKING_VENDOR)
 
 
-# Roots that end up on PYTHONPATH at runtime (ros2_robot_ws/src/main.py:120
-# puts src/ there explicitly; scripts dirs are added by ament install rules).
-IMPORT_ROOTS = ["src", "."]
+# Roots that end up on PYTHONPATH at runtime (main.py and launchers/start_grasp_pipeline.py
+# put aria/aria_app/ there explicitly; scripts dirs are added by ament install rules).
+IMPORT_ROOTS = ["aria/aria_app", "."]
 
 
 def is_excluded(p: Path) -> bool:

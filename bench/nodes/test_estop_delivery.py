@@ -34,7 +34,7 @@ except ImportError as e:
     sys.exit(3)
 
 REPO = Path(__file__).resolve().parents[2]
-ESTOP = REPO / "ros2_robot_ws/src/estop.py"
+ESTOP = REPO / "arm/estop/estop.py"
 ESTOP_TOPIC = "/rm_driver/emergency_stop_cmd"
 SOFT_TOPIC = "/rm_driver/move_stop_cmd"
 TRIALS = int(os.environ.get("BENCH_ESTOP_TRIALS", "5"))

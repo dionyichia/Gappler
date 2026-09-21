@@ -29,7 +29,7 @@ as a pass, and skipped levels do not fail the run.
 | L0 | Static checks | code parses, imports and launch file names resolve (`static.py`) | any machine | Tier 0-1 |
 | L1 | Contracts | no topic, frame or parameter name moved since the snapshot (`contracts.py`) | any machine | Tier 0-1 |
 | L2 | Lab box check | preflight: can this machine run L3-L4? Does not look at the robot (`preflight.py`) | any machine | preflight |
-| L3 | Build | colcon build of the arm and nav workspaces (`build.sh`) | ROS 2 Humble | Tier 2 |
+| L3 | Build | colcon build of the arm and nav code (`build.sh` at the repo root) | ROS 2 Humble | Tier 2 |
 | L4 | Simulation | simulated arm, e-stop, state machine, nav nodes vs mock Nav2, AnyGrasp env | ROS 2 Humble + L3 | Tier 3 |
 | L5 | Robot check | preflight `--hardware`: do the arm, wrist camera, LiDAR and glasses answer? Gates L6 | the lab box | new 2026-09-21 |
 | L6 | Hardware | the real arm test | a person with the e-stop, never automated | Tier 4 |
@@ -59,7 +59,7 @@ refused, 3 skipped — never a pass.
 
 | Script | What it checks | Extra guards |
 |---|---|---|
-| `build.sh [nav]` | Tier 2: colcon build of the arm workspace (`ros2_robot_ws/src`, `arm/vendor`, `grasp/vendor`) or, with `nav`, `Navigation_Module/src` and `nav/vendor`, into this checkout, with `--symlink-install`. `nav` first does the Livox prep: copies `nav/vendor/livox_ros_driver2/package_ROS2.xml` in as the (gitignored) livox `package.xml` if missing, passes the ROS 2 CMake flags, and warns if Livox-SDK2 isn't installed | only `/opt/ros/humble` may be sourced |
+| `../build.sh [nav]` | At the repo root since 2026-09-21 (the real build, not only a test). colcon build of `arm/` + `grasp/` or, with `nav`, `nav/`, vendor included, into this checkout, with `--symlink-install`. `nav` first does the Livox prep: copies `nav/vendor/livox_ros_driver2/package_ROS2.xml` in as the (gitignored) livox `package.xml` if missing, passes the ROS 2 CMake flags, and warns if Livox-SDK2 isn't installed | only `/opt/ros/humble` may be sourced |
 | `sim_moveit.sh` | MoveIt plans and executes to both home poses and zero on a `mock_components` arm | installed config must be mock hardware |
 | `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s` sent back to back, the Ctrl+C key and SIGINT (5 trials) all deliver? Every case is required since the 2026-09-21 fix | — |
 | `state_machine_sim.sh` | `grasp_state_machine` runs a full grasp cycle on the simulated arm; the test plays camera, detector and gripper | mock hardware; preflight's `arm-ping`/`arm-port` must not pass (Dion's exception in `CLAUDE.md`) |
@@ -133,7 +133,7 @@ system's interface — which is worth having in review on its own.
 
 `preflight.py` runs everything up to **but not including** commanding the arm. That line is
 enforced in the code, not just in a comment: the script never publishes to any `/rm_driver/*_cmd`
-topic and never launches `grasp_state_machine` or `ros2_robot_ws/src/main.py`, because both home
+topic and never launches `grasp_state_machine` or `launchers/start_grasp_pipeline.py`, because both home
 the arm within seconds of start, unprompted (`ORIENTATION.md` §8.1).
 
 Everything short of that is checked, in two runs. The default run (L2) covers the machine: GPU

@@ -14,7 +14,7 @@ because with no arm there is nothing for L6 to test.
 Runs everything that can be checked WITHOUT commanding the arm. The boundary is
 absolute and is enforced in code (see SAFETY below): this script never publishes
 to a /rm_driver/*_cmd topic and never launches grasp_state_machine or
-ros2_robot_ws/src/main.py, because both home the arm within seconds of start
+launchers/start_grasp_pipeline.py, because both home the arm within seconds of start
 (ORIENTATION.md 8.1). Everything up to that line is fair game -- network,
 drivers, TF tree, topic rates, model weights, licences, GPU.
 
@@ -301,7 +301,7 @@ def g_gpu() -> list[Check]:
 def g_ros() -> list[Check]:
     cs = []
 
-    c = Check("ros", "humble", "everything in ros2_robot_ws and Navigation_Module needs it")
+    c = Check("ros", "humble", "everything in arm/, grasp/ and nav/ needs it")
     if Path("/opt/ros/humble").exists():
         cs.append(c.ok(f"/opt/ros/humble present, ROS_DISTRO={os.environ.get('ROS_DISTRO','<unsourced>')}"))
     else:
@@ -394,10 +394,10 @@ def g_env() -> list[Check]:
 def g_assets() -> list[Check]:
     cs = []
     lab = on_lab_machine()
-    perception = REPO / "ros2_robot_ws/src/rm_mtc/src/perception"
+    perception = REPO / "grasp/rm_mtc/src/perception"
 
     c = Check("assets", "sam3-weights", "3.4 GB checkpoint, gitignored")
-    p = REPO / "src/models/sam3/sam3.pt"
+    p = REPO / "aria/aria_app/models/sam3/sam3.pt"
     if p.exists():
         cs.append(c.ok(f"{p.stat().st_size/1024**3:.2f} GB"))
     elif not lab:
@@ -406,9 +406,9 @@ def g_assets() -> list[Check]:
         cs.append(c.bad(f"missing: {p.relative_to(REPO)}", "copy it from the lab machine"))
 
     # The two AnyGrasp nodes want DIFFERENT checkpoints. The hardware-verified
-    # run used the tracking one; ros2_robot_ws/src/main.py:30 launches the
+    # run used the tracking one; launchers/start_grasp_pipeline.py launches the
     # detection one. Both are checked so the discrepancy is visible.
-    for fn, who in (("checkpoint_detection.tar", "anygrasp_detection_node.py (what main.py launches)"),
+    for fn, who in (("checkpoint_detection.tar", "anygrasp_detection_node.py (what start_grasp_pipeline.py launches)"),
                     ("checkpoint_tracking.tar", "anygrasp_node.py (what the 2026-08-25 session verified)")):
         c = Check("assets", f"anygrasp-{fn.split('_')[1].split('.')[0]}", f"needed by {who}")
         p = perception / "log" / fn
@@ -433,7 +433,7 @@ def g_assets() -> list[Check]:
     cs.append(c.ok(", ".join(sos)) if sos else c.bad("no .so files in perception/"))
 
     c = Check("assets", "slam-map", "slam_localization reads a prebuilt map")
-    ref = REPO / "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml"
+    ref = REPO / "nav/robot_slam/config/slam_toolbox_localization.yaml"
     want = None
     if ref.exists():
         m = re.search(r"map_file_name:\s*(\S+)", ref.read_text())

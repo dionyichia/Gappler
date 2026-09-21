@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Tier 2 -- does it build? Compiles into THIS checkout's build/ install/ log/
-# and nowhere else. Never launches a node, never touches hardware, no sudo.
+# Builds our ROS code into THIS checkout's build/ install/ log/ and nowhere else.
+# env.sh sources the result. The bench runs it as L3 (was bench/build.sh until 2026-09-21).
+# Never launches a node, never touches hardware, no sudo.
 #
-#   ./bench/build.sh          arm: ros2_robot_ws/src + arm/vendor + grasp/vendor (24 packages)
-#   ./bench/build.sh nav      Navigation_Module/src + nav/vendor, into build_nav/ install_nav/
+#   ./build.sh          arm/ + grasp/, vendor included (24 packages)
+#   ./build.sh nav      nav/, vendor included, into build_nav/ install_nav/
 #
 # --symlink-install: install/ links back to the repo instead of copying, so a Python
 # or launch-file edit takes effect without a rebuild. Switching an existing install/
@@ -20,12 +21,12 @@
 # Exit: 0 all packages built, 1 a package failed, 3 SKIPPED (no ROS here --
 # never reported as a pass).
 set -uo pipefail
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # this file sits at the repo root
 target="${1:-arm}"
 
 case "$target" in
-  arm) paths=(ros2_robot_ws/src arm/vendor grasp/vendor); bdir=build;     idir=install;     extra=() ;;
-  nav) paths=(Navigation_Module/src nav/vendor);            bdir=build_nav; idir=install_nav
+  arm) paths=(arm grasp); bdir=build;     idir=install;     extra=() ;;
+  nav) paths=(nav);       bdir=build_nav; idir=install_nav
        extra=(-DROS_EDITION=ROS2 -DHUMBLE_ROS=humble) ;;
   *)   echo "usage: $0 [arm|nav]"; exit 2 ;;
 esac
@@ -60,7 +61,7 @@ if [ "$target" = nav ]; then
   fi
 fi
 
-echo "Tier 2 build [$target]: ${paths[*]} -> $bdir/ $idir/   (log: $out)"
+echo "Build [$target]: ${paths[*]} -> $bdir/ $idir/   (log: $out)"
 start=$(date +%s)
 # MAKEFLAGS caps compile jobs so a shared machine stays usable.
 MAKEFLAGS="-j${BENCH_JOBS:-8}" colcon build \

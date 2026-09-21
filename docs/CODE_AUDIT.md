@@ -1,5 +1,10 @@
 # CODE AUDIT — 2026-09-10
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **What this is:** a line-by-line read of every file this project owns (~10,600 lines), tracing each
 connection from publisher to subscriber. Companion to [`ORIENTATION.md`](ORIENTATION.md) (what the
 system is) and [`NEXT_STEPS.md`](NEXT_STEPS.md) (what we intend to do).
@@ -891,3 +896,4 @@ publishers racing on the same three topics.
 | 2026-09-20 | Claude (Opus 5) + Dion | **Five more open questions answered in `T0.7`** (see [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) §6): A3 stays `true` for bring-up, B4 uses the `realman_manip` home pose but recalibrate first, A1 is a typo so AnyGrasp runs during `EXECUTING`, `/manipulator/release` comes from the Aria side after `/manipulation/done`, and E1/E2 is parked with the out-of-scope return leg. All six open questions are now answered or parked. |
 | 2026-09-21 | Claude (Opus 5) + Dion | **B2 now `[observed]`**: the e-stop's SIGINT stop was lost in 0-5 of 5 trials across four box runs. **New B2c `[observed]`**: `estop.py` drops a key pressed while the previous one is being handled, so S then E fast can lose the e-stop. Both found by `bench/estop_delivery.sh`. `code-audit-page.html` not yet updated with either, still owed. |
 | 2026-09-21 | Claude (Opus 5) + Dion | **B2, B2a and B2c fixed** in `estop.py` (task T1.2) and confirmed on the box: five runs of `bench/estop_delivery.sh`, every key and every stop path delivered, `kill -INT` 25 of 25. The Ctrl+C and SIGINT cases are now required checks. `code-audit-page.html` still owes these updates. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |

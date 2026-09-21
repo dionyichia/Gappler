@@ -1,5 +1,10 @@
 # CHANNEL CONTRACT
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **What this is.** The one place that says which subsystem owns which message channel, and what
 passes between subsystems. It is task `T0.7` in [`PROJECT_PLAN.md`](PROJECT_PLAN.md), settled by
 Dion on 2026-09-20.
@@ -313,3 +318,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-09-20 | Claude (Opus 5) + Dion | `next-steps-map.html` republished with the new ownership section, the owner changes and T0.7 marked done. `wiring-map.html` §8 gained a pointer to this file and was republished (version 5). ⚠️ Its share pin still points at the old version, so viewers see the previous page until the pin is moved from the page's Share menu. |
 | 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |
 | 2026-09-21 | Claude (Opus 5) + Dion | X7: `shared/config.yaml` renamed to `shared/global_config.yaml` (reorg step 2). |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |

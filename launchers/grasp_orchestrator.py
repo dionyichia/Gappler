@@ -21,8 +21,9 @@ from rclpy.node import Node
 from rm_ros_interfaces.msg import Gripperset
 from std_msgs.msg import Bool, String
 
-MAIN_PY_DIR = str(ROOT / "ros2_robot_ws/src")
-MAIN_PY_PATH = f"{MAIN_PY_DIR}/main.py"
+# Started when the start-grasp message arrives: the camera, arm and grasp nodes.
+PIPELINE_DIR = str(ROOT / "launchers")
+PIPELINE_PATH = f"{PIPELINE_DIR}/start_grasp_pipeline.py"
 
 processes: list[tuple[str, subprocess.Popen]] = []
 
@@ -80,7 +81,7 @@ class Orchestrator(Node):
             return
         self._started = True
         self.get_logger().info("Start received — launching main.py")
-        launch(["python3", MAIN_PY_PATH], label="main", cwd=MAIN_PY_DIR)
+        launch(["python3", PIPELINE_PATH], label="main", cwd=PIPELINE_DIR)
 
     # ------------------------------------------------------------------
     # def _on_return_to_user(self, msg: Bool):

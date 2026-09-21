@@ -1,5 +1,10 @@
 # NEXT STEPS — work register
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in §2.15 of this file,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 Companion to [`ORIENTATION.md`](ORIENTATION.md) (what the system *is*),
 [`ARCHITECTURE.md`](ARCHITECTURE.md) (diagrams) and [`READING_GUIDE.md`](READING_GUIDE.md) (a
 guided walk through the code). **This file is what we intend to *do*.** Index:
@@ -1046,8 +1051,39 @@ Run `./bench/run.sh` before and after every step.
    step 5, and the AnyGrasp `.so` files stay in `rm_mtc` until the node moves. `temp.urdf` deleted.
    **OpenVINS (`aria/vendor/open_vins/`) is unused and a candidate for deletion**: nothing builds
    or runs it, and pose fusion, its only user, is parked. It carries a `COLCON_IGNORE` saying so.
-4. **Our code moves**, one subsystem per PR. Package names stay the same, so launch files and
-   `ros2 run` keep working. A pure move must leave L1 at 0 changes.
+4. ✅ **Done 2026-09-21 (on the branch).** **Our code moves.** Package names stay the same, so
+   launch files and `ros2 run` keep working. Commit `9d0cc60` is the moves (207 renames) plus the 4
+   `.gitignore` rules that name moved files. The next commit fixed the references: launchers,
+   `PYTHONPATH`, both builds (`arm grasp` and `nav`), `OWNED_PREFIXES`, the bench, CLAUDE.md's safety
+   rule. L1 shows only moves. SAM3 segmentation stays inside the Aria app until §2.2 merges the two
+   copies. `ros2_robot_ws/install.sh` deleted and `bench/build.sh` moved to the repo root as
+   `build.sh` (Dion: `bench/` holds test-bench tools only), so `ros2_robot_ws/` and
+   `Navigation_Module/` are gone. The launchers got
+   descriptive names in `launchers/` (not `launch/`, which would shadow ROS's `launch` library).
+
+   **Where things moved (old path → new path).** Use this to read older cites in every doc:
+
+   | Old | New |
+   |---|---|
+   | `src/` (the Aria app) | `aria/aria_app/` |
+   | `src/services/object_recognition/` (SAM3) | `aria/aria_app/services/object_recognition/` |
+   | `src/models/` | `aria/aria_app/models/` |
+   | `ros2_robot_ws/src/rm_mtc/` | `grasp/rm_mtc/` |
+   | `ros2_robot_ws/src/rm_ros_interfaces/` | `arm/rm_ros_interfaces/` |
+   | `ros2_robot_ws/src/estop.py` | `arm/estop/estop.py` |
+   | `ros2_robot_ws/src/main.py` | `launchers/start_grasp_pipeline.py` |
+   | `ros2_robot_ws/src/orchestrator.py` | `launchers/grasp_orchestrator.py` |
+   | `Navigation_Module/src/<pkg>/` (`robot_slam`, `robot_navigation`, `simple_teleop`, `echo_plus_driver`) | `nav/<pkg>/` |
+   | `ros2_robot_ws/src/rm_*`, `eg2_4b_description` (RealMan) | `arm/vendor/` |
+   | `deps_ws/src/moveit_task_constructor/`, `grasp_module/src/anygrasp_sdk/`, `grasp_module/dependencies/MinkowskiEngine/` | `grasp/vendor/` |
+   | `Navigation_Module/src/{livox_ros_driver2,Livox-SDk2,base,drivers,urdf,demo}/` | `nav/vendor/` |
+   | `Navigation_Module/OpenVINS/` | `aria/vendor/open_vins/` (unused) |
+   | `shared/config.yaml` | `shared/global_config.yaml` |
+   | `ros2_robot_ws/src/output.log` | `docs/archive/output.log` |
+   | `bench/build.sh` | `build.sh` (repo root: it is the real build, not only a bench tool) |
+   | `ros2_robot_ws/install.sh` | deleted, replaced by `build.sh` |
+
+   Line numbers inside moved files are unchanged by the move itself.
 5. **Splits into per-node packages.** `rm_mtc` into `grasp_state_machine`, `anygrasp_node` and
    `segmentation`, the `robot_slam` scripts into their own packages, and `rm_ros_interfaces` into
    ours and theirs (§2.11 step 3). These change package names, so launch files change too. L1 will
@@ -1274,3 +1310,5 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-21 | Claude (Opus 5) + Dion | Added §2.15: the full reorg is in scope. Target layout (four subsystems, one folder per package, `vendor/` per subsystem), three config levels with each value written once, `GAPPLER_ROOT` plus one path helper so no file finds the repo by itself, and a six-step order that teaches the bench to read YAML first. §2.11's gap note points to it. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.15: steps 1 and 2 done on the branch, now one branch `t0.10-t0.11-refactor`. Flat config names (`shared/global_config.yaml`, `<subsystem>/<subsystem>_config.yaml`). `gappler_common` finds the root from its own place, replacing the `GAPPLER_ROOT` plan. New step 7, per-subsystem env files, last. New block for Sherman: the two nav launch files, the missing Nav2 map default, the dead `map_file_name` line. Docs renamed to `shared/global_config.yaml` where they describe today. **Republish owed** for `wiring-map.html` (cites and the C1 fix) and `next-steps-map.html` (T3.5), held until the refactor ends. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.15 step 3 done on the branch: vendor code in `<subsystem>/vendor/`, `deps_ws/` and `grasp_module/` gone, OpenVINS marked unused and a deletion candidate. §2.11 steps 1, 2 and 4 marked done, its hardcoded-path table resolved. Current paths updated in §2.5, §2.6, §2.9, §3.1 and §3.2. Step 2 passed the full bench on the box (L0-L4). |
+| 2026-09-21 | Claude (Opus 5) + Dion | §2.15 step 4 done on the branch: our code in `aria/`, `arm/`, `grasp/`, `nav/`, launchers renamed into `launchers/`. Added the old-to-new path table that older cites across the docs rely on. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |

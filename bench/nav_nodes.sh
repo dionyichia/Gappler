@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Tier 3 -- the navigation nodes against synthetic inputs (TESTBENCH_PLAN W7).
 # object_approach_node, goal_reached_publisher, goto_glasses, qos_relay and
-# pose_publisher, each started fresh from Navigation_Module/src/robot_slam/scripts/.
+# pose_publisher, each started fresh from nav/robot_slam/scripts/.
 # Nothing can drive: no Nav2 and no base driver exist on the private channel;
 # the test's mock navigate_to_pose server only records goals.
 #

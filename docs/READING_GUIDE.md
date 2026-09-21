@@ -1,5 +1,10 @@
 # READING GUIDE — a guided walk through the codebase
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 A round-by-round walkthrough for someone who has never seen this repo and has no ROS 2 experience.
 [`ORIENTATION.md`](ORIENTATION.md) §4 lists *which* files to read; this file explains *what to
 notice in them* and why it matters.
@@ -497,3 +502,4 @@ might that `return` at `:721` have been put there deliberately? ⬜ **open**
 | 2026-09-13 | Claude (Opus 5) + Dion | Round 3 written out in full (§3.1–3.6) from the walkthrough, replacing the five-line outline: per-file notes, the state machine's key lines as a table, and §3.6's "centroid-driven, not grasp-driven". **Corrected an error in the old outline**, which said `anygrasp_detection_node.py` runs during EXECUTING — it gates on `!= "IDLE"` (`:182`), i.e. only while IDLE, which is CODE_AUDIT A1. Line counts and anchors re-verified. §3.7 added with three open check questions. |
 | 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §1.1: the shared config is now `shared/global_config.yaml` (reorg step 2). It also holds machine paths now. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |

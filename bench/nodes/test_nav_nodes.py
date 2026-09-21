@@ -3,7 +3,7 @@
 Run by bench/nav_nodes.sh, which has already proven the ROS channel is private and
 empty. Nothing here can drive: there is no Nav2 and no base driver on this channel,
 and MockNav2 below -- standing in for Nav2's navigate_to_pose -- only records goals.
-Each case starts its node(s) fresh from Navigation_Module/src/robot_slam/scripts/
+Each case starts its node(s) fresh from nav/robot_slam/scripts/
 (the files robot_slam's CMakeLists installs), so the nav build is not needed.
 
   control  approach, far object         /goal_pose 0.78 m from the object, facing it
@@ -46,7 +46,7 @@ except ImportError as e:
     sys.exit(3)
 
 REPO = Path(__file__).resolve().parents[2]
-SCRIPTS = REPO / "Navigation_Module/src/robot_slam/scripts"
+SCRIPTS = REPO / "nav/robot_slam/scripts"
 LOG = REPO / os.environ.get("BENCH_NAV_LOG", "log/bench_nav_nodes.txt")
 # robot_base_link -> base_link (the arm), as slam_localization.launch.py:102 publishes it
 ARM_MOUNT = (0.18, 0.0, 0.48, math.pi)

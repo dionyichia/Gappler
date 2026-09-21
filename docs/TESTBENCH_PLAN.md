@@ -1,5 +1,10 @@
 # TESTBENCH PLAN — handoff for the next session
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **Purpose:** everything a fresh session needs to continue building the test bench, cold, without
 re-deriving anything. Written 2026-09-11 at the end of the session that built `bench/` tiers 0–1 and
 the preflight tier, and wrote [`CODE_AUDIT.md`](CODE_AUDIT.md).
@@ -739,3 +744,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-21 | Claude (Opus 5) + Dion | "Start here" points to `NEXT_STEPS` §2.15, the reorg spec. |
 | 2026-09-21 | Claude (Opus 5) + Dion | C1 fixed: the contract extractor reads config, so topics moved into YAML during the reorg stay visible. Contracts re-snapshotted, 13 Aria topics now show publishers. New L1 self-test `bench/test_contracts.py`. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Reorg step 3: current paths and build recipes point at `<subsystem>/vendor/`. Past run records (W5, the box survey) left as they were. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |

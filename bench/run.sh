@@ -68,9 +68,9 @@ elif [ $lab = 0 ]; then
   row L3 "Build" SKIPPED "needs the lab box (see L2)"
   row L4 "Simulation" SKIPPED "needs the lab box (see L2)"
 else
-  arm=$(step "L3  Build: arm workspace" ./bench/build.sh arm)
+  arm=$(step "L3  Build: arm workspace" ./build.sh arm)
   row L3 "Build: arm" "$arm" ""
-  s=$(step "L3  Build: nav workspace" ./bench/build.sh nav)
+  s=$(step "L3  Build: nav workspace" ./build.sh nav)
   row L3 "Build: nav" "$s" ""
   if [ "$arm" != PASS ]; then
     row L4 "Simulation" SKIPPED "arm build did not pass (see L3)"

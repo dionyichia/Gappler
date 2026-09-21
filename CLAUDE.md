@@ -52,8 +52,9 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
 
 ## Safety — this code moves a real robot arm
 
-- Never launch `grasp_state_machine`, `ros2_robot_ws/src/main.py`, `ros2_robot_ws/src/orchestrator.py`
-  or root `main.py`. The state machine homes the arm within seconds, unprompted, to a home pose that
+- Never launch `grasp_state_machine`, `launchers/start_grasp_pipeline.py`, `launchers/grasp_orchestrator.py`
+  or root `main.py` (the two launchers were `ros2_robot_ws/src/main.py` and `orchestrator.py` until
+  2026-09-21). The state machine homes the arm within seconds, unprompted, to a home pose that
   has never been validated. **One exception (Dion, 2026-09-11):** `bench/state_machine_sim.sh` may
   launch the state machine against the *simulated* arm, behind its guards (mock hardware, private
   channel, no `rm_driver`, preflight shows the arm unreachable).
@@ -91,7 +92,7 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
 ./bench/run.sh report                  # contract inventory + orphan analysis
 python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract change
 # lab box only (ROS + the built overlay):
-./bench/build.sh [nav]                 # L3: colcon build into this checkout
+./build.sh [nav]                       # L3: colcon build into this checkout (was bench/build.sh)
 ./bench/sim_moveit.sh                  # L4: MoveIt on a simulated arm
 ./bench/estop_delivery.sh              # L4: does estop.py's stop message leave
 ./bench/state_machine_sim.sh           # L4: grasp state machine on the simulated arm

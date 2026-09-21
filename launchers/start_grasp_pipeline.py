@@ -1,7 +1,7 @@
 """
-Main orchestrator for the robot grasping pipeline.
-Run from ros2_robot_ws/ with:
-    python main.py
+Starts the robot grasping pipeline. launchers/grasp_orchestrator.py runs it when the
+start-grasp message arrives. By hand, after `source env.sh`:
+    python3 launchers/start_grasp_pipeline.py
 
 Launches in order:
   1. ROS2 bringup (rm_driver, robot_state_publisher, move_group, rm_control)
@@ -26,21 +26,21 @@ from gappler_common import ROOT
 # Paths, from the repo root that gappler_common finds (NEXT_STEPS 2.15)
 # ---------------------------------------------------------------------------
 REPO_ROOT = str(ROOT)
-HERE = os.path.join(REPO_ROOT, "ros2_robot_ws/src")
+PERCEPTION = os.path.join(REPO_ROOT, "grasp/rm_mtc/src/perception")
 
 ANYGRASP_CONDA_ENV = "anygrasp"
-ANYGRASP_DIR = os.path.join(HERE, "rm_mtc/src/perception")
+ANYGRASP_DIR = PERCEPTION
 ANYGRASP_CHECKPOINT = "log/checkpoint_detection.tar"  # relative to ANYGRASP_DIR
 
 
 ANYGRASP_NODE_PATH = os.path.join(
-    HERE, "rm_mtc/src/perception/anygrasp_detection_node.py"
+    PERCEPTION, "anygrasp_detection_node.py"
 )
 SAM3_PROJECT_ROOT = REPO_ROOT
-SAM3_NODE_PATH = os.path.join(HERE, "rm_mtc/src/perception/sam3_ros_node.py")
-SAM3_WORK_DIR = os.path.join(REPO_ROOT, "src/services/object_recognition")
-GRASP_VIZ_NODE_PATH = os.path.join(HERE, "rm_mtc/src/perception/grasp_viz.py")
-RVIZ_CONFIG_PATH = os.path.join(HERE, "rm_mtc/src/perception/rviz_config.rviz")
+SAM3_NODE_PATH = os.path.join(PERCEPTION, "sam3_ros_node.py")
+SAM3_WORK_DIR = os.path.join(REPO_ROOT, "aria/aria_app/services/object_recognition")
+GRASP_VIZ_NODE_PATH = os.path.join(PERCEPTION, "grasp_viz.py")
+RVIZ_CONFIG_PATH = os.path.join(PERCEPTION, "rviz_config.rviz")
 
 # ---------------------------------------------------------------------------
 # Process registry
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         cwd=SAM3_WORK_DIR,
         env={
             **os.environ,
-            "PYTHONPATH": os.path.join(REPO_ROOT, "src")
+            "PYTHONPATH": os.path.join(REPO_ROOT, "aria/aria_app")
             + os.pathsep
             + os.environ.get("PYTHONPATH", ""),
         },

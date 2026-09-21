@@ -13,8 +13,8 @@ import time
 
 from gappler_common import ROOT
 
-ORCHESTRATOR_PATH = ROOT / "ros2_robot_ws" / "src" / "orchestrator.py"
-ARIA_APP_PATH = ROOT / "src" / "main.py"
+ORCHESTRATOR_PATH = ROOT / "launchers" / "grasp_orchestrator.py"
+ARIA_APP_PATH = ROOT / "aria" / "aria_app" / "main.py"
 # The uv venv lives at the repo root. "uv sync" creates it on a fresh clone.
 ARIA_PYTHON = ROOT / ".venv" / "bin" / "python"
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         label="aria_app",
         env={
             **os.environ,
-            "PYTHONPATH": str(ROOT / "src")
+            "PYTHONPATH": str(ROOT / "aria" / "aria_app")
             + os.pathsep
             + os.environ.get("PYTHONPATH", ""),
         },

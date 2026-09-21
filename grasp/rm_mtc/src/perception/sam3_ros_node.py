@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 SAM3 ROS2 mask publisher node.
-Runs inside the project's uv venv, with src/ on PYTHONPATH.
-Working directory: .../src/services/object_recognition/
+Runs inside the project's uv venv, with aria/aria_app/ on PYTHONPATH.
+Working directory: .../aria/aria_app/services/object_recognition/
 
 Subscribes to RGB + depth image topics.
 Runs SAM3 inference with a fixed text prompt.

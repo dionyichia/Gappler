@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-PERCEPTION = REPO / "ros2_robot_ws/src/rm_mtc/src/perception"
+PERCEPTION = REPO / "grasp/rm_mtc/src/perception"
 SDK_DET = REPO / "grasp/vendor/anygrasp_sdk/grasp_detection"
 SCRATCH = REPO / "log/anygrasp_probe"
 # envs/anygrasp/.venv is built by envs/anygrasp/build.sh. The 2026-09-11 scratch env (log/w5/venv)

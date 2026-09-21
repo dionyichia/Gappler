@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 # Our own calibration file, handed to the external OpenVINS binary.
 ESTIMATOR_CONFIG = (
-    Settings.PROJECT_ROOT / "src/services/aria_device/calibration/estimator_config.yaml"
+    Settings.PROJECT_ROOT / "aria/aria_app/services/aria_device/calibration/estimator_config.yaml"
 )
 # The OpenVINS build we launch. It lives outside this repo: `openvins_ws` in global_config.yaml.
 OPENVINS_WS = path("openvins_ws")

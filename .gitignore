@@ -17,7 +17,7 @@ recordings
 tmp
 
 aria/aria_app/models/sam3/sam3.pt
-# colcon output (bench/build.sh)
+# colcon output (build.sh)
 /build/
 /install/
 /log/

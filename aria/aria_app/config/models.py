@@ -8,7 +8,7 @@ from .base import Settings
 class ModelPaths:
     """Paths to model checkpoints and configurations."""
 
-    SAM3_PATH: Path = Settings.PROJECT_ROOT / "src/models/sam3/sam3.pt"
+    SAM3_PATH: Path = Settings.PROJECT_ROOT / "aria/aria_app/models/sam3/sam3.pt"
     EYETRACKING_MODEL_BASE_PATH: Path = (
-        Settings.PROJECT_ROOT / "src/models/projectaria_eyetracking/"
+        Settings.PROJECT_ROOT / "aria/aria_app/models/projectaria_eyetracking/"
     )

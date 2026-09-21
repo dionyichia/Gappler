@@ -1,5 +1,10 @@
 # Compute Request (RCP2026/19) — verification against the codebase
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **What this is.** A check of the draft "Compute Resource Request" doc against what this repo
 actually runs, done before the request goes to the supervisor. Three corrections matter enough to
 fix before submitting. The three tables in section 3 are the requested end state: one row per
@@ -161,3 +166,4 @@ camera purchase in row 1.
 |---|---|---|
 | 2026-09-15 | Claude (Sonnet 5) + Dion | Created. Verified the draft compute request against `pyproject.toml`, the FAM-HRI-side service code, `ORIENTATION.md`, `TESTBENCH_PLAN.md`, and the HiCo-Nav paper report. Tailscale address timed out; campus address (`rcp2026@10.91.242.76`) reached the box, so GPU/RAM/disk numbers came from a live `nvidia-smi`/`free -h`/`df -h`, not just the 2026-09-11 bench log. No SLURM client on the box, so the REP Makers claim stays unchecked. |
 | 2026-09-21 | Claude (Opus 5) + Dion | AnyGrasp source path updated to `grasp/vendor/` after reorg step 3. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |

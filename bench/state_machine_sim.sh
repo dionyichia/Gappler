@@ -3,7 +3,7 @@
 # The arm is ros2_control's mock_components: joint positions exist only in memory. rm_driver
 # is never started; the gripper commands the state machine sends are only recorded.
 #
-#   ./bench/state_machine_sim.sh        needs ./bench/build.sh to have passed
+#   ./bench/state_machine_sim.sh        needs ./build.sh to have passed
 #
 # CLAUDE.md forbids launching grasp_state_machine; Dion allowed this one exception on
 # 2026-09-11 for the simulated arm only, behind every guard below.
@@ -15,7 +15,7 @@ DOMAIN="${BENCH_DOMAIN:-77}"
 CFG=rm_65_w_gripper_config
 
 [ -f /opt/ros/humble/setup.bash ] || { echo "SKIP: no ROS 2 Humble here"; exit 3; }
-[ -f "$REPO/install/setup.bash" ] || { echo "SKIP: no $REPO/install -- run ./bench/build.sh first"; exit 3; }
+[ -f "$REPO/install/setup.bash" ] || { echo "SKIP: no $REPO/install -- run ./build.sh first"; exit 3; }
 export ROS_DOMAIN_ID="$DOMAIN" ROS_LOCALHOST_ONLY=1
 set +u; source /opt/ros/humble/setup.bash; source "$REPO/install/setup.bash"; set -u
 cd "$REPO"; mkdir -p log
