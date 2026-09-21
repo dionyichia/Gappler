@@ -836,8 +836,8 @@ was verified against running hardware. Most relevant to this section:
 - **The grasp path cannot work** — `anygrasp_detection_node.py:182` produces candidates only in
   IDLE, `grasp_state_machine.cpp:171` consumes them only in EXECUTING, and `USE_SIMPLE_EXECUTE`
   makes the whole path dead code so neither gate is exercised (§A).
-- **`main.py` promises an emergency-stop key that does not exist** (§B1), and `estop.py` may not
-  deliver its own message on Ctrl+C (§B2).
+- **`main.py` promises an emergency-stop key that does not exist** (§B1), and until 2026-09-21 `estop.py`
+  ignored Ctrl+C and could lose its own stop (§B2, B2a, B2c, fixed in T1.2).
 - **`HOME_JOINTS` changed** — joint4 by 176° — and §8.1's safety warning quotes the old values (§B4).
 - **Undefined behaviour** in the state machine's threading: one condition variable waited on with
   two different mutexes, and the centroid read without its lock (§C1, §C2).
@@ -1237,3 +1237,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-19 | Claude (Opus 5) + Dion | §5 contract table: count corrected to eight topics. `/return_to_user/goal_reached` has no consumer today (orchestrator subscription commented out). `/manipulation/start` launches `main.py` as a process. Pointer to T0.7 as the future single source. Fixed the broken link to `sherman_docs/T0.2_SESSION.md`. |
 | 2026-09-20 | Claude (Opus 5) + Dion | §8.11b: the double `background.launch.py` launch now names its owner. CODE_AUDIT open question 5 is answered: `ros2_robot_ws/src/main.py` owns it, delete `orchestrator.py:69-74`. Pointer to the new `NEXT_STEPS.md` §2.14 on whether anything should launch processes mid-task at all. |
 | 2026-09-20 | Claude (Opus 5) + Dion | §5's nav ↔ manipulation table replaced by a pointer to the new [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md), which is now the single source for channel ownership, types, frames and QoS (T0.7, decision T-5). A four-line summary stays here for reading the rest of §5. |
+| 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |

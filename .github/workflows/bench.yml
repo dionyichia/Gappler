@@ -3,7 +3,7 @@
 #
 # GitHub's machine has no ROS, so L0-L2 run and L3-L4 report SKIPPED. That is
 # allowed for now. A self-hosted runner on the lab box is T0.11.
-# A green run does NOT mean the robot works. L5 (hardware) is never run here.
+# A green run does NOT mean the robot works. L6 (hardware) is never run here.
 name: bench
 
 on:

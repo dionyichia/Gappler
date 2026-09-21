@@ -87,6 +87,7 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
 ./bench/run.sh                         # L0 static → L1 contracts → L2 preflight → L3 build → L4 sim
                                        # (L3-L4 only where ROS 2 Humble exists, else SKIPPED)
 ./bench/run.sh quick                   # L0-L2 only
+./bench/run.sh robot                   # L5 only: is the robot connected (gates L6)
 ./bench/run.sh report                  # contract inventory + orphan analysis
 python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract change
 # lab box only (ROS + the built overlay):
@@ -98,8 +99,9 @@ python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract
 ./bench/anygrasp_env.sh [PYTHON]       # can this env run AnyGrasp (imports + SDK demo)
 ```
 
-Levels L0-L5 are defined in `bench/README.md` (renamed from Tiers 0-4 on 2026-09-19). L0-L2 are
-stdlib-only and need no ROS. Run them before and after any refactor. L5 is the real robot and is
+Levels L0-L6 are defined in `bench/README.md` (renamed from Tiers 0-4 on 2026-09-19, L5 robot
+check added 2026-09-21). L0-L2 are stdlib-only and need no ROS. Run them before and after any
+refactor. L5 checks the robot is connected and gates L6. L6 is the real robot and is
 never automated. When the reorg moves code, update `OWNED_PREFIXES` in `bench/_common.py` (the one copy, shared by all three tools).
 Every L4 (simulation) script refuses to start unless its ROS channel is private and empty. Results go in
 `docs/bench-runs/`; status and next work in TESTBENCH_PLAN "▶ Start here".

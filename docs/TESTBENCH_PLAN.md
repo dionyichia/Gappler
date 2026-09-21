@@ -29,19 +29,12 @@ Both held files are now on `main`, so T0.0 is closed.
    12 `rm_` packages, the `.venv` python. It must be sourced from the repo root (`source
    ~/rcp-Gappler/env.sh`). A copy elsewhere now refuses with exit 1.
 
-**Next, as of 2026-09-21: T0.10 and T0.11 (CI), alongside the one-folder-per-node refactor.**
-Before starting:
-
-1. Merge `t0.0-close-realman-manip` into `main` through a PR. The `bench` workflow only runs on PRs
-   into `main` and pushes to `main`, so CI has not yet run on T0.4's fixes. L0-L2 pass locally.
-2. Once the PR's `bench` check is green, turn on branch protection for `main`, requiring `bench`.
-3. **The repo is public, so settle the fork-PR risk before registering the lab box as a runner.** A
-   self-hosted runner runs whatever a PR contains, on a box wired to the arm and base network. Either
-   make the repo private, or set Actions to require approval for every outside contributor and never
-   run fork PRs on the self-hosted runner.
-4. During the refactor, update `OWNED_PREFIXES` in `bench/_common.py` whenever code moves, or moved
-   files quietly count as vendor code and stop failing. Run `./bench/run.sh` before and after each move.
-   A pure move must leave L1 at 0 changes.
+**Work items live in the task tree, not here** (since 2026-09-21). This page records what the bench
+is, what it found and the evidence. Every open item it found is a task in
+[`next-steps-map.html`](next-steps-map.html) and [`PROJECT_PLAN.md`](PROJECT_PLAN.md) §6, so it can be
+seen, owned and ticked off in one place. Bench and CI tasks: **T0.11** (CI on the lab box, per-subsystem
+suites) and **T0.12** (AnyGrasp replay, was W6). When code moves in the refactor, update
+`OWNED_PREFIXES` in `bench/_common.py` (CLAUDE.md, "The bench").
 
 **One paragraph (updated 2026-09-14):** the bench runs on the lab box in `~/rcp-Gappler`, and
 **tiers 0 through 3 are now complete**. Done there: tiers 0–1, preflight, Tier 2 for **both**
@@ -50,8 +43,8 @@ simulated arm, the e-stop, the whole grasp state machine on the simulated arm, t
 probe, and the five navigation nodes against a mock Nav2. Nothing physical has moved; Aria, arm and
 base are unplugged, so their checks fail or skip **as expected**. The 2026-09-14 session ran the two
 pieces that were written but never run (W4b, W7) and both passed first time. **What is left is not
-more test-writing:** W6 needs a decision from Dion (recording camera frames), W8 needs a person at
-the robot, and the real queue is now the **held findings** below — each one is a branch for review.
+more test-writing:** W6 is now task T0.12, W8 is L6 (a person at the robot), and every finding below
+is a task in the task tree.
 Dion's standing instruction still holds: `~/rcp-Gappler` only, no real-world movement, and
 **fixes on branches for review, through a PR into `main`** (2026-09-19, replacing "no fixes
  without asking").
@@ -62,24 +55,27 @@ Dion's standing instruction still holds: `~/rcp-Gappler` only, no real-world mov
 |---|---|---|
 | W1 project env (uv) | ✅ torch sees the GPU; setuptools pin merged | [`bench-runs/…-w1-venv.txt`](bench-runs/2026-09-11-labbox-w1-venv.txt) |
 | W2 state machine, simulated arm | ✅ full cycle; **C7 reproduced**, B4 observed | [`…-w2-state-machine.txt`](bench-runs/2026-09-11-labbox-w2-state-machine.txt) |
-| W3 e-stop delivery | ✅ **B2a found** (Ctrl+C ignored); B2 loss not reproduced | [`…-w3-estop.txt`](bench-runs/2026-09-11-labbox-w3-estop.txt) |
+| W3 e-stop delivery | ✅ **B2a found** (Ctrl+C ignored). 2026-09-21: B2 loss reproduced, B2c found, all three **fixed** (T1.2), every stop path now a required check | [`…-w3-estop.txt`](bench-runs/2026-09-11-labbox-w3-estop.txt) |
 | W4a nav code vs `iot22` | ✅ repo newer; `robot_navigation`, `xpkg_demo` only outside git | [`…-w4a-nav-diff.txt`](bench-runs/2026-09-11-labbox-w4a-nav-diff.txt) |
 | W4b nav build | ✅ **PASS** 10/10 packages, 2 min 34 s. No blocker: Livox-SDK2 already installed | [`…-w4b-nav-build.txt`](bench-runs/2026-09-14-labbox-w4b-nav-build.txt) |
-| W5 AnyGrasp env | ✅ survey: one env works (licence passed, grasps found). Making it permanent is held | [`…-w5-anygrasp-env.txt`](bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt) |
-| W6 AnyGrasp gate + replay | **blocked on a replug.** Dion approved starting the camera 2026-09-14; the D435i was already faulty (colour stream dead) and a hardware reset took it off the USB bus. No frames recorded | [`…-w6-camera-attempt.txt`](bench-runs/2026-09-14-labbox-w6-camera-attempt.txt) |
+| W5 AnyGrasp env | ✅ done 2026-09-21: `envs/anygrasp/build.sh` rebuilds it from nothing, demo passes | [`…-w5-anygrasp-env.txt`](bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt) |
+| W6 AnyGrasp gate + replay | **now task T0.12.** Blocked on a replug. Dion approved starting the camera 2026-09-14; the D435i was already faulty (colour stream dead) and a hardware reset took it off the USB bus. No frames recorded | [`…-w6-camera-attempt.txt`](bench-runs/2026-09-14-labbox-w6-camera-attempt.txt) |
 | W7 nav node tests | ✅ **PASS first run**, no fix needed: 6 controls pass, 4 xfail reproduced (F1 ×2, F2, E1), 0 skipped. **E1, F1, F2 now `[observed]`**; new finding F4 | [`…-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt) |
-| W8 Tier 4 | human at the robot; Dion schedules it | — |
+| W8 Tier 4 | now L6 (hardware), gated by the L5 robot check. The runs are tasks T1.6 onward | — |
 | Preflight glasses check | ✅ **fix confirmed on the box 2026-09-14**: `aria-sdk` now FAILs "aria CLI works, but no glasses are connected over USB". It used to wrongly PASS | `bench/preflight.py` |
 | Preflight camera check | ✅ **rewritten 2026-09-14 (bench bug S4)**: `realsense-usb` used to pass on the USB id alone — and on any "Intel" line, including the Bluetooth adapter. Now strict on `8086:0b3a`, plus a new `realsense-stream` check that actually grabs a frame | `bench/preflight.py` |
 
-**Found, not fixed (held — each becomes a branch for Dion's review):** `estop.py` ignores the Ctrl+C key
-and crashes on SIGINT (CODE_AUDIT B2, B2a) · the state machine never returns to IDLE after a grasp (C7)
-and homes to an unvalidated pose (B4) · all five nav nodes traceback on Ctrl+C (F4, new 2026-09-14) ·
-the approach node wedges after any nav failure (F1), a failed return leg can never be retried (F2) and
-`goto_glasses` reads a robot-relative pose as a map coordinate (E1) — **all three now `[observed]`, W7** ·
-~~`robot_navigation`, `xpkg_demo` and the livox `package.xml` are
-not in the repo~~ in the repo since 2026-09-21 (T0.4) · the AnyGrasp one-env recipe isn't in the repo and
-`main.py` still uses `conda run` (NEXT_STEPS §2.5) · 10 hardcoded `/home/iot22` paths (§2.5).
+**Findings and the task that fixes each** (the tasks hold the work, CODE_AUDIT holds the detail):
+
+| Finding | Task |
+|---|---|
+| `estop.py`: Ctrl+C ignored, stop lost on SIGINT, keys dropped (B2a, B2, B2c) | T1.2, **fixed 2026-09-21** |
+| State machine homes to an unvalidated pose, warning quotes the old one (B4) | T1.3 |
+| State machine queue grows without limit after a grasp (C7) | T1.9 |
+| Approach node gets no goal after any navigation failure (F1), nav nodes crash on Ctrl+C (F4) | T3.8 |
+| `goto_glasses` reads a robot-relative pose as a map coordinate (E1), failed return leg never retried (F2) | stretch S5 (return leg is out of scope) |
+| `main.py` launches AnyGrasp through `conda run` | T1.10 |
+| ~~Nav packages and Livox manifest not in the repo~~, ~~hardcoded `/home/iot22` paths~~ | done: T0.4, T0.3 |
 
 **The two pages (keep them current):** both are written for readers new to code, including mechanical
 engineering students. Republish after each change, to the same link.
@@ -106,7 +102,7 @@ ROS channel is empty, so never skip that guard.
 | W2 | **Allowed** (Dion, 2026-09-11) — simulated arm only, via `bench/state_machine_sim.sh`; `CLAUDE.md` records the exception |
 | `.venv` | **Rebuilt ✅** with `uv sync --locked` (W1). Never copy one; uv is at `~/.local/bin/uv` (not on the non-interactive PATH) |
 | Model files | Copied into `~/rcp-Gappler` ✅. Long-term: one `assets/models/` folder (NEXT_STEPS §2.8) — later, with the reorg |
-| AnyGrasp env | **One env confirmed** (W5 survey): the project env + MinkowskiEngine etc. runs AnyGrasp. `iot22`'s conda is not used. Making it permanent is held |
+| AnyGrasp env | **One env confirmed** (W5 survey): the project env + MinkowskiEngine etc. runs AnyGrasp. `iot22`'s conda is not used. Scripted 2026-09-21: `envs/anygrasp/build.sh` |
 | Simulation | MoveIt with `mock_components` is allowed. `rm_driver` never. Private ROS channel always |
 | Robot config | Not edited by the bench. `bench/nodes/sim_arm.*` carries the simulated model (ORIENTATION §8.16). The Livox manifest moved out of the bench into `Navigation_Module/src/livox_ros_driver2/package_ROS2.xml` (T0.4, 2026-09-21) |
 | Writing | Dion's docs and pages: plain language, main point first, jargon only when needed and explained. Readers include mechanical engineering students. No em dashes, semicolons or emojis in pages |
@@ -237,6 +233,19 @@ in the repo builds the env from nothing and AnyGrasp prints `license passed` on 
 > (egg), pointnet2, open3d 0.18.0, scikit-learn 1.3.2, scipy 1.10.1, graspnetAPI 1.2.10. The SDK pins numpy 1.21.2,
 > scikit-learn 1.3.2, scipy 1.10.1 — all numpy-1 builds, so one env needs newer versions of them. Box toolchain:
 > nvcc 12.8, gcc 11.4, libopenblas-dev, python3.10-dev; no system `ninja` (pip-installed into the scratch env).
+
+> ✅ **Done 2026-09-21: the env is rebuilt by a script in the repo.** `./envs/anygrasp/build.sh` makes
+> `envs/anygrasp/.venv` from nothing in about 18 minutes on the box: a venv on top of `.venv` (through a `.pth`
+> file), MinkowskiEngine and pointnet2 compiled from copies of the repo's sources, then the packages in
+> `envs/anygrasp/requirements.txt`, pinned to the set that worked on 2026-09-11. It ends by running the probe:
+> every import passes and the SDK demo gives the same grasp score, 0.476 `[observed]`
+> ([`bench-runs/2026-09-21-labbox-w5-anygrasp-build.txt`](bench-runs/2026-09-21-labbox-w5-anygrasp-build.txt)).
+> Machine paths (`CUDA_HOME`, GPU arch, BLAS folders) are environment variables with the box's values as
+> defaults. AnyGrasp's packages did **not** join `pyproject.toml`: MinkowskiEngine needs a CUDA compile, which
+> `uv sync` on a laptop or in CI cannot do. L2 `anygrasp-env` and L4 `anygrasp_env.sh` now both test this env.
+> The scratch env `log/w5/venv` is no longer used by the bench and can be deleted. Re-running the script
+> reuses what is built: MinkowskiEngine and pointnet2 compile only if they do not already import, so a
+> rerun takes about 20 s on the box. `--clean` rebuilds everything, needed after changing torch, CUDA or the GPU.
 
 **W6 — AnyGrasp gate test** (A1, expected-fail) and perception replay. Needs W5 + frames.
 
@@ -709,3 +718,5 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-21 | Claude (Opus 5) + Dion | Ran the T0.0 box checks. Calibration parses and `env.sh` works, both `[observed]`. The glasses serial check is skipped and still owed. The three-check block in "Start here" now shows the results. Evidence in `bench-runs/2026-09-21-labbox-t0.0-box-checks.txt`. |
 | 2026-09-21 | Claude (Opus 5) + Dion | T0.4: struck the "not in the repo" held finding. The Livox manifest moved from `bench/nodes/` into its package, and `bench/build.sh` copies it from there. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Contracts snapshot re-taken at `1461e72`: the 12 `robot_navigation` names and the new launch nodes added, the deleted `mtc_sim_test` launch removed. Decisions row updated. Added a "Next" block to "Start here" for T0.10 and T0.11: merge the PR, branch protection, the fork-PR risk of a self-hosted runner on a public repo, and `OWNED_PREFIXES` during the refactor. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Full bench L0-L4 on `main` @ `9bbb26a` on the box: L3 and every L4 script PASS. L1 failed on a bench bug: `contracts.py` and `static.py` read `build_nav/` and `install_nav/`, fixed. Robot checks moved out of L2 into a new L5 (`preflight.py --hardware`) that gates L6, the real arm test (was L5). An unplugged arm makes L5 and L6 SKIPPED, not FAIL. Neither is needed to merge. Evidence in `bench-runs/2026-09-21-labbox-full-bench-main.txt`. `next-steps-map.html` T0.11 text edited and republished. |
+| 2026-09-21 | Claude (Opus 5) + Dion | **W5 done**: `envs/anygrasp/build.sh` rebuilds the AnyGrasp env from nothing, the SDK demo passes, L2 `anygrasp-env` is green. `estop_delivery.sh` control case made stable (0.5 s between keys) after it exposed a new finding, CODE_AUDIT B2c. B2's loss now observed. The `estop.py` fix is queued in "Start here". `build.sh` reuses built parts, `--clean` rebuilds. |

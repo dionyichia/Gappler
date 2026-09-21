@@ -28,13 +28,26 @@ as a pass, and skipped levels do not fail the run.
 |---|---|---|---|---|
 | L0 | Static checks | code parses, imports and launch file names resolve (`static.py`) | any machine | Tier 0-1 |
 | L1 | Contracts | no topic, frame or parameter name moved since the snapshot (`contracts.py`) | any machine | Tier 0-1 |
-| L2 | Lab box check | preflight: the machine, and whether it can run L3-L4 (`preflight.py`) | any machine | preflight |
+| L2 | Lab box check | preflight: can this machine run L3-L4? Does not look at the robot (`preflight.py`) | any machine | preflight |
 | L3 | Build | colcon build of the arm and nav workspaces (`build.sh`) | ROS 2 Humble | Tier 2 |
 | L4 | Simulation | simulated arm, e-stop, state machine, nav nodes vs mock Nav2, AnyGrasp env | ROS 2 Humble + L3 | Tier 3 |
-| L5 | Hardware | the real robot | a person with the e-stop, never automated | Tier 4 |
+| L5 | Robot check | preflight `--hardware`: do the arm, wrist camera, LiDAR and glasses answer? Gates L6 | the lab box | new 2026-09-21 |
+| L6 | Hardware | the real arm test | a person with the e-stop, never automated | Tier 4 |
 
 L3-L4 run when L2 finds ROS 2 Humble. L4 runs only if the arm build in L3 passed. Older docs and
 `docs/bench-runs/` use the Tier names.
+
+**L5 and L6 are not needed to merge.** A PR into `dev` or `main` needs L0-L4 green (into `main`,
+with none of L0-L4 skipped). L5 and L6 are for when a change is ready to try on the robot.
+
+**L5 gates L6 the way L2 gates L3-L4** (since 2026-09-21). L2 checks only the machine, because an
+unplugged robot does not stop a build or a simulation. L5 checks the robot:
+
+- the arm does not answer on the network: L5 SKIPPED, L6 SKIPPED. The run stays green.
+- the arm answers but something else is missing (camera, LiDAR, glasses): L5 FAIL, L6 SKIPPED.
+- everything answers: L5 PASS, and L6 is ready for a person with the e-stop.
+
+At the robot, `./bench/run.sh robot` runs L5 alone.
 
 ### On the lab box: tiers 2–3
 
@@ -48,10 +61,10 @@ refused, 3 skipped — never a pass.
 |---|---|---|
 | `build.sh [nav]` | Tier 2: colcon build of the arm workspace (or `Navigation_Module`) into this checkout. `nav` first does the Livox prep: copies `Navigation_Module/src/livox_ros_driver2/package_ROS2.xml` in as the (gitignored) livox `package.xml` if missing, passes the ROS 2 CMake flags, and warns if Livox-SDK2 isn't installed | only `/opt/ros/humble` may be sourced |
 | `sim_moveit.sh` | MoveIt plans and executes to both home poses and zero on a `mock_components` arm | installed config must be mock hardware |
-| `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s`, the Ctrl+C key and SIGINT deliver a stop? | — |
+| `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s` sent back to back, the Ctrl+C key and SIGINT (5 trials) all deliver? Every case is required since the 2026-09-21 fix | — |
 | `state_machine_sim.sh` | `grasp_state_machine` runs a full grasp cycle on the simulated arm; the test plays camera, detector and gripper | mock hardware; preflight's `arm-ping`/`arm-port` must not pass (Dion's exception in `CLAUDE.md`) |
 | `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 10 cases, 4 expected-fail (F1 ×2, F2, E1). Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
-| `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint | GPU only, no ROS |
+| `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `envs/anygrasp/.venv`, built by `./envs/anygrasp/build.sh` | GPU only, no ROS |
 
 Tests that encode a CODE_AUDIT finding assert the *intended* behaviour and report **XFAIL** while the
 bug is there, **XPASS** once it isn't — then retag the finding.
@@ -123,9 +136,11 @@ enforced in the code, not just in a comment: the script never publishes to any `
 topic and never launches `grasp_state_machine` or `ros2_robot_ws/src/main.py`, because both home
 the arm within seconds of start, unprompted (`ORIENTATION.md` §8.1).
 
-Everything short of that is checked: GPU and VRAM, RAM, disk, the `PYTHONNOUSERSITE` trap, ROS
-overlay completeness and the double-source trap, the venv and AnyGrasp's env (MinkowskiEngine), Aria auth,
-whether the glasses are plugged in, model weights and AnyGrasp licences, NIC addressing, arm ping and port 8080, LiDAR ping, the RealSense
+Everything short of that is checked, in two runs. The default run (L2) covers the machine: GPU
+and VRAM, RAM, disk, the `PYTHONNOUSERSITE` trap, ROS overlay completeness and the double-source
+trap, the venv and AnyGrasp's env (MinkowskiEngine), model weights and AnyGrasp licences.
+`--hardware` (L5) covers the robot: NIC addressing, arm ping and port 8080, LiDAR ping,
+whether the glasses are plugged in and paired, the RealSense
 on USB **and whether it can actually deliver a frame** (two checks since 2026-09-14: the old
 single one passed on the USB id alone, so it reported a camera with a dead colour stream as
 fine, and would also have passed on the box's Intel Bluetooth adapter), and — when a ROS graph
@@ -164,7 +179,8 @@ question that cannot be asked here. Reporting it as red would train people to ig
 
 ### `preflight.py` — can this machine run it, and is the hardware there
 
-Eight groups: `host`, `home`, `gpu`, `ros`, `env`, `assets`, `net`, `graph`. Run one with
+Eight groups: `host`, `home`, `gpu`, `ros`, `env`, `assets`, `net`, `graph`. The default run is
+the first six (L2). `--hardware` runs `net` and `graph` (L5, the robot). Run one group with
 `-g net`, or get JSON with `--json`. `--lab` / `--no-lab` override the "is this the lab box?" guess
 (Linux + ROS or NVIDIA). `home` names the running user — per-user state is judged for that user
 only — and lists every `/home/<other-user>/` path in owned code (the box moved `iot22` → `rcp2026`). Every device address is read out of the repo

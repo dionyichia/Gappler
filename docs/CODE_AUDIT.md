@@ -128,6 +128,32 @@ still got out (logging to `/rosout` already failed: "publisher's context is inva
 `rclpy.shutdown()` at `:76` raises `RCLError: rcl_shutdown already called` → traceback, exit 1. So delivery
 rests on a window nothing guarantees. The `depth=1` / VOLATILE point was not tested.
 
+**Loss reproduced 2026-09-21** `[observed]`. Four runs of the same test on the box, same code: the stop
+arrived in **0, 4, 5 and 3 of 5** trials after `kill -INT`
+([`bench-runs/2026-09-21-labbox-full-bench-main.txt`](bench-runs/2026-09-21-labbox-full-bench-main.txt)).
+So the race is real and does bite on this machine, more under load. An e-stop that works 60 % of the time
+on SIGINT is a safety defect, not a tidy-up.
+
+**Fixed 2026-09-21 (T1.2), together with B2a and B2c** `[observed]`. `estop.py` now turns off rclpy's
+SIGINT handler (`SignalHandlerOptions.NO`) and handles SIGINT, SIGTERM and SIGHUP itself, sends the stop,
+then waits for subscribers to confirm it (`wait_for_all_acked`) before shutting down with
+`rclpy.try_shutdown()`. It exits 0 instead of crashing. `bench/estop_delivery.sh`, five runs on the box:
+`kill -INT` delivered 25 of 25, and it is now a required check, not an expected failure.
+
+### B2c. A key pressed while the last one is being handled is lost `[observed]`
+
+`ros2_robot_ws/src/estop.py:48-55`. When the bench sent `r` right after the `e` stop landed, the resume
+never arrived in 2 of 3 runs. With a 0.5 s gap between keys it arrived 5 of 5 (2026-09-21). Cause
+`[inferred]`: `getch()` calls `tty.setraw(fd)`, whose default `when=TCSAFLUSH` discards input still
+waiting in the terminal. A key typed after one `getch()` returns and before the next one starts is
+thrown away. Nothing is logged, so the operator cannot tell. The danger case is **S then E pressed
+quickly: the e-stop can be lost.** Fix direction: put the terminal in raw mode once at start
+(`tty.setcbreak` or `setraw` with `TCSANOW`), restore it at exit, and read keys in a plain loop.
+
+**Fixed 2026-09-21 (T1.2)** `[observed]`. The terminal is switched to key-at-a-time mode once, at start,
+with `TCSANOW` so nothing already typed is discarded, and restored at exit. The bench now sends the
+keys back to back with no pause, and they arrived in five of five runs.
+
 ### B2a. Ctrl+C in the e-stop terminal does nothing `[observed]`
 
 `ros2_robot_ws/src/estop.py:48-55` — `getch()` puts the terminal in raw mode while it waits for a key,
@@ -138,6 +164,10 @@ reached only by a signal from outside (`kill -INT`). An operator whose reflex is
 Closing the terminal sends SIGHUP, which is not handled either, so no stop `[inferred]`.
 Fix direction: treat `\x03` (and `\x1b`?) as `e`; handle SIGHUP/SIGTERM; publish, then sleep briefly
 before shutdown, and guard the second `rclpy.shutdown()`.
+
+**Fixed 2026-09-21 (T1.2)** `[observed]`. The terminal's signal keys are off, so Ctrl+C arrives as
+`0x03`, which now sends the stop and quits. A closed terminal (end of input or SIGHUP) also sends it.
+Only Q leaves without a stop. The bench's Ctrl+C case passed in five of five runs and is now required.
 
 ### B3. The voice kill word cannot stop the arm
 
@@ -859,3 +889,5 @@ publishers racing on the same three topics.
 | 2026-09-19 | Claude (Opus 5) + Dion | Repointed citations of `RCP_NEW_USER_STARTUP_GUIDE.md` to its new home, `docs/archive/`, after T0.0 brought it onto `main`. |
 | 2026-09-20 | Claude (Opus 5) + Dion | **Open question 5 answered: `ros2_robot_ws/src/main.py` owns `background.launch.py`, delete `orchestrator.py:69-74`.** Reasoning recorded under the question and pointed to from I1. Refreshed I1's line citations against the working tree (`orchestrator.py:70`, `:84`, `ros2_robot_ws/src/main.py:101`). Flagged that the fix sits inside the larger phase-gating decision now in `NEXT_STEPS.md` §2.14, and is correct either way. Five open questions remain. |
 | 2026-09-20 | Claude (Opus 5) + Dion | **Five more open questions answered in `T0.7`** (see [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) §6): A3 stays `true` for bring-up, B4 uses the `realman_manip` home pose but recalibrate first, A1 is a typo so AnyGrasp runs during `EXECUTING`, `/manipulator/release` comes from the Aria side after `/manipulation/done`, and E1/E2 is parked with the out-of-scope return leg. All six open questions are now answered or parked. |
+| 2026-09-21 | Claude (Opus 5) + Dion | **B2 now `[observed]`**: the e-stop's SIGINT stop was lost in 0-5 of 5 trials across four box runs. **New B2c `[observed]`**: `estop.py` drops a key pressed while the previous one is being handled, so S then E fast can lose the e-stop. Both found by `bench/estop_delivery.sh`. `code-audit-page.html` not yet updated with either, still owed. |
+| 2026-09-21 | Claude (Opus 5) + Dion | **B2, B2a and B2c fixed** in `estop.py` (task T1.2) and confirmed on the box: five runs of `bench/estop_delivery.sh`, every key and every stop path delivered, `kill -INT` 25 of 25. The Ctrl+C and SIGINT cases are now required checks. `code-audit-page.html` still owes these updates. |

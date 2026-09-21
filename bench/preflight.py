@@ -2,6 +2,15 @@
 """
 Preflight: is this machine capable of running the stack, and is the hardware there?
 
+Two separate questions, run separately:
+
+  * default      L2: can this machine run L3-L4 (build + simulation)? No robot needed.
+  * --hardware   L5: is the robot there? Arm, LiDAR, wrist camera, glasses and the live
+                 ROS graph. Gates L6, the arm test a person runs at the robot.
+
+Exit: 0 all pass, 1 any fail. With --hardware, 3 (skipped) when the arm does not answer,
+because with no arm there is nothing for L6 to test.
+
 Runs everything that can be checked WITHOUT commanding the arm. The boundary is
 absolute and is enforced in code (see SAFETY below): this script never publishes
 to a /rm_driver/*_cmd topic and never launches grasp_state_machine or
@@ -16,8 +25,9 @@ Designed to run in two very different places and say clearly which one it is in:
 
 Nothing here is destructive and nothing needs sudo. Read-only throughout.
 
-    python3 bench/preflight.py           # run everything applicable
-    python3 bench/preflight.py -g net    # only one group
+    python3 bench/preflight.py              # L2: the machine
+    python3 bench/preflight.py --hardware   # L5: the robot
+    python3 bench/preflight.py -g net       # only one group
     python3 bench/preflight.py --json    # machine-readable
 
 Stdlib only.
@@ -356,14 +366,13 @@ def g_env() -> list[Check]:
     else:
         cs.append(c.skip("no .venv in this clone -- run `uv sync`"))
 
-    # AnyGrasp's env is rebuilt with uv (TESTBENCH_PLAN W5), not taken from iot22's conda:
-    # either the project venv gains MinkowskiEngine (one env) or envs/anygrasp/ holds a second.
+    # AnyGrasp's env is envs/anygrasp/.venv, built on top of .venv by envs/anygrasp/build.sh (W5).
     c = Check("env", "anygrasp-env",
               "AnyGrasp needs MinkowskiEngine (CUDA extension) next to torch")
     candidates = [REPO / "envs" / "anygrasp" / ".venv" / "bin" / "python", v / "bin" / "python"]
     found = [py for py in candidates if py.exists()]
     if not found:
-        cs.append(c.skip("no project venv yet -- run `uv sync`; AnyGrasp env is W5"))
+        cs.append(c.skip("no project venv yet -- run `uv sync`, then ./envs/anygrasp/build.sh"))
     else:
         py = found[0]
         rc, out = sh([str(py), "-c", "import MinkowskiEngine as ME;print(ME.__version__)"],
@@ -373,27 +382,8 @@ def g_env() -> list[Check]:
             cs.append(c.ok(f"MinkowskiEngine {out.strip()} in {where}"))
         else:
             cs.append(c.bad(f"MinkowskiEngine not importable from {where}",
-                            "build the AnyGrasp env -- TESTBENCH_PLAN W5"))
+                            "build it: ./envs/anygrasp/build.sh (about 20 min)"))
 
-    c = Check("env", "aria-sdk", "glasses auth is a prerequisite for any Aria stream")
-    aria = shutil.which("aria") or str(REPO / ".venv" / "bin" / "aria")
-    if not Path(aria).exists():
-        cs.append(c.skip("aria CLI not found (venv not built, or not the lab machine)"))
-    else:
-        rc, out = sh([aria, "auth", "check"], timeout=30)
-        last = out.strip().splitlines()[-1][:120] if out.strip() else f"rc={rc}"
-        if "Traceback" in out:      # the CLI itself is broken, not the pairing
-            cs.append(c.bad(f"aria CLI crashed: {last}", "fix the venv (see TESTBENCH_PLAN W1)"))
-        elif "no devices connected" in out.lower():
-            # The CLI works but finds no glasses. It can still exit 0 here, which used to
-            # pass as "authenticated" with the glasses unplugged (2026-09-11 box run).
-            cs.append(c.bad("aria CLI works, but no glasses are connected over USB",
-                            "plug in the glasses, then re-run"))
-        elif rc != 0:
-            cs.append(c.warn(last, "run `aria auth pair`"))
-        else:
-            cs.append(c.ok(f"authenticated"
-                           + (f", device {ARIA_SERIAL} seen" if ARIA_SERIAL in out else "")))
     return cs
 
 
@@ -577,6 +567,26 @@ def g_net() -> list[Check]:
                               f"LiDAR powered off, or host lacks {LIDAR_HOST_IP}"))
 
     cs.extend(realsense_checks(lab))
+
+    c = Check("net", "aria-glasses", "glasses auth is a prerequisite for any Aria stream")
+    aria = shutil.which("aria") or str(REPO / ".venv" / "bin" / "aria")
+    if not Path(aria).exists():
+        cs.append(c.skip("aria CLI not found (venv not built, or not the lab machine)"))
+    else:
+        rc, out = sh([aria, "auth", "check"], timeout=30)
+        last = out.strip().splitlines()[-1][:120] if out.strip() else f"rc={rc}"
+        if "Traceback" in out:      # the CLI itself is broken, not the pairing
+            cs.append(c.bad(f"aria CLI crashed: {last}", "fix the venv (see TESTBENCH_PLAN W1)"))
+        elif "no devices connected" in out.lower():
+            # The CLI works but finds no glasses. It can still exit 0 here, which used to
+            # pass as "authenticated" with the glasses unplugged (2026-09-11 box run).
+            cs.append(c.bad("aria CLI works, but no glasses are connected over USB",
+                            "plug in the glasses, then re-run"))
+        elif rc != 0:
+            cs.append(c.warn(last, "run `aria auth pair`"))
+        else:
+            cs.append(c.ok(f"authenticated"
+                           + (f", device {ARIA_SERIAL} seen" if ARIA_SERIAL in out else "")))
     return cs
 
 
@@ -892,6 +902,10 @@ def g_home() -> list[Check]:
 
 GROUPS = {"host": g_host, "home": g_home, "gpu": g_gpu, "ros": g_ros, "env": g_env,
           "assets": g_assets, "net": g_net, "graph": g_graph}
+# L2 asks only "can L3-L4 run here". An unplugged robot does not stop a build or a simulation,
+# so the robot's own checks are their own level, L5 (--hardware).
+HARDWARE_GROUPS = ["net", "graph"]
+L2_GROUPS = [g for g in GROUPS if g not in HARDWARE_GROUPS]
 
 
 def main() -> int:
@@ -900,6 +914,8 @@ def main() -> int:
     ap.add_argument("-g", "--group", action="append", choices=list(GROUPS),
                     help="run only these groups (repeatable)")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--hardware", action="store_true",
+                    help="L5: check the robot before an L6 arm test: " + ", ".join(HARDWARE_GROUPS))
     lab = ap.add_mutually_exclusive_group()
     lab.add_argument("--lab", dest="lab", action="store_const", const=True,
                      help="treat this as the lab machine (overrides the Linux+ROS/GPU guess)")
@@ -909,7 +925,7 @@ def main() -> int:
     global LAB_OVERRIDE
     LAB_OVERRIDE = a.lab
 
-    names = a.group or list(GROUPS)
+    names = a.group or (HARDWARE_GROUPS if a.hardware else L2_GROUPS)
     checks: list[Check] = []
     for n in names:
         checks.extend(GROUPS[n]())
@@ -923,7 +939,8 @@ def main() -> int:
 
     mark = {PASS: "PASS", FAIL: "FAIL", WARN: "warn", SKIP: "skip"}
     print("=" * 78)
-    print("PREFLIGHT -- capability and hardware, up to but not including arm motion")
+    print("PREFLIGHT -- " + ("L5: is the robot there? No arm motion" if a.hardware and not a.group
+                             else "can this machine run L3-L4 (the robot is checked by --hardware)"))
     print(f"host: {platform.system()} {platform.machine()}   repo: {REPO}")
     print(f"user: {getpass.getuser()}   lab machine: {on_lab_machine()} "
           f"({'forced' if LAB_OVERRIDE is not None else 'guessed: Linux + ROS or NVIDIA'})")
@@ -962,6 +979,11 @@ def main() -> int:
     print(f"\n  This script never publishes to any of: {', '.join(FORBIDDEN[:3])}, ...")
     print("  Everything past that line needs a human at the robot with the e-stop in hand.")
 
+    if a.hardware and not a.group:
+        arm = next(c for c in checks if c.name == "arm-ping")
+        if arm.status != PASS:
+            print(f"\nSKIPPED: the arm does not answer ({arm.status.lower()}), so L6 has nothing to test.")
+            return 3
     return 1 if n[FAIL] else 0
 
 

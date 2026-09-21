@@ -2,19 +2,19 @@
 
 Run by bench/estop_delivery.sh, which has already proven the ROS channel is private
 and no rm_driver is running -- nothing on this channel acts on a stop message.
-estop.py needs a terminal (getch() puts the tty in raw mode), so it runs under a
-pseudo-terminal and gets real keystrokes.
+estop.py needs a terminal (it reads single keys), so it runs under a pseudo-terminal and
+gets real keystrokes.
 
   control  key 'e'         -> Stop(state=True)  on /rm_driver/emergency_stop_cmd
   control  key 'r'         -> Stop(state=False) on the same topic
   control  key 's'         -> Empty on /rm_driver/move_stop_cmd
-  xfail    Ctrl+C key      -> Stop(state=True). Expected to fail [inferred]: raw mode
-                              turns Ctrl+C into a plain character, so no SIGINT is raised
-  xfail    kill -INT (xN)  -> Stop(state=True). Expected to fail: CODE_AUDIT B2 (publish,
-                              then destroy_node/shutdown at once). A race, so repeated
+  control  Ctrl+C key      -> Stop(state=True)   (CODE_AUDIT B2a, fixed 2026-09-21)
+  control  kill -INT (xN)  -> Stop(state=True)   (CODE_AUDIT B2, fixed 2026-09-21). Was a race,
+                                                 so repeated: every trial must deliver
 
-Controls must pass. An xfail that passes is reported as XPASS: the finding did not
-reproduce, retag it. Exit 0 = controls pass, 1 = a control failed, 3 = skipped.
+The keys are sent back to back, with no pause: estop.py used to drop a key sent while it
+handled the previous one (CODE_AUDIT B2c, fixed 2026-09-21).
+Every case must pass. Exit 0 = pass, 1 = a case failed, 3 = skipped.
 """
 import os
 import pty
@@ -122,7 +122,7 @@ def main():
             e.key(b"\x03")
             ok = node.arrived(ESTOP_TOPIC, True, t)
             rc = e.wait_exit(2.0)
-            results.append(("Ctrl+C key -> emergency stop", "xfail", ok,
+            results.append(("Ctrl+C key -> emergency stop", "control", ok,
                             ("stop arrived" if ok else "no stop")
                             + ("; estop.py still running" if rc is None else f"; estop.py exited {rc}")))
         finally:
@@ -146,7 +146,7 @@ def main():
                 details.append(f"#{i + 1}: {'stop' if ok else 'none'}, exit {rc}")
             finally:
                 e.kill()
-        results.append((f"kill -INT -> emergency stop ({TRIALS} trials)", "xfail",
+        results.append((f"kill -INT -> emergency stop ({TRIALS} trials)", "control",
                         delivered == TRIALS, f"{delivered}/{TRIALS} delivered  [" + "; ".join(details) + "]"))
 
     node.destroy_node()
@@ -163,7 +163,7 @@ def main():
         print(f"  [{tag}] {name:42s} {detail}")
     if any(k == "xfail" and ok for _, k, ok, _ in results):
         print("\n  XPASS: an expected failure did not reproduce -- retag the finding (CODE_AUDIT B2 / TESTBENCH_PLAN W3).")
-    print("\nRESULT:", "FAIL (a control case failed)" if failed else "PASS (controls pass; XFAIL = known finding reproduced)")
+    print("\nRESULT:", "FAIL (a case failed)" if failed else "PASS (every stop path delivers)")
     return 1 if failed else 0
 
 

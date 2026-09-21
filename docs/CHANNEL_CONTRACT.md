@@ -300,7 +300,7 @@ Known problems inside subsystems, so they are not lost:
 | Grasp | `/PLACEHOLDER/sam/mask` in `dummy_mask_publisher.py:14` should be `/camera/sam/mask`. The tool broadcasts into the void |
 | Grasp | `/camera/sam/mask` has two publishers, `sam3_ros_node.py:65` and `object_recognition_pipeline.py:189`. G-1 removes one |
 | Bot | `/rm_driver/set_gripper_position_cmd` has two publishers, `grasp_state_machine.cpp:150` and `orchestrator.py:51` |
-| Bot | `estop.py` ignores the Ctrl+C key, `CODE_AUDIT` B2a, observed |
+| Bot | ~~`estop.py` ignores the Ctrl+C key, `CODE_AUDIT` B2a, observed~~ Fixed 2026-09-21 (T1.2) |
 | Aria | Every glasses channel except the spoken word is switched off, `ORIENTATION` §6.1 |
 
 ---
@@ -311,3 +311,4 @@ Known problems inside subsystems, so they are not lost:
 |---|---|---|
 | 2026-09-20 | Claude (Opus 5) + Dion | Created. `T0.7`. Twelve live handovers, four parked with the return leg, four planned, five measurements, eleven hidden channels and the TF edge table. Twenty-eight decisions recorded, including the nav split between Sherman and Zongzhe, FAST-LIVO2 staged into scope, the phase table, and the target names for the rename pass. |
 | 2026-09-20 | Claude (Opus 5) + Dion | `next-steps-map.html` republished with the new ownership section, the owner changes and T0.7 marked done. `wiring-map.html` §8 gained a pointer to this file and was republished (version 5). ⚠️ Its share pin still points at the old version, so viewers see the previous page until the pin is moved from the page's Share menu. |
+| 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |

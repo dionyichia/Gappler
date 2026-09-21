@@ -97,7 +97,7 @@ ends with an explicit list of what it could **not** check and why. Run it before
 refactor. On the lab box it also has L3-L4 scripts (build and simulation) — the arm build, MoveIt and the grasp state
 machine on a simulated arm, the e-stop, the AnyGrasp env. See [`bench/README.md`](../bench/README.md). The bench levels were renamed from
 "Tiers" on 2026-09-19. Older docs and `bench-runs/` still say Tier. The mapping table is in
-`bench/README.md` "Levels": Tier 0-1 is L0-L1, Tier 2 is L3, Tier 3 is L4, Tier 4 is L5.
+`bench/README.md` "Levels": Tier 0-1 is L0-L1, Tier 2 is L3, Tier 3 is L4, Tier 4 is L6. L5 (robot check) is new, 2026-09-21.
 
 [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) is the one place that says **which subsystem owns which
 message channel**, what passes between subsystems, and who decides when a name, type or frame

@@ -1,0 +1,34 @@
+W5 -- AnyGrasp env built from nothing by the repo script     lab box, ~/rcp-Gappler, 2026-09-21 14:30-14:48
+================================================================================================
+Command: ./envs/anygrasp/build.sh   (main @ 9bbb26a plus the staged changes of 2026-09-21)
+Result:  PASS [observed]. envs/anygrasp/.venv built in about 18 minutes, then the probe
+         (bench/nodes/probe_anygrasp_env.py) passed every import and the SDK demo:
+         "grasp score: 0.4764862060546875", the same as the 2026-09-11 scratch env.
+Defaults used: CUDA_HOME=/usr/local/cuda-12.8, TORCH_CUDA_ARCH_LIST=8.9 (read from the GPU),
+         Ubuntu openblas-pthread folders, MAX_JOBS=8. /home had 26 GB free before the build.
+Full log (250 KB, mostly compiler warnings): ~/bench-logs/2026-09-21-anygrasp-build.log on the box.
+
+Step markers and the probe, from that log:
+== fresh env at envs/anygrasp/.venv (CUDA_HOME=/usr/local/cuda-12.8, arch 8.9)
+== MinkowskiEngine (the long step)
+== pointnet2
+== pinned packages
+== check: imports and the SDK demo
+Stage 1 -- imports, each in its own process
+  [PASS] torch            2.10.0+cu128 cuda 12.8 gpu True
+  [PASS] numpy            2.2.6
+  [PASS] MinkowskiEngine  0.5.4
+  [PASS] pointnet2        ok
+  [PASS] open3d           0.19.0
+  [PASS] graspnetAPI      ok
+  [PASS] sklearn          1.7.2
+  [PASS] scipy            1.15.3
+  [PASS] PIL              12.1.1
+  [PASS] lib_cxx          ok
+  [PASS] gsnet            ok
+Stage 2 -- SDK detection demo on its example frame
+  licence line: [2026-09-21 14:48:09.659] [info] [FlexivLic] license /home/rcp2026/rcp-Gappler/log/anygrasp_probe/license/Puneet.lic check passed.
+  licence line: checking license on /home/rcp2026/rcp-Gappler/log/anygrasp_probe/gsnet.cpython-310-x86_64-linux-gnu.so
+  licence line: license passed: True, state: FvrLicenseState.PASSED
+  [PASS] demo exit 0: grasp score: 0.4764862060546875
+RESULT: PASS -- this interpreter runs AnyGrasp
