@@ -629,7 +629,7 @@ now means the startup guide and `SETUP.md` are on `main` before Zongzhe and Sher
 | ID | Task | Type | Owner | Hours | Where | After |
 |---|---|---|---|---|---|---|
 | T2.0 | Settle the open decision in `NEXT_STEPS` 2.2: patch the spoken word into the existing arm-side segmentation program, or retire it and restore the pipeline call site. Recommendation below | decide | Dion | 2 | off | T1.1 |
-| T2.1 | Build one segmentation service that owns the model and is the only publisher of the three mask channels. Both current call sites become clients of it | rewire | Dion | 12 | off, box | T1.12, T2.0 |
+| T2.1 | Build one segmentation service that owns the model and is the only publisher of the three mask channels. Both current call sites become clients of it. **Also (added 2026-09-22):** decide whether `grasp/tools/dummy_mask_publisher.py`, the no-perception stand-in, is still needed. It is broken (`NEXT_STEPS` §2.3). Fix it or delete it | rewire | Dion | 12 | off, box | T1.12, T2.0 |
 | T2.2 | Switch the glasses image stream back on, one stage at a time so failures are attributable | rewire | Dion | 6 | lab | T0.3 |
 | T2.3 | Verify the gaze path and measure the error introduced by the fixed 1.5 metre depth assumption. Record the usable distance range | measure | Dion | 6 | lab | T2.2 |
 | T2.4 | Decide when segmentation runs, instead of on every frame, and add an age limit so the arm never moves toward a stale position | build | Dion | 8 | off | T2.1 |
@@ -1047,3 +1047,4 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-21 | Claude (Opus 5) + Dion | T3.5 points to the nav map findings in `NEXT_STEPS` §2.15 "For Sherman". `next-steps-map.html` task data updated to match, republish owed (the refactor is still going). |
 | 2026-09-21 | Claude (Opus 5) + Dion | `shared/config.yaml` renamed to `shared/global_config.yaml` in the two current mentions (reorg step 2). The gaze topic's line cite corrected to `:13`. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T2.1 gains the fix-or-delete check for `dummy_mask_publisher.py`, parked in `grasp/tools/` by the reorg. `next-steps-map.html` task data updated, republish owed. |

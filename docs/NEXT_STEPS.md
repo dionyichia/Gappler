@@ -238,6 +238,9 @@ drifted and the stand-in was left behind. Since this is the tool for testing the
 the perception stack, it is worth 30 seconds to fix — retarget it to `/camera/sam/mask`. Note
 `docs/SETUP.md` on `realman_manip` still describes it as the working bridge.
 
+**Parked 2026-09-22** in `grasp/tools/dummy_mask_publisher.py`, with a "consider deleting" note at the
+top. Fix it or delete it when the one segmentation service is built (`PROJECT_PLAN` T2.1).
+
 ### 2.4 🟡 Naming cleanup — do it in one deliberate pass, not opportunistically
 
 `[code]` The audit in ORIENTATION §0b found nine name collisions and two defects already caused by
@@ -1068,8 +1071,15 @@ Run `./bench/run.sh` before and after every step.
    | `src/` (the Aria app) | `aria/aria_app/` |
    | `src/services/object_recognition/` (SAM3) | `aria/aria_app/services/object_recognition/` |
    | `src/models/` | `aria/aria_app/models/` |
-   | `ros2_robot_ws/src/rm_mtc/` | `grasp/rm_mtc/` |
-   | `ros2_robot_ws/src/rm_ros_interfaces/` | `arm/rm_ros_interfaces/` |
+   | `ros2_robot_ws/src/rm_mtc/` | `grasp/rm_mtc/`, then split in step 5 (rows below) |
+   | `rm_mtc` package (C++, `include/rm_mtc/`, `launch/grasp_state_machine.launch.py`) | `grasp/grasp_state_machine/` (package `grasp_state_machine`) |
+   | `rm_mtc/launch/background.launch.py` | `arm/arm_bringup/launch/arm_bringup.launch.py` (package `arm_bringup`) |
+   | `rm_mtc/src/perception/anygrasp_*.py`, `*.so`, `license/`, `log/` | `grasp/anygrasp_node/` |
+   | `rm_mtc/src/perception/sam3_ros_node.py` | `grasp/segmentation/sam3_ros_node.py` |
+   | `rm_mtc/src/perception/grasp_viz.py`, `rviz_config.rviz` | `grasp/grasp_viz/` |
+   | `rm_mtc/src/perception/dummy_mask_publisher.py` | `grasp/tools/` (consider deleting, T2.1) |
+   | `rm_ros_interfaces/msg/GraspCandidate*.msg` | `grasp/grasp_interfaces/msg/` (package `grasp_interfaces`) |
+   | `ros2_robot_ws/src/rm_ros_interfaces/` | `arm/rm_ros_interfaces/`, then `arm/vendor/rm_ros_interfaces/` in step 5 |
    | `ros2_robot_ws/src/estop.py` | `arm/estop/estop.py` |
    | `ros2_robot_ws/src/main.py` | `launchers/start_grasp_pipeline.py` |
    | `ros2_robot_ws/src/orchestrator.py` | `launchers/grasp_orchestrator.py` |
@@ -1084,7 +1094,14 @@ Run `./bench/run.sh` before and after every step.
    | `ros2_robot_ws/install.sh` | deleted, replaced by `build.sh` |
 
    Line numbers inside moved files are unchanged by the move itself.
-5. **Splits into per-node packages.** `rm_mtc` into `grasp_state_machine`, `anygrasp_node` and
+5. 🟡 **Grasp and arm done 2026-09-22 (on the branch), nav next.** Decided 2026-09-22: Python nodes
+   that run in their own environment (AnyGrasp, SAM3, the visualiser, the e-stop) get a plain folder
+   each, not a ROS package, because a ROS Python package runs under colcon's interpreter and would
+   fight those environments. `rm_mtc` is now `grasp_state_machine`, arm bring-up is `arm_bringup`,
+   our two grasp messages are `grasp_interfaces` (the `/grasp_candidates` type changed on purpose,
+   contracts re-snapshotted), and `rm_ros_interfaces` is in `arm/vendor/`. The refactor deletes no
+   code: `dummy_mask_publisher.py` is parked in `grasp/tools/` with a "consider deleting" note.
+   **Splits into per-node packages.** `rm_mtc` into `grasp_state_machine`, `anygrasp_node` and
    `segmentation`, the `robot_slam` scripts into their own packages, and `rm_ros_interfaces` into
    ours and theirs (§2.11 step 3). These change package names, so launch files change too. L1 will
    show those renames as deliberate changes, re-snapshot after each.
@@ -1312,3 +1329,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.15 step 3 done on the branch: vendor code in `<subsystem>/vendor/`, `deps_ws/` and `grasp_module/` gone, OpenVINS marked unused and a deletion candidate. §2.11 steps 1, 2 and 4 marked done, its hardcoded-path table resolved. Current paths updated in §2.5, §2.6, §2.9, §3.1 and §3.2. Step 2 passed the full bench on the box (L0-L4). |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.15 step 4 done on the branch: our code in `aria/`, `arm/`, `grasp/`, `nav/`, launchers renamed into `launchers/`. Added the old-to-new path table that older cites across the docs rely on. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 5: grasp and arm split done on the branch (per-node folders, `grasp_state_machine`, `grasp_interfaces`, `arm_bringup`), path table extended. §2.3: the dummy mask publisher is parked in `grasp/tools/`, fix-or-delete decided in T2.1. |

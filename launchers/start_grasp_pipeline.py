@@ -26,21 +26,21 @@ from gappler_common import ROOT
 # Paths, from the repo root that gappler_common finds (NEXT_STEPS 2.15)
 # ---------------------------------------------------------------------------
 REPO_ROOT = str(ROOT)
-PERCEPTION = os.path.join(REPO_ROOT, "grasp/rm_mtc/src/perception")
+GRASP = os.path.join(REPO_ROOT, "grasp")
 
 ANYGRASP_CONDA_ENV = "anygrasp"
-ANYGRASP_DIR = PERCEPTION
+ANYGRASP_DIR = os.path.join(GRASP, "anygrasp_node")
 ANYGRASP_CHECKPOINT = "log/checkpoint_detection.tar"  # relative to ANYGRASP_DIR
 
 
 ANYGRASP_NODE_PATH = os.path.join(
-    PERCEPTION, "anygrasp_detection_node.py"
+    ANYGRASP_DIR, "anygrasp_detection_node.py"
 )
 SAM3_PROJECT_ROOT = REPO_ROOT
-SAM3_NODE_PATH = os.path.join(PERCEPTION, "sam3_ros_node.py")
+SAM3_NODE_PATH = os.path.join(GRASP, "segmentation", "sam3_ros_node.py")
 SAM3_WORK_DIR = os.path.join(REPO_ROOT, "aria/aria_app/services/object_recognition")
-GRASP_VIZ_NODE_PATH = os.path.join(PERCEPTION, "grasp_viz.py")
-RVIZ_CONFIG_PATH = os.path.join(PERCEPTION, "rviz_config.rviz")
+GRASP_VIZ_NODE_PATH = os.path.join(GRASP, "grasp_viz", "grasp_viz.py")
+RVIZ_CONFIG_PATH = os.path.join(GRASP, "grasp_viz", "rviz_config.rviz")
 
 # ---------------------------------------------------------------------------
 # Process registry
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     # 1. ROS2 bringup — allow time for move_group to fully initialise
     launch(
-        ["ros2", "launch", "rm_mtc", "background.launch.py"],
+        ["ros2", "launch", "arm_bringup", "arm_bringup.launch.py"],
         label="rm_bringup",
         delay=0.0,
     )
@@ -144,7 +144,7 @@ if __name__ == "__main__":
 
     # 5. Grasp state machine — launched last, after all sources are ready
     launch(
-        ["ros2", "launch", "rm_mtc", "grasp_state_machine.launch.py"],
+        ["ros2", "launch", "grasp_state_machine", "grasp_state_machine.launch.py"],
         label="grasp_state_machine",
         delay=5.0,
     )

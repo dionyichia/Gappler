@@ -23,8 +23,8 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <rm_ros_interfaces/msg/gripperpick.hpp>
 #include <rm_ros_interfaces/msg/gripperset.hpp>
-#include <rm_ros_interfaces/msg/grasp_candidate_array.hpp>
-#include "rm_mtc/mtc_planner.hpp"
+#include <grasp_interfaces/msg/grasp_candidate_array.hpp>
+#include "grasp_state_machine/mtc_planner.hpp"
 
 // ===========================================================================
 // Tuning constants
@@ -139,7 +139,7 @@ private:
         "/camera/camera/color/camera_info", 1,
         std::bind(&GraspStateMachine::cameraInfoCallback, this, std::placeholders::_1));
 
-    grasp_sub_ = this->create_subscription<rm_ros_interfaces::msg::GraspCandidateArray>(
+    grasp_sub_ = this->create_subscription<grasp_interfaces::msg::GraspCandidateArray>(
         "/grasp_candidates", 10,
         std::bind(&GraspStateMachine::graspCallback, this, std::placeholders::_1));
 
@@ -178,7 +178,7 @@ private:
     camera_info_sub_.reset();
   }
 
-  void graspCallback(const rm_ros_interfaces::msg::GraspCandidateArray::SharedPtr msg)
+  void graspCallback(const grasp_interfaces::msg::GraspCandidateArray::SharedPtr msg)
   {
     if (state_ != State::EXECUTING || msg->grasps.empty())
       return;
@@ -459,7 +459,7 @@ private:
   bool executingStep(bool &pose_locked, geometry_msgs::msg::Pose &stable_pose_base)
   {
     // --- Wait for a detection candidate (3s timeout) ---
-    rm_ros_interfaces::msg::GraspCandidateArray::SharedPtr msg;
+    grasp_interfaces::msg::GraspCandidateArray::SharedPtr msg;
     {
       std::unique_lock<std::mutex> lock(queue_mutex_);
       bool got = queue_cv_.wait_for(lock, std::chrono::seconds(3),
@@ -746,7 +746,7 @@ private:
 
   // ROS interfaces
   rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_sub_;
-  rclcpp::Subscription<rm_ros_interfaces::msg::GraspCandidateArray>::SharedPtr grasp_sub_;
+  rclcpp::Subscription<grasp_interfaces::msg::GraspCandidateArray>::SharedPtr grasp_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr centroid_sub_;
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperset>::SharedPtr gripper_position_pub_;
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperpick>::SharedPtr gripper_pick_on_pub_;
@@ -774,7 +774,7 @@ private:
   geometry_msgs::msg::PointStamped centroid_snapshot_;
 
   // Grasp candidate queue (shared with callbacks)
-  std::queue<rm_ros_interfaces::msg::GraspCandidateArray::SharedPtr> candidate_queue_;
+  std::queue<grasp_interfaces::msg::GraspCandidateArray::SharedPtr> candidate_queue_;
   std::mutex queue_mutex_;
   std::condition_variable queue_cv_;
 

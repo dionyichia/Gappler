@@ -394,7 +394,7 @@ def g_env() -> list[Check]:
 def g_assets() -> list[Check]:
     cs = []
     lab = on_lab_machine()
-    perception = REPO / "grasp/rm_mtc/src/perception"
+    perception = REPO / "grasp/anygrasp_node"
 
     c = Check("assets", "sam3-weights", "3.4 GB checkpoint, gitignored")
     p = REPO / "aria/aria_app/models/sam3/sam3.pt"
@@ -430,7 +430,7 @@ def g_assets() -> list[Check]:
 
     c = Check("assets", "anygrasp-so", "compiled binaries built against a pinned torch")
     sos = sorted(p.name for p in perception.glob("*.so"))
-    cs.append(c.ok(", ".join(sos)) if sos else c.bad("no .so files in perception/"))
+    cs.append(c.ok(", ".join(sos)) if sos else c.bad("no .so files in grasp/anygrasp_node/"))
 
     c = Check("assets", "slam-map", "slam_localization reads a prebuilt map")
     ref = REPO / "nav/robot_slam/config/slam_toolbox_localization.yaml"

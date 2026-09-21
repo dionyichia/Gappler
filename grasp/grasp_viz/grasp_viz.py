@@ -16,7 +16,7 @@ import numpy as np
 import rclpy
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.node import Node
-from rm_ros_interfaces.msg import GraspCandidateArray
+from grasp_interfaces.msg import GraspCandidateArray
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from tf2_geometry_msgs import do_transform_pose

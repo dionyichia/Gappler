@@ -1,4 +1,9 @@
 """
+CONSIDER DELETING (parked here 2026-09-22 by the reorg, was rm_mtc/src/perception/).
+It no longer works: it publishes to /PLACEHOLDER/sam/mask, but the AnyGrasp nodes now
+listen on /camera/sam/mask (NEXT_STEPS 2.3). Fix it (retarget the topic) or delete it:
+decide in PROJECT_PLAN T2.1, when the one segmentation service is built.
+
 Dummy mask publisher for testing without SAM.
 Subscribes to depth topic to match resolution and timestamp,
 publishes an all-True mask on the SAM mask placeholder topic.

@@ -34,7 +34,7 @@ aria/aria_app/models/sam3/sam3.pt
 *.engine
 *.h5
 assets/models/
-grasp/rm_mtc/src/perception/log/checkpoint_*.tar
+grasp/anygrasp_node/log/checkpoint_*.tar
 # ...except the Aria eye-tracking model: 11 MB, tracked since before this rule, loaded by the code
 !aria/aria_app/models/projectaria_eyetracking/weights.pth
 # Recordings, bags, captured frames

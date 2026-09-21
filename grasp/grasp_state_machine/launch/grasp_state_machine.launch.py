@@ -9,7 +9,7 @@ def generate_launch_description():
     ).to_moveit_configs()
 
     grasp_state_machine = Node(
-        package="rm_mtc",
+        package="grasp_state_machine",
         executable="grasp_state_machine",
         output="screen",
         parameters=[moveit_config.to_dict()],

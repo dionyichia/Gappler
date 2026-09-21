@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>arm_bringup</name>
+  <version>0.0.0</version>
+  <description>Starts the RM65 arm: RealMan's driver, robot description, arm control and MoveIt (launch/arm_bringup.launch.py). Was rm_mtc/launch/background.launch.py until 2026-09-22.</description>
+  <maintainer email="dionyi2002@gmail.com">Dion</maintainer>
+  <license>TODO: License declaration</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>rm_driver</exec_depend>
+  <exec_depend>rm_description</exec_depend>
+  <exec_depend>rm_control</exec_depend>
+  <exec_depend>rm_65_w_gripper_config</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

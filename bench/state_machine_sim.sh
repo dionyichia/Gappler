@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tier 3 -- rm_mtc's grasp_state_machine against a SIMULATED arm (TESTBENCH_PLAN W2).
+# Tier 3 -- grasp_state_machine against a SIMULATED arm (TESTBENCH_PLAN W2).
 # The arm is ros2_control's mock_components: joint positions exist only in memory. rm_driver
 # is never started; the gripper commands the state machine sends are only recorded.
 #
@@ -24,7 +24,7 @@ export BENCH_SM_LOG="log/bench_state_machine_$(date +%F_%H%M).txt"
 # ---- guards: every one must hold before anything is launched ----------------
 refuse() { echo "REFUSED: $*"; exit 1; }
 [ "$DOMAIN" != "0" ] || refuse "ROS_DOMAIN_ID 0 is the default channel the real robot uses"
-ros2 pkg prefix rm_mtc >/dev/null 2>&1 || refuse "rm_mtc is not in $REPO/install"
+ros2 pkg prefix grasp_state_machine >/dev/null 2>&1 || refuse "grasp_state_machine is not in $REPO/install"
 share="$(ros2 pkg prefix "$CFG" 2>/dev/null)/share/$CFG"
 [ -d "$share" ] || refuse "$CFG is not in $REPO/install"
 grep -q "mock_components/GenericSystem" "$share/config/rm_65_with_gripper.ros2_control.xacro" \

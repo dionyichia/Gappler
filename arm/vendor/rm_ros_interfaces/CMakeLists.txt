@@ -36,8 +36,7 @@ set(msg_files
   # msg/Jointpos75.msg
   msg/Cartepos.msg
   msg/Jointerrclear.msg
-  msg/GraspCandidate.msg
-  msg/GraspCandidateArray.msg
+  # GraspCandidate.msg and GraspCandidateArray.msg moved to grasp/grasp_interfaces (2026-09-22).
   msg/Gripperpick.msg
   msg/Gripperset.msg
   msg/Handangle.msg

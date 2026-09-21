@@ -234,7 +234,7 @@ def main():
         run()
     finally:
         # ---- shutdown: does the node exit on SIGINT? (CODE_AUDIT C6: nothing is ever joined)
-        pid = subprocess.run(["pgrep", "-f", "lib/rm_mtc/grasp_state_machine"], capture_output=True,
+        pid = subprocess.run(["pgrep", "-f", "lib/grasp_state_machine/grasp_state_machine"], capture_output=True,
                              text=True).stdout.split()
         if pid:
             os.kill(int(pid[0]), 2)

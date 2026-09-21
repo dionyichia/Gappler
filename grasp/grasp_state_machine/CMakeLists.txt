@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(rm_mtc)
+project(grasp_state_machine)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -15,7 +15,8 @@ find_package(geometry_msgs REQUIRED)
 # further dependencies manually.
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
-find_package(rm_ros_interfaces REQUIRED)
+find_package(rm_ros_interfaces REQUIRED)   # the gripper messages (RealMan's)
+find_package(grasp_interfaces REQUIRED)    # GraspCandidate(Array), ours
 find_package(std_msgs REQUIRED)
 find_package(moveit_msgs REQUIRED)
 find_package(shape_msgs REQUIRED)
@@ -35,6 +36,7 @@ ament_target_dependencies(grasp_state_machine
   tf2_ros
   tf2_geometry_msgs
   rm_ros_interfaces
+  grasp_interfaces
   std_msgs
   moveit_msgs
   shape_msgs  

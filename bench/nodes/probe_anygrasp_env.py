@@ -3,7 +3,7 @@
 Stdlib only; drives the target interpreter in subprocesses so one broken import cannot hide
 the others. Stage 1 imports every dependency separately. Stage 2 runs the SDK's own
 grasp_detection/demo.py on its example frame, in a scratch folder (log/anygrasp_probe/) that
-links in exactly what the robot's node uses: the perception folder's gsnet / lib_cxx builds,
+links in exactly what the robot's node uses: the anygrasp_node folder's gsnet / lib_cxx builds,
 its license/ folder and log/checkpoint_detection.tar. Headless (no --debug), GPU only.
 """
 import os
@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-PERCEPTION = REPO / "grasp/rm_mtc/src/perception"
+PERCEPTION = REPO / "grasp/anygrasp_node"
 SDK_DET = REPO / "grasp/vendor/anygrasp_sdk/grasp_detection"
 SCRATCH = REPO / "log/anygrasp_probe"
 # envs/anygrasp/.venv is built by envs/anygrasp/build.sh. The 2026-09-11 scratch env (log/w5/venv)

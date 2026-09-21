@@ -1,4 +1,4 @@
-#include "rm_mtc/mtc_planner.hpp"
+#include "grasp_state_machine/mtc_planner.hpp"
 #include <moveit/robot_trajectory/robot_trajectory.h>
 #include <moveit/trajectory_processing/time_optimal_trajectory_generation.h>
 

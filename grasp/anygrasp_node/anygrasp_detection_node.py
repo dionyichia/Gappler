@@ -15,7 +15,7 @@ import tf2_ros
 from gsnet import AnyGrasp  # Compiled binary, must be in conda env
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.node import Node
-from rm_ros_interfaces.msg import GraspCandidate, GraspCandidateArray
+from grasp_interfaces.msg import GraspCandidate, GraspCandidateArray
 from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import String

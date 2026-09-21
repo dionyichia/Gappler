@@ -68,7 +68,7 @@ class Orchestrator(Node):
 
         self.get_logger().info("Launching rm_bringup...")
         launch(
-            ["ros2", "launch", "rm_mtc", "background.launch.py"],
+            ["ros2", "launch", "arm_bringup", "arm_bringup.launch.py"],
             label="rm_bringup",
             delay=0.0,
         )
@@ -105,7 +105,7 @@ class Orchestrator(Node):
     #     self._goal_reached = True
     #     self.get_logger().info("Goal reached — launching rm_bringup")
     #     launch(
-    #         ["ros2", "launch", "rm_mtc", "background.launch.py"],
+    #         ["ros2", "launch", "arm_bringup", "arm_bringup.launch.py"],
     #         label="rm_bringup",
     #         delay=0.0,
     #     )

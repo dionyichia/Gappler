@@ -1177,7 +1177,7 @@ var T = [
  ["T1.12","M1","DS",4,"lab","Grasp using a live mask from the wrist camera with a fixed prompt word. Five attempts, success rate recorded",["T1.11"],"measure"],
 
  ["T2.0","M2","D",2,"off","DONE 2026-09-20. Settle the open decision in NEXT_STEPS 2.2: patch the spoken word into the arm-side segmentation program, or retire it and restore the pipeline call site. Decided: retire it. The pipeline already reads both cameras and already has gaze, and the duplicate model is the biggest memory saving in the system",["T1.1"],"plan"],
- ["T2.1","M2","D",12,"mix","Build one segmentation service that owns the model and is the only publisher of the three mask channels. Both current call sites become clients",["T1.12","T2.0"],"wire"],
+ ["T2.1","M2","D",12,"mix","Build one segmentation service that owns the model and is the only publisher of the three mask channels. Both current call sites become clients Also (added 2026-09-22): decide whether grasp/tools/dummy_mask_publisher.py, the broken no-perception stand-in, is still needed. Fix it or delete it",["T1.12","T2.0"],"wire"],
  ["T2.2","M2","D",6,"lab","Switch the glasses image stream back on, one stage at a time so failures are attributable",["T0.3"],"wire"],
  ["T2.3","M2","D",6,"lab","Verify the gaze path and measure the error introduced by the fixed 1.5 metre depth assumption. Record the usable distance range",["T2.2"],"measure"],
  ["T2.4","M2","D",8,"off","Decide when segmentation runs, instead of on every frame, and add an age limit so the arm never moves toward a stale position",["T2.1"],"build"],
