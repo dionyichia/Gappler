@@ -14,7 +14,7 @@ from gappler_common import path
 
 
 # Where saved maps live: `map_dir` in shared/global_config.yaml, overridden by
-# exporting GAPPLER_MAP_DIR. Needs `source env.sh` first, so gappler_common imports.
+# exporting GAPPLER_MAP_DIR. Needs `source nav/nav_env.sh` (or global_env.sh) first, so gappler_common imports.
 #   mapping writes  <map_dir>/current_map
 #   localisation reads <map_dir>/completed_map
 MAP_DIR = str(path("map_dir"))

@@ -1019,8 +1019,9 @@ work for ROS nodes, which run from `install/`, not from the repo.
   `shared/`, which never moves, so it takes the folder above itself. Every other file imports
   `ROOT`, `config()` or `path(name)` from it. (Decided 2026-09-21 instead of a `GAPPLER_ROOT`
   variable: one less setting, same result.)
-- **`env.sh` puts `shared/` on `PYTHONPATH`**, so any program started after `source env.sh` can
-  import the helper. Source `env.sh` before starting anything, nav included.
+- **`global_env.sh` puts `shared/` on `PYTHONPATH`** (through `shared/base_envs/ros_humble_and_helper.sh`, which every
+  `<subsystem>_env.sh` sources), so any program started after it can import the helper. Source
+  `global_env.sh`, or one subsystem's own file, before starting anything, nav included.
 - **Shell scripts ask git**: `git rev-parse --show-toplevel` works from any folder depth and stops
   with an error outside a git clone, instead of guessing. Needed because config cannot say where
   the repo is: you must already know the repo to read config.
@@ -1092,6 +1093,7 @@ Run `./bench/run.sh` before and after every step.
    | `ros2_robot_ws/src/output.log` | `docs/archive/output.log` |
    | `bench/build.sh` | `build.sh` (repo root: it is the real build, not only a bench tool) |
    | `assets/gripper/` | `assets/vendor/gripper/` |
+   | `env.sh` | `global_env.sh`, plus `aria/aria_env.sh`, `arm/arm_env.sh`, `grasp/grasp_env.sh`, `nav/nav_env.sh` |
    | `ros2_robot_ws/install.sh` | deleted, replaced by `build.sh` |
 
    Line numbers inside moved files are unchanged by the move itself.
@@ -1113,10 +1115,14 @@ Run `./bench/run.sh` before and after every step.
    and serial debugger moved from `assets/gripper/` to `assets/vendor/gripper/` so the rule needs no
    exceptions. Newly counted as ours: `envs/` and `.github/`, with 0 findings. Static and L1 results
    unchanged.
-7. **Last: one env file per subsystem.** `aria/aria_env.sh`, `nav/nav_env.sh` and so on, each
-   setting up only its own subsystem, so someone can start one subsystem against stub data from
-   the others. The root `env.sh` then sources all four. Rename files only at this step, since
-   CLAUDE.md, the docs and the bench all refer to `env.sh`.
+7. ✅ **Done 2026-09-22 (on the branch).** One env file per subsystem: `aria/aria_env.sh`,
+   `arm/arm_env.sh`, `grasp/grasp_env.sh`, `nav/nav_env.sh`, each setting up only its own subsystem,
+   so one subsystem can be started on its own (against stub data from the others, once T0.11 has
+   stubs). The root `env.sh` is now **`global_env.sh`** (Dion: explicit names) and sources all four.
+   Shared setup lives once in `shared/base_envs/ros_humble_and_helper.sh` (ROS, `shared/` on `PYTHONPATH`) and
+   `shared/base_envs/uv_venv.sh` (the `.venv`, only for aria and grasp). New: **nav's `install_nav/` is
+   now sourced**, which `env.sh` never did. Overlays use `local_setup.bash` so several can stack
+   in one shell. Each file finds the repo with git, so none counts folders.
 
 Steps 3 and 4 are pure moves: a commit that only moves files lets git track them as renames, which
 keeps merges manageable for everyone else.
@@ -1343,3 +1349,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 5: grasp and arm split done on the branch (per-node folders, `grasp_state_machine`, `grasp_interfaces`, `arm_bringup`), path table extended. §2.3: the dummy mask publisher is parked in `grasp/tools/`, fix-or-delete decided in T2.1. |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 5, nav: the six robot_slam scripts are one package each, path table row added. `robot_slam` and `robot_navigation` stay two packages (Dion, decision b): their `nav2_params.yaml` differ, so the merge is left to Sherman, noted in "For Sherman". |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 6 done on the branch: ownership is the `is_owned` rule (not under `vendor/`), gripper tools moved to `assets/vendor/`. §2.7 note updated. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 7 done on the branch: `global_env.sh` plus one env file per subsystem, shared setup in `shared/`, nav's overlay now sourced. The refactor's seven steps are all done on the branch. |

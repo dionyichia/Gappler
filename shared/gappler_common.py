@@ -1,7 +1,8 @@
 """The one place that knows where the repo is and reads shared/global_config.yaml.
 
 Import this instead of working out paths from __file__, so moving a file never
-breaks a path (NEXT_STEPS 2.15). env.sh puts shared/ on PYTHONPATH.
+breaks a path (NEXT_STEPS 2.15). shared/base_envs/ros_humble_and_helper.sh, sourced by every
+<subsystem>_env.sh and so by global_env.sh, puts shared/ on PYTHONPATH.
 
     from gappler_common import ROOT, config, path
     config()["topics"]["imu"]      -> "/aria/imu"
@@ -35,7 +36,7 @@ def path(name: str) -> Path:
 
 
 if __name__ == "__main__":  # self-check: python3 shared/gappler_common.py
-    assert (ROOT / "env.sh").exists(), ROOT
+    assert (ROOT / "global_env.sh").exists(), ROOT
     assert config()["topics"]["imu"] == "/aria/imu"
     assert path("openvins_ws") == Path(config()["paths"]["openvins_ws"]).expanduser()
     os.environ["GAPPLER_OPENVINS_WS"] = str(Path.home())

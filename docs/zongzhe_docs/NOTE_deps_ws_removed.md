@@ -6,7 +6,7 @@ Your [`BUILD_WORKSPACES.md`](BUILD_WORKSPACES.md) explains why `deps_ws` and
 - **MoveIt Task Constructor moved** from `deps_ws/src/` to `grasp/vendor/moveit_task_constructor/`.
   `deps_ws/` is deleted.
 - **One build, one overlay.** `./build.sh` (moved from `bench/` to the repo root) builds `arm/` and
-  `grasp/` together into the repo-root `install/`. `env.sh` sources only that.
+  `grasp/` together into the repo-root `install/`. `global_env.sh` (was `env.sh`) sources only that.
 - **`ros2_robot_ws/install.sh` is deleted** (Dion, 2026-09-21). `./build.sh` replaces it.
 
 Please update or retire `BUILD_WORKSPACES.md` when you next work in your folder.

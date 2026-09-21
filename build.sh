@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds our ROS code into THIS checkout's build/ install/ log/ and nowhere else.
-# env.sh sources the result. The bench runs it as L3 (was bench/build.sh until 2026-09-21).
+# global_env.sh sources the result (through arm/, grasp/ and nav/<subsystem>_env.sh). The bench runs it as L3 (was bench/build.sh until 2026-09-21).
 # Never launches a node, never touches hardware, no sudo.
 #
 #   ./build.sh          arm/ + grasp/, vendor included (24 packages)

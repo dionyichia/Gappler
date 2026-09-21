@@ -29,7 +29,7 @@ Both held files are now on `main`, so T0.0 is closed.
 2. **Still owed: are these the same glasses?** Skipped 2026-09-21, the glasses were not plugged in.
    With them on USB, read the serial from the `aria` CLI and compare it with `1WM10350101291`, the
    serial in the file. If it differs, the file is for another pair and only good as a parsing fixture.
-   Note the `aria` CLI is not on `rcp2026`'s PATH. Source `env.sh` first so the project `.venv` is active.
+   Note the `aria` CLI is not on `rcp2026`'s PATH. Source `global_env.sh` (was `env.sh`, renamed 2026-09-22) or `aria/aria_env.sh` first so the project `.venv` is active.
 3. ✅ **`env.sh` works in `~/rcp-Gappler`** `[observed]`. 5 `moveit_task_constructor` packages,
    12 `rm_` packages, the `.venv` python. It must be sourced from the repo root (`source
    ~/rcp-Gappler/env.sh`). A copy elsewhere now refuses with exit 1.
@@ -745,3 +745,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-21 | Claude (Opus 5) + Dion | Reorg step 3: current paths and build recipes point at `<subsystem>/vendor/`. Past run records (W5, the box survey) left as they were. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
 | 2026-09-22 | Claude (Opus 5) + Dion | `OWNED_PREFIXES` replaced by the `is_owned` rule (not under `vendor/`), reorg step 6. |
+| 2026-09-22 | Claude (Opus 5) + Dion | `env.sh` renamed `global_env.sh` (reorg step 7) in the current setup instruction. The 2026-09-21 check results keep the old name. |

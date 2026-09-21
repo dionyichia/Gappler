@@ -311,7 +311,7 @@ def g_ros() -> list[Check]:
     cs.append(c.ok(shutil.which("colcon")) if shutil.which("colcon")
               else c.skip("colcon not on PATH"))
 
-    # The four-install-spaces trap: env.sh and the startup guide are emphatic
+    # The four-install-spaces trap: global_env.sh and the startup guide are emphatic
     # that only the repo-root overlay is complete.
     c = Check("ros", "overlay", "only the repo-root install/ has rm_* AND MoveIt Task Constructor")
     spaces = [p for p in (REPO / "install", REPO / "ros2_robot_ws" / "install",
@@ -342,7 +342,7 @@ def g_ros() -> list[Check]:
         dupes = [p for p in ament.split(":") if p.endswith("deps_ws/install") or "/deps_ws/" in p]
         both = dupes and str(REPO / "install") in ament
         cs.append(c.bad("both repo-root and deps_ws overlays are sourced",
-                        "source only env.sh / the repo-root install") if both
+                        "source only global_env.sh / the repo-root install") if both
                   else c.ok(f"{len(ament.split(':'))} prefixes, no duplicate MTC overlay"))
 
     c = Check("ros", "domain-id", "a mismatched ROS_DOMAIN_ID silently hides every topic")

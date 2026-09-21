@@ -1,6 +1,6 @@
 """
 Starts the robot grasping pipeline. launchers/grasp_orchestrator.py runs it when the
-start-grasp message arrives. By hand, after `source env.sh`:
+start-grasp message arrives. By hand, after `source global_env.sh`:
     python3 launchers/start_grasp_pipeline.py
 
 Launches in order:
