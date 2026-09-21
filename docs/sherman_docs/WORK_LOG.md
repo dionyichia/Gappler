@@ -31,6 +31,15 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: Test the D455 under T0.1, then validate the completed design against the physical base before
   fabrication.
 
+## [2026-09-21] T0.5 | Fresh Mac clone bench
+
+- Evidence: [`T0.5_FRESH_CLONE.md`](T0.5_FRESH_CLONE.md)
+- Verified: An isolated clone at `9bbb26a` passed L0 static checks, L1 contracts, and L2 preflight.
+  L3-L4 skipped as expected because the Mac has no ROS 2 Humble or NVIDIA environment.
+- Outcome: Sherman's clean-clone evidence is complete. The independent-clone half of T0.5 remains open.
+- Next: Resolve the Orin-to-GitHub transfer failure, create a new clean Orin clone, and record its
+  bench result before closing T0.5.
+
 ## Record Template
 
 ```markdown
