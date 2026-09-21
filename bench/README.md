@@ -229,9 +229,7 @@ Echo Plus / Livox drops, reported with `-v`.
 
 Vendored trees are excluded wholesale: `open_vins/`, `MinkowskiEngine/`,
 `moveit_task_constructor/`, `anygrasp_sdk/`, `src/archive/`, and every build
-artefact directory. Ownership is defined by `OWNED_PREFIXES` in `bench/_common.py` (one copy, used by all three tools) —
-**update it when the reorg moves things**, or newly-moved code will be
-misclassified as vendor and stop failing the build.
+artefact directory. Ownership is one rule, `is_owned` in `bench/_common.py` (since 2026-09-22): our code is everything except what sits under a folder named `vendor/`. Put third-party code under its subsystem's `vendor/`, and nothing in the bench needs editing when code moves.
 
 ## What this bench does not cover
 

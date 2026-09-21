@@ -60,13 +60,13 @@ MSG_PKG_RE = re.compile(r"^([a-z0-9_]+_(?:msgs|interfaces))(?:\.(msg|srv|action)
 # vendor code that ships with the arm, the base or the LiDAR: its contracts still
 # matter (we call into them) but they are not going to move because *we* moved a
 # file, so the report separates them.
-from _common import OWNED_PREFIXES   # noqa: E402 -- single source; edit there
+from _common import is_owned   # noqa: E402 -- single source; the rule lives there
 
 
 def owned(loc: str) -> bool:
     """loc is a 'path:line' or 'path(tag)' string."""
     path = re.split(r"[:(]", loc)[0]
-    return path.startswith(OWNED_PREFIXES)
+    return is_owned(path)
 
 
 def any_owned(locs) -> bool:

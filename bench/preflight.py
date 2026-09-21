@@ -49,7 +49,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from _common import OWNED_PREFIXES
+from _common import is_owned
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -833,7 +833,7 @@ HOME_SCAN_EXT = (".py", ".sh", ".yaml", ".yml", ".xml", ".json", ".launch", ".cf
 
 
 def _hardcoded_home_paths() -> dict[str, list[str]]:
-    """{absolute /home/... path: [file:line, ...]} over owned code (_common.OWNED_PREFIXES)."""
+    """{absolute /home/... path: [file:line, ...]} over owned code (_common.is_owned)."""
     hits: dict[str, list[str]] = {}
     for root, dirs, files in os.walk(REPO):
         dirs[:] = [d for d in dirs if d not in HOME_SCAN_SKIP and not d.endswith("_docs")]
@@ -841,7 +841,7 @@ def _hardcoded_home_paths() -> dict[str, list[str]]:
             if not fn.endswith(HOME_SCAN_EXT):
                 continue
             f = Path(root) / fn
-            if not str(f.relative_to(REPO)).startswith(OWNED_PREFIXES):
+            if not is_owned(str(f.relative_to(REPO))):
                 continue    # vendored code's example paths (/home/patrick/...) are not ours
             try:
                 lines = f.read_text(errors="replace").splitlines()

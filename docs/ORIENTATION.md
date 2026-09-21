@@ -220,7 +220,7 @@ Top-level, with an honest note on whether you will ever need to touch each one.
 | `shared/global_config.yaml` | **Settings more than one subsystem reads** (renamed from `shared/config.yaml` 2026-09-21, `NEXT_STEPS` §2.15). Today: the Aria-side topic names, 16 of the 54 topics our code declares (§8.17), the video QoS, and machine paths outside the repo (`openvins_ws`, `map_dir`). A ROS parameter file. Read by `aria/aria_app/config/ros2.py`, which builds a `ROS2Topics` enum from it at import time. | **Yes**, when adding an Aria-side topic or a machine path. |
 | `shared/gappler_common.py` | **The one file that knows where the repo is.** `ROOT`, `config()` (reads `global_config.yaml`) and `path(name)` (a machine path, overridable with `GAPPLER_<NAME>`). `env.sh` puts `shared/` on `PYTHONPATH`, so source `env.sh` first. Added 2026-09-21. | Rarely. Import it instead of working out paths from `__file__`. |
 | `main.py` (root) | Top-level launcher: spawns `launchers/grasp_orchestrator.py` + the Aria app. | Yes. Paths come from `shared/gappler_common.py`. |
-| `assets/` | Vendor PDFs (arm + gripper manuals, in Chinese), a test image, gripper serial-debug tools. | No. Manuals are worth a skim. |
+| `assets/` | A test image, and in `assets/vendor/gripper/` the vendor PDFs (arm + gripper manuals, in Chinese) and gripper serial-debug tools. | No. Manuals are worth a skim. |
 | `README.md` (root) | **STALE — ignore it entirely.** It describes a different upstream project (`joshopp/aria_pkg`): ZeroMQ, YOLO `best.pt`, `start_interaction.py`. None of that exists in this code. | Delete it eventually. |
 | `pyproject.toml` / `uv.lock` | Subsystem A's Python deps. Three are forks pulled from GitHub: `rcp-LightGlue`, `rcp-projectaria_eyetracking`, `rcp-sam3`. | Rarely. |
 
@@ -387,7 +387,7 @@ You now know what starts what. Stop and make sure that's solid before Round 2.
 
 Every `vendor/` folder (`aria/vendor/`, `arm/vendor/`, `grasp/vendor/`, `nav/vendor/`),
 `rm_ros_interfaces` except our two grasp messages, `src/archive/`,
-`assets/gripper/`, and the root `README.md`.
+`assets/vendor/gripper/`, and the root `README.md`.
 
 ---
 
@@ -1262,3 +1262,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-21 | Claude (Opus 5) + Dion | §2 repo map updated for reorg step 4: `aria/`, `arm/`, `grasp/`, `nav/`, `launchers/` rows, the three folder trees retitled. Older cites below still use old paths, see the pointer at the top. |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2 grasp rows and the grasp folder tree updated for reorg step 5: `rm_mtc` split into `grasp_state_machine`, `grasp_interfaces`, `anygrasp_node`, `segmentation`, `grasp_viz`, `tools`, and `arm/arm_bringup`. |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2 nav folder tree: one package per node (`object_approach`, `goto_glasses`, `goal_reached`, `pose_publisher`, `qos_relay`, `aria_image_relay`), `robot_slam` keeps launch and config. |
+| 2026-09-22 | Claude (Opus 5) + Dion | `assets/gripper/` is now `assets/vendor/gripper/` (reorg step 6). |

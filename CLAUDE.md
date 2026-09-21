@@ -103,7 +103,8 @@ python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract
 Levels L0-L6 are defined in `bench/README.md` (renamed from Tiers 0-4 on 2026-09-19, L5 robot
 check added 2026-09-21). L0-L2 are stdlib-only and need no ROS. Run them before and after any
 refactor. L5 checks the robot is connected and gates L6. L6 is the real robot and is
-never automated. When the reorg moves code, update `OWNED_PREFIXES` in `bench/_common.py` (the one copy, shared by all three tools).
+never automated. What counts as our code is one rule, `is_owned` in `bench/_common.py`: everything
+except what sits under a `vendor/` folder. Put third-party code under its subsystem's `vendor/`.
 Every L4 (simulation) script refuses to start unless its ROS channel is private and empty. Results go in
 `docs/bench-runs/`; status and next work in TESTBENCH_PLAN "▶ Start here".
 

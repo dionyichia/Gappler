@@ -1,35 +1,13 @@
-"""Shared constants for the bench tools. Stdlib-only, like the rest of bench/.
+"""Shared helpers for the bench tools. Stdlib-only, like the rest of bench/.
 
-OWNED_PREFIXES decides what counts as "our code" (findings fail the bench) as
-opposed to vendored code (findings are informational). When the modular reorg
-moves code, update it HERE -- otherwise moved files get classified as vendor
-and silently stop failing. Paths are repo-relative, matched with startswith.
+is_owned decides what counts as "our code" (findings fail the bench) as opposed to
+vendored code (findings are informational). The rule: everything except what sits under
+a folder named vendor/ (NEXT_STEPS 2.15 step 6, 2026-09-22). So moving or adding our code
+needs no edit here. Third-party code goes under the vendor/ folder of its subsystem
+(aria/vendor, arm/vendor, grasp/vendor, nav/vendor, assets/vendor).
 """
 
-OWNED_PREFIXES = (
-    "shared/",
-    "main.py",
-    "bench/",
-    "launchers/",
-    "aria/aria_app/",
-    "arm/estop/",
-    "arm/arm_bringup/",
-    "grasp/grasp_state_machine/",
-    "grasp/grasp_interfaces/",
-    "grasp/anygrasp_node/",
-    "grasp/segmentation/",
-    "grasp/grasp_viz/",
-    "grasp/tools/",
-    "nav/robot_slam/",
-    "nav/object_approach/",
-    "nav/goto_glasses/",
-    "nav/goal_reached/",
-    "nav/pose_publisher/",
-    "nav/qos_relay/",
-    "nav/aria_image_relay/",
-    "nav/simple_teleop/",
-    "nav/echo_plus_driver/",
-    "nav/robot_navigation/",
-    "build.sh",
-    "env.sh",
-)
+
+def is_owned(path: str) -> bool:
+    """path is repo-relative, for example 'grasp/anygrasp_node/anygrasp_node.py'."""
+    return "vendor" not in path.split("/")

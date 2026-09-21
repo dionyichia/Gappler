@@ -38,8 +38,7 @@ Both held files are now on `main`, so T0.0 is closed.
 is, what it found and the evidence. Every open item it found is a task in
 [`next-steps-map.html`](next-steps-map.html) and [`PROJECT_PLAN.md`](PROJECT_PLAN.md) §6, so it can be
 seen, owned and ticked off in one place. Bench and CI tasks: **T0.11** (CI on the lab box, per-subsystem
-suites) and **T0.12** (AnyGrasp replay, was W6). When code moves in the refactor, update
-`OWNED_PREFIXES` in `bench/_common.py` (CLAUDE.md, "The bench"). The refactor itself (target layout, three config
+suites) and **T0.12** (AnyGrasp replay, was W6). Ownership is one rule, `is_owned` in `bench/_common.py` (since 2026-09-22): our code is everything except what sits under a folder named `vendor/`. Put third-party code under its subsystem's `vendor/`, and nothing in the bench needs editing when code moves. The refactor itself (target layout, three config
 levels, `GAPPLER_ROOT`, the order of moves) is specified in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15.
 Its first step is teaching the extractor to read YAML (C1).
 
@@ -745,3 +744,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-21 | Claude (Opus 5) + Dion | C1 fixed: the contract extractor reads config, so topics moved into YAML during the reorg stay visible. Contracts re-snapshotted, 13 Aria topics now show publishers. New L1 self-test `bench/test_contracts.py`. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Reorg step 3: current paths and build recipes point at `<subsystem>/vendor/`. Past run records (W5, the box survey) left as they were. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-22 | Claude (Opus 5) + Dion | `OWNED_PREFIXES` replaced by the `is_owned` rule (not under `vendor/`), reorg step 6. |

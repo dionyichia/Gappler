@@ -83,7 +83,7 @@ KNOWN_EXTERNAL |= {"rcutils", "rcl_interfaces", "rosbag2", "git", "apr"}
 # Code we own and will refactor (docs/ORIENTATION.md 2). Vendor findings are
 # still reported, but under a separate heading -- they are pre-existing
 # conditions of the vendor drops, not things this refactor caused.
-from _common import OWNED_PREFIXES   # noqa: E402 -- single source; edit there
+from _common import is_owned   # noqa: E402 -- single source; the rule lives there
 
 
 # Vendor trees that nonetheless sit inside a workspace WE build, so a defect in
@@ -93,7 +93,7 @@ BLOCKING_VENDOR = ("nav/vendor/livox_ros_driver2/",)
 
 def owned(msg: str) -> bool:
     path = msg.split(":")[0].strip()
-    return path.startswith(OWNED_PREFIXES) or path.startswith(BLOCKING_VENDOR)
+    return is_owned(path) or path.startswith(BLOCKING_VENDOR)
 
 
 # Roots that end up on PYTHONPATH at runtime (main.py and launchers/start_grasp_pipeline.py

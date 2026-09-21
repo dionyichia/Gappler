@@ -466,8 +466,7 @@ contract that actually changed.
 there is no observed behaviour to regress against — the arm has never been commanded to move. Every
 run ends with an explicit list of what could not be checked and why. See `bench/README.md`.
 
-⚠️ **When the reorg moves code, update `OWNED_PREFIXES` in `bench/_common.py`** (one copy, used by all
-three tools) — otherwise moved files get classified as vendor and stop failing the build.
+✅ **Since 2026-09-22 this needs no upkeep:** Ownership is one rule, `is_owned` in `bench/_common.py` (since 2026-09-22): our code is everything except what sits under a folder named `vendor/`. Put third-party code under its subsystem's `vendor/`, and nothing in the bench needs editing when code moves. (Was `OWNED_PREFIXES`, a list that had to be edited on every move.)
 
 **Tiers built since (on the lab box, 2026-09-11):** `bench/build.sh` (colcon, Tier 2) and Tier 3 scripts
 on a private ROS channel with a simulated arm — no container needed, the box has ROS. **Still to build:**
@@ -1092,6 +1091,7 @@ Run `./bench/run.sh` before and after every step.
    | `shared/config.yaml` | `shared/global_config.yaml` |
    | `ros2_robot_ws/src/output.log` | `docs/archive/output.log` |
    | `bench/build.sh` | `build.sh` (repo root: it is the real build, not only a bench tool) |
+   | `assets/gripper/` | `assets/vendor/gripper/` |
    | `ros2_robot_ws/install.sh` | deleted, replaced by `build.sh` |
 
    Line numbers inside moved files are unchanged by the move itself.
@@ -1108,8 +1108,11 @@ Run `./bench/run.sh` before and after every step.
    `segmentation`, the `robot_slam` scripts into their own packages, and `rm_ros_interfaces` into
    ours and theirs (§2.11 step 3). These change package names, so launch files change too. L1 will
    show those renames as deliberate changes, re-snapshot after each.
-6. **Replace `OWNED_PREFIXES`** in `bench/_common.py` with one rule: our code is anything not under
-   a `vendor/` folder. Until then, update it in every PR that moves code (§2.7).
+6. ✅ **Done 2026-09-22 (on the branch).** `OWNED_PREFIXES` replaced by one rule, `is_owned` in
+   `bench/_common.py`: our code is anything not under a `vendor/` folder. RealMan's gripper test code
+   and serial debugger moved from `assets/gripper/` to `assets/vendor/gripper/` so the rule needs no
+   exceptions. Newly counted as ours: `envs/` and `.github/`, with 0 findings. Static and L1 results
+   unchanged.
 7. **Last: one env file per subsystem.** `aria/aria_env.sh`, `nav/nav_env.sh` and so on, each
    setting up only its own subsystem, so someone can start one subsystem against stub data from
    the others. The root `env.sh` then sources all four. Rename files only at this step, since
@@ -1339,3 +1342,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 5: grasp and arm split done on the branch (per-node folders, `grasp_state_machine`, `grasp_interfaces`, `arm_bringup`), path table extended. §2.3: the dummy mask publisher is parked in `grasp/tools/`, fix-or-delete decided in T2.1. |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 5, nav: the six robot_slam scripts are one package each, path table row added. `robot_slam` and `robot_navigation` stay two packages (Dion, decision b): their `nav2_params.yaml` differ, so the merge is left to Sherman, noted in "For Sherman". |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 6 done on the branch: ownership is the `is_owned` rule (not under `vendor/`), gripper tools moved to `assets/vendor/`. §2.7 note updated. |
