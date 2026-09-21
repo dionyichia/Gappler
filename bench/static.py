@@ -38,7 +38,7 @@ REPO = Path(__file__).resolve().parent.parent
 EXCLUDE_DIRS = {
     ".git", "install", "build", "log", "install_nav", "build_nav", "log_nav",
     "__pycache__", ".venv", "node_modules",
-    "OpenVINS", "MinkowskiEngine", "moveit_task_constructor", "anygrasp_sdk",
+    "open_vins", "MinkowskiEngine", "moveit_task_constructor", "anygrasp_sdk",
     "archive",
 }
 
@@ -61,8 +61,8 @@ KNOWN_EXTERNAL = {
     "nav2_velocity_smoother", "nav2_smoother", "nav2_collision_monitor",
 }
 
-# ROS 1 packages. The Echo Plus base packages under Navigation_Module/src/base
-# and /drivers are dual-build (catkin + ament) vendor drops, so their package.xml
+# ROS 1 packages. The Echo Plus base packages under nav/vendor/base
+# and nav/vendor/drivers are dual-build (catkin + ament) vendor drops, so their package.xml
 # legitimately declares ROS 1 deps. Not a defect.
 ROS1_PKGS = {
     "roscpp", "rospy", "catkin", "message_generation", "message_runtime",
@@ -88,7 +88,7 @@ from _common import OWNED_PREFIXES   # noqa: E402 -- single source; edit there
 
 # Vendor trees that nonetheless sit inside a workspace WE build, so a defect in
 # them blocks our colcon run and is ours to solve even though we did not write it.
-BLOCKING_VENDOR = ("Navigation_Module/src/livox_ros_driver2/",)
+BLOCKING_VENDOR = ("nav/vendor/livox_ros_driver2/",)
 
 
 def owned(msg: str) -> bool:

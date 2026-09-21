@@ -119,7 +119,7 @@ ROS channel is empty, so never skip that guard.
 | Model files | Copied into `~/rcp-Gappler` ✅. Long-term: one `assets/models/` folder (NEXT_STEPS §2.8) — later, with the reorg |
 | AnyGrasp env | **One env confirmed** (W5 survey): the project env + MinkowskiEngine etc. runs AnyGrasp. `iot22`'s conda is not used. Scripted 2026-09-21: `envs/anygrasp/build.sh` |
 | Simulation | MoveIt with `mock_components` is allowed. `rm_driver` never. Private ROS channel always |
-| Robot config | Not edited by the bench. `bench/nodes/sim_arm.*` carries the simulated model (ORIENTATION §8.16). The Livox manifest moved out of the bench into `Navigation_Module/src/livox_ros_driver2/package_ROS2.xml` (T0.4, 2026-09-21) |
+| Robot config | Not edited by the bench. `bench/nodes/sim_arm.*` carries the simulated model (ORIENTATION §8.16). The Livox manifest moved out of the bench into `nav/vendor/livox_ros_driver2/package_ROS2.xml` (T0.4, 2026-09-21) |
 | Writing | Dion's docs and pages: plain language, main point first, jargon only when needed and explained. Readers include mechanical engineering students. No em dashes, semicolons or emojis in pages |
 | Baselines | **Contracts snapshot re-taken 2026-09-21** at `1461e72` (Dion), so the refactor starts from a clean L1 with 0 informational lines. Re-take it only after a deliberate contract change, never to make a refactor pass. Still no static baseline (S1): the static check must stay at 0 findings |
 
@@ -218,7 +218,7 @@ result is in `docs/bench-runs/` and the §8.15 fix (commit `package_ROS2.xml`) i
 >
 > Still true: `robot_navigation` and `xpkg_demo` exist only in `iot22`'s workspace, so the base cannot be
 > brought up from this repo. They are `exec_depend`s, which is why the build did not need them
-> (NEXT_STEPS §2.9). Undo: `rm -rf build_nav install_nav log_nav Navigation_Module/src/livox_ros_driver2/package.xml`.
+> (NEXT_STEPS §2.9). Undo: `rm -rf build_nav install_nav log_nav nav/vendor/livox_ros_driver2/package.xml` (path since 2026-09-21).
 
 **W5 — AnyGrasp env, reproducibly.** What `iot22`'s env actually is `[observed]`: conda, Python
 3.10, torch 2.7.0 (but at runtime `~iot22/.local`'s torch 2.10 wins), **numpy 1.21.2**,
@@ -603,7 +603,7 @@ These can be settled without launching anything. Retag each in ORIENTATION / COD
 | `mtc_sim_test` not built | `ls <overlay>/lib/rm_mtc/` | ORIENTATION §8.12 |
 | Arm + LiDAR share one NIC with different host IPs | `ip -4 addr show enp2s0`; `ip link` for a second NIC | ORIENTATION §8.13 |
 | Which AnyGrasp checkpoint exists | `ls ros2_robot_ws/src/rm_mtc/src/perception/log/` | ORIENTATION §8.14 |
-| `livox_ros_driver2` has no ROS 2 manifest | `ls Navigation_Module/src/livox_ros_driver2/package*.xml` | ORIENTATION §8.15 |
+| `livox_ros_driver2` has no ROS 2 manifest | `ls nav/vendor/livox_ros_driver2/package*.xml` | ORIENTATION §8.15 |
 | `xpkg_demo` missing | `ros2 pkg prefix xpkg_demo`; `find / -name 'xpkg_demo' -maxdepth 6 2>/dev/null` | ORIENTATION §8.6 |
 | Which OpenVINS is authoritative | `ls ~/Ros2Workspaces/OpenVINS/install` | NEXT_STEPS §2.5 |
 | Home pose on the box's checkout | `grep -A8 HOME_JOINTS <rcp-desktop>/ros2_robot_ws/src/rm_mtc/include/rm_mtc/mtc_planner.hpp` | CODE_AUDIT §B4 |
@@ -621,9 +621,9 @@ on the Mac is the fallback for when the box is unavailable.
 cd ~/bench_work/gappler
 source /opt/ros/humble/setup.bash                      # only this — a stale overlay poisons the build
 colcon build --build-base ~/bench_work/build --install-base ~/bench_work/install \
-  --base-paths ros2_robot_ws/src deps_ws/src          2>&1 | tee ~/bench_work/build_arm.log
+  --base-paths ros2_robot_ws/src arm/vendor grasp/vendor 2>&1 | tee ~/bench_work/build_arm.log
 colcon build --build-base ~/bench_work/build_nav --install-base ~/bench_work/install_nav \
-  --base-paths Navigation_Module/src                  2>&1 | tee ~/bench_work/build_nav.log
+  --base-paths Navigation_Module/src nav/vendor       2>&1 | tee ~/bench_work/build_nav.log
 ```
 
 Add `bench/build.sh` wrapping this, with a pass/fail summary per package. Expected results:
@@ -738,3 +738,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-21 | Claude (Opus 5) + Dion | CI and branches set up: `dev` is the default branch, `bench` runs on PRs and pushes to `main` and `dev`, both protected. Box pulls over SSH with a deploy key. "Next" block rewritten as the refactor plus the rest of T0.11. Fixes now go through a PR into `dev`. |
 | 2026-09-21 | Claude (Opus 5) + Dion | "Start here" points to `NEXT_STEPS` §2.15, the reorg spec. |
 | 2026-09-21 | Claude (Opus 5) + Dion | C1 fixed: the contract extractor reads config, so topics moved into YAML during the reorg stay visible. Contracts re-snapshotted, 13 Aria topics now show publishers. New L1 self-test `bench/test_contracts.py`. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Reorg step 3: current paths and build recipes point at `<subsystem>/vendor/`. Past run records (W5, the box survey) left as they were. |

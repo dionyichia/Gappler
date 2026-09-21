@@ -76,7 +76,7 @@ motion-induced image blur — a fact that matters directly to our mounting decis
 | Camera | **One** RealSense D435i, eye-in-hand on the arm's `Link6`. `Navigation_Module` has no image topic anywhere in it. |
 | IMU | Aria glasses publish `/aria/imu`; the base and the LiDAR do **not** expose a synchronised IMU topic in this workspace |
 | Odometry | `xnode_vehicle` wheel odometry → TF `odom → robot_base_link` |
-| VIO | OpenVINS is vendored under `Navigation_Module/OpenVINS/` but is launched externally; `/aria/vio_pose` has no publisher inside the repo |
+| VIO | OpenVINS is vendored under `aria/vendor/open_vins/` (unused) but is launched externally; `/aria/vio_pose` has no publisher inside the repo |
 | Semantic perception | SAM 3 (3.4 GB checkpoint) on the RealSense stream, hardcoded text prompt `"box"` |
 | Compute | Single Ubuntu 22.04 host, RTX 4060 Ti 16 GB `[reported]` |
 
@@ -533,12 +533,12 @@ Tier A and Tier B (§5.1) both need one.
 
 **What already exists for a robot simulation.** `[code]`
 
-- **The base has a Gazebo model.** `Navigation_Module/src/urdf/xpkg_urdf_echo_plus/launch/ROS2/simulate.launch.py`
+- **The base has a Gazebo model.** `nav/vendor/urdf/xpkg_urdf_echo_plus/launch/ROS2/simulate.launch.py`
   spawns `urdf/sim_base.xacro` into Gazebo. A plugin, `libgazebo_ros_planar_move.so`, slides it around
   on `cmd_vel` and publishes `odom` (`simplified_model.xacro:181-194`). It has no sensors: no LiDAR,
   no camera. The model the SLAM launch files actually load, `urdf/model.urdf`, has no simulator
   settings at all.
-- **The arm has a separate Gazebo model**, in RealMan's `ros2_robot_ws/src/rm_gazebo`.
+- **The arm has a separate Gazebo model**, in RealMan's `arm/vendor/rm_gazebo`.
 - **Both use Gazebo Classic**, which reached end of life in January 2025.
 - **Missing:** a simulated MID-360 and D455, the arm mounted on the base, and a model of the lab.
   `[unverified]` whether a maintained MID-360 simulator plugin exists for ROS 2 Humble.
@@ -610,7 +610,7 @@ it. Feeding a graph from a drifting or low-rate pose source will produce duplica
 a graph that degrades over the run.
 
 **What this repository has instead:** `slam_toolbox` in 2D on a laserscan projection of the MID-360,
-plus wheel odometry from `xnode_vehicle`, plus OpenVINS vendored under `Navigation_Module/OpenVINS/`
+plus wheel odometry from `xnode_vehicle`, plus OpenVINS vendored under `aria/vendor/open_vins/`
 but launched externally.
 
 `[open]` Three paths, unresolved:
@@ -770,6 +770,7 @@ productive than forcing the binary.
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-09-21 | Claude (Opus 5) + Dion | Vendor paths updated after reorg step 3 (`aria/vendor/open_vins`, `nav/vendor/urdf`, `arm/vendor/rm_gazebo`). |
 | 2026-09-12 | Claude (Opus 5) + Dion | Added §5.6 (testing needs a simulator: upstream is a Habitat evaluation setup with no ROS, and what exists here for a robot simulation). New `[upstream]` tag. Updated the §2 limitation note, §6.7 register, §7.1 ROS question and §7.2 steps 2–3. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §4.4a (the object-registration cascade — SAM runs on keyframes, not frames) and §5.5 (it answers `NEXT_STEPS` §2.1 and promotes that item's `[inferred]` two-stage row). |
 | 2026-09-10 | Claude (Opus 5) + Dion | Created. Full read of the paper; confirmed the RGB-D blocker, answered the goals-vs-velocities question, narrowed the scoping question, and surfaced three previously unrecorded dependencies (FAST-LIVO2, extrinsic calibration, VLM endpoint). No integration plan by design. |

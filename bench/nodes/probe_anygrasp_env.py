@@ -15,7 +15,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 PERCEPTION = REPO / "ros2_robot_ws/src/rm_mtc/src/perception"
-SDK_DET = REPO / "grasp_module/src/anygrasp_sdk/grasp_detection"
+SDK_DET = REPO / "grasp/vendor/anygrasp_sdk/grasp_detection"
 SCRATCH = REPO / "log/anygrasp_probe"
 # envs/anygrasp/.venv is built by envs/anygrasp/build.sh. The 2026-09-11 scratch env (log/w5/venv)
 # is no longer a candidate: the bench tests the env the repo can rebuild. Pass it explicitly to probe it.
@@ -27,7 +27,7 @@ IMPORTS = [
     ("numpy", "numpy (AnyGrasp pins 1.21.2; the project env has 2.x)", "import numpy;print(numpy.__version__)"),
     ("MinkowskiEngine", "sparse-conv CUDA extension, built by hand", "import MinkowskiEngine as ME;print(ME.__version__)"),
     # torch first: it loads libc10.so, which the extension links against (as the real code does)
-    ("pointnet2", "AnyGrasp's CUDA op (grasp_module/src/anygrasp_sdk/pointnet2)", "import torch, pointnet2._ext;print('ok')"),
+    ("pointnet2", "AnyGrasp's CUDA op (grasp/vendor/anygrasp_sdk/pointnet2)", "import torch, pointnet2._ext;print('ok')"),
     ("open3d", "point clouds (pinned 0.18.0)", "import open3d;print(open3d.__version__)"),
     ("graspnetAPI", "GraspGroup data structure", "import graspnetAPI;print('ok')"),
     ("sklearn", "scikit-learn (pinned 1.3.2)", "import sklearn;print(sklearn.__version__)"),

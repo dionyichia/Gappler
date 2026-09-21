@@ -2,12 +2,16 @@
 # Tier 2 -- does it build? Compiles into THIS checkout's build/ install/ log/
 # and nowhere else. Never launches a node, never touches hardware, no sudo.
 #
-#   ./bench/build.sh          arm workspace: ros2_robot_ws/src + deps_ws/src (24 packages)
-#   ./bench/build.sh nav      Navigation_Module/src, into build_nav/ install_nav/
+#   ./bench/build.sh          arm: ros2_robot_ws/src + arm/vendor + grasp/vendor (24 packages)
+#   ./bench/build.sh nav      Navigation_Module/src + nav/vendor, into build_nav/ install_nav/
+#
+# --symlink-install: install/ links back to the repo instead of copying, so a Python
+# or launch-file edit takes effect without a rebuild. Switching an existing install/
+# to it needs one clean rebuild (rm -rf build install).
 #
 # nav does the Livox prep livox_ros_driver2/build.sh:50-67 would do: if the
 # (gitignored) livox package.xml is missing, copy in the ROS 2 template
-# (Navigation_Module/src/livox_ros_driver2/package_ROS2.xml; delete the copy to undo), and pass
+# (nav/vendor/livox_ros_driver2/package_ROS2.xml; delete the copy to undo), and pass
 # -DROS_EDITION=ROS2 -DHUMBLE_ROS=humble. It does not install Livox-SDK2 (that
 # needs sudo); it says so up front if the library isn't there.
 #
@@ -20,8 +24,8 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 target="${1:-arm}"
 
 case "$target" in
-  arm) paths=(ros2_robot_ws/src deps_ws/src); bdir=build;     idir=install;     extra=() ;;
-  nav) paths=(Navigation_Module/src);         bdir=build_nav; idir=install_nav
+  arm) paths=(ros2_robot_ws/src arm/vendor grasp/vendor); bdir=build;     idir=install;     extra=() ;;
+  nav) paths=(Navigation_Module/src nav/vendor);            bdir=build_nav; idir=install_nav
        extra=(-DROS_EDITION=ROS2 -DHUMBLE_ROS=humble) ;;
   *)   echo "usage: $0 [arm|nav]"; exit 2 ;;
 esac
@@ -39,11 +43,11 @@ mkdir -p log
 out="log/bench_build_${target}_$(date +%F_%H%M).txt"
 
 if [ "$target" = nav ]; then
-  livox=Navigation_Module/src/livox_ros_driver2
+  livox=nav/vendor/livox_ros_driver2
   if [ ! -f "$livox/package.xml" ]; then
-    cp Navigation_Module/src/livox_ros_driver2/package_ROS2.xml "$livox/package.xml"
+    cp "$livox/package_ROS2.xml" "$livox/package.xml"
     echo "prep: $livox/package.xml was missing (gitignored, ORIENTATION 8.15);"
-    echo "      copied Navigation_Module/src/livox_ros_driver2/package_ROS2.xml there. rm it to undo."
+    echo "      copied $livox/package_ROS2.xml there. rm it to undo."
   else
     echo "prep: $livox/package.xml exists; left as is"
   fi
@@ -60,7 +64,7 @@ echo "Tier 2 build [$target]: ${paths[*]} -> $bdir/ $idir/   (log: $out)"
 start=$(date +%s)
 # MAKEFLAGS caps compile jobs so a shared machine stays usable.
 MAKEFLAGS="-j${BENCH_JOBS:-8}" colcon build \
-  --base-paths "${paths[@]}" --build-base "$bdir" --install-base "$idir" \
+  --base-paths "${paths[@]}" --build-base "$bdir" --install-base "$idir" --symlink-install \
   --cmake-args -DCMAKE_BUILD_TYPE=Release ${extra[@]+"${extra[@]}"} \
   --event-handlers console_direct- console_cohesion+ 2>&1 | tee "$out" >/dev/null
 rc=${PIPESTATUS[0]}

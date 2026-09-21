@@ -337,7 +337,7 @@ already parameterised. `rm_driver.cpp:114` is a commented-out line with a strang
 
 `[code]` `src/main.py:303` launches OpenVINS from `~/Ros2Workspaces/OpenVINS/install/` — an
 external workspace **that is not in this repo**. Meanwhile the repo *vendors* OpenVINS source at
-`Navigation_Module/OpenVINS/`, which **has never been built** (no `install/` anywhere).
+`Navigation_Module/OpenVINS/` (now `aria/vendor/open_vins/`, unused), which **has never been built** (no `install/` anywhere).
 
 So there are two OpenVINS in play: a vendored copy nobody has compiled, and a compiled copy that
 exists only on the lab machine. **Decide which is authoritative before touching these paths** — if
@@ -391,7 +391,7 @@ in the first ten minutes of the next lab session, before anything else — they 
 | 1 | `mtc_sim_test.launch.py` names an executable `rm_mtc` does not build (ORIENTATION §8.12) | `ros2 launch rm_mtc mtc_sim_test.launch.py` | The project has no hardware-free MoveIt test. Wire up `trivial_mtc.cpp`, or delete the launch file. |
 | 2 | ~~Arm needs host `.10`, LiDAR needs host `.5`, one NIC (§8.13)~~ **Done 2026-09-16.** Switch connected; persistent `Wired connection 1` profile carries `.100`, `.10`, and `.5`; RM65 and MID-360 each replied from the required source address after a connection cycle | | Resolved. Do not use the old base scripts unchanged: they flush the arm's `.10` address. |
 | 3 | `main` launches an AnyGrasp node/checkpoint that was never verified (§8.14) | `ls .../perception/log/` — is `checkpoint_detection.tar` even there? | Decide which node is authoritative before closing seam §6.2. |
-| 4 | `livox_ros_driver2` has no ROS 2 manifest, so §3.2 cannot compile (§8.15) | `ls Navigation_Module/src/livox_ros_driver2/package*.xml` | Commit `package_ROS2.xml` from upstream. Unblocks §3.2. |
+| 4 | `livox_ros_driver2` has no ROS 2 manifest, so §3.2 cannot compile (§8.15) | `ls nav/vendor/livox_ros_driver2/package*.xml` | Commit `package_ROS2.xml` from upstream. Unblocks §3.2. |
 
 `bench/preflight.py` automates 2, 3 and 4; `bench/static.py` automates 1 and 4.
 **Retag them in ORIENTATION when you settle them** — a stale `[unverified]` is worse than none.
@@ -502,7 +502,7 @@ is built against `/home/iot22/Ros2Workspaces/install`, so it is reference, not s
 | `robot_slam`, `simple_teleop`, `echo_plus_driver`, `base`, `drivers`, `urdf`, `Livox-SDk2` | same | — | Already in the repo; the repo's copies are newer and equivalent (W4a) |
 | OpenVINS workspace | same, `OpenVINS/` | 3.2 GB | Unclear — which OpenVINS is authoritative is open (§2.5); keep as reference |
 | Orbbec camera driver (`orbbec_camera*` in `install/`) | same | — | Unknown — nobody has mentioned an Orbbec camera; ask |
-| MoveIt / MTC source builds in `install/` | same | — | No — MoveIt comes from apt; MTC is in `deps_ws/` |
+| MoveIt / MTC source builds in `install/` | same | — | No — MoveIt comes from apt; MTC is in `grasp/vendor/` (was `deps_ws/`) |
 | `build/`, `log/` | same | 700 MB | No |
 | AnyGrasp conda env, `~/.local` CUDA torch | `~iot22/` | GBs | No — replaced by the uv env (W1, W5) |
 | `~/.aria` certificates | `~iot22/` | small | Covered — `aria auth check` already passes for `rcp2026` |
@@ -594,6 +594,11 @@ as ours.
 
 #### The proposal
 
+> ✅ **Steps 1, 2 and 4 done 2026-09-21** as `NEXT_STEPS` §2.15 step 3, in the final layout rather
+> than one `vendor/` per workspace: vendor code is in `aria/vendor/`, `arm/vendor/`, `grasp/vendor/`
+> and `nav/vendor/`. `COLCON_IGNORE` only on `aria/vendor/open_vins` (unused). Step 3, the
+> `rm_ros_interfaces` split, is §2.15 step 5.
+
 1. **One `vendor/` folder per workspace.** Move vendor packages down one level, into
    `ros2_robot_ws/src/vendor/`, `Navigation_Module/src/vendor/`. What remains at `src/` is ours and
    is readable at a glance.
@@ -618,7 +623,10 @@ as ours.
 
 #### What would actually break, and it is a short list `[code]`
 
-Three places hardcode a vendor path as a string, so a move invalidates them:
+Three places hardcode a vendor path as a string, so a move invalidates them. **All three handled
+2026-09-21 (reorg step 3):** the OpenVINS path is `openvins_ws` in `shared/global_config.yaml`,
+`BLOCKING_VENDOR` points at `nav/vendor/`, and the `deps_ws/install` checks stay on purpose, to catch
+a stale overlay left in old clones.
 
 | File | What it hardcodes |
 |---|---|
@@ -1031,8 +1039,13 @@ Run `./bench/run.sh` before and after every step.
    compiled and import-checked, not yet started on the box. **Scope narrowed:** `src/config/*.py`
    (the Aria settings classes) folds into `aria_config.yaml` in step 4, when `aria/` exists, and so
    does sorting the aria-only topics out of `global_config.yaml`.
-3. **Vendor moves**, one subsystem per PR, as pure moves (§2.11 steps 1 and 2). Update the three
-   hardcoded vendor paths (§2.11) in the same PR.
+3. ✅ **Done 2026-09-21 (on the branch).** **Vendor moves**, as pure moves (§2.11 steps 1 and 2).
+   Commit `2cd2297` is 2,145 renames and nothing else. The next commit fixed the references:
+   `bench/build.sh` base paths (and `--symlink-install`), bench exclusions, the AnyGrasp env
+   script, `env.sh`. `deps_ws/` and `grasp_module/` are gone. `rm_ros_interfaces` stays until
+   step 5, and the AnyGrasp `.so` files stay in `rm_mtc` until the node moves. `temp.urdf` deleted.
+   **OpenVINS (`aria/vendor/open_vins/`) is unused and a candidate for deletion**: nothing builds
+   or runs it, and pose fusion, its only user, is parked. It carries a `COLCON_IGNORE` saying so.
 4. **Our code moves**, one subsystem per PR. Package names stay the same, so launch files and
    `ros2 run` keep working. A pure move must leave L1 at 0 changes.
 5. **Splits into per-node packages.** `rm_mtc` into `grasp_state_machine`, `anygrasp_node` and
@@ -1054,10 +1067,10 @@ keeps merges manageable for everyone else.
 - **Where the three launchers go.** Root `main.py`, `ros2_robot_ws/src/main.py` and
   `orchestrator.py` start processes across subsystems. `CODE_AUDIT` I1 already says
   `ros2_robot_ws/src/main.py` owns `background.launch.py`. Keep one launcher at the root.
-- **One build or two.** Today there are three workspaces (`ros2_robot_ws`, `deps_ws`,
-  `Navigation_Module`) and two overlays (`install/`, `install_nav/`). colcon finds packages at any
+- **One build or two.** Today there are two builds (`ros2_robot_ws/src` + `arm/vendor` +
+  `grasp/vendor`, and `Navigation_Module/src` + `nav/vendor`) and two overlays (`install/`, `install_nav/`). colcon finds packages at any
   depth, so one build from the repo root works. Nav could stay a separate build because it is slow.
-- **Tell Zongzhe and Sherman before step 3.** Every path changes, and open branches will conflict.
+- ~~Tell Zongzhe and Sherman before step 3.~~ Not needed: neither had open work, both are waiting on the refactor (Dion, 2026-09-21).
 
 #### For Sherman (nav), found during step 2, not changed
 
@@ -1084,7 +1097,7 @@ Left for the nav owner, part of `PROJECT_PLAN` T3.5. Checked 2026-09-21 `[code]`
 
 ## 3. Bring-up (needs the lab machine)
 
-### 3.1 ✅ Find `xpkg_demo` — **in the repo since 2026-09-21 (T0.4)**, at `Navigation_Module/src/demo/demo_general_chassis/`
+### 3.1 ✅ Find `xpkg_demo` — **in the repo since 2026-09-21 (T0.4)**, at `nav/vendor/demo/demo_general_chassis/`
 
 `[code]` Both SLAM launch files include `bringup_basic_ctrl.launch.py` from a package `xpkg_demo`
 that is **not in this repo** (declared `exec_depend` in `robot_slam/package.xml:12`). `[inferred]`
@@ -1105,7 +1118,7 @@ dependency — but launching will fail. **Ask whoever set up the base before boo
 > built by colcon as `livox_sdk2` through plain-CMake support **despite having no `package.xml`**, so
 > the `[code]` claim that colcon ignores it is **wrong**. `robot_navigation` and `xpkg_demo` were not
 > needed for the build, only for the launch, because they are `exec_depend`s. Undo with
-> `rm -rf build_nav install_nav log_nav Navigation_Module/src/livox_ros_driver2/package.xml`.
+> `rm -rf build_nav install_nav log_nav nav/vendor/livox_ros_driver2/package.xml` (path since 2026-09-21).
 
 No `install/` exists for it anywhere. Pure compile, touches no hardware, safe remotely. Blocked on
 3.1 for actually *running* it, but the build itself is independent and worth doing first.
@@ -1113,7 +1126,7 @@ No `install/` exists for it anywhere. Pure compile, touches no hardware, safe re
 ⚠️ `[unverified]` **There is a second blocker, and it stops the build rather than the launch.**
 `livox_ros_driver2/build.sh:50` generates `package.xml` from `package_ROS2.xml`; the repo ships only
 `package_ROS1.xml` and gitignores the result, so colcon cannot see the package at all. See
-ORIENTATION §8.15 and §2.6 item 4. Check `ls Navigation_Module/src/livox_ros_driver2/package*.xml`
+ORIENTATION §8.15 and §2.6 item 4. Check `ls nav/vendor/livox_ros_driver2/package*.xml`
 on the lab clone before booking time for this.
 
 ### 3.3 ✅ Consolidate the `realman_manip` docs onto `main` — **T0.0, done 2026-09-21**
@@ -1260,3 +1273,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.12: T0.10 done. `dev` created as the default branch, `bench` on `main` and `dev`, both protected. The runner and the no-skips job stay in T0.11. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Added §2.15: the full reorg is in scope. Target layout (four subsystems, one folder per package, `vendor/` per subsystem), three config levels with each value written once, `GAPPLER_ROOT` plus one path helper so no file finds the repo by itself, and a six-step order that teaches the bench to read YAML first. §2.11's gap note points to it. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.15: steps 1 and 2 done on the branch, now one branch `t0.10-t0.11-refactor`. Flat config names (`shared/global_config.yaml`, `<subsystem>/<subsystem>_config.yaml`). `gappler_common` finds the root from its own place, replacing the `GAPPLER_ROOT` plan. New step 7, per-subsystem env files, last. New block for Sherman: the two nav launch files, the missing Nav2 map default, the dead `map_file_name` line. Docs renamed to `shared/global_config.yaml` where they describe today. **Republish owed** for `wiring-map.html` (cites and the C1 fix) and `next-steps-map.html` (T3.5), held until the refactor ends. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §2.15 step 3 done on the branch: vendor code in `<subsystem>/vendor/`, `deps_ws/` and `grasp_module/` gone, OpenVINS marked unused and a deletion candidate. §2.11 steps 1, 2 and 4 marked done, its hardcoded-path table resolved. Current paths updated in §2.5, §2.6, §2.9, §3.1 and §3.2. Step 2 passed the full bench on the box (L0-L4). |

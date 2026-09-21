@@ -650,7 +650,7 @@ svg.scn{display:block;width:100%;height:auto;min-width:560px}
             <tr><td><strong>B · Grasp planner</strong><br><span style="color:var(--ink-2);font-size:14px">
               Decides where to put the fingers</span></td>
               <td>None — it just thinks about camera data</td>
-              <td><code>grasp_module/</code>, <code>rm_mtc/src/perception/</code></td>
+              <td><code>grasp/vendor/</code>, <code>rm_mtc/src/perception/</code></td>
               <td>No — build once, then leave alone</td></tr>
             <tr><td><strong>C · Arm</strong><br><span style="color:var(--ink-2);font-size:14px">
               Reaches and grips</span></td>
@@ -680,8 +680,8 @@ svg.scn{display:block;width:100%;height:auto;min-width:560px}
 
       <h3>Roughly 95% of the files are not yours</h3>
       <p>Three folders are third-party code copied into the repo wholesale, and you should treat
-      them as sealed boxes: <code>Navigation_Module/OpenVINS/</code> (about 3.4 million lines of
-      motion-tracking code), <code>grasp_module/</code>, and <code>deps_ws/</code>. Add every
+      them as sealed boxes: everything under a <code>vendor/</code> folder, for example
+      <code>aria/vendor/open_vins/</code> (about 3.4 million lines of motion-tracking code, unused). Add every
       <code>rm_*</code> folder except <code>rm_mtc</code> — those are the arm manufacturer's.
       What is genuinely ours: <code>src/</code>, <code>rm_mtc/</code>,
       <code>robot_slam/</code>, and four loose scripts.</p>

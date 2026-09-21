@@ -92,7 +92,7 @@ a real bug, not by how untidy it looks.
 | 6 | `/object_centroid` vs `/object_centroid_2d` | a real 3D point vs pixel-plus-depth (§8.3) | rename the `_2d` one to say what it holds |
 | 7 | three × `main.py` + `orchestrator.py` | four entry points. Worse: `ros2_robot_ws/src/main.py:2` describes *itself* as "Main orchestrator", which is the other file's name | name each after what it launches |
 | 8 | `rm_65_config` / `rm_65_w_gripper_config` | arm without / with the gripper joints. Ours all use the gripper variant, but the vendor's `rm_bringup` launch files reference the plain one — so copy-pasting a launch snippet loads an arm with no gripper | — (vendor names) |
-| 9 | `Navigation_Module/src/base/` | comms packages, **not** the physical base's description (that is `src/urdf/`) | — |
+| 9 | `nav/vendor/base/` | comms packages, **not** the physical base's description (that is `nav/vendor/urdf/`) | — |
 
 `[code]` **Two of these have already produced defects**, which is the argument for the rule:
 
@@ -145,7 +145,7 @@ other half runs perfectly, which is the situation today (§6).
 | # | Subsystem | Hardware | Lives in | Runtime |
 |---|---|---|---|---|
 | A | **Perception** | Project Aria glasses — RGB cam, eye tracker, 7-mic array, IMU, stereo SLAM cams | `src/` | Python 3.10, `uv` venv at repo root |
-| B | **Grasp prediction** | none (pure inference on RealSense data) | `grasp_module/`, `ros2_robot_ws/src/rm_mtc/src/perception/` | Python 3.10, **separate conda env `anygrasp`** |
+| B | **Grasp prediction** | none (pure inference on RealSense data) | `grasp/vendor/` (AnyGrasp SDK, MinkowskiEngine), `ros2_robot_ws/src/rm_mtc/src/perception/` | Python 3.10, **separate conda env `anygrasp`** |
 | C | **Arm** | RealMan RM65 6-DOF arm, EG2-4B gripper, RealSense D435i on the wrist | `ros2_robot_ws/` | C++ / ROS 2 Humble |
 | D | **Mobile base** | Livox MID-360 LiDAR, differential drive base | `Navigation_Module/` | C++ / Python, ROS 2 Humble |
 | E | **Glue** | — | `main.py`, `ros2_robot_ws/src/orchestrator.py` | Python |
@@ -204,13 +204,13 @@ Top-level, with an honest note on whether you will ever need to touch each one.
 | `src/` | **Subsystem A.** All Aria glasses code: streaming, eye tracking, ASR, LLM, SAM3, feature matching, pose fusion, OpenCV visualiser. | **Yes, a lot.** |
 | `ros2_robot_ws/` | **Subsystem C.** A ROS 2 colcon workspace. Mostly vendor code from RealMan. | Only `src/rm_mtc/` and the loose scripts at `src/`. |
 | `ros2_robot_ws/src/rm_mtc/` | **Ours.** The grasp state machine, MoveIt Task Constructor planner, and the perception nodes that bridge to AnyGrasp. | **Yes.** This is the heart of the arm logic. |
-| `ros2_robot_ws/src/rm_driver`, `rm_control`, `rm_description`, `rm_moveit2_config`, `rm_gazebo`, `rm_example`, `rm_arm_examples`, `rm_doc`, `rm_install` | RealMan's shipped vendor packages — driver, URDF model, MoveIt config, sim, docs, install scripts. | **No.** Read `rm_description`'s URDF when you need to know where the camera is mounted. |
+| `arm/vendor/`: `rm_driver`, `rm_control`, `rm_description`, `rm_moveit2_config`, `rm_gazebo`, `rm_example`, `rm_arm_examples`, `rm_doc`, `rm_install` | RealMan's shipped vendor packages — driver, URDF model, MoveIt config, sim, docs, install scripts. | **No.** Read `rm_description`'s URDF when you need to know where the camera is mounted. |
 | `ros2_robot_ws/src/rm_ros_interfaces/` | 79 custom message definitions. Includes ours: `GraspCandidate.msg`, `GraspCandidateArray.msg`. | Only if you add a message. |
-| `ros2_robot_ws/src/eg2_4b_description/` | URDF for the gripper. | No. |
+| `arm/vendor/eg2_4b_description/` | URDF for the gripper. | No. |
 | `Navigation_Module/` | **Subsystem D.** A second, separate colcon workspace: Livox driver, SLAM Toolbox + Nav2 config, base drivers, teleop, and the nodes that bridge nav ↔ manipulation. | **Yes** — this is where HiCo-Nav lands. |
-| `Navigation_Module/OpenVINS/` | Vendored visual-inertial odometry (upstream, ~3.4 M lines). Estimates the *glasses'* pose from their stereo cams + IMU. | **No.** Treat as a black box; we only consume its output topic. |
-| `grasp_module/` | **Subsystem B** source: AnyGrasp SDK + MinkowskiEngine. Build-time only — the runtime `.so` files live in `rm_mtc/src/perception/`. | **No.** Build once per machine, then forget. |
-| `deps_ws/` | A third colcon workspace holding **MoveIt Task Constructor** (vendored, not a submodule). A dependency of `rm_mtc`. | **No.** Build it, source it. |
+| `aria/vendor/open_vins/` | **Unused, candidate for deletion** (`COLCON_IGNORE` note inside). Vendored visual-inertial odometry (upstream, ~3.4 M lines). Estimates the *glasses'* pose from their stereo cams + IMU. | **No.** Treat as a black box; we only consume its output topic. |
+| `grasp/vendor/anygrasp_sdk/`, `grasp/vendor/MinkowskiEngine/` | **Subsystem B** source: AnyGrasp SDK + MinkowskiEngine. Build-time only — the runtime `.so` files live in `rm_mtc/src/perception/`. | **No.** Build once per machine, then forget. |
+| `grasp/vendor/moveit_task_constructor/` | **MoveIt Task Constructor** (vendored, not a submodule). A dependency of `rm_mtc`. Was the separate `deps_ws/` workspace until 2026-09-21. | **No.** `bench/build.sh` builds it with the arm. |
 | `shared/global_config.yaml` | **Settings more than one subsystem reads** (renamed from `shared/config.yaml` 2026-09-21, `NEXT_STEPS` §2.15). Today: the Aria-side topic names, 16 of the 54 topics our code declares (§8.17), the video QoS, and machine paths outside the repo (`openvins_ws`, `map_dir`). A ROS parameter file. Read by `src/config/ros2.py`, which builds a `ROS2Topics` enum from it at import time. | **Yes**, when adding an Aria-side topic or a machine path. |
 | `shared/gappler_common.py` | **The one file that knows where the repo is.** `ROOT`, `config()` (reads `global_config.yaml`) and `path(name)` (a machine path, overridable with `GAPPLER_<NAME>`). `env.sh` puts `shared/` on `PYTHONPATH`, so source `env.sh` first. Added 2026-09-21. | Rarely. Import it instead of working out paths from `__file__`. |
 | `main.py` (root) | Top-level launcher: spawns `orchestrator.py` + the Aria app. | Yes — has hardcoded paths (§8.4). |
@@ -294,6 +294,12 @@ simple_teleop/                    ← keyboard driving, 10 Hz cmd_vel
 
 ## 3. The three workspaces, and why builds are confusing
 
+> **Changed 2026-09-21 (reorg step 3, `NEXT_STEPS` §2.15).** Vendor code now sits in
+> `<subsystem>/vendor/`, and `deps_ws/` is gone. `./bench/build.sh` builds `ros2_robot_ws/src`,
+> `arm/vendor` and `grasp/vendor` into one `install/`, and `./bench/build.sh nav` builds
+> `Navigation_Module/src` and `nav/vendor` into `install_nav/`. The text below describes the
+> layout before that move.
+
 There are **three separate colcon workspaces** in this repo: `ros2_robot_ws/`, `deps_ws/`,
 `Navigation_Module/`. Each has its own `src/` and produces its own `install/setup.bash`.
 
@@ -368,8 +374,8 @@ You now know what starts what. Stop and make sure that's solid before Round 2.
 
 ### Skip entirely on a first pass
 
-`Navigation_Module/OpenVINS/`, `grasp_module/dependencies/MinkowskiEngine/`,
-`deps_ws/src/moveit_task_constructor/`, every `rm_*` package except `rm_mtc`, `src/archive/`,
+Every `vendor/` folder (`aria/vendor/`, `arm/vendor/`, `grasp/vendor/`, `nav/vendor/`),
+`rm_ros_interfaces` except our two grasp messages, `src/archive/`,
 `assets/gripper/`, and the root `README.md`.
 
 ---
@@ -687,7 +693,7 @@ Two things the list below does not convey:
    `ros2_robot_ws/src/main.py` and `sam3_ros_node.py` all fail immediately.
 2. **One of them is not a path problem at all.** `src/main.py:303-304` launches OpenVINS from
    `~/Ros2Workspaces/OpenVINS/install/` — an external workspace **not in this repo** — while the
-   repo vendors OpenVINS source at `Navigation_Module/OpenVINS/` that has **never been built**.
+   repo vendors OpenVINS source at `aria/vendor/open_vins/` (was `Navigation_Module/OpenVINS/`) that has **never been built**.
    Which copy is authoritative is an open question, not a rename.
 
 `src/config/base.py` already computes `Settings.PROJECT_ROOT` correctly and `config/models.py:11`
@@ -979,7 +985,7 @@ This matters for planning because `NEXT_STEPS.md` §3.2 describes building `Navi
 "pure compile, touches no hardware, safe remotely" — a good remote task. It will not get as far as
 compiling.
 
-**To check:** `ls Navigation_Module/src/livox_ros_driver2/package*.xml` on the lab clone. If a
+**To check:** `ls nav/vendor/livox_ros_driver2/package*.xml` on the lab clone. If a
 `package.xml` is present there, it was generated locally by `build.sh` and simply never committed —
 in which case the fix is to commit `package_ROS2.xml` from upstream. `bench/static.py`
 (`generated-manifests`) checks this.
@@ -1102,7 +1108,7 @@ written as four separate literals (`estop.py:25-26`, `orchestrator.py:49`,
 
 **⚠️ There is no base-mounted RGB-D camera on this robot.** The D435i is the only camera and it is
 on the moving wrist. `Navigation_Module` is LiDAR-only — no image topics anywhere in it. The
-`d455` files under `Navigation_Module/OpenVINS/src/open_vins/config/` are **stock upstream example
+`d455` files under `aria/vendor/open_vins/src/open_vins/config/` are **stock upstream example
 configs**, not evidence of hardware. See §10.
 
 ---
@@ -1240,3 +1246,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-20 | Claude (Opus 5) + Dion | §5's nav ↔ manipulation table replaced by a pointer to the new [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md), which is now the single source for channel ownership, types, frames and QoS (T0.7, decision T-5). A four-line summary stays here for reading the rest of §5. |
 | 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |
 | 2026-09-21 | Claude (Opus 5) + Dion | `shared/config.yaml` is now `shared/global_config.yaml` (reorg step 2), all current-state mentions renamed. New row for `shared/gappler_common.py`, the path helper. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Vendor code moved to `<subsystem>/vendor/` (reorg step 3): §2 table, §3 (dated note), the skip list and five path cites updated. OpenVINS marked unused, candidate for deletion. |
