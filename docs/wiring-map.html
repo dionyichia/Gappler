@@ -646,24 +646,24 @@ svg.scn{display:block;width:100%;height:auto;min-width:560px}
             <tr><td><strong>A · Perception</strong><br><span style="color:var(--ink-2);font-size:14px">
               Sees and hears</span></td>
               <td>Project Aria smart glasses — camera, eye tracker, 7 microphones, motion sensors</td>
-              <td><code>src/</code></td><td><strong>Yes, a lot</strong></td></tr>
+              <td><code>aria/aria_app/</code> (was <code>src/</code>)</td><td><strong>Yes, a lot</strong></td></tr>
             <tr><td><strong>B · Grasp planner</strong><br><span style="color:var(--ink-2);font-size:14px">
               Decides where to put the fingers</span></td>
               <td>None — it just thinks about camera data</td>
-              <td><code>grasp/vendor/</code>, <code>rm_mtc/src/perception/</code></td>
+              <td><code>grasp/</code>: <code>anygrasp_node/</code>, <code>segmentation/</code>; SDK in <code>grasp/vendor/</code></td>
               <td>No — build once, then leave alone</td></tr>
             <tr><td><strong>C · Arm</strong><br><span style="color:var(--ink-2);font-size:14px">
               Reaches and grips</span></td>
               <td>RealMan RM65 arm, EG2-4B gripper, RealSense depth camera on the wrist</td>
-              <td><code>ros2_robot_ws/</code></td>
-              <td>Only <code>rm_mtc/</code> — the rest is the manufacturer's</td></tr>
+              <td><code>arm/</code>, and <code>grasp/grasp_state_machine/</code></td>
+              <td>Not <code>arm/vendor/</code> — that is the manufacturer's</td></tr>
             <tr><td><strong>D · Mobile base</strong><br><span style="color:var(--ink-2);font-size:14px">
               Drives around</span></td>
               <td>Wheeled base with a Livox spinning laser scanner</td>
-              <td><code>Navigation_Module/</code></td><td><strong>Yes</strong></td></tr>
+              <td><code>nav/</code> (was <code>Navigation_Module/</code>)</td><td><strong>Yes</strong></td></tr>
             <tr><td><strong>E · Coordinator</strong><br><span style="color:var(--ink-2);font-size:14px">
               Decides what happens when</span></td>
-              <td>None</td><td><code>orchestrator.py</code>, <code>main.py</code></td>
+              <td>None</td><td><code>launchers/</code>, root <code>main.py</code></td>
               <td>Yes — it is small</td></tr>
           </tbody>
         </table>
@@ -687,20 +687,20 @@ svg.scn{display:block;width:100%;height:auto;min-width:560px}
       <code>robot_slam/</code>, and four loose scripts.</p>
 
       <div class="callout c-warn">
-        <span class="ct">Three files are called main.py</span>
-        <p>Sort this out now and a lot of confusion disappears. When someone says "run main.py",
-        always ask which one.</p>
+        <span class="ct">Four entry points (renamed 22 September 2026)</span>
+        <p>There used to be three files called <code>main.py</code>. The two robot-side ones now have
+        names that say what they do. Root <code>main.py</code> still starts everything.</p>
       </div>
       <div class="scroller">
         <table>
           <thead><tr><th>File</th><th>What it starts</th></tr></thead>
           <tbody>
             <tr><td><code>main.py</code> (top folder)</td><td>The coordinator plus the glasses app</td></tr>
-            <tr><td><code>src/main.py</code></td><td>The <strong>glasses</strong> side (part A)</td></tr>
-            <tr><td><code>ros2_robot_ws/src/main.py</code></td><td>The <strong>robot</strong> side —
+            <tr><td><code>aria/aria_app/main.py</code></td><td>The <strong>glasses</strong> side (part A)</td></tr>
+            <tr><td><code>launchers/start_grasp_pipeline.py</code> (was <code>ros2_robot_ws/src/main.py</code>)</td><td>The <strong>robot</strong> side —
               camera, arm planning, segmentation, grasp planner, state machine.
               <span class="flag">⚠ This one moves the arm. See Section 5.</span></td></tr>
-            <tr><td><code>ros2_robot_ws/src/orchestrator.py</code></td>
+            <tr><td><code>launchers/grasp_orchestrator.py</code> (was <code>orchestrator.py</code>)</td>
               <td>Waits for signals, then starts the robot side at the right moment</td></tr>
           </tbody>
         </table>
