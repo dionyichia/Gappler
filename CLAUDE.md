@@ -52,8 +52,9 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
 
 ## Safety — this code moves a real robot arm
 
-- Never launch `grasp_state_machine`, `ros2_robot_ws/src/main.py`, `ros2_robot_ws/src/orchestrator.py`
-  or root `main.py`. The state machine homes the arm within seconds, unprompted, to a home pose that
+- Never launch `grasp_state_machine`, `launchers/start_grasp_pipeline.py`, `launchers/grasp_orchestrator.py`
+  or root `main.py` (the two launchers were `ros2_robot_ws/src/main.py` and `orchestrator.py` until
+  2026-09-21). The state machine homes the arm within seconds, unprompted, to a home pose that
   has never been validated. **One exception (Dion, 2026-09-11):** `bench/state_machine_sim.sh` may
   launch the state machine against the *simulated* arm, behind its guards (mock hardware, private
   channel, no `rm_driver`, preflight shows the arm unreachable).
@@ -62,8 +63,8 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
   Other users (`iot22`, and other people logged in as `rcp2026`) share the box; localhost-only does
   not separate you from their processes — a unique, empty domain id does.
 - **Fixes go on branches for review** (Dion, 2026-09-19, replacing the 2026-09-11 "no fixes yet"
-  rule). The project is in implementation. Each fix lands through a PR into `main`, where CI runs the
-  bench.
+  rule). The project is in implementation. Each fix lands through a PR into `dev`
+  (the default branch), where CI runs the bench. `dev` is promoted to `main` by PR.
 
 ## The lab machine
 
@@ -91,7 +92,7 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
 ./bench/run.sh report                  # contract inventory + orphan analysis
 python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract change
 # lab box only (ROS + the built overlay):
-./bench/build.sh [nav]                 # L3: colcon build into this checkout
+./build.sh [nav]                       # L3: colcon build into this checkout (was bench/build.sh)
 ./bench/sim_moveit.sh                  # L4: MoveIt on a simulated arm
 ./bench/estop_delivery.sh              # L4: does estop.py's stop message leave
 ./bench/state_machine_sim.sh           # L4: grasp state machine on the simulated arm
@@ -102,7 +103,8 @@ python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract
 Levels L0-L6 are defined in `bench/README.md` (renamed from Tiers 0-4 on 2026-09-19, L5 robot
 check added 2026-09-21). L0-L2 are stdlib-only and need no ROS. Run them before and after any
 refactor. L5 checks the robot is connected and gates L6. L6 is the real robot and is
-never automated. When the reorg moves code, update `OWNED_PREFIXES` in `bench/_common.py` (the one copy, shared by all three tools).
+never automated. What counts as our code is one rule, `is_owned` in `bench/_common.py`: everything
+except what sits under a `vendor/` folder. Put third-party code under its subsystem's `vendor/`.
 Every L4 (simulation) script refuses to start unless its ROS channel is private and empty. Results go in
 `docs/bench-runs/`; status and next work in TESTBENCH_PLAN "▶ Start here".
 

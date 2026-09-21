@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.8)
+project(aria_image_relay)
+find_package(ament_cmake REQUIRED)
+install(PROGRAMS aria_image_relay.py DESTINATION lib/${PROJECT_NAME})
+ament_package()

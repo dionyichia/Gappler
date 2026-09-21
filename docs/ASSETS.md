@@ -1,5 +1,10 @@
 # ASSETS — the files the code needs that git does not hold
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **Why this exists:** four things the stack needs at runtime are deliberately not in git. A fresh
 clone has none of them, and until 2026-09-11 nothing recorded where they came from. This is that
 record. Tags as elsewhere: `[code]` read from source · `[observed]` measured on the lab box ·
@@ -88,3 +93,4 @@ one configurable path instead of hardcoded ones. Tracked as NEXT_STEPS §2.8. Wh
 | 2026-09-11 | Claude (Opus 5) + Dion | Moved to `docs/`. Root `.gitignore` now covers weights, recordings and archives explicitly; recorded why already-tracked big files stay. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added the `~/rcp-old-ros-wkspace` pointer (NEXT_STEPS §2.9). |
 | 2026-09-21 | Claude (Opus 5) + Dion | `robot_navigation` and `xpkg_demo` are now in the repo (T0.4). Recorded the saved lab map: where it is, its files, and why it stays out of git. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |

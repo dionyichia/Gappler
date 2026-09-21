@@ -1,5 +1,10 @@
 # CHANNEL CONTRACT
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **What this is.** The one place that says which subsystem owns which message channel, and what
 passes between subsystems. It is task `T0.7` in [`PROJECT_PLAN.md`](PROJECT_PLAN.md), settled by
 Dion on 2026-09-20.
@@ -257,7 +262,7 @@ Channels that a topic list does not show. Each says whether it is assigned.
 | X4 | MoveIt `move_group` action and services | Yes, as one block | Dion | Internal to the bot, not a handover. `mtc_planner.cpp:16` plans for `rm_group` |
 | X5 | Process launches | Yes | Dion | One launcher per program. `main.py` owns `background.launch.py` (B-3). Launching stops being an interlock (B-4) |
 | X6 | Vendor driver topics | Owner per driver, not per topic | `rm_driver` and the wrist camera: Dion. Livox, the base driver and the base camera: Sherman | The vendor owns the names. `/rm_driver/*` is the driver's API, not ours |
-| X7 | ROS parameters, 201 of them | Per file | Nav and SLAM YAML: Sherman. MoveIt config: Dion. `shared/config.yaml`: Dion | Assigning individual parameters is not useful |
+| X7 | ROS parameters, 201 of them | Per file | Nav and SLAM YAML: Sherman. MoveIt config: Dion. `shared/global_config.yaml`: Dion | Assigning individual parameters is not useful |
 | X8 | QoS | Written into this contract | Dion | Rule 4 in §2 |
 | X9 | Visualisation and debug topics | No | whoever publishes them | `/debug/*`, the markers, `/object_marker`, `/object_map_pose`, `/aria/glasses_marker`, and the pickled mask topics. The pickled ones go when `T2.1` lands |
 | X10 | OpenVINS and `/aria/vio_pose` | No, out of scope | none | Launched from `src/main.py:309`, no publisher in this repo, only feeds pose fusion |
@@ -312,3 +317,5 @@ Known problems inside subsystems, so they are not lost:
 | 2026-09-20 | Claude (Opus 5) + Dion | Created. `T0.7`. Twelve live handovers, four parked with the return leg, four planned, five measurements, eleven hidden channels and the TF edge table. Twenty-eight decisions recorded, including the nav split between Sherman and Zongzhe, FAST-LIVO2 staged into scope, the phase table, and the target names for the rename pass. |
 | 2026-09-20 | Claude (Opus 5) + Dion | `next-steps-map.html` republished with the new ownership section, the owner changes and T0.7 marked done. `wiring-map.html` §8 gained a pointer to this file and was republished (version 5). ⚠️ Its share pin still points at the old version, so viewers see the previous page until the pin is moved from the page's Share menu. |
 | 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |
+| 2026-09-21 | Claude (Opus 5) + Dion | X7: `shared/config.yaml` renamed to `shared/global_config.yaml` (reorg step 2). |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Tier 3 -- does ros2_robot_ws/src/estop.py actually deliver its stop message?
+# Tier 3 -- does arm/estop/estop.py actually deliver its stop message?
 # CODE_AUDIT B2. Nothing here moves anything: rm_driver is never started, the
 # channel is private, and the script refuses to run if an rm_driver exists.
 #
-#   ./bench/estop_delivery.sh        needs ./bench/build.sh (for rm_ros_interfaces)
+#   ./bench/estop_delivery.sh        needs ./build.sh (for rm_ros_interfaces)
 #
 # Isolation: private ROS channel (ROS_DOMAIN_ID, default 77) + localhost only.
 # Exit: 0 pass (expected-fails allowed), 1 fail or refused, 3 SKIPPED -- never a pass.
@@ -12,7 +12,7 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOMAIN="${BENCH_DOMAIN:-77}"
 
 [ -f /opt/ros/humble/setup.bash ] || { echo "SKIP: no ROS 2 Humble here"; exit 3; }
-[ -f "$REPO/install/setup.bash" ] || { echo "SKIP: no $REPO/install -- run ./bench/build.sh first"; exit 3; }
+[ -f "$REPO/install/setup.bash" ] || { echo "SKIP: no $REPO/install -- run ./build.sh first"; exit 3; }
 export ROS_DOMAIN_ID="$DOMAIN" ROS_LOCALHOST_ONLY=1
 set +u; source /opt/ros/humble/setup.bash; source "$REPO/install/setup.bash"; set -u
 cd "$REPO"; mkdir -p log

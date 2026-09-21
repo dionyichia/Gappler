@@ -1,5 +1,10 @@
 # Compute Request (RCP2026/19) — verification against the codebase
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **What this is.** A check of the draft "Compute Resource Request" doc against what this repo
 actually runs, done before the request goes to the supervisor. Three corrections matter enough to
 fix before submitting. The three tables in section 3 are the requested end state: one row per
@@ -118,7 +123,7 @@ Every row here is a model this repo imports and instantiates, all sharing one GP
 | SAM 3, human view | `src/services/object_recognition/sam3_model.py` | 3.21 GB checkpoint (measured, `sam3-weights` preflight), bf16 autocast enabled | One instance per view; this is the Aria-side one |
 | SAM 3, robot view | `ros2_robot_ws/src/rm_mtc/src/perception/sam3_ros_node.py` | 3.21 GB checkpoint, same weights file | Separate process from the human-view instance today |
 | LightGlue + SuperPoint | `src/services/feature_matching.py:35-36` | SuperPoint, 2048 keypoints, + LightGlue matcher, both on GPU | Cross-view alignment, real-time on frame arrival |
-| AnyGrasp + MinkowskiEngine | `grasp_module/`, checkpoints under `ros2_robot_ws/src/rm_mtc/src/perception/log/` | Detection net 283 MB, tracking net 23 MB on disk (checkpoint size, not runtime VRAM) | Licence machine-locked; re-registering to new hardware costs ~2 working days |
+| AnyGrasp + MinkowskiEngine | `grasp/vendor/` (was `grasp_module/`), checkpoints under `ros2_robot_ws/src/rm_mtc/src/perception/log/` | Detection net 283 MB, tracking net 23 MB on disk (checkpoint size, not runtime VRAM) | Licence machine-locked; re-registering to new hardware costs ~2 working days |
 | Prompt extractor (LLM) | `src/services/prompt_extractor.py:135` | Qwen2.5-0.5B-Instruct, fp16, local, ~1-1.5 GB resident | Not an API call — corrects draft §4.1's "LLM, API, 2 calls" row |
 | Speech transcription | `src/services/aria_device/stream/audio_streaming_pipeline.py:59-62` | faster-whisper `small.en`, int8, on `Settings.DEVICE` (GPU when present) | Corrects draft §4.1's "CPU" row |
 | Aria gaze (Gen 1) | `src/config/models.py`, `projectaria-eyetracking` (pinned fork) | ~0.5 GB `[inferred, not measured]` | Offline inference only, per draft's own note |
@@ -160,3 +165,5 @@ camera purchase in row 1.
 | Date | Who | Change |
 |---|---|---|
 | 2026-09-15 | Claude (Sonnet 5) + Dion | Created. Verified the draft compute request against `pyproject.toml`, the FAM-HRI-side service code, `ORIENTATION.md`, `TESTBENCH_PLAN.md`, and the HiCo-Nav paper report. Tailscale address timed out; campus address (`rcp2026@10.91.242.76`) reached the box, so GPU/RAM/disk numbers came from a live `nvidia-smi`/`free -h`/`df -h`, not just the 2026-09-11 bench log. No SLURM client on the box, so the REP Makers claim stays unchecked. |
+| 2026-09-21 | Claude (Opus 5) + Dion | AnyGrasp source path updated to `grasp/vendor/` after reorg step 3. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |

@@ -21,7 +21,8 @@
 #   BLAS_INC, BLAS_LIB    default: Ubuntu's openblas-pthread folders
 #   MAX_JOBS              parallel compile jobs, default 8
 set -euo pipefail
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# Ask git which repo this script is in. set -e stops here outside a git clone.
+REPO="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 HERE="$REPO/envs/anygrasp"
 ENV="$HERE/.venv"
 PROJECT_PY="$REPO/.venv/bin/python"
@@ -71,7 +72,7 @@ if built MinkowskiEngine; then
   echo "== MinkowskiEngine already built, skipping"
 else
   echo "== MinkowskiEngine (the long step)"
-  cp -r "$REPO/grasp_module/dependencies/MinkowskiEngine" "$tmp/"
+  cp -r "$REPO/grasp/vendor/MinkowskiEngine" "$tmp/"
   (cd "$tmp/MinkowskiEngine" && python setup.py -q install --force_cuda --blas=openblas \
     --blas_include_dirs="$BLAS_INC" --blas_library_dirs="$BLAS_LIB")
 fi
@@ -80,7 +81,7 @@ if built pointnet2._ext; then
   echo "== pointnet2 already built, skipping"
 else
   echo "== pointnet2"
-  cp -r "$REPO/grasp_module/src/anygrasp_sdk/pointnet2" "$tmp/"
+  cp -r "$REPO/grasp/vendor/anygrasp_sdk/pointnet2" "$tmp/"
   rm -rf "$tmp/pointnet2/build"               # the repo tracks a stale build folder
   (cd "$tmp/pointnet2" && python setup.py -q install)
 fi

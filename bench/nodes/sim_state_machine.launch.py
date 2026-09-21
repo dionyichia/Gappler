@@ -1,7 +1,7 @@
-"""MoveIt + a SIMULATED RM65 (mock_components) + rm_mtc's grasp_state_machine, for the bench.
+"""MoveIt + a SIMULATED RM65 (mock_components) + the grasp_state_machine package, for the bench.
 
 The state machine gets the same parameters as its own launch file
-(rm_mtc/launch/grasp_state_machine.launch.py: moveit_config.to_dict()), except that the robot
+(grasp_state_machine/launch/grasp_state_machine.launch.py: moveit_config.to_dict()), except that the robot
 model is bench/nodes/sim_arm.urdf.xacro, whose ros2_control block is fake hardware. Run only
 through bench/state_machine_sim.sh, which proves the channel is private, the hardware is
 simulated and the real arm is unreachable before this starts.
@@ -25,6 +25,6 @@ def generate_launch_description():
                            mappings={"initial_positions_file": os.path.join(cfg, "initial_positions.yaml")})
         .to_moveit_configs()
     )
-    state_machine = Node(package="rm_mtc", executable="grasp_state_machine", output="screen",
+    state_machine = Node(package="grasp_state_machine", executable="grasp_state_machine", output="screen",
                          parameters=[moveit_config.to_dict()])
     return LaunchDescription([*generate_demo_launch(moveit_config).entities, state_machine])

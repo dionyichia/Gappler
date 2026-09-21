@@ -1,5 +1,10 @@
 # TESTBENCH PLAN — handoff for the next session
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **Purpose:** everything a fresh session needs to continue building the test bench, cold, without
 re-deriving anything. Written 2026-09-11 at the end of the session that built `bench/` tiers 0–1 and
 the preflight tier, and wrote [`CODE_AUDIT.md`](CODE_AUDIT.md).
@@ -24,7 +29,7 @@ Both held files are now on `main`, so T0.0 is closed.
 2. **Still owed: are these the same glasses?** Skipped 2026-09-21, the glasses were not plugged in.
    With them on USB, read the serial from the `aria` CLI and compare it with `1WM10350101291`, the
    serial in the file. If it differs, the file is for another pair and only good as a parsing fixture.
-   Note the `aria` CLI is not on `rcp2026`'s PATH. Source `env.sh` first so the project `.venv` is active.
+   Note the `aria` CLI is not on `rcp2026`'s PATH. Source `global_env.sh` (was `env.sh`, renamed 2026-09-22) or `aria/aria_env.sh` first so the project `.venv` is active.
 3. ✅ **`env.sh` works in `~/rcp-Gappler`** `[observed]`. 5 `moveit_task_constructor` packages,
    12 `rm_` packages, the `.venv` python. It must be sourced from the repo root (`source
    ~/rcp-Gappler/env.sh`). A copy elsewhere now refuses with exit 1.
@@ -33,8 +38,22 @@ Both held files are now on `main`, so T0.0 is closed.
 is, what it found and the evidence. Every open item it found is a task in
 [`next-steps-map.html`](next-steps-map.html) and [`PROJECT_PLAN.md`](PROJECT_PLAN.md) §6, so it can be
 seen, owned and ticked off in one place. Bench and CI tasks: **T0.11** (CI on the lab box, per-subsystem
-suites) and **T0.12** (AnyGrasp replay, was W6). When code moves in the refactor, update
-`OWNED_PREFIXES` in `bench/_common.py` (CLAUDE.md, "The bench").
+suites) and **T0.12** (AnyGrasp replay, was W6). Ownership is one rule, `is_owned` in `bench/_common.py` (since 2026-09-22): our code is everything except what sits under a folder named `vendor/`. Put third-party code under its subsystem's `vendor/`, and nothing in the bench needs editing when code moves. The refactor (target layout, config levels, env files) is **done and verified on the box, 2026-09-22**:
+[`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15, which also has the old-to-new path table. Build with `./build.sh`, set up a
+shell with `source global_env.sh` (or one `<subsystem>/<subsystem>_env.sh`).
+
+CI and branches, set up 2026-09-21 `[observed]`:
+
+- **`dev` is the default branch.** Branch from `dev` and open PRs into `dev`. `main` holds the last
+  state promoted from `dev`, by a merge commit, never a squash.
+- **`bench` runs on every PR into, and push to, `main` or `dev`.** It runs L0-L2 on GitHub's
+  machines. L3-L4 report SKIPPED there.
+- **Both branches are protected.** A PR is required and `bench` must pass. No approvals are needed.
+  Admins can still push directly (`enforce_admins` is off).
+- **The box pulls over SSH with a deploy key** (`~/.ssh/gappler_deploy`, host alias
+  `github-gappler` in `~/.ssh/config`), so it keeps working if the repo goes private.
+- **The repo stays public for now.** Making it private waits on GitHub Pro (student pack), because a
+  free account gets no branch protection on private repos.
 
 **One paragraph (updated 2026-09-14):** the bench runs on the lab box in `~/rcp-Gappler`, and
 **tiers 0 through 3 are now complete**. Done there: tiers 0–1, preflight, Tier 2 for **both**
@@ -46,7 +65,7 @@ pieces that were written but never run (W4b, W7) and both passed first time. **W
 more test-writing:** W6 is now task T0.12, W8 is L6 (a person at the robot), and every finding below
 is a task in the task tree.
 Dion's standing instruction still holds: `~/rcp-Gappler` only, no real-world movement, and
-**fixes on branches for review, through a PR into `main`** (2026-09-19, replacing "no fixes
+**fixes on branches for review, through a PR into `dev`** (2026-09-19, replacing "no fixes
  without asking").
 
 **Status at a glance:**
@@ -104,7 +123,7 @@ ROS channel is empty, so never skip that guard.
 | Model files | Copied into `~/rcp-Gappler` ✅. Long-term: one `assets/models/` folder (NEXT_STEPS §2.8) — later, with the reorg |
 | AnyGrasp env | **One env confirmed** (W5 survey): the project env + MinkowskiEngine etc. runs AnyGrasp. `iot22`'s conda is not used. Scripted 2026-09-21: `envs/anygrasp/build.sh` |
 | Simulation | MoveIt with `mock_components` is allowed. `rm_driver` never. Private ROS channel always |
-| Robot config | Not edited by the bench. `bench/nodes/sim_arm.*` carries the simulated model (ORIENTATION §8.16). The Livox manifest moved out of the bench into `Navigation_Module/src/livox_ros_driver2/package_ROS2.xml` (T0.4, 2026-09-21) |
+| Robot config | Not edited by the bench. `bench/nodes/sim_arm.*` carries the simulated model (ORIENTATION §8.16). The Livox manifest moved out of the bench into `nav/vendor/livox_ros_driver2/package_ROS2.xml` (T0.4, 2026-09-21) |
 | Writing | Dion's docs and pages: plain language, main point first, jargon only when needed and explained. Readers include mechanical engineering students. No em dashes, semicolons or emojis in pages |
 | Baselines | **Contracts snapshot re-taken 2026-09-21** at `1461e72` (Dion), so the refactor starts from a clean L1 with 0 informational lines. Re-take it only after a deliberate contract change, never to make a refactor pass. Still no static baseline (S1): the static check must stay at 0 findings |
 
@@ -203,7 +222,7 @@ result is in `docs/bench-runs/` and the §8.15 fix (commit `package_ROS2.xml`) i
 >
 > Still true: `robot_navigation` and `xpkg_demo` exist only in `iot22`'s workspace, so the base cannot be
 > brought up from this repo. They are `exec_depend`s, which is why the build did not need them
-> (NEXT_STEPS §2.9). Undo: `rm -rf build_nav install_nav log_nav Navigation_Module/src/livox_ros_driver2/package.xml`.
+> (NEXT_STEPS §2.9). Undo: `rm -rf build_nav install_nav log_nav nav/vendor/livox_ros_driver2/package.xml` (path since 2026-09-21).
 
 **W5 — AnyGrasp env, reproducibly.** What `iot22`'s env actually is `[observed]`: conda, Python
 3.10, torch 2.7.0 (but at runtime `~iot22/.local`'s torch 2.10 wins), **numpy 1.21.2**,
@@ -517,7 +536,7 @@ owned code, all pre-existing — see known issue S1) · contracts PASS.
 
 | # | Gap | Evidence | Effect | Fix |
 |---|---|---|---|---|
-| C1 | **Every Aria-side publisher is invisible.** They are created via the `ROSPublisher` wrapper class (`src/services/ros/ros_publisher.py:14`) with topic names from `ROS2Topics`, an enum built from `shared/config.yaml` **at import time** — the AST resolver can see neither | `/aria/audio/prompt` shows `pub=0` in the golden file, yet `audio_streaming_pipeline.py:49` publishes it. Same for `/aria/rgb_camera/raw`, `/aria/imu`, … | the orphan report wrongly lists Aria topics as "subscribed, nobody publishes"; a rename on the Aria side will not be caught | teach `PyExtractor` two things: treat `ROSPublisher(name, MsgType, topic, ...)` as a publisher with the topic in arg 3; resolve `ROS2Topics.X.value` by loading `shared/config.yaml` (key = `X.lower()`). Then **re-snapshot** |
+| C1 ✅ | **Every Aria-side publisher is invisible.** **Fixed 2026-09-21 (reorg step 1, `NEXT_STEPS` §2.15):** the extractor now reads our YAML files, resolves `ROS2Topics.X.value`, `get_parameter("x")` and variables set from them, and treats `ROSPublisher` as a publisher. 13 Aria topics gained their publishers. Self-test `bench/test_contracts.py` runs first in L1. They are created via the `ROSPublisher` wrapper class (`src/services/ros/ros_publisher.py:14`) with topic names from `ROS2Topics`, an enum built from `shared/config.yaml` **at import time** — the AST resolver can see neither | `/aria/audio/prompt` shows `pub=0` in the golden file, yet `audio_streaming_pipeline.py:49` publishes it. Same for `/aria/rgb_camera/raw`, `/aria/imu`, … | the orphan report wrongly lists Aria topics as "subscribed, nobody publishes"; a rename on the Aria side will not be caught | teach `PyExtractor` two things: treat `ROSPublisher(name, MsgType, topic, ...)` as a publisher with the topic in arg 3; resolve `ROS2Topics.X.value` by loading `shared/config.yaml` (key = `X.lower()`). Then **re-snapshot** |
 | C2 | C++ topics are found only when the string literal is inline in `create_publisher<T>("...")` | regex | a topic held in a `const std::string` is missed | acceptable until the reorg introduces constants; then extend |
 | C3 | Golden file was taken on a dirty tree (`2d36a89-dirty`) | `bench/golden/contracts.json` `"git"` field | cosmetic, but makes the baseline's provenance unclear | re-snapshot on the first commit that includes `bench/` |
 
@@ -588,7 +607,7 @@ These can be settled without launching anything. Retag each in ORIENTATION / COD
 | `mtc_sim_test` not built | `ls <overlay>/lib/rm_mtc/` | ORIENTATION §8.12 |
 | Arm + LiDAR share one NIC with different host IPs | `ip -4 addr show enp2s0`; `ip link` for a second NIC | ORIENTATION §8.13 |
 | Which AnyGrasp checkpoint exists | `ls ros2_robot_ws/src/rm_mtc/src/perception/log/` | ORIENTATION §8.14 |
-| `livox_ros_driver2` has no ROS 2 manifest | `ls Navigation_Module/src/livox_ros_driver2/package*.xml` | ORIENTATION §8.15 |
+| `livox_ros_driver2` has no ROS 2 manifest | `ls nav/vendor/livox_ros_driver2/package*.xml` | ORIENTATION §8.15 |
 | `xpkg_demo` missing | `ros2 pkg prefix xpkg_demo`; `find / -name 'xpkg_demo' -maxdepth 6 2>/dev/null` | ORIENTATION §8.6 |
 | Which OpenVINS is authoritative | `ls ~/Ros2Workspaces/OpenVINS/install` | NEXT_STEPS §2.5 |
 | Home pose on the box's checkout | `grep -A8 HOME_JOINTS <rcp-desktop>/ros2_robot_ws/src/rm_mtc/include/rm_mtc/mtc_planner.hpp` | CODE_AUDIT §B4 |
@@ -606,9 +625,9 @@ on the Mac is the fallback for when the box is unavailable.
 cd ~/bench_work/gappler
 source /opt/ros/humble/setup.bash                      # only this — a stale overlay poisons the build
 colcon build --build-base ~/bench_work/build --install-base ~/bench_work/install \
-  --base-paths ros2_robot_ws/src deps_ws/src          2>&1 | tee ~/bench_work/build_arm.log
+  --base-paths ros2_robot_ws/src arm/vendor grasp/vendor 2>&1 | tee ~/bench_work/build_arm.log
 colcon build --build-base ~/bench_work/build_nav --install-base ~/bench_work/install_nav \
-  --base-paths Navigation_Module/src                  2>&1 | tee ~/bench_work/build_nav.log
+  --base-paths Navigation_Module/src nav/vendor       2>&1 | tee ~/bench_work/build_nav.log
 ```
 
 Add `bench/build.sh` wrapping this, with a pass/fail summary per package. Expected results:
@@ -720,3 +739,11 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-21 | Claude (Opus 5) + Dion | Contracts snapshot re-taken at `1461e72`: the 12 `robot_navigation` names and the new launch nodes added, the deleted `mtc_sim_test` launch removed. Decisions row updated. Added a "Next" block to "Start here" for T0.10 and T0.11: merge the PR, branch protection, the fork-PR risk of a self-hosted runner on a public repo, and `OWNED_PREFIXES` during the refactor. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Full bench L0-L4 on `main` @ `9bbb26a` on the box: L3 and every L4 script PASS. L1 failed on a bench bug: `contracts.py` and `static.py` read `build_nav/` and `install_nav/`, fixed. Robot checks moved out of L2 into a new L5 (`preflight.py --hardware`) that gates L6, the real arm test (was L5). An unplugged arm makes L5 and L6 SKIPPED, not FAIL. Neither is needed to merge. Evidence in `bench-runs/2026-09-21-labbox-full-bench-main.txt`. `next-steps-map.html` T0.11 text edited and republished. |
 | 2026-09-21 | Claude (Opus 5) + Dion | **W5 done**: `envs/anygrasp/build.sh` rebuilds the AnyGrasp env from nothing, the SDK demo passes, L2 `anygrasp-env` is green. `estop_delivery.sh` control case made stable (0.5 s between keys) after it exposed a new finding, CODE_AUDIT B2c. B2's loss now observed. The `estop.py` fix is queued in "Start here". `build.sh` reuses built parts, `--clean` rebuilds. |
+| 2026-09-21 | Claude (Opus 5) + Dion | CI and branches set up: `dev` is the default branch, `bench` runs on PRs and pushes to `main` and `dev`, both protected. Box pulls over SSH with a deploy key. "Next" block rewritten as the refactor plus the rest of T0.11. Fixes now go through a PR into `dev`. |
+| 2026-09-21 | Claude (Opus 5) + Dion | "Start here" points to `NEXT_STEPS` §2.15, the reorg spec. |
+| 2026-09-21 | Claude (Opus 5) + Dion | C1 fixed: the contract extractor reads config, so topics moved into YAML during the reorg stay visible. Contracts re-snapshotted, 13 Aria topics now show publishers. New L1 self-test `bench/test_contracts.py`. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Reorg step 3: current paths and build recipes point at `<subsystem>/vendor/`. Past run records (W5, the box survey) left as they were. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-22 | Claude (Opus 5) + Dion | `OWNED_PREFIXES` replaced by the `is_owned` rule (not under `vendor/`), reorg step 6. |
+| 2026-09-22 | Claude (Opus 5) + Dion | `env.sh` renamed `global_env.sh` (reorg step 7) in the current setup instruction. The 2026-09-21 check results keep the old name. |
+| 2026-09-22 | Claude (Opus 5) + Dion | "Start here": the refactor is done and verified. Points at `./build.sh`, `global_env.sh` and the path table. |

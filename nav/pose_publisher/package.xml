@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>pose_publisher</name>
+  <version>0.0.1</version>
+  <description>Publishes the robot pose in the map (TF map to robot_base_link) as /robot_pose. Was a script in robot_slam until 2026-09-22.</description>
+  <maintainer email="you@email.com">Your Name</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

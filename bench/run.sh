@@ -51,7 +51,8 @@ step() {
 s=$(step "L0  Static checks" python3 bench/static.py)
 row L0 "Static checks" "$s" ""
 
-s=$(step "L1  Contracts" python3 bench/contracts.py check)
+# The extractor self-test first: a broken extractor would make every check below pass.
+s=$(step "L1  Contracts" sh -c "python3 bench/test_contracts.py && python3 bench/contracts.py check")
 row L1 "Contracts" "$s" ""
 
 s=$(step "L2  Lab box check (preflight)" python3 bench/preflight.py)
@@ -67,9 +68,9 @@ elif [ $lab = 0 ]; then
   row L3 "Build" SKIPPED "needs the lab box (see L2)"
   row L4 "Simulation" SKIPPED "needs the lab box (see L2)"
 else
-  arm=$(step "L3  Build: arm workspace" ./bench/build.sh arm)
+  arm=$(step "L3  Build: arm workspace" ./build.sh arm)
   row L3 "Build: arm" "$arm" ""
-  s=$(step "L3  Build: nav workspace" ./bench/build.sh nav)
+  s=$(step "L3  Build: nav workspace" ./build.sh nav)
   row L3 "Build: nav" "$s" ""
   if [ "$arm" != PASS ]; then
     row L4 "Simulation" SKIPPED "arm build did not pass (see L3)"
