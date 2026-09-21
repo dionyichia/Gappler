@@ -11,14 +11,8 @@
     "/home/yangfan/Plog.txt": [
       "ros2_robot_ws/src/rm_driver/src/rm_driver.cpp:114"
     ],
-    "~/Ros2Workspaces/OpenVINS/install/ov_msckf/lib/ov_msckf/run_subscribe_msckf": [
-      "src/main.py:310"
-    ],
-    "~/Ros2Workspaces/OpenVINS/install/setup.bash": [
-      "src/main.py:309"
-    ],
-    "~/Ros2Workspaces/OpenVINS/src/open_vins/ov_msckf/launch/display_ros2.rviz": [
-      "src/main.py:337"
+    "~/Ros2Workspaces/OpenVINS": [
+      "shared/global_config.yaml:34"
     ]
   },
   "divergent_constants": {
@@ -430,7 +424,7 @@
       "ros2_robot_ws/src/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "0040069-dirty",
+  "git": "9d86499",
   "launch_includes": [
     {
       "from": "Navigation_Module/src/robot_navigation/launch/navigation.launch.py",
@@ -1290,6 +1284,12 @@
       "ros2_robot_ws/src/rm_driver/config/rm_65_config.yaml:7",
       "ros2_robot_ws/src/rm_driver/src/rm_driver.cpp:4100"
     ],
+    "aruco_pose": [
+      "shared/global_config.yaml:20"
+    ],
+    "audio_transcription_prompt": [
+      "shared/global_config.yaml:18"
+    ],
     "base_frame": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:12",
       "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:11"
@@ -1349,6 +1349,9 @@
     "com_enable": [
       "Navigation_Module/src/base/xpkg_comm/src/ROS_INF/ros2_interface.cpp:115"
     ],
+    "combined_visualization": [
+      "shared/global_config.yaml:16"
+    ],
     "controller_frequency": [
       "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:13",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:26"
@@ -1388,10 +1391,13 @@
     ],
     "debug_logging": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:16",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:19"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:20"
     ],
     "default_server_timeout": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:16"
+    ],
+    "depth": [
+      "shared/global_config.yaml:29"
     ],
     "desired_linear_vel": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:45"
@@ -1413,6 +1419,15 @@
     "expected_planner_frequency": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:133"
     ],
+    "eye_tracking_gaze_estimate": [
+      "shared/global_config.yaml:13"
+    ],
+    "eye_tracking_raw": [
+      "shared/global_config.yaml:12"
+    ],
+    "feature_match_results": [
+      "shared/global_config.yaml:17"
+    ],
     "feedback": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:195"
     ],
@@ -1424,6 +1439,9 @@
     ],
     "frame_id": [
       "Navigation_Module/src/livox_ros_driver2/src/livox_ros_driver2.cpp:136"
+    ],
+    "fused_pose": [
+      "shared/global_config.yaml:22"
     ],
     "global_frame": [
       "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:37",
@@ -1445,6 +1463,12 @@
       "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:42",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:77"
     ],
+    "history": [
+      "shared/global_config.yaml:28"
+    ],
+    "imu": [
+      "shared/global_config.yaml:19"
+    ],
     "inflation_radius": [
       "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:48",
       "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:77",
@@ -1454,6 +1478,9 @@
     "ini_path": [
       "Navigation_Module/src/drivers/xpkg_power/src/ROS_INF/ros2_interface.cpp:119",
       "Navigation_Module/src/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:123"
+    ],
+    "is_stationary": [
+      "shared/global_config.yaml:23"
     ],
     "link_match_minimum_response_fine": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:29"
@@ -1495,15 +1522,15 @@
     "manu_state": [
       "Navigation_Module/src/drivers/xpkg_power/src/ROS_INF/ros2_interface.cpp:121"
     ],
-    "map_file_name": [
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:17"
+    "map_dir": [
+      "shared/global_config.yaml:35"
     ],
     "map_frame": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:11",
       "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:10"
     ],
     "map_start_at_dock": [
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:18"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:19"
     ],
     "map_subscribe_transient_local": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:107",
@@ -1511,7 +1538,7 @@
     ],
     "map_update_interval": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:19",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:22"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:23"
     ],
     "mark_threshold": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:93"
@@ -1565,7 +1592,7 @@
     ],
     "max_laser_range": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:21",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:24"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:25"
     ],
     "max_lookahead_dist": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:48"
@@ -1597,7 +1624,7 @@
     ],
     "min_laser_range": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:22",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:25"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:26"
     ],
     "min_lookahead_dist": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:47"
@@ -1622,15 +1649,15 @@
     ],
     "minimum_time_interval": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:23",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:26"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:27"
     ],
     "minimum_travel_distance": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:27",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:30"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:31"
     ],
     "minimum_travel_heading": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:28",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:31"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:32"
     ],
     "mode": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:14",
@@ -1673,6 +1700,9 @@
     "odom_topic": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:14",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:200"
+    ],
+    "openvins_ws": [
+      "shared/global_config.yaml:34"
     ],
     "origin_z": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:89"
@@ -1771,6 +1801,9 @@
     "regulated_linear_scaling_min_speed": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:60"
     ],
+    "reliability": [
+      "shared/global_config.yaml:27"
+    ],
     "required_angular_velocity": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:36"
     ],
@@ -1786,7 +1819,16 @@
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:119",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:78",
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:20",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:23"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:24"
+    ],
+    "rgb_camera_raw": [
+      "shared/global_config.yaml:8"
+    ],
+    "rgb_camera_undistorted": [
+      "shared/global_config.yaml:9"
+    ],
+    "rgb_camera_with_object_masks": [
+      "shared/global_config.yaml:14"
     ],
     "robot_base_frame": [
       "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:38",
@@ -1809,6 +1851,9 @@
     "rolling_window": [
       "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:40",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:75"
+    ],
+    "ros_camera_with_object_masks": [
+      "shared/global_config.yaml:15"
     ],
     "rotate_to_heading_angular_vel": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:50"
@@ -1836,6 +1881,12 @@
     "simulate_ahead_time": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:170"
     ],
+    "slam_left_raw": [
+      "shared/global_config.yaml:10"
+    ],
+    "slam_right_raw": [
+      "shared/global_config.yaml:11"
+    ],
     "smoother_plugins": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:145"
     ],
@@ -1848,7 +1899,7 @@
     ],
     "stack_size_to_use": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:26",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:29"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:30"
     ],
     "stateful": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:42"
@@ -1879,11 +1930,11 @@
     ],
     "tf_buffer_duration": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:25",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:28"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:29"
     ],
     "throttle_scans": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:17",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:20"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:21"
     ],
     "tolerance": [
       "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:85",
@@ -1904,11 +1955,11 @@
     ],
     "transform_publish_period": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:18",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:21"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:22"
     ],
     "transform_timeout": [
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:24",
-      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:27"
+      "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:28"
     ],
     "transform_tolerance": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:168"
@@ -2025,6 +2076,9 @@
     "velocity_timeout": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:203"
     ],
+    "vio_pose": [
+      "shared/global_config.yaml:21"
+    ],
     "waypoint_pause_duration": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:188"
     ],
@@ -2137,7 +2191,7 @@
         "geometry_msgs/PoseStamped"
       ],
       "yaml_refs": [
-        "shared/config.yaml:16"
+        "shared/global_config.yaml:20"
       ]
     },
     "/aria/audio/prompt": {
@@ -2156,7 +2210,7 @@
         "std_msgs/String"
       ],
       "yaml_refs": [
-        "shared/config.yaml:14"
+        "shared/global_config.yaml:18"
       ]
     },
     "/aria/eye_tracking/gaze_estimate": {
@@ -2174,7 +2228,7 @@
         "geometry_msgs/Point"
       ],
       "yaml_refs": [
-        "shared/config.yaml:9"
+        "shared/global_config.yaml:13"
       ]
     },
     "/aria/eye_tracking/raw": {
@@ -2191,7 +2245,7 @@
         "sensor_msgs/CompressedImage"
       ],
       "yaml_refs": [
-        "shared/config.yaml:8"
+        "shared/global_config.yaml:12"
       ]
     },
     "/aria/fused_pose": {
@@ -2208,7 +2262,7 @@
         "geometry_msgs/PoseStamped"
       ],
       "yaml_refs": [
-        "shared/config.yaml:18"
+        "shared/global_config.yaml:22"
       ]
     },
     "/aria/glasses_marker": {
@@ -2236,7 +2290,7 @@
         "sensor_msgs/Imu"
       ],
       "yaml_refs": [
-        "shared/config.yaml:15",
+        "shared/global_config.yaml:19",
         "src/services/aria_device/calibration/kalibr_imu_chain.yaml:13"
       ]
     },
@@ -2250,7 +2304,7 @@
         "?"
       ],
       "yaml_refs": [
-        "shared/config.yaml:19"
+        "shared/global_config.yaml:23"
       ]
     },
     "/aria/pose_initialized": {
@@ -2281,7 +2335,7 @@
         "std_msgs/UInt8MultiArray"
       ],
       "yaml_refs": [
-        "shared/config.yaml:13"
+        "shared/global_config.yaml:17"
       ]
     },
     "/aria/rgb_camera/object_masks": {
@@ -2298,7 +2352,7 @@
         "std_msgs/UInt8MultiArray"
       ],
       "yaml_refs": [
-        "shared/config.yaml:10"
+        "shared/global_config.yaml:14"
       ]
     },
     "/aria/rgb_camera/raw": {
@@ -2315,7 +2369,7 @@
         "sensor_msgs/CompressedImage"
       ],
       "yaml_refs": [
-        "shared/config.yaml:4"
+        "shared/global_config.yaml:8"
       ]
     },
     "/aria/rgb_camera/undistorted": {
@@ -2335,7 +2389,7 @@
         "sensor_msgs/CompressedImage"
       ],
       "yaml_refs": [
-        "shared/config.yaml:5"
+        "shared/global_config.yaml:9"
       ]
     },
     "/aria/rgb_camera/view": {
@@ -2363,7 +2417,7 @@
         "sensor_msgs/Image"
       ],
       "yaml_refs": [
-        "shared/config.yaml:6",
+        "shared/global_config.yaml:10",
         "src/services/aria_device/calibration/kalibr_imucam_chain.yaml:15"
       ]
     },
@@ -2379,7 +2433,7 @@
         "sensor_msgs/Image"
       ],
       "yaml_refs": [
-        "shared/config.yaml:7",
+        "shared/global_config.yaml:11",
         "src/services/aria_device/calibration/kalibr_imucam_chain.yaml:29"
       ]
     },
@@ -2393,7 +2447,7 @@
         "?"
       ],
       "yaml_refs": [
-        "shared/config.yaml:17"
+        "shared/global_config.yaml:21"
       ]
     },
     "/camera/camera/aligned_depth_to_color/image_raw": {
@@ -2519,7 +2573,7 @@
         "std_msgs/UInt8MultiArray"
       ],
       "yaml_refs": [
-        "shared/config.yaml:12"
+        "shared/global_config.yaml:16"
       ]
     },
     "/debug/centroid_marker": {
@@ -2711,7 +2765,7 @@
         "Navigation_Module/src/robot_slam/scripts/object_approach_node.py:97"
       ],
       "subscribers": [
-        "ros2_robot_ws/src/orchestrator.py:56"
+        "ros2_robot_ws/src/orchestrator.py:55"
       ],
       "types": [
         "std_msgs/Bool"
@@ -2725,7 +2779,7 @@
       "publishers": [],
       "subscribers": [
         "Navigation_Module/src/robot_slam/scripts/object_approach_node.py:86",
-        "ros2_robot_ws/src/orchestrator.py:65"
+        "ros2_robot_ws/src/orchestrator.py:64"
       ],
       "types": [
         "std_msgs/Bool"
@@ -2851,7 +2905,7 @@
         "std_msgs/UInt8MultiArray"
       ],
       "yaml_refs": [
-        "shared/config.yaml:11"
+        "shared/global_config.yaml:15"
       ]
     },
     "/return_to_user/goal_reached": {
@@ -3230,7 +3284,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "ros2_robot_ws/src/orchestrator.py:51",
+        "ros2_robot_ws/src/orchestrator.py:50",
         "ros2_robot_ws/src/rm_mtc/src/grasp_state_machine.cpp:150"
       ],
       "subscribers": [],
