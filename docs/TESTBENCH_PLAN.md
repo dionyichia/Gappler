@@ -29,6 +29,20 @@ Both held files are now on `main`, so T0.0 is closed.
    12 `rm_` packages, the `.venv` python. It must be sourced from the repo root (`source
    ~/rcp-Gappler/env.sh`). A copy elsewhere now refuses with exit 1.
 
+**Next, as of 2026-09-21: T0.10 and T0.11 (CI), alongside the one-folder-per-node refactor.**
+Before starting:
+
+1. Merge `t0.0-close-realman-manip` into `main` through a PR. The `bench` workflow only runs on PRs
+   into `main` and pushes to `main`, so CI has not yet run on T0.4's fixes. L0-L2 pass locally.
+2. Once the PR's `bench` check is green, turn on branch protection for `main`, requiring `bench`.
+3. **The repo is public, so settle the fork-PR risk before registering the lab box as a runner.** A
+   self-hosted runner runs whatever a PR contains, on a box wired to the arm and base network. Either
+   make the repo private, or set Actions to require approval for every outside contributor and never
+   run fork PRs on the self-hosted runner.
+4. During the refactor, update `OWNED_PREFIXES` in `bench/_common.py` whenever code moves, or moved
+   files quietly count as vendor code and stop failing. Run `./bench/run.sh` before and after each move.
+   A pure move must leave L1 at 0 changes.
+
 **One paragraph (updated 2026-09-14):** the bench runs on the lab box in `~/rcp-Gappler`, and
 **tiers 0 through 3 are now complete**. Done there: tiers 0–1, preflight, Tier 2 for **both**
 workspaces (arm 22/22, nav 10/10), and every Tier 3 script on a private ROS channel — MoveIt on a
@@ -96,7 +110,7 @@ ROS channel is empty, so never skip that guard.
 | Simulation | MoveIt with `mock_components` is allowed. `rm_driver` never. Private ROS channel always |
 | Robot config | Not edited by the bench. `bench/nodes/sim_arm.*` carries the simulated model (ORIENTATION §8.16). The Livox manifest moved out of the bench into `Navigation_Module/src/livox_ros_driver2/package_ROS2.xml` (T0.4, 2026-09-21) |
 | Writing | Dion's docs and pages: plain language, main point first, jargon only when needed and explained. Readers include mechanical engineering students. No em dashes, semicolons or emojis in pages |
-| Baselines | **Neither wanted** (Dion, 2026-09-11). The contracts snapshot keeps its `2d36a89-dirty` label — its content equals `3f37cab`'s, so re-taking it changes only the label. No static baseline (S1): the 7 known findings stay red |
+| Baselines | **Contracts snapshot re-taken 2026-09-21** at `1461e72` (Dion), so the refactor starts from a clean L1 with 0 informational lines. Re-take it only after a deliberate contract change, never to make a refactor pass. Still no static baseline (S1): the static check must stay at 0 findings |
 
 **Every session on the box:** connect over **tailscale**, which works from anywhere:
 `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60` (`HostKeyAlias` reuses the host key already
@@ -694,3 +708,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-19 | Claude (Opus 5) + Dion | Replaced "no fixes without asking" with fixes on branches through a PR into `main`. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Ran the T0.0 box checks. Calibration parses and `env.sh` works, both `[observed]`. The glasses serial check is skipped and still owed. The three-check block in "Start here" now shows the results. Evidence in `bench-runs/2026-09-21-labbox-t0.0-box-checks.txt`. |
 | 2026-09-21 | Claude (Opus 5) + Dion | T0.4: struck the "not in the repo" held finding. The Livox manifest moved from `bench/nodes/` into its package, and `bench/build.sh` copies it from there. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Contracts snapshot re-taken at `1461e72`: the 12 `robot_navigation` names and the new launch nodes added, the deleted `mtc_sim_test` launch removed. Decisions row updated. Added a "Next" block to "Start here" for T0.10 and T0.11: merge the PR, branch protection, the fork-PR risk of a self-hosted runner on a public repo, and `OWNED_PREFIXES` during the refactor. |

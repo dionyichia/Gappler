@@ -26,6 +26,7 @@
       "int(ROS_VERSION)": [
         "Navigation_Module/src/base/xpkg_comm/tools/hex-pkg-init.py:46",
         "Navigation_Module/src/base/xpkg_msgs/tools/hex-pkg-init.py:45",
+        "Navigation_Module/src/demo/demo_general_chassis/tools/hex-pkg-init.py:45",
         "Navigation_Module/src/drivers/xpkg_power/tools/hex-pkg-init.py:45",
         "Navigation_Module/src/drivers/xpkg_vehicle/tools/hex-pkg-init.py:45",
         "Navigation_Module/src/urdf/xpkg_urdf_echo_plus/tools/hex-pkg-init.py:46"
@@ -33,6 +34,7 @@
       "os.getenv('ROS_VERSION')": [
         "Navigation_Module/src/base/xpkg_comm/tools/hex-pkg-init.py:41",
         "Navigation_Module/src/base/xpkg_msgs/tools/hex-pkg-init.py:41",
+        "Navigation_Module/src/demo/demo_general_chassis/tools/hex-pkg-init.py:40",
         "Navigation_Module/src/drivers/xpkg_power/tools/hex-pkg-init.py:40",
         "Navigation_Module/src/drivers/xpkg_vehicle/tools/hex-pkg-init.py:40",
         "Navigation_Module/src/urdf/xpkg_urdf_echo_plus/tools/hex-pkg-init.py:41"
@@ -202,6 +204,10 @@
     "base_link": [
       "Navigation_Module/src/drivers/xpkg_vehicle/src/ROS_INF/ros1_interface.cpp:176",
       "Navigation_Module/src/drivers/xpkg_vehicle/src/ROS_INF/ros1_interface.cpp:186",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:38",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:4",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:63",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:99",
       "Navigation_Module/src/robot_slam/launch/slam_localization.launch.py(static_tf)",
       "ros2_robot_ws/src/eg2_4b_description/launch/gazebo.launch.py(static_tf)",
       "ros2_robot_ws/src/rm_description/urdf/rm_65.urdf(urdf)",
@@ -325,6 +331,7 @@
       "Navigation_Module/src/urdf/xpkg_urdf_echo_plus/urdf/model.urdf(urdf)"
     ],
     "map": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:62",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:115",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:12",
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:11",
@@ -350,6 +357,9 @@
       "Navigation_Module/src/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:222",
       "Navigation_Module/src/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:246",
       "Navigation_Module/src/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:251",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:37",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:6",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:98",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:166",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:72",
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:10",
@@ -420,8 +430,16 @@
       "ros2_robot_ws/src/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "1ef47f3",
+  "git": "1461e72",
   "launch_includes": [
+    {
+      "from": "Navigation_Module/src/robot_navigation/launch/navigation.launch.py",
+      "target": "bringup_basic_ctrl.launch.py"
+    },
+    {
+      "from": "Navigation_Module/src/robot_navigation/launch/navigation.launch.py",
+      "target": "bringup_basic_ctrl.launch.py"
+    },
     {
       "from": "Navigation_Module/src/robot_slam/launch/slam_localization.launch.py",
       "target": "bringup_basic_ctrl.launch.py"
@@ -640,6 +658,27 @@
       "remappings": []
     },
     {
+      "executable": "rviz2",
+      "from": "Navigation_Module/src/demo/demo_general_chassis/demo_vehicle/ROS2/launch/bringup_basic_ctrl.launch.py",
+      "name": "rviz2",
+      "package": "rviz2",
+      "remappings": []
+    },
+    {
+      "executable": "xnode_comm",
+      "from": "Navigation_Module/src/demo/demo_general_chassis/demo_vehicle/ROS2/launch/bringup_basic_ctrl.launch.py",
+      "name": "xnode_comm",
+      "package": "xpkg_comm",
+      "remappings": []
+    },
+    {
+      "executable": "xnode_vehicle",
+      "from": "Navigation_Module/src/demo/demo_general_chassis/demo_vehicle/ROS2/launch/bringup_basic_ctrl.launch.py",
+      "name": "xnode_vehicle",
+      "package": "xpkg_vehicle",
+      "remappings": []
+    },
+    {
       "executable": "xnode_comm",
       "from": "Navigation_Module/src/drivers/xpkg_power/launch/ROS2/xnode_power_test.launch.py",
       "name": "xnode_comm",
@@ -673,6 +712,22 @@
       "name": "xnode_vehicle",
       "package": "xpkg_vehicle",
       "remappings": []
+    },
+    {
+      "executable": "pointcloud_to_laserscan_node",
+      "from": "Navigation_Module/src/robot_navigation/launch/navigation.launch.py",
+      "name": "pointcloud_to_laserscan",
+      "package": "pointcloud_to_laserscan",
+      "remappings": [
+        [
+          "cloud_in",
+          "/livox/lidar"
+        ],
+        [
+          "scan",
+          "/livox/lidar_2d"
+        ]
+      ]
     },
     {
       "executable": "joint_state_publisher",
@@ -1185,13 +1240,6 @@
       "name": "",
       "package": "rm_mtc",
       "remappings": []
-    },
-    {
-      "executable": "mtc_sim_test",
-      "from": "ros2_robot_ws/src/rm_mtc/launch/mtc_sim_test.launch.py",
-      "name": "",
-      "package": "rm_mtc",
-      "remappings": []
     }
   ],
   "package_deps": [
@@ -1204,6 +1252,12 @@
     "xpkg_vehicle"
   ],
   "params": {
+    "acc_lim_theta": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:31"
+    ],
+    "acc_lim_x": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:30"
+    ],
     "allow_reversing": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:62"
     ],
@@ -1240,10 +1294,14 @@
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:12",
       "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:11"
     ],
+    "base_frame_id": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:4"
+    ],
     "beep_enable": [
       "Navigation_Module/src/drivers/xpkg_power/src/ROS_INF/ros2_interface.cpp:123"
     ],
     "behavior_plugins": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:91",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:157"
     ],
     "bond_timeout": [
@@ -1276,6 +1334,7 @@
       "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:6"
     ],
     "clearing": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:55",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:98"
     ],
     "cmdline_input_bd_code": [
@@ -1291,9 +1350,11 @@
       "Navigation_Module/src/base/xpkg_comm/src/ROS_INF/ros2_interface.cpp:115"
     ],
     "controller_frequency": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:13",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:26"
     ],
     "controller_plugins": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:16",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:32"
     ],
     "correlation_search_space_dimension": [
@@ -1313,6 +1374,7 @@
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:154"
     ],
     "cycle_frequency": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:90",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:156"
     ],
     "data_src": [
@@ -1344,6 +1406,7 @@
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:150"
     ],
     "enabled": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:51",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:187",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:87"
     ],
@@ -1363,18 +1426,28 @@
       "Navigation_Module/src/livox_ros_driver2/src/livox_ros_driver2.cpp:136"
     ],
     "global_frame": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:37",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:62",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:98",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:115",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:12",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:166",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:72"
     ],
+    "global_frame_id": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:5"
+    ],
     "goal_checker_plugins": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:15",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:31"
     ],
     "height": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:42",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:77"
     ],
     "inflation_radius": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:48",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:77",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:128",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:84"
     ],
@@ -1407,6 +1480,7 @@
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:40"
     ],
     "loop_rate": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:104",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:182"
     ],
     "loop_search_maximum_distance": [
@@ -1471,6 +1545,7 @@
       "src/services/pose_fusion/pose_fusion_node.py:182"
     ],
     "marking": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:56",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:99"
     ],
     "max_accel": [
@@ -1505,6 +1580,12 @@
     "max_rotational_vel": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:171"
     ],
+    "max_vel_theta": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:29"
+    ],
+    "max_vel_x": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:28"
+    ],
     "max_velocity": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:196"
     ],
@@ -1526,6 +1607,9 @@
     ],
     "min_theta_velocity_threshold": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:29"
+    ],
+    "min_vel_x": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:27"
     ],
     "min_velocity": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:197"
@@ -1556,6 +1640,7 @@
       "Navigation_Module/src/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:127"
     ],
     "movement_time_allowance": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:20",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:37"
     ],
     "multi_topic": [
@@ -1565,6 +1650,8 @@
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:17"
     ],
     "observation_sources": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:52",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:70",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:94"
     ],
     "obstacle_max_range": [
@@ -1580,6 +1667,9 @@
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:10",
       "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:9"
     ],
+    "odom_frame_id": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:6"
+    ],
     "odom_topic": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:14",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:200"
@@ -1591,9 +1681,22 @@
       "Navigation_Module/src/livox_ros_driver2/src/livox_ros_driver2.cpp:135"
     ],
     "planner_plugins": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:82",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:135"
     ],
     "plugin": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:18",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:22",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:26",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:47",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:50",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:69",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:74",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:76",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:84",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:93",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:95",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:97",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:106",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:123",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:126",
@@ -1613,8 +1716,13 @@
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:86"
     ],
     "plugins": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:45",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:67",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:121",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:80"
+    ],
+    "progress_checker_plugin": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:14"
     ],
     "progress_checker_plugins": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:30"
@@ -1669,23 +1777,37 @@
     "required_linear_velocity": [
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:35"
     ],
+    "required_movement_radius": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:19"
+    ],
     "resolution": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:43",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:66",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:119",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:78",
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:20",
       "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:23"
     ],
     "robot_base_frame": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:38",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:63",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:99",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:116",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:13",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:167",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:73"
     ],
+    "robot_model_type": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:8"
+    ],
     "robot_radius": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:44",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:65",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:118",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:79"
     ],
     "rolling_window": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:40",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:75"
     ],
     "rotate_to_heading_angular_vel": [
@@ -1701,6 +1823,7 @@
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:194"
     ],
     "scan_topic": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:7",
       "Navigation_Module/src/robot_slam/config/slam_toolbox.yaml:13",
       "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:12"
     ],
@@ -1731,6 +1854,7 @@
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:42"
     ],
     "stop_on_failure": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:105",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:183"
     ],
     "tcp_addr": [
@@ -1762,10 +1886,13 @@
       "Navigation_Module/src/robot_slam/config/slam_toolbox_localization.yaml:20"
     ],
     "tolerance": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:85",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:138",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:148"
     ],
     "topic": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:54",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:72",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:96"
     ],
     "track_unknown_space": [
@@ -1842,6 +1969,8 @@
       "ros2_robot_ws/src/rm_driver/src/rm_driver.cpp:4106"
     ],
     "update_frequency": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:36",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:61",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:113",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:70"
     ],
@@ -1850,6 +1979,7 @@
       "ros2_robot_ws/src/rm_moveit2_config/rm_65_w_gripper_config/config/ros2_controllers.yaml:4"
     ],
     "use_astar": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:86",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:139"
     ],
     "use_collision_detection": [
@@ -1868,6 +1998,12 @@
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:61"
     ],
     "use_sim_time": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:100",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:12",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:3",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:39",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:64",
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:81",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:11",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:117",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:134",
@@ -1896,15 +2032,18 @@
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:184"
     ],
     "width": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:41",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:76"
     ],
     "xfer_format": [
       "Navigation_Module/src/livox_ros_driver2/src/livox_ros_driver2.cpp:131"
     ],
     "xy_goal_tolerance": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:23",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:40"
     ],
     "yaw_goal_tolerance": [
+      "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:24",
       "Navigation_Module/src/robot_slam/config/nav2_params.yaml:41"
     ],
     "z_resolution": [
@@ -2478,6 +2617,21 @@
         "sensor_msgs/PointCloud2"
       ],
       "yaml_refs": []
+    },
+    "/livox/lidar_2d": {
+      "n_publishers": 0,
+      "n_subscribers": 0,
+      "owned": true,
+      "publishers": [],
+      "subscribers": [],
+      "types": [
+        "?"
+      ],
+      "yaml_refs": [
+        "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:54",
+        "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:7",
+        "Navigation_Module/src/robot_navigation/config/nav2_params.yaml:72"
+      ]
     },
     "/manipulation/done": {
       "n_publishers": 0,
