@@ -14,15 +14,14 @@ Flow:
 import subprocess
 import sys
 import time
-from pathlib import Path
 
 import rclpy
+from gappler_common import ROOT
 from rclpy.node import Node
 from rm_ros_interfaces.msg import Gripperset
 from std_msgs.msg import Bool, String
 
-# main.py sits next to this file, so the folder we want is our own.
-MAIN_PY_DIR = str(Path(__file__).resolve().parent)
+MAIN_PY_DIR = str(ROOT / "ros2_robot_ws/src")
 MAIN_PY_PATH = f"{MAIN_PY_DIR}/main.py"
 
 processes: list[tuple[str, subprocess.Popen]] = []

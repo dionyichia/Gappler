@@ -43,7 +43,7 @@ When someone says "run main.py", always ask which one.
 **Goal:** be able to answer *"what starts what, and how do they find each other?"* Needs no
 hardware and no ROS install. Keep ARCHITECTURE L0 open beside you.
 
-### 1.1 `shared/config.yaml` — 20 lines, and it *is* the interface
+### 1.1 `shared/global_config.yaml` — 35 lines, and it *is* the interface
 
 Two naming conventions to absorb: **`/aria/*` came from the glasses**, **`/realman/*` came from
 the robot's camera**. Once you know that, any topic name tells you which camera produced it.
@@ -496,3 +496,4 @@ might that `return` at `:721` have been put there deliberately? ⬜ **open**
 | 2026-09-13 | Claude (Opus 5) + Dion | Re-verified every line number in §2 against source after comments shifted them (`_setup_ros_node` 112→115, `run` 267→266, `_find_closest_mask` 499→501, `_find_matching_ros_mask` 527→532, seam #2 call 384→389; §2.7 and §2.8 Q1 follow). Added the missing cites in §2.2, §2.3 and §2.4. Round 2 Q2 and Q3 answered; Round 2 marked complete and the START HERE marker moved to Round 3. **Baseline:** §2's numbers are against the *working tree*, which in `object_recognition_pipeline.py` is 8 lines ahead of the last commit (the added comments); every other file cited is clean. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Round 3 written out in full (§3.1–3.6) from the walkthrough, replacing the five-line outline: per-file notes, the state machine's key lines as a table, and §3.6's "centroid-driven, not grasp-driven". **Corrected an error in the old outline**, which said `anygrasp_detection_node.py` runs during EXECUTING — it gates on `!= "IDLE"` (`:182`), i.e. only while IDLE, which is CODE_AUDIT A1. Line counts and anchors re-verified. §3.7 added with three open check questions. |
 | 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §1.1: the shared config is now `shared/global_config.yaml` (reorg step 2). It also holds machine paths now. |

@@ -20,5 +20,7 @@ fi
 source /opt/ros/humble/setup.bash
 source "$REPO_ROOT/install/setup.bash"
 source "$REPO_ROOT/.venv/bin/activate"
+# shared/gappler_common.py is how every program finds paths and global config (NEXT_STEPS 2.15).
+export PYTHONPATH="$REPO_ROOT/shared${PYTHONPATH:+:$PYTHONPATH}"
 
 echo "ROS overlay: $REPO_ROOT/install   DISPLAY=$DISPLAY"

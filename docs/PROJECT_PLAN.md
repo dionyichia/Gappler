@@ -170,7 +170,7 @@ never-executed candidate-handling code, and that debugging is the real cost. C1 
 in `src/main.py:102-113`, which is four comment characters. Behind them sit `rgb_worker` (71 lines),
 `et_worker` (42 lines), a 184-line `EyeTrackingPipeline` and its weights on disk at
 `src/models/projectaria_eyetracking/weights.pth`. Gaze estimation is complete and publishes to a real
-topic declared in `shared/config.yaml:11`. **What is absent is the consumer:** nothing in
+topic declared in `shared/global_config.yaml:13`. **What is absent is the consumer:** nothing in
 `ros2_robot_ws/` subscribes to it. T2.2 is therefore much smaller than budgeted and the real work is
 on the arm side.
 
@@ -646,7 +646,7 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 | T3.2 | ~~Run the ten navigation node tests~~ **Done 2026-09-14**, passed first run: 6 controls, 4 expected failures reproduced, 0 skipped. E1, F1 and F2 are now `[observed]`, F4 is new. Read the result before starting T3.3 | measure | Zongzhe | 0 of 5 left | box | T3.1 |
 | T3.3 | Fix the missing arm-to-base transform during a mapping run, which today leaves the arm unconnected to the position tree. **Owner changed to Sherman 2026-09-20**, Zongzhe reviews the change | fix | Sherman | 2 | off | T3.2 |
 | T3.4 | Drive the base under keyboard control. Confirm the LiDAR publishes. **Owner changed to Sherman 2026-09-20** | bring-up | Sherman | 4 | lab | T0.2, T3.1 |
-| T3.5 | Build a map of the lab and localise in it. **Owner changed 2026-09-20:** Sherman leads, Dion joins, since he is at the robot for the camera and LiDAR calibration anyway (T5.5) | bring-up | Sherman, Dion | 6 | lab | T3.4 |
+| T3.5 | Build a map of the lab and localise in it. **Owner changed 2026-09-20:** Sherman leads, Dion joins, since he is at the robot for the camera and LiDAR calibration anyway (T5.5). **Read first (2026-09-21):** `NEXT_STEPS` §2.15 "For Sherman". Two launch files localise differently and read different map files, `navigation.launch.py` fails without `map:=`, and which one the team drives with is still open | bring-up | Sherman, Dion | 6 | lab | T3.4 |
 | T3.6 | Drive to a commanded point ten times. Record the position error each time. **Owner changed to Sherman 2026-09-20** | measure | Sherman | 5 | lab | T3.5 |
 | T3.7 | The navigation to arm handover on hardware: object position in, drive, arrived signal out. The channels are `CHANNEL_CONTRACT` H2, H3 and H9 | rewire | Dion, Sherman | 6 | lab | T1.12, T3.6, T3.8 |
 | T3.8 | **Added 2026-09-21.** Fix the bridge-node defects the bench found: `goal_reached_publisher` has three silent-failure paths, so a second object after any navigation failure gets no goal (`CODE_AUDIT` F1), and all five nav nodes crash with a traceback on Ctrl+C (F4). Both `[observed]` by `bench/nav_nodes.sh`. The return-leg defects E1 and F2 stay with stretch goal S5 | fix | Zongzhe | 6 | off | T3.2 |
@@ -1000,7 +1000,7 @@ take from the top of this list, and say so in the weekly note so the others know
 | S6 | **Frontier scoring and visit ordering, if M9 was cut** | Zongzhe | Cut item 1. The largest reported benefit in the paper. It is not ours and it is not on the path to our claim, which is why it was cut, but it is the most complete second result available | M6 done, and the upstream evaluation running as a baseline |
 | S7 | **Replay a recording as a regression test** | Dion | The bench catches renamed channels but nothing catches a perception regression. A recorded drive replayed through the graph would. It is also the cheapest way to make the results reproducible by someone else | A recorded run from T6.2 |
 | S9 | **Pick the gazed object by geometry** | Dion | Two identical objects defeat appearance matching. Casting the gaze ray in the robot's frame does not care what the objects look like. Three methods, cheapest first: map the gaze point by the whole-scene matches, then solve the glasses pose from the shared scene against robot depth, then full pose fusion. Could become part of M8's claim, per D9 | An identical pair included in T2.5, so the failure of today's method is measured first. `NEXT_STEPS` §2.13 |
-| S8 | **One configuration tree** | anyone with a spare week | Channel names declared as parameters rather than constants, so they stay overridable at launch. Today 38 of 54 owned channel names are declared outside `shared/config.yaml` `[code]` `CODE_AUDIT` K1 | The naming pass, and `TESTBENCH_PLAN` C1 fixed so the bench can still read them |
+| S8 | **One configuration tree** | anyone with a spare week | Channel names declared as parameters rather than constants, so they stay overridable at launch. Today 38 of 54 owned channel names are declared outside `shared/global_config.yaml` `[code]` `CODE_AUDIT` K1 | The naming pass, and `TESTBENCH_PLAN` C1 fixed so the bench can still read them |
 
 **How to use this list.** If a milestone lands early, the default is not to start the next one early.
 It is to take the top item here that your own stream unblocks. That keeps the slack where the
@@ -1039,3 +1039,5 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-21 | Claude (Opus 5) + Dion | Every open bench finding is now a task, so TESTBENCH_PLAN holds no work items. New **T0.12** (was W6, AnyGrasp replay) and **T3.8** (nav bridge fixes F1, F4, before T3.7). B4 folded into T1.3, C7 into T1.9, `conda run` into T1.10. **T1.2 progress:** `estop.py` fixed (B2, B2a, B2c). Task tree updated to match and republished. |
 | 2026-09-21 | Claude (Opus 5) + Dion | **T0.10 done.** `bench` on `main` and `dev`, both protected, `dev` the default branch. T0.11 progress: branch step done, runner and no-skips job left. `next-steps-map.html` task data updated. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §4.2: the full reorg moved into scope. Spec in `NEXT_STEPS` §2.15. No new task ID: it rides with T0.11, whose suites follow the folder layout. |
+| 2026-09-21 | Claude (Opus 5) + Dion | T3.5 points to the nav map findings in `NEXT_STEPS` §2.15 "For Sherman". `next-steps-map.html` task data updated to match, republish owed (the refactor is still going). |
+| 2026-09-21 | Claude (Opus 5) + Dion | `shared/config.yaml` renamed to `shared/global_config.yaml` in the two current mentions (reorg step 2). The gaze topic's line cite corrected to `:13`. |

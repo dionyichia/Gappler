@@ -21,7 +21,8 @@
 #   BLAS_INC, BLAS_LIB    default: Ubuntu's openblas-pthread folders
 #   MAX_JOBS              parallel compile jobs, default 8
 set -euo pipefail
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# Ask git which repo this script is in. set -e stops here outside a git clone.
+REPO="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 HERE="$REPO/envs/anygrasp"
 ENV="$HERE/.venv"
 PROJECT_PY="$REPO/.venv/bin/python"

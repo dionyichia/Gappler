@@ -15,6 +15,7 @@ from typing import Optional
 import rclpy
 
 from config import Settings
+from gappler_common import path
 from schemas.application import ApplicationConfig
 from services.process_manager import ProcessManager
 from utils import exit_keypress, safe_update_iptables, setup_logging
@@ -27,6 +28,8 @@ logger = logging.getLogger(__name__)
 ESTIMATOR_CONFIG = (
     Settings.PROJECT_ROOT / "src/services/aria_device/calibration/estimator_config.yaml"
 )
+# The OpenVINS build we launch. It lives outside this repo: `openvins_ws` in global_config.yaml.
+OPENVINS_WS = path("openvins_ws")
 
 if not rclpy.ok():
     rclpy.init()
@@ -306,8 +309,8 @@ class AriaApplication:
                 [
                     "bash",
                     "-c",
-                    "source ~/Ros2Workspaces/OpenVINS/install/setup.bash && "
-                    "~/Ros2Workspaces/OpenVINS/install/ov_msckf/lib/ov_msckf/run_subscribe_msckf "
+                    f"source {OPENVINS_WS}/install/setup.bash && "
+                    f"{OPENVINS_WS}/install/ov_msckf/lib/ov_msckf/run_subscribe_msckf "
                     "--ros-args "
                     f"-p config_path:={ESTIMATOR_CONFIG} "
                     "-r __ns:=/ov_msckf",
@@ -333,9 +336,7 @@ class AriaApplication:
                 [
                     "rviz2",
                     "-d",
-                    os.path.expanduser(
-                        "~/Ros2Workspaces/OpenVINS/src/open_vins/ov_msckf/launch/display_ros2.rviz"
-                    ),
+                    str(OPENVINS_WS / "src/open_vins/ov_msckf/launch/display_ros2.rviz"),
                 ],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,

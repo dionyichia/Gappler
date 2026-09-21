@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-# Derive the repo root from this script's own location, so a fresh clone works
-# anywhere. Both variables below are targets of "rm -rf" further down, so they
-# must never fall back to a guess.
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Ask git which repo this script is in, so it works wherever the script moves.
+# Both variables below are targets of "rm -rf" further down, so they must never
+# fall back to a guess: outside a git clone, set -e stops here.
+REPO="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 DEPS_WS="$REPO/deps_ws"
 ROBOT_WS="$REPO/ros2_robot_ws"
 

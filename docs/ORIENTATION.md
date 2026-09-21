@@ -211,7 +211,8 @@ Top-level, with an honest note on whether you will ever need to touch each one.
 | `Navigation_Module/OpenVINS/` | Vendored visual-inertial odometry (upstream, ~3.4 M lines). Estimates the *glasses'* pose from their stereo cams + IMU. | **No.** Treat as a black box; we only consume its output topic. |
 | `grasp_module/` | **Subsystem B** source: AnyGrasp SDK + MinkowskiEngine. Build-time only — the runtime `.so` files live in `rm_mtc/src/perception/`. | **No.** Build once per machine, then forget. |
 | `deps_ws/` | A third colcon workspace holding **MoveIt Task Constructor** (vendored, not a submodule). A dependency of `rm_mtc`. | **No.** Build it, source it. |
-| `shared/config.yaml` | **The single source of truth for Aria-side topic names** — and only the Aria side: 16 of the 54 topics our code declares (§8.17). Read by `src/config/ros2.py`, which builds a `ROS2Topics` enum from it at import time. | **Yes**, when adding an Aria-side topic. |
+| `shared/global_config.yaml` | **Settings more than one subsystem reads** (renamed from `shared/config.yaml` 2026-09-21, `NEXT_STEPS` §2.15). Today: the Aria-side topic names, 16 of the 54 topics our code declares (§8.17), the video QoS, and machine paths outside the repo (`openvins_ws`, `map_dir`). A ROS parameter file. Read by `src/config/ros2.py`, which builds a `ROS2Topics` enum from it at import time. | **Yes**, when adding an Aria-side topic or a machine path. |
+| `shared/gappler_common.py` | **The one file that knows where the repo is.** `ROOT`, `config()` (reads `global_config.yaml`) and `path(name)` (a machine path, overridable with `GAPPLER_<NAME>`). `env.sh` puts `shared/` on `PYTHONPATH`, so source `env.sh` first. Added 2026-09-21. | Rarely. Import it instead of working out paths from `__file__`. |
 | `main.py` (root) | Top-level launcher: spawns `orchestrator.py` + the Aria app. | Yes — has hardcoded paths (§8.4). |
 | `assets/` | Vendor PDFs (arm + gripper manuals, in Chinese), a test image, gripper serial-debug tools. | No. Manuals are worth a skim. |
 | `README.md` (root) | **STALE — ignore it entirely.** It describes a different upstream project (`joshopp/aria_pkg`): ZeroMQ, YOLO `best.pt`, `start_interaction.py`. None of that exists in this code. | Delete it eventually. |
@@ -222,7 +223,7 @@ Top-level, with an honest note on whether you will ever need to touch each one.
 ```
 src/
 ├── main.py                    ← ENTRY POINT for everything Aria-side
-├── config/                    ← dataclasses of constants; ros2.py reads shared/config.yaml
+├── config/                    ← dataclasses of constants; ros2.py reads shared/global_config.yaml
 ├── schemas/                   ← plain data containers (ApplicationConfig, GazeEstimate)
 ├── utils/                     ← logging, iptables, keypress, terminal helpers
 ├── models/                    ← checkpoints. sam3.pt (3.4 GB) is gitignored; eyetracking weights are committed
@@ -325,7 +326,7 @@ Follow this with the files open. Times are rough.
 
 | # | File | Why |
 |---|---|---|
-| 1 | `shared/config.yaml` | 20 lines. Every Aria-side topic name in one place. Read this first — it *is* the interface for that side. The other 38 owned topics are declared in the nodes themselves (§8.17). |
+| 1 | `shared/global_config.yaml` | 35 lines. Every Aria-side topic name in one place. Read this first — it *is* the interface for that side. The other 38 owned topics are declared in the nodes themselves (§8.17). |
 | 2 | `src/config/ros2.py` | Shows how that YAML becomes the `ROS2Topics` enum used everywhere. |
 | 3 | `docs/ORIENTATION.md` §5 | The full topic table below. Skim, don't memorise. |
 | 4 | `src/main.py` | The Aria entry point. Focus on `ProcessPipelineBuilder` (lines 30–113): each `add_*` method starts one subsystem. **Note which are commented out at 107–112.** |
@@ -804,7 +805,7 @@ Found by the naming audit (§0b). These are the same value defined independently
 — the pattern that produced the `dummy_mask_publisher` defect.
 
 **Already drifted:** `VIDEO_QOS` is defined canonically in `src/config/ros2.py:16-21`, built from
-`shared/config.yaml` with `depth: 10`, and imported by five modules. But
+`shared/global_config.yaml` with `depth: 10`, and imported by five modules. But
 `pose_fusion_node.py:62-66` **re-declares it under the same name with `depth=1`**. Editing the
 YAML will silently not affect pose fusion. Either import the shared one or rename the local one
 `POSE_FUSION_QOS` and say why the shallower queue is wanted.
@@ -1052,13 +1053,13 @@ gazed object by geometry.
 
 ### 8.17 `[code]` Most channel names are not in the shared config
 
-`shared/config.yaml` is the interface for the Aria side and nowhere else. Measured 2026-09-13 with
+`shared/global_config.yaml` is the interface for the Aria side and nowhere else. Measured 2026-09-13 with
 `bench/contracts.py extract`, scope "code we own":
 
 | | Topics |
 |---|---|
 | Declared by code we own | 54 |
-| Named in `shared/config.yaml` | 16 |
+| Named in `shared/global_config.yaml` | 16 |
 | Declared in the node that uses them | 38 |
 
 The 38 split as: `Navigation_Module/` Python 15 (inline literals), `ros2_robot_ws/` Python 14
@@ -1069,7 +1070,7 @@ Proposed fix and its constraints: [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.10.
 
 Two things follow that are easy to miss:
 
-- **No C++ we own reads `shared/config.yaml`.** Checked 2026-09-13. The arm side cannot use the
+- **No C++ we own reads `shared/global_config.yaml`.** Checked 2026-09-13. The arm side cannot use the
   shared config even in principle without a YAML loader or ROS parameters, so "put it in the shared
   config" is not available as a fix for the four C++ topics, including
   `/rm_driver/set_gripper_position_cmd`.
@@ -1238,3 +1239,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-20 | Claude (Opus 5) + Dion | §8.11b: the double `background.launch.py` launch now names its owner. CODE_AUDIT open question 5 is answered: `ros2_robot_ws/src/main.py` owns it, delete `orchestrator.py:69-74`. Pointer to the new `NEXT_STEPS.md` §2.14 on whether anything should launch processes mid-task at all. |
 | 2026-09-20 | Claude (Opus 5) + Dion | §5's nav ↔ manipulation table replaced by a pointer to the new [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md), which is now the single source for channel ownership, types, frames and QoS (T0.7, decision T-5). A four-line summary stays here for reading the rest of §5. |
 | 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |
+| 2026-09-21 | Claude (Opus 5) + Dion | `shared/config.yaml` is now `shared/global_config.yaml` (reorg step 2), all current-state mentions renamed. New row for `shared/gappler_common.py`, the path helper. |

@@ -20,12 +20,13 @@ import subprocess
 import sys
 import time
 
+from gappler_common import ROOT
+
 # ---------------------------------------------------------------------------
-# Paths — derived from this file's own location, so a fresh clone works anywhere
+# Paths, from the repo root that gappler_common finds (NEXT_STEPS 2.15)
 # ---------------------------------------------------------------------------
-# HERE is ros2_robot_ws/src, so the repo root is two folders up.
-HERE = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(os.path.dirname(HERE))
+REPO_ROOT = str(ROOT)
+HERE = os.path.join(REPO_ROOT, "ros2_robot_ws/src")
 
 ANYGRASP_CONDA_ENV = "anygrasp"
 ANYGRASP_DIR = os.path.join(HERE, "rm_mtc/src/perception")

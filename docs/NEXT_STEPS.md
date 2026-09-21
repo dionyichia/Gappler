@@ -516,7 +516,7 @@ needs should live only in someone's home folder.
 ### 2.10 🟠 One config tree — state every channel and constant in one place
 
 `[code]` Raised by Dion, 2026-09-13, after finding that the `/rm_driver/*` topics are not in
-`shared/config.yaml`. The inventory is CODE_AUDIT §K: **38 of the 54 topics our code declares are
+`shared/config.yaml` (now `shared/global_config.yaml`). The inventory is CODE_AUDIT §K: **38 of the 54 topics our code declares are
 written somewhere other than the shared config**, and the constants pattern in `src/config/` is not
 used outside `src/`.
 
@@ -546,7 +546,7 @@ place instead of being discovered file by file.
 **Two real constraints, both of which affect sequencing:**
 
 - **Three colcon workspaces, two languages, separate Python environments.** No single Python import
-  reaches all of it. C++ reads none of `shared/config.yaml` today (checked: no `.cpp` or `.hpp` we
+  reaches all of it. C++ reads none of `shared/global_config.yaml` today (checked: no `.cpp` or `.hpp` we
   own opens it). ROS parameters are the only mechanism that spans all of it natively.
 - **⚠️ Indirection currently blinds the bench.** `src/config/ros2.py:11-14` builds the topics enum
   *dynamically at import time*, and the bench's static extractor cannot resolve `ROS2Topics.X.value`
@@ -930,7 +930,7 @@ Nothing here is scheduled work until Dion adds it.
 Dion, 2026-09-21. **The full reorg is now in scope** (was out, `PROJECT_PLAN` §4.2). This section is
 the spec §2.11 said was missing. It builds on two decisions already made on 2026-09-20: the layout
 (`CHANNEL_CONTRACT.md` §6 G-2) and one config tree per subsystem over a shared package (T-4, §2.10).
-Work happens on one branch per step (the first is `reorg-1-bench-reads-yaml`), each a PR into `dev`.
+All steps happen on one branch, `t0.10-t0.11-refactor`, which merges into `dev` by PR.
 
 #### Target layout
 
@@ -940,30 +940,30 @@ folder. Each subsystem keeps its third-party code in its own `vendor/`.
 
 ```
 shared/                     used by more than one subsystem
-  config/global.yaml        values two or more subsystems read
+  global_config.yaml        values two or more subsystems read
   gappler_common/           the path helper and shared constants (T-4)
 aria/                       glasses: stream, gaze, voice, glasses pose
   aria_app/                 from src/ (main.py, services/aria_device, ros, visualizer, ...)
   pose_fusion/              from src/services/pose_fusion (parked, §4)
-  config/aria.yaml
+  aria_config.yaml
   vendor/open_vins/         from Navigation_Module/OpenVINS
 grasp/                      what to grasp and how
   grasp_state_machine/      rm_mtc C++: state machine + MTC planner
   anygrasp_node/            from rm_mtc/src/perception, with its 3 .so files
   segmentation/             SAM3: src/services/object_recognition + sam3_ros_node.py (G-2, §2.2)
   grasp_interfaces/         GraspCandidate, GraspCandidateArray, split out of rm_ros_interfaces
-  config/grasp.yaml
+  grasp_config.yaml
   vendor/                   anygrasp_sdk, MinkowskiEngine, moveit_task_constructor (from deps_ws)
 arm/                        the RM65 itself
   estop/                    from ros2_robot_ws/src/estop.py
-  config/arm.yaml
+  arm_config.yaml
   vendor/                   rm_driver, rm_description, rm_moveit2_config, rm_control, rm_bringup,
                             rm_ros_interfaces, eg2_4b_description, the other rm_* packages
 nav/
   object_approach/  goto_glasses/  goal_reached/  pose_publisher/   from robot_slam/scripts
   echo_plus_driver/  simple_teleop/
   nav_bringup/              launch files and Nav2/SLAM params from robot_navigation + robot_slam
-  config/nav.yaml
+  nav_config.yaml
   vendor/                   livox_ros_driver2, Livox-SDk2, base, drivers, urdf, demo
 bench/  docs/  main.py
 ```
@@ -975,8 +975,8 @@ subsystem is mostly RealMan's.
 
 | Level | File | Holds |
 |---|---|---|
-| global | `shared/config/global.yaml` | values two or more subsystems read: shared topic names, frame names, machine paths |
-| subsystem | `<subsystem>/config/<subsystem>.yaml` | values two or more nodes in that subsystem read |
+| global | `shared/global_config.yaml` | values two or more subsystems read: shared topic names, frame names, machine paths |
+| subsystem | `<subsystem>/<subsystem>_config.yaml` | values two or more nodes in that subsystem read |
 | node | `<subsystem>/<node>/config.yaml` | values only that node reads |
 
 - **A value lives at the lowest level that covers all its readers.** When it gains a reader in
@@ -1000,26 +1000,37 @@ Today files find the repo root by counting parent folders, for example `src/conf
 up 3 and `ros2_robot_ws/src/main.py:28` goes up 2 `[code]`. Every move breaks them. It also cannot
 work for ROS nodes, which run from `install/`, not from the repo.
 
-- **`env.sh` exports `GAPPLER_ROOT`.** It already computes the root (`env.sh:11`).
-- **`gappler_common` is the only code that reads it**, and it fails with a clear message if it is
-  unset. Every other file asks the helper.
-- **Machine paths live in `global.yaml` with defaults**, each one overridable by an environment
+- **`shared/gappler_common.py` is the only file that works out the repo root.** It lives in
+  `shared/`, which never moves, so it takes the folder above itself. Every other file imports
+  `ROOT`, `config()` or `path(name)` from it. (Decided 2026-09-21 instead of a `GAPPLER_ROOT`
+  variable: one less setting, same result.)
+- **`env.sh` puts `shared/` on `PYTHONPATH`**, so any program started after `source env.sh` can
+  import the helper. Source `env.sh` before starting anything, nav included.
+- **Shell scripts ask git**: `git rev-parse --show-toplevel` works from any folder depth and stops
+  with an error outside a git clone, instead of guessing. Needed because config cannot say where
+  the repo is: you must already know the repo to read config.
+- **Machine paths live in `global_config.yaml` with defaults**, each one overridable by an environment
   variable, as `GAPPLER_MAP_DIR` already is. This settles §2.5's open "config file or environment
   variables": both, for different jobs.
 - **Config is read from the repo, not from `install/`**, so editing a YAML file needs no rebuild.
-- The last hardcoded external path, OpenVINS under `~/Ros2Workspaces/` (`src/main.py:303-304`,
-  `:331`), moves into `global.yaml` in step 2.
+- The last hardcoded external path, OpenVINS under `~/Ros2Workspaces/`, is now `openvins_ws` in
+  `global_config.yaml` (step 2).
 
 #### Order
 
-Each step is its own PR into `dev`. Run `./bench/run.sh` before and after every step.
+Run `./bench/run.sh` before and after every step.
 
-1. **Teach the bench's extractor to read YAML** (TESTBENCH_PLAN C1). Topic names that move into
+1. ✅ **Done 2026-09-21 (on the branch).** **Teach the bench's extractor to read YAML** (TESTBENCH_PLAN C1). Topic names that move into
    config files are otherwise invisible to the contract check, and the refactor removes its own
    safety net (§2.10). Re-snapshot.
-2. **Paths and config.** Add `shared/config/global.yaml`, `gappler_common` and `GAPPLER_ROOT`. Route
-   every path through the helper. Fold `shared/config.yaml` and `src/config/*.py` into it. After
-   this, moving a file cannot break a path.
+2. ✅ **Done 2026-09-21 (on the branch).** **Paths and config.** `shared/config.yaml` became
+   `shared/global_config.yaml` (a ROS parameter file, plus `paths:` for `openvins_ws` and `map_dir`).
+   `shared/gappler_common.py` added. The launchers, `src/config/`, `src/main.py`, both SLAM launch
+   files and two shell scripts no longer count folders. Hardcoded absolute paths in L1 went from 5
+   to 3 (two vendor, one the OpenVINS default in `global_config.yaml`). `[unverified]` at runtime:
+   compiled and import-checked, not yet started on the box. **Scope narrowed:** `src/config/*.py`
+   (the Aria settings classes) folds into `aria_config.yaml` in step 4, when `aria/` exists, and so
+   does sorting the aria-only topics out of `global_config.yaml`.
 3. **Vendor moves**, one subsystem per PR, as pure moves (§2.11 steps 1 and 2). Update the three
    hardcoded vendor paths (§2.11) in the same PR.
 4. **Our code moves**, one subsystem per PR. Package names stay the same, so launch files and
@@ -1030,6 +1041,10 @@ Each step is its own PR into `dev`. Run `./bench/run.sh` before and after every 
    show those renames as deliberate changes, re-snapshot after each.
 6. **Replace `OWNED_PREFIXES`** in `bench/_common.py` with one rule: our code is anything not under
    a `vendor/` folder. Until then, update it in every PR that moves code (§2.7).
+7. **Last: one env file per subsystem.** `aria/aria_env.sh`, `nav/nav_env.sh` and so on, each
+   setting up only its own subsystem, so someone can start one subsystem against stub data from
+   the others. The root `env.sh` then sources all four. Rename files only at this step, since
+   CLAUDE.md, the docs and the bench all refer to `env.sh`.
 
 Steps 3 and 4 are pure moves: a commit that only moves files lets git track them as renames, which
 keeps merges manageable for everyone else.
@@ -1043,6 +1058,27 @@ keeps merges manageable for everyone else.
   `Navigation_Module`) and two overlays (`install/`, `install_nav/`). colcon finds packages at any
   depth, so one build from the repo root works. Nav could stay a separate build because it is slow.
 - **Tell Zongzhe and Sherman before step 3.** Every path changes, and open branches will conflict.
+
+#### For Sherman (nav), found during step 2, not changed
+
+Left for the nav owner, part of `PROJECT_PLAN` T3.5. Checked 2026-09-21 `[code]`.
+
+- **There are two ways to drive, with two kinds of saved map.**
+
+  | Launch file | Localises with | Map it reads | Written by |
+  |---|---|---|---|
+  | `robot_slam/launch/slam_localization.launch.py` | SLAM Toolbox, and starts Nav2 itself (line 210) | `<map_dir>/completed_map` (`.posegraph`, `.data`), line 150 | no launch file, saved by hand `[inferred]` |
+  | `robot_navigation/launch/navigation.launch.py` | Nav2's own AMCL | `map:=` argument, default `<package>/maps/my_map.yaml` (line 16) | `slam_mapping.launch.py:39` writes `<map_dir>/current_map` (`.pgm`, `.yaml`) every 30 s |
+
+- **`navigation.launch.py` fails without `map:=`**, because `my_map.yaml` does not exist
+  (`robot_navigation/maps/README.md`). **Recommendation:** default it to
+  `path("map_dir") / "current_map.yaml"` (from `gappler_common`), the image map the mapping launch
+  writes, which is the format Nav2's map loader needs. It breaks no launch that works today, and
+  `map:=` still overrides it.
+- **`[open]` Which of the two launch files the team drives with.** Not decided. Sherman starts after
+  the refactor.
+- **`slam_toolbox_localization.yaml:17`**, `map_file_name`, is commented out with a note: the launch
+  file always overrode it. Delete it when next working on that file.
 
 ---
 
@@ -1223,3 +1259,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.12: L5 robot check added, it gates L6 hardware (was L5). Robot checks left L2. Not needed to merge. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.12: T0.10 done. `dev` created as the default branch, `bench` on `main` and `dev`, both protected. The runner and the no-skips job stay in T0.11. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Added §2.15: the full reorg is in scope. Target layout (four subsystems, one folder per package, `vendor/` per subsystem), three config levels with each value written once, `GAPPLER_ROOT` plus one path helper so no file finds the repo by itself, and a six-step order that teaches the bench to read YAML first. §2.11's gap note points to it. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §2.15: steps 1 and 2 done on the branch, now one branch `t0.10-t0.11-refactor`. Flat config names (`shared/global_config.yaml`, `<subsystem>/<subsystem>_config.yaml`). `gappler_common` finds the root from its own place, replacing the `GAPPLER_ROOT` plan. New step 7, per-subsystem env files, last. New block for Sherman: the two nav launch files, the missing Nav2 map default, the dead `map_file_name` line. Docs renamed to `shared/global_config.yaml` where they describe today. **Republish owed** for `wiring-map.html` (cites and the C1 fix) and `next-steps-map.html` (T3.5), held until the refactor ends. |

@@ -11,10 +11,11 @@ slam_toolbox:
     base_frame: robot_base_link
     scan_topic: /scan
     mode: localization
-    # Default only. slam_localization.launch.py overrides this with
-    # $GAPPLER_MAP_DIR/completed_map (default ~/maps), because a ROS
-    # params file cannot read an environment variable itself.
-    map_file_name: maps/completed_map
+    # Commented out 2026-09-21 (reorg, NEXT_STEPS 2.15), delete when next working on this file.
+    # It never took effect: slam_localization.launch.py:150 always overrides it with
+    # <map_dir>/completed_map, where map_dir is in shared/global_config.yaml.
+    # Keeping it here would write the same setting twice.
+    # map_file_name: maps/completed_map
     map_start_at_dock: false
     debug_logging: false
     throttle_scans: 1

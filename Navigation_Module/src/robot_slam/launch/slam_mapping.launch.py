@@ -9,13 +9,14 @@ from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
+from gappler_common import path
 
-# Where saved maps live. This is outside the repository and differs per machine,
-# so it is a setting rather than something we can work out. Override by exporting
-# GAPPLER_MAP_DIR before launching.
-#   mapping writes  <GAPPLER_MAP_DIR>/current_map
-#   localisation reads <GAPPLER_MAP_DIR>/completed_map
-MAP_DIR = os.path.expanduser(os.environ.get("GAPPLER_MAP_DIR", "~/maps"))
+
+# Where saved maps live: `map_dir` in shared/global_config.yaml, overridden by
+# exporting GAPPLER_MAP_DIR. Needs `source env.sh` first, so gappler_common imports.
+#   mapping writes  <map_dir>/current_map
+#   localisation reads <map_dir>/completed_map
+MAP_DIR = str(path("map_dir"))
 
 
 def generate_launch_description():

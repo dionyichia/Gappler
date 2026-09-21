@@ -10,9 +10,9 @@ import signal
 import subprocess
 import sys
 import time
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+from gappler_common import ROOT
+
 ORCHESTRATOR_PATH = ROOT / "ros2_robot_ws" / "src" / "orchestrator.py"
 ARIA_APP_PATH = ROOT / "src" / "main.py"
 # The uv venv lives at the repo root. "uv sync" creates it on a fresh clone.

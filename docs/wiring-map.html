@@ -1593,8 +1593,8 @@ sensors_calib_json_str = self.config_queue.get()
       <code>2d36a89</code>, by reading the source. The <a href="#graph">Every channel, drawn</a>
       tab was added on 13 September 2026 from the same reading plus
       <code>bench/golden/contracts.json</code>; the sixteen channels named in
-      <code>shared/config.yaml</code> were traced to their publishers by hand, because the bench
-      scanner cannot resolve them. <strong>No hardware was running</strong> — every
+      <code>shared/config.yaml</code> (now <code>shared/global_config.yaml</code>) were traced to
+      their publishers by hand, because the bench scanner could not resolve them then. <strong>No hardware was running</strong> — every
       claim tagged <span class="tag t-code">code</span> was checked against the file and line
       cited, and nothing here has been verified against a live robot.</p>
     </footer>
@@ -1963,8 +1963,11 @@ sensors_calib_json_str = self.config_queue.get()
   </div>
 
   <section style="margin-top:34px">
-    <h3 style="margin-top:0">Why some publishers are invisible to the bench</h3>
-    <p>Sixteen channel names live in <code>shared/config.yaml</code> and reach the code through an
+    <h3 style="margin-top:0">Why some publishers were invisible to the bench</h3>
+    <p><strong>Fixed 21 September 2026.</strong> The scanner now reads the config file and resolves
+      these names (<code>TESTBENCH_PLAN</code> C1). This section records why the graph below was
+      checked by hand.</p>
+    <p>Sixteen channel names live in <code>shared/global_config.yaml</code> and reach the code through an
       enum that is <strong>built at import time</strong> from that file
       <span class="cite">src/config/ros2.py:12</span> <span class="tag t-code">code</span>. That is
       good practice — one place to change a name. It has one cost, and it is the reason this graph
@@ -1981,7 +1984,7 @@ sensors_calib_json_str = self.config_queue.get()
         arrow, resolved by reading the code by hand.</li>
     </ul>
     <p>The fix is not to abandon the config file. It is to make the scanner resolve
-      <code>ROS2Topics.X.value</code> against <code>shared/config.yaml</code>, which is a short
+      <code>ROS2Topics.X.value</code> against <code>shared/global_config.yaml</code>, which is a short
       addition to <code>bench/contracts.py</code> and turns sixteen blind spots into checked
       contracts. See <a href="#next">Section 11</a>.</p>
 
@@ -2012,7 +2015,7 @@ sensors_calib_json_str = self.config_queue.get()
       <div><span class="k">Real channels</span><span class="v">53</span>
         <span class="d">Declared by code we own. Vendor channels on top of that.</span></div>
       <div><span class="k">Named in one place</span><span class="v">16</span>
-        <span class="d">In <code>shared/config.yaml</code>. Invisible to the bench scanner.</span></div>
+        <span class="d">In <code>shared/global_config.yaml</code>. Checked by the bench since 21 September 2026.</span></div>
       <div><span class="k">Dead ends</span><span class="v">14</span>
         <span class="d">Channels with nothing at one end. Nine have no publisher.</span></div>
       <div><span class="k">Named four times over</span><span class="v">4</span>
@@ -2120,8 +2123,8 @@ sensors_calib_json_str = self.config_queue.get()
 <script>
 /* tab 3 - node and channel graph.
    Every vertex and edge below was read out of the source. Channels named in
-   shared/config.yaml reach the code through an enum built at import time, so the
-   bench's static scanner reports them as having no publisher; those publishers
+   shared/global_config.yaml reach the code through an enum built at import time, so the
+   bench's static scanner reported them as having no publisher until 2026-09-21; those publishers
    were resolved by hand and are drawn as hidden-publisher edges. */
 (function(){
   var svg = document.getElementById('g-svg');
@@ -2233,30 +2236,30 @@ sensors_calib_json_str = self.config_queue.get()
     'Subscribes from a saved config file rather than from code, so the bench scanner cannot see it. That is why so many debug channels look like they have no listener.');
 
   /* -- channels: from the glasses -- */
-  t('/aria/audio/prompt','glass','The object name you spoke','shared/config.yaml:14');
-  t('/aria/rgb_camera/raw','glass','Glasses camera, straight off the sensor','shared/config.yaml:4');
+  t('/aria/audio/prompt','glass','The object name you spoke','shared/global_config.yaml:18');
+  t('/aria/rgb_camera/raw','glass','Glasses camera, straight off the sensor','shared/global_config.yaml:8');
   t('/aria/rgb_camera/undistorted','glass','Glasses camera, lens distortion removed',
-    'shared/config.yaml:5');
-  t('/aria/aruco_pose','glass','Printed marker sighting','shared/config.yaml:16',[],
+    'shared/global_config.yaml:9');
+  t('/aria/aruco_pose','glass','Printed marker sighting','shared/global_config.yaml:20',[],
     'Stamped with a frame called camera_rgb, which nothing in the repo defines.');
   t('/aria/eye_tracking/gaze_estimate','glass','Where you are looking, as a screen position',
-    'shared/config.yaml:9',[],'Assumes everything is 1.5 m away. See section 10.');
-  t('/aria/eye_tracking/raw','glass','Eye camera image','shared/config.yaml:8');
-  t('/aria/slam_left/raw','glass','Left side camera','shared/config.yaml:6');
-  t('/aria/slam_right/raw','glass','Right side camera','shared/config.yaml:7');
-  t('/aria/imu','glass','Glasses motion sensors','shared/config.yaml:15');
-  t('/aria/vio_pose','glass','Motion-tracking pose','shared/config.yaml:17',[],
+    'shared/global_config.yaml:13',[],'Assumes everything is 1.5 m away. See section 10.');
+  t('/aria/eye_tracking/raw','glass','Eye camera image','shared/global_config.yaml:12');
+  t('/aria/slam_left/raw','glass','Left side camera','shared/global_config.yaml:10');
+  t('/aria/slam_right/raw','glass','Right side camera','shared/global_config.yaml:11');
+  t('/aria/imu','glass','Glasses motion sensors','shared/global_config.yaml:19');
+  t('/aria/vio_pose','glass','Motion-tracking pose','shared/global_config.yaml:21',[],
     'Named in the config file and used by nothing at either end. Left over from the OpenVINS work.');
-  t('/aria/is_stationary','glass','Are you standing still','shared/config.yaml:19',[],
+  t('/aria/is_stationary','glass','Are you standing still','shared/global_config.yaml:23',[],
     'Named in the config file and used by nothing at either end.');
   t('/aria/rgb_camera/object_masks','brain','Glasses view with outlines drawn on',
-    'shared/config.yaml:10');
+    'shared/global_config.yaml:14');
   t('/realman/rgb_camera/object_masks','brain','Wrist view with outlines drawn on',
-    'shared/config.yaml:11');
-  t('/combined/object_masks','brain','Both views side by side','shared/config.yaml:12');
+    'shared/global_config.yaml:15');
+  t('/combined/object_masks','brain','Both views side by side','shared/global_config.yaml:16');
   t('/aria/rgb_camera/feature_match','brain','Which features matched between the two views',
-    'shared/config.yaml:13');
-  t('/aria/fused_pose','brain','Where you are standing','shared/config.yaml:18',[],
+    'shared/global_config.yaml:17');
+  t('/aria/fused_pose','brain','Where you are standing','shared/global_config.yaml:22',[],
     'Measured against the robot body, not the room. See break 4.');
   t('/aria/pose_initialized','brain','First fix obtained','pose_fusion_node.py:154');
   t('/aria/glasses_marker','brain','A marker showing you, for RViz','pose_fusion_node.py:157');
