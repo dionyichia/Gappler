@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.8)
+project(object_approach)
+find_package(ament_cmake REQUIRED)
+install(PROGRAMS object_approach_node.py DESTINATION lib/${PROJECT_NAME})
+ament_package()

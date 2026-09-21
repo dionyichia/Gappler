@@ -86,7 +86,7 @@ def generate_launch_description():
     )
 
     qos_relay_node = Node(
-        package="robot_slam",
+        package="qos_relay",
         executable="qos_relay.py",
         name="qos_relay",
         output="screen",
@@ -154,35 +154,35 @@ def generate_launch_description():
     )
 
     pose_publisher_node = Node(
-        package="robot_slam",
+        package="pose_publisher",
         executable="pose_publisher.py",
         name="pose_publisher",
         output="screen",
     )
 
     goal_reached_node = Node(
-        package="robot_slam",
+        package="goal_reached",
         executable="goal_reached_publisher.py",
         name="goal_reached_publisher",
         output="screen",
     )
 
     goto_glasses_node = Node(
-        package="robot_slam",
+        package="goto_glasses",
         executable="goto_glasses.py",
         name="goto_glasses",
         output="screen",
     )
 
     aria_image_relay = Node(
-        package="robot_slam",
+        package="aria_image_relay",
         executable="aria_image_relay.py",
         name="aria_image_relay",
         output="screen",
     )
 
     object_approach_node = Node(
-        package="robot_slam",
+        package="object_approach",
         executable="object_approach_node.py",
         name="object_approach_node",
         output="screen",

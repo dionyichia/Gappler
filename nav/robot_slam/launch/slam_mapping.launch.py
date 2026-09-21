@@ -92,7 +92,7 @@ def generate_launch_description():
 
     # QoS relay: bridges RELIABLE livox → BEST_EFFORT for pointcloud_to_laserscan
     qos_relay_node = Node(
-        package="robot_slam",
+        package="qos_relay",
         executable="qos_relay.py",
         name="qos_relay",
         output="screen",
@@ -142,13 +142,13 @@ def generate_launch_description():
     )
 
     pose_publisher_node = Node(
-        package="robot_slam",
+        package="pose_publisher",
         executable="pose_publisher.py",
         name="pose_publisher",
         output="screen",
     )
     goal_reached_node = Node(
-        package="robot_slam",
+        package="goal_reached",
         executable="goal_reached_publisher.py",
         name="goal_reached_publisher",
         output="screen",

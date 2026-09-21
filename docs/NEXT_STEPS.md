@@ -1084,6 +1084,7 @@ Run `./bench/run.sh` before and after every step.
    | `ros2_robot_ws/src/main.py` | `launchers/start_grasp_pipeline.py` |
    | `ros2_robot_ws/src/orchestrator.py` | `launchers/grasp_orchestrator.py` |
    | `Navigation_Module/src/<pkg>/` (`robot_slam`, `robot_navigation`, `simple_teleop`, `echo_plus_driver`) | `nav/<pkg>/` |
+   | `robot_slam/scripts/<script>.py` | `nav/<package>/<script>.py`: `object_approach`, `goto_glasses`, `goal_reached` (`goal_reached_publisher.py`), `pose_publisher`, `qos_relay`, `aria_image_relay`. `ros2 run robot_slam X.py` becomes `ros2 run <package> X.py` |
    | `ros2_robot_ws/src/rm_*`, `eg2_4b_description` (RealMan) | `arm/vendor/` |
    | `deps_ws/src/moveit_task_constructor/`, `grasp_module/src/anygrasp_sdk/`, `grasp_module/dependencies/MinkowskiEngine/` | `grasp/vendor/` |
    | `Navigation_Module/src/{livox_ros_driver2,Livox-SDk2,base,drivers,urdf,demo}/` | `nav/vendor/` |
@@ -1094,7 +1095,9 @@ Run `./bench/run.sh` before and after every step.
    | `ros2_robot_ws/install.sh` | deleted, replaced by `build.sh` |
 
    Line numbers inside moved files are unchanged by the move itself.
-5. 🟡 **Grasp and arm done 2026-09-22 (on the branch), nav next.** Decided 2026-09-22: Python nodes
+5. ✅ **Done 2026-09-22 (on the branch): grasp and arm (`cf6f3b0`), then nav.** Nav: the six
+   `robot_slam` scripts are one package each, `robot_slam` and `robot_navigation` stay two packages
+   until Sherman decides (see "For Sherman"). Decided 2026-09-22: Python nodes
    that run in their own environment (AnyGrasp, SAM3, the visualiser, the e-stop) get a plain folder
    each, not a ROS package, because a ROS Python package runs under colcon's interpreter and would
    fight those environments. `rm_mtc` is now `grasp_state_machine`, arm bring-up is `arm_bringup`,
@@ -1143,6 +1146,11 @@ Left for the nav owner, part of `PROJECT_PLAN` T3.5. Checked 2026-09-21 `[code]`
   `map:=` still overrides it.
 - **`[open]` Which of the two launch files the team drives with.** Not decided. Sherman starts after
   the refactor.
+- **`robot_slam` and `robot_navigation` stay two packages for now** (Dion, 2026-09-22). The plan was
+  to merge them into one `nav_bringup`, but their `config/nav2_params.yaml` files differ: the SLAM
+  one is 203 lines with `robot_base_link`, the AMCL one 105 lines with `base_link`. Merging would bake
+  in a choice between them. Decide the merge together with the question above. The six node scripts
+  already moved out of `robot_slam` into one package each (§2.15 step 5).
 - **`slam_toolbox_localization.yaml:17`**, `map_file_name`, is commented out with a note: the launch
   file always overrode it. Delete it when next working on that file.
 
@@ -1330,3 +1338,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.15 step 4 done on the branch: our code in `aria/`, `arm/`, `grasp/`, `nav/`, launchers renamed into `launchers/`. Added the old-to-new path table that older cites across the docs rely on. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 5: grasp and arm split done on the branch (per-node folders, `grasp_state_machine`, `grasp_interfaces`, `arm_bringup`), path table extended. §2.3: the dummy mask publisher is parked in `grasp/tools/`, fix-or-delete decided in T2.1. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 5, nav: the six robot_slam scripts are one package each, path table row added. `robot_slam` and `robot_navigation` stay two packages (Dion, decision b): their `nav2_params.yaml` differ, so the merge is left to Sherman, noted in "For Sherman". |

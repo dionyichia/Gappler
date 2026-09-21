@@ -283,22 +283,23 @@ arm/arm_bringup/launch/arm_bringup.launch.py   driver + URDF + control + move_gr
                                                (was rm_mtc/launch/background.launch.py)
 ```
 
-### Inside `nav/` (subsystem D, was `Navigation_Module/src/`)
+### Inside `nav/` (subsystem D, was `Navigation_Module/src/`, one package per node since 2026-09-22)
 
 ```
-robot_slam/                    ← ours: the nav brain
-├── config/  slam_toolbox.yaml, nav2_params.yaml, slam.rviz
-├── launch/  slam_mapping.launch.py (build a map), slam_localization.launch.py (use one)
-└── scripts/
-    ├── object_approach_node.py     ★ object pose → Nav2 goal → /manipulation/start
-    ├── goto_glasses.py             ★ navigate to the user; return after grasp
-    ├── goal_reached_publisher.py   bridges /goal_pose topic → Nav2 action, reports outcome
-    ├── pose_publisher.py           TF map→robot_base_link → /robot_pose
-    ├── qos_relay.py                Livox publishes RELIABLE, laserscan needs BEST_EFFORT
-    └── aria_image_relay.py         CompressedImage → raw Image so RViz can show it
+robot_slam/                    ← launch + config: the SLAM Toolbox + Nav2 bring-up
+├── config/  slam_toolbox.yaml, slam_toolbox_localization.yaml, nav2_params.yaml, slam.rviz
+└── launch/  slam_mapping.launch.py (build a map), slam_localization.launch.py (use one)
+robot_navigation/              ← launch + config: Nav2 with AMCL on a saved image map (see NEXT_STEPS §2.15, For Sherman)
+object_approach/object_approach_node.py   ★ object pose → Nav2 goal → /manipulation/start
+goto_glasses/goto_glasses.py              ★ navigate to the user; return after grasp
+goal_reached/goal_reached_publisher.py    bridges /goal_pose topic → Nav2 action, reports outcome
+pose_publisher/pose_publisher.py          TF map→robot_base_link → /robot_pose
+qos_relay/qos_relay.py                    Livox publishes RELIABLE, laserscan needs BEST_EFFORT
+aria_image_relay/aria_image_relay.py      CompressedImage → raw Image so RViz can show it
+simple_teleop/                            keyboard driving, 10 Hz cmd_vel
+echo_plus_driver/
 vendor/livox_ros_driver2/, vendor/Livox-SDk2/   ← vendor LiDAR driver
 vendor/base/, vendor/drivers/, vendor/urdf/     ← vendor base: xpkg_comm, xpkg_msgs, xpkg_vehicle, xpkg_power, URDF
-simple_teleop/                    ← keyboard driving, 10 Hz cmd_vel
 ```
 
 ---
@@ -1260,3 +1261,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2 repo map updated for reorg step 4: `aria/`, `arm/`, `grasp/`, `nav/`, `launchers/` rows, the three folder trees retitled. Older cites below still use old paths, see the pointer at the top. |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2 grasp rows and the grasp folder tree updated for reorg step 5: `rm_mtc` split into `grasp_state_machine`, `grasp_interfaces`, `anygrasp_node`, `segmentation`, `grasp_viz`, `tools`, and `arm/arm_bringup`. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2 nav folder tree: one package per node (`object_approach`, `goto_glasses`, `goal_reached`, `pose_publisher`, `qos_relay`, `aria_image_relay`), `robot_slam` keeps launch and config. |

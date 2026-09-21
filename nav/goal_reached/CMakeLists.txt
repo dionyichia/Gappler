@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.8)
+project(goal_reached)
+find_package(ament_cmake REQUIRED)
+install(PROGRAMS goal_reached_publisher.py DESTINATION lib/${PROJECT_NAME})
+ament_package()
