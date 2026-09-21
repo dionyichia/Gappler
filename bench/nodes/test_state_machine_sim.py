@@ -2,7 +2,7 @@
 
 Run by bench/state_machine_sim.sh, which has proven the arm is mock_components, the channel is
 private, no rm_driver exists and the real arm is unreachable. This test plays every other actor:
-  camera      /camera/camera/color/camera_info  (the real D435i intrinsics, output.log:200)
+  camera      /camera/camera/color/camera_info  (the real D435i intrinsics, docs/archive/output.log:200)
   camera TF   camera_link -> ... -> camera_color_optical_frame, only if the model lacks it (the
               RealSense driver publishes these on the robot)
   detector    /object_centroid_2d: an object straight ahead, far, then near

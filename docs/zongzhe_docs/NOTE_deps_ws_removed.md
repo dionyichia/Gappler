@@ -1,6 +1,6 @@
-# Note for Zongzhe: `deps_ws/` no longer exists (2026-09-21)
+# `deps_ws/` no longer exists (2026-09-21, left here by Dion)
 
-Your [`BUILD_WORKSPACES.md`](../zongzhe_docs/BUILD_WORKSPACES.md) explains why `deps_ws` and
+Your [`BUILD_WORKSPACES.md`](BUILD_WORKSPACES.md) explains why `deps_ws` and
 `ros2_robot_ws` are built separately. That changed in reorg step 3 (`NEXT_STEPS.md` §2.15):
 
 - **MoveIt Task Constructor moved** from `deps_ws/src/` to `grasp/vendor/moveit_task_constructor/`.
