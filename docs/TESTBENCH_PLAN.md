@@ -18,7 +18,54 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 ---
 
-## ▶ Start here — next session (updated 2026-09-12)
+## ▶ Start here — next session (updated 2026-09-22)
+
+### Next: finish T0.11, the no-skips `full` job (written 2026-09-22 for a cold start)
+
+**Branch:** `t0.11-ci-full-job`, cut from `dev` at `0f87c89` (the refactor, PR #5). Open the PR into `dev`.
+
+**Goal of this branch:** a `full` CI job that runs L0-L4 on the lab box with **no level skipped**,
+and is a **required check on PRs from `dev` into `main`**. The rest of T0.11 is decided:
+
+- **Fork-PR guard: waived for now** (Dion, 2026-09-22). The repo is public and stays so until
+  GitHub Pro. Revisit when it goes private.
+- **Per-subsystem suites: deferred** to a later branch.
+
+**What already exists** `[observed]`:
+
+| Piece | Where | State |
+|---|---|---|
+| `bench` job | `.github/workflows/bench.yml` | L0-L2 on GitHub's machines, every PR and push to `dev` or `main`. Required on both |
+| `bench-nightly` job | `.github/workflows/bench-nightly.yml` | Full bench on `dev`, Mon and Wed 23:00 Singapore time, plus the "Run workflow" button. `runs-on: [self-hosted, lab-box]`, `concurrency: lab-box`, `clean: false`. Never runs on a PR |
+| The runner | `~/actions-runner` on the box, user `rcp2026`, name `iot22-Computer` | Runs in tmux session `gh-runner` (`tmux attach -t gh-runner`). **A reboot stops it**, restart with `cd ~/actions-runner && ./run.sh` in that tmux session |
+| The runner's copy | `~/actions-runner/_work/Gappler/Gappler` | Cleaned 2026-09-22 and on `dev` `0f87c89`. SAM3 weights and AnyGrasp checkpoints are **symlinks** to the files in `~/rcp-Gappler`. L2 there: 17 pass, 0 fail |
+
+**The work, in order:**
+
+1. **`--no-skips` in `bench/run.sh`.** Any SKIPPED level from L0 to L4 makes the run fail. L5-L6
+   (robot and hardware) stay allowed to skip, they never gate a merge.
+2. **A `full` job** for `pull_request` into `main`: `runs-on: [self-hosted, lab-box]`,
+   `concurrency: lab-box`, `timeout-minutes: 120`, `clean: false`, running `./bench/run.sh --no-skips`.
+   Copy the shape of `bench-nightly.yml`.
+3. **Make `full` required** in `main`'s branch protection (`gh api` on
+   `repos/dionyichia/Gappler/branches/main/protection`). Do this only after the job has passed once,
+   or every `dev` into `main` PR is blocked.
+4. **Test it** with a real `dev` into `main` PR. Record the run in `bench-runs/`.
+
+**Gotchas for whoever picks this up:**
+
+- **One bench at a time on the box.** Two full runs at once share the GPU, the CPU (throttled) and the
+  ROS channel, and the second one's L4 refuses. Before starting anything by hand, check
+  `pgrep -af "Runner.Worker|bench/run.sh"`.
+- **`clean: false` keeps ignored files between runs.** After any change that moves folders, clear the
+  runner copy's `build/`, `install/`, `build_nav/`, `install_nav/` and any leftover generated files
+  (the Livox `package.xml`), or the nav build finds two packages with one name. Done once already, for
+  the refactor.
+- **Timing:** a clean build plus L4 is about 40 minutes, an incremental one about 20.
+- **The first nightly since the refactor has not run yet.** Its result is the first proof that the
+  runner copy works in the new layout. Check it under the Actions tab.
+
+---
 
 **T0.0 box checks: run 2026-09-21, two of three done.** Evidence:
 [`bench-runs/2026-09-21-labbox-t0.0-box-checks.txt`](bench-runs/2026-09-21-labbox-t0.0-box-checks.txt).
@@ -747,3 +794,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-22 | Claude (Opus 5) + Dion | `OWNED_PREFIXES` replaced by the `is_owned` rule (not under `vendor/`), reorg step 6. |
 | 2026-09-22 | Claude (Opus 5) + Dion | `env.sh` renamed `global_env.sh` (reorg step 7) in the current setup instruction. The 2026-09-21 check results keep the old name. |
 | 2026-09-22 | Claude (Opus 5) + Dion | "Start here": the refactor is done and verified. Points at `./build.sh`, `global_env.sh` and the path table. |
+| 2026-09-22 | Claude (Opus 5) + Dion | "Start here" opens with a cold-start block for finishing T0.11: branch `t0.11-ci-full-job`, the no-skips `full` job, what exists (both workflows, the runner in tmux, the cleaned runner copy with linked weights), the decided scope (fork-PR guard waived, suites deferred) and the gotchas. |
