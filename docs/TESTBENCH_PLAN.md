@@ -38,9 +38,9 @@ Both held files are now on `main`, so T0.0 is closed.
 is, what it found and the evidence. Every open item it found is a task in
 [`next-steps-map.html`](next-steps-map.html) and [`PROJECT_PLAN.md`](PROJECT_PLAN.md) §6, so it can be
 seen, owned and ticked off in one place. Bench and CI tasks: **T0.11** (CI on the lab box, per-subsystem
-suites) and **T0.12** (AnyGrasp replay, was W6). Ownership is one rule, `is_owned` in `bench/_common.py` (since 2026-09-22): our code is everything except what sits under a folder named `vendor/`. Put third-party code under its subsystem's `vendor/`, and nothing in the bench needs editing when code moves. The refactor itself (target layout, three config
-levels, `GAPPLER_ROOT`, the order of moves) is specified in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15.
-Its first step is teaching the extractor to read YAML (C1).
+suites) and **T0.12** (AnyGrasp replay, was W6). Ownership is one rule, `is_owned` in `bench/_common.py` (since 2026-09-22): our code is everything except what sits under a folder named `vendor/`. Put third-party code under its subsystem's `vendor/`, and nothing in the bench needs editing when code moves. The refactor (target layout, config levels, env files) is **done and verified on the box, 2026-09-22**:
+[`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15, which also has the old-to-new path table. Build with `./build.sh`, set up a
+shell with `source global_env.sh` (or one `<subsystem>/<subsystem>_env.sh`).
 
 CI and branches, set up 2026-09-21 `[observed]`:
 
@@ -746,3 +746,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
 | 2026-09-22 | Claude (Opus 5) + Dion | `OWNED_PREFIXES` replaced by the `is_owned` rule (not under `vendor/`), reorg step 6. |
 | 2026-09-22 | Claude (Opus 5) + Dion | `env.sh` renamed `global_env.sh` (reorg step 7) in the current setup instruction. The 2026-09-21 check results keep the old name. |
+| 2026-09-22 | Claude (Opus 5) + Dion | "Start here": the refactor is done and verified. Points at `./build.sh`, `global_env.sh` and the path table. |

@@ -940,7 +940,16 @@ Nothing here is scheduled work until Dion adds it.
 
 ---
 
-### 2.15 🟠 The full reorg: target layout, config levels, and the order of moves
+### 2.15 ✅ The full reorg: target layout, config levels, and the order of moves
+
+> ✅ **All seven steps done 2026-09-22 on `t0.10-t0.11-refactor`, verified on the lab box**: full bench
+> L0-L4 PASS after each stage (`bench-runs/2026-09-21-labbox-reorg-step2-bench.txt`,
+> `…-step4-bench.txt`, `2026-09-22-…-step5-grasp-arm-bench.txt`, `…-step5-7-bench.txt`), and every
+> `<subsystem>_env.sh` checked in an empty shell. Merges into `dev` by PR. **After the merge:** clean
+> the nightly runner's copy once (`~/actions-runner/_work/Gappler/Gappler`: delete `build/`,
+> `install/`, `build_nav/`, `install_nav/` and the leftover `Navigation_Module/`, which holds a
+> generated Livox `package.xml` that would clash) and link the SAM3 weights and AnyGrasp checkpoints
+> in at the new paths, see `PROJECT_PLAN` T0.11.
 
 Dion, 2026-09-21. **The full reorg is now in scope** (was out, `PROJECT_PLAN` §4.2). This section is
 the spec §2.11 said was missing. It builds on two decisions already made on 2026-09-20: the layout
@@ -1350,3 +1359,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 5, nav: the six robot_slam scripts are one package each, path table row added. `robot_slam` and `robot_navigation` stay two packages (Dion, decision b): their `nav2_params.yaml` differ, so the merge is left to Sherman, noted in "For Sherman". |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 6 done on the branch: ownership is the `is_owned` rule (not under `vendor/`), gripper tools moved to `assets/vendor/`. §2.7 note updated. |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 7 done on the branch: `global_env.sh` plus one env file per subsystem, shared setup in `shared/`, nav's overlay now sourced. The refactor's seven steps are all done on the branch. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 marked done: all seven steps verified on the box. Post-merge cleanup of the nightly runner's copy recorded. |

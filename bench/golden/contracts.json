@@ -325,22 +325,22 @@
       "nav/vendor/urdf/xpkg_urdf_echo_plus/urdf/model.urdf(urdf)"
     ],
     "map": [
+      "nav/goto_glasses/goto_glasses.py:174",
+      "nav/goto_glasses/goto_glasses.py:204",
+      "nav/object_approach/object_approach_node.py:138",
+      "nav/object_approach/object_approach_node.py:167",
+      "nav/object_approach/object_approach_node.py:190",
+      "nav/object_approach/object_approach_node.py:232",
+      "nav/object_approach/object_approach_node.py:256",
+      "nav/object_approach/object_approach_node.py:277",
+      "nav/object_approach/object_approach_node.py:298",
+      "nav/pose_publisher/pose_publisher.py:17",
+      "nav/pose_publisher/pose_publisher.py:21",
       "nav/robot_navigation/config/nav2_params.yaml:62",
       "nav/robot_slam/config/nav2_params.yaml:115",
       "nav/robot_slam/config/nav2_params.yaml:12",
       "nav/robot_slam/config/slam_toolbox.yaml:11",
-      "nav/robot_slam/config/slam_toolbox_localization.yaml:10",
-      "nav/robot_slam/scripts/goto_glasses.py:174",
-      "nav/robot_slam/scripts/goto_glasses.py:204",
-      "nav/robot_slam/scripts/object_approach_node.py:138",
-      "nav/robot_slam/scripts/object_approach_node.py:167",
-      "nav/robot_slam/scripts/object_approach_node.py:190",
-      "nav/robot_slam/scripts/object_approach_node.py:232",
-      "nav/robot_slam/scripts/object_approach_node.py:256",
-      "nav/robot_slam/scripts/object_approach_node.py:277",
-      "nav/robot_slam/scripts/object_approach_node.py:298",
-      "nav/robot_slam/scripts/pose_publisher.py:17",
-      "nav/robot_slam/scripts/pose_publisher.py:21"
+      "nav/robot_slam/config/slam_toolbox_localization.yaml:10"
     ],
     "odom": [
       "nav/robot_navigation/config/nav2_params.yaml:37",
@@ -374,6 +374,9 @@
     "robot_base_link": [
       "aria/aria_app/services/pose_fusion/pose_fusion_node.py:215",
       "aria/aria_app/services/pose_fusion/pose_fusion_node.py:296",
+      "nav/object_approach/object_approach_node.py:138",
+      "nav/object_approach/object_approach_node.py:190",
+      "nav/pose_publisher/pose_publisher.py:17",
       "nav/robot_slam/config/nav2_params.yaml:116",
       "nav/robot_slam/config/nav2_params.yaml:13",
       "nav/robot_slam/config/nav2_params.yaml:167",
@@ -383,9 +386,6 @@
       "nav/robot_slam/launch/slam_localization.launch.py(static_tf)",
       "nav/robot_slam/launch/slam_localization.launch.py(static_tf)",
       "nav/robot_slam/launch/slam_mapping.launch.py(static_tf)",
-      "nav/robot_slam/scripts/object_approach_node.py:138",
-      "nav/robot_slam/scripts/object_approach_node.py:190",
-      "nav/robot_slam/scripts/pose_publisher.py:17",
       "nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:209",
       "nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:223",
       "nav/vendor/urdf/xpkg_urdf_echo_plus/urdf/model.urdf(urdf)",
@@ -424,7 +424,7 @@
       "arm/vendor/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "21f1f52-dirty",
+  "git": "75f398e-dirty",
   "launch_includes": [
     {
       "from": "arm/arm_bringup/launch/arm_bringup.launch.py",
@@ -932,6 +932,27 @@
       ]
     },
     {
+      "executable": "aria_image_relay.py",
+      "from": "nav/robot_slam/launch/slam_localization.launch.py",
+      "name": "aria_image_relay",
+      "package": "aria_image_relay",
+      "remappings": []
+    },
+    {
+      "executable": "goal_reached_publisher.py",
+      "from": "nav/robot_slam/launch/slam_localization.launch.py",
+      "name": "goal_reached_publisher",
+      "package": "goal_reached",
+      "remappings": []
+    },
+    {
+      "executable": "goto_glasses.py",
+      "from": "nav/robot_slam/launch/slam_localization.launch.py",
+      "name": "goto_glasses",
+      "package": "goto_glasses",
+      "remappings": []
+    },
+    {
       "executable": "joint_state_publisher",
       "from": "nav/robot_slam/launch/slam_localization.launch.py",
       "name": "joint_state_publisher",
@@ -948,6 +969,13 @@
       ]
     },
     {
+      "executable": "object_approach_node.py",
+      "from": "nav/robot_slam/launch/slam_localization.launch.py",
+      "name": "object_approach_node",
+      "package": "object_approach",
+      "remappings": []
+    },
+    {
       "executable": "pointcloud_to_laserscan_node",
       "from": "nav/robot_slam/launch/slam_localization.launch.py",
       "name": "pointcloud_to_laserscan",
@@ -960,45 +988,17 @@
       ]
     },
     {
-      "executable": "aria_image_relay.py",
-      "from": "nav/robot_slam/launch/slam_localization.launch.py",
-      "name": "aria_image_relay",
-      "package": "robot_slam",
-      "remappings": []
-    },
-    {
-      "executable": "goal_reached_publisher.py",
-      "from": "nav/robot_slam/launch/slam_localization.launch.py",
-      "name": "goal_reached_publisher",
-      "package": "robot_slam",
-      "remappings": []
-    },
-    {
-      "executable": "goto_glasses.py",
-      "from": "nav/robot_slam/launch/slam_localization.launch.py",
-      "name": "goto_glasses",
-      "package": "robot_slam",
-      "remappings": []
-    },
-    {
-      "executable": "object_approach_node.py",
-      "from": "nav/robot_slam/launch/slam_localization.launch.py",
-      "name": "object_approach_node",
-      "package": "robot_slam",
-      "remappings": []
-    },
-    {
       "executable": "pose_publisher.py",
       "from": "nav/robot_slam/launch/slam_localization.launch.py",
       "name": "pose_publisher",
-      "package": "robot_slam",
+      "package": "pose_publisher",
       "remappings": []
     },
     {
       "executable": "qos_relay.py",
       "from": "nav/robot_slam/launch/slam_localization.launch.py",
       "name": "qos_relay",
-      "package": "robot_slam",
+      "package": "qos_relay",
       "remappings": []
     },
     {
@@ -1051,6 +1051,13 @@
       "remappings": []
     },
     {
+      "executable": "goal_reached_publisher.py",
+      "from": "nav/robot_slam/launch/slam_mapping.launch.py",
+      "name": "goal_reached_publisher",
+      "package": "goal_reached",
+      "remappings": []
+    },
+    {
       "executable": "joint_state_publisher",
       "from": "nav/robot_slam/launch/slam_mapping.launch.py",
       "name": "joint_state_publisher",
@@ -1070,24 +1077,17 @@
       ]
     },
     {
-      "executable": "goal_reached_publisher.py",
-      "from": "nav/robot_slam/launch/slam_mapping.launch.py",
-      "name": "goal_reached_publisher",
-      "package": "robot_slam",
-      "remappings": []
-    },
-    {
       "executable": "pose_publisher.py",
       "from": "nav/robot_slam/launch/slam_mapping.launch.py",
       "name": "pose_publisher",
-      "package": "robot_slam",
+      "package": "pose_publisher",
       "remappings": []
     },
     {
       "executable": "qos_relay.py",
       "from": "nav/robot_slam/launch/slam_mapping.launch.py",
       "name": "qos_relay",
-      "package": "robot_slam",
+      "package": "qos_relay",
       "remappings": []
     },
     {
@@ -2203,8 +2203,8 @@
       ],
       "subscribers": [
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:148",
-        "nav/robot_slam/scripts/goto_glasses.py:59",
-        "nav/robot_slam/scripts/object_approach_node.py:80"
+        "nav/goto_glasses/goto_glasses.py:59",
+        "nav/object_approach/object_approach_node.py:80"
       ],
       "types": [
         "std_msgs/String"
@@ -2256,7 +2256,7 @@
         "aria/aria_app/services/pose_fusion/pose_fusion_node.py:153"
       ],
       "subscribers": [
-        "nav/robot_slam/scripts/goto_glasses.py:47"
+        "nav/goto_glasses/goto_glasses.py:47"
       ],
       "types": [
         "geometry_msgs/PoseStamped"
@@ -2383,7 +2383,7 @@
         "aria/aria_app/services/feature_matching.py:183",
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:131",
         "aria/aria_app/services/visualizer/ros_manager.py:71",
-        "nav/robot_slam/scripts/aria_image_relay.py:27"
+        "nav/aria_image_relay/aria_image_relay.py:27"
       ],
       "types": [
         "sensor_msgs/CompressedImage"
@@ -2397,7 +2397,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "nav/robot_slam/scripts/aria_image_relay.py:33"
+        "nav/aria_image_relay/aria_image_relay.py:33"
       ],
       "subscribers": [],
       "types": [
@@ -2523,7 +2523,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "nav/robot_slam/scripts/qos_relay.py:38"
+        "nav/qos_relay/qos_relay.py:38"
       ],
       "subscribers": [],
       "types": [
@@ -2620,10 +2620,10 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "nav/robot_slam/scripts/object_approach_node.py:90"
+        "nav/object_approach/object_approach_node.py:90"
       ],
       "subscribers": [
-        "nav/robot_slam/scripts/goal_reached_publisher.py:29"
+        "nav/goal_reached/goal_reached_publisher.py:29"
       ],
       "types": [
         "geometry_msgs/PoseStamped"
@@ -2635,10 +2635,10 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "nav/robot_slam/scripts/goal_reached_publisher.py:27"
+        "nav/goal_reached/goal_reached_publisher.py:27"
       ],
       "subscribers": [
-        "nav/robot_slam/scripts/object_approach_node.py:77"
+        "nav/object_approach/object_approach_node.py:77"
       ],
       "types": [
         "std_msgs/String"
@@ -2651,7 +2651,7 @@
       "owned": true,
       "publishers": [],
       "subscribers": [
-        "nav/robot_slam/scripts/goto_glasses.py:55"
+        "nav/goto_glasses/goto_glasses.py:55"
       ],
       "types": [
         "std_msgs/Empty"
@@ -2664,7 +2664,7 @@
       "owned": true,
       "publishers": [],
       "subscribers": [
-        "nav/robot_slam/scripts/goto_glasses.py:51"
+        "nav/goto_glasses/goto_glasses.py:51"
       ],
       "types": [
         "std_msgs/Empty"
@@ -2707,7 +2707,7 @@
       "owned": true,
       "publishers": [],
       "subscribers": [
-        "nav/robot_slam/scripts/qos_relay.py:39"
+        "nav/qos_relay/qos_relay.py:39"
       ],
       "types": [
         "sensor_msgs/PointCloud2"
@@ -2735,7 +2735,7 @@
       "owned": true,
       "publishers": [],
       "subscribers": [
-        "nav/robot_slam/scripts/object_approach_node.py:83"
+        "nav/object_approach/object_approach_node.py:83"
       ],
       "types": [
         "std_msgs/Empty"
@@ -2750,7 +2750,7 @@
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:204"
       ],
       "subscribers": [
-        "nav/robot_slam/scripts/object_approach_node.py:74"
+        "nav/object_approach/object_approach_node.py:74"
       ],
       "types": [
         "geometry_msgs/PoseStamped"
@@ -2762,7 +2762,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "nav/robot_slam/scripts/object_approach_node.py:97"
+        "nav/object_approach/object_approach_node.py:97"
       ],
       "subscribers": [
         "launchers/grasp_orchestrator.py:56"
@@ -2779,7 +2779,7 @@
       "publishers": [],
       "subscribers": [
         "launchers/grasp_orchestrator.py:65",
-        "nav/robot_slam/scripts/object_approach_node.py:86"
+        "nav/object_approach/object_approach_node.py:86"
       ],
       "types": [
         "std_msgs/Bool"
@@ -2794,7 +2794,7 @@
         "grasp/grasp_state_machine/src/grasp_state_machine.cpp:159"
       ],
       "subscribers": [
-        "nav/robot_slam/scripts/goto_glasses.py:63"
+        "nav/goto_glasses/goto_glasses.py:63"
       ],
       "types": [
         "std_msgs/Bool"
@@ -2838,7 +2838,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "nav/robot_slam/scripts/object_approach_node.py:92"
+        "nav/object_approach/object_approach_node.py:92"
       ],
       "subscribers": [],
       "types": [
@@ -2851,7 +2851,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "nav/robot_slam/scripts/object_approach_node.py:91"
+        "nav/object_approach/object_approach_node.py:91"
       ],
       "subscribers": [],
       "types": [
@@ -2913,7 +2913,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "nav/robot_slam/scripts/goto_glasses.py:68"
+        "nav/goto_glasses/goto_glasses.py:68"
       ],
       "subscribers": [],
       "types": [
@@ -3324,7 +3324,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "nav/robot_slam/scripts/pose_publisher.py:12"
+        "nav/pose_publisher/pose_publisher.py:12"
       ],
       "subscribers": [
         "aria/aria_app/services/pose_fusion/pose_fusion_node.py:147"
