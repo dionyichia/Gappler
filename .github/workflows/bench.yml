@@ -1,4 +1,4 @@
-# Runs the bench on every PR into main and every push to main. See NEXT_STEPS.md
+# Runs the bench on every PR into and push to main or dev. See NEXT_STEPS.md
 # 2.12 and PROJECT_PLAN T0.10. Levels are defined in bench/README.md.
 #
 # GitHub's machine has no ROS, so L0-L2 run and L3-L4 report SKIPPED. That is
@@ -8,9 +8,9 @@ name: bench
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, dev]
   push:
-    branches: [main]
+    branches: [main, dev]
 
 jobs:
   bench:
