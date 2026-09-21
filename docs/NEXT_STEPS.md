@@ -702,6 +702,11 @@ each level the machine can and reporting the rest as SKIPPED: L0 static, L1 cont
 table, which CI also writes to the run's summary page. Definitions in `bench/README.md`. On GitHub,
 L3-L4 skip. Runner on the lab box and the `dev`/`main` rules are T0.11.
 
+**Robot check, 2026-09-21.** A new L5 checks the robot (arm, wrist camera, LiDAR, glasses, live
+ROS graph) and gates L6, the real arm test, the way L2 gates L3-L4. These checks left L2, so an
+unplugged robot no longer fails the bench. With no arm on the network L5 and L6 are SKIPPED.
+Neither is needed to merge into `dev` or `main`.
+
 Owner: Dion, since he owns `bench/` itself. Depends on `T0.5` (both other clones build and pass the
 bench) — see `PROJECT_PLAN.md` §6.2, task `T0.10`.
 
@@ -1085,3 +1090,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-20 | Claude (Opus 5) + Dion | `T0.7` landed as [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md). §1.3 answered for the contract topics, §2.1 gains the decided phase-based trigger policy, §2.4 points at the frozen rename targets, §2.10's config question answered (one tree per subsystem plus a shared constants package), §4's scope conflict settled: return leg out, pose fusion parked. |
 | 2026-09-21 | Claude (Opus 5) + Dion | **§3.3 closed, T0.0 done.** Box checks run: the Aria calibration file parses, `env.sh` works unchanged in `~/rcp-Gappler`, glasses serial skipped (not plugged in). Took `env.sh` (plus a guard against sourcing a copy outside the repo) and `anygrasp_node.sh` (plus a header comment). Struck the claim that `env.sh` needs `REPO_ROOT` re-pointed. Evidence in `bench-runs/2026-09-21-labbox-t0.0-box-checks.txt`. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.9 and §3.1: T0.4 done. `robot_navigation` and `xpkg_demo` in the repo, Livox template in its package, map recorded in `ASSETS.md` rather than committed. §2.9 drops from 🔴 to 🟠, the unclear rows stay open. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §2.12: L5 robot check added, it gates L6 hardware (was L5). Robot checks left L2. Not needed to merge. |

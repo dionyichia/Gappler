@@ -47,7 +47,8 @@ GOLDEN = REPO / "bench" / "golden" / "contracts.json"
 # Vendored trees we neither own nor refactor. Excluded wholesale -- including
 # them would bury our own contracts under upstream noise.
 EXCLUDE_DIRS = {
-    ".git", "install", "build", "log", "__pycache__", ".venv", "node_modules",
+    ".git", "install", "build", "log", "install_nav", "build_nav", "log_nav",
+    "__pycache__", ".venv", "node_modules",
     "OpenVINS", "MinkowskiEngine", "moveit_task_constructor", "anygrasp_sdk",
     "archive",
 }

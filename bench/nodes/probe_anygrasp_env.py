@@ -17,8 +17,9 @@ REPO = Path(__file__).resolve().parents[2]
 PERCEPTION = REPO / "ros2_robot_ws/src/rm_mtc/src/perception"
 SDK_DET = REPO / "grasp_module/src/anygrasp_sdk/grasp_detection"
 SCRATCH = REPO / "log/anygrasp_probe"
-CANDIDATES = [REPO / "envs/anygrasp/.venv/bin/python", REPO / "log/w5/venv/bin/python",
-              REPO / ".venv/bin/python"]
+# envs/anygrasp/.venv is built by envs/anygrasp/build.sh. The 2026-09-11 scratch env (log/w5/venv)
+# is no longer a candidate: the bench tests the env the repo can rebuild. Pass it explicitly to probe it.
+CANDIDATES = [REPO / "envs/anygrasp/.venv/bin/python", REPO / ".venv/bin/python"]
 
 # module, what it is, code printed on success
 IMPORTS = [
