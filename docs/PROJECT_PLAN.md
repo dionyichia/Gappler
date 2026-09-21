@@ -353,7 +353,7 @@ not relitigated later, and so a supervisor cannot reasonably expect both.
 | Cross-camera feature matching as a requirement | The contribution proposes replacing it. It stays as the comparison baseline, not as a dependency | `ORIENTATION` 5 |
 | The HiCo-Nav motion layer, meaning its own planner and controller | Nav2 already does this and is tuned for this chassis. Adopting it means retuning the part that can drive a robot into a wall, for no benefit to the claim | Paper review 5.1 tier C |
 | FAST-LIVO2 localisation | A bring-up project of its own. Start with the existing 2D localisation and measure whether it is good enough | Paper review 6.2 |
-| The full repository reorganisation into one folder per node | Referenced in four documents and specified in none. Do the vendor separation only, as part of M0, and leave the rest | `NEXT_STEPS` 2.11 |
+| ~~The full repository reorganisation into one folder per node~~ **In scope since 2026-09-21 (Dion).** Specified in `NEXT_STEPS` §2.15, done on the T0.10/T0.11 branch alongside T0.11's per-subsystem suites | ~~Referenced in four documents and specified in none. Do the vendor separation only, as part of M0, and leave the rest~~ | `NEXT_STEPS` 2.11, 2.15 |
 | The Habitat simulator baseline | Only needed to evaluate goal ordering, which is the optional milestone | Paper review 5.6 |
 
 ### 4.3 Deferred, meaning wanted but after this plan ends (mid-April 2027)
@@ -1038,3 +1038,4 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-21 | Claude (Opus 5) + Dion | T0.11: L5 is now the robot check, L6 the hardware. Neither runs on the CI runner or gates a merge. Map text updated to match. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Every open bench finding is now a task, so TESTBENCH_PLAN holds no work items. New **T0.12** (was W6, AnyGrasp replay) and **T3.8** (nav bridge fixes F1, F4, before T3.7). B4 folded into T1.3, C7 into T1.9, `conda run` into T1.10. **T1.2 progress:** `estop.py` fixed (B2, B2a, B2c). Task tree updated to match and republished. |
 | 2026-09-21 | Claude (Opus 5) + Dion | **T0.10 done.** `bench` on `main` and `dev`, both protected, `dev` the default branch. T0.11 progress: branch step done, runner and no-skips job left. `next-steps-map.html` task data updated. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §4.2: the full reorg moved into scope. Spec in `NEXT_STEPS` §2.15. No new task ID: it rides with T0.11, whose suites follow the folder layout. |

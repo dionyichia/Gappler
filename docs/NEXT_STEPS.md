@@ -638,6 +638,8 @@ by file location, so a pure move should show as informational and fail nothing.
 reorg starts, it needs its own item saying what the target layout actually is. This section covers
 only the vendor half of it.
 
+**Specified 2026-09-21 in §2.15**, which also puts the full reorg in scope.
+
 ### 2.12 🟡 CI: run the bench automatically on every push, once M0 is done
 
 Dion, 2026-09-16. Raised as a task rather than left as the "deferred, after this plan ends" item
@@ -923,6 +925,127 @@ Nothing here is scheduled work until Dion adds it.
 
 ---
 
+### 2.15 🟠 The full reorg: target layout, config levels, and the order of moves
+
+Dion, 2026-09-21. **The full reorg is now in scope** (was out, `PROJECT_PLAN` §4.2). This section is
+the spec §2.11 said was missing. It builds on two decisions already made on 2026-09-20: the layout
+(`CHANNEL_CONTRACT.md` §6 G-2) and one config tree per subsystem over a shared package (T-4, §2.10).
+Work happens on one branch per step (the first is `reorg-1-bench-reads-yaml`), each a PR into `dev`.
+
+#### Target layout
+
+Four subsystem folders. Inside each, one folder per ROS package, which in practice is one per node.
+The exception is code that builds into one program: the state machine and the MTC planner share a
+folder. Each subsystem keeps its third-party code in its own `vendor/`.
+
+```
+shared/                     used by more than one subsystem
+  config/global.yaml        values two or more subsystems read
+  gappler_common/           the path helper and shared constants (T-4)
+aria/                       glasses: stream, gaze, voice, glasses pose
+  aria_app/                 from src/ (main.py, services/aria_device, ros, visualizer, ...)
+  pose_fusion/              from src/services/pose_fusion (parked, §4)
+  config/aria.yaml
+  vendor/open_vins/         from Navigation_Module/OpenVINS
+grasp/                      what to grasp and how
+  grasp_state_machine/      rm_mtc C++: state machine + MTC planner
+  anygrasp_node/            from rm_mtc/src/perception, with its 3 .so files
+  segmentation/             SAM3: src/services/object_recognition + sam3_ros_node.py (G-2, §2.2)
+  grasp_interfaces/         GraspCandidate, GraspCandidateArray, split out of rm_ros_interfaces
+  config/grasp.yaml
+  vendor/                   anygrasp_sdk, MinkowskiEngine, moveit_task_constructor (from deps_ws)
+arm/                        the RM65 itself
+  estop/                    from ros2_robot_ws/src/estop.py
+  config/arm.yaml
+  vendor/                   rm_driver, rm_description, rm_moveit2_config, rm_control, rm_bringup,
+                            rm_ros_interfaces, eg2_4b_description, the other rm_* packages
+nav/
+  object_approach/  goto_glasses/  goal_reached/  pose_publisher/   from robot_slam/scripts
+  echo_plus_driver/  simple_teleop/
+  nav_bringup/              launch files and Nav2/SLAM params from robot_navigation + robot_slam
+  config/nav.yaml
+  vendor/                   livox_ros_driver2, Livox-SDk2, base, drivers, urdf, demo
+bench/  docs/  main.py
+```
+
+`arm/` holds almost none of our code (only `estop`). That is accurate, not a problem: the arm
+subsystem is mostly RealMan's.
+
+#### Config: three levels, each value written once
+
+| Level | File | Holds |
+|---|---|---|
+| global | `shared/config/global.yaml` | values two or more subsystems read: shared topic names, frame names, machine paths |
+| subsystem | `<subsystem>/config/<subsystem>.yaml` | values two or more nodes in that subsystem read |
+| node | `<subsystem>/<node>/config.yaml` | values only that node reads |
+
+- **A value lives at the lowest level that covers all its readers.** When it gains a reader in
+  another subsystem, move it up and delete it below.
+- **References only point down.** Global has no list of subsystem files, and a subsystem file never
+  copies a global value. So editing a subsystem file never touches global.
+- **ROS nodes get their values as ROS parameters.** The launch file loads global, then subsystem,
+  then node, and later files win. One file can hold several nodes, keyed by node name, with `/**:`
+  for values every node in the file shares. Nodes still declare each parameter with a default, so
+  launch can remap (§2.10 point 2).
+- **The Aria app is not launched by ROS.** It reads the same files through `gappler_common`.
+- **Vendor parameter files keep their own format and place** (`nav2_params.yaml`, the SLAM Toolbox
+  files). Our levels are for our nodes.
+- **A bench check fails when one key is defined in two files**, so duplicates cannot creep back.
+  L0 is stdlib only, so it reads keys line by line rather than with a YAML parser. `[open]` whether
+  that is enough, decide when writing it.
+
+#### Paths: no file finds the repo by itself
+
+Today files find the repo root by counting parent folders, for example `src/config/ros2.py:7` goes
+up 3 and `ros2_robot_ws/src/main.py:28` goes up 2 `[code]`. Every move breaks them. It also cannot
+work for ROS nodes, which run from `install/`, not from the repo.
+
+- **`env.sh` exports `GAPPLER_ROOT`.** It already computes the root (`env.sh:11`).
+- **`gappler_common` is the only code that reads it**, and it fails with a clear message if it is
+  unset. Every other file asks the helper.
+- **Machine paths live in `global.yaml` with defaults**, each one overridable by an environment
+  variable, as `GAPPLER_MAP_DIR` already is. This settles §2.5's open "config file or environment
+  variables": both, for different jobs.
+- **Config is read from the repo, not from `install/`**, so editing a YAML file needs no rebuild.
+- The last hardcoded external path, OpenVINS under `~/Ros2Workspaces/` (`src/main.py:303-304`,
+  `:331`), moves into `global.yaml` in step 2.
+
+#### Order
+
+Each step is its own PR into `dev`. Run `./bench/run.sh` before and after every step.
+
+1. **Teach the bench's extractor to read YAML** (TESTBENCH_PLAN C1). Topic names that move into
+   config files are otherwise invisible to the contract check, and the refactor removes its own
+   safety net (§2.10). Re-snapshot.
+2. **Paths and config.** Add `shared/config/global.yaml`, `gappler_common` and `GAPPLER_ROOT`. Route
+   every path through the helper. Fold `shared/config.yaml` and `src/config/*.py` into it. After
+   this, moving a file cannot break a path.
+3. **Vendor moves**, one subsystem per PR, as pure moves (§2.11 steps 1 and 2). Update the three
+   hardcoded vendor paths (§2.11) in the same PR.
+4. **Our code moves**, one subsystem per PR. Package names stay the same, so launch files and
+   `ros2 run` keep working. A pure move must leave L1 at 0 changes.
+5. **Splits into per-node packages.** `rm_mtc` into `grasp_state_machine`, `anygrasp_node` and
+   `segmentation`, the `robot_slam` scripts into their own packages, and `rm_ros_interfaces` into
+   ours and theirs (§2.11 step 3). These change package names, so launch files change too. L1 will
+   show those renames as deliberate changes, re-snapshot after each.
+6. **Replace `OWNED_PREFIXES`** in `bench/_common.py` with one rule: our code is anything not under
+   a `vendor/` folder. Until then, update it in every PR that moves code (§2.7).
+
+Steps 3 and 4 are pure moves: a commit that only moves files lets git track them as renames, which
+keeps merges manageable for everyone else.
+
+#### Open, decide in the PR that needs it
+
+- **Where the three launchers go.** Root `main.py`, `ros2_robot_ws/src/main.py` and
+  `orchestrator.py` start processes across subsystems. `CODE_AUDIT` I1 already says
+  `ros2_robot_ws/src/main.py` owns `background.launch.py`. Keep one launcher at the root.
+- **One build or two.** Today there are three workspaces (`ros2_robot_ws`, `deps_ws`,
+  `Navigation_Module`) and two overlays (`install/`, `install_nav/`). colcon finds packages at any
+  depth, so one build from the repo root works. Nav could stay a separate build because it is slow.
+- **Tell Zongzhe and Sherman before step 3.** Every path changes, and open branches will conflict.
+
+---
+
 ## 3. Bring-up (needs the lab machine)
 
 ### 3.1 ✅ Find `xpkg_demo` — **in the repo since 2026-09-21 (T0.4)**, at `Navigation_Module/src/demo/demo_general_chassis/`
@@ -1099,3 +1222,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.9 and §3.1: T0.4 done. `robot_navigation` and `xpkg_demo` in the repo, Livox template in its package, map recorded in `ASSETS.md` rather than committed. §2.9 drops from 🔴 to 🟠, the unclear rows stay open. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.12: L5 robot check added, it gates L6 hardware (was L5). Robot checks left L2. Not needed to merge. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.12: T0.10 done. `dev` created as the default branch, `bench` on `main` and `dev`, both protected. The runner and the no-skips job stay in T0.11. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Added §2.15: the full reorg is in scope. Target layout (four subsystems, one folder per package, `vendor/` per subsystem), three config levels with each value written once, `GAPPLER_ROOT` plus one path helper so no file finds the repo by itself, and a six-step order that teaches the bench to read YAML first. §2.11's gap note points to it. |

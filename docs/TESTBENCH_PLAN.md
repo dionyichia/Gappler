@@ -34,7 +34,9 @@ is, what it found and the evidence. Every open item it found is a task in
 [`next-steps-map.html`](next-steps-map.html) and [`PROJECT_PLAN.md`](PROJECT_PLAN.md) §6, so it can be
 seen, owned and ticked off in one place. Bench and CI tasks: **T0.11** (CI on the lab box, per-subsystem
 suites) and **T0.12** (AnyGrasp replay, was W6). When code moves in the refactor, update
-`OWNED_PREFIXES` in `bench/_common.py` (CLAUDE.md, "The bench").
+`OWNED_PREFIXES` in `bench/_common.py` (CLAUDE.md, "The bench"). The refactor itself (target layout, three config
+levels, `GAPPLER_ROOT`, the order of moves) is specified in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15.
+Its first step is teaching the extractor to read YAML (C1).
 
 CI and branches, set up 2026-09-21 `[observed]`:
 
@@ -530,7 +532,7 @@ owned code, all pre-existing — see known issue S1) · contracts PASS.
 
 | # | Gap | Evidence | Effect | Fix |
 |---|---|---|---|---|
-| C1 | **Every Aria-side publisher is invisible.** They are created via the `ROSPublisher` wrapper class (`src/services/ros/ros_publisher.py:14`) with topic names from `ROS2Topics`, an enum built from `shared/config.yaml` **at import time** — the AST resolver can see neither | `/aria/audio/prompt` shows `pub=0` in the golden file, yet `audio_streaming_pipeline.py:49` publishes it. Same for `/aria/rgb_camera/raw`, `/aria/imu`, … | the orphan report wrongly lists Aria topics as "subscribed, nobody publishes"; a rename on the Aria side will not be caught | teach `PyExtractor` two things: treat `ROSPublisher(name, MsgType, topic, ...)` as a publisher with the topic in arg 3; resolve `ROS2Topics.X.value` by loading `shared/config.yaml` (key = `X.lower()`). Then **re-snapshot** |
+| C1 ✅ | **Every Aria-side publisher is invisible.** **Fixed 2026-09-21 (reorg step 1, `NEXT_STEPS` §2.15):** the extractor now reads our YAML files, resolves `ROS2Topics.X.value`, `get_parameter("x")` and variables set from them, and treats `ROSPublisher` as a publisher. 13 Aria topics gained their publishers. Self-test `bench/test_contracts.py` runs first in L1. They are created via the `ROSPublisher` wrapper class (`src/services/ros/ros_publisher.py:14`) with topic names from `ROS2Topics`, an enum built from `shared/config.yaml` **at import time** — the AST resolver can see neither | `/aria/audio/prompt` shows `pub=0` in the golden file, yet `audio_streaming_pipeline.py:49` publishes it. Same for `/aria/rgb_camera/raw`, `/aria/imu`, … | the orphan report wrongly lists Aria topics as "subscribed, nobody publishes"; a rename on the Aria side will not be caught | teach `PyExtractor` two things: treat `ROSPublisher(name, MsgType, topic, ...)` as a publisher with the topic in arg 3; resolve `ROS2Topics.X.value` by loading `shared/config.yaml` (key = `X.lower()`). Then **re-snapshot** |
 | C2 | C++ topics are found only when the string literal is inline in `create_publisher<T>("...")` | regex | a topic held in a `const std::string` is missed | acceptable until the reorg introduces constants; then extend |
 | C3 | Golden file was taken on a dirty tree (`2d36a89-dirty`) | `bench/golden/contracts.json` `"git"` field | cosmetic, but makes the baseline's provenance unclear | re-snapshot on the first commit that includes `bench/` |
 
@@ -734,3 +736,5 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-21 | Claude (Opus 5) + Dion | Full bench L0-L4 on `main` @ `9bbb26a` on the box: L3 and every L4 script PASS. L1 failed on a bench bug: `contracts.py` and `static.py` read `build_nav/` and `install_nav/`, fixed. Robot checks moved out of L2 into a new L5 (`preflight.py --hardware`) that gates L6, the real arm test (was L5). An unplugged arm makes L5 and L6 SKIPPED, not FAIL. Neither is needed to merge. Evidence in `bench-runs/2026-09-21-labbox-full-bench-main.txt`. `next-steps-map.html` T0.11 text edited and republished. |
 | 2026-09-21 | Claude (Opus 5) + Dion | **W5 done**: `envs/anygrasp/build.sh` rebuilds the AnyGrasp env from nothing, the SDK demo passes, L2 `anygrasp-env` is green. `estop_delivery.sh` control case made stable (0.5 s between keys) after it exposed a new finding, CODE_AUDIT B2c. B2's loss now observed. The `estop.py` fix is queued in "Start here". `build.sh` reuses built parts, `--clean` rebuilds. |
 | 2026-09-21 | Claude (Opus 5) + Dion | CI and branches set up: `dev` is the default branch, `bench` runs on PRs and pushes to `main` and `dev`, both protected. Box pulls over SSH with a deploy key. "Next" block rewritten as the refactor plus the rest of T0.11. Fixes now go through a PR into `dev`. |
+| 2026-09-21 | Claude (Opus 5) + Dion | "Start here" points to `NEXT_STEPS` §2.15, the reorg spec. |
+| 2026-09-21 | Claude (Opus 5) + Dion | C1 fixed: the contract extractor reads config, so topics moved into YAML during the reorg stay visible. Contracts re-snapshotted, 13 Aria topics now show publishers. New L1 self-test `bench/test_contracts.py`. |

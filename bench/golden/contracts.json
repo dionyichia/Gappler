@@ -430,7 +430,7 @@
       "ros2_robot_ws/src/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "1461e72",
+  "git": "0040069-dirty",
   "launch_includes": [
     {
       "from": "Navigation_Module/src/robot_navigation/launch/navigation.launch.py",
@@ -2124,10 +2124,12 @@
       "yaml_refs": []
     },
     "/aria/aruco_pose": {
-      "n_publishers": 0,
+      "n_publishers": 1,
       "n_subscribers": 1,
       "owned": true,
-      "publishers": [],
+      "publishers": [
+        "src/services/aria_device/stream/image_streaming_pipeline.py:90"
+      ],
       "subscribers": [
         "src/services/pose_fusion/pose_fusion_node.py:141"
       ],
@@ -2139,13 +2141,16 @@
       ]
     },
     "/aria/audio/prompt": {
-      "n_publishers": 0,
-      "n_subscribers": 2,
+      "n_publishers": 1,
+      "n_subscribers": 3,
       "owned": true,
-      "publishers": [],
+      "publishers": [
+        "src/services/aria_device/stream/audio_streaming_pipeline.py:49"
+      ],
       "subscribers": [
         "Navigation_Module/src/robot_slam/scripts/goto_glasses.py:59",
-        "Navigation_Module/src/robot_slam/scripts/object_approach_node.py:80"
+        "Navigation_Module/src/robot_slam/scripts/object_approach_node.py:80",
+        "src/services/object_recognition/object_recognition_pipeline.py:148"
       ],
       "types": [
         "std_msgs/String"
@@ -2155,26 +2160,35 @@
       ]
     },
     "/aria/eye_tracking/gaze_estimate": {
-      "n_publishers": 0,
-      "n_subscribers": 0,
+      "n_publishers": 1,
+      "n_subscribers": 2,
       "owned": true,
-      "publishers": [],
-      "subscribers": [],
+      "publishers": [
+        "src/services/aria_device/stream/image_streaming_pipeline.py:153"
+      ],
+      "subscribers": [
+        "src/services/object_recognition/object_recognition_pipeline.py:155",
+        "src/services/visualizer/ros_manager.py:77"
+      ],
       "types": [
-        "?"
+        "geometry_msgs/Point"
       ],
       "yaml_refs": [
         "shared/config.yaml:9"
       ]
     },
     "/aria/eye_tracking/raw": {
-      "n_publishers": 0,
-      "n_subscribers": 0,
+      "n_publishers": 1,
+      "n_subscribers": 1,
       "owned": true,
-      "publishers": [],
-      "subscribers": [],
+      "publishers": [
+        "src/services/aria_device/stream/image_streaming_pipeline.py:158"
+      ],
+      "subscribers": [
+        "src/services/visualizer/ros_manager.py:83"
+      ],
       "types": [
-        "?"
+        "sensor_msgs/CompressedImage"
       ],
       "yaml_refs": [
         "shared/config.yaml:8"
@@ -2211,13 +2225,15 @@
       "yaml_refs": []
     },
     "/aria/imu": {
-      "n_publishers": 0,
+      "n_publishers": 1,
       "n_subscribers": 0,
       "owned": true,
-      "publishers": [],
+      "publishers": [
+        "src/services/aria_device/stream/pose_streaming_pipeline.py:237"
+      ],
       "subscribers": [],
       "types": [
-        "?"
+        "sensor_msgs/Imu"
       ],
       "yaml_refs": [
         "shared/config.yaml:15",
@@ -2251,51 +2267,69 @@
       "yaml_refs": []
     },
     "/aria/rgb_camera/feature_match": {
-      "n_publishers": 0,
-      "n_subscribers": 0,
+      "n_publishers": 2,
+      "n_subscribers": 1,
       "owned": true,
-      "publishers": [],
-      "subscribers": [],
+      "publishers": [
+        "src/services/feature_matching.py:191",
+        "src/services/object_recognition/object_recognition_pipeline.py:184"
+      ],
+      "subscribers": [
+        "src/services/visualizer/ros_manager.py:101"
+      ],
       "types": [
-        "?"
+        "std_msgs/UInt8MultiArray"
       ],
       "yaml_refs": [
         "shared/config.yaml:13"
       ]
     },
     "/aria/rgb_camera/object_masks": {
-      "n_publishers": 0,
-      "n_subscribers": 0,
+      "n_publishers": 1,
+      "n_subscribers": 1,
       "owned": true,
-      "publishers": [],
-      "subscribers": [],
+      "publishers": [
+        "src/services/object_recognition/object_recognition_pipeline.py:169"
+      ],
+      "subscribers": [
+        "src/services/visualizer/ros_manager.py:89"
+      ],
       "types": [
-        "?"
+        "std_msgs/UInt8MultiArray"
       ],
       "yaml_refs": [
         "shared/config.yaml:10"
       ]
     },
     "/aria/rgb_camera/raw": {
-      "n_publishers": 0,
-      "n_subscribers": 0,
+      "n_publishers": 1,
+      "n_subscribers": 1,
       "owned": true,
-      "publishers": [],
-      "subscribers": [],
+      "publishers": [
+        "src/services/aria_device/stream/image_streaming_pipeline.py:80"
+      ],
+      "subscribers": [
+        "src/services/visualizer/ros_manager.py:65"
+      ],
       "types": [
-        "?"
+        "sensor_msgs/CompressedImage"
       ],
       "yaml_refs": [
         "shared/config.yaml:4"
       ]
     },
     "/aria/rgb_camera/undistorted": {
-      "n_publishers": 0,
-      "n_subscribers": 1,
+      "n_publishers": 1,
+      "n_subscribers": 4,
       "owned": true,
-      "publishers": [],
+      "publishers": [
+        "src/services/aria_device/stream/image_streaming_pipeline.py:85"
+      ],
       "subscribers": [
-        "Navigation_Module/src/robot_slam/scripts/aria_image_relay.py:27"
+        "Navigation_Module/src/robot_slam/scripts/aria_image_relay.py:27",
+        "src/services/feature_matching.py:183",
+        "src/services/object_recognition/object_recognition_pipeline.py:131",
+        "src/services/visualizer/ros_manager.py:71"
       ],
       "types": [
         "sensor_msgs/CompressedImage"
@@ -2318,13 +2352,15 @@
       "yaml_refs": []
     },
     "/aria/slam_left/raw": {
-      "n_publishers": 0,
+      "n_publishers": 1,
       "n_subscribers": 0,
       "owned": true,
-      "publishers": [],
+      "publishers": [
+        "src/services/aria_device/stream/pose_streaming_pipeline.py:120"
+      ],
       "subscribers": [],
       "types": [
-        "?"
+        "sensor_msgs/Image"
       ],
       "yaml_refs": [
         "shared/config.yaml:6",
@@ -2332,13 +2368,15 @@
       ]
     },
     "/aria/slam_right/raw": {
-      "n_publishers": 0,
+      "n_publishers": 1,
       "n_subscribers": 0,
       "owned": true,
-      "publishers": [],
+      "publishers": [
+        "src/services/aria_device/stream/pose_streaming_pipeline.py:126"
+      ],
       "subscribers": [],
       "types": [
-        "?"
+        "sensor_msgs/Image"
       ],
       "yaml_refs": [
         "shared/config.yaml:7",
@@ -2468,13 +2506,17 @@
       "yaml_refs": []
     },
     "/combined/object_masks": {
-      "n_publishers": 0,
-      "n_subscribers": 0,
+      "n_publishers": 1,
+      "n_subscribers": 1,
       "owned": true,
-      "publishers": [],
-      "subscribers": [],
+      "publishers": [
+        "src/services/object_recognition/object_recognition_pipeline.py:179"
+      ],
+      "subscribers": [
+        "src/services/visualizer/ros_manager.py:107"
+      ],
       "types": [
-        "?"
+        "std_msgs/UInt8MultiArray"
       ],
       "yaml_refs": [
         "shared/config.yaml:12"
@@ -2796,13 +2838,17 @@
       "yaml_refs": []
     },
     "/realman/rgb_camera/object_masks": {
-      "n_publishers": 0,
-      "n_subscribers": 0,
+      "n_publishers": 1,
+      "n_subscribers": 1,
       "owned": true,
-      "publishers": [],
-      "subscribers": [],
+      "publishers": [
+        "src/services/object_recognition/object_recognition_pipeline.py:174"
+      ],
+      "subscribers": [
+        "src/services/visualizer/ros_manager.py:95"
+      ],
       "types": [
-        "?"
+        "std_msgs/UInt8MultiArray"
       ],
       "yaml_refs": [
         "shared/config.yaml:11"
@@ -2852,7 +2898,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "ros2_robot_ws/src/estop.py:25"
+        "ros2_robot_ws/src/estop.py:35"
       ],
       "subscribers": [],
       "types": [
@@ -2997,7 +3043,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "ros2_robot_ws/src/estop.py:26"
+        "ros2_robot_ws/src/estop.py:36"
       ],
       "subscribers": [],
       "types": [

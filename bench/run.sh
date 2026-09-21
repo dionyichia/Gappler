@@ -51,7 +51,8 @@ step() {
 s=$(step "L0  Static checks" python3 bench/static.py)
 row L0 "Static checks" "$s" ""
 
-s=$(step "L1  Contracts" python3 bench/contracts.py check)
+# The extractor self-test first: a broken extractor would make every check below pass.
+s=$(step "L1  Contracts" sh -c "python3 bench/test_contracts.py && python3 bench/contracts.py check")
 row L1 "Contracts" "$s" ""
 
 s=$(step "L2  Lab box check (preflight)" python3 bench/preflight.py)
