@@ -1,9 +1,15 @@
-# Runs the bench on every PR into and push to main or dev. See NEXT_STEPS.md
-# 2.12 and PROJECT_PLAN T0.10. Levels are defined in bench/README.md.
+# The bench in CI, two jobs. Levels are defined in bench/README.md.
+# See NEXT_STEPS.md 2.12 and PROJECT_PLAN T0.10, T0.11.
 #
-# GitHub's machine has no ROS, so L0-L2 run and L3-L4 report SKIPPED. That is
-# allowed for now. A self-hosted runner on the lab box is T0.11.
-# A green run does NOT mean the robot works. L6 (hardware) is never run here.
+#   bench  L0-L2 on GitHub's machines, every PR and push to main or dev.
+#          No ROS there, so L3-L4 report SKIPPED, which is allowed.
+#   full   L0-L4 on the lab box, no level may skip (--no-skips). Runs on PRs into
+#          main (the check that gates promoting dev), Mon and Wed nights on dev,
+#          and from the "Run workflow" button on the Actions tab.
+#
+# full runs PR code on the lab box. The guard against PRs from forks is waived
+# while the repo is public (Dion, 2026-09-22). Revisit when it goes private.
+# A green run does NOT mean the robot works. L5-L6 (robot) are never run here.
 name: bench
 
 on:
@@ -11,12 +17,29 @@ on:
     branches: [main, dev]
   push:
     branches: [main, dev]
+  schedule:
+    - cron: '0 15 * * 1,3'   # 23:00 Singapore time, Mon and Wed (cron is UTC). Runs on dev, the default branch
+  workflow_dispatch:          # "Run workflow" button on the Actions tab
 
 jobs:
   bench:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     # 22.04 ships Python 3.10, the same as ROS 2 Humble on the lab box.
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - run: ./bench/run.sh
+
+  full:
+    if: >-
+      github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main')
+    runs-on: [self-hosted, lab-box]
+    concurrency: lab-box      # never two runs at once on the box
+    timeout-minutes: 120      # clean build plus L4 is about 40 min
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false        # keep build folders, .venv and weight links between runs
+      - run: ./bench/run.sh --no-skips

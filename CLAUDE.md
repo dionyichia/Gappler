@@ -80,6 +80,10 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
   `iot22`'s nav workspace) are old code / reference: never modify them or their `install/` overlays.
   Don't touch `/home/iot22`; never set `PYTHONNOUSERSITE=1`; never `pip install --user`.
 - MoveIt with `mock_components` (simulated arm) is allowed; anything with `rm_driver` is not.
+- **The GitHub Actions runner** lives in `~/actions-runner` (tmux session `gh-runner`, stops on reboot).
+  Its checkout `~/actions-runner/_work/Gappler/Gappler` belongs to CI: don't work in it. Only one bench
+  run at a time on the box, so check `pgrep -af "Runner.Worker|bench/run.sh"` before starting one.
+  Details in TESTBENCH_PLAN "Start here".
 - `/home` is nearly full (14 GB free on 2026-09-11) — check `df -h ~` before large builds or downloads.
 
 ## The bench

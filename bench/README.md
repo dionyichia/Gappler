@@ -14,6 +14,7 @@ or any Python dependencies. Runs on a laptop in about a second.
 ./bench/run.sh quick        # L0-L2 only: skips the ~30 min build on the lab box
 ./bench/run.sh preflight    # L2 only: environment + hardware
 ./bench/run.sh report       # inventory of every contract, plus orphan analysis
+./bench/run.sh --no-skips   # also fail if any of L0-L4 is SKIPPED (the CI `full` job)
 python3 bench/contracts.py snapshot   # re-baseline after a deliberate change
 ```
 
@@ -22,7 +23,8 @@ Python 3.8+, stdlib only. Nothing to install.
 ### Levels (renamed 2026-09-19)
 
 `run.sh` runs these in order. A level that this machine cannot run is reported as SKIPPED, never
-as a pass, and skipped levels do not fail the run.
+as a pass, and skipped levels do not fail the run. With `--no-skips`, a skipped L0-L4 fails the run.
+L5-L6 may always skip.
 
 | Level | Name | What it checks | Runs on | Was |
 |---|---|---|---|---|
