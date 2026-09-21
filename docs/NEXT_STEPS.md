@@ -942,7 +942,7 @@ Nothing here is scheduled work until Dion adds it.
 
 ### 2.15 ✅ The full reorg: target layout, config levels, and the order of moves
 
-> ✅ **All seven steps done 2026-09-22 on `t0.10-t0.11-refactor`, verified on the lab box**: full bench
+> ✅ **All seven steps done 2026-09-22 on `t0.10-refactor` (was `t0.10-t0.11-refactor`), verified on the lab box**: full bench
 > L0-L4 PASS after each stage (`bench-runs/2026-09-21-labbox-reorg-step2-bench.txt`,
 > `…-step4-bench.txt`, `2026-09-22-…-step5-grasp-arm-bench.txt`, `…-step5-7-bench.txt`), and every
 > `<subsystem>_env.sh` checked in an empty shell. Merges into `dev` by PR. **After the merge:** clean
@@ -954,7 +954,7 @@ Nothing here is scheduled work until Dion adds it.
 Dion, 2026-09-21. **The full reorg is now in scope** (was out, `PROJECT_PLAN` §4.2). This section is
 the spec §2.11 said was missing. It builds on two decisions already made on 2026-09-20: the layout
 (`CHANNEL_CONTRACT.md` §6 G-2) and one config tree per subsystem over a shared package (T-4, §2.10).
-All steps happen on one branch, `t0.10-t0.11-refactor`, which merges into `dev` by PR.
+All steps happen on one branch, `t0.10-refactor` (renamed from `t0.10-t0.11-refactor` 2026-09-22), which merges into `dev` by PR.
 
 #### Target layout
 
