@@ -36,6 +36,19 @@ seen, owned and ticked off in one place. Bench and CI tasks: **T0.11** (CI on th
 suites) and **T0.12** (AnyGrasp replay, was W6). When code moves in the refactor, update
 `OWNED_PREFIXES` in `bench/_common.py` (CLAUDE.md, "The bench").
 
+CI and branches, set up 2026-09-21 `[observed]`:
+
+- **`dev` is the default branch.** Branch from `dev` and open PRs into `dev`. `main` holds the last
+  state promoted from `dev`, by a merge commit, never a squash.
+- **`bench` runs on every PR into, and push to, `main` or `dev`.** It runs L0-L2 on GitHub's
+  machines. L3-L4 report SKIPPED there.
+- **Both branches are protected.** A PR is required and `bench` must pass. No approvals are needed.
+  Admins can still push directly (`enforce_admins` is off).
+- **The box pulls over SSH with a deploy key** (`~/.ssh/gappler_deploy`, host alias
+  `github-gappler` in `~/.ssh/config`), so it keeps working if the repo goes private.
+- **The repo stays public for now.** Making it private waits on GitHub Pro (student pack), because a
+  free account gets no branch protection on private repos.
+
 **One paragraph (updated 2026-09-14):** the bench runs on the lab box in `~/rcp-Gappler`, and
 **tiers 0 through 3 are now complete**. Done there: tiers 0–1, preflight, Tier 2 for **both**
 workspaces (arm 22/22, nav 10/10), and every Tier 3 script on a private ROS channel — MoveIt on a
@@ -46,7 +59,7 @@ pieces that were written but never run (W4b, W7) and both passed first time. **W
 more test-writing:** W6 is now task T0.12, W8 is L6 (a person at the robot), and every finding below
 is a task in the task tree.
 Dion's standing instruction still holds: `~/rcp-Gappler` only, no real-world movement, and
-**fixes on branches for review, through a PR into `main`** (2026-09-19, replacing "no fixes
+**fixes on branches for review, through a PR into `dev`** (2026-09-19, replacing "no fixes
  without asking").
 
 **Status at a glance:**
@@ -720,3 +733,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-21 | Claude (Opus 5) + Dion | Contracts snapshot re-taken at `1461e72`: the 12 `robot_navigation` names and the new launch nodes added, the deleted `mtc_sim_test` launch removed. Decisions row updated. Added a "Next" block to "Start here" for T0.10 and T0.11: merge the PR, branch protection, the fork-PR risk of a self-hosted runner on a public repo, and `OWNED_PREFIXES` during the refactor. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Full bench L0-L4 on `main` @ `9bbb26a` on the box: L3 and every L4 script PASS. L1 failed on a bench bug: `contracts.py` and `static.py` read `build_nav/` and `install_nav/`, fixed. Robot checks moved out of L2 into a new L5 (`preflight.py --hardware`) that gates L6, the real arm test (was L5). An unplugged arm makes L5 and L6 SKIPPED, not FAIL. Neither is needed to merge. Evidence in `bench-runs/2026-09-21-labbox-full-bench-main.txt`. `next-steps-map.html` T0.11 text edited and republished. |
 | 2026-09-21 | Claude (Opus 5) + Dion | **W5 done**: `envs/anygrasp/build.sh` rebuilds the AnyGrasp env from nothing, the SDK demo passes, L2 `anygrasp-env` is green. `estop_delivery.sh` control case made stable (0.5 s between keys) after it exposed a new finding, CODE_AUDIT B2c. B2's loss now observed. The `estop.py` fix is queued in "Start here". `build.sh` reuses built parts, `--clean` rebuilds. |
+| 2026-09-21 | Claude (Opus 5) + Dion | CI and branches set up: `dev` is the default branch, `bench` runs on PRs and pushes to `main` and `dev`, both protected. Box pulls over SSH with a deploy key. "Next" block rewritten as the refactor plus the rest of T0.11. Fixes now go through a PR into `dev`. |

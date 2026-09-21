@@ -707,6 +707,13 @@ ROS graph) and gates L6, the real arm test, the way L2 gates L3-L4. These checks
 unplugged robot no longer fails the bench. With no arm on the network L5 and L6 are SKIPPED.
 Neither is needed to merge into `dev` or `main`.
 
+**Branches, 2026-09-21** `[observed]`. `dev` exists and is the default branch. `bench` runs on
+every PR into and push to `main` or `dev`, and both branches are protected: a PR is required and
+`bench` must pass. T0.10 is done. What remains is T0.11: the lab box runner, the no-skips `full`
+job required on `dev` into `main`, the Monday and Wednesday night run, and the per-subsystem
+suites. The fork-PR risk of a self-hosted runner on a public repo is still open. Steps in
+`TESTBENCH_PLAN.md` "Start here".
+
 Owner: Dion, since he owns `bench/` itself. Depends on `T0.5` (both other clones build and pass the
 bench) — see `PROJECT_PLAN.md` §6.2, task `T0.10`.
 
@@ -1091,3 +1098,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-21 | Claude (Opus 5) + Dion | **§3.3 closed, T0.0 done.** Box checks run: the Aria calibration file parses, `env.sh` works unchanged in `~/rcp-Gappler`, glasses serial skipped (not plugged in). Took `env.sh` (plus a guard against sourcing a copy outside the repo) and `anygrasp_node.sh` (plus a header comment). Struck the claim that `env.sh` needs `REPO_ROOT` re-pointed. Evidence in `bench-runs/2026-09-21-labbox-t0.0-box-checks.txt`. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.9 and §3.1: T0.4 done. `robot_navigation` and `xpkg_demo` in the repo, Livox template in its package, map recorded in `ASSETS.md` rather than committed. §2.9 drops from 🔴 to 🟠, the unclear rows stay open. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.12: L5 robot check added, it gates L6 hardware (was L5). Robot checks left L2. Not needed to merge. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §2.12: T0.10 done. `dev` created as the default branch, `bench` on `main` and `dev`, both protected. The runner and the no-skips job stay in T0.11. |

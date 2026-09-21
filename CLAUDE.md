@@ -62,8 +62,8 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
   Other users (`iot22`, and other people logged in as `rcp2026`) share the box; localhost-only does
   not separate you from their processes — a unique, empty domain id does.
 - **Fixes go on branches for review** (Dion, 2026-09-19, replacing the 2026-09-11 "no fixes yet"
-  rule). The project is in implementation. Each fix lands through a PR into `main`, where CI runs the
-  bench.
+  rule). The project is in implementation. Each fix lands through a PR into `dev`
+  (the default branch), where CI runs the bench. `dev` is promoted to `main` by PR.
 
 ## The lab machine
 

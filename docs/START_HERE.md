@@ -182,7 +182,8 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 - **Pages:** the wiring map and the test bench page are rewritten in plain language for readers new to
   code (links above). Dion's docs follow the same rule.
 - **Standing rule: fixes go on branches for review.** Since 2026-09-19 the project is in
-  implementation. Each fix lands through a PR into `main`, where CI runs the bench.
+  implementation. Each fix lands through a PR into `dev` (the default branch since 2026-09-21), where CI
+  runs the bench. `dev` is promoted to `main` by PR.
 - **Things the robot needs that live outside git** — `robot_navigation`, `xpkg_demo`, the SLAM map and
   more: [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.9. The lab box now has a copy of `iot22`'s navigation
   workspace at `~/rcp-old-ros-wkspace`.
@@ -209,3 +210,4 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 | 2026-09-19 | Claude (Opus 5) + Dion | Replaced the "no fixes yet" rule. Fixes now go on branches, through a PR into `main`. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Tier wording changed to bench Levels, with the old-to-new mapping so older docs still read correctly. |
 | 2026-09-20 | Claude (Opus 5) + Dion | Added `CHANNEL_CONTRACT.md` to the global docs, the single source for channel ownership (T0.7). |
+| 2026-09-21 | Claude (Opus 5) + Dion | Fixes now go through a PR into `dev`, the new default branch. |
