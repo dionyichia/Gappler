@@ -1,0 +1,34 @@
+T0.0 box checks -- the three read-only checks that decide the last realman_manip files   lab box, ~/rcp-Gappler @ 719950a, 2026-09-21 12:04
+================================================================================================
+Reached over the campus address (tailscale node 100.87.133.60 was down). Before running anything:
+one desktop login (iot22, since 2026-09-18), load 0.00, no ROS / colcon / rm_driver processes,
+GPU idle apart from the remote-desktop daemon. /home 26 GB free (92 %). The box clone was behind,
+so it was fast-forwarded to 719950a over https (the box's github ssh key is not authorised).
+Nothing was launched. No ROS channel was used. The box tree was left clean.
+
+  [PASS   ] 1. Aria calibration parses   device_calibration_from_json_string on
+                                         src/services/aria_device/calibration/aria_factory_calibration.json
+                                         -> 5 cameras (camera-et-left/right, camera-rgb, camera-slam-left/right).
+                                         camera-rgb: Fisheye624, 2880x2880, focal 1218.78, principal point
+                                         (1452.81, 1449.96), T_Device_Camera present
+  [SKIPPED] 2. Same glasses?             no Aria device on USB (lsusb), and no `aria` CLI on rcp2026's PATH.
+                                         The file names serial 1WM10350101291, build DVT-L, class Ariane.
+                                         Still owed: plug the glasses in and compare
+  [PASS   ] 3. env.sh works              realman_manip's env.sh placed at the repo root and sourced in a fresh
+                                         login shell: exit 0, 5 moveit_task_constructor packages, 12 rm_
+                                         packages, python = ~/rcp-Gappler/.venv/bin/python, torch
+                                         2.10.0+cu128 imports, first overlay entry install/rm_mtc
+  [INFO   ]    anygrasp_node.sh          both checkpoints exist at ros2_robot_ws/src/rm_mtc/src/perception/log/
+                                         (checkpoint_tracking.tar, checkpoint_detection.tar), the relative
+                                         path the script assumes. The W5 probe env holds only the detection one
+
+Findings [observed]
+- env.sh already derives REPO_ROOT from BASH_SOURCE, so it needs no re-pointing (NEXT_STEPS 3.3 said
+  it did). It does have to live at the repo root: the plan's own recipe, a copy at /tmp/env.sh,
+  exited 0 while pointing the overlay at /tmp/install and loading nothing. The copy taken onto main
+  now refuses with exit 1 when install/ or .venv/ is missing. Re-checked on the box: at the repo
+  root rc=0 with the same package counts, from /tmp rc=1 with the message.
+- An unanchored `grep -c rm_` counts 14. Two of those are unrelated package names containing "rm_".
+  The real count of rm_* packages is 12.
+
+Outcome: both held files taken, T0.0 closed except check 2.

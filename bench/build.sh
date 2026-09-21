@@ -6,8 +6,8 @@
 #   ./bench/build.sh nav      Navigation_Module/src, into build_nav/ install_nav/
 #
 # nav does the Livox prep livox_ros_driver2/build.sh:50-67 would do: if the
-# (gitignored) livox package.xml is missing, copy in the bench's ROS 2 template
-# (bench/nodes/livox_package_ROS2.xml; delete the copy to undo), and pass
+# (gitignored) livox package.xml is missing, copy in the ROS 2 template
+# (Navigation_Module/src/livox_ros_driver2/package_ROS2.xml; delete the copy to undo), and pass
 # -DROS_EDITION=ROS2 -DHUMBLE_ROS=humble. It does not install Livox-SDK2 (that
 # needs sudo); it says so up front if the library isn't there.
 #
@@ -41,9 +41,9 @@ out="log/bench_build_${target}_$(date +%F_%H%M).txt"
 if [ "$target" = nav ]; then
   livox=Navigation_Module/src/livox_ros_driver2
   if [ ! -f "$livox/package.xml" ]; then
-    cp bench/nodes/livox_package_ROS2.xml "$livox/package.xml"
+    cp Navigation_Module/src/livox_ros_driver2/package_ROS2.xml "$livox/package.xml"
     echo "prep: $livox/package.xml was missing (gitignored, ORIENTATION 8.15);"
-    echo "      copied bench/nodes/livox_package_ROS2.xml there. rm it to undo."
+    echo "      copied Navigation_Module/src/livox_ros_driver2/package_ROS2.xml there. rm it to undo."
   else
     echo "prep: $livox/package.xml exists; left as is"
   fi

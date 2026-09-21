@@ -34,8 +34,20 @@ would not shrink the clone, and a `git pull` would delete them from every workin
 
 Not model files, but the same problem: **`~/rcp-old-ros-wkspace`** (4.5 GB) is a copy, made
 2026-09-11, of `~iot22/Ros2Workspaces` — the base's navigation workspace, a git repo with no commits
-and no remote. It holds `robot_navigation` and `xpkg_demo`, which this repo lacks. What in it is
-needed, and what to do about each item: [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.9.
+and no remote. `robot_navigation` and `xpkg_demo` came from it into this repo on 2026-09-21 (T0.4),
+under `Navigation_Module/src/`. What else in it is needed: [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.9.
+
+**The saved lab map stays outside git on purpose.** The launch files read it from `$GAPPLER_MAP_DIR`
+(default `~/maps`), because a map belongs to one room, not to the code (T0.3). The one that exists is
+in `~iot22/maps/`, saved 2026-04-10 `[observed]`:
+
+| File | Size | Read by |
+|---|---|---|
+| `completed_map.posegraph`, `completed_map.data` | 25 MB, 2.5 MB | `slam_localization.launch.py:149`, SLAM Toolbox's saved pose graph |
+| `current_map.pgm`, `current_map.yaml` | 213 KB, 129 B | an image map, 0.05 m per pixel. Pass it to `robot_navigation` with `map:=` |
+
+To use it as `rcp2026`: `mkdir -p ~/maps && cp ~iot22/maps/* ~/maps/`. It is five months old, so the
+lab may have changed since. Re-mapping is T3.5.
 
 ## Where they come from
 
@@ -75,3 +87,4 @@ one configurable path instead of hardcoded ones. Tracked as NEXT_STEPS §2.8. Wh
 | 2026-09-11 | Claude (Opus 5) + Dion | Created. Checksums, sizes, sources, why each is ignored; the accidental `log` rule; proposed `assets/models/`. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Moved to `docs/`. Root `.gitignore` now covers weights, recordings and archives explicitly; recorded why already-tracked big files stay. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added the `~/rcp-old-ros-wkspace` pointer (NEXT_STEPS §2.9). |
+| 2026-09-21 | Claude (Opus 5) + Dion | `robot_navigation` and `xpkg_demo` are now in the repo (T0.4). Recorded the saved lab map: where it is, its files, and why it stays out of git. |

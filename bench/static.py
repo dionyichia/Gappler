@@ -74,6 +74,11 @@ KNOWN_EXTERNAL |= {
     "joint_trajectory_controller", "joint_state_broadcaster", "robot_localization",
 }
 
+# Declared by livox_ros_driver2/package_ROS2.xml once it came into the repo (T0.4).
+# rcutils, rcl_interfaces and rosbag2 are core Humble. git and apr are rosdep keys for
+# system libraries, not ROS packages.
+KNOWN_EXTERNAL |= {"rcutils", "rcl_interfaces", "rosbag2", "git", "apr"}
+
 # Code we own and will refactor (docs/ORIENTATION.md 2). Vendor findings are
 # still reported, but under a separate heading -- they are pre-existing
 # conditions of the vendor drops, not things this refactor caused.

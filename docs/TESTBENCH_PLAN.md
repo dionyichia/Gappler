@@ -15,20 +15,19 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 ## ▶ Start here — next session (updated 2026-09-12)
 
-**When the box is next up, run these three checks first (added 2026-09-19, T0.0).** Each is
-read-only. They decide what happens to the three files held back from `realman_manip`.
+**T0.0 box checks: run 2026-09-21, two of three done.** Evidence:
+[`bench-runs/2026-09-21-labbox-t0.0-box-checks.txt`](bench-runs/2026-09-21-labbox-t0.0-box-checks.txt).
+Both held files are now on `main`, so T0.0 is closed.
 
-1. **Does the Aria calibration file parse?** From `~/rcp-Gappler`:
-   `.venv/bin/python -c "from projectaria_tools.core.calibration import device_calibration_from_json_string as f; print(f(open('src/services/aria_device/calibration/aria_factory_calibration.json').read()).get_camera_calib('camera-rgb'))"`.
-   Done when it prints the RGB camera instead of raising.
-2. **Are these the same glasses?** With the glasses plugged in, read the serial from the `aria`
-   CLI and compare it with `1WM10350101291`, the serial in the file. If it differs, the file is for
-   another pair and only good as a parsing fixture.
-3. **Does `env.sh` work in `~/rcp-Gappler`?** `git show origin/realman_manip:env.sh > /tmp/env.sh`,
-   then in a fresh shell `source /tmp/env.sh && ros2 pkg list | grep -c moveit_task_constructor`.
-   `bench/build.sh` builds the arm workspace into a repo-root `install/` (`bench/build.sh:23`), the
-   layout `env.sh` assumes, so this should pass `[code]`. `env.sh` does not source `install_nav/`.
-   Also look at `anygrasp_node.sh` against T1.10 (see `NEXT_STEPS` §3.3).
+1. ✅ **The Aria calibration file parses** `[observed]`. All five cameras load, the RGB one as
+   Fisheye624, 2880x2880.
+2. **Still owed: are these the same glasses?** Skipped 2026-09-21, the glasses were not plugged in.
+   With them on USB, read the serial from the `aria` CLI and compare it with `1WM10350101291`, the
+   serial in the file. If it differs, the file is for another pair and only good as a parsing fixture.
+   Note the `aria` CLI is not on `rcp2026`'s PATH. Source `env.sh` first so the project `.venv` is active.
+3. ✅ **`env.sh` works in `~/rcp-Gappler`** `[observed]`. 5 `moveit_task_constructor` packages,
+   12 `rm_` packages, the `.venv` python. It must be sourced from the repo root (`source
+   ~/rcp-Gappler/env.sh`). A copy elsewhere now refuses with exit 1.
 
 **One paragraph (updated 2026-09-14):** the bench runs on the lab box in `~/rcp-Gappler`, and
 **tiers 0 through 3 are now complete**. Done there: tiers 0–1, preflight, Tier 2 for **both**
@@ -64,8 +63,8 @@ and crashes on SIGINT (CODE_AUDIT B2, B2a) · the state machine never returns to
 and homes to an unvalidated pose (B4) · all five nav nodes traceback on Ctrl+C (F4, new 2026-09-14) ·
 the approach node wedges after any nav failure (F1), a failed return leg can never be retried (F2) and
 `goto_glasses` reads a robot-relative pose as a map coordinate (E1) — **all three now `[observed]`, W7** ·
-`robot_navigation`, `xpkg_demo` and the livox `package.xml` are
-not in the repo (NEXT_STEPS §2.9, §3.1–3.2) · the AnyGrasp one-env recipe isn't in the repo and
+~~`robot_navigation`, `xpkg_demo` and the livox `package.xml` are
+not in the repo~~ in the repo since 2026-09-21 (T0.4) · the AnyGrasp one-env recipe isn't in the repo and
 `main.py` still uses `conda run` (NEXT_STEPS §2.5) · 10 hardcoded `/home/iot22` paths (§2.5).
 
 **The two pages (keep them current):** both are written for readers new to code, including mechanical
@@ -95,7 +94,7 @@ ROS channel is empty, so never skip that guard.
 | Model files | Copied into `~/rcp-Gappler` ✅. Long-term: one `assets/models/` folder (NEXT_STEPS §2.8) — later, with the reorg |
 | AnyGrasp env | **One env confirmed** (W5 survey): the project env + MinkowskiEngine etc. runs AnyGrasp. `iot22`'s conda is not used. Making it permanent is held |
 | Simulation | MoveIt with `mock_components` is allowed. `rm_driver` never. Private ROS channel always |
-| Robot config | Not edited by the bench. `bench/nodes/sim_arm.*` carries the simulated model (ORIENTATION §8.16); `bench/nodes/livox_package_ROS2.xml` the Livox manifest |
+| Robot config | Not edited by the bench. `bench/nodes/sim_arm.*` carries the simulated model (ORIENTATION §8.16). The Livox manifest moved out of the bench into `Navigation_Module/src/livox_ros_driver2/package_ROS2.xml` (T0.4, 2026-09-21) |
 | Writing | Dion's docs and pages: plain language, main point first, jargon only when needed and explained. Readers include mechanical engineering students. No em dashes, semicolons or emojis in pages |
 | Baselines | **Neither wanted** (Dion, 2026-09-11). The contracts snapshot keeps its `2d36a89-dirty` label — its content equals `3f37cab`'s, so re-taking it changes only the label. No static baseline (S1): the 7 known findings stay red |
 
@@ -693,3 +692,5 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-14 | Claude (Opus 5) + Dion | **Camera: attempted, not done** ([`bench-runs/2026-09-14-labbox-w6-camera-attempt.txt`](bench-runs/2026-09-14-labbox-w6-camera-attempt.txt)). With Dion's go-ahead the RealSense driver was started on private channel 78. The D435i was **already faulty**: depth opened, colour died with `VIDIOC_S_FMT errno=5`. `initial_reset:=true` then took it off the USB bus entirely, so it needs a physical replug (approved for ~2 h later). No frames recorded, nothing moved, no process left running. **New bench bug S4, fixed the same session:** preflight's `realsense-usb` PASSED that morning on this very camera, because it only grepped `lsusb` — and it matched any "Intel" line, so the box's AX201 Bluetooth adapter alone would have passed it `[code]`. Now two checks: `realsense-usb` (strict on `8086:0b3a` or a "RealSense" description) and a new `realsense-stream` that grabs one frame through `v4l2-ctl`, scoped by sysfs to the RealSense's own nodes so a stray webcam cannot satisfy it, and reporting a busy device as SKIP rather than PASS or FAIL. Verified: both SKIP on the Mac, and on the box `realsense-usb` FAILs with a replug hint while `realsense-stream` SKIPs. **The pass path and the colour-dead path are untested** until the camera is back. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Added three read-only box checks to the top of "Start here", from T0.0: does the Aria calibration file parse, are these the same glasses, and does `env.sh` work in `~/rcp-Gappler`. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Replaced "no fixes without asking" with fixes on branches through a PR into `main`. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Ran the T0.0 box checks. Calibration parses and `env.sh` works, both `[observed]`. The glasses serial check is skipped and still owed. The three-check block in "Start here" now shows the results. Evidence in `bench-runs/2026-09-21-labbox-t0.0-box-checks.txt`. |
+| 2026-09-21 | Claude (Opus 5) + Dion | T0.4: struck the "not in the repo" held finding. The Livox manifest moved from `bench/nodes/` into its package, and `bench/build.sh` copies it from there. |

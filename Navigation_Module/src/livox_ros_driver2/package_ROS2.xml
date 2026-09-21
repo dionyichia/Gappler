@@ -1,12 +1,8 @@
 <?xml version="1.0"?>
-<!-- Carried by the bench, not by the robot code. Upstream Livox-SDK/livox_ros_driver2 master's
-     package_ROS2.xml, fetched 2026-09-11. The repo's livox_ros_driver2/ ships only the ROS 1
-     template, and its package.xml is generated + gitignored (ORIENTATION 8.15), so a fresh clone
-     has no manifest and colcon skips the package. bench/build.sh nav copies this file to
-     Navigation_Module/src/livox_ros_driver2/package.xml when that file is missing.
-     [unverified] against iot22's generated copy (29 lines) - diff with
-     ~/rcp-old-ros-wkspace/src/livox_ros_driver2/package.xml on the box. The real fix (commit a
-     package_ROS2.xml) is robot code: a branch for review. -->
+<!-- The ROS 2 manifest template. Upstream Livox-SDK/livox_ros_driver2 master's package_ROS2.xml,
+     fetched 2026-09-11. build.sh:50 copies it to package.xml, which is generated and gitignored
+     (ORIENTATION 8.15). bench/build.sh nav does the same copy. Checked 2026-09-21: identical,
+     apart from this comment, to the package.xml iot22's working build generated. -->
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>livox_ros_driver2</name>
