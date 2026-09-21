@@ -36,18 +36,23 @@ and is a **required check on PRs from `dev` into `main`**. The rest of T0.11 is 
 | Piece | Where | State |
 |---|---|---|
 | `bench` job | `.github/workflows/bench.yml` | L0-L2 on GitHub's machines, every PR and push to `dev` or `main`. Required on both |
-| `bench-nightly` job | `.github/workflows/bench-nightly.yml` | Full bench on `dev`, Mon and Wed 23:00 Singapore time, plus the "Run workflow" button. `runs-on: [self-hosted, lab-box]`, `concurrency: lab-box`, `clean: false`. Never runs on a PR |
+| `full` job (2026-09-22, this branch) | `.github/workflows/bench.yml`, same file | `./bench/run.sh --no-skips` on the lab box. PRs into `main`, Mon and Wed 23:00 on `dev`, and the "Run workflow" button. Replaces `bench-nightly.yml`. Not yet run `[unverified]` |
+| ~~`bench-nightly` job~~ | ~~`.github/workflows/bench-nightly.yml`~~, merged into `full` on this branch | Full bench on `dev`, Mon and Wed 23:00 Singapore time, plus the "Run workflow" button. `runs-on: [self-hosted, lab-box]`, `concurrency: lab-box`, `clean: false`. Never runs on a PR |
 | The runner | `~/actions-runner` on the box, user `rcp2026`, name `iot22-Computer` | Runs in tmux session `gh-runner` (`tmux attach -t gh-runner`). **A reboot stops it**, restart with `cd ~/actions-runner && ./run.sh` in that tmux session |
 | The runner's copy | `~/actions-runner/_work/Gappler/Gappler` | Cleaned 2026-09-22 and on `dev` `0f87c89`. SAM3 weights and AnyGrasp checkpoints are **symlinks** to the files in `~/rcp-Gappler`. L2 there: 17 pass, 0 fail |
 
 **The work, in order:**
 
-1. **`--no-skips` in `bench/run.sh`.** Any SKIPPED level from L0 to L4 makes the run fail. L5-L6
+1. ✅ **Done 2026-09-22. `--no-skips` in `bench/run.sh`.** Any SKIPPED level from L0 to L4 makes the run fail. L5-L6
    (robot and hardware) stay allowed to skip, they never gate a merge.
-2. **A `full` job** for `pull_request` into `main`: `runs-on: [self-hosted, lab-box]`,
+2. ✅ **Done 2026-09-22. A `full` job** for `pull_request` into `main`: `runs-on: [self-hosted, lab-box]`,
    `concurrency: lab-box`, `timeout-minutes: 120`, `clean: false`, running `./bench/run.sh --no-skips`.
-   Copy the shape of `bench-nightly.yml`.
-3. **Make `full` required** in `main`'s branch protection (`gh api` on
+   Dion chose one file: `full` is a second job in `bench.yml` and also took over the nightly schedule
+   and the button, so `bench-nightly.yml` is gone. Each job's `if:` line picks its events.
+   Tested on the Mac only: `--no-skips` exits 1 when L3-L4 skip, the plain run still exits 0.
+3. **Next: run `full` once.** After this branch merges into `dev`, press "Run workflow" on the
+   Actions tab (branch `dev`), or wait for the next night. The button only appears once the workflow
+   is on `dev`. Then **make `full` required** in `main`'s branch protection (`gh api` on
    `repos/dionyichia/Gappler/branches/main/protection`). Do this only after the job has passed once,
    or every `dev` into `main` PR is blocked.
 4. **Test it** with a real `dev` into `main` PR. Record the run in `bench-runs/`.
@@ -795,3 +800,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-22 | Claude (Opus 5) + Dion | `env.sh` renamed `global_env.sh` (reorg step 7) in the current setup instruction. The 2026-09-21 check results keep the old name. |
 | 2026-09-22 | Claude (Opus 5) + Dion | "Start here": the refactor is done and verified. Points at `./build.sh`, `global_env.sh` and the path table. |
 | 2026-09-22 | Claude (Opus 5) + Dion | "Start here" opens with a cold-start block for finishing T0.11: branch `t0.11-ci-full-job`, the no-skips `full` job, what exists (both workflows, the runner in tmux, the cleaned runner copy with linked weights), the decided scope (fork-PR guard waived, suites deferred) and the gotchas. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T0.11 steps 1-2 done: `bench/run.sh --no-skips`, and the `full` job as a second job in `bench.yml`, which also took over the nightly schedule (`bench-nightly.yml` removed). Not yet run on the box. |
