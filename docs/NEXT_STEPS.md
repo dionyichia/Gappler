@@ -23,7 +23,7 @@ session · `[inferred]` reasoning, not fact · `[open]` genuinely undecided ·
 > [`next-steps-map.html`](next-steps-map.html)
 > (<https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>). Items here map onto task
 > IDs there — for example §2.5 is T0.3, §2.9 is T0.4, §2.2 is T2.0 and T2.1, §3.2 is T3.1, and
-> §3.3 is **T0.0, now the first task in the plan**.
+> §3.3 is **T0.0, done 2026-09-21**.
 
 ---
 
@@ -476,7 +476,13 @@ rule. Move them to `assets/models/{sam3,anygrasp}/`, gitignore that folder expli
 checksum list in [`ASSETS.md`](ASSETS.md), and make the code read one configurable path (ties into
 §2.5). Do it with the modular reorg, not before: `preflight.py`'s `assets` group must move with it.
 
-### 2.9 🔴 Important state lives outside git — decide what is needed, then bring it in
+### 2.9 🟠 Important state lives outside git — decide what is needed, then bring it in
+
+> ✅ **The four "Yes" rows are settled (T0.4, 2026-09-21).** `robot_navigation` and `xpkg_demo` are in
+> `Navigation_Module/src/`, and both build on the box `[observed]`. The Livox template is at
+> `livox_ros_driver2/package_ROS2.xml`. The map stays outside git on purpose (T0.3's
+> `GAPPLER_MAP_DIR`), with its location in [`ASSETS.md`](ASSETS.md). The rows below marked "Unclear",
+> "Unknown" and "Possibly" are still open.
 
 Dion, 2026-09-11. Things the robot needs were kept in folders no repo tracks. When `iot22`'s two
 project clones were copied to `rcp2026` and pushed, everything outside them was left behind — and
@@ -907,7 +913,7 @@ Nothing here is scheduled work until Dion adds it.
 
 ## 3. Bring-up (needs the lab machine)
 
-### 3.1 🔴 Find `xpkg_demo` — `Navigation_Module` cannot launch without it
+### 3.1 ✅ Find `xpkg_demo` — **in the repo since 2026-09-21 (T0.4)**, at `Navigation_Module/src/demo/demo_general_chassis/`
 
 `[code]` Both SLAM launch files include `bringup_basic_ctrl.launch.py` from a package `xpkg_demo`
 that is **not in this repo** (declared `exec_depend` in `robot_slam/package.xml:12`). `[inferred]`
@@ -939,7 +945,7 @@ No `install/` exists for it anywhere. Pure compile, touches no hardware, safe re
 ORIENTATION §8.15 and §2.6 item 4. Check `ls Navigation_Module/src/livox_ros_driver2/package*.xml`
 on the lab clone before booking time for this.
 
-### 3.3 🔴 Consolidate the `realman_manip` docs onto `main` — **this is now T0.0, the first task in the plan**
+### 3.3 ✅ Consolidate the `realman_manip` docs onto `main` — **T0.0, done 2026-09-21**
 
 > ➡️ **Promoted 2026-09-14 by Dion to first order of business.** It is `PROJECT_PLAN` **T0.0**, 3
 > hours, Dion, no dependencies. Full file-by-file table and the reasoning are there. This section
@@ -950,12 +956,12 @@ on the lab clone before booking time for this.
 | File | Decision | Why |
 |---|---|---|
 | `calibration.json` | ✅ **Taken**, as `src/services/aria_device/calibration/aria_factory_calibration.json` | Live mode reads calibration from the glasses (`aria_device_controller.py:240` → `main.py:110`), but the image and eye pipelines take it as a JSON string (`image_streaming_pipeline.py:96,163`). Without glasses this file is the only source, since playback mode is broken (`main.py:116`) and no `.vrs` recording is in the repo. It is for one pair of glasses, `1WM10350101291` |
-| `env.sh` | **Held** until the box check | No secrets. It sources ROS, the repo-root `install/` and `.venv`. `bench/build.sh:23` builds that same layout, but it is unchecked on the box |
-| `anygrasp_node.sh` | **Held** until the box check | See the two-node note below |
+| `env.sh` | ✅ **Taken 2026-09-21**, at the repo root, with a guard added | Box check passed `[observed]`: 5 `moveit_task_constructor` packages, 12 `rm_` packages, the project `.venv` python. It already derives `REPO_ROOT` from its own location, so no re-pointing was needed. A copy outside the repo used to exit 0 with nothing loaded. It now exits 1 with a message |
+| `anygrasp_node.sh` | ✅ **Taken 2026-09-21**, command unchanged, with a header comment | Both checkpoints sit at `perception/log/` in the box clone, the relative path it assumes `[observed]`. It is a record for T1.10, nothing calls it. See the two-node note below |
 | `RCP_NEW_USER_STARTUP_GUIDE.md` | ✅ **Taken** into `docs/archive/`, unchanged except a header marking it historical | Paths and IPs are stale, but `bench/` and four docs cite it by section. Citations repointed to the new path |
 | `docs/SETUP.md` | ✅ **Skipped** | Reviewed 2026-09-19. Everything in it is already covered by `CODE_AUDIT`, `ORIENTATION`, `TESTBENCH_PLAN` and this file. It stays readable on the branch |
 
-**What is left of T0.0:** the two held files, decided by the box checks at the top of `TESTBENCH_PLAN` "Start here". After that the branch can be treated as closed.
+**T0.0 is closed (2026-09-21).** All five files are decided and `realman_manip` is no longer treated as live. One box check is still owed: the calibration file's serial `1WM10350101291` has not been compared with the glasses, because they were not plugged in. Evidence: [`bench-runs/2026-09-21-labbox-t0.0-box-checks.txt`](bench-runs/2026-09-21-labbox-t0.0-box-checks.txt).
 
 **The two AnyGrasp nodes are two methods, not two cameras** `[code]`. Both subscribe to the same
 RealSense topics (`/camera/camera/color/image_raw`, `.../aligned_depth_to_color/image_raw`,
@@ -997,8 +1003,8 @@ git checkout origin/realman_manip -- \
 ⚠️ `docs/SETUP.md` lands in the shared `docs/` root, which `CLAUDE.md` forbids. **Move it into
 `docs/` in the same commit.**
 
-`env.sh` needs its `REPO_ROOT` re-pointed and its assumption of a repo-root `install/` re-checked
-on this clone. `calibration.json` is the Aria factory calibration dump for device
+~~`env.sh` needs its `REPO_ROOT` re-pointed and its assumption of a repo-root `install/` re-checked
+on this clone.~~ Wrong: it derives `REPO_ROOT` itself, and the `install/` layout checked out on the box (2026-09-21). `calibration.json` is the Aria factory calibration dump for device
 `1WM10350101291` — `main` has only the derived kalibr chains, and it doubles as an offline test
 fixture for calibration parsing.
 
@@ -1077,3 +1083,5 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-20 | Claude (Opus 5) + Dion | **Added §2.14: GPU budget, phase-gated model residency, and which HiCo-Nav models we need.** Target design is every process booted and idle with the models gated by phase, and the state machine subscribing to `/manipulation/start` as a real gate, which closes CODE_AUDIT B6. Key finding: navigation is the tight phase, not grasping, and a local Qwen3-Omni does not fit on a 16 GB card at all. MobileSAM is replaceable by SAM3, YOLO-World probably is not, CLIP needs an API check. The OOM risk is at the phase transition, not in either steady state. Four open threads recorded. Not yet in `PROJECT_PLAN` or the task map. |
 | 2026-09-20 | Claude (Opus 5) + Dion | §2.6b: CODE_AUDIT open question 5 answered, so the I1 row now names the owner (`ros2_robot_ws/src/main.py`) and the deletion (`orchestrator.py:69-74`). Five open questions left. §2.1: pointer to the HiCo-Nav cascade and §2.14. |
 | 2026-09-20 | Claude (Opus 5) + Dion | `T0.7` landed as [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md). §1.3 answered for the contract topics, §2.1 gains the decided phase-based trigger policy, §2.4 points at the frozen rename targets, §2.10's config question answered (one tree per subsystem plus a shared constants package), §4's scope conflict settled: return leg out, pose fusion parked. |
+| 2026-09-21 | Claude (Opus 5) + Dion | **§3.3 closed, T0.0 done.** Box checks run: the Aria calibration file parses, `env.sh` works unchanged in `~/rcp-Gappler`, glasses serial skipped (not plugged in). Took `env.sh` (plus a guard against sourcing a copy outside the repo) and `anygrasp_node.sh` (plus a header comment). Struck the claim that `env.sh` needs `REPO_ROOT` re-pointed. Evidence in `bench-runs/2026-09-21-labbox-t0.0-box-checks.txt`. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §2.9 and §3.1: T0.4 done. `robot_navigation` and `xpkg_demo` in the repo, Livox template in its package, map recorded in `ASSETS.md` rather than committed. §2.9 drops from 🔴 to 🟠, the unclear rows stay open. |

@@ -20,4 +20,5 @@ OWNED_PREFIXES = (
     "Navigation_Module/src/robot_slam/",
     "Navigation_Module/src/simple_teleop/",
     "Navigation_Module/src/echo_plus_driver/",
+    "Navigation_Module/src/robot_navigation/",
 )
