@@ -29,7 +29,8 @@ and is a **required check on PRs from `dev` into `main`**. The rest of T0.11 is 
 
 - **Fork-PR guard: waived for now** (Dion, 2026-09-22). The repo is public and stays so until
   GitHub Pro. Revisit when it goes private.
-- **Per-subsystem suites: deferred** to a later branch.
+- **Per-subsystem suites: paused until a need arises** (Dion, 2026-09-22). L0-L2 take about 30 s,
+  so splitting them by subsystem saves nothing. Every lab box run is the full L0-L4.
 
 **What already exists** `[observed]`:
 
@@ -801,3 +802,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-22 | Claude (Opus 5) + Dion | "Start here": the refactor is done and verified. Points at `./build.sh`, `global_env.sh` and the path table. |
 | 2026-09-22 | Claude (Opus 5) + Dion | "Start here" opens with a cold-start block for finishing T0.11: branch `t0.11-ci-full-job`, the no-skips `full` job, what exists (both workflows, the runner in tmux, the cleaned runner copy with linked weights), the decided scope (fork-PR guard waived, suites deferred) and the gotchas. |
 | 2026-09-22 | Claude (Opus 5) + Dion | T0.11 steps 1-2 done: `bench/run.sh --no-skips`, and the `full` job as a second job in `bench.yml`, which also took over the nightly schedule (`bench-nightly.yml` removed). Not yet run on the box. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T0.11: per-subsystem suites paused until a need arises (L0-L2 take about 30 s). T0.11 closes once `full` is required on `main` and has passed on a real `dev` into `main` PR. |
