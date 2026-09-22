@@ -213,7 +213,8 @@ All of these were decided by Dion. Each names where the detail lives.
 - **T-2. Dion keeps `T5.5` to `T5.7`**, the calibration and localisation-error work. Answers
   `PROJECT_PLAN` D2.
 - **T-3. Buy a replacement wrist camera** if the D435i does not survive a replug. Replacements are
-  available `[reported]`. Answers `PROJECT_PLAN` D8.
+  available `[reported]`. Answers `PROJECT_PLAN` D8. **Not needed so far:** the D435i survived the
+  replug on 2026-09-22, colour and depth at 15 Hz `[observed]` (T0.12).
 - **T-4. Config: one tree per subsystem, with a shared constants package underneath.**
   `NEXT_STEPS` §2.10.
 - **T-5. This file is the single source** for the contract.
@@ -319,3 +320,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |
 | 2026-09-21 | Claude (Opus 5) + Dion | X7: `shared/config.yaml` renamed to `shared/global_config.yaml` (reorg step 2). |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T-3: the wrist D435i survived the replug (T0.12), so no replacement is needed so far. Same camera update in `testbench-map.html` and the task tree's 14 September note. |

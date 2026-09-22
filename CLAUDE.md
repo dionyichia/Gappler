@@ -74,6 +74,10 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
 - **Fixes go on branches for review** (Dion, 2026-09-19, replacing the 2026-09-11 "no fixes yet"
   rule). The project is in implementation. Each fix lands through a PR into `dev`
   (the default branch), where CI runs the bench. `dev` is promoted to `main` by PR.
+- **Branch names start with the task ID** (Dion, 2026-09-22), lower case, then a short
+  description: `t1.8-anygrasp-gate`, `t1.2-t1.3-estop-and-home-pose`. Anyone reading the branch
+  list should see which task it serves without opening it. Put the same ID at the start of the PR
+  title (`T1.8: ...`). If no task in `docs/task-tree.html` covers the work, add one there first.
 
 ## The lab machine
 

@@ -237,7 +237,7 @@ device. Passing librealsense's own documented `initial_reset` made it worse and 
 off the USB bus entirely, with no re-enumeration. It **needs a physical replug**, and whether it
 survives one is unknown `[observed]`. Until then there is no live mask for the arm and no recorded
 frames for anything. This touches T1.12, the M5 fallback and T6.2. It is now a named risk in §8.2
-and a new open decision, D8.
+and a new open decision, D8. **Update 2026-09-22:** the replug worked, see T0.12.
 
 **Two bench bugs found and fixed.** The glasses check used to pass with no glasses plugged in, and
 the camera check used to pass on the USB vendor id alone, matching even the Bluetooth adapter. Both
@@ -988,4 +988,7 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-22 | Claude (Opus 5) + Dion | T1.10: the AnyGrasp venv recipe moved to `grasp/anygrasp_venv/build_anygrasp_venv.sh`, and `grasp_env.sh` builds it on first use. The launcher still uses conda, which T1.10 still has to switch. |
 | 2026-09-22 | Claude (Opus 5) + Dion | T0.5 marked unblocked (clone `dev`, build, bench). T2.0 marked done, matching the tracker and `NEXT_STEPS` 2.2. T3.8 points at the nodes' new packages. `next-steps-map.html` updated and republished. |
 | 2026-09-22 | Claude (Opus 5) + Dion | **Task list condensed to one place.** The per-milestone task tables in §6 are gone. Their full text moved into `task-tree.html` (renamed from `next-steps-map.html`) as each task's notes, checked word by word so nothing was lost. §6 keeps how to read the tree, the longer write-ups and the critical path. Type counts corrected to 73 tasks. **T0.11 done:** `full` passed on PR #7 and is required on `main`. The per-subsystem suites and the fork-PR guard are recorded as deferred in §4.3. Map republished to the same link. |
+| 2026-09-22 | OpenCode (Muse Spark) + Sherman | T0.1 progress: D455 validated on the lab box — USB 3 link after a port/cable swap, ROS-driver color/depth/aligned-depth at ~30 Hz sustained over a 60 s bag. Earlier `hz` swings were a measurement artifact. `task-tree.html` T0.1 entry updated. Evidence: `docs/sherman_docs/T0.1_D455_VALIDATION.md`. |
+| 2026-09-22 | OpenCode (Muse Spark) + Sherman | **T0.1 done.** USB 3, live RGB-D, and ROS-driver delivery all evidenced on the lab box; no open verification items remain. `task-tree.html` T0.1 entry flipped to DONE. |
+| 2026-09-22 | Claude (Opus 5) + Dion | **T1.1 done.** All six code audit questions were already answered or parked on 2026-09-20. Two follow-ups raised with Dion, not yet decided: whether M1 grasps on the simple path or with AnyGrasp (T1.11 currently waits on T1.8 and T1.10), and who builds the `/manipulation/done` and `/manipulator/release` publishers. Parked on T1.8 (the first), T1.9 and T1.11 (the second). Map republished. |
 | 2026-09-22 | Claude (Opus 5) + Dion | **T0.12 done**: wrist camera recovered after the replug, recording and L4 replay added, A1 reproduced on real frames. The two camera risk rows marked resolved. New **T1.13** (start the wrist camera by serial). `task-tree.html` updated. |
