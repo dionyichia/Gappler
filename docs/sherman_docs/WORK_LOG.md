@@ -40,6 +40,19 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: T0.1 stream/USB gaps closed. Box left clean, no ROS processes running.
 - Next: T5.3 mount fabrication, then T5.5 LiDAR-camera calibration.
 
+## [2026-09-22] T1.2 | Remaining safety fixes done
+
+- Evidence: [`T1.2_SAFETY_FIXES.md`](T1.2_SAFETY_FIXES.md)
+- Verified: B1 launcher wording corrected (2 lines, zero behavior change; no phantom `q` promise left).
+  I1 orchestrator double-launch copy deleted behind a new failing-first L0 check
+  (`arm-bringup-single-launch`): RED with 2 sites, GREEN with 1. Full L0 (11 checks), L1, and
+  `./bench/run.sh quick` PASS.
+- Outcome: T1.2 complete. T1.6 still needs T1.4 and the solo Ctrl-C discipline.
+- Box 2026-09-22: isolated `~/rcp-t1.2` worktree — L3 build PASS, sim_moveit PASS, estop_delivery
+  PASS (plus Sherman direct run), nav_nodes PASS on re-run after one flake; state_machine_sim refused
+  by design with the arm powered. Weights linked per repo precedent; worktree removed after.
+- Next: Push + PR, then T1.4 physical setup at the box.
+
 ## Record Template
 
 ```markdown
