@@ -36,6 +36,7 @@ evidence into the shared documents.
 | [`T0.1_D455_VALIDATION.md`](T0.1_D455_VALIDATION.md) | D455 USB 3 link and ROS-driver stream evidence | When reviewing M0 camera acceptance |
 | [`T1.2_SAFETY_FIXES.md`](T1.2_SAFETY_FIXES.md) | B1 launcher wording + I1 double-launch deletion evidence | When reviewing M1 pre-power safety |
 | [`T1.3_HOME_POSE.md`](T1.3_HOME_POSE.md) | Final T1.3 sim verdicts; original row retained; replacement pose still owed | When reviewing the arm home pose |
+| [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md) | T1.4 robot-side measurement plan; exact A–F sheet; cell half blocked | Before the physical safety visit |
 | [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md) | Reported D455 mount design and remaining fabrication evidence | Before fabricating the camera mount |
 
 ## Recording work
@@ -70,3 +71,4 @@ From [`../START_HERE.md`](../START_HERE.md) and the root `CLAUDE.md`:
 | 2026-09-16 | OpenCode (GPT-5.6 Terra) + Sherman | Added shared-source-of-truth rules and `WORK_LOG.md`. |
 | 2026-09-16 | OpenCode (GPT-5.6 Terra) + Sherman | Added the T0.9 base-identification and footprint record. |
 | 2026-09-22 | OpenCode (Muse Spark) + Sherman | Pointed T1.3 at the final verdict: original row retained, replacement pose still owed. |
+| 2026-09-22 | OpenCode (Muse Spark) + Sherman | Added T1.4 measurement-plan pointer; robot-side sheet now, cell half blocked. |

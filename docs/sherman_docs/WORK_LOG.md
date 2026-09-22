@@ -70,6 +70,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: `dev` keeps the original row. The decided-row change remains only in unmerged `t1.3-home-pose` / PR #18. Task-tree T1.3 is PROGRESS, not DONE.
 - Next: T1.4 physical setup, then a purpose-built candidate with joint-limit margin; replacement PR only after sim validation.
 
+## [2026-09-22] T1.4 | Measurement plan recorded on t1.4-physical-setup
+
+- Evidence: [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md)
+- Verified: plan only; no physical visit, no arm motion, no table/cell.
+- Outcome: exact A–F sheet recorded (base verification, static envelope, extrusion/mount, safety setup, camera identity, blockers). Task-tree T1.4 status untouched.
+- Next: lab visit for T1.4-now measurements; T1.4-cell stays blocked until a table exists.
+
 ## Record Template
 
 ```markdown
