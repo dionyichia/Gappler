@@ -48,6 +48,9 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   (`arm-bringup-single-launch`): RED with 2 sites, GREEN with 1. Full L0 (11 checks), L1, and
   `./bench/run.sh quick` PASS.
 - Outcome: T1.2 complete. T1.6 still needs T1.4 and the solo Ctrl-C discipline.
+- Box 2026-09-22: isolated `~/rcp-t1.2` worktree — L3 build PASS, sim_moveit PASS, estop_delivery
+  PASS (plus Sherman direct run), nav_nodes PASS on re-run after one flake; state_machine_sim refused
+  by design with the arm powered. Weights linked per repo precedent; worktree removed after.
 - Next: Push + PR, then T1.4 physical setup at the box.
 
 ## Record Template
