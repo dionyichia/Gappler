@@ -20,14 +20,12 @@ session · `[inferred]` reasoning, not fact · `[open]` genuinely undecided ·
 
 **Priority key:** 🔴 blocks other work · 🟠 needed for the HiCo-Nav milestone · 🟡 quality/debt
 
-> ➡️ **This file is the register of everything we *could* do. What we *will* do, in what order and
-> who owns it, is now in [`PROJECT_PLAN.md`](PROJECT_PLAN.md)** — 11 milestones and 70 tasks, mapped
-> onto the real capstone calendar from 2026-09-14 to 2027-04-18 (recess, exam period and winter break
-> excluded, the four official deadlines marked), with the three-way split validated, the scope
-> written down, and the cut list decided in advance. Visual version:
-> [`next-steps-map.html`](next-steps-map.html)
+> ➡️ **This file is the register of everything we *could* do, and why.** What we *will* do, in what
+> order and who owns it, is in [`PROJECT_PLAN.md`](PROJECT_PLAN.md): 11 milestones mapped onto the
+> capstone calendar from 2026-09-14 to 2027-04-18. **The tasks themselves (73) are listed in one
+> place, [`task-tree.html`](task-tree.html)**
 > (<https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>). Items here map onto task
-> IDs there — for example §2.5 is T0.3, §2.9 is T0.4, §2.2 is T2.0 and T2.1, §3.2 is T3.1, and
+> IDs there. For example §2.5 is T0.3, §2.9 is T0.4, §2.2 is T2.0 and T2.1, §3.2 is T3.1, and
 > §3.3 is **T0.0, done 2026-09-21**.
 
 ---
@@ -655,7 +653,14 @@ only the vendor half of it.
 
 **Specified 2026-09-21 in §2.15**, which also puts the full reorg in scope.
 
-### 2.12 🟡 CI: run the bench automatically on every push, once M0 is done
+### 2.12 ✅ CI: run the bench automatically on every push, **done 2026-09-22 (T0.10, T0.11)**
+
+**Status 2026-09-22.** Done. `bench` (L0-L2) runs on GitHub's machines for every PR and push to `dev`
+and `main`. `full` (L0-L4, no level skipped) runs on the lab box for PRs into `main`, on Monday and
+Wednesday nights on `dev`, and from the button. Both are required on `main`. First `full` run:
+[`bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt`](bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt).
+One bench suite per subsystem is deferred (`PROJECT_PLAN` §4.3). The text below is the original
+reasoning, kept for the record.
 
 Dion, 2026-09-16. Raised as a task rather than left as the "deferred, after this plan ends" item
 `PROJECT_PLAN.md` §4.3 used to call it — a running CI job now has real value once there is more
@@ -1391,3 +1396,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 marked done: all seven steps verified on the box. Post-merge cleanup of the nightly runner's copy recorded. |
 | 2026-09-22 | Claude (Opus 5) + Dion | Republished `next-steps-map.html` (T0.11, T2.1, T3.5, reorg row), `wiring-map.html` (new paths, folder and entry-point tables) and `testbench-map.html` (`./build.sh`). The republish owed since 2026-09-21 is done. |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 "Open": launchers marked settled (step 4), "one build or two" rewritten to today's two builds, with Zongzhe's MTC underlay question recorded as open and deferred. New "For Zongzhe" block (bridge nodes moved, stale `BUILD_WORKSPACES.md`, T0.3 items resolved, T0.5 unblocked). "For Sherman" gained the map folder setting and the nav build and env commands. `wiring-map.html`: the last four old launcher paths renamed, and "what is ours" now states the `vendor/` rule. Both HTML pages republished. |
+| 2026-09-22 | Claude (Opus 5) + Dion | Header now points at `task-tree.html` (renamed from `next-steps-map.html`) as the one task list. §2.12 marked done (T0.10, T0.11). |
