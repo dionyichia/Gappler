@@ -366,13 +366,13 @@ def g_env() -> list[Check]:
     else:
         cs.append(c.skip("no .venv in this clone -- run `uv sync`"))
 
-    # AnyGrasp's env is envs/anygrasp/.venv, built on top of .venv by envs/anygrasp/build.sh (W5).
+    # AnyGrasp's venv is grasp/anygrasp_venv/.venv, built on top of .venv by build_anygrasp_venv.sh (W5).
     c = Check("env", "anygrasp-env",
               "AnyGrasp needs MinkowskiEngine (CUDA extension) next to torch")
-    candidates = [REPO / "envs" / "anygrasp" / ".venv" / "bin" / "python", v / "bin" / "python"]
+    candidates = [REPO / "grasp" / "anygrasp_venv" / ".venv" / "bin" / "python", v / "bin" / "python"]
     found = [py for py in candidates if py.exists()]
     if not found:
-        cs.append(c.skip("no project venv yet -- run `uv sync`, then ./envs/anygrasp/build.sh"))
+        cs.append(c.skip("no project venv yet -- run `uv sync`, then ./grasp/anygrasp_venv/build_anygrasp_venv.sh"))
     else:
         py = found[0]
         rc, out = sh([str(py), "-c", "import MinkowskiEngine as ME;print(ME.__version__)"],
@@ -382,7 +382,7 @@ def g_env() -> list[Check]:
             cs.append(c.ok(f"MinkowskiEngine {out.strip()} in {where}"))
         else:
             cs.append(c.bad(f"MinkowskiEngine not importable from {where}",
-                            "build it: ./envs/anygrasp/build.sh (about 20 min)"))
+                            "build it: ./grasp/anygrasp_venv/build_anygrasp_venv.sh (about 20 min)"))
 
     return cs
 
