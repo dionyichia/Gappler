@@ -464,6 +464,34 @@ def check_generated_manifests() -> Result:
     return r
 
 
+def check_arm_bringup_single_launch() -> Result:
+    """arm_bringup.launch.py is launched from exactly one owned site.
+
+    T1.2/I1: the orchestrator and the grasp pipeline each launched
+    rm_bringup, yielding two rm_driver instances on one arm. AST (not grep),
+    so commented-out copies do not count.
+    """
+    r = Result("arm-bringup-single-launch",
+               "arm_bringup.launch.py is launched from exactly one owned site")
+    sites: list[str] = []
+    for p in walk(".py"):
+        if rel(p) == "bench/static.py":
+            continue  # this check names the file it looks for
+        try:
+            tree = ast.parse(p.read_text(errors="replace"))
+        except SyntaxError:
+            continue  # reported by check_python_syntax
+        r.n_checked += 1
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Constant) and n.value == "arm_bringup.launch.py":
+                sites.append(f"{rel(p)}:{n.lineno}")
+    owned_sites = [s for s in sites if owned(s)]
+    if len(owned_sites) != 1:
+        r.fail(f"arm_bringup.launch.py launched from {len(owned_sites)} owned sites "
+               f"(want exactly 1): {', '.join(sorted(owned_sites)) or 'none'}")
+    return r
+
+
 CHECKS = [
     check_python_syntax,
     check_undefined_names,
@@ -475,6 +503,7 @@ CHECKS = [
     check_launch_file_includes,
     check_install_targets_exist,
     check_generated_manifests,
+    check_arm_bringup_single_launch,
 ]
 
 

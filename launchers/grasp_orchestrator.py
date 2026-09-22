@@ -66,13 +66,6 @@ class Orchestrator(Node):
             Bool, "/manipulator/release", self._on_audio, 10
         )
 
-        self.get_logger().info("Launching rm_bringup...")
-        launch(
-            ["ros2", "launch", "arm_bringup", "arm_bringup.launch.py"],
-            label="rm_bringup",
-            delay=0.0,
-        )
-
         self.get_logger().info("Orchestrator ready")
 
     # ------------------------------------------------------------------
