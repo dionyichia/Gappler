@@ -230,13 +230,12 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
     <div><span class="k">Grasp finder (AnyGrasp)</span><span class="v"><b>Runs</b>in a test copy of the Python setup</span></div>
     <div><span class="k">Navigation software</span><span class="v"><b>Builds</b>all 10 parts compile, first time</span></div>
     <div><span class="k">Navigation programs</span><span class="v"><b>Work, until a drive fails</b>6 of 6 good-weather tests pass</span></div>
-    <div><span class="k">Camera</span><span class="v"><b>Needs replugging</b>off the USB bus since 14 Sep</span></div>
+    <div><span class="k">Camera</span><span class="v"><b>Working again</b>replugged 22 Sep, colour and depth at 15 Hz</span></div>
   </div>
 
   <h3>Next steps</h3>
   <ol class="next">
-    <li><div>Someone at the lab unplugs and replugs the camera's USB cable. <span class="who">It dropped off the bus on 14 Sep.</span></div></li>
-    <li><div>Record a few camera frames so the grasp finder can be tested. <span class="who">Depth first, then colour, then record.</span></div></li>
+    <li><div><s>Replug the camera and record frames for the grasp finder.</s> <span class="who">Done 22 Sep (T0.12): 10 s recorded, and <code>bench/anygrasp_replay.sh</code> replays it.</span></div></li>
     <li><div>Test at the robot with a person present. <span class="who">Dion schedules this.</span></div></li>
   </ol>
 </section>
@@ -281,11 +280,12 @@ footer{border-top:1px solid var(--line);margin-top:20px;padding:22px 0 0;font-si
             A check that passes when the thing is broken is the worst kind, so it now takes a real frame
             from the camera. Fixed the same day.</td>
           <td><span class="chip s-ok">Fixed</span></td></tr>
-        <tr><td><b>The camera is off the USB bus and needs replugging</b></td>
+        <tr><td><b><s>The camera is off the USB bus and needs replugging</s></b></td>
           <td>The colour picture was already broken when we started the camera on 14 Sep. The standard
             recovery, a software reset, made the camera disappear from the computer entirely. Someone at
-            the lab needs to unplug and replug its USB cable. No damage, and nothing else was affected.</td>
-          <td><span class="chip s-blocked">Needs a person</span></td></tr>
+            the lab needs to unplug and replug its USB cable. No damage, and nothing else was affected.
+            <b>Replugged 22 Sep and working:</b> colour and depth at 15 Hz (T0.12).</td>
+          <td><span class="chip s-ok">Fixed</span></td></tr>
         <tr><td><b>All five navigation programs crash on Ctrl+C</b> <span class="tag">F4</span></td>
           <td>Harmless while parked, just an error message on screen. The concern is pressing Ctrl+C while the
             base is driving: nothing cancels the drive target, so the base would keep going with the program
@@ -512,11 +512,11 @@ const STATES = {
 const CELLS = {
   machine:{t0:["na","Nothing to compare"],t1:["na","Nothing to check"],pf:["flag","Everything passes, but 10 file paths point into /home/iot22"],t2:["na","Build tools are installed"],t3:["na","Nothing to test"],t4:["na","Nothing to test"]},
   aria:{t0:["gap","What it receives is checked. What it sends isn't yet"],t1:["ok","Files readable, links work"],pf:["hw","Glasses unplugged, so this fails. The glasses software itself starts"],t2:["na","Nothing to build"],t3:["plan","No test designed yet"],t4:["plan","Voice commands recorded with the sensor data"]},
-  sam3:{t0:["ok","Its channels are checked"],t1:["ok","Files readable, links work"],pf:["ok","Model file present, graphics card works"],t2:["na","Nothing to build"],t3:["plan","No test designed yet"],t4:["plan","Replay recorded camera frames"]},
-  anygrasp:{t0:["ok","Its channels are checked"],t1:["ok","Files readable, links work"],pf:["blocked","Model files and licence pass. Only runs in a test copy of the Python setup"],t2:["na","Supplied ready-made"],t3:["plan","Needs recorded camera frames first"],t4:["plan","First real frame gives grip points"]},
+  sam3:{t0:["ok","Its channels are checked"],t1:["ok","Files readable, links work"],pf:["ok","Model file present, graphics card works"],t2:["na","Nothing to build"],t3:["ok","Replay test on recorded frames (bench/anygrasp_replay.sh)"],t4:["ok","Finds the box on real recorded frames (T0.12)"]},
+  anygrasp:{t0:["ok","Its channels are checked"],t1:["ok","Files readable, links work"],pf:["blocked","Model files and licence pass. Only runs in a test copy of the Python setup"],t2:["na","Supplied ready-made"],t3:["ok","Replay test on recorded frames (bench/anygrasp_replay.sh)"],t4:["flag","Grip points on real frames, but only while the arm is idle (A1, T0.12)"]},
   planner:{t0:["ok","Its channels and settings are checked"],t1:["flag","A start-up file launches a program that doesn't exist"],pf:["na","Can only be checked while running"],t2:["ok","Builds"],t3:["flag","One full grasp on the simulated arm, then stuck (C7)"],t4:["na","Moving the real arm is past the line"]},
   driver:{t0:["gap","Supplier's code. Only checked through what we send it"],t1:["ok","Emergency stop file readable"],pf:["hw","Arm cable unplugged, so these checks can't pass. Expected"],t2:["ok","Builds, with warnings"],t3:["flag","Stop is sent, but Ctrl+C is ignored (B2a)"],t4:["plan","Driver confirms the arm model, RM65-BI"]},
-  camera:{t0:["ok","Its channels and mount position are checked"],t1:["na","Supplier's software"],pf:["flag","The camera has dropped off the USB bus and needs replugging. The check that missed this is fixed"],t2:["na","Installed ready-made"],t3:["na","Provides inputs for other tests"],t4:["plan","Record 30 s of colour and depth"]},
+  camera:{t0:["ok","Its channels and mount position are checked"],t1:["na","Supplier's software"],pf:["ok","Replugged 22 Sep, colour and depth stream at 15 Hz. The check that once missed a dead camera is fixed"],t2:["na","Installed ready-made"],t3:["na","Provides inputs for other tests"],t4:["ok","10 s of colour and depth recorded, 22 Sep (T0.12)"]},
   nav:{t0:["ok","Its channels and positions are checked"],t1:["flag","Two packages missing. LiDAR setup file not saved"],pf:["hw","LiDAR unreachable. Saved map found"],t2:["ok","All 10 parts build. The LiDAR library was already installed"],t3:["flag","6 of 6 good-weather tests pass. Every failure path is broken (F1, F2, E1, F4)"],t4:["plan","Record LiDAR and positions"]},
   glue:{t0:["ok","Every start-up file entry is checked"],t1:["ok","Start-up files point at real programs"],pf:["ready","Lists running programs. Nothing running yet"],t2:["na","Nothing to build"],t3:["na","Never started here: they move the arm"],t4:["na","Past the line"]},
 };
@@ -556,7 +556,7 @@ const CHECKS = [
   ["arm joint readings",["driver"],"pf","Arm connected but sending no joint positions. Usually a wrong network address.","hw"],
   ["arm and LiDAR network",["nav","driver"],"pf","The computer needs network addresses for both the arm and the LiDAR on one port. The saved setting has neither.","hw"],
   ["map and base link",["nav"],"pf","Saved map missing, or the arm's position not linked to the base's.","ok"],
-  ["camera on USB",["camera"],"pf","The camera is not plugged in, or has dropped off the USB bus. Today it has dropped off and needs replugging.","flag"],
+  ["camera on USB",["camera"],"pf","The camera is not plugged in, or has dropped off the USB bus. Replugged 22 Sep, it is on the bus and streaming.","ok"],
   ["camera streams",["camera"],"pf","The camera is plugged in but cannot actually produce a picture. New on 14 Sep: the old check only looked for the camera in the list of USB devices, so it passed on a camera whose colour picture was dead. This one takes a real frame.","flag"],
   ["running programs",["glue"],"pf","Lists what is running before judging anything.","ready"],
   ["arm software build",["planner","driver"],"t2","Any arm software part that no longer builds. 22 of 22 pass (27 min, the lab computer's processor is slowed by heat).","ok"],
