@@ -30,7 +30,12 @@ pipeline cannot work as written.
 
 *Box 2026-09-11:* the `main` checkout on the machine (`~/rcp-github`, byte-identical to `main` @
 `2d36a89`) has the same line. The hardware-verified `~/rcp-desktop` has no
-`anygrasp_detection_node.py` at all. Behaviour still `[unverified]` — nothing has been run.
+`anygrasp_detection_node.py` at all.
+
+**`[observed]` 2026-09-22** (T0.12, `bench/anygrasp_replay.sh`, [`bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt`](bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt)): on a
+recorded wrist-camera bag, AnyGrasp published 154 candidate sets while `/pipeline_state` was IDLE
+and 0 while it was EXECUTING. The code is now at `grasp/anygrasp_node/anygrasp_detection_node.py:182`.
+Fixed by T1.8.
 
 ```python
 def synced_callback(self, rgb_msg: Image, depth_msg: Image):
@@ -897,3 +902,4 @@ publishers racing on the same three topics.
 | 2026-09-21 | Claude (Opus 5) + Dion | **B2 now `[observed]`**: the e-stop's SIGINT stop was lost in 0-5 of 5 trials across four box runs. **New B2c `[observed]`**: `estop.py` drops a key pressed while the previous one is being handled, so S then E fast can lose the e-stop. Both found by `bench/estop_delivery.sh`. `code-audit-page.html` not yet updated with either, still owed. |
 | 2026-09-21 | Claude (Opus 5) + Dion | **B2, B2a and B2c fixed** in `estop.py` (task T1.2) and confirmed on the box: five runs of `bench/estop_delivery.sh`, every key and every stop path delivered, `kill -INT` 25 of 25. The Ctrl+C and SIGINT cases are now required checks. `code-audit-page.html` still owes these updates. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-22 | Claude (Opus 5) + Dion | **A1 now `[observed]`** on real wrist-camera frames by the new L4 replay (T0.12). |

@@ -63,6 +63,14 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
   `/object_centroid_2d` on the real ROS domain. Isolate tests with `ROS_DOMAIN_ID` + `ROS_LOCALHOST_ONLY=1`.
   Other users (`iot22`, and other people logged in as `rcp2026`) share the box; localhost-only does
   not separate you from their processes — a unique, empty domain id does.
+- **The box's hardware is shared: check before you use it** (Dion, 2026-09-22). `rcp2026` is used by
+  three people. Before starting anything that uses a camera, the GPU, the arm, the glasses or the LiDAR,
+  check whether someone else is already using it:
+  `ps -eo pid,user,etime,args | grep -iE "realsense|rs_launch|ros2 launch|bench/run.sh|Runner.Worker"`,
+  `nvidia-smi`, `fuser /dev/video*`. If anyone is, stop and tell the user who and what, then wait.
+  **Never stop a process you did not start.** `pkill -u rcp2026 -f <pattern>` also hits other people's
+  work (on 2026-09-22 it stopped someone's camera driver mid-test). Start your processes with `setsid`
+  and stop them only by their own process group: `kill -INT -<pgid>`.
 - **Fixes go on branches for review** (Dion, 2026-09-19, replacing the 2026-09-11 "no fixes yet"
   rule). The project is in implementation. Each fix lands through a PR into `dev`
   (the default branch), where CI runs the bench. `dev` is promoted to `main` by PR.

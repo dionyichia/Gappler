@@ -22,7 +22,8 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 ### T0.11 is done (2026-09-22). The CI setup, for whoever maintains it
 
-**Next bench and CI work:** none open. T0.12 (AnyGrasp replay) waits on the wrist camera replug.
+**Next bench and CI work:** none open. T0.12 (AnyGrasp replay) is done, 2026-09-22: `./bench/anygrasp_replay.sh`
+replays a recorded wrist-camera bag through SAM 3 and AnyGrasp, and reproduces A1.
 Dion's next task is T1.1, the code audit's open questions.
 
 **What T0.11 delivered:** a `full` CI job that runs L0-L4 on the lab box with **no level skipped**,
@@ -128,7 +129,7 @@ Dion's standing instruction still holds: `~/rcp-Gappler` only, no real-world mov
 | W4a nav code vs `iot22` | ✅ repo newer; `robot_navigation`, `xpkg_demo` only outside git | [`…-w4a-nav-diff.txt`](bench-runs/2026-09-11-labbox-w4a-nav-diff.txt) |
 | W4b nav build | ✅ **PASS** 10/10 packages, 2 min 34 s. No blocker: Livox-SDK2 already installed | [`…-w4b-nav-build.txt`](bench-runs/2026-09-14-labbox-w4b-nav-build.txt) |
 | W5 AnyGrasp env | ✅ done 2026-09-21: `grasp/anygrasp_venv/build_anygrasp_venv.sh` (was `envs/anygrasp/build.sh`) rebuilds it from nothing, demo passes | [`…-w5-anygrasp-env.txt`](bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt) |
-| W6 AnyGrasp gate + replay | **now task T0.12.** Blocked on a replug. Dion approved starting the camera 2026-09-14; the D435i was already faulty (colour stream dead) and a hardware reset took it off the USB bus. No frames recorded | [`…-w6-camera-attempt.txt`](bench-runs/2026-09-14-labbox-w6-camera-attempt.txt) |
+| W6 AnyGrasp gate + replay | ✅ **done 2026-09-22 as task T0.12.** After the replug: 10 s bag recorded, replay PASS, segmentation and grasp detection work on real frames, **A1 reproduced** (154 candidate sets in IDLE, 0 in EXECUTING) | [`…-t0.12-anygrasp-replay.txt`](bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt) |
 | W7 nav node tests | ✅ **PASS first run**, no fix needed: 6 controls pass, 4 xfail reproduced (F1 ×2, F2, E1), 0 skipped. **E1, F1, F2 now `[observed]`**; new finding F4 | [`…-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt) |
 | W8 Tier 4 | now L6 (hardware), gated by the L5 robot check. The runs are tasks T1.6 onward | — |
 | Preflight glasses check | ✅ **fix confirmed on the box 2026-09-14**: `aria-sdk` now FAILs "aria CLI works, but no glasses are connected over USB". It used to wrongly PASS | `bench/preflight.py` |
@@ -317,6 +318,21 @@ in the repo builds the env from nothing and AnyGrasp prints `license passed` on 
 > rerun takes about 20 s on the box. `--clean` rebuilds everything, needed after changing torch, CUDA or the GPU.
 
 **W6 — AnyGrasp gate test** (A1, expected-fail) and perception replay. Needs W5 + frames.
+
+> ✅ **Done 2026-09-22 as task T0.12** ([`bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt`](bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt)). Someone replugged the camera and it works:
+> colour and depth at 15 Hz. Two parts, both in the repo:
+>
+> - `./grasp/tools/record_wrist_camera.sh [SECONDS]` starts the driver for the wrist D435i only (serial
+>   `243222074878`), records colour, aligned depth and their camera info to a bag, then stops the driver.
+>   The recording is `assets/recordings/wrist_camera/` (217 MB, gitignored, checksum in `ASSETS.md`).
+>   It refuses to start if any RealSense driver is already running, since the box is shared.
+> - `./bench/anygrasp_replay.sh` (L4) plays that bag on a loop through `sam3_ros_node` and
+>   `anygrasp_detection_node`, and publishes `/pipeline_state` as the state machine would: EXECUTING
+>   for 30 s, then IDLE for 30 s. Result: segmentation PASS (119 masks, 4.1 % of the image), detection
+>   PASS (154 candidate sets, 2.5 per second, top score 0.466), **A1 XFAIL**: all 154 sets came in IDLE,
+>   none in EXECUTING `[observed]`. When T1.8 fixes A1, this case turns XPASS.
+>
+> The 2026-09-14 note below is history.
 
 > **Attempted 2026-09-14 with Dion's go-ahead. Not done: no frames**
 > ([`bench-runs/2026-09-14-labbox-w6-camera-attempt.txt`](bench-runs/2026-09-14-labbox-w6-camera-attempt.txt)).
@@ -802,3 +818,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-22 | Claude (Opus 5) + Dion | T0.11: per-subsystem suites paused until a need arises (L0-L2 take about 30 s). T0.11 closes once `full` is required on `main` and has passed on a real `dev` into `main` PR. |
 | 2026-09-22 | Claude (Opus 5) + Dion | AnyGrasp venv recipe moved from `envs/anygrasp/` into the grasp subsystem: `grasp/anygrasp_venv/build_anygrasp_venv.sh` and `anygrasp_requirements.txt`, venv at `grasp/anygrasp_venv/.venv`. `grasp_env.sh` now builds it on first use (Dion's choice, about 20 min). Also: L2 `hardcoded-homes` now skips `install_nav/`, `build_nav/`, `log_nav/`. It failed the first `full` run on vendor Livox files there. The W5 write-up below keeps the old path as history. On the box the built venv was moved to the new path, with a link left at the old one in `~/rcp-Gappler` and in the runner copy. The AnyGrasp probe passes from the new path `[observed]`. |
 | 2026-09-22 | Claude (Opus 5) + Dion | T0.11 closed in "Start here": `full` passed on PR #7 and is required on `main`, evidence in `bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt`. Task pointer now names `task-tree.html` only. |
+| 2026-09-22 | Claude (Opus 5) + Dion | **T0.12 done.** Wrist camera back after the replug. New `grasp/tools/record_wrist_camera.sh` and L4 `bench/anygrasp_replay.sh` (in `run.sh`). Replay PASS, **A1 reproduced on real frames**. Evidence: `bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt`. |
