@@ -1138,12 +1138,17 @@ keeps merges manageable for everyone else.
 
 #### Open, decide in the PR that needs it
 
-- **Where the three launchers go.** Root `main.py`, `ros2_robot_ws/src/main.py` and
-  `orchestrator.py` start processes across subsystems. `CODE_AUDIT` I1 already says
-  `ros2_robot_ws/src/main.py` owns `background.launch.py`. Keep one launcher at the root.
-- **One build or two.** Today there are two builds (`ros2_robot_ws/src` + `arm/vendor` +
-  `grasp/vendor`, and `Navigation_Module/src` + `nav/vendor`) and two overlays (`install/`, `install_nav/`). colcon finds packages at any
-  depth, so one build from the repo root works. Nav could stay a separate build because it is slow.
+- ✅ **Where the three launchers go. Settled in step 4 (2026-09-21).** `launchers/start_grasp_pipeline.py`
+  and `launchers/grasp_orchestrator.py`, root `main.py` stays. Which launcher owns arm bring-up is
+  `CODE_AUDIT` I1, part of T1.2.
+- **One build or two. Two today, one question left for Zongzhe** (updated 2026-09-22). `./build.sh`
+  builds `arm/` and `grasp/` with their vendor code into `install/`, and `./build.sh nav` builds
+  `nav/` into `install_nav/`. `deps_ws/` and `ros2_robot_ws/install.sh` are gone, so MoveIt Task
+  Constructor now builds inside the arm overlay. **Open, deferred (Dion):** Zongzhe's
+  `zongzhe_docs/BUILD_WORKSPACES.md` "For Dion" item 2. With MTC in the same overlay, clearing a bad
+  `install/` rebuilds MTC too (10 to 15 minutes). Giving MTC its own underlay again would avoid
+  that. Not blocking: colcon is incremental, so ordinary rebuilds are fast either way. Raised with
+  Zongzhe 2026-09-22, see "For Zongzhe" below.
 - ~~Tell Zongzhe and Sherman before step 3.~~ Not needed: neither had open work, both are waiting on the refactor (Dion, 2026-09-21).
 
 #### For Sherman (nav), found during step 2, not changed
@@ -1169,8 +1174,32 @@ Left for the nav owner, part of `PROJECT_PLAN` T3.5. Checked 2026-09-21 `[code]`
   one is 203 lines with `robot_base_link`, the AMCL one 105 lines with `base_link`. Merging would bake
   in a choice between them. Decide the merge together with the question above. The six node scripts
   already moved out of `robot_slam` into one package each (§2.15 step 5).
+- **Where the saved maps are.** `paths.map_dir` in `shared/global_config.yaml`, default `~/maps`,
+  overridden by `GAPPLER_MAP_DIR`. On the lab box the existing map is under `/home/iot22/maps/`, so
+  set the variable there rather than editing the file `[code]`.
+- **Build and run nav after the refactor.** `./build.sh nav` builds into `install_nav/`, and
+  `source nav/nav_env.sh` (or `global_env.sh`) sets up a shell, nav overlay included.
 - **`slam_toolbox_localization.yaml:17`**, `map_file_name`, is commented out with a note: the launch
   file always overrode it. Delete it when next working on that file.
+
+#### For Zongzhe (graph, bridge nodes), after the refactor
+
+Checked 2026-09-22 `[code]`.
+
+- **The bridge nodes moved.** `robot_slam/scripts/` is gone. Each script is its own package in
+  `nav/`: `goal_reached/goal_reached_publisher.py`, `object_approach/object_approach_node.py`,
+  `goto_glasses/goto_glasses.py`, `pose_publisher/`, `qos_relay/`, `aria_image_relay/`.
+  `ros2 run robot_slam X.py` is now `ros2 run <package> X.py`. Line numbers did not change, so the
+  T3.8 cites (`CODE_AUDIT` F1, F4) still hold.
+- **`zongzhe_docs/BUILD_WORKSPACES.md` describes a build that no longer exists** (`deps_ws/`,
+  `install.sh`). The note `zongzhe_docs/NOTE_deps_ws_removed.md` asks Zongzhe to update or retire it.
+  The underlay question in it is still open, see "One build or two" above.
+- **T0.3's items for Dion, where they ended up.** The OpenVINS paths are now `paths.openvins_ws` in
+  `shared/global_config.yaml`, and the in-repo copy is `aria/vendor/open_vins/`, unused and a
+  deletion candidate (step 3). `install.sh` is deleted (step 4). AnyGrasp through `conda run` is
+  T1.10.
+- **T0.5 is unblocked.** Clone `dev`, not `main`: the refactor is on `dev` and has not been
+  promoted yet.
 
 ---
 
@@ -1361,3 +1390,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 7 done on the branch: `global_env.sh` plus one env file per subsystem, shared setup in `shared/`, nav's overlay now sourced. The refactor's seven steps are all done on the branch. |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 marked done: all seven steps verified on the box. Post-merge cleanup of the nightly runner's copy recorded. |
 | 2026-09-22 | Claude (Opus 5) + Dion | Republished `next-steps-map.html` (T0.11, T2.1, T3.5, reorg row), `wiring-map.html` (new paths, folder and entry-point tables) and `testbench-map.html` (`./build.sh`). The republish owed since 2026-09-21 is done. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 "Open": launchers marked settled (step 4), "one build or two" rewritten to today's two builds, with Zongzhe's MTC underlay question recorded as open and deferred. New "For Zongzhe" block (bridge nodes moved, stale `BUILD_WORKSPACES.md`, T0.3 items resolved, T0.5 unblocked). "For Sherman" gained the map folder setting and the nav build and env commands. `wiring-map.html`: the last four old launcher paths renamed, and "what is ours" now states the `vendor/` rule. Both HTML pages republished. |
