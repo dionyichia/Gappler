@@ -31,6 +31,15 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: Test the D455 under T0.1, then validate the completed design against the physical base before
   fabrication.
 
+## [2026-09-22] T0.1 | D455 ROS-driver validation
+
+- Evidence: [`T0.1_D455_VALIDATION.md`](T0.1_D455_VALIDATION.md)
+- Verified: D455 on USB 3 (5000M, serial `146222253541`) after a port/cable swap; ROS driver delivered
+  color, depth, and aligned depth at ~30 Hz sustained over a 60 s three-topic bag (2117/2273/2117 msgs).
+  Earlier `hz` swings were a measurement artifact. D435i moved to its own direct USB 3 port.
+- Outcome: T0.1 stream/USB gaps closed. Box left clean, no ROS processes running.
+- Next: T5.3 mount fabrication, then T5.5 LiDAR-camera calibration.
+
 ## Record Template
 
 ```markdown
