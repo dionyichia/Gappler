@@ -3,8 +3,8 @@
 # the SDK's detection demo on the SDK's example frame with our licence + checkpoint.
 # GPU inference only: no ROS, no robot, nothing published.
 #
-#   ./bench/anygrasp_env.sh [PYTHON]   default: first of envs/anygrasp/.venv, .venv
-#   Build envs/anygrasp/.venv with ./envs/anygrasp/build.sh
+#   ./bench/anygrasp_env.sh [PYTHON]   default: first of grasp/anygrasp_venv/.venv, .venv
+#   Build grasp/anygrasp_venv/.venv with ./grasp/anygrasp_venv/build_anygrasp_venv.sh
 #
 # Exit: 0 pass, 1 fail, 3 SKIPPED (no interpreter / no checkpoint -- never a pass).
 set -uo pipefail

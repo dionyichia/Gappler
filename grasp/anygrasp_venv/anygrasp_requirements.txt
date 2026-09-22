@@ -1,6 +1,6 @@
 # AnyGrasp's Python packages on top of the project env (.venv), pinned to the set that ran the
 # SDK demo on the lab box on 2026-09-11 (docs/bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt).
-# Installed by envs/anygrasp/build.sh. Not listed here: packages .venv already has (seen through a
+# Installed by grasp/anygrasp_venv/build_anygrasp_venv.sh. Not listed here: packages .venv already has (seen through a
 # .pth file and pinned to .venv's versions), MinkowskiEngine and pointnet2 (compiled from source),
 # graspnetAPI (installed with --no-deps: its metadata pins transforms3d 0.3.1 and the dead
 # 'sklearn' package).

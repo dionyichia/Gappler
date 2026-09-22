@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
-# Build the AnyGrasp Python env from nothing: envs/anygrasp/.venv (TESTBENCH_PLAN W5).
+# Build the AnyGrasp Python venv from nothing: grasp/anygrasp_venv/.venv (TESTBENCH_PLAN W5).
+# It compiles MinkowskiEngine and pointnet2 (CUDA) and installs anygrasp_requirements.txt.
+# grasp_env.sh runs this on its own the first time it finds no venv (moved from envs/anygrasp/build.sh 2026-09-22).
 #
 # The env sits on top of the project env (.venv) through a .pth file, so it shares .venv's torch
 # (CUDA build) and numpy 2 and adds only what AnyGrasp needs: MinkowskiEngine and pointnet2,
-# compiled here from the repo's own copies, plus the pinned packages in requirements.txt.
+# compiled here from the repo's own copies, plus the pinned packages in anygrasp_requirements.txt.
 # Recipe first run by hand on 2026-09-11: docs/bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt
 #
-#   ./envs/anygrasp/build.sh          reuse what is already built, fill in the rest
-#   ./envs/anygrasp/build.sh --clean  delete the env and build everything (about 20 min on the lab box)
+#   ./grasp/anygrasp_venv/build_anygrasp_venv.sh          reuse what is already built, fill in the rest
+#   ./grasp/anygrasp_venv/build_anygrasp_venv.sh --clean  delete the env and build everything (about 20 min on the lab box)
 #
 # Re-running is cheap: MinkowskiEngine and pointnet2 are compiled only if they do not already import
-# in envs/anygrasp/.venv, which is where they live once built. The package install always runs and
+# in grasp/anygrasp_venv/.venv, which is where they live once built. The package install always runs and
 # takes seconds when nothing changed. Use --clean after changing torch, CUDA or the GPU.
 #
 # Needs: .venv built (`uv sync`), uv, the CUDA toolkit (nvcc), libopenblas-dev, python3.10-dev.
@@ -23,7 +25,7 @@
 set -euo pipefail
 # Ask git which repo this script is in. set -e stops here outside a git clone.
 REPO="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
-HERE="$REPO/envs/anygrasp"
+HERE="$REPO/grasp/anygrasp_venv"
 ENV="$HERE/.venv"
 PROJECT_PY="$REPO/.venv/bin/python"
 UV="${UV:-$(command -v uv || echo "$HOME/.local/bin/uv")}"
@@ -32,7 +34,7 @@ BLAS_INC="${BLAS_INC:-/usr/include/x86_64-linux-gnu/openblas-pthread}"
 BLAS_LIB="${BLAS_LIB:-/usr/lib/x86_64-linux-gnu/openblas-pthread}"
 export MAX_JOBS="${MAX_JOBS:-8}"
 
-die() { echo "build.sh: $*" >&2; exit 1; }
+die() { echo "build_anygrasp_venv.sh: $*" >&2; exit 1; }
 case "${1:-}" in
   --clean) clean=1 ;;
   "")      clean=0 ;;
@@ -87,7 +89,7 @@ else
 fi
 
 echo "== pinned packages"
-"$UV" pip install -q --python "$ENV/bin/python" -c "$tmp/constraints.txt" -r "$HERE/requirements.txt"
+"$UV" pip install -q --python "$ENV/bin/python" -c "$tmp/constraints.txt" -r "$HERE/anygrasp_requirements.txt"
 "$UV" pip install -q --python "$ENV/bin/python" --no-deps graspnetAPI==1.2.10
 
 echo "== check: imports and the SDK demo"

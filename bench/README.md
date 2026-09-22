@@ -66,7 +66,7 @@ refused, 3 skipped — never a pass.
 | `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s` sent back to back, the Ctrl+C key and SIGINT (5 trials) all deliver? Every case is required since the 2026-09-21 fix | — |
 | `state_machine_sim.sh` | `grasp_state_machine` runs a full grasp cycle on the simulated arm; the test plays camera, detector and gripper | mock hardware; preflight's `arm-ping`/`arm-port` must not pass (Dion's exception in `CLAUDE.md`) |
 | `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 10 cases, 4 expected-fail (F1 ×2, F2, E1). Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
-| `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `envs/anygrasp/.venv`, built by `./envs/anygrasp/build.sh` | GPU only, no ROS |
+| `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `grasp/anygrasp_venv/.venv`, built by `./grasp/anygrasp_venv/build_anygrasp_venv.sh` | GPU only, no ROS |
 
 Tests that encode a CODE_AUDIT finding assert the *intended* behaviour and report **XFAIL** while the
 bug is there, **XPASS** once it isn't — then retag the finding.
