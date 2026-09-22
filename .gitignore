@@ -16,8 +16,8 @@ logs
 recordings
 tmp
 
-src/models/sam3/sam3.pt
-# colcon output (bench/build.sh)
+aria/aria_app/models/sam3/sam3.pt
+# colcon output (build.sh)
 /build/
 /install/
 /log/
@@ -34,9 +34,9 @@ src/models/sam3/sam3.pt
 *.engine
 *.h5
 assets/models/
-ros2_robot_ws/src/rm_mtc/src/perception/log/checkpoint_*.tar
+grasp/anygrasp_node/log/checkpoint_*.tar
 # ...except the Aria eye-tracking model: 11 MB, tracked since before this rule, loaded by the code
-!src/models/projectaria_eyetracking/weights.pth
+!aria/aria_app/models/projectaria_eyetracking/weights.pth
 # Recordings, bags, captured frames
 *.vrs
 *.bag
@@ -47,7 +47,7 @@ rosbag2_*/
 *.mp4
 frame_*.png
 gaze_recording_*
-src/output/
+aria/aria_app/output/
 # Archives
 *.zip
 *.tar.gz

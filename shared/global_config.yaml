@@ -1,0 +1,35 @@
+# Settings more than one subsystem reads. Each value is written once (NEXT_STEPS 2.15).
+# This is a ROS parameter file, so a launch file can pass it to any node as is.
+# Python outside ROS reads it through shared/gappler_common.py.
+/**:
+  ros__parameters:
+    # Some of these are only read inside aria. They move to aria/config in reorg step 4.
+    topics:
+      rgb_camera_raw: "/aria/rgb_camera/raw"
+      rgb_camera_undistorted: "/aria/rgb_camera/undistorted"
+      slam_left_raw: "/aria/slam_left/raw"
+      slam_right_raw: "/aria/slam_right/raw"
+      eye_tracking_raw: "/aria/eye_tracking/raw"
+      eye_tracking_gaze_estimate: "/aria/eye_tracking/gaze_estimate"
+      rgb_camera_with_object_masks: "/aria/rgb_camera/object_masks"
+      ros_camera_with_object_masks: "/realman/rgb_camera/object_masks"
+      combined_visualization: "/combined/object_masks"
+      feature_match_results: "/aria/rgb_camera/feature_match"
+      audio_transcription_prompt: "/aria/audio/prompt"
+      imu: "/aria/imu"
+      aruco_pose: "/aria/aruco_pose"
+      vio_pose: "/aria/vio_pose"
+      fused_pose: "/aria/fused_pose"
+      is_stationary: "/aria/is_stationary"
+
+    qos:
+      video:
+        reliability: "BEST_EFFORT"
+        history: "KEEP_LAST"
+        depth: 10
+
+    # Paths outside the repo. Each can be overridden per machine with GAPPLER_<NAME>,
+    # for example GAPPLER_MAP_DIR for map_dir. A relative path is from the repo root.
+    paths:
+      openvins_ws: "~/Ros2Workspaces/OpenVINS"   # an OpenVINS build outside this repo
+      map_dir: "~/maps"                          # saved SLAM maps (nav): current_map, completed_map

@@ -1,5 +1,10 @@
 # ORIENTATION
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **What this is:** the entry point for anyone — human or AI assistant — who has never seen this
 repo. It explains what the system is, how the code is laid out, what order to read it in, and
 which parts are currently connected versus severed.
@@ -92,7 +97,7 @@ a real bug, not by how untidy it looks.
 | 6 | `/object_centroid` vs `/object_centroid_2d` | a real 3D point vs pixel-plus-depth (§8.3) | rename the `_2d` one to say what it holds |
 | 7 | three × `main.py` + `orchestrator.py` | four entry points. Worse: `ros2_robot_ws/src/main.py:2` describes *itself* as "Main orchestrator", which is the other file's name | name each after what it launches |
 | 8 | `rm_65_config` / `rm_65_w_gripper_config` | arm without / with the gripper joints. Ours all use the gripper variant, but the vendor's `rm_bringup` launch files reference the plain one — so copy-pasting a launch snippet loads an arm with no gripper | — (vendor names) |
-| 9 | `Navigation_Module/src/base/` | comms packages, **not** the physical base's description (that is `src/urdf/`) | — |
+| 9 | `nav/vendor/base/` | comms packages, **not** the physical base's description (that is `nav/vendor/urdf/`) | — |
 
 `[code]` **Two of these have already produced defects**, which is the argument for the rule:
 
@@ -145,7 +150,7 @@ other half runs perfectly, which is the situation today (§6).
 | # | Subsystem | Hardware | Lives in | Runtime |
 |---|---|---|---|---|
 | A | **Perception** | Project Aria glasses — RGB cam, eye tracker, 7-mic array, IMU, stereo SLAM cams | `src/` | Python 3.10, `uv` venv at repo root |
-| B | **Grasp prediction** | none (pure inference on RealSense data) | `grasp_module/`, `ros2_robot_ws/src/rm_mtc/src/perception/` | Python 3.10, **separate conda env `anygrasp`** |
+| B | **Grasp prediction** | none (pure inference on RealSense data) | `grasp/vendor/` (AnyGrasp SDK, MinkowskiEngine), `grasp/anygrasp_node/` | Python 3.10, **separate conda env `anygrasp`** |
 | C | **Arm** | RealMan RM65 6-DOF arm, EG2-4B gripper, RealSense D435i on the wrist | `ros2_robot_ws/` | C++ / ROS 2 Humble |
 | D | **Mobile base** | Livox MID-360 LiDAR, differential drive base | `Navigation_Module/` | C++ / Python, ROS 2 Humble |
 | E | **Glue** | — | `main.py`, `ros2_robot_ws/src/orchestrator.py` | Python |
@@ -201,28 +206,30 @@ Top-level, with an honest note on whether you will ever need to touch each one.
 
 | Path | What it is | Will you edit it? |
 |---|---|---|
-| `src/` | **Subsystem A.** All Aria glasses code: streaming, eye tracking, ASR, LLM, SAM3, feature matching, pose fusion, OpenCV visualiser. | **Yes, a lot.** |
-| `ros2_robot_ws/` | **Subsystem C.** A ROS 2 colcon workspace. Mostly vendor code from RealMan. | Only `src/rm_mtc/` and the loose scripts at `src/`. |
-| `ros2_robot_ws/src/rm_mtc/` | **Ours.** The grasp state machine, MoveIt Task Constructor planner, and the perception nodes that bridge to AnyGrasp. | **Yes.** This is the heart of the arm logic. |
-| `ros2_robot_ws/src/rm_driver`, `rm_control`, `rm_description`, `rm_moveit2_config`, `rm_gazebo`, `rm_example`, `rm_arm_examples`, `rm_doc`, `rm_install` | RealMan's shipped vendor packages — driver, URDF model, MoveIt config, sim, docs, install scripts. | **No.** Read `rm_description`'s URDF when you need to know where the camera is mounted. |
-| `ros2_robot_ws/src/rm_ros_interfaces/` | 79 custom message definitions. Includes ours: `GraspCandidate.msg`, `GraspCandidateArray.msg`. | Only if you add a message. |
-| `ros2_robot_ws/src/eg2_4b_description/` | URDF for the gripper. | No. |
-| `Navigation_Module/` | **Subsystem D.** A second, separate colcon workspace: Livox driver, SLAM Toolbox + Nav2 config, base drivers, teleop, and the nodes that bridge nav ↔ manipulation. | **Yes** — this is where HiCo-Nav lands. |
-| `Navigation_Module/OpenVINS/` | Vendored visual-inertial odometry (upstream, ~3.4 M lines). Estimates the *glasses'* pose from their stereo cams + IMU. | **No.** Treat as a black box; we only consume its output topic. |
-| `grasp_module/` | **Subsystem B** source: AnyGrasp SDK + MinkowskiEngine. Build-time only — the runtime `.so` files live in `rm_mtc/src/perception/`. | **No.** Build once per machine, then forget. |
-| `deps_ws/` | A third colcon workspace holding **MoveIt Task Constructor** (vendored, not a submodule). A dependency of `rm_mtc`. | **No.** Build it, source it. |
-| `shared/config.yaml` | **The single source of truth for Aria-side topic names** — and only the Aria side: 16 of the 54 topics our code declares (§8.17). Read by `src/config/ros2.py`, which builds a `ROS2Topics` enum from it at import time. | **Yes**, when adding an Aria-side topic. |
-| `main.py` (root) | Top-level launcher: spawns `orchestrator.py` + the Aria app. | Yes — has hardcoded paths (§8.4). |
-| `assets/` | Vendor PDFs (arm + gripper manuals, in Chinese), a test image, gripper serial-debug tools. | No. Manuals are worth a skim. |
+| `aria/aria_app/` (was `src/`) | **Subsystem A.** All Aria glasses code: streaming, eye tracking, ASR, LLM, SAM3, feature matching, pose fusion, OpenCV visualiser. | **Yes, a lot.** |
+| `arm/` | **Subsystem C, the arm.** `estop/`, `rm_ros_interfaces/`, and RealMan's code in `vendor/`. Built together with `grasp/` by `./build.sh`. Replaced the `ros2_robot_ws/` workspace 2026-09-21. | `estop/` and `rm_ros_interfaces/` only. |
+| `launchers/` | `start_grasp_pipeline.py` (camera, arm bring-up, SAM3, AnyGrasp, state machine) and `grasp_orchestrator.py` (waits for the start-grasp message, then runs the pipeline). Were `ros2_robot_ws/src/main.py` and `orchestrator.py`. **Never launch either** (CLAUDE.md). | Yes. |
+| `grasp/` (was `ros2_robot_ws/src/rm_mtc/`) | **Ours.** One folder per node: `grasp_state_machine/` (with the MoveIt Task Constructor planner), `anygrasp_node/`, `segmentation/`, `grasp_viz/`, plus `grasp_interfaces/` (our messages) and `tools/`. | **Yes.** This is the heart of the arm logic. |
+| `arm/vendor/`: `rm_driver`, `rm_control`, `rm_description`, `rm_moveit2_config`, `rm_gazebo`, `rm_example`, `rm_arm_examples`, `rm_doc`, `rm_install` | RealMan's shipped vendor packages — driver, URDF model, MoveIt config, sim, docs, install scripts. | **No.** Read `rm_description`'s URDF when you need to know where the camera is mounted. |
+| `arm/rm_ros_interfaces/` | 79 custom message definitions. Includes ours: `GraspCandidate.msg`, `GraspCandidateArray.msg`. | Only if you add a message. |
+| `arm/vendor/eg2_4b_description/` | URDF for the gripper. | No. |
+| `nav/` (was `Navigation_Module/`) | **Subsystem D.** Built separately (`./build.sh nav`): SLAM Toolbox + Nav2 config, teleop, and the nodes that bridge nav ↔ manipulation. Livox driver and base drivers in `nav/vendor/`. | **Yes** — this is where HiCo-Nav lands. |
+| `aria/vendor/open_vins/` | **Unused, candidate for deletion** (`COLCON_IGNORE` note inside). Vendored visual-inertial odometry (upstream, ~3.4 M lines). Estimates the *glasses'* pose from their stereo cams + IMU. | **No.** Treat as a black box; we only consume its output topic. |
+| `grasp/vendor/anygrasp_sdk/`, `grasp/vendor/MinkowskiEngine/` | **Subsystem B** source: AnyGrasp SDK + MinkowskiEngine. Build-time only — the runtime `.so` files live in `grasp/anygrasp_node/`. | **No.** Build once per machine, then forget. |
+| `grasp/vendor/moveit_task_constructor/` | **MoveIt Task Constructor** (vendored, not a submodule). A dependency of `rm_mtc`. Was the separate `deps_ws/` workspace until 2026-09-21. | **No.** `bench/build.sh` builds it with the arm. |
+| `shared/global_config.yaml` | **Settings more than one subsystem reads** (renamed from `shared/config.yaml` 2026-09-21, `NEXT_STEPS` §2.15). Today: the Aria-side topic names, 16 of the 54 topics our code declares (§8.17), the video QoS, and machine paths outside the repo (`openvins_ws`, `map_dir`). A ROS parameter file. Read by `aria/aria_app/config/ros2.py`, which builds a `ROS2Topics` enum from it at import time. | **Yes**, when adding an Aria-side topic or a machine path. |
+| `shared/gappler_common.py` | **The one file that knows where the repo is.** `ROOT`, `config()` (reads `global_config.yaml`) and `path(name)` (a machine path, overridable with `GAPPLER_<NAME>`). `global_env.sh` (or a subsystem's own `<subsystem>_env.sh`) puts `shared/` on `PYTHONPATH`, so source it first. Added 2026-09-21. | Rarely. Import it instead of working out paths from `__file__`. |
+| `main.py` (root) | Top-level launcher: spawns `launchers/grasp_orchestrator.py` + the Aria app. | Yes. Paths come from `shared/gappler_common.py`. |
+| `assets/` | A test image, and in `assets/vendor/gripper/` the vendor PDFs (arm + gripper manuals, in Chinese) and gripper serial-debug tools. | No. Manuals are worth a skim. |
 | `README.md` (root) | **STALE — ignore it entirely.** It describes a different upstream project (`joshopp/aria_pkg`): ZeroMQ, YOLO `best.pt`, `start_interaction.py`. None of that exists in this code. | Delete it eventually. |
 | `pyproject.toml` / `uv.lock` | Subsystem A's Python deps. Three are forks pulled from GitHub: `rcp-LightGlue`, `rcp-projectaria_eyetracking`, `rcp-sam3`. | Rarely. |
 
-### Inside `src/` (subsystem A)
+### Inside `aria/aria_app/` (subsystem A, was `src/`)
 
 ```
-src/
+aria/aria_app/
 ├── main.py                    ← ENTRY POINT for everything Aria-side
-├── config/                    ← dataclasses of constants; ros2.py reads shared/config.yaml
+├── config/                    ← dataclasses of constants; ros2.py reads shared/global_config.yaml
 ├── schemas/                   ← plain data containers (ApplicationConfig, GazeEstimate)
 ├── utils/                     ← logging, iptables, keypress, terminal helpers
 ├── models/                    ← checkpoints. sam3.pt (3.4 GB) is gitignored; eyetracking weights are committed
@@ -249,49 +256,60 @@ src/
     └── playback_controller.py ← replay recorded sessions (marked TODO: broken)
 ```
 
-### Inside `ros2_robot_ws/src/rm_mtc/` (the arm logic we own)
+### Inside `grasp/` (the grasp logic we own, was `ros2_robot_ws/src/rm_mtc/`, split 2026-09-22)
 
 ```
-rm_mtc/
-├── launch/
-│   ├── background.launch.py         driver + URDF + control + move_group. NEEDS REAL ARM.
-│   ├── grasp_state_machine.launch.py the state machine
-│   └── mtc_sim_test.launch.py       ⚠️ `[unverified]` NAMES AN EXECUTABLE THAT IS NOT BUILT — §8.12
-├── src/
-│   ├── grasp_state_machine.cpp      ★ the arm's brain. IDLE→SELECTING→EXECUTING
-│   ├── mtc_planner.cpp / .hpp       MoveIt wrapper: moveToHome, moveCartesianStep, getCurrentPose
-│   ├── trivial_mtc.cpp              minimal MTC example
-│   └── perception/
-│       ├── sam3_ros_node.py         SAM3 on RealSense only, HARDCODED prompt "box"  (see §6)
-│       ├── anygrasp_detection_node.py  ★ RGB+depth+mask → /grasp_candidates
-│       ├── anygrasp_node.py         older tracking-based variant
-│       ├── dummy_mask_publisher.py  all-ones mask, for hardware tests without perception
-│       ├── grasp_viz.py             RViz markers for debugging
-│       ├── license/                 AnyGrasp licence — MACHINE-LOCKED (§9)
-│       └── *.so                     compiled AnyGrasp binaries
+grasp/
+├── grasp_state_machine/             ROS package (was rm_mtc)
+│   ├── launch/grasp_state_machine.launch.py   the state machine
+│   ├── include/grasp_state_machine/mtc_planner.hpp
+│   └── src/
+│       ├── grasp_state_machine.cpp  ★ the arm's brain. IDLE→SELECTING→EXECUTING
+│       ├── mtc_planner.cpp          MoveIt wrapper: moveToHome, moveCartesianStep, getCurrentPose
+│       └── trivial_mtc.cpp          minimal MTC example, not built
+├── grasp_interfaces/                ROS package: GraspCandidate, GraspCandidateArray (ours, split from rm_ros_interfaces)
+├── anygrasp_node/                   plain folder, run by path in the AnyGrasp env
+│   ├── anygrasp_detection_node.py   ★ RGB+depth+mask → /grasp_candidates
+│   ├── anygrasp_node.py             older tracking-based variant
+│   ├── license/                     AnyGrasp licence — MACHINE-LOCKED (§9)
+│   ├── log/                         checkpoints, gitignored
+│   └── *.so                         compiled AnyGrasp binaries, loaded from this folder
+├── segmentation/sam3_ros_node.py    SAM3 on RealSense only, HARDCODED prompt "box"  (see §6)
+├── grasp_viz/                       grasp_viz.py (RViz markers) + rviz_config.rviz
+├── tools/dummy_mask_publisher.py    CONSIDER DELETING: broken since the topic rename (NEXT_STEPS §2.3, T2.1)
+└── vendor/                          AnyGrasp SDK, MinkowskiEngine, MoveIt Task Constructor
+
+arm/arm_bringup/launch/arm_bringup.launch.py   driver + URDF + control + move_group. NEEDS REAL ARM.
+                                               (was rm_mtc/launch/background.launch.py)
 ```
 
-### Inside `Navigation_Module/src/` (subsystem D)
+### Inside `nav/` (subsystem D, was `Navigation_Module/src/`, one package per node since 2026-09-22)
 
 ```
-robot_slam/                    ← ours: the nav brain
-├── config/  slam_toolbox.yaml, nav2_params.yaml, slam.rviz
-├── launch/  slam_mapping.launch.py (build a map), slam_localization.launch.py (use one)
-└── scripts/
-    ├── object_approach_node.py     ★ object pose → Nav2 goal → /manipulation/start
-    ├── goto_glasses.py             ★ navigate to the user; return after grasp
-    ├── goal_reached_publisher.py   bridges /goal_pose topic → Nav2 action, reports outcome
-    ├── pose_publisher.py           TF map→robot_base_link → /robot_pose
-    ├── qos_relay.py                Livox publishes RELIABLE, laserscan needs BEST_EFFORT
-    └── aria_image_relay.py         CompressedImage → raw Image so RViz can show it
-livox_ros_driver2/, Livox-SDk2/   ← vendor LiDAR driver
-base/, drivers/, urdf/            ← vendor base: xpkg_comm, xpkg_msgs, xpkg_vehicle, xpkg_power, URDF
-simple_teleop/                    ← keyboard driving, 10 Hz cmd_vel
+robot_slam/                    ← launch + config: the SLAM Toolbox + Nav2 bring-up
+├── config/  slam_toolbox.yaml, slam_toolbox_localization.yaml, nav2_params.yaml, slam.rviz
+└── launch/  slam_mapping.launch.py (build a map), slam_localization.launch.py (use one)
+robot_navigation/              ← launch + config: Nav2 with AMCL on a saved image map (see NEXT_STEPS §2.15, For Sherman)
+object_approach/object_approach_node.py   ★ object pose → Nav2 goal → /manipulation/start
+goto_glasses/goto_glasses.py              ★ navigate to the user; return after grasp
+goal_reached/goal_reached_publisher.py    bridges /goal_pose topic → Nav2 action, reports outcome
+pose_publisher/pose_publisher.py          TF map→robot_base_link → /robot_pose
+qos_relay/qos_relay.py                    Livox publishes RELIABLE, laserscan needs BEST_EFFORT
+aria_image_relay/aria_image_relay.py      CompressedImage → raw Image so RViz can show it
+simple_teleop/                            keyboard driving, 10 Hz cmd_vel
+echo_plus_driver/
+vendor/livox_ros_driver2/, vendor/Livox-SDk2/   ← vendor LiDAR driver
+vendor/base/, vendor/drivers/, vendor/urdf/     ← vendor base: xpkg_comm, xpkg_msgs, xpkg_vehicle, xpkg_power, URDF
 ```
 
 ---
 
 ## 3. The three workspaces, and why builds are confusing
+
+> **Changed 2026-09-21 (reorg step 3, `NEXT_STEPS` §2.15).** Vendor code now sits in
+> `<subsystem>/vendor/`, and `deps_ws/` is gone. `./build.sh` (at the repo root) builds `arm/` and
+> `grasp/` into one `install/`, and `./build.sh nav` builds `nav/` into `install_nav/`. The text below describes the
+> layout before that move.
 
 There are **three separate colcon workspaces** in this repo: `ros2_robot_ws/`, `deps_ws/`,
 `Navigation_Module/`. Each has its own `src/` and produces its own `install/setup.bash`.
@@ -325,7 +343,7 @@ Follow this with the files open. Times are rough.
 
 | # | File | Why |
 |---|---|---|
-| 1 | `shared/config.yaml` | 20 lines. Every Aria-side topic name in one place. Read this first — it *is* the interface for that side. The other 38 owned topics are declared in the nodes themselves (§8.17). |
+| 1 | `shared/global_config.yaml` | 35 lines. Every Aria-side topic name in one place. Read this first — it *is* the interface for that side. The other 38 owned topics are declared in the nodes themselves (§8.17). |
 | 2 | `src/config/ros2.py` | Shows how that YAML becomes the `ROS2Topics` enum used everywhere. |
 | 3 | `docs/ORIENTATION.md` §5 | The full topic table below. Skim, don't memorise. |
 | 4 | `src/main.py` | The Aria entry point. Focus on `ProcessPipelineBuilder` (lines 30–113): each `add_*` method starts one subsystem. **Note which are commented out at 107–112.** |
@@ -367,9 +385,9 @@ You now know what starts what. Stop and make sure that's solid before Round 2.
 
 ### Skip entirely on a first pass
 
-`Navigation_Module/OpenVINS/`, `grasp_module/dependencies/MinkowskiEngine/`,
-`deps_ws/src/moveit_task_constructor/`, every `rm_*` package except `rm_mtc`, `src/archive/`,
-`assets/gripper/`, and the root `README.md`.
+Every `vendor/` folder (`aria/vendor/`, `arm/vendor/`, `grasp/vendor/`, `nav/vendor/`),
+`rm_ros_interfaces` except our two grasp messages, `src/archive/`,
+`assets/vendor/gripper/`, and the root `README.md`.
 
 ---
 
@@ -686,7 +704,7 @@ Two things the list below does not convey:
    `ros2_robot_ws/src/main.py` and `sam3_ros_node.py` all fail immediately.
 2. **One of them is not a path problem at all.** `src/main.py:303-304` launches OpenVINS from
    `~/Ros2Workspaces/OpenVINS/install/` — an external workspace **not in this repo** — while the
-   repo vendors OpenVINS source at `Navigation_Module/OpenVINS/` that has **never been built**.
+   repo vendors OpenVINS source at `aria/vendor/open_vins/` (was `Navigation_Module/OpenVINS/`) that has **never been built**.
    Which copy is authoritative is an open question, not a rename.
 
 `src/config/base.py` already computes `Settings.PROJECT_ROOT` correctly and `config/models.py:11`
@@ -804,7 +822,7 @@ Found by the naming audit (§0b). These are the same value defined independently
 — the pattern that produced the `dummy_mask_publisher` defect.
 
 **Already drifted:** `VIDEO_QOS` is defined canonically in `src/config/ros2.py:16-21`, built from
-`shared/config.yaml` with `depth: 10`, and imported by five modules. But
+`shared/global_config.yaml` with `depth: 10`, and imported by five modules. But
 `pose_fusion_node.py:62-66` **re-declares it under the same name with `depth=1`**. Editing the
 YAML will silently not affect pose fusion. Either import the shared one or rename the local one
 `POSE_FUSION_QOS` and say why the shallower queue is wanted.
@@ -836,8 +854,8 @@ was verified against running hardware. Most relevant to this section:
 - **The grasp path cannot work** — `anygrasp_detection_node.py:182` produces candidates only in
   IDLE, `grasp_state_machine.cpp:171` consumes them only in EXECUTING, and `USE_SIMPLE_EXECUTE`
   makes the whole path dead code so neither gate is exercised (§A).
-- **`main.py` promises an emergency-stop key that does not exist** (§B1), and `estop.py` may not
-  deliver its own message on Ctrl+C (§B2).
+- **`main.py` promises an emergency-stop key that does not exist** (§B1), and until 2026-09-21 `estop.py`
+  ignored Ctrl+C and could lose its own stop (§B2, B2a, B2c, fixed in T1.2).
 - **`HOME_JOINTS` changed** — joint4 by 176° — and §8.1's safety warning quotes the old values (§B4).
 - **Undefined behaviour** in the state machine's threading: one condition variable waited on with
   two different mutexes, and the centroid read without its lock (§C1, §C2).
@@ -978,7 +996,7 @@ This matters for planning because `NEXT_STEPS.md` §3.2 describes building `Navi
 "pure compile, touches no hardware, safe remotely" — a good remote task. It will not get as far as
 compiling.
 
-**To check:** `ls Navigation_Module/src/livox_ros_driver2/package*.xml` on the lab clone. If a
+**To check:** `ls nav/vendor/livox_ros_driver2/package*.xml` on the lab clone. If a
 `package.xml` is present there, it was generated locally by `build.sh` and simply never committed —
 in which case the fix is to commit `package_ROS2.xml` from upstream. `bench/static.py`
 (`generated-manifests`) checks this.
@@ -1052,13 +1070,13 @@ gazed object by geometry.
 
 ### 8.17 `[code]` Most channel names are not in the shared config
 
-`shared/config.yaml` is the interface for the Aria side and nowhere else. Measured 2026-09-13 with
+`shared/global_config.yaml` is the interface for the Aria side and nowhere else. Measured 2026-09-13 with
 `bench/contracts.py extract`, scope "code we own":
 
 | | Topics |
 |---|---|
 | Declared by code we own | 54 |
-| Named in `shared/config.yaml` | 16 |
+| Named in `shared/global_config.yaml` | 16 |
 | Declared in the node that uses them | 38 |
 
 The 38 split as: `Navigation_Module/` Python 15 (inline literals), `ros2_robot_ws/` Python 14
@@ -1069,7 +1087,7 @@ Proposed fix and its constraints: [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.10.
 
 Two things follow that are easy to miss:
 
-- **No C++ we own reads `shared/config.yaml`.** Checked 2026-09-13. The arm side cannot use the
+- **No C++ we own reads `shared/global_config.yaml`.** Checked 2026-09-13. The arm side cannot use the
   shared config even in principle without a YAML loader or ROS parameters, so "put it in the shared
   config" is not available as a fix for the four C++ topics, including
   `/rm_driver/set_gripper_position_cmd`.
@@ -1101,7 +1119,7 @@ written as four separate literals (`estop.py:25-26`, `orchestrator.py:49`,
 
 **⚠️ There is no base-mounted RGB-D camera on this robot.** The D435i is the only camera and it is
 on the moving wrist. `Navigation_Module` is LiDAR-only — no image topics anywhere in it. The
-`d455` files under `Navigation_Module/OpenVINS/src/open_vins/config/` are **stock upstream example
+`d455` files under `aria/vendor/open_vins/src/open_vins/config/` are **stock upstream example
 configs**, not evidence of hardware. See §10.
 
 ---
@@ -1237,3 +1255,12 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-19 | Claude (Opus 5) + Dion | §5 contract table: count corrected to eight topics. `/return_to_user/goal_reached` has no consumer today (orchestrator subscription commented out). `/manipulation/start` launches `main.py` as a process. Pointer to T0.7 as the future single source. Fixed the broken link to `sherman_docs/T0.2_SESSION.md`. |
 | 2026-09-20 | Claude (Opus 5) + Dion | §8.11b: the double `background.launch.py` launch now names its owner. CODE_AUDIT open question 5 is answered: `ros2_robot_ws/src/main.py` owns it, delete `orchestrator.py:69-74`. Pointer to the new `NEXT_STEPS.md` §2.14 on whether anything should launch processes mid-task at all. |
 | 2026-09-20 | Claude (Opus 5) + Dion | §5's nav ↔ manipulation table replaced by a pointer to the new [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md), which is now the single source for channel ownership, types, frames and QoS (T0.7, decision T-5). A four-line summary stays here for reading the rest of §5. |
+| 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |
+| 2026-09-21 | Claude (Opus 5) + Dion | `shared/config.yaml` is now `shared/global_config.yaml` (reorg step 2), all current-state mentions renamed. New row for `shared/gappler_common.py`, the path helper. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Vendor code moved to `<subsystem>/vendor/` (reorg step 3): §2 table, §3 (dated note), the skip list and five path cites updated. OpenVINS marked unused, candidate for deletion. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §2 repo map updated for reorg step 4: `aria/`, `arm/`, `grasp/`, `nav/`, `launchers/` rows, the three folder trees retitled. Older cites below still use old paths, see the pointer at the top. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2 grasp rows and the grasp folder tree updated for reorg step 5: `rm_mtc` split into `grasp_state_machine`, `grasp_interfaces`, `anygrasp_node`, `segmentation`, `grasp_viz`, `tools`, and `arm/arm_bringup`. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2 nav folder tree: one package per node (`object_approach`, `goto_glasses`, `goal_reached`, `pose_publisher`, `qos_relay`, `aria_image_relay`), `robot_slam` keeps launch and config. |
+| 2026-09-22 | Claude (Opus 5) + Dion | `assets/gripper/` is now `assets/vendor/gripper/` (reorg step 6). |
+| 2026-09-22 | Claude (Opus 5) + Dion | `env.sh` is now `global_env.sh`, which sources `aria/aria_env.sh`, `arm/arm_env.sh`, `grasp/grasp_env.sh` and `nav/nav_env.sh` (reorg step 7). |

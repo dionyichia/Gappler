@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>goal_reached</name>
+  <version>0.0.1</version>
+  <description>Bridges /goal_pose to the Nav2 NavigateToPose action and reports the outcome. Was a script in robot_slam until 2026-09-22.</description>
+  <maintainer email="you@email.com">Your Name</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav2_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

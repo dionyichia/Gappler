@@ -3,7 +3,7 @@
 # mock_components/GenericSystem: joint positions exist only in memory.
 # rm_driver is never started, and the script refuses to run if one exists.
 #
-#   ./bench/sim_moveit.sh        needs ./bench/build.sh to have passed
+#   ./bench/sim_moveit.sh        needs ./build.sh to have passed
 #
 # Isolation: private ROS channel (ROS_DOMAIN_ID, default 77) + localhost only.
 # Exit: 0 pass, 1 fail or refused, 3 SKIPPED (no build / no ROS -- never a pass).
@@ -13,7 +13,7 @@ DOMAIN="${BENCH_DOMAIN:-77}"
 CFG=rm_65_w_gripper_config
 
 [ -f /opt/ros/humble/setup.bash ] || { echo "SKIP: no ROS 2 Humble here"; exit 3; }
-[ -f "$REPO/install/setup.bash" ] || { echo "SKIP: no $REPO/install -- run ./bench/build.sh first"; exit 3; }
+[ -f "$REPO/install/setup.bash" ] || { echo "SKIP: no $REPO/install -- run ./build.sh first"; exit 3; }
 export ROS_DOMAIN_ID="$DOMAIN" ROS_LOCALHOST_ONLY=1
 set +u; source /opt/ros/humble/setup.bash; source "$REPO/install/setup.bash"; set -u
 cd "$REPO"; mkdir -p log

@@ -3,7 +3,7 @@
 Stdlib only; drives the target interpreter in subprocesses so one broken import cannot hide
 the others. Stage 1 imports every dependency separately. Stage 2 runs the SDK's own
 grasp_detection/demo.py on its example frame, in a scratch folder (log/anygrasp_probe/) that
-links in exactly what the robot's node uses: the perception folder's gsnet / lib_cxx builds,
+links in exactly what the robot's node uses: the anygrasp_node folder's gsnet / lib_cxx builds,
 its license/ folder and log/checkpoint_detection.tar. Headless (no --debug), GPU only.
 """
 import os
@@ -14,11 +14,12 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-PERCEPTION = REPO / "ros2_robot_ws/src/rm_mtc/src/perception"
-SDK_DET = REPO / "grasp_module/src/anygrasp_sdk/grasp_detection"
+PERCEPTION = REPO / "grasp/anygrasp_node"
+SDK_DET = REPO / "grasp/vendor/anygrasp_sdk/grasp_detection"
 SCRATCH = REPO / "log/anygrasp_probe"
-CANDIDATES = [REPO / "envs/anygrasp/.venv/bin/python", REPO / "log/w5/venv/bin/python",
-              REPO / ".venv/bin/python"]
+# grasp/anygrasp_venv/.venv is built by grasp/anygrasp_venv/build_anygrasp_venv.sh. The 2026-09-11 scratch env (log/w5/venv)
+# is no longer a candidate: the bench tests the env the repo can rebuild. Pass it explicitly to probe it.
+CANDIDATES = [REPO / "grasp/anygrasp_venv/.venv/bin/python", REPO / ".venv/bin/python"]
 
 # module, what it is, code printed on success
 IMPORTS = [
@@ -26,7 +27,7 @@ IMPORTS = [
     ("numpy", "numpy (AnyGrasp pins 1.21.2; the project env has 2.x)", "import numpy;print(numpy.__version__)"),
     ("MinkowskiEngine", "sparse-conv CUDA extension, built by hand", "import MinkowskiEngine as ME;print(ME.__version__)"),
     # torch first: it loads libc10.so, which the extension links against (as the real code does)
-    ("pointnet2", "AnyGrasp's CUDA op (grasp_module/src/anygrasp_sdk/pointnet2)", "import torch, pointnet2._ext;print('ok')"),
+    ("pointnet2", "AnyGrasp's CUDA op (grasp/vendor/anygrasp_sdk/pointnet2)", "import torch, pointnet2._ext;print('ok')"),
     ("open3d", "point clouds (pinned 0.18.0)", "import open3d;print(open3d.__version__)"),
     ("graspnetAPI", "GraspGroup data structure", "import graspnetAPI;print('ok')"),
     ("sklearn", "scikit-learn (pinned 1.3.2)", "import sklearn;print(sklearn.__version__)"),

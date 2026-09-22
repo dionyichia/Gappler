@@ -36,8 +36,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 EXCLUDE_DIRS = {
-    ".git", "install", "build", "log", "__pycache__", ".venv", "node_modules",
-    "OpenVINS", "MinkowskiEngine", "moveit_task_constructor", "anygrasp_sdk",
+    ".git", "install", "build", "log", "install_nav", "build_nav", "log_nav",
+    "__pycache__", ".venv", "node_modules",
+    "open_vins", "MinkowskiEngine", "moveit_task_constructor", "anygrasp_sdk",
     "archive",
 }
 
@@ -60,8 +61,8 @@ KNOWN_EXTERNAL = {
     "nav2_velocity_smoother", "nav2_smoother", "nav2_collision_monitor",
 }
 
-# ROS 1 packages. The Echo Plus base packages under Navigation_Module/src/base
-# and /drivers are dual-build (catkin + ament) vendor drops, so their package.xml
+# ROS 1 packages. The Echo Plus base packages under nav/vendor/base
+# and nav/vendor/drivers are dual-build (catkin + ament) vendor drops, so their package.xml
 # legitimately declares ROS 1 deps. Not a defect.
 ROS1_PKGS = {
     "roscpp", "rospy", "catkin", "message_generation", "message_runtime",
@@ -82,22 +83,22 @@ KNOWN_EXTERNAL |= {"rcutils", "rcl_interfaces", "rosbag2", "git", "apr"}
 # Code we own and will refactor (docs/ORIENTATION.md 2). Vendor findings are
 # still reported, but under a separate heading -- they are pre-existing
 # conditions of the vendor drops, not things this refactor caused.
-from _common import OWNED_PREFIXES   # noqa: E402 -- single source; edit there
+from _common import is_owned   # noqa: E402 -- single source; the rule lives there
 
 
 # Vendor trees that nonetheless sit inside a workspace WE build, so a defect in
 # them blocks our colcon run and is ours to solve even though we did not write it.
-BLOCKING_VENDOR = ("Navigation_Module/src/livox_ros_driver2/",)
+BLOCKING_VENDOR = ("nav/vendor/livox_ros_driver2/",)
 
 
 def owned(msg: str) -> bool:
     path = msg.split(":")[0].strip()
-    return path.startswith(OWNED_PREFIXES) or path.startswith(BLOCKING_VENDOR)
+    return is_owned(path) or path.startswith(BLOCKING_VENDOR)
 
 
-# Roots that end up on PYTHONPATH at runtime (ros2_robot_ws/src/main.py:120
-# puts src/ there explicitly; scripts dirs are added by ament install rules).
-IMPORT_ROOTS = ["src", "."]
+# Roots that end up on PYTHONPATH at runtime (main.py and launchers/start_grasp_pipeline.py
+# put aria/aria_app/ there explicitly; scripts dirs are added by ament install rules).
+IMPORT_ROOTS = ["aria/aria_app", "."]
 
 
 def is_excluded(p: Path) -> bool:

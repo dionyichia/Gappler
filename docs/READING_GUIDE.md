@@ -1,5 +1,10 @@
 # READING GUIDE — a guided walk through the codebase
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 A round-by-round walkthrough for someone who has never seen this repo and has no ROS 2 experience.
 [`ORIENTATION.md`](ORIENTATION.md) §4 lists *which* files to read; this file explains *what to
 notice in them* and why it matters.
@@ -43,7 +48,7 @@ When someone says "run main.py", always ask which one.
 **Goal:** be able to answer *"what starts what, and how do they find each other?"* Needs no
 hardware and no ROS install. Keep ARCHITECTURE L0 open beside you.
 
-### 1.1 `shared/config.yaml` — 20 lines, and it *is* the interface
+### 1.1 `shared/global_config.yaml` — 35 lines, and it *is* the interface
 
 Two naming conventions to absorb: **`/aria/*` came from the glasses**, **`/realman/*` came from
 the robot's camera**. Once you know that, any topic name tells you which camera produced it.
@@ -385,17 +390,18 @@ input, and `homeWithRetry` retries forever until it succeeds.
 AnyGrasp candidate-evaluation path is compiled but **not taken**. The arm does a blind 10 cm push
 and closes. `/grasp_candidates` is subscribed and unused in this mode.
 
-### 3.1 `estop.py` — 80 lines, read it *first*
+### 3.1 `estop.py` — 130 lines, read it *first*
 
-Three keys. `E` publishes `Stop(state=true)` to `/rm_driver/emergency_stop_cmd`, `R` the same with
-`state=false`, `S` an `Empty` to `/rm_driver/move_stop_cmd` (current motion only). Raw-terminal key
-reading at `:48-55`, so the stop only works while that window has focus.
+Four keys. `E` publishes `Stop(state=true)` to `/rm_driver/emergency_stop_cmd`, `R` the same with
+`state=false`, `S` an `Empty` to `/rm_driver/move_stop_cmd` (current motion only), `Q` quits. It reads
+single keys from its own terminal (`keys()`), so the stop only works while that window has focus.
 
-Two weaknesses before you ever rely on it, both CODE_AUDIT B2: it publishes and then immediately
-destroys the node (`:72-76`), and DDS may not have delivered by then — `orchestrator.py:121` sleeps
-1.5 s for exactly this reason and the e-stop does not; and the publisher is `depth=1` VOLATILE
-(`:25`), so a stop sent before `rm_driver` subscribes is dropped silently. Compare B1: the root
-`main.py` advertises a `q` stop key that does not exist.
+Leaving any other way sends an emergency stop first: Ctrl+C, closing the terminal, or a kill signal.
+Before exiting it waits for subscribers to confirm the stop (`wait_delivered()`). All of this was
+fixed on 2026-09-21 (CODE_AUDIT B2, B2a, B2c): before that, Ctrl+C did nothing, a killed e-stop lost
+its stop up to 100 % of the time, and a key pressed quickly after another could be dropped. One
+weakness remains: the publisher is `depth=1` VOLATILE, so a stop sent before `rm_driver` subscribes
+is dropped silently. Compare B1: the root `main.py` advertises a `q` stop key that does not exist.
 
 ### 3.2 `sam3_ros_node.py` — 197 lines
 
@@ -494,3 +500,6 @@ might that `return` at `:721` have been put there deliberately? ⬜ **open**
 | 2026-09-10 | Claude (Opus 5) + Dion | Created, capturing the Round 1 and Round 2 walkthroughs that previously existed only in a chat session. Round 1 questions answered and marked; Round 2 written but unread; Rounds 3-4 outlined. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Re-verified every line number in §2 against source after comments shifted them (`_setup_ros_node` 112→115, `run` 267→266, `_find_closest_mask` 499→501, `_find_matching_ros_mask` 527→532, seam #2 call 384→389; §2.7 and §2.8 Q1 follow). Added the missing cites in §2.2, §2.3 and §2.4. Round 2 Q2 and Q3 answered; Round 2 marked complete and the START HERE marker moved to Round 3. **Baseline:** §2's numbers are against the *working tree*, which in `object_recognition_pipeline.py` is 8 lines ahead of the last commit (the added comments); every other file cited is clean. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Round 3 written out in full (§3.1–3.6) from the walkthrough, replacing the five-line outline: per-file notes, the state machine's key lines as a table, and §3.6's "centroid-driven, not grasp-driven". **Corrected an error in the old outline**, which said `anygrasp_detection_node.py` runs during EXECUTING — it gates on `!= "IDLE"` (`:182`), i.e. only while IDLE, which is CODE_AUDIT A1. Line counts and anchors re-verified. §3.7 added with three open check questions. |
+| 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §1.1: the shared config is now `shared/global_config.yaml` (reorg step 2). It also holds machine paths now. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
