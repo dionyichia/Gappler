@@ -157,16 +157,16 @@ def main():
             return
         idle = n.spin_until(lambda: n.seen("IDLE", t0), 120)
         fails = log_count(r"Homing failed")
-        ok, dev = n.near(HOME_MAIN)
+        ok, dev = n.near(HOME_REALMAN)
         check("startup: homes, then publishes IDLE", idle and ok,
-              f"IDLE {'seen' if idle else 'not seen'}; joints {dev:.4f} rad from main's home; "
+              f"IDLE {'seen' if idle else 'not seen'}; joints {dev:.4f} rad from the decided home (realman_manip, CODE_AUDIT B4); "
               f"{fails} 'Homing failed' retries")
         if not idle:
             return
-        realman = n.near(HOME_REALMAN)[0]
+        main = n.near(HOME_MAIN)[0]
         R.append(("home pose actually used", "info", "INFO",
-                  "main's (joint4 0.0) -- unvalidated on the real arm, CODE_AUDIT B4" if ok else
-                  "realman_manip's" if realman else f"neither table row: {[round(x, 3) for x in n.joints()]}"))
+                  "realman_manip's" if ok else
+                  "main's (joint4 0.0) -- unvalidated on the real arm, CODE_AUDIT B4" if main else f"neither table row: {[round(x, 3) for x in n.joints()]}"))
 
         # ---- camera frames -----------------------------------------------------
         if not n.spin_until(lambda: n.has_tf("base_link", OPT), 5):

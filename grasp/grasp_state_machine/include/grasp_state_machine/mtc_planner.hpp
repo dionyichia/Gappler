@@ -42,14 +42,15 @@ private:
 
   const std::string ARM_GROUP = "rm_group";
 
-  // Home pose joint values (radians)
+  // Home pose joint values (radians) — T1.3 decided row (CODE_AUDIT B4,
+  // realman_manip values). Recalibrate before any powered run; trust neither set.
   const std::map<std::string, double> HOME_JOINTS = {
-      {"joint1", 0.0},    // 0 degrees
-      {"joint2", 0.0},    // 0 degrees
-      {"joint3", 0.7854}, // 45 degrees
-      {"joint4", 0.0},    // 0 degrees
-      {"joint5", 1.5708}, // 90 degrees
-      {"joint6", 1.5708}, // 90 degrees
+      {"joint1", -0.0175}, // -1 degree
+      {"joint2", -0.1745}, // -10 degrees
+      {"joint3", 0.7854},  // 45 degrees
+      {"joint4", -3.0718}, // -176 degrees
+      {"joint5", -1.6930}, // -97 degrees
+      {"joint6", -1.6057}, // -92 degrees
   };
 
   // Return pose joint values (radians)

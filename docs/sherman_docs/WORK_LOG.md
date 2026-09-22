@@ -53,6 +53,16 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   by design with the arm powered. Weights linked per repo precedent; worktree removed after.
 - Next: Push + PR, then T1.4 physical setup at the box.
 
+## [2026-09-22] T1.3 | Home pose decided row applied (code, Mac side)
+
+- Evidence: [`T1.3_HOME_POSE.md`](T1.3_HOME_POSE.md)
+- Verified (Mac): new L0 check `home-joints-decided` RED (5 joints differ) before the header edit,
+  GREEN after; full L0 (12 checks) clean. Sim expectation flipped to the decided row (runs on the
+  box only). Baseline banked in the evidence note; stale-warning verified absent; trivial_mtc copy
+  untouched per scope.
+- Outcome: Code change complete locally. Unpushed. Box rebuild + sim re-runs still owed.
+- Next: Push, box worktree rebuild, sim_moveit + state_machine_sim vs baseline, then PR.
+
 ## Record Template
 
 ```markdown

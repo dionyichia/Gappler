@@ -492,6 +492,44 @@ def check_arm_bringup_single_launch() -> Result:
     return r
 
 
+def check_home_joints_decided() -> Result:
+    """HOME_JOINTS in mtc_planner.hpp equals the T1.3-decided row (CODE_AUDIT B4).
+
+    T1.3: use the realman_manip values; trust neither set until recalibrated.
+    Regex on the HOME_JOINTS block only (C++ is not AST-parsed here), so the
+    RETURN_JOINTS block below it cannot leak in. Tolerance 1e-4 rad.
+    The decided row also lives in bench/nodes/test_state_machine_sim.py
+    (HOME_REALMAN) and test_sim_moveit.py — keep all three in sync by hand.
+    """
+    r = Result("home-joints-decided",
+               "arm home pose matches the validated record")
+    want = {"joint1": -0.0175, "joint2": -0.1745, "joint3": 0.7854,
+            "joint4": -3.0718, "joint5": -1.6930, "joint6": -1.6057}
+    p = REPO / "grasp/grasp_state_machine/include/grasp_state_machine/mtc_planner.hpp"
+    r.n_checked = 1
+    try:
+        txt = p.read_text(errors="replace")
+    except OSError:
+        r.fail(f"header not found: {rel(p)}")
+        return r
+    i = txt.find("HOME_JOINTS")
+    if i < 0:
+        r.fail("HOME_JOINTS block not found in mtc_planner.hpp")
+        return r
+    block = txt[i:txt.find("};", i)]
+    got = {m.group(1): float(m.group(2))
+           for m in re.finditer(r'\{"(joint[1-6])",\s*(-?[\d.]+)\}', block)}
+    missing = sorted(set(want) - set(got))
+    if missing:
+        r.fail(f"HOME_JOINTS missing joints: {', '.join(missing)}")
+        return r
+    bad = [f"{j} is {got[j]} (want {want[j]})" for j in sorted(want)
+           if abs(got[j] - want[j]) > 1e-4]
+    if bad:
+        r.fail("HOME_JOINTS differs from the decided row: " + "; ".join(bad))
+    return r
+
+
 CHECKS = [
     check_python_syntax,
     check_undefined_names,
@@ -504,6 +542,7 @@ CHECKS = [
     check_install_targets_exist,
     check_generated_manifests,
     check_arm_bringup_single_launch,
+    check_home_joints_decided,
 ]
 
 
