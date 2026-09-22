@@ -44,6 +44,9 @@ RETURN = [0.0, -0.2443, 2.3562, 0.0, -0.5585, 1.5708]    # mtc_planner.hpp RETUR
 FX, FY, CX, CY, W, H = 607.18, 606.92, 331.95, 250.13, 640, 480
 OFFSET_X = 55.0        # CENTROID_TARGET_OFFSET_X: a centroid here means "no lateral error"
 FAR, NEAR = 0.30, 0.15  # m; the code switches to EXECUTING below EXECUTE_DEPTH_THRESH_M = 0.18
+# Scenario sweep (T1.3 finding): env overrides for re-runs, defaults = recorded baseline.
+CY = float(os.environ.get("SM_CY", CY))
+FAR = float(os.environ.get("SM_FAR", FAR))
 OPT = "camera_color_optical_frame"
 TOL = 0.02  # rad
 
