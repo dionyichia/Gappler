@@ -827,7 +827,8 @@ NOT_TESTABLE_HERE = [
 # ===========================================================================
 
 HOME_PATH_RE = re.compile(r"/home/[A-Za-z0-9_.-]+/[^\s\"'`:,;(){}\[\]]*")
-HOME_SCAN_SKIP = {".git", "install", "build", "log", "bench", "docs", ".venv", "venv",
+HOME_SCAN_SKIP = {".git", "install", "build", "log", "install_nav", "build_nav", "log_nav",
+                  "bench", "docs", ".venv", "venv",
                   "node_modules", "__pycache__"}   # plus any <name>_docs/ folder, below
 HOME_SCAN_EXT = (".py", ".sh", ".yaml", ".yml", ".xml", ".json", ".launch", ".cfg")
 
