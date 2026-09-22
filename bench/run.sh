@@ -6,7 +6,7 @@
 #   L1  Contracts        no topic, frame or param name moved             any machine
 #   L2  Lab box check    preflight: can this machine run L3-L4?          any machine
 #   L3  Build            colcon build, arm and nav workspaces            needs ROS 2 Humble
-#   L4  Simulation       simulated arm, mock Nav2, e-stop, AnyGrasp env  needs ROS + L3
+#   L4  Simulation       simulated arm, mock Nav2, e-stop, AnyGrasp env + replay  needs ROS + L3
 #   L5  Robot check      preflight --hardware: is the robot there?      the lab box
 #   L6  Hardware         the real arm test. Never run by this script     a person at the robot
 #
@@ -84,7 +84,7 @@ else
   if [ "$arm" != PASS ]; then
     row L4 "Simulation" SKIPPED "arm build did not pass (see L3)"
   else
-    for t in sim_moveit estop_delivery state_machine_sim nav_nodes anygrasp_env; do
+    for t in sim_moveit estop_delivery state_machine_sim nav_nodes anygrasp_env anygrasp_replay; do
       s=$(step "L4  Simulation: $t" ./bench/$t.sh)
       row L4 "Sim: $t" "$s" ""
     done
