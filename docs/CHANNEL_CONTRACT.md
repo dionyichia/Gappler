@@ -14,7 +14,7 @@ type, change a frame, or add a channel that another subsystem reads, this file s
 yours to change and who you have to tell.
 
 **This file is the single source.** [`ORIENTATION.md`](ORIENTATION.md) §5, `PROJECT_PLAN` §3.5,
-[`next-steps-map.html`](next-steps-map.html) and [`wiring-map.html`](wiring-map.html) used to carry
+[`task-tree.html`](task-tree.html) and [`wiring-map.html`](wiring-map.html) used to carry
 their own copies of the handover list. They now point here.
 
 **Provenance tags** are the same as the rest of `docs/`: `[code]` read from source, `[reported]` a

@@ -11,7 +11,7 @@ refactored toward one-folder-per-node modular code.
 - **Global docs live directly in `docs/`** — they describe state shared by everyone, not one
   person's session: `ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`,
   `CHANNEL_CONTRACT`, `NEXT_STEPS`, `PROJECT_PLAN`, `TESTBENCH_PLAN`, `hico-nav/`, `bench-runs/`,
-  and the three published HTML pages (`next-steps-map.html`, `wiring-map.html`, `testbench-map.html`).
+  and the three published HTML pages (`task-tree.html`, `wiring-map.html`, `testbench-map.html`).
 - **Personal docs live in per-person folders**, `docs/<name>_docs/` — session notes, handoffs and
   evidence write-ups not yet folded into the shared docs above.
 
@@ -24,13 +24,14 @@ Rules:
   confirmed, a decision is settled), **update that doc directly, in the same session**, following
   its citation/tag/changelog conventions. Don't leave the correction in a personal folder waiting
   for someone else to notice.
-  - When a task tracked in `NEXT_STEPS.md` / `PROJECT_PLAN.md` is done, also update its entry in
-    `next-steps-map.html`'s task data (the `T` array): prefix the task's description with
+  - **Tasks live in one place: `docs/task-tree.html`'s task data (the `T` array).** `PROJECT_PLAN.md`
+    §6 explains how to read it but no longer repeats the tasks (since 2026-09-22). Add a new task
+    there. A task's optional 9th field holds its long notes. When a task is done, prefix the task's description with
     `"DONE <date>. ..."`. The page derives its done state (strikethrough, green mark) from that
     prefix on load for every viewer — it is not enough to just narrate completion in the markdown
     while the tracker still shows the task open.
   - If your tooling can publish Artifacts (the Claude Code `Artifact` tool), republish
-    `next-steps-map.html` (and any other HTML page you edited) after the edit so the live page
+    `task-tree.html` (and any other HTML page you edited) after the edit so the live page
     matches the file. If it can't, say in the doc's changelog that a republish is still owed, so the
     next session with publish access does it.
 - **Personal work** — plans, session notes, handoffs not yet ready to be shared fact — goes in your

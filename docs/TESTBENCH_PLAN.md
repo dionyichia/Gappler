@@ -20,11 +20,12 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 ## ▶ Start here — next session (updated 2026-09-22)
 
-### Next: finish T0.11, the no-skips `full` job (written 2026-09-22 for a cold start)
+### T0.11 is done (2026-09-22). The CI setup, for whoever maintains it
 
-**Branch:** `t0.11-ci-full-job`, cut from `dev` at `0f87c89` (the refactor, PR #5). Open the PR into `dev`.
+**Next bench and CI work:** none open. T0.12 (AnyGrasp replay) waits on the wrist camera replug.
+Dion's next task is T1.1, the code audit's open questions.
 
-**Goal of this branch:** a `full` CI job that runs L0-L4 on the lab box with **no level skipped**,
+**What T0.11 delivered:** a `full` CI job that runs L0-L4 on the lab box with **no level skipped**,
 and is a **required check on PRs from `dev` into `main`**. The rest of T0.11 is decided:
 
 - **Fork-PR guard: waived for now** (Dion, 2026-09-22). The repo is public and stays so until
@@ -37,7 +38,7 @@ and is a **required check on PRs from `dev` into `main`**. The rest of T0.11 is 
 | Piece | Where | State |
 |---|---|---|
 | `bench` job | `.github/workflows/bench.yml` | L0-L2 on GitHub's machines, every PR and push to `dev` or `main`. Required on both |
-| `full` job (2026-09-22, this branch) | `.github/workflows/bench.yml`, same file | `./bench/run.sh --no-skips` on the lab box. PRs into `main`, Mon and Wed 23:00 on `dev`, and the "Run workflow" button. Replaces `bench-nightly.yml`. Not yet run `[unverified]` |
+| `full` job (2026-09-22) | `.github/workflows/bench.yml`, same file | `./bench/run.sh --no-skips` on the lab box. PRs into `main`, Mon and Wed 23:00 on `dev`, and the "Run workflow" button. Replaces `bench-nightly.yml`. **Passed on its first run**, PR #7 (`dev` into `main`), every L0-L4 level PASS, 4.5 minutes incremental `[observed]` [`bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt`](bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt). Required on `main`, with `bench` |
 | ~~`bench-nightly` job~~ | ~~`.github/workflows/bench-nightly.yml`~~, merged into `full` on this branch | Full bench on `dev`, Mon and Wed 23:00 Singapore time, plus the "Run workflow" button. `runs-on: [self-hosted, lab-box]`, `concurrency: lab-box`, `clean: false`. Never runs on a PR |
 | The runner | `~/actions-runner` on the box, user `rcp2026`, name `iot22-Computer` | Runs in tmux session `gh-runner` (`tmux attach -t gh-runner`). **A reboot stops it**, restart with `cd ~/actions-runner && ./run.sh` in that tmux session |
 | The runner's copy | `~/actions-runner/_work/Gappler/Gappler` | Cleaned 2026-09-22 and on `dev` `0f87c89`. SAM3 weights and AnyGrasp checkpoints are **symlinks** to the files in `~/rcp-Gappler`. L2 there: 17 pass, 0 fail |
@@ -51,12 +52,10 @@ and is a **required check on PRs from `dev` into `main`**. The rest of T0.11 is 
    Dion chose one file: `full` is a second job in `bench.yml` and also took over the nightly schedule
    and the button, so `bench-nightly.yml` is gone. Each job's `if:` line picks its events.
    Tested on the Mac only: `--no-skips` exits 1 when L3-L4 skip, the plain run still exits 0.
-3. **Next: run `full` once.** After this branch merges into `dev`, press "Run workflow" on the
-   Actions tab (branch `dev`), or wait for the next night. The button only appears once the workflow
-   is on `dev`. Then **make `full` required** in `main`'s branch protection (`gh api` on
-   `repos/dionyichia/Gappler/branches/main/protection`). Do this only after the job has passed once,
-   or every `dev` into `main` PR is blocked.
-4. **Test it** with a real `dev` into `main` PR. Record the run in `bench-runs/`.
+3. ✅ **Done 2026-09-22. `full` ran and passed** on PR #7, a real `dev` into `main` PR (workflow run
+   35678486519). L0-L4 all PASS, L5 failed only because the arm was off, which never gates a merge.
+4. ✅ **Done 2026-09-22. `full` is required** in `main`'s branch protection, next to `bench`
+   (checked with `gh api repos/dionyichia/Gappler/branches/main/protection`).
 
 **Gotchas for whoever picks this up:**
 
@@ -68,8 +67,7 @@ and is a **required check on PRs from `dev` into `main`**. The rest of T0.11 is 
   (the Livox `package.xml`), or the nav build finds two packages with one name. Done once already, for
   the refactor.
 - **Timing:** a clean build plus L4 is about 40 minutes, an incremental one about 20.
-- **The first nightly since the refactor has not run yet.** Its result is the first proof that the
-  runner copy works in the new layout. Check it under the Actions tab.
+- **The runner copy works in the new layout.** The PR #7 run above was the first proof.
 
 ---
 
@@ -89,9 +87,8 @@ Both held files are now on `main`, so T0.0 is closed.
 
 **Work items live in the task tree, not here** (since 2026-09-21). This page records what the bench
 is, what it found and the evidence. Every open item it found is a task in
-[`next-steps-map.html`](next-steps-map.html) and [`PROJECT_PLAN.md`](PROJECT_PLAN.md) §6, so it can be
-seen, owned and ticked off in one place. Bench and CI tasks: **T0.11** (CI on the lab box, per-subsystem
-suites) and **T0.12** (AnyGrasp replay, was W6). Ownership is one rule, `is_owned` in `bench/_common.py` (since 2026-09-22): our code is everything except what sits under a folder named `vendor/`. Put third-party code under its subsystem's `vendor/`, and nothing in the bench needs editing when code moves. The refactor (target layout, config levels, env files) is **done and verified on the box, 2026-09-22**:
+[`task-tree.html`](task-tree.html), so it can be
+seen, owned and ticked off in one place. Bench and CI tasks: **T0.11** (CI on the lab box, done 2026-09-22) and **T0.12** (AnyGrasp replay, was W6). Ownership is one rule, `is_owned` in `bench/_common.py` (since 2026-09-22): our code is everything except what sits under a folder named `vendor/`. Put third-party code under its subsystem's `vendor/`, and nothing in the bench needs editing when code moves. The refactor (target layout, config levels, env files) is **done and verified on the box, 2026-09-22**:
 [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15, which also has the old-to-new path table. Build with `./build.sh`, set up a
 shell with `source global_env.sh` (or one `<subsystem>/<subsystem>_env.sh`).
 
@@ -804,3 +801,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-22 | Claude (Opus 5) + Dion | T0.11 steps 1-2 done: `bench/run.sh --no-skips`, and the `full` job as a second job in `bench.yml`, which also took over the nightly schedule (`bench-nightly.yml` removed). Not yet run on the box. |
 | 2026-09-22 | Claude (Opus 5) + Dion | T0.11: per-subsystem suites paused until a need arises (L0-L2 take about 30 s). T0.11 closes once `full` is required on `main` and has passed on a real `dev` into `main` PR. |
 | 2026-09-22 | Claude (Opus 5) + Dion | AnyGrasp venv recipe moved from `envs/anygrasp/` into the grasp subsystem: `grasp/anygrasp_venv/build_anygrasp_venv.sh` and `anygrasp_requirements.txt`, venv at `grasp/anygrasp_venv/.venv`. `grasp_env.sh` now builds it on first use (Dion's choice, about 20 min). Also: L2 `hardcoded-homes` now skips `install_nav/`, `build_nav/`, `log_nav/`. It failed the first `full` run on vendor Livox files there. The W5 write-up below keeps the old path as history. On the box the built venv was moved to the new path, with a link left at the old one in `~/rcp-Gappler` and in the runner copy. The AnyGrasp probe passes from the new path `[observed]`. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T0.11 closed in "Start here": `full` passed on PR #7 and is required on `main`, evidence in `bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt`. Task pointer now names `task-tree.html` only. |
