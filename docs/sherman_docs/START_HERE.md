@@ -33,6 +33,7 @@ evidence into the shared documents.
 | [`WORK_LOG.md`](WORK_LOG.md) | Chronological index of Sherman's sessions, outcomes, and next actions | At the start or end of every session |
 | [`T0.2_SESSION.md`](T0.2_SESSION.md) | Evidence for the T0.2 network-switch proof | When reviewing M0 network evidence |
 | [`T0.9_BASE_FOOTPRINT.md`](T0.9_BASE_FOOTPRINT.md) | Reported base identity and pending footprint-measurement record | Before measuring or changing the navigation footprint |
+| [`T0.1_D455_VALIDATION.md`](T0.1_D455_VALIDATION.md) | D455 USB 3 link and ROS-driver stream evidence | When reviewing M0 camera acceptance |
 | [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md) | Reported D455 mount design and remaining fabrication evidence | Before fabricating the camera mount |
 
 ## Recording work
