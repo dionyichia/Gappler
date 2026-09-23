@@ -212,3 +212,6 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 | 2026-09-19 | Claude (Opus 5) + Dion | Replaced the "no fixes yet" rule. Fixes now go on branches, through a PR into `main`. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Tier wording changed to bench Levels, with the old-to-new mapping so older docs still read correctly. |
 | 2026-09-20 | Claude (Opus 5) + Dion | Added `CHANNEL_CONTRACT.md` to the global docs, the single source for channel ownership (T0.7). |
+| 2026-09-21 | Claude (Opus 5) + Dion | Fixes now go through a PR into `dev`, the new default branch. |
+| 2026-09-21 | Claude (Opus 5) + Zongzhe | Added `MEMORY_GRAPH_DESIGN.md` to the global docs: the anchor-object graph specified ahead of M6's T6.3. Proposed only, nothing built. |
+| 2026-09-22 | Claude (Opus 5) + Dion | `next-steps-map.html` renamed `task-tree.html`, same published link. It is now the one task list. `PROJECT_PLAN` §6 no longer repeats the tasks. |
