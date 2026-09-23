@@ -31,6 +31,9 @@ say — see `docs/START_HERE.md` rule 4 and the root `CLAUDE.md`.
 - [`../TESTBENCH_PLAN.md`](../TESTBENCH_PLAN.md) — lab test evidence and safe bench procedures.
 - [`../task-tree.html`](../task-tree.html) — the one task list (73 tasks). Edit tasks there, in
   the `T` array, and republish it after a change.
+- [`grasp-pipeline-explainer.html`](grasp-pipeline-explainer.html): how the arm grasps, end to end:
+  the six programs, the state machine step by step, the simple path versus AnyGrasp, and the open
+  decisions. Start here before any grasp work (T1.x).
 
 ## Recording work
 
