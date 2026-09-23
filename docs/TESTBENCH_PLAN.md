@@ -518,15 +518,22 @@ ORIENTATION §8.16's decision (fix the config's simulated-arm launch, or keep it
 
 ## 3. Safety rules — non-negotiable for any session on the lab machine
 
+For an attended first-power, **no-motion** RM65 handshake, use the shared
+[`ARM_BRINGUP.md`](ARM_BRINGUP.md). It remains **unvalidated** until T1.6 evidence and Dion's
+review. The rules below were written before the 2026-09-21 layout move; current launch paths and
+the driver-only boundary are in the runbook.
+
 1. **Never launch** `grasp_state_machine` (directly or via `grasp_state_machine.launch.py`),
-   `ros2_robot_ws/src/main.py`, `ros2_robot_ws/src/orchestrator.py`, or root `main.py`. The state
+   `launchers/start_grasp_pipeline.py`, `launchers/grasp_orchestrator.py`, or root `main.py`. The state
    machine homes the arm within seconds, unprompted (ORIENTATION §8.1) — and to a **home pose that has
-   changed and never been validated** (CODE_AUDIT §B4). The orchestrator launches the arm stack
-   itself and `main.py` launches it a second time (CODE_AUDIT §I1).
+   changed and never been validated** (CODE_AUDIT §B4). T1.2 removed the orchestrator's duplicate
+   arm bring-up launch (`sherman_docs/T1.2_SAFETY_FIXES.md` §I1); the grasp pipeline still includes
+   the state machine and is not a no-motion launcher.
 2. **Never publish** to any `/rm_driver/*_cmd` topic, `/goal_pose`, `/cmd_vel`,
    `/manipulation/start`, `/manipulation/goal_pose`, or `/object_centroid_2d` on the real ROS domain.
    Each of those moves something, or triggers something that does.
-3. **`background.launch.py` connects to the real arm.** Not needed for anything in Phases 0–4.
+3. **`arm_bringup.launch.py` connects to the real arm.** It starts the driver, control, robot
+   description and MoveIt; T1.6's narrower procedure starts the driver only.
 4. **Before any node runs in Phase 5**, isolate the ROS graph: `export ROS_DOMAIN_ID=77` (any
    unused id) **and** `export ROS_LOCALHOST_ONLY=1`, then confirm `ros2 node list` is empty. A
    synthetic `/object_centroid_2d` on the real domain would reach a running state machine.
@@ -820,3 +827,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-22 | Claude (Opus 5) + Dion | T0.11 closed in "Start here": `full` passed on PR #7 and is required on `main`, evidence in `bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt`. Task pointer now names `task-tree.html` only. |
 | 2026-09-22 | Claude (Opus 5) + Dion | **T0.12 done.** Wrist camera back after the replug. New `grasp/tools/record_wrist_camera.sh` and L4 `bench/anygrasp_replay.sh` (in `run.sh`). Replay PASS, **A1 reproduced on real frames**. Evidence: `bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt`. |
 | 2026-09-22 | Claude (Opus 5) + Dion | Recorded the runner copy's two new links, `.venv` and the wrist-camera recording, both needed by `anygrasp_replay`. First `full` run on `dev` after T0.12 (run 35690851133): `anygrasp_replay` SKIPPED for want of `.venv` (now linked), and `state_machine_sim` refused because the real arm was on the network while someone worked at the robot. That refusal is the guard working, not a fault. |
+| 2026-09-23 | OpenCode + Sherman | §3 links the unvalidated shared ARM_BRINGUP.md and corrects moved launch paths and the T1.2 single-launch result. |

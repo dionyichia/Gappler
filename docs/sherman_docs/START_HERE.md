@@ -36,8 +36,10 @@ evidence into the shared documents.
 | [`T0.1_D455_VALIDATION.md`](T0.1_D455_VALIDATION.md) | D455 USB 3 link and ROS-driver stream evidence | When reviewing M0 camera acceptance |
 | [`T1.2_SAFETY_FIXES.md`](T1.2_SAFETY_FIXES.md) | B1 launcher wording + I1 double-launch deletion evidence | When reviewing M1 pre-power safety |
 | [`T1.3_HOME_POSE.md`](T1.3_HOME_POSE.md) | Final T1.3 sim verdicts; original row retained; replacement pose still owed | When reviewing the arm home pose |
-| [`T1.5_ARM_BRINGUP.md`](T1.5_ARM_BRINGUP.md) | Draft driver-only, no-motion procedure for the first powered arm session (T1.6); not yet hardware-validated | Before planning T1.6 with Dion |
 | [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md) | Reported D455 mount design and remaining fabrication evidence | Before fabricating the camera mount |
+
+The shared, unvalidated T1.5 procedure is in [`../ARM_BRINGUP.md`](../ARM_BRINGUP.md). This
+personal folder holds Sherman's session evidence, not a second copy of the operating procedure.
 
 ## Recording work
 
@@ -72,3 +74,4 @@ From [`../START_HERE.md`](../START_HERE.md) and the root `CLAUDE.md`:
 | 2026-09-16 | OpenCode (GPT-5.6 Terra) + Sherman | Added the T0.9 base-identification and footprint record. |
 | 2026-09-22 | OpenCode (Muse Spark) + Sherman | Pointed T1.3 at the final verdict: original row retained, replacement pose still owed. |
 | 2026-09-23 | OpenCode + Sherman | Linked the draft T1.5 no-motion arm bring-up procedure; T1.5 and T1.6 remain open. |
+| 2026-09-23 | OpenCode + Sherman | Pointed at the shared draft in ../ARM_BRINGUP.md; no personal procedure copy remains. |

@@ -85,6 +85,7 @@ to notice.
 | **[`NEXT_STEPS.md`](NEXT_STEPS.md)** | **What we intend to *do*** — prioritised work register with the open decisions. | Planning. Churns; expect it to change. |
 | **[`CODE_AUDIT.md`](CODE_AUDIT.md)** | A **line-by-line read of every file we own**, publisher to subscriber. 45 findings, all `[unverified]` — static analysis only, nothing was run. Starts with the three interlocking defects that stop the grasp path working. | Before touching the grasp path, and before the first hardware run. |
 | **[`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md)** | **The cold-start handoff for building the test bench.** State at handoff, safety rules for the lab machine, known bench bugs, and a phased plan from "establish which machine this is" through build, node-behaviour and replay tiers. | **When you pick up bench work.** Read §0–§3 before touching the lab machine. |
+| **[`ARM_BRINGUP.md`](ARM_BRINGUP.md)** | **Shared RM65 driver-only bring-up procedure (UNVALIDATED DRAFT).** Covers the attended T1.6 handshake, independent UDP receipt and ROS joint feedback, including failure and shutdown paths. | Review with Dion before any first-power session; do not treat as verified until T1.6 evidence is recorded. |
 | [`ASSETS.md`](ASSETS.md) | The files git doesn't hold — model weights and the `.venv` — with sizes, checksums, sources and why each is ignored. | Before copying or re-downloading a model file, or setting up a new machine. |
 | [`bench-runs/`](bench-runs/) | Raw results of every lab-box bench run, one file per run, with what each result means and what it does not show. | For the evidence behind any ✅ in TESTBENCH_PLAN. |
 
@@ -212,3 +213,4 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 | 2026-09-20 | Claude (Opus 5) + Dion | Added `CHANNEL_CONTRACT.md` to the global docs, the single source for channel ownership (T0.7). |
 | 2026-09-21 | Claude (Opus 5) + Dion | Fixes now go through a PR into `dev`, the new default branch. |
 | 2026-09-22 | Claude (Opus 5) + Dion | `next-steps-map.html` renamed `task-tree.html`, same published link. It is now the one task list. `PROJECT_PLAN` §6 no longer repeats the tasks. |
+| 2026-09-23 | OpenCode + Sherman | Indexed ARM_BRINGUP.md as a shared, unvalidated driver-only procedure for T1.6. |
