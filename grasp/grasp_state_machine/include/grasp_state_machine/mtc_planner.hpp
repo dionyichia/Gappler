@@ -56,7 +56,10 @@ private:
   const std::map<std::string, double> RETURN_JOINTS = {
       {"joint1", 0.0},     // 0 degrees
       {"joint2", -0.2443}, // -14 degrees
-      {"joint3", 2.3562},  // 135 degrees
+      {"joint3", 2.3000},  // 131.8 degrees. Was 2.3562 (135 deg), which is past
+                           // joint3's 2.355 limit, so this pose could never be planned
+                           // and moveToReturn() retried it forever. Interim value only:
+                           // the real return pose is decided with the home pose in T1.3.
       {"joint4", 0.0},     // 0 degrees
       {"joint5", -0.5585}, // -32 degrees
       {"joint6", 1.5708},  // 90 degrees
