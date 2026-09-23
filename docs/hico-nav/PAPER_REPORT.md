@@ -667,9 +667,11 @@ Two optimisation solvers are load-bearing:
   is embedded — this project already carries one machine-locked commercial licence in AnyGrasp, and
   a second would be unwelcome.
 - **LKH** for the WTRP (§4.7). LKH's own licence is free for academic use but **not open source**
-  and not redistributable. `[inferred]` OR-Tools' routing solver is a plausible substitute for
-  frontier-count-sized problems. Worth resolving before Tier A is written, since Tier A *is* the
-  WTRP.
+  and not redistributable. **Decided 2026-09-23 (Zongzhe): keep LKH.** This is an academic project,
+  so the academic-use licence covers it. Because it is not redistributable, do not commit LKH's
+  source or binaries to this repo (not even under `vendor/`). The build or a setup script fetches it
+  instead. OR-Tools' routing solver stays the fallback if the project's use ever stops being
+  academic.
 
 ### 6.6 🟡 Confirmed non-blockers
 
@@ -692,7 +694,7 @@ Recording these so they are not re-litigated:
 | 6.2 | Camera-pose source (FAST-LIVO2 vs slam_toolbox vs OpenVINS) | 🔴 | Days–weeks | Engineering, after §6.1 |
 | 6.3 | LiDAR↔camera extrinsic calibration | 🟠 | Days, after camera arrives | Engineering |
 | 6.4 | VLM endpoint: cloud vs local | 🟠 | Days + policy check | Dion + supervisor |
-| 6.5 | ILP and TSP solver choice / licensing | 🟡 | Hours–days | Engineering |
+| 6.5 | ILP solver choice / licensing (TSP settled 2026-09-23: LKH, fetched at build time) | 🟡 | Hours–days | Engineering |
 | — | Camera mount design | 🟠 | Weeks, **in parallel with 6.1** | Engineering |
 | 5.6 | A simulator to test navigation in | 🟡 | Days (Habitat), weeks (a robot simulation) | Engineering |
 
@@ -770,6 +772,7 @@ productive than forcing the binary.
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-09-23 | Claude (Opus 5.5) + Zongzhe | §6.5 and §6.7: LKH kept for the WTRP (academic use), not committed to the repo, fetched at build time. The ILP solver half of 6.5 stays open (T6.1). |
 | 2026-09-21 | Claude (Opus 5) + Dion | Vendor paths updated after reorg step 3 (`aria/vendor/open_vins`, `nav/vendor/urdf`, `arm/vendor/rm_gazebo`). |
 | 2026-09-12 | Claude (Opus 5) + Dion | Added §5.6 (testing needs a simulator: upstream is a Habitat evaluation setup with no ROS, and what exists here for a robot simulation). New `[upstream]` tag. Updated the §2 limitation note, §6.7 register, §7.1 ROS question and §7.2 steps 2–3. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §4.4a (the object-registration cascade — SAM runs on keyframes, not frames) and §5.5 (it answers `NEXT_STEPS` §2.1 and promotes that item's `[inferred]` two-stage row). |
