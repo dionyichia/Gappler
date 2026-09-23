@@ -15,6 +15,8 @@ Those are the shared reference. This folder does not repeat them, it links to th
 |---|---|---|
 | [`T0.3_SESSION.md`](T0.3_SESSION.md) | The 2026-09-15 session that made the repository run from a fresh clone. What changed, what the evidence is, what was deliberately left, and five items for Dion. | Before T0.4 or T0.5, and before trusting `../NEXT_STEPS.md` section 2.5, which this supersedes. |
 | [`BUILD_WORKSPACES.md`](BUILD_WORKSPACES.md) | Why `deps_ws` and `ros2_robot_ws` are built separately instead of together, answered by Puneet on 2026-08-25, checked against the code. Explains the underlay and overlay idea for anyone who has not used colcon. | Before your first build, and before changing anything about how the project is built. |
+| [`HICO_NAV_CLASS_DIAGRAM.md`](HICO_NAV_CLASS_DIAGRAM.md) | Class diagram of HiCo-Nav's `map/` package at commit `ffc1517`: the graph data model, the inter-process message types, and what is dead code. | Before reading any HiCo-Nav source, and before `CMG_GRAPH_STRUCTURE.md`. |
+| [`CMG_GRAPH_STRUCTURE.md`](CMG_GRAPH_STRUCTURE.md) | Why HiCo-Nav's Cognitive Memory Graph is not stored as a graph, what its pruning formula means, and a prototype replacement structure with 16 passing checks. The evidence behind [`../MEMORY_GRAPH_DESIGN.md`](../MEMORY_GRAPH_DESIGN.md). | After [`HICO_NAV_CLASS_DIAGRAM.md`](HICO_NAV_CLASS_DIAGRAM.md), and before writing any memory-graph code for Gappler. |
 
 ## Rules this folder follows
 
@@ -39,3 +41,4 @@ From [`../START_HERE.md`](../START_HERE.md) and the root `CLAUDE.md`:
 |---|---|---|
 | 2026-09-15 | Claude (Opus 5) + Zongzhe | Folder created. Added `BUILD_WORKSPACES.md`. |
 | 2026-09-15 | Claude (Opus 5) + Zongzhe | Added `T0.3_SESSION.md`. |
+| 2026-09-21 | Claude (Opus 5) + Zongzhe | Added `CMG_GRAPH_STRUCTURE.md` and `prototypes/`. |

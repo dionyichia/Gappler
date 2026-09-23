@@ -70,6 +70,33 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: `dev` keeps the original row. The decided-row change remains only in unmerged `t1.3-home-pose` / PR #18. Task-tree T1.3 is PROGRESS, not DONE.
 - Next: T1.4 physical setup, then a purpose-built candidate with joint-limit margin; replacement PR only after sim validation.
 
+## [2026-09-22] T1.4 | Measurement plan recorded on t1.4-physical-setup
+
+- Evidence: [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md)
+- Verified: plan only; no physical visit, no arm motion, no table/cell.
+- Outcome: exact A–F sheet recorded (base verification, static envelope, extrusion/mount, safety setup, camera identity, blockers). Task-tree T1.4 status untouched.
+- Next: lab visit for T1.4-now measurements; T1.4-cell stays blocked until a table exists.
+
+## [2026-09-23] T1.4 | Visit closed, DONE (power-on ready, no motion)
+
+- Evidence: [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md)
+- Verified: A taped (0.380 x 0.460). B2/B4/C4/C5 measured-closed, single readings. B1 verdicts + C6-C9 reported with itemizations waived. D cleared as reported (D1 figures waived, D2 deleted, D3 verbal confirm with transcription owed, D4 no hazards). E serial 243222074878 matches banked wrist default. F blockers confirmed. Unpowered throughout, no motion commanded.
+- Outcome: T1.4 DONE locally on t1.4-physical-setup. Unpushed. Residuals: D3 figure transcription, T1.4-cell blocked until a table exists.
+- Next: Push + PR to dev on Sherman's word, then T1.3 purpose-built candidate from latest origin/dev.
+
+## [2026-09-23] T1.5 | Driver-only bring-up draft
+
+- Draft: [`../ARM_BRINGUP.md`](../ARM_BRINGUP.md) (shared procedure; not yet validated)
+- Verified: source and earlier records only. No controller power-on, driver launch, or joint-feedback
+  observation was performed for this draft.
+- Outcome: no-motion handshake procedure prepared for Dion and Sherman's T1.6 session. T1.5 and
+  T1.6 remain open until its attended session results are recorded.
+- Next: T1.4's no-motion power-on verdict was merged in PR #22. Review the procedure with Dion,
+  carry forward its accepted 0.03 m back-edge overhang and D3 reach figure still owed, then validate
+  the commands and outcomes during T1.6.
+- 2026-09-23: moved the draft to shared docs and required independent UDP packet observation
+  alongside ROS joint feedback. No hardware run performed for this update.
+
 ## Record Template
 
 ```markdown
