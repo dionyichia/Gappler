@@ -40,7 +40,7 @@ LOG = REPO / os.environ.get("BENCH_SM_LOG", "log/bench_state_machine.txt")
 JOINTS = [f"joint{i}" for i in range(1, 7)]
 HOME_MAIN = [0.0, 0.0, 0.7854, 0.0, 1.5708, 1.5708]      # mtc_planner.hpp HOME_JOINTS on main (CODE_AUDIT B4)
 HOME_REALMAN = [-0.0175, -0.1745, 0.7854, -3.0718, -1.6930, -1.6057]
-RETURN = [0.0, -0.2443, 2.3562, 0.0, -0.5585, 1.5708]    # mtc_planner.hpp RETURN_JOINTS
+RETURN = [0.0, -0.2443, 2.3000, 0.0, -0.5585, 1.5708]    # mtc_planner.hpp RETURN_JOINTS (2.3000 interim per PR #26; was 2.3562, past the 2.355 limit)
 FX, FY, CX, CY, W, H = 607.18, 606.92, 331.95, 250.13, 640, 480
 OFFSET_X = 55.0        # CENTROID_TARGET_OFFSET_X: a centroid here means "no lateral error"
 FAR, NEAR = 0.30, 0.15  # m; the code switches to EXECUTING below EXECUTE_DEPTH_THRESH_M = 0.18

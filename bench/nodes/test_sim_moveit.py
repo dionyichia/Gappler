@@ -32,7 +32,6 @@ JOINTS = [f"joint{i}" for i in range(1, 7)]
 POSES = [  # name, target -- values from mtc_planner.hpp HOME_JOINTS on each branch
     ("home (main)",          [0.0, 0.0, 0.7854, 0.0, 1.5708, 1.5708]),
     ("home (realman_manip)", [-0.0175, -0.1745, 0.7854, -3.0718, -1.6930, -1.6057]),
-    ("home (C2 tucked)",     [0.0, -0.20, 0.7854, 0.0, 1.35, 1.5708]),  # T1.3 probe, reverts if C2 loses
     ("zero",                 [0.0] * 6),
 ]
 TOL = 0.01  # rad
