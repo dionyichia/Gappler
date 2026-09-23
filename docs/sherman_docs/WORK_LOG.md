@@ -70,6 +70,16 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: `dev` keeps the original row. The decided-row change remains only in unmerged `t1.3-home-pose` / PR #18. Task-tree T1.3 is PROGRESS, not DONE.
 - Next: T1.4 physical setup, then a purpose-built candidate with joint-limit margin; replacement PR only after sim validation.
 
+## [2026-09-23] T1.5 | Driver-only bring-up draft
+
+- Evidence: [`T1.5_ARM_BRINGUP.md`](T1.5_ARM_BRINGUP.md)
+- Verified: source and earlier records only. No controller power-on, driver launch, or joint-feedback
+  observation was performed for this draft.
+- Outcome: no-motion handshake procedure prepared for Dion and Sherman's T1.6 session. T1.5 and
+  T1.6 remain open until the physical prerequisites and session results are recorded.
+- Next: complete the T1.4 physical visit, review the procedure with Dion, then validate its outputs
+  during the attended T1.6 session.
+
 ## Record Template
 
 ```markdown
