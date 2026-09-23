@@ -97,6 +97,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - 2026-09-23: moved the draft to shared docs and required independent UDP packet observation
   alongside ROS joint feedback. No hardware run performed for this update.
 
+## [2026-09-23] T1.3 | MAIN row adopted final, branch to dev
+
+- Evidence: [`T1.3_HOME_POSE.md`](T1.3_HOME_POSE.md)
+- Verified: Round A 4/4 reachable + TF placement mm-matches FK (C1 wins: lowest grasp 0.922, 44-deg view). Round B on C1: approach + close PASS (rejected row's killer step); return FAIL 0.0563 attributed to stale test RETURN (2.3562 vs fixed 2.3000, delta 0.0562), fixed test-only. C2 probe reverted. Archive guide bannered (was quoting rejected row). No production-code change: HOME_JOINTS already MAIN.
+- Outcome: verdict MAIN final (sim-validated + documented) on t1.3-home-pose-select. Residuals: variant matrix not run, T1.1 supersession owed (Dion), box green re-run owed, live validation T1.7.
+- Next: PR to dev, CI green, box verification, merge on Sherman's word. Task-tree T1.3 DONE at merge.
+
 ## Record Template
 
 ```markdown
