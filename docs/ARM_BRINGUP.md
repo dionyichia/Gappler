@@ -56,8 +56,19 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
 
    Expect no competing arm or shared-hardware session. The `grep` process itself may appear.
    If someone else is using shared hardware or process ownership is unclear, stop and coordinate
-   before proceeding; do not terminate anything. Also check *before power-on* that
-   passive network capture is available; without it this procedure cannot establish READY:
+   before proceeding; do not terminate anything. Check the lab-box checkout **before power-on**:
+
+   ```bash
+   git -C ~/rcp-Gappler status --short --branch
+   git -C ~/rcp-Gappler rev-parse --short HEAD
+   ```
+
+   Expect the agreed T1.6 code revision and a clean worktree (ignored build output is normal).
+   The arm overlay must be built from that approved revision, not a copied older checkout. If the
+   branch, revision, build provenance, or local changes are unresolved, mark this session
+   **INCOMPLETE** and coordinate with the checkout owner. Do not stash, discard, switch branches,
+   pull, or rebuild over someone else's work. Also check that passive network capture is available;
+   without it this procedure cannot establish READY:
 
    ```bash
    command -v tcpdump
@@ -85,7 +96,9 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    Expect no nodes before the stop program starts. If `arm_env.sh` reports missing `install/`, or
    if nodes are present, stop and resolve that before power-on. Choose another empty domain rather
    than sharing traffic with another operator. `arm_env.sh` sources ROS 2 Humble and the arm overlay
-   (`arm/arm_env.sh:5-11`). The stop program, driver, and inspection terminal **must** agree on
+   (`arm/arm_env.sh:5-11`). In T-INSPECT, also run `ros2 pkg prefix rm_driver` and confirm the
+   returned prefix is inside `~/rcp-Gappler/install/`; this locates the package but does not prove
+   when its binary was built. The stop program, driver, and inspection terminal **must** agree on
    domain and localhost setting. T-NET observes the physical wired interface directly; ROS
    domain settings do not filter the arm's TCP and UDP traffic.
 4. **Software stop ready, physical stop primary.** The computer operator starts T-ESTOP in a
@@ -119,8 +132,8 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
 
    Expect a link with carrier and `.10/24`; stop if either is missing. Record discrepancies in
    `.100` or `.5` for the network owner, but those addresses are not the arm-feedback path. The
-   person at the robot then
-   powers the controller; record the power-on time. After power-on, check reachability and its
+   person at the robot then powers the controller; record the power-on time. After power-on, check
+   reachability and its
    control port:
 
    ```bash
@@ -132,8 +145,8 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    says port 8080 can take about 60 seconds after power-on
    (`archive/RCP_NEW_USER_STARTUP_GUIDE.md` §3.3). A refusal immediately after power-on merits
    waiting and retrying; record how long it actually takes. If the port remains unavailable
-   after the session's agreed boot window, **do not start
-   the driver**. A timeout or unreachable host also requires checking power, cable, and addressing.
+   after the session's agreed boot window, **do not start the driver**. A timeout or unreachable
+   host also requires checking power, cable, and addressing.
 6. **Passive packet observation, computer operator.** Before launching the driver, open T-NET on
    the lab box and start a capture filtered to UDP from controller `.18` to host `.10:8089`:
 
@@ -220,6 +233,7 @@ it also checks the LiDAR, glasses, and wrist camera (`bench/preflight.py:908-929
 | Observation | Action and verdict |
 |---|---|
 | Area, rear overhang, mount/cables or physical-stop reach differ from the accepted T1.4 record | Do not power on. INCOMPLETE until the current setup is checked; T1.4's recorded 0.03 m overhang and D3 number owed were already accepted for no-motion power-on. |
+| Lab-box checkout is modified, on an unapproved branch, or the arm overlay's build revision is unknown | Do not start the controller. INCOMPLETE; coordinate with its owner rather than switching, cleaning or rebuilding their checkout. |
 | `enp2s0` has `NO-CARRIER` or no `.10/24` | Do not power on. Check switch/cabling or the approved NetworkManager profile, then reassess. |
 | Ping works but port 8080 refuses immediately after power-on | Wait only within the agreed boot window, then retry and record elapsed time; unresolved means no driver launch. |
 | T-NET cannot start or lacks capture permission | Do not launch the driver. INCOMPLETE; arrange a permitted read-only packet observer. |
@@ -232,7 +246,8 @@ it also checks the LiDAR, glasses, and wrist camera (`bench/preflight.py:908-929
 ## Evidence to collect during T1.6
 
 Record date/time, people and roles, T1.4 sign-off and any remaining overhang or stop-reach issues,
-as-found posture and power state, physical-stop position, ROS domain, checked-out commit, NIC
+as-found posture and power state, physical-stop position, ROS domain, approved checkout commit and
+arm overlay build provenance, NIC
 addresses, source-addressed ping, time to open port, driver handshake and UDP setup log lines,
 software-stop publisher/subscriber counts, **filtered tcpdump output and packet count with a time
 interval overlapping the ROS observation**, joint names/positions/timestamps, measured ROS rate
@@ -248,3 +263,4 @@ T1.5 done or treating it as an independently validated shared runbook.
 | 2026-09-23 | OpenCode + Sherman | Drafted the T1.6 no-motion, driver-only handshake and joint-feedback procedure. Hardware outputs remain unverified. |
 | 2026-09-23 | OpenCode + Sherman | Moved the shared draft to docs/; required independent UDP receipt, clarified stop-terminal roles and first-power shutdown. Still unvalidated. |
 | 2026-09-23 | OpenCode + Sherman | After merging current dev, replaced the stale open-T1.4 blocker with its accepted no-motion verdict, documented rear overhang and D3 residual, and a day-of-condition check. No hardware run. |
+| 2026-09-23 | OpenCode + Sherman | Added a checkout/overlay provenance gate after a read-only lab-box check found an older branch with local changes; do not change that checkout during first-power verification. |
