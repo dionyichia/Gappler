@@ -30,14 +30,17 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
 
 ## Before controller power
 
-1. **Physical setup, led by Sherman.** Confirm T1.4's visit record is accepted for *power-on with
-   no motion*: as-found arm posture, cleared area, mount and cables, operator location, an
-   identified **physical** controller stop within reach (not the `estop.py` terminal), and residual
-   hazards. Do not force braked joints into position. At the time
-   of this draft, T1.4's separate working branch reports a back-edge overhang and has not recorded
-   every cleared-area and stop-reach measurement. **Do not power on until those specific findings
-   are resolved or explicitly accepted in the current T1.4 record.** Table/grasp-cell geometry
-   is a later gate for motion (T1.3/T1.7), not for this no-motion handshake.
+1. **Physical setup, led by Sherman.** `[reported]` T1.4 was marked DONE on 2026-09-23 for
+   *power-on with no motion* ([`task-tree.html`](task-tree.html), T1.4;
+   `sherman_docs/T1.4_PHYSICAL_SETUP.md:235-272`). Read its accepted visit record rather than
+   reopening its measurements: the 0.03 m rear overhang is recorded, D1 area figures were waived,
+   and the physical-stop reach was confirmed verbally with its D3 number still owed. There is no
+   fenced zone or table/cell. Before **this** session, confirm the arm remains in its as-found
+   posture, the area and mount/cables have not changed, and an identified **physical** controller
+   stop is within reach of the operator's actual standing position (not just the `estop.py`
+   terminal). Do not force braked joints into position. If current conditions have changed or the
+   physical stop is not reachable, stop and reassess; the waived D3 number is not itself a new
+   T1.6 power-on gate. The table/cell and arm sweep remain out of scope until T1.3/T1.7 motion work.
 2. **Roles and shared equipment.** Name the computer operator and a *different* person at the
    physical stop; both must remain present. The stop operator stays with the physical stop while
    the computer operator handles terminals. Record the controller's as-found power state. If it
@@ -216,7 +219,7 @@ it also checks the LiDAR, glasses, and wrist camera (`bench/preflight.py:908-929
 
 | Observation | Action and verdict |
 |---|---|
-| T1.4 physical stop, back-edge hazard, or cleared-area status unresolved | Do not power on. INCOMPLETE until T1.4 explicitly accepts no-motion power-on. |
+| Area, rear overhang, mount/cables or physical-stop reach differ from the accepted T1.4 record | Do not power on. INCOMPLETE until the current setup is checked; T1.4's recorded 0.03 m overhang and D3 number owed were already accepted for no-motion power-on. |
 | `enp2s0` has `NO-CARRIER` or no `.10/24` | Do not power on. Check switch/cabling or the approved NetworkManager profile, then reassess. |
 | Ping works but port 8080 refuses immediately after power-on | Wait only within the agreed boot window, then retry and record elapsed time; unresolved means no driver launch. |
 | T-NET cannot start or lacks capture permission | Do not launch the driver. INCOMPLETE; arrange a permitted read-only packet observer. |
@@ -244,3 +247,4 @@ T1.5 done or treating it as an independently validated shared runbook.
 |---|---|---|
 | 2026-09-23 | OpenCode + Sherman | Drafted the T1.6 no-motion, driver-only handshake and joint-feedback procedure. Hardware outputs remain unverified. |
 | 2026-09-23 | OpenCode + Sherman | Moved the shared draft to docs/; required independent UDP receipt, clarified stop-terminal roles and first-power shutdown. Still unvalidated. |
+| 2026-09-23 | OpenCode + Sherman | After merging current dev, replaced the stale open-T1.4 blocker with its accepted no-motion verdict, documented rear overhang and D3 residual, and a day-of-condition check. No hardware run. |
