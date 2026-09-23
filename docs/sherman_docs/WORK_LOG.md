@@ -70,6 +70,20 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: `dev` keeps the original row. The decided-row change remains only in unmerged `t1.3-home-pose` / PR #18. Task-tree T1.3 is PROGRESS, not DONE.
 - Next: T1.4 physical setup, then a purpose-built candidate with joint-limit margin; replacement PR only after sim validation.
 
+## [2026-09-22] T1.4 | Measurement plan recorded on t1.4-physical-setup
+
+- Evidence: [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md)
+- Verified: plan only; no physical visit, no arm motion, no table/cell.
+- Outcome: exact A–F sheet recorded (base verification, static envelope, extrusion/mount, safety setup, camera identity, blockers). Task-tree T1.4 status untouched.
+- Next: lab visit for T1.4-now measurements; T1.4-cell stays blocked until a table exists.
+
+## [2026-09-23] T1.4 | Visit closed, DONE (power-on ready, no motion)
+
+- Evidence: [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md)
+- Verified: A taped (0.380 x 0.460). B2/B4/C4/C5 measured-closed, single readings. B1 verdicts + C6-C9 reported with itemizations waived. D cleared as reported (D1 figures waived, D2 deleted, D3 verbal confirm with transcription owed, D4 no hazards). E serial 243222074878 matches banked wrist default. F blockers confirmed. Unpowered throughout, no motion commanded.
+- Outcome: T1.4 DONE locally on t1.4-physical-setup. Unpushed. Residuals: D3 figure transcription, T1.4-cell blocked until a table exists.
+- Next: Push + PR to dev on Sherman's word, then T1.3 purpose-built candidate from latest origin/dev.
+
 ## Record Template
 
 ```markdown
