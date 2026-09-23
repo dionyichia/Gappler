@@ -84,6 +84,19 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: T1.4 DONE locally on t1.4-physical-setup. Unpushed. Residuals: D3 figure transcription, T1.4-cell blocked until a table exists.
 - Next: Push + PR to dev on Sherman's word, then T1.3 purpose-built candidate from latest origin/dev.
 
+## [2026-09-23] T1.5 | Driver-only bring-up draft
+
+- Draft: [`../ARM_BRINGUP.md`](../ARM_BRINGUP.md) (shared procedure; not yet validated)
+- Verified: source and earlier records only. No controller power-on, driver launch, or joint-feedback
+  observation was performed for this draft.
+- Outcome: no-motion handshake procedure prepared for Dion and Sherman's T1.6 session. T1.5 and
+  T1.6 remain open until its attended session results are recorded.
+- Next: T1.4's no-motion power-on verdict was merged in PR #22. Review the procedure with Dion,
+  carry forward its accepted 0.03 m back-edge overhang and D3 reach figure still owed, then validate
+  the commands and outcomes during T1.6.
+- 2026-09-23: moved the draft to shared docs and required independent UDP packet observation
+  alongside ROS joint feedback. No hardware run performed for this update.
+
 ## Record Template
 
 ```markdown
