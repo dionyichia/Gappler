@@ -654,7 +654,10 @@ the "real fix" §8.2 says belongs in the collision scene instead of the z-overwr
 **before waiting for anything.** Launching the state machine moves the arm to its home pose
 immediately. `homeWithRetry` retries forever until it succeeds (line 342).
 
-`[reported]` As of 2026-08-25 the arm had **never** been commanded to move. Execution is untested.
+`[reported]` As of 2026-08-25 the arm had **never** been commanded to move. `[observed]` 2026-09-23 (T1.7): the
+home pose was sent straight to the driver, one joint at a time, and reached within 0.02°. At that
+pose the tool sits slightly outside the base footprint. The state machine has still never run on
+the real arm, so its homing is untested.
 
 **Rules:** clear the workspace first; run `estop.py` in its own terminal before anything else;
 never launch `grasp_state_machine` or `ros2_robot_ws/src/main.py` while nobody is physically
@@ -857,6 +860,7 @@ was verified against running hardware. Most relevant to this section:
 - **`main.py` promises an emergency-stop key that does not exist** (§B1), and until 2026-09-21 `estop.py`
   ignored Ctrl+C and could lose its own stop (§B2, B2a, B2c, fixed in T1.2).
 - **`HOME_JOINTS` changed** — joint4 by 176° — and §8.1's safety warning quotes the old values (§B4).
+  Settled 2026-09-23: T1.3 kept `main`'s row and T1.7 validated it on the real arm.
 - **Undefined behaviour** in the state machine's threading: one condition variable waited on with
   two different mutexes, and the centroid read without its lock (§C1, §C2).
 - **`background.launch.py` is launched twice**, giving two `rm_driver` on one arm (§I1).
@@ -1264,3 +1268,5 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-22 | Claude (Opus 5) + Dion | §2 nav folder tree: one package per node (`object_approach`, `goto_glasses`, `goal_reached`, `pose_publisher`, `qos_relay`, `aria_image_relay`), `robot_slam` keeps launch and config. |
 | 2026-09-22 | Claude (Opus 5) + Dion | `assets/gripper/` is now `assets/vendor/gripper/` (reorg step 6). |
 | 2026-09-22 | Claude (Opus 5) + Dion | `env.sh` is now `global_env.sh`, which sources `aria/aria_env.sh`, `arm/arm_env.sh`, `grasp/grasp_env.sh` and `nav/nav_env.sh` (reorg step 7). |
+| 2026-09-23 | Claude Opus 5.5 + Dion | §8.1 and the §B4 bullet: HOME validated on the real arm in T1.7, extends slightly outside the base. |
+

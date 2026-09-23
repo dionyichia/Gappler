@@ -56,8 +56,9 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
 
 - Never launch `grasp_state_machine`, `launchers/start_grasp_pipeline.py`, `launchers/grasp_orchestrator.py`
   or root `main.py` (the two launchers were `ros2_robot_ws/src/main.py` and `orchestrator.py` until
-  2026-09-21). The state machine homes the arm within seconds, unprompted, to a home pose that
-  has never been validated. **One exception (Dion, 2026-09-11):** `bench/state_machine_sim.sh` may
+  2026-09-21). The state machine homes the arm within seconds, unprompted. The home pose itself
+  was validated on the real arm by direct command in T1.7 (2026-09-23), but the state machine has
+  never run on the real arm. **One exception (Dion, 2026-09-11):** `bench/state_machine_sim.sh` may
   launch the state machine against the *simulated* arm, behind its guards (mock hardware, private
   channel, no `rm_driver`, preflight shows the arm unreachable).
 - Never publish to `/rm_driver/*_cmd`, `/goal_pose`, `/cmd_vel`, `/manipulation/*`, or
