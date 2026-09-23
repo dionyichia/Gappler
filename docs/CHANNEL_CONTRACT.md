@@ -179,6 +179,10 @@ All of these were decided by Dion. Each names where the detail lives.
 - **B-2. Use the `realman_manip` home pose values**, the ones the safety document describes.
   ⚠️ **Do not trust either set.** Recalibrate and validate on the simulated arm before any powered
   run. Answers `CODE_AUDIT` open question 2.
+  **Superseded 2026-09-23.** T1.3 kept `main`'s row after the simulated arm checks, and T1.7
+  validated it on the real arm: every joint within 0.02° (`dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`).
+  The tool sits slightly outside the base footprint at this pose, so it is not a rest pose for
+  driving. A tucked pose inside the base is T1.18.
 - **B-3. `ros2_robot_ws/src/main.py` owns `background.launch.py`.** Delete the launch in
   `orchestrator.py:69-74`. Already recorded in `CODE_AUDIT` open question 5.
 - **B-4. "Arrived" stops launching processes.** The arm stack is already running and the state
@@ -321,3 +325,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-09-21 | Claude (Opus 5) + Dion | X7: `shared/config.yaml` renamed to `shared/global_config.yaml` (reorg step 2). |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
 | 2026-09-22 | Claude (Opus 5) + Dion | T-3: the wrist D435i survived the replug (T0.12), so no replacement is needed so far. Same camera update in `testbench-map.html` and the task tree's 14 September note. |
+| 2026-09-23 | Claude Opus 5.5 + Dion | B-2 superseded: HOME is `main`'s row, validated on the real arm in T1.7. It extends slightly outside the base, tucked pose is T1.18. |

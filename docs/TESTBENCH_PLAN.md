@@ -525,8 +525,9 @@ the driver-only boundary are in the runbook.
 
 1. **Never launch** `grasp_state_machine` (directly or via `grasp_state_machine.launch.py`),
    `launchers/start_grasp_pipeline.py`, `launchers/grasp_orchestrator.py`, or root `main.py`. The state
-   machine homes the arm within seconds, unprompted (ORIENTATION §8.1) — and to a **home pose that has
-   changed and never been validated** (CODE_AUDIT §B4). T1.2 removed the orchestrator's duplicate
+   machine homes the arm within seconds, unprompted (ORIENTATION §8.1) — and to the home pose. That pose
+   was reached on the real arm by direct command in T1.7 (2026-09-23), but the state machine has never
+   homed the real arm, and it homes without asking (CODE_AUDIT §B4). T1.2 removed the orchestrator's duplicate
    arm bring-up launch (`sherman_docs/T1.2_SAFETY_FIXES.md` §I1); the grasp pipeline still includes
    the state machine and is not a no-motion launcher.
 2. **Never publish** to any `/rm_driver/*_cmd` topic, `/goal_pose`, `/cmd_vel`,
@@ -828,3 +829,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-22 | Claude (Opus 5) + Dion | **T0.12 done.** Wrist camera back after the replug. New `grasp/tools/record_wrist_camera.sh` and L4 `bench/anygrasp_replay.sh` (in `run.sh`). Replay PASS, **A1 reproduced on real frames**. Evidence: `bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt`. |
 | 2026-09-22 | Claude (Opus 5) + Dion | Recorded the runner copy's two new links, `.venv` and the wrist-camera recording, both needed by `anygrasp_replay`. First `full` run on `dev` after T0.12 (run 35690851133): `anygrasp_replay` SKIPPED for want of `.venv` (now linked), and `state_machine_sim` refused because the real arm was on the network while someone worked at the robot. That refusal is the guard working, not a fault. |
 | 2026-09-23 | OpenCode + Sherman | §3 links the unvalidated shared ARM_BRINGUP.md and corrects moved launch paths and the T1.2 single-launch result. |
+| 2026-09-23 | Claude Opus 5.5 + Dion | Rule 1: the home pose is validated on the real arm (T1.7), the unprompted-homing warning stays. |
