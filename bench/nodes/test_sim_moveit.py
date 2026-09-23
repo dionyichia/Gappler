@@ -40,7 +40,12 @@ ERR = {1: "SUCCESS", 99999: "FAILURE", -1: "PLANNING_FAILED", -2: "INVALID_MOTIO
        -4: "CONTROL_FAILED", -6: "TIMED_OUT", -10: "START_STATE_IN_COLLISION",
        -12: "GOAL_IN_COLLISION", -13: "GOAL_VIOLATES_PATH_CONSTRAINTS",
        -14: "GOAL_CONSTRAINTS_VIOLATED", -31: "NO_IK_SOLUTION"}
-LINK_FRAMES = [f"Link{i}" for i in range(1, 7)] + ["grasp_frame", "camera_color_optical_frame"]
+LINK_FRAMES = [f"Link{i}" for i in range(1, 7)] + ["grasp_frame", "camera_link"]
+# camera_color_optical_frame does not exist in the sim model (verified live on
+# the box 2026-09-23: static tree holds camera_link + camera_bottom_screw_frame
+# only). Camera POSITION comes from camera_link TF; VIEW uses the Link6 flange
+# normal as proxy (camera is fixed-mounted ~5 cm off Link6, tilt per vendor
+# xacro), flagged wherever the view vector is printed.
 # T1.4 mount truth (model): arm base 0.18 m fwd, 0.48 m up, yaw pi, robot-base-relative only.
 MOUNT_XYZ = (0.18, 0.0, 0.48)
 HOLD = int(os.environ.get("BENCH_POSE_HOLD", "0"))  # seconds to hold each settled pose for RViz viewing
@@ -82,16 +87,16 @@ class Bench(Node):
                 print(f"  [PLACE] {name}: tf-missing for {f} ({e})")
                 return False
         p = {f: t.transform.translation for f, t in tr.items()}
-        q = tr["camera_color_optical_frame"].transform.rotation
+        q = tr["Link6"].transform.rotation
         qx, qy, qz, qw = q.x, q.y, q.z, q.w
         view = (2 * (qx * qz + qw * qy), 2 * (qy * qz - qw * qx), 1 - 2 * (qx * qx + qy * qy))
         maxr = max(math.hypot(v.x, v.y) for f, v in p.items() if f.startswith("Link"))
         links = " ".join(f"{f}=(%+.3f,%+.3f,%+.3f)" % (p[f].x, p[f].y, p[f].z)
                          for f in LINK_FRAMES if f.startswith("Link"))
         print(f"  [PLACE] {name}: {links}")
-        g, c = p["grasp_frame"], p["camera_color_optical_frame"]
+        g, c = p["grasp_frame"], p["camera_link"]
         print(f"  [PLACE] {name}: grasp=(%+.3f,%+.3f,%+.3f) camera=(%+.3f,%+.3f,%+.3f) "
-              f"view=(%+.3f,%+.3f,%+.3f) max_origin_radius=%.3f m"
+              f"view[Link6-normal-proxy]=(%+.3f,%+.3f,%+.3f) max_origin_radius=%.3f m"
               % (g.x, g.y, g.z, c.x, c.y, c.z, *view, maxr))
         return True
 
