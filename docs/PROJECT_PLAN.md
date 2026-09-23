@@ -513,7 +513,12 @@ object entries, the same physical object is not registered twice, and a sentence
 Risk: the merge test depends on camera pose accuracy, and our pose comes from 2D localisation which
 has no reliable pitch or roll `[inferred]` paper review 6.2. Mitigation: duplicated object entries
 are directly visible, so measure the duplication rate and decide from data whether a better pose
-source is needed.
+source is needed. **The data structure is specified ahead of T6.3 in
+[`MEMORY_GRAPH_DESIGN.md`](MEMORY_GRAPH_DESIGN.md)**, which also records a finding bearing
+directly on this risk: with the upstream merge weights, appearance similarity alone can never
+merge two entries `[inferred]`, so the duplication rate becomes a pure function of pose quality
+unless T6.4 changes them. That document's §4 lists three cheaper options than a better pose
+source, to decide on the recorded data from T6.2.
 
 **M7. The graph drives the robot.** Accept when a spoken instruction with no object in view causes
 the robot to drive to the right place and then grasp. Risk: the graph's object position is at
@@ -930,7 +935,7 @@ take from the top of this list, and say so in the weekly note so the others know
 |---|---|---|---|---|
 | S1 | **Candidate-based grasping instead of the simple path** | Dion | `grasp_state_machine.cpp:41` sets `USE_SIMPLE_EXECUTE = true`, which routes every grasp through one Cartesian step and a gripper close. The real path, with the candidate queue, the stability window and orientation interpolation, is about 150 lines of written but never-executed code in the same file `[code]`. Turning it on is the difference between a demonstration and a grasp policy | M1 complete, and the concurrency fixes in T1.9 landed first, because this path is what makes them reachable |
 | S2 | **The reasoning layer, if it was cut** | Zongzhe | Cut item 2 in section 8. It is what turns "find the mug" into "look near the sink as well", and it is the piece a reviewer will expect from a paper that claims a memory graph | M6 through T6.4, plus the endpoint decision in T6.6 |
-| S3 | **Graph pruning with a real solver** | Zongzhe | Cut item 3. Bounded graph growth over a long run. A weighted set multicover problem with mature open solvers, so it is a known quantity rather than a research question | T6.4, and a licence check on the solver |
+| S3 | **Graph pruning with a real solver** | Zongzhe | Cut item 3. Bounded graph growth over a long run. A weighted set multicover problem with mature open solvers, so it is a known quantity rather than a research question. [`MEMORY_GRAPH_DESIGN.md`](MEMORY_GRAPH_DESIGN.md) §6 makes this a drop-in: an exact solver replaces the greedy body without changing the interface, and greedy becomes the baseline it is measured against | T6.4, and a licence check on the solver |
 | S4 | **A second pose source, measured against the first** | Sherman | If T5.7 says 2D localisation is the limiting factor, this stops being a stretch goal and becomes required work. Either way the comparison is a paper section. The LiDAR's inertial sensor already publishes on `livox/imu` with no subscriber `[code]`, so the input exists | T5.7, and the duplicate-object rate measured on the existing source first |
 | S5 | **The return-to-user leg** | Dion | Out of scope in section 4.2, but `goto_glasses.py` has to be corrected regardless, because its outbound half fires on the same spoken command as the forward leg and competes for the same Nav2 action server `[code]`. Once that is fixed the return leg is closer than the scope decision assumes | The frame defect fixed, and the pose fusion node reconciled with its own documentation |
 | S6 | **Frontier scoring and visit ordering, if M9 was cut** | Zongzhe | Cut item 1. The largest reported benefit in the paper. It is not ours and it is not on the path to our claim, which is why it was cut, but it is the most complete second result available | M6 done, and the upstream evaluation running as a baseline |
@@ -978,6 +983,7 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-21 | Claude (Opus 5) + Dion | T3.5 points to the nav map findings in `NEXT_STEPS` §2.15 "For Sherman". `next-steps-map.html` task data updated to match, republish owed (the refactor is still going). |
 | 2026-09-21 | Claude (Opus 5) + Dion | `shared/config.yaml` renamed to `shared/global_config.yaml` in the two current mentions (reorg step 2). The gaze topic's line cite corrected to `:13`. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-21 | Claude (Opus 5) + Zongzhe | Added [`MEMORY_GRAPH_DESIGN.md`](MEMORY_GRAPH_DESIGN.md), the anchor-object graph specified ahead of M6's T6.3, and linked it from M6's acceptance text, T6.1 and S3. It carries a finding that bears on M6's named pose risk: with the upstream merge weights, appearance alone can never merge two entries, so duplication rate tracks pose quality unless T6.4 changes them. Proposed only, nothing implemented, no task changed state. T6.1 text in `task-tree.html` updated, republish owed until this merges. |
 | 2026-09-22 | Claude (Opus 5) + Dion | T2.1 gains the fix-or-delete check for `dummy_mask_publisher.py`, parked in `grasp/tools/` by the reorg. `next-steps-map.html` task data updated, republish owed. |
 | 2026-09-22 | Claude (Opus 5) + Dion | T0.11: refactor done, post-merge cleanup of the nightly runner's copy recorded. `next-steps-map.html` republish still owed. |
 | 2026-09-22 | Claude (Opus 5) + Dion | T0.11: recorded the runner and the nightly run from PR #4, the fork-PR risk settled for the nightly, and what is left. `next-steps-map.html` updated and republished. |

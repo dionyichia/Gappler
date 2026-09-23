@@ -1,0 +1,248 @@
+T0.5 half 1: fresh clone + bench on Zongzhe's Mac, 2026-09-21
+================================================================================
+Host: Darwin arm64 (Apple silicon), macOS 24.0.0, no ROS, no CUDA.
+Clone: git clone https://github.com/dionyichia/Gappler.git -> 90c8fc0 on dev
+  (the remote's default branch is now dev, so a plain clone lands on dev, not main)
+Command: ./bench/run.sh   (full, not quick)
+
+RESULT: PASS. L0 PASS, L1 PASS, L2 PASS, L3-L6 SKIPPED (no ROS 2 Humble, no robot).
+
+Finding: L2 env/anygrasp-env FAILS on this machine as soon as a venv exists.
+  bench/preflight.py:370-385 skips the check only while no venv is present. Once
+  `uv sync` creates .venv it tries `import MinkowskiEngine`, a CUDA extension that
+  cannot be built on an arm64 Mac, so the check FAILs, L2 FAILs and the whole bench
+  goes red. Verified by creating an empty .venv and running preflight -g env:
+    [PASS] venv          .venv -> Python 3.13.1
+    [FAIL] anygrasp-env  MinkowskiEngine not importable from .venv
+  Same class as the 2026-09-19 fix in NEXT_STEPS 2.12, where net and camera checks
+  gated on "is Linux" instead of "is the lab box". This one gates on "does a venv
+  exist" instead of "is there a CUDA GPU". It affects any teammate laptop, which is
+  the whole point of T0.5.
+
+================================================================================
+Full output of ./bench/run.sh follows.
+================================================================================
+
+######## L0  Static checks ########
+==============================================================================
+STATIC CHECKS  (10 checks)
+==============================================================================
+
+[PASS] python-syntax  (164 checked)
+       every Python file we own parses
+
+[PASS] undefined-names  (164 checked)
+       no name is used that is never imported or assigned
+
+[PASS] internal-imports  (164 checked)
+       every intra-repo import resolves to a file that exists
+
+[PASS] xml-wellformed  (49 checked)
+       package.xml / urdf / xacro parse as XML
+
+[PASS] launch-packages  (61 checked)
+       every package a launch file names exists in the repo or in ROS Humble
+       note: 27 packages found in repo
+
+[warn] package-xml-deps  (27 checked)
+       declared dependencies exist in repo or in ROS Humble
+       -- plus 2 finding(s) in vendor code (-v to show)
+
+[PASS] launch-executables  (26 checked)
+       every executable a launch file names is installed by its package
+
+[PASS] launch-includes  (27 checked)
+       launch files included by other launch files exist
+
+[PASS] install-targets  (6 checked)
+       scripts named in CMakeLists install(PROGRAMS) exist on disk
+
+[PASS] generated-manifests  (1 checked)
+       vendor packages that generate package.xml ship the ROS 2 template
+
+==============================================================================
+findings: 0 in code we own, 2 in vendor code
+PASS: all 10 checks clean for code we own.
+
+######## L1  Contracts ########
+
+=== info (2) ===
+  moved           /rm_driver/emergency_stop_cmd
+  moved           /rm_driver/move_stop_cmd
+
+baseline 1461e72  ->  current 90c8fc0
+
+PASS: no contract regressions. (0 warnings, 2 informational)
+
+######## L2  Lab box check (preflight) ########
+==============================================================================
+PREFLIGHT -- can this machine run L3-L4 (the robot is checked by --hardware)
+host: Darwin arm64   repo: /private/tmp/claude-501/-Users-jiangzongzhe-Documents-GitHub-Gappler/dfeb4048-d863-4fa9-9fa6-63511b652a0b/scratchpad/t0.5-clone
+user: jiangzongzhe   lab machine: False (guessed: Linux + ROS or NVIDIA)
+==============================================================================
+
+### host
+  [PASS] platform               Darwin 24.0.0 arm64
+  [PASS] ram                    16.0 GB total
+  [warn] disk                   12.3 GB free at /private/tmp/claude-501/-Users-jiangzongzhe-Documents-GitHub-Gappler/dfeb4048-d863-4fa9-9fa6-63511b652a0b/scratchpad/t0.5-clone
+         -> builds + weights need ~20 GB
+  [PASS] cpu                    8 cores
+
+### home
+  [PASS] running-user           jiangzongzhe (/Users/jiangzongzhe)
+  [PASS] hardcoded-homes        none
+
+### gpu
+  [skip] nvidia-driver          nvidia-smi not present (no NVIDIA GPU, or not a Linux host)
+  [skip] vram                   no NVIDIA GPU detected
+  [PASS] pythonnousersite       not set (correct)
+  [skip] torch-cuda             torch not importable by /opt/homebrew/bin/python3 (ModuleNotFoundError: No module named 'torch')
+
+### ros
+  [skip] humble                 no /opt/ros/humble -- not a ROS machine
+  [skip] colcon                 colcon not on PATH
+  [skip] overlay                no install/ anywhere -- nothing has been built in this clone
+  [skip] no-double-source       AMENT_PREFIX_PATH unset -- no overlay sourced in this shell
+  [PASS] domain-id              ROS_DOMAIN_ID unset (default 0)
+
+### env
+  [skip] venv                   no .venv in this clone -- run `uv sync`
+  [skip] anygrasp-env           no project venv yet -- run `uv sync`, then ./envs/anygrasp/build.sh
+
+### assets
+  [skip] sam3-weights           not the lab workstation (no ROS, no NVIDIA GPU) -- this can only be judged on the robot's machine
+  [skip] anygrasp-detection     not the lab workstation (no ROS, no NVIDIA GPU) -- this can only be judged on the robot's machine
+  [skip] anygrasp-tracking      not the lab workstation (no ROS, no NVIDIA GPU) -- this can only be judged on the robot's machine
+  [PASS] anygrasp-licence       4 file(s): Puneet.lic, Puneet.public_key, Puneet.signature, licenseCfg.json (lock can only be verified by running the node)
+  [PASS] anygrasp-so            gsnet.cpython-310-x86_64-linux-gnu.so, lib_cxx.cpython-310-x86_64-linux-gnu.so, tracker.cpython-310-x86_64-linux-gnu.so
+  [skip] slam-map               not the lab workstation (no ROS, no NVIDIA GPU) -- this can only be judged on the robot's machine
+
+==============================================================================
+RESULT   9 pass   0 fail   1 warn   13 skipped
+==============================================================================
+
+COULD NOT BE RUN HERE (13) -- these are unverified, not passing:
+
+  not the lab workstation (no ROS, no NVIDIA GPU) -- this can only be judged on the robot's machine
+      - assets/sam3-weights
+      - assets/anygrasp-detection
+      - assets/anygrasp-tracking
+      - assets/slam-map
+
+  nvidia-smi not present (no NVIDIA GPU, or not a Linux host)
+      - gpu/nvidia-driver
+
+  no NVIDIA GPU detected
+      - gpu/vram
+
+  torch not importable by /opt/homebrew/bin/python3 (ModuleNotFoundError: No module named 'torch')
+      - gpu/torch-cuda
+
+  no /opt/ros/humble -- not a ROS machine
+      - ros/humble
+
+  colcon not on PATH
+      - ros/colcon
+
+  no install/ anywhere -- nothing has been built in this clone
+      - ros/overlay
+
+  AMENT_PREFIX_PATH unset -- no overlay sourced in this shell
+      - ros/no-double-source
+
+  no .venv in this clone -- run `uv sync`
+      - env/venv
+
+  no project venv yet -- run `uv sync`, then ./envs/anygrasp/build.sh
+      - env/anygrasp-env
+
+NOT TESTABLE BY THIS BENCH AT ALL, BY DESIGN:
+  - arm motion: grasp_state_machine homes the arm within seconds of launch, unprompted (ORIENTATION 8.1). Nothing in this bench launches it.
+  - grasp execution: AnyGrasp -> MoveIt -> arm has never been run end to end; there is no known-good result to compare against (startup guide 7).
+  - gripper: opening or closing the gripper is a physical command; out of scope by design.
+  - Nav2 driving: publishing /goal_pose moves the base. Not exercised.
+  - the full pipeline: voice -> SAM 3 -> gaze -> grasp is severed at object_recognition_pipeline.py:384 (ORIENTATION 6.2), so there is no end-to-end path to test yet.
+
+  This script never publishes to any of: /rm_driver/movej_cmd, /rm_driver/movel_cmd, /rm_driver/movec_cmd, ...
+  Everything past that line needs a human at the robot with the e-stop in hand.
+
+######## L5  Robot check (preflight --hardware) ########
+==============================================================================
+PREFLIGHT -- L5: is the robot there? No arm motion
+host: Darwin arm64   repo: /private/tmp/claude-501/-Users-jiangzongzhe-Documents-GitHub-Gappler/dfeb4048-d863-4fa9-9fa6-63511b652a0b/scratchpad/t0.5-clone
+user: jiangzongzhe   lab machine: False (guessed: Linux + ROS or NVIDIA)
+==============================================================================
+
+### net
+  [skip] arm-nic                not the lab workstation (no ROS, no NVIDIA GPU) -- this can only be judged on the robot's machine
+  [skip] arm-lidar-coexist      not the lab workstation (no ROS, no NVIDIA GPU) -- this can only be judged on the robot's machine
+  [skip] arm-ping               this host has no address on 192.168.1.0/24, so the arm and LiDAR cannot be reached from here by definition
+  [skip] arm-port               this host has no address on 192.168.1.0/24, so the arm and LiDAR cannot be reached from here by definition
+  [skip] lidar-ping             this host has no address on 192.168.1.0/24, so the arm and LiDAR cannot be reached from here by definition
+  [skip] realsense-usb          not the lab workstation (no ROS, no NVIDIA GPU) -- this can only be judged on the robot's machine
+  [skip] realsense-stream       not the lab workstation (no ROS, no NVIDIA GPU) -- this can only be judged on the robot's machine
+  [skip] aria-glasses           aria CLI not found (venv not built, or not the lab machine)
+
+### graph
+  [skip] nodes                  ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+  [skip] camera-hz-color        ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+  [skip] camera-hz-depth        ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+  [skip] tf-arm-camera          ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+  [skip] tf-base-bridge         ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+  [skip] joint-states           ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+
+==============================================================================
+RESULT   0 pass   0 fail   0 warn   14 skipped
+==============================================================================
+
+COULD NOT BE RUN HERE (14) -- these are unverified, not passing:
+
+  ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+      - graph/nodes
+      - graph/camera-hz-color
+      - graph/camera-hz-depth
+      - graph/tf-arm-camera
+      - graph/tf-base-bridge
+      - graph/joint-states
+
+  not the lab workstation (no ROS, no NVIDIA GPU) -- this can only be judged on the robot's machine
+      - net/arm-nic
+      - net/arm-lidar-coexist
+      - net/realsense-usb
+      - net/realsense-stream
+
+  this host has no address on 192.168.1.0/24, so the arm and LiDAR cannot be reached from here by definition
+      - net/arm-ping
+      - net/arm-port
+      - net/lidar-ping
+
+  aria CLI not found (venv not built, or not the lab machine)
+      - net/aria-glasses
+
+NOT TESTABLE BY THIS BENCH AT ALL, BY DESIGN:
+  - arm motion: grasp_state_machine homes the arm within seconds of launch, unprompted (ORIENTATION 8.1). Nothing in this bench launches it.
+  - grasp execution: AnyGrasp -> MoveIt -> arm has never been run end to end; there is no known-good result to compare against (startup guide 7).
+  - gripper: opening or closing the gripper is a physical command; out of scope by design.
+  - Nav2 driving: publishing /goal_pose moves the base. Not exercised.
+  - the full pipeline: voice -> SAM 3 -> gaze -> grasp is severed at object_recognition_pipeline.py:384 (ORIENTATION 6.2), so there is no end-to-end path to test yet.
+
+  This script never publishes to any of: /rm_driver/movej_cmd, /rm_driver/movel_cmd, /rm_driver/movec_cmd, ...
+  Everything past that line needs a human at the robot with the e-stop in hand.
+
+SKIPPED: the arm does not answer (skip), so L6 has nothing to test.
+
+======================================================================
+  BENCH SUMMARY
+----------------------------------------------------------------------
+  L0  Static checks              PASS     
+  L1  Contracts                  PASS     
+  L2  Lab box check              PASS     no ROS 2 Humble, so not the lab box. L3-L4 skipped
+  L3  Build                      SKIPPED  needs the lab box (see L2)
+  L4  Simulation                 SKIPPED  needs the lab box (see L2)
+  L5  Robot check                SKIPPED  needs the lab box (see L2)
+  L6  Hardware                   SKIPPED  L5 did not pass. Not needed to merge
+----------------------------------------------------------------------
+  RESULT: PASS (every level that ran passed)
+======================================================================
+A green bench means no contract moved and the code is consistent. It does
+NOT mean the robot works. L6 needs a human with the e-stop.

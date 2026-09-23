@@ -10,7 +10,8 @@ refactored toward one-folder-per-node modular code.
 
 - **Global docs live directly in `docs/`** — they describe state shared by everyone, not one
   person's session: `ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`,
-  `CHANNEL_CONTRACT`, `NEXT_STEPS`, `PROJECT_PLAN`, `TESTBENCH_PLAN`, `hico-nav/`, `bench-runs/`,
+  `CHANNEL_CONTRACT`, `MEMORY_GRAPH_DESIGN`, `NEXT_STEPS`, `PROJECT_PLAN`, `TESTBENCH_PLAN`,
+  `hico-nav/`, `bench-runs/`,
   and the three published HTML pages (`task-tree.html`, `wiring-map.html`, `testbench-map.html`).
 - **Personal docs live in per-person folders**, `docs/<name>_docs/` — session notes, handoffs and
   evidence write-ups not yet folded into the shared docs above.
