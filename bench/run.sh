@@ -6,7 +6,7 @@
 #   L1  Contracts        no topic, frame or param name moved             any machine
 #   L2  Lab box check    preflight: can this machine run L3-L4?          any machine
 #   L3  Build            colcon build, arm and nav workspaces            needs ROS 2 Humble
-#   L4  Simulation       simulated arm, mock Nav2, e-stop, AnyGrasp env  needs ROS + L3
+#   L4  Simulation       simulated arm, mock Nav2, e-stop, AnyGrasp env + replay  needs ROS + L3
 #   L5  Robot check      preflight --hardware: is the robot there?      the lab box
 #   L6  Hardware         the real arm test. Never run by this script     a person at the robot
 #
@@ -15,20 +15,24 @@
 #   ./bench/run.sh preflight    L2 only
 #   ./bench/run.sh robot        L5 only (run this at the robot before an L6 test)
 #   ./bench/run.sh report       contract inventory + orphan analysis
+#   ./bench/run.sh --no-skips   also fail if any of L0-L4 is SKIPPED (the CI full job)
 #
-# Exit 0 when every level that ran passed. Skipped levels do not fail the run.
+# Exit 0 when every level that ran passed. Skipped levels do not fail the run,
+# unless --no-skips is given. L5-L6 may always skip.
 # L5 and L6 are not needed to merge: an unplugged arm makes L5 SKIPPED, not FAIL.
 # Nothing here commands the arm -- see bench/preflight.py SAFETY.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
+no_skips=0
+[ "${1:-}" = --no-skips ] && { no_skips=1; shift; }
 mode="${1:-all}"
 case "$mode" in
   report)    exec python3 bench/contracts.py report ;;
   preflight) exec python3 bench/preflight.py ;;
   robot)     exec python3 bench/preflight.py --hardware ;;
   all|quick) ;;
-  *) echo "usage: $0 [quick|preflight|robot|report]"; exit 2 ;;
+  *) echo "usage: $0 [--no-skips] [quick|preflight|robot|report]"; exit 2 ;;
 esac
 
 # In GitHub Actions, fold each level's output so the log reads as a list of levels.
@@ -38,7 +42,12 @@ close() { [ -n "$gh" ] && echo "::endgroup::"; return 0; }
 
 rows=()      # "level|name|status|note" for the summary
 failed=0
-row() { rows+=("$1|$2|$3|$4"); [ "$3" = FAIL ] && failed=1; return 0; }
+row() {
+  rows+=("$1|$2|$3|$4"); [ "$3" = FAIL ] && failed=1
+  # --no-skips: a skipped L0-L4 means that level was not tested, so the run fails.
+  case "$no_skips$3$1" in 1SKIPPEDL[0-4]) failed=1 ;; esac
+  return 0
+}
 
 # Run one script, map its exit code: 0 PASS, 3 SKIPPED, anything else FAIL.
 # The level's own output goes to stderr so that $(step ...) captures only the status word.
@@ -51,7 +60,8 @@ step() {
 s=$(step "L0  Static checks" python3 bench/static.py)
 row L0 "Static checks" "$s" ""
 
-s=$(step "L1  Contracts" python3 bench/contracts.py check)
+# The extractor self-test first: a broken extractor would make every check below pass.
+s=$(step "L1  Contracts" sh -c "python3 bench/test_contracts.py && python3 bench/contracts.py check")
 row L1 "Contracts" "$s" ""
 
 s=$(step "L2  Lab box check (preflight)" python3 bench/preflight.py)
@@ -67,14 +77,14 @@ elif [ $lab = 0 ]; then
   row L3 "Build" SKIPPED "needs the lab box (see L2)"
   row L4 "Simulation" SKIPPED "needs the lab box (see L2)"
 else
-  arm=$(step "L3  Build: arm workspace" ./bench/build.sh arm)
+  arm=$(step "L3  Build: arm workspace" ./build.sh arm)
   row L3 "Build: arm" "$arm" ""
-  s=$(step "L3  Build: nav workspace" ./bench/build.sh nav)
+  s=$(step "L3  Build: nav workspace" ./build.sh nav)
   row L3 "Build: nav" "$s" ""
   if [ "$arm" != PASS ]; then
     row L4 "Simulation" SKIPPED "arm build did not pass (see L3)"
   else
-    for t in sim_moveit estop_delivery state_machine_sim nav_nodes anygrasp_env; do
+    for t in sim_moveit estop_delivery state_machine_sim nav_nodes anygrasp_env anygrasp_replay; do
       s=$(step "L4  Simulation: $t" ./bench/$t.sh)
       row L4 "Sim: $t" "$s" ""
     done
@@ -109,7 +119,7 @@ for r in "${rows[@]}"; do
 done
 echo "----------------------------------------------------------------------"
 [ $failed = 0 ] && echo "  RESULT: PASS (every level that ran passed)" \
-                || echo "  RESULT: FAIL (open the failing level's output above)"
+                || echo "  RESULT: FAIL (a level failed$([ $no_skips = 1 ] && echo ", or L0-L4 skipped under --no-skips"). See its output above)"
 echo "======================================================================"
 echo "A green bench means no contract moved and the code is consistent. It does"
 echo "NOT mean the robot works. L6 needs a human with the e-stop."

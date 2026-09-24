@@ -1,5 +1,10 @@
 # ARCHITECTURE DIAGRAMS
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 Companion to [`ORIENTATION.md`](ORIENTATION.md) (prose), [`NEXT_STEPS.md`](NEXT_STEPS.md) (the
 work register) and [`READING_GUIDE.md`](READING_GUIDE.md) (a guided walk through the code). Read
 ORIENTATION first; this file is the visual reference. Index: [`START_HERE.md`](START_HERE.md).
@@ -506,3 +511,4 @@ See ORIENTATION §8.2 for the three self-annotated bugs in the EXECUTING branch.
 | 2026-09-10 | Claude (Opus 5) + Dion | Cuts table now lists all five (added pose-fusion VIO and the duplicate-publisher collision). Linked NEXT_STEPS.md. |
 | 2026-09-09 | Claude (Opus 5) | Added L1a (arm end-to-end + rm_driver surface + TF chain), L1b (nav node graph, mapping-vs-localization, TF tree), L2 (process/thread model, latest-wins handoff), L2b (state machine transitions). Corrected `/aria/fused_pose` frame in L0c. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Cuts table: seam #2 citation `object_recognition_pipeline.py:384`→`:389`, shifted by uncommitted comments in that file. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |

@@ -14,6 +14,7 @@ or any Python dependencies. Runs on a laptop in about a second.
 ./bench/run.sh quick        # L0-L2 only: skips the ~30 min build on the lab box
 ./bench/run.sh preflight    # L2 only: environment + hardware
 ./bench/run.sh report       # inventory of every contract, plus orphan analysis
+./bench/run.sh --no-skips   # also fail if any of L0-L4 is SKIPPED (the CI `full` job)
 python3 bench/contracts.py snapshot   # re-baseline after a deliberate change
 ```
 
@@ -22,14 +23,15 @@ Python 3.8+, stdlib only. Nothing to install.
 ### Levels (renamed 2026-09-19)
 
 `run.sh` runs these in order. A level that this machine cannot run is reported as SKIPPED, never
-as a pass, and skipped levels do not fail the run.
+as a pass, and skipped levels do not fail the run. With `--no-skips`, a skipped L0-L4 fails the run.
+L5-L6 may always skip.
 
 | Level | Name | What it checks | Runs on | Was |
 |---|---|---|---|---|
 | L0 | Static checks | code parses, imports and launch file names resolve (`static.py`) | any machine | Tier 0-1 |
 | L1 | Contracts | no topic, frame or parameter name moved since the snapshot (`contracts.py`) | any machine | Tier 0-1 |
 | L2 | Lab box check | preflight: can this machine run L3-L4? Does not look at the robot (`preflight.py`) | any machine | preflight |
-| L3 | Build | colcon build of the arm and nav workspaces (`build.sh`) | ROS 2 Humble | Tier 2 |
+| L3 | Build | colcon build of the arm and nav code (`build.sh` at the repo root) | ROS 2 Humble | Tier 2 |
 | L4 | Simulation | simulated arm, e-stop, state machine, nav nodes vs mock Nav2, AnyGrasp env | ROS 2 Humble + L3 | Tier 3 |
 | L5 | Robot check | preflight `--hardware`: do the arm, wrist camera, LiDAR and glasses answer? Gates L6 | the lab box | new 2026-09-21 |
 | L6 | Hardware | the real arm test | a person with the e-stop, never automated | Tier 4 |
@@ -59,12 +61,13 @@ refused, 3 skipped — never a pass.
 
 | Script | What it checks | Extra guards |
 |---|---|---|
-| `build.sh [nav]` | Tier 2: colcon build of the arm workspace (or `Navigation_Module`) into this checkout. `nav` first does the Livox prep: copies `Navigation_Module/src/livox_ros_driver2/package_ROS2.xml` in as the (gitignored) livox `package.xml` if missing, passes the ROS 2 CMake flags, and warns if Livox-SDK2 isn't installed | only `/opt/ros/humble` may be sourced |
+| `../build.sh [nav]` | At the repo root since 2026-09-21 (the real build, not only a test). colcon build of `arm/` + `grasp/` or, with `nav`, `nav/`, vendor included, into this checkout, with `--symlink-install`. `nav` first does the Livox prep: copies `nav/vendor/livox_ros_driver2/package_ROS2.xml` in as the (gitignored) livox `package.xml` if missing, passes the ROS 2 CMake flags, and warns if Livox-SDK2 isn't installed | only `/opt/ros/humble` may be sourced |
 | `sim_moveit.sh` | MoveIt plans and executes to both home poses and zero on a `mock_components` arm | installed config must be mock hardware |
 | `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s` sent back to back, the Ctrl+C key and SIGINT (5 trials) all deliver? Every case is required since the 2026-09-21 fix | — |
 | `state_machine_sim.sh` | `grasp_state_machine` runs a full grasp cycle on the simulated arm; the test plays camera, detector and gripper | mock hardware; preflight's `arm-ping`/`arm-port` must not pass (Dion's exception in `CLAUDE.md`) |
 | `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 10 cases, 4 expected-fail (F1 ×2, F2, E1). Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
-| `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `envs/anygrasp/.venv`, built by `./envs/anygrasp/build.sh` | GPU only, no ROS |
+| `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `grasp/anygrasp_venv/.venv`, built by `./grasp/anygrasp_venv/build_anygrasp_venv.sh` | GPU only, no ROS |
+| `anygrasp_replay.sh` | a recorded wrist-camera bag (`WRIST_CAMERA_BAG`, default `assets/recordings/wrist_camera`, made by `grasp/tools/record_wrist_camera.sh`) through `sam3_ros_node` and `anygrasp_detection_node`, with `/pipeline_state` played as EXECUTING then IDLE. 2 controls (a mask, candidates) and the A1 gate case, expected-fail. SKIPPED with no recording | channel must be empty **including hidden topics**. No camera, no state machine |
 
 Tests that encode a CODE_AUDIT finding assert the *intended* behaviour and report **XFAIL** while the
 bug is there, **XPASS** once it isn't — then retag the finding.
@@ -133,7 +136,7 @@ system's interface — which is worth having in review on its own.
 
 `preflight.py` runs everything up to **but not including** commanding the arm. That line is
 enforced in the code, not just in a comment: the script never publishes to any `/rm_driver/*_cmd`
-topic and never launches `grasp_state_machine` or `ros2_robot_ws/src/main.py`, because both home
+topic and never launches `grasp_state_machine` or `launchers/start_grasp_pipeline.py`, because both home
 the arm within seconds of start, unprompted (`ORIENTATION.md` §8.1).
 
 Everything short of that is checked, in two runs. The default run (L2) covers the machine: GPU
@@ -227,11 +230,9 @@ Echo Plus / Livox drops, reported with `-v`.
 
 ## Scope
 
-Vendored trees are excluded wholesale: `OpenVINS/`, `MinkowskiEngine/`,
+Vendored trees are excluded wholesale: `open_vins/`, `MinkowskiEngine/`,
 `moveit_task_constructor/`, `anygrasp_sdk/`, `src/archive/`, and every build
-artefact directory. Ownership is defined by `OWNED_PREFIXES` in `bench/_common.py` (one copy, used by all three tools) —
-**update it when the reorg moves things**, or newly-moved code will be
-misclassified as vendor and stop failing the build.
+artefact directory. Ownership is one rule, `is_owned` in `bench/_common.py` (since 2026-09-22): our code is everything except what sits under a folder named `vendor/`. Put third-party code under its subsystem's `vendor/`, and nothing in the bench needs editing when code moves.
 
 ## What this bench does not cover
 

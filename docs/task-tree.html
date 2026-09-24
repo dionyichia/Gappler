@@ -1,0 +1,1417 @@
+<title>Gappler Task Tree</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#f7f8fa; --surface:#ffffff; --surface-2:#f0f2f6; --surface-3:#e7eaf0;
+  --ink:#16191f; --ink-2:#495261; --ink-3:#78828f;
+  --line:#dbe0e8; --line-2:#c3cad6;
+  --accent:#1f5fa8; --accent-soft:#e8f0f9;
+  --dion:#1f5fa8; --dion-soft:#e8f0f9;
+  --zz:#6f3d9e; --zz-soft:#f0eaf8;
+  --sherman:#0d6a66; --sherman-soft:#e2f1f0;
+  --all:#5b6472; --all-soft:#eceef2;
+  --broken:#b02a2a; --broken-soft:#fbeced;
+  --caution:#96620d; --caution-soft:#fdf3e3;
+  --working:#1c7048; --working-soft:#e7f4ed;
+  --build:#1f5fa8; --build-soft:#e8f0f9;
+  --fix:#b02a2a; --fix-soft:#fbeced;
+  --wire:#96620d; --wire-soft:#fdf3e3;
+  --bringup:#0d6a66; --bringup-soft:#e2f1f0;
+  --measure:#1c7048; --measure-soft:#e7f4ed;
+  --plan:#5b6472; --plan-soft:#eceef2;
+  --display:'Archivo','Helvetica Neue',Arial,sans-serif;
+  --body:'IBM Plex Sans',-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+  --shadow:0 1px 2px rgba(20,30,50,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14171c; --surface:#1c2027; --surface-2:#23282f; --surface-3:#2b313a;
+    --ink:#e8ebef; --ink-2:#b0b8c4; --ink-3:#828c99;
+    --line:#2e343d; --line-2:#3d444f;
+    --accent:#6aa6e8; --accent-soft:#1b2836;
+    --dion:#6aa6e8; --dion-soft:#1b2836;
+    --zz:#b189e6; --zz-soft:#251d33;
+    --sherman:#4fb5ad; --sherman-soft:#14292a;
+    --all:#9aa4b2; --all-soft:#242830;
+    --broken:#e8797a; --broken-soft:#2c1c1e;
+    --caution:#d9a353; --caution-soft:#2a2118;
+    --working:#5fb98a; --working-soft:#17271f;
+    --build:#6aa6e8; --build-soft:#1b2836;
+    --fix:#e8797a; --fix-soft:#2c1c1e;
+    --wire:#d9a353; --wire-soft:#2a2118;
+    --bringup:#4fb5ad; --bringup-soft:#14292a;
+    --measure:#5fb98a; --measure-soft:#17271f;
+    --plan:#9aa4b2; --plan-soft:#242830;
+    --shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14171c; --surface:#1c2027; --surface-2:#23282f; --surface-3:#2b313a;
+  --ink:#e8ebef; --ink-2:#b0b8c4; --ink-3:#828c99;
+  --line:#2e343d; --line-2:#3d444f;
+  --accent:#6aa6e8; --accent-soft:#1b2836;
+  --dion:#6aa6e8; --dion-soft:#1b2836;
+  --zz:#b189e6; --zz-soft:#251d33;
+  --sherman:#4fb5ad; --sherman-soft:#14292a;
+  --all:#9aa4b2; --all-soft:#242830;
+  --broken:#e8797a; --broken-soft:#2c1c1e;
+  --caution:#d9a353; --caution-soft:#2a2118;
+  --working:#5fb98a; --working-soft:#17271f;
+  --build:#6aa6e8; --build-soft:#1b2836;
+  --fix:#e8797a; --fix-soft:#2c1c1e;
+  --wire:#d9a353; --wire-soft:#2a2118;
+  --bringup:#4fb5ad; --bringup-soft:#14292a;
+  --measure:#5fb98a; --measure-soft:#17271f;
+  --plan:#9aa4b2; --plan-soft:#242830;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);
+  font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px;display:grid;
+  grid-template-columns:214px minmax(0,1fr);gap:44px;align-items:start}
+@media (max-width:940px){.wrap{grid-template-columns:1fr;gap:0}}
+
+.masthead{border-bottom:1px solid var(--line);background:var(--surface);margin-bottom:36px}
+.masthead .inner{max-width:1240px;margin:0 auto;padding:34px 24px 30px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 10px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,4.4vw,42px);
+  line-height:1.1;margin:0 0 12px;letter-spacing:-.02em;text-wrap:balance}
+.dek{font-size:17.5px;color:var(--ink-2);max-width:66ch;margin:0}
+.facts{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 0}
+.fact{background:var(--surface-2);border:1px solid var(--line);border-radius:4px;
+  padding:8px 13px;font-size:13.5px;color:var(--ink-2)}
+.fact b{color:var(--ink);font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+
+nav.rail{position:sticky;top:20px;font-size:14px}
+@media (max-width:940px){nav.rail{position:static;margin-bottom:32px;
+  border:1px solid var(--line);border-radius:5px;background:var(--surface);padding:16px}}
+nav.rail .hd{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:12px}
+nav.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+nav.rail a{display:flex;gap:9px;padding:5px 8px;border-radius:3px;text-decoration:none;
+  color:var(--ink-2);line-height:1.35}
+nav.rail a:hover{background:var(--surface-2);color:var(--ink)}
+nav.rail a .n{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);padding-top:2px;min-width:14px}
+nav.rail a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+main{min-width:0;padding-bottom:90px}
+section{margin:0 0 60px;scroll-margin-top:20px}
+h2{font-family:var(--display);font-weight:600;font-size:26px;line-height:1.2;
+  margin:0 0 6px;letter-spacing:-.015em;text-wrap:balance}
+h2 .sn{font-family:var(--mono);font-size:13px;font-weight:400;color:var(--ink-3);
+  display:block;margin-bottom:5px;letter-spacing:.04em}
+h3{font-family:var(--display);font-weight:600;font-size:18.5px;margin:34px 0 8px;letter-spacing:-.01em}
+.sub{color:var(--ink-2);font-size:16.5px;margin:0 0 22px;max-width:68ch}
+p{margin:0 0 15px;max-width:68ch}
+ul,ol.body{margin:0 0 15px;padding-left:22px;max-width:66ch}
+li{margin-bottom:7px}
+a{color:var(--accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+code{font-family:var(--mono);font-size:.87em;background:var(--surface-2);
+  padding:1.5px 5px;border-radius:3px;color:var(--ink)}
+.chan{font-family:var(--mono);font-size:.85em;color:var(--accent);
+  background:var(--accent-soft);padding:1.5px 6px;border-radius:3px;white-space:nowrap}
+
+.callout{border-radius:5px;padding:17px 19px;margin:0 0 22px;border:1px solid;
+  border-left-width:4px;font-size:15.5px}
+.callout p{max-width:none;margin:0 0 10px}
+.callout p:last-child{margin:0}
+.callout .ct{font-family:var(--display);font-weight:600;font-size:16px;margin:0 0 7px;display:block}
+.c-key{background:var(--working-soft);border-color:var(--working)}
+.c-key .ct{color:var(--working)}
+.c-warn{background:var(--caution-soft);border-color:var(--caution)}
+.c-warn .ct{color:var(--caution)}
+.c-note{background:var(--accent-soft);border-color:var(--accent)}
+.c-note .ct{color:var(--accent)}
+
+.scroller{overflow-x:auto;margin:0 0 22px;border:1px solid var(--line);
+  border-radius:5px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:540px;
+  font-family:var(--body);line-height:1.55;color:var(--ink-2)}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);text-align:left;padding:10px 13px;border-bottom:1px solid var(--line-2);
+  background:var(--surface-2);font-weight:500;white-space:nowrap}
+td{padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+td:first-child{color:var(--ink)}
+tr:last-child td{border-bottom:none}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ---------- owner chips ---------- */
+.who{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 7px;border-radius:2px;white-space:nowrap;border:1px solid}
+.w-D{background:var(--dion-soft);color:var(--dion);border-color:var(--dion)}
+.w-Z{background:var(--zz-soft);color:var(--zz);border-color:var(--zz)}
+.w-S{background:var(--sherman-soft);color:var(--sherman);border-color:var(--sherman)}
+.w-A{background:var(--all-soft);color:var(--all);border-color:var(--all)}
+
+/* ---------- the gantt ---------- */
+figure{margin:0 0 12px}
+figcaption{font-size:13.5px;color:var(--ink-3);margin-top:9px;max-width:70ch}
+.chart{overflow-x:auto;border:1px solid var(--line);border-radius:5px;background:var(--surface);padding:6px}
+.chart svg{display:block;min-width:900px;width:100%;height:auto}
+
+/* ---------- the tree ---------- */
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 18px;
+  padding:13px 15px;background:var(--surface);border:1px solid var(--line);border-radius:5px}
+.toolbar .lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);margin-right:2px}
+button.f{font-family:var(--body);font-size:13.5px;padding:5px 12px;border-radius:3px;
+  border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink-2);cursor:pointer}
+button.f:hover{border-color:var(--accent);color:var(--ink)}
+button.f[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.toolbar .note{font-size:13px;color:var(--ink-3);margin-left:auto}
+
+.ms{margin:0 0 26px;border:1px solid var(--line);border-radius:6px;background:var(--surface);
+  overflow:hidden}
+.ms.opt{border-style:dashed}
+.ms > header{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;
+  padding:14px 17px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.ms h4{font-family:var(--display);font-size:17px;font-weight:600;margin:0;letter-spacing:-.01em}
+.ms .mid{font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:.06em}
+.ms .wks{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);
+  background:var(--surface-3);padding:2px 8px;border-radius:2px;font-variant-numeric:tabular-nums}
+.ms .goal{flex-basis:100%;font-size:14.5px;color:var(--ink-2);margin:0}
+.ms .flag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  padding:2px 7px;border-radius:2px;border:1px solid}
+.flag-prot{background:var(--working-soft);color:var(--working);border-color:var(--working)}
+.flag-opt{background:var(--caution-soft);color:var(--caution);border-color:var(--caution)}
+
+.nodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:1px;
+  background:var(--line)}
+.node{background:var(--surface);padding:13px 15px 32px;display:flex;flex-direction:column;gap:7px;
+  border-left:3px solid transparent;cursor:pointer;position:relative}
+.node:hover{background:var(--surface-2)}
+.node .notes{display:none;font-size:13px;line-height:1.5;color:var(--ink-2);border-top:1px solid var(--line);padding-top:7px}
+.node.sel .notes{display:block}
+.node .notes code{font-family:var(--mono);font-size:12px}
+.node:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.node.own-D{border-left-color:var(--dion)}
+.node.own-Z{border-left-color:var(--zz)}
+.node.own-S{border-left-color:var(--sherman)}
+.node.own-A{border-left-color:var(--all)}
+.node .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.node .tid{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--ink)}
+.node .hrs{font-family:var(--mono);font-size:11.5px;color:var(--ink-3);margin-left:auto;
+  font-variant-numeric:tabular-nums}
+.node .title{font-size:14px;line-height:1.45;color:var(--ink-2);margin:0}
+.node .deps{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:11.5px;color:var(--ink-3)}
+.node .deps .k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.dep{font-family:var(--mono);font-size:11px;background:var(--surface-2);border:1px solid var(--line-2);
+  border-radius:2px;padding:1px 5px;color:var(--ink-2)}
+.node .free{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--working)}
+.node .loc{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);border:1px dashed var(--line-2);border-radius:2px;padding:1px 5px}
+.node.dim{opacity:.3}
+.node.sel{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.node.up{background:var(--caution-soft)}
+.node.down{background:var(--working-soft)}
+.node.done .title,.node.done .tid{text-decoration:line-through;color:var(--ink-3)}
+.node .mark{position:absolute;right:12px;bottom:10px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);border:1px solid var(--line-2);
+  background:var(--surface);border-radius:2px;padding:1px 6px;cursor:pointer}
+.node .mark:hover{border-color:var(--working);color:var(--working)}
+.node.done .mark{border-color:var(--working);color:var(--working);background:var(--working-soft)}
+
+/* ---------- work type ---------- */
+.wt{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  padding:1px 6px;border-radius:2px;white-space:nowrap;border:1px solid;font-weight:500}
+.wt-build{background:var(--build-soft);color:var(--build);border-color:var(--build)}
+.wt-fix{background:var(--fix-soft);color:var(--fix);border-color:var(--fix)}
+.wt-wire{background:var(--wire-soft);color:var(--wire);border-color:var(--wire)}
+.wt-bringup{background:var(--bringup-soft);color:var(--bringup);border-color:var(--bringup)}
+.wt-measure{background:var(--measure-soft);color:var(--measure);border-color:var(--measure)}
+.wt-plan{background:var(--plan-soft);color:var(--plan);border-color:var(--plan)}
+.node{border-right:4px solid transparent}
+.node.wk-build{border-right-color:var(--build)}
+.node.wk-fix{border-right-color:var(--fix)}
+.node.wk-wire{border-right-color:var(--wire)}
+.node.wk-bringup{border-right-color:var(--bringup)}
+.node.wk-measure{border-right-color:var(--measure)}
+.node.wk-plan{border-right-color:var(--plan)}
+.mix{display:flex;flex-wrap:wrap;gap:2px;margin:0 0 18px;border:1px solid var(--line);
+  border-radius:5px;overflow:hidden;background:var(--surface)}
+.mix .seg{flex:1 1 auto;padding:9px 11px;font-family:var(--mono);font-size:11px;
+  letter-spacing:.06em;text-transform:uppercase;color:#fff;text-align:center;min-width:90px}
+.mix .seg b{display:block;font-size:17px;letter-spacing:0;margin-bottom:1px}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--ink-3);margin:0 0 18px}
+.legend span{display:flex;gap:6px;align-items:center}
+.swatch{width:12px;height:12px;border-radius:2px;display:inline-block}
+
+.lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin:0 0 22px}
+.lane{border:1px solid var(--line);border-top-width:3px;border-radius:5px;background:var(--surface);
+  padding:16px 18px}
+.lane.L-D{border-top-color:var(--dion)}
+.lane.L-Z{border-top-color:var(--zz)}
+.lane.L-S{border-top-color:var(--sherman)}
+.lane h4{font-family:var(--display);font-size:17px;margin:0 0 3px;font-weight:600}
+.lane .role{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 11px}
+.lane p{font-size:14.5px;margin:0 0 11px;max-width:none;color:var(--ink-2)}
+.lane ul{font-size:14px;padding-left:19px;margin:0 0 11px;max-width:none}
+.lane .load{font-family:var(--mono);font-size:12px;color:var(--ink-3);border-top:1px solid var(--line);
+  padding-top:10px;font-variant-numeric:tabular-nums}
+
+.foot{border-top:1px solid var(--line);padding-top:22px;font-size:13.5px;color:var(--ink-3);max-width:70ch}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="masthead"><div class="inner">
+  <p class="eyebrow">Gappler &middot; project plan &middot; 16 September 2026</p>
+  <h1>Gappler Task Tree</h1>
+  <p class="dek">Thirty-one calendar weeks, three people, one robot &mdash; the same 20 weeks of work
+  the first version of this page planned, now mapped onto the real capstone calendar: a recess, an
+  exam period, a winter break, and four dates the university sets rather than us. The companion to
+  the wiring map: that one says how the system is put together, this one says what we do about it.</p>
+  <div class="facts">
+    <span class="fact">Week 1 starts <b>14 Sep 2026</b></span>
+    <span class="fact">Plan &amp; Gantt due <b>5 Oct 2026</b></span>
+    <span class="fact">Interim presentation <b>10&ndash;13 Nov 2026</b></span>
+    <span class="fact">Final report due <b>28 Mar 2027</b></span>
+    <span class="fact">Oral presentation <b>5&ndash;16 Apr 2027</b></span>
+    <span class="fact">Milestones <b>11</b></span>
+    <span class="fact">Tasks <b>73</b></span>
+    <span class="fact">Effort available <b>~620 h</b></span>
+  </div>
+</div></header>
+
+<div class="wrap">
+<nav class="rail">
+  <p class="hd">On this page</p>
+  <ol>
+    <li><a href="#split"><span class="n">1</span><span>Can we split the work</span></a></li>
+    <li><a href="#streams"><span class="n">2</span><span>The three streams</span></a></li>
+    <li><a href="#map"><span class="n">3</span><span>The milestone map</span></a></li>
+    <li><a href="#tree"><span class="n">4</span><span>The task tree</span></a></li>
+    <li><a href="#people"><span class="n">5</span><span>What each person owns</span></a></li>
+    <li><a href="#scope"><span class="n">6</span><span>In scope, out of scope</span></a></li>
+    <li><a href="#cut"><span class="n">7</span><span>What we cut first</span></a></li>
+    <li><a href="#stretch"><span class="n">8</span><span>If we run early</span></a></li>
+    <li><a href="#track"><span class="n">9</span><span>How we track it</span></a></li>
+    <li><a href="#owns"><span class="n">10</span><span>Who owns what</span></a></li>
+  </ol>
+</nav>
+
+<main>
+<div class="callout c-warn" style="margin-bottom:20px">
+  <span class="ct">What changed on 16 September &mdash; the schedule is now the real one</span>
+  <p>This page used to plan in a straight 20 weeks ending 31 January. That was never the actual
+  deadline. The capstone has four fixed dates: the project plan and Gantt chart are due
+  <strong>5 October 2026</strong>, the interim presentation falls <strong>10&ndash;13 November
+  2026</strong>, the final report is due <strong>28 March 2027</strong>, and the oral presentation
+  and demonstration run <strong>5&ndash;16 April 2027</strong>. None of that time was free either:
+  the last week of September is a recess, the last three weeks of November plus the first few days
+  of December are the exam period, and of the four-week winter break only the back two weeks are
+  usable as working buffer.</p>
+  <p>The same 20 weeks of milestone work now spans <strong>31 calendar weeks</strong>, finishing
+  mid-April instead of end of January. That is not a delay &mdash; it is more accurate slack: about
+  620 person-hours are now available against the 406 hours of named work, versus 515 before, so
+  capacity usage drops from 79 to about 65 percent. See section 3 below for the full calendar, and
+  the deadlines highlighted in the chart. Task ownership, hours and dependencies did not change,
+  only which calendar week each one falls in.</p>
+</div>
+<div class="callout c-key" style="margin-bottom:20px">
+  <span class="ct">What changed on 20 September &mdash; the channel contract, and navigation has two owners</span>
+  <p><strong>T0.7 is done.</strong> <code>docs/CHANNEL_CONTRACT.md</code> now says which subsystem
+  owns which message channel, what passes between subsystems, and who decides when a name, type or
+  frame changes. It records twelve live handover channels, four parked with the out-of-scope return
+  leg, four planned ones, five measurements and the hidden channels most people forget: the Nav2 goal
+  server, the transform tree edge by edge, the launch files and the vendor drivers. It is the single
+  source, and this page, <code>ORIENTATION</code> and the wiring map point at it.</p>
+  <p><strong>Navigation is split at the goal.</strong> Sherman owns everything that gets the robot to
+  a commanded point, Zongzhe owns everything that decides which point. Tasks T3.3 to T3.6 and the new
+  T5.9, the FAST-LIVO2 escalation, move to Sherman, along with T4.2. T0.10 and T0.11, the CI and bench
+  work, stay with Dion, who wrote the bench. See <a href="#owns">Section 10</a>.</p>
+  <p><strong>Twenty-eight decisions were settled</strong>, including five of the six open questions in
+  the code audit. The reasoning is in the contract, section 6.</p>
+</div>
+<div class="callout c-note" style="margin-bottom:20px">
+  <span class="ct">Also on 16 September &mdash; a CI task added, and DONE now means done for everyone</span>
+  <p><strong>New task, T0.10.</strong> Once a second clone has actually proven the fresh-clone story
+  works (T0.5), CI wires up <code>./bench/run.sh</code> to run on every push, so a breaking change to
+  a topic, frame or contract name fails loudly instead of waiting for someone to notice. It cannot
+  touch the real arm, base or glasses. Owner: Dion. Full scope in <code>NEXT_STEPS.md</code> &sect;2.12.</p>
+  <p><strong>The done state on every task node below is no longer just per-browser.</strong> A task
+  whose description starts with "DONE" is struck through and shown green for every viewer, derived
+  from the data itself rather than from a click saved in one person's <code>localStorage</code>. The
+  mark button still lets you track anything else locally, same as before.</p>
+</div>
+<div class="callout c-note" style="margin-bottom:34px">
+  <span class="ct">What changed on 14 September</span>
+  <p><strong>The first task is now T0.0</strong>, taking the four documents worth keeping off the
+  old <code>realman_manip</code> branch onto the main one, plus one file nobody had noticed: a
+  one-line script recording that the session which actually worked used a different grasp checkpoint
+  from the one the code launches today. Three hours, no hardware, nothing waiting on it.</p>
+  <p><strong>The test bench finished its backlog.</strong> The navigation software compiles for the
+  first time, all 10 parts, and the five navigation programs passed their tests on the first run.
+  Three suspected defects are now confirmed by observation rather than by reading the code, and one
+   new one turned up. T0.2, T0.8, T0.9, T3.1, T3.2 and T5.2 are done.</p>
+  <p><strong>One thing got worse.</strong> The arm's camera is faulty and is currently off the USB
+  bus entirely. It needs someone to unplug and replug it, and it is not known whether it survives
+  that. It was also the fallback for the base camera, so a single fault removes both camera paths
+  at once. <strong>Update 22 September:</strong> replugged, and it works. Colour and depth stream at
+  15 Hz (T0.12).</p>
+</div>
+<section id="split">
+  <h2><span class="sn">Section 1</span>Can we split the work three ways</h2>
+  <p class="sub">Dion's question was whether there is any obvious way to divide this between three
+  people right now. The answer is worth stating before anything else on this page.</p>
+
+  <div class="callout c-key">
+    <span class="ct">Partly. Not this week, and cleanly from week 3.</span>
+    <p>Three separate streams exist and they touch each other at only three message channels and one
+    measurement. What hides them is that two removable obstacles sit in front of all three, so from
+    where we stand today everything looks like a single queue. Removing both is the whole of
+    milestone M0 and costs about two weeks.</p>
+  </div>
+
+  <h3>The two obstacles</h3>
+  <div class="scroller"><table>
+    <thead><tr><th>Obstacle</th><th>Why it stops a split</th><th>Cost</th><th>Owner</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Nothing in this repository runs from a fresh clone. Every absolute path points at a user
+        and a repository name that no longer exist</td>
+        <td>Only the one machine that already holds working state can run anything, so only one
+        person can do real work at a time</td>
+        <td class="num">12 h</td>
+        <td><span class="who w-Z">Zongzhe</span></td>
+      </tr>
+      <tr>
+        <td>The arm and the LiDAR both need the workstation's only wired network port, at two
+        different addresses</td>
+        <td>The arm and the navigation base cannot be powered on together, so arm work and
+        navigation work cannot happen in the same session</td>
+        <td class="num">5 h + a switch</td>
+        <td><span class="who w-S">Sherman</span></td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <h3>Why the split is real once those are gone</h3>
+  <ul>
+    <li><strong>ROS 2 couples subsystems by channel name and message type and by nothing else.</strong>
+    No subsystem here imports another. That is exactly the property that lets three people build
+    against an agreed interface and find out at integration time whether they agreed.</li>
+    <li><strong>The bench already supplies stand-ins for the hardware.</strong> A simulated arm, a fake
+    navigation server that can be told to fail, synthetic camera publishers, and a private message
+    channel so two people on the same workstation cannot see each other's traffic.</li>
+    <li><strong>About two thirds of the open work needs no hardware at all.</strong> Path portability,
+    the configuration work, most of the 51 audit findings, the memory graph built from recordings,
+    and the goal-ordering work which is LiDAR only.</li>
+    <li><strong>Mechanical work does not contend with code at all.</strong> The mount, the switch, the
+    physical measurements that four places currently disagree about, the trial fixture.</li>
+  </ul>
+
+  <h3>What genuinely does constrain us</h3>
+  <div class="scroller"><table>
+    <thead><tr><th>Constraint</th><th>Effect on the plan</th></tr></thead>
+    <tbody>
+      <tr><td>One arm, one base, one pair of glasses, and a person has to be in the room</td>
+      <td>One hardware session at a time. Batch them and write the agenda before travelling</td></tr>
+      <tr><td>One wired port, two devices, two required addresses</td>
+      <td>Until obstacle 2 is gone, arm sessions and navigation sessions are mutually exclusive.
+      This is the least appreciated blocker in the project</td></tr>
+      <tr><td>Dion sits on twelve consecutive tasks of the critical path</td>
+      <td>The contention point is Dion, not the hardware. Handled by the channel contract, written in
+      week 1, and by handing navigation out: the software half to Zongzhe, the physical half to
+      Sherman</td></tr>
+      <tr><td>The lab workstation is shared, thermally throttled and 96 percent full</td>
+      <td>Builds take about four times as long as they should. Check free space before large builds</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="streams">
+  <h2><span class="sn">Section 2</span>The three streams and what passes between them</h2>
+  <p class="sub">After M0 these run in parallel. The whole interface between them is three message
+  channels and one measurement, which is small enough to agree on in an hour and then leave alone
+  for a month.</p>
+
+  <div class="lanes">
+    <div class="lane L-D">
+      <h4>Arm and perception</h4>
+      <p class="role">Dion &middot; computer engineering, perception</p>
+      <p>Arm bring-up, the grasp path defects, one segmentation service, gaze, the calibration and
+      localisation-error study, and the research contribution.</p>
+      <ul>
+        <li>Milestones M1, M2, M4, M7, M8, and the calibration half of M5</li>
+        <li>Lab plus the workstation over the network</li>
+      </ul>
+      <p class="load">about 12 hours a week</p>
+    </div>
+    <div class="lane L-Z">
+      <h4>Algorithms and graph</h4>
+      <p class="role">Zongzhe &middot; computer science</p>
+      <p>The memory graph, the reasoning layer, goal ordering, and the bridge nodes that turn an
+      object position into a drive goal.</p>
+      <ul>
+        <li>Milestones M6, M9, and the software half of M3</li>
+        <li>Laptop and the workstation</li>
+      </ul>
+      <p class="load">8 to 10 hours a week</p>
+    </div>
+    <div class="lane L-S">
+      <h4>Platform and experiments</h4>
+      <p class="role">Sherman &middot; mechanical engineering</p>
+      <p>Network, navigation bring-up, mapping and localisation, where the robot's poses come from,
+      the camera mount, the calibration rig, physical measurements, the runbook, the trial fixture
+      and running the trials.</p>
+      <ul>
+        <li>Milestone M3, the mount half of M5, plus the lab half of M1 and M8</li>
+        <li>Lab plus the workstation</li>
+      </ul>
+      <p class="load">8 to 10 hours a week</p>
+    </div>
+  </div>
+
+  <div class="callout c-note">
+    <span class="ct">Updated 20 September 2026 &mdash; navigation now has two owners</span>
+    <p>Navigation is not one person's job. It has a software half and a physical half.
+    <strong>The line between them is the goal.</strong> Sherman owns everything that gets the robot
+    to a commanded point: the drivers, SLAM, the Nav2 settings, the transforms, mapping,
+    localisation and the pose source. Zongzhe owns everything that decides which point: the memory
+    graph, goal ordering, and the bridge nodes. Full ownership list in
+    <a href="#owns">Section 10</a>.</p>
+  </div>
+
+  <h3>The handover points</h3>
+  <div class="scroller"><table>
+    <thead><tr><th>What passes</th><th>From</th><th>To</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="chan">/manipulation/goal_pose</span></td>
+        <td><span class="who w-D">Dion</span> perception, later <span class="who w-Z">Zongzhe</span> the graph</td>
+        <td><span class="who w-Z">Zongzhe</span> navigation</td>
+        <td>The object is here. Drive to it</td></tr>
+      <tr><td><span class="chan">/goal_pose</span></td>
+        <td><span class="who w-Z">Zongzhe</span></td>
+        <td>Nav2, unchanged</td>
+        <td>Drive to this point on the map</td></tr>
+      <tr><td><span class="chan">/manipulation/start</span></td>
+        <td><span class="who w-Z">Zongzhe</span> navigation</td>
+        <td><span class="who w-D">Dion</span> arm</td>
+        <td>In position. The arm may proceed</td></tr>
+      <tr><td>The mount geometry, measured once</td>
+        <td><span class="who w-S">Sherman</span></td>
+        <td>Everyone</td>
+        <td>Where the camera and the arm sit relative to the base. Today the same 0.18 metre offset
+        is written in four independent places</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout c-warn">
+    <span class="ct">The one rule that keeps this working</span>
+    <p>ROS matches channel and frame names as plain text at run time. A rename applied to four of five
+    places compiles, launches and quietly does nothing. That has already produced two defects in this
+    repository. Run <code>./bench/run.sh</code> before and after any change that moves code.</p>
+  </div>
+</section>
+<section id="map">
+  <h2><span class="sn">Section 3</span>The milestone map</h2>
+  <p class="sub">Eleven milestones, coloured by who leads them, drawn against the real capstone
+  calendar rather than a plain week count. Four dates are fixed by the university, not by us &mdash;
+  they are marked in red below &mdash; and four spans of the calendar are not working time at all:
+  a recess, an exam period, and half the winter break. Milestones overlap because their tasks
+  interleave, so the exact blocking is in the tree below, not here. What this picture is for is
+  seeing that after week 2 there are always three things running at once, and that the gap between
+  the interim presentation and the next real checkpoint is mostly exams, not slippage.</p>
+
+  <div class="callout c-warn" style="margin-bottom:22px">
+    <span class="ct">Four dates we do not control</span>
+    <p><strong>5 October 2026</strong> &mdash; project plan, Gantt chart and budget due to the
+    supervisor. <strong>10&ndash;13 November 2026</strong> &mdash; interim presentation (university
+    window: 26 October to 13 November). <strong>28 March 2027</strong> &mdash; final report, softcopy
+    plus similarity report, due to the main supervisor and the REP Office (Ms Yang Huixin); get the
+    finished copy to the supervisor a week or two earlier for review and amendments. <strong>5&ndash;16
+    April 2027</strong> &mdash; oral presentation and demonstration.</p>
+  </div>
+  <style>
+  .g-D{fill:var(--dion)} .g-Z{fill:var(--zz)} .g-S{fill:var(--sherman)} .g-A{fill:var(--all)}
+  .gt{fill:var(--ink-3);font-family:var(--mono);font-size:10.5px;letter-spacing:.08em}
+  .gl{fill:var(--ink);font-family:var(--body);font-size:12.5px}
+  .gid{fill:var(--ink-2);font-family:var(--mono);font-size:11.5px}
+  .grid{stroke:var(--line);stroke-width:1}
+  .gridm{stroke:var(--line-2);stroke-width:1}
+  .barlabel{fill:#fff;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em}
+  .critrule{stroke:var(--ink);stroke-width:2;opacity:.55}
+  .conn{stroke:var(--all);stroke-width:1.5;fill:none;opacity:.75}
+  .cpline{stroke:var(--broken);stroke-width:1.5;stroke-dasharray:3 3}
+  .cptext{fill:var(--broken);font-family:var(--mono);font-size:10px;letter-spacing:.05em}
+  .hol{fill:var(--surface-3);opacity:.8}
+  .buf{fill:var(--surface-3);opacity:.4}
+  .win{fill:var(--broken-soft);opacity:.6}
+  .bandtext{fill:var(--ink-3);font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase}
+  </style>
+  <figure><div class="chart">
+  <svg viewBox="0 0 1000 494" role="img" aria-label="Milestone schedule across 31 calendar weeks, 14 September 2026 to 18 April 2027, with the recess, exam period, winter break and four fixed capstone deadlines marked">
+    <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="var(--all)"/></marker></defs>
+    <rect class="hol" x="263" y="42" width="24" height="386"/>
+    <rect class="hol" x="407" y="42" width="96" height="386"/>
+    <rect class="hol" x="503" y="42" width="48" height="386"/>
+    <rect class="buf" x="551" y="42" width="48" height="386"/>
+    <rect class="win" x="410" y="42" width="11" height="386"/>
+    <rect class="win" x="911" y="42" width="38" height="386"/>
+    <line class="gridm" x1="215" y1="42" x2="215" y2="428"/>
+    <line class="grid" x1="273" y1="42" x2="273" y2="428"/>
+    <line class="grid" x1="380" y1="42" x2="380" y2="428"/>
+    <line class="grid" x1="482" y1="42" x2="482" y2="428"/>
+    <line class="grid" x1="589" y1="42" x2="589" y2="428"/>
+    <line class="grid" x1="695" y1="42" x2="695" y2="428"/>
+    <line class="grid" x1="791" y1="42" x2="791" y2="428"/>
+    <line class="grid" x1="897" y1="42" x2="897" y2="428"/>
+    <line class="gridm" x1="959" y1="42" x2="959" y2="428"/>
+    <text class="gt" x="244" y="34" text-anchor="middle">SEP</text>
+    <text class="gt" x="326" y="34" text-anchor="middle">OCT</text>
+    <text class="gt" x="431" y="34" text-anchor="middle">NOV</text>
+    <text class="gt" x="535" y="34" text-anchor="middle">DEC</text>
+    <text class="gt" x="642" y="34" text-anchor="middle">JAN</text>
+    <text class="gt" x="743" y="34" text-anchor="middle">FEB</text>
+    <text class="gt" x="844" y="34" text-anchor="middle">MAR</text>
+    <text class="gt" x="928" y="34" text-anchor="middle">APR</text>
+    <text class="bandtext" x="275" y="442" text-anchor="middle">recess</text>
+    <text class="bandtext" x="455" y="442" text-anchor="middle">exams</text>
+    <text class="bandtext" x="527" y="442" text-anchor="middle">break</text>
+    <text class="bandtext" x="575" y="442" text-anchor="middle">buffer</text>
+    <line class="cpline" x1="287" y1="26" x2="287" y2="428"/>
+    <text class="cptext" x="283" y="458" text-anchor="end">5 OCT PLAN DUE</text>
+    <text class="cptext" x="425" y="472">10&ndash;13 NOV INTERIM PRES.</text>
+    <line class="cpline" x1="887" y1="26" x2="887" y2="428"/>
+    <text class="cptext" x="883" y="458" text-anchor="end">28 MAR REPORT DUE</text>
+    <text class="cptext" x="915" y="472">5&ndash;16 APR ORAL PRES.</text>
+    <rect class="g-A" x="215" y="59" width="48" height="22" rx="3"/>
+    <line class="critrule" x1="215" y1="84" x2="263" y2="84"/>
+    <text class="gid" x="14" y="74">M0</text>
+    <text class="gl" x="48" y="74">Everyone can build and run</text>
+    <rect class="g-S" x="287" y="95" width="360" height="22" rx="3"/>
+    <line class="critrule" x1="287" y1="120" x2="647" y2="120"/>
+    <text class="gid" x="14" y="110">M5</text>
+    <text class="gl" x="48" y="110">A calibrated camera on the base</text>
+    <rect class="g-D" x="287" y="131" width="96" height="22" rx="3"/>
+    <line class="critrule" x1="287" y1="156" x2="383" y2="156"/>
+    <text class="gid" x="14" y="146">M1</text>
+    <text class="gl" x="48" y="146">The arm picks something up</text>
+    <rect class="g-Z" x="311" y="167" width="264" height="22" rx="3"/>
+    <text class="gid" x="14" y="182">M3</text>
+    <text class="gl" x="48" y="182">The base navigates</text>
+    <rect class="g-D" x="359" y="203" width="240" height="22" rx="3"/>
+    <line class="critrule" x1="359" y1="228" x2="599" y2="228"/>
+    <text class="gid" x="14" y="218">M2</text>
+    <text class="gl" x="48" y="218">Voice and gaze reach the arm</text>
+    <rect class="g-Z" x="383" y="239" width="384" height="22" rx="3" stroke-dasharray="4 3" stroke="var(--zz)" stroke-width="1.5" fill-opacity="0.28"/>
+    <text class="gid" x="14" y="254">M9</text>
+    <text class="gl" x="48" y="254">Frontier scoring, visit ordering</text>
+    <text class="gt" x="700" y="254" fill="var(--caution)">OPTIONAL</text>
+    <rect class="g-D" x="575" y="275" width="72" height="22" rx="3"/>
+    <text class="gid" x="14" y="290">M4</text>
+    <text class="gl" x="48" y="290">The current system, closed loop</text>
+    <rect class="g-Z" x="575" y="311" width="144" height="22" rx="3"/>
+    <line class="critrule" x1="575" y1="336" x2="719" y2="336"/>
+    <text class="gid" x="14" y="326">M6</text>
+    <text class="gl" x="48" y="326">The memory graph, offline</text>
+    <rect class="g-D" x="695" y="347" width="96" height="22" rx="3"/>
+    <line class="critrule" x1="695" y1="372" x2="791" y2="372"/>
+    <text class="gid" x="14" y="362">M7</text>
+    <text class="gl" x="48" y="362">The graph drives the robot</text>
+    <rect class="g-D" x="719" y="383" width="120" height="22" rx="3"/>
+    <line class="critrule" x1="719" y1="408" x2="839" y2="408"/>
+    <text class="gid" x="14" y="398">M8</text>
+    <text class="gl" x="48" y="398">Gaze picks the instance</text>
+    <rect class="g-A" x="791" y="419" width="72" height="22" rx="3"/>
+    <line class="critrule" x1="791" y1="444" x2="863" y2="444"/>
+    <text class="gid" x="14" y="434">M10</text>
+    <text class="gl" x="48" y="434">Demonstration and paper</text>
+    <path class="conn" d="M 263 70 V 142 H 287" marker-end="url(#ah)"/>
+    <path class="conn" d="M 263 70 V 178 H 311" marker-end="url(#ah)"/>
+    <path class="conn" d="M 263 70 V 106 H 287" marker-end="url(#ah)"/>
+  </svg>
+  </div>
+  <figcaption>Bar colour is the lead: blue Dion, violet Zongzhe, teal Sherman, grey all three. A dark
+  rule under a bar means the milestone is on the critical path to the research result. M9 is dashed
+  because it is optional and the first thing we cut. The grey bands are the recess (last week of
+  September), the November exam period through early December, and the winter break &mdash; its first
+  two weeks off, its last two kept as half-speed buffer. The red dashed lines and the two red bands
+  are the four dates the university sets: the plan and Gantt chart due 5 October, the interim
+  presentation 10&ndash;13 November, the final report due 28 March, and the oral presentation
+  5&ndash;16 April. A milestone bar that runs through a grey band is elapsed calendar time, not
+  working time &mdash; M2, M3, M5 and M9 all cross the exam period or the winter break.</figcaption>
+  </figure>
+
+  <div class="legend">
+    <span><i class="swatch" style="background:var(--dion)"></i> Dion leads</span>
+    <span><i class="swatch" style="background:var(--zz)"></i> Zongzhe leads</span>
+    <span><i class="swatch" style="background:var(--sherman)"></i> Sherman leads</span>
+    <span><i class="swatch" style="background:var(--all)"></i> all three</span>
+  </div>
+
+  <h3>What each milestone means by "done"</h3>
+  <div class="scroller"><table>
+    <thead><tr><th>ID</th><th>Milestone</th><th>Done means</th><th>Dates</th><th>Lead</th></tr></thead>
+    <tbody>
+      <tr><td>M0</td><td>Everyone can build and run</td><td>Two people who are not Dion have cloned the repository on their own machine, built it, run the bench and got the same result. The arm and the LiDAR answer on the network in the same session</td><td class="num">14&ndash;27 Sep 2026</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td>M1</td><td>The arm picks something up</td><td>With the emergency stop verified and a validated home pose, the arm grasps a box using a mask from its own camera. Five attempts, success rate recorded</td><td class="num">5 Oct&ndash;1 Nov 2026</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M2</td><td>Voice and gaze reach the arm</td><td>You say "grab the box", you look at one of two boxes, and the arm picks the one you looked at. Three times out of four</td><td class="num">26 Oct 2026&ndash;3 Jan 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M3</td><td>The base navigates</td><td>A map of the lab exists, the robot localises in it, and it drives to a commanded point and reports arrival. Ten runs, position error recorded</td><td class="num">12 Oct&ndash;27 Dec 2026</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td>M4</td><td>The current system, closed loop</td><td>One recorded run: speak, look, the base drives, the arm grasps. Per-stage timing recorded at the 99th percentile</td><td class="num">28 Dec 2026&ndash;17 Jan 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M5</td><td>A calibrated camera on the base</td><td>A RealSense D455 is mounted forward facing on the base, LiDAR points projected into its image land on the right objects, and the camera-pose error is written down as a number</td><td class="num">5 Oct 2026&ndash;17 Jan 2027</td><td><span class="who w-S">Sherman</span> <span class="who w-D">Dion</span></td></tr>
+      <tr><td>M6</td><td>The memory graph, offline</td><td>From a recorded drive, the system produces object entries with a 3D position and an image feature each, the same object is not registered twice, and a sentence query returns it</td><td class="num">28 Dec 2026&ndash;7 Feb 2027</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td>M7</td><td>The graph drives the robot</td><td>A spoken instruction with the object not in view produces an approach goal read out of the graph, the base drives there, and close-range perception takes over</td><td class="num">1&ndash;28 Feb 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M8</td><td>Gaze picks the instance</td><td>The gaze-cropped image feature is carried into the graph query. Ablation with and without, N trials each, success rates side by side</td><td class="num">8 Feb&ndash;14 Mar 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M9</td><td>Frontier scoring, visit ordering</td><td>The robot's chosen exploration order beats a nearest-first baseline on a measured metric. Optional</td><td class="num">2 Nov 2026&ndash;21 Feb 2027</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td>M10</td><td>Demonstration and paper</td><td>A recorded end-to-end run, and a draft whose central table is M8's ablation</td><td class="num">1&ndash;21 Mar 2027</td><td><span class="who w-A">all</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>The four official deliverables</h3>
+  <div class="scroller"><table>
+    <thead><tr><th>Deliverable</th><th>Due</th><th>Goes to</th></tr></thead>
+    <tbody>
+      <tr><td>Project plan, Gantt chart and budget</td><td class="num">Mon 5 Oct 2026</td><td>Supervisor</td></tr>
+      <tr><td>Interim presentation</td><td class="num">10&ndash;13 Nov 2026</td><td>Panel (university window 26 Oct&ndash;13 Nov)</td></tr>
+      <tr><td>Final report, softcopy plus similarity report</td><td class="num">Sun 28 Mar 2027</td><td>Main supervisor and the REP Office (Ms Yang Huixin)</td></tr>
+      <tr><td>Oral presentation and demonstration</td><td class="num">5&ndash;16 Apr 2027</td><td>Panel</td></tr>
+    </tbody>
+  </table></div>
+  <p>Have the finished, similarity-checked report with the supervisor a week or two before 28 March
+  &mdash; that date is when the final copy is due, not when a draft may first reach them.</p>
+
+  <div class="callout c-note">
+    <span class="ct">Two things to notice about this shape</span>
+    <p><strong>The critical path to a result does not run through navigation.</strong> It runs M0, M1,
+    M2, M5, M6, M7, M8. M3 has to happen for the demonstration, and M9 is the part of the HiCo-Nav
+    paper with the largest reported benefit, and neither is on the path to our own claim. That is why
+    M9 is the first thing we cut.</p>
+    <p><strong>M8 is protected.</strong> It is the only milestone that produces a claim rather than a
+    system. Everything before it exists to make it measurable. If M8 cannot run, the right move is to
+    say so early rather than late.</p>
+  </div>
+</section>
+
+<section id="tree">
+  <h2><span class="sn">Section 4</span>The task tree</h2>
+  <p class="sub">Seventy-three tasks. Each one lists what has to finish before it can start, and what
+  kind of work it is. Click any task to trace it: what it is waiting on turns amber, what is waiting
+  on it turns green, and the task's full notes open below its title. Filter by person or by kind of
+  work to see one slice at a time. This page is the one task list. <code>PROJECT_PLAN.md</code>
+  section 6 explains how to read it but no longer repeats the tasks.</p>
+
+  <h3>What kind of work this project actually is</h3>
+  <p>Every task carries a work type, shown as a chip and as the colour of its right-hand edge. The
+  bar below is the whole project by that measure, sized by task count.</p>
+  <div class="mix" id="mix"></div>
+  <div class="scroller"><table>
+    <thead><tr><th>Type</th><th>Means</th></tr></thead>
+    <tbody>
+      <tr><td><span class="wt wt-build">build</span></td><td>New code. None of it exists today</td></tr>
+      <tr><td><span class="wt wt-fix">fix</span></td><td>Repair of existing code that is written but defective</td></tr>
+      <tr><td><span class="wt wt-wire">rewire</span></td><td>Existing, complete code reconnected, re-enabled or consolidated. No new logic</td></tr>
+      <tr><td><span class="wt wt-bringup">bring-up</span></td><td>Make existing things run: retrieve, compile, install, mount, power on</td></tr>
+      <tr><td><span class="wt wt-measure">measure</span></td><td>Trials, calibration, error characterisation, tests. Produces numbers, not code</td></tr>
+      <tr><td><span class="wt wt-plan">decide</span></td><td>A decision to settle or a document to write</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout c-note">
+    <span class="ct">Read the bar before you read the schedule</span>
+    <p>Only eighteen of seventy-three tasks are new code, and ten are repair or rewiring. The rest is
+    bring-up, measurement and decisions. This is not a project that builds a robot. It is a project
+    that repairs one, measures it, and adds one new component, which is the memory graph.</p>
+    <p>That matters for estimates. Where the work is repair, the code change is usually small and the
+    time goes into verifying it. Where the work is measurement, the time is lab hours and cannot be
+    compressed by working harder.</p>
+  </div>
+
+  <div class="toolbar">
+    <span class="lbl">Show</span>
+    <button class="f" data-filter="all" aria-pressed="true">Everyone</button>
+    <button class="f" data-filter="D" aria-pressed="false">Dion</button>
+    <button class="f" data-filter="Z" aria-pressed="false">Zongzhe</button>
+    <button class="f" data-filter="S" aria-pressed="false">Sherman</button>
+    <button class="f" data-filter="free" aria-pressed="false">Nothing blocking it</button>
+    <span class="lbl" style="margin-left:14px">Work</span>
+    <button class="f" data-work="all" aria-pressed="true">Any</button>
+    <button class="f" data-work="build" aria-pressed="false">Build</button>
+    <button class="f" data-work="fix" aria-pressed="false">Fix</button>
+    <button class="f" data-work="wire" aria-pressed="false">Rewire</button>
+    <button class="f" data-work="bringup" aria-pressed="false">Bring-up</button>
+    <button class="f" data-work="measure" aria-pressed="false">Measure</button>
+    <button class="f" data-work="plan" aria-pressed="false">Decide</button>
+    <button class="f" id="clearsel">Clear trace</button>
+    <span class="note">Tasks the source data marks "DONE" show struck through and green for everyone. Anything else you mark done here is saved in this browser only. Linear holds the shared record.</span>
+  </div>
+
+  <div class="legend">
+    <span><i class="swatch" style="background:var(--caution-soft);border:1px solid var(--caution)"></i> waiting on the selected task, upstream</span>
+    <span><i class="swatch" style="background:var(--working-soft);border:1px solid var(--working)"></i> blocked by the selected task, downstream</span>
+    <span><i class="swatch" style="background:var(--accent-soft);border:1px solid var(--accent)"></i> selected</span>
+    <span>left edge is the owner, right edge is the kind of work</span>
+  </div>
+
+  <div id="tree-root"></div>
+
+  <h3>The critical path, written out</h3>
+  <p>The longest chain of dependent tasks between today and the ablation, and it is almost all
+  Dion:</p>
+  <div class="scroller"><table>
+    <thead><tr><th>Chain</th><th>Tasks</th></tr></thead>
+    <tbody>
+      <tr><td>Through the arm and perception</td>
+      <td><code>T1.1 &rarr; T1.8 &rarr; T1.9 &rarr; T1.11 &rarr; T1.12 &rarr; T2.1 &rarr;
+      T2.4 &rarr; T2.5 &rarr; T3.7 &rarr; T7.1 &rarr; T8.2 &rarr; T8.3</code> &mdash; T0.7 came off
+      the front of this chain on 20 September</td></tr>
+      <tr><td>Through the camera and the graph</td>
+      <td><code>T0.1 &rarr; T5.1 &rarr; T5.2 &rarr; T5.3 &rarr; T5.5 &rarr; T5.6 &rarr; T6.2 &rarr;
+      T6.3 &rarr; T6.4 &rarr; T6.8 &rarr; T8.2 &rarr; T8.3</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Anything that can be moved off the first chain should be. That is why navigation is handed out,
+  why the trials are run by Sherman, and why T6.5, T6.6 and then, on 20 September, T4.2 moved off
+  Dion. T7.1 stays on the chain and is written in C++ on purpose.</p>
+
+  <div class="scroller"><table>
+    <thead><tr><th>Person</th><th>Open hours</th><th>Hours a week</th><th>Weeks of work left</th></tr></thead>
+    <tbody>
+      <tr><td><span class="who w-D">Dion</span></td><td class="num">about 210</td><td class="num">12</td><td class="num">17 to 18</td></tr>
+      <tr><td><span class="who w-Z">Zongzhe</span></td><td class="num">about 130</td><td class="num">8 to 10</td><td class="num">13 to 16</td></tr>
+      <tr><td><span class="who w-S">Sherman</span></td><td class="num">about 139</td><td class="num">8 to 10</td><td class="num">14 to 17</td></tr>
+    </tbody>
+  </table></div>
+  <p>Dion is still the heaviest and still sits on the whole chain. What moved on 20 September was work
+  beside the chain, not on it, because nobody else can pick up the arm and perception repairs faster
+  than they can learn them.</p>
+</section>
+
+<section id="people">
+  <h2><span class="sn">Section 5</span>What each person owns</h2>
+  <p class="sub">What you are accountable for, what you get out of it, why the work suits you, and
+  what is open enough to be worth digging into. Task-level ownership is in the tree above.</p>
+
+  <div class="lanes">
+    <div class="lane L-D">
+      <h4>Dion</h4>
+      <p class="role">Perception, the arm, and the research claim</p>
+      <p><strong>Owns</strong> everything between a camera frame and the arm closing on an object,
+      plus the contribution itself. Arm bring-up through to a working grasp, one segmentation service
+      instead of two competing ones, the glasses stream reaching the arm, the calibration of the base
+      camera and what its accuracy costs, and the gaze-conditioned query that M8 measures.</p>
+      <p><strong>Takeaway.</strong> An end-to-end perception system on real hardware, from raw frames
+      to an executed motion, and a measured result with an ablation table behind it. Production
+      ROS&nbsp;2 in both Python and C++, since T7.1 is written with rclcpp against a working Python
+      reference.</p>
+      <p><strong>Why it fits.</strong> The most vision-heavy and the most systems-heavy stream in the
+      project. Most of it is repair rather than authorship, and the skill it rewards is reading an
+      unfamiliar system accurately enough to find the five lines that matter.</p>
+      <p><strong>Worth exploring.</strong> Image embeddings. Nothing in this repository computes one
+      today, so the feature extractor is genuinely new code, and both the memory graph and the gaze
+      crop consume it. Owning it makes the interface between perception and the graph a deliverable
+      rather than a conversation.</p>
+    </div>
+    <div class="lane L-Z">
+      <h4>Zongzhe</h4>
+      <p class="role">The memory graph and the reasoning layer</p>
+      <p><strong>Updated 20 September.</strong> Navigation bring-up moved to Sherman. What stays
+      here is the software half: the two bridge nodes, the node that emits drive goals, and
+      everything above the goal.</p>
+      <p><strong>Owns</strong> the one part of this project that does not already exist in some form:
+      object entries built from images, depth and camera pose; the merge rule that stops one physical
+      object being registered twice; the sentence query that returns a place to drive to; and, if the
+      schedule allows, the frontier scoring and visit ordering in M9.</p>
+      <p><strong>Takeaway.</strong> A published method taken from the paper to working, evaluated
+      code, with the design decisions owned rather than inherited. The most paper-shaped work on the
+      board, and the part a reader of the write-up will ask about first.</p>
+      <p><strong>Why it fits.</strong> Well-posed problems with a right answer, most of them geometric
+      or statistical, and the core of it runs on a laptop against recorded data. Progress does not
+      depend on the robot being free, the lab being open, or anyone else finishing first.</p>
+      <p><strong>Worth exploring.</strong> The merge rule itself, which is 3D overlap combined with
+      embedding similarity and a threshold nobody has tuned for this room. It is the decision the
+      graph's correctness turns on and it is directly measurable. The reasoning layer is the other
+      one, and it carries the only real research risk in the project, because no model here has ever
+      been given an image.</p>
+    </div>
+    <div class="lane L-S">
+      <h4>Sherman</h4>
+      <p class="role">The platform, and where its poses come from</p>
+      <p><strong>Updated 20 September.</strong> This now includes navigation bring-up outright,
+      tasks T3.3 to T3.6, the Nav2 and SLAM settings, the static transforms, and the FAST-LIVO2
+      escalation in T5.9. Sherman also owns the lab session itself: the agenda, the setup, the
+      recording and running the trials, whoever else is in the room.</p>
+      <p><strong>Owns</strong> the robot as a working machine: it powers on, it drives, it maps, it
+      localises, it answers on the network, and a runbook exists that says how. Owns the physical
+      build the rest depends on, meaning the forward camera mount, the calibration rig and target, and
+      the trial fixture that makes M8's runs repeatable. Owns the open question of which pose source
+      the memory graph needs, and the measurement that answers it.</p>
+      <p><strong>Takeaway.</strong> SLAM and localisation on real hardware, ending in a comparison
+      with a number attached rather than a preference. Plus a mechanical design that is genuinely on
+      the critical path rather than a bracket bolted on at the end.</p>
+      <p><strong>Why it fits.</strong> Bring-up rewards resourcefulness with unfamiliar tooling far
+      more than it rewards knowing the internals first, and most of what stands between this
+      repository and a running robot is retrieval and assembly rather than development. The mount is a
+      real design problem, because the arm is mounted facing backward and its swept volume constrains
+      where a forward camera can sit.</p>
+      <p><strong>Worth exploring.</strong> The pose-source question is open and nobody has the answer.
+      Start with the 2D localisation already running, because it is free, and escalate only if the
+      measurement says to. Two findings make it more interesting than it looks: the LiDAR's own
+      inertial sensor is already publishing on <code>livox/imu</code> with nothing subscribing, and
+      the vendored OpenVINS copy is calibrated for the glasses rather than for a base camera. Neither
+      obvious shortcut is quite the shortcut it appears to be.</p>
+    </div>
+  </div>
+  
+  <h3>What each person is expected to put in</h3>
+  <div class="scroller"><table>
+    <thead><tr><th>Person</th><th>Hours a week</th></tr></thead>
+    <tbody>
+      <tr><td><span class="who w-D">Dion</span></td><td class="num">about 12</td></tr>
+      <tr><td><span class="who w-Z">Zongzhe</span></td><td class="num">8 to 10</td></tr>
+      <tr><td><span class="who w-S">Sherman</span></td><td class="num">8 to 10</td></tr>
+    </tbody>
+  </table></div>
+  <p>That is about 30 person-hours a week and about 620 over the 31 calendar weeks once the recess,
+  the exam period, the winter break and travel are taken out. The named work adds up to roughly 406
+  hours, so the plan runs at about 65 percent of capacity. Sherman's share carries more slack than
+  the task list suggests, because the travel and the lab session overhead land on him and none of the
+  estimates capture them.</p>
+
+  <h3>Working agreements</h3>
+  <ol class="body">
+    <li><strong>Hardware sessions are booked and have a written agenda.</strong> Travel is twenty
+    minutes each way, so a session with no agenda costs an hour before anything starts. Write it in
+    your own docs folder the day before.</li>
+    <li><strong>Run the bench before and after any change that moves code.</strong> It takes a second
+    and it catches the failure mode this project has already suffered twice.</li>
+    <li><strong>Two people can use the lab workstation at once</strong> as long as each uses a
+    different private message channel. The bench scripts refuse to start if the channel is not empty,
+    which is the check that stops you reaching real hardware by accident.</li>
+    <li><strong>The defect log is one shared file</strong>, one line per bug, from the first powered
+    session onward. It is the raw material for the paper's discussion and it costs nothing to keep.</li>
+    <li><strong>Nobody edits anybody else's docs folder.</strong> Corrections go in your own folder
+    with a citation, and you tell the owner.</li>
+    <li><strong>Every change goes on a branch and through a PR into <code>dev</code>.</strong> Since
+    21 September <code>dev</code> is the default branch and both <code>dev</code> and <code>main</code>
+    are protected: a PR must pass the bench before it merges. <code>dev</code> is promoted to
+    <code>main</code> by PR.</li>
+  </ol>
+</section>
+
+<section id="scope">
+  <h2><span class="sn">Section 6</span>In scope, and out</h2>
+  <p class="sub">We are not rebuilding the whole original demonstration. We are building what the
+  HiCo-Nav integration and the research claim need. Writing that down here means it is not relitigated
+  in week 16, and a supervisor cannot reasonably expect both.</p>
+
+  <h3>In scope</h3>
+  <div class="scroller"><table>
+    <thead><tr><th>Capability</th><th>Why it is needed</th></tr></thead>
+    <tbody>
+      <tr><td>Speech to an object word</td><td>The instruction input. Already works</td></tr>
+      <tr><td>Gaze published from the glasses</td><td>The contribution depends on it. Currently switched off</td></tr>
+      <tr><td>Glasses colour image published</td><td>The gaze crop comes from this frame. Currently switched off</td></tr>
+      <tr><td>One segmentation service on the wrist camera</td><td>Feeds the grasp predictor at close range</td></tr>
+      <tr><td>Grasp prediction and execution on the real arm</td><td>Without it there is no task to navigate for</td></tr>
+      <tr><td>Navigation: map, localise, drive, report arrival</td><td>The graph produces a place, something has to drive there</td></tr>
+      <tr><td>A forward-facing camera on the base, calibrated</td><td>The memory graph is built from its images and depth</td></tr>
+      <tr><td>The memory graph and the reasoning layer</td><td>This is the integration</td></tr>
+      <tr><td>The gaze-conditioned instance query and its ablation</td><td>This is the claim</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Out of scope, with the reason</h3>
+  <div class="scroller"><table>
+    <thead><tr><th>Capability</th><th>Why it is out</th></tr></thead>
+    <tbody>
+      <tr><td>Return to the user after grasping</td><td>Needs the pose fusion node, the marker path and the glasses localised in the map. Three separate broken things, for a leg the claim does not use</td></tr>
+      <tr><td>The pose fusion node as documented</td><td>Its code and its documentation describe different programs. Fixing it only matters for the return leg</td></tr>
+      <tr><td>Cross-camera feature matching as a requirement</td><td>The contribution proposes replacing it. It stays as the comparison baseline, not as a dependency</td></tr>
+      <tr><td>The HiCo-Nav motion layer, its own planner and controller</td><td>Nav2 already does this and is tuned for this chassis. Swapping it means retuning the part that can drive a robot into a wall, for no benefit to the claim</td></tr>
+      <tr><td>FAST-LIVO2 localisation</td><td>A bring-up project of its own. Start with the existing 2D localisation and measure whether it is good enough</td></tr>
+      <tr><td><s>The full repository reorganisation</s></td><td><strong>Moved into scope and done, 22 September.</strong> Four subsystem folders, one folder per node, third-party code under each subsystem's <code>vendor/</code>. Specified and verified in <code>NEXT_STEPS.md</code> &sect;2.15</td></tr>
+      <tr><td>The simulator baseline</td><td>Only needed to evaluate goal ordering, which is the optional milestone</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="cut">
+  <h2><span class="sn">Section 7</span>What we cut first</h2>
+  <p class="sub">Decided now so it is not an argument in week 16. If the schedule slips, cut from the
+  top of this list.</p>
+  <div class="scroller"><table>
+    <thead><tr><th>Order</th><th>What we cut</th><th>What we lose</th><th>What survives</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td>M9 entirely, frontier scoring and visit ordering</td><td>The paper's largest reported benefit, which is not ours anyway</td><td>Everything. M9 is not on the path to the claim</td></tr>
+      <tr><td class="num">2</td><td>The reasoning layer, T6.7</td><td>Instruction expansion into related objects</td><td>Direct sentence query of the graph, which is what M8 needs</td></tr>
+      <tr><td class="num">3</td><td>Graph pruning and the solver work</td><td>The graph grows without bound over a long run</td><td>Correctness over a lab-sized run</td></tr>
+      <tr><td class="num">4</td><td>The two-stage trigger, T6.5</td><td>Speed</td><td>Correctness, provided the age limit from T2.4 stays</td></tr>
+      <tr><td class="num">5</td><td>Live graph building, T7.2</td><td>The robot building its object map as it goes</td><td>A graph built from a recorded drive of the same room, which still supports the ablation</td></tr>
+      <tr><td class="num">6</td><td>Reduce N in the ablation, T8.3</td><td>Statistical strength</td><td>A number, which beats no number</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Two things this project's own record says to expect</h3>
+  <div class="callout c-warn">
+    <span class="ct">Bring-up work has doubled every time so far</span>
+    <p>The navigation workspace needed two packages nobody had, a manifest that is generated rather
+    than committed, and a build flag combination written in no document. Treat every hardware estimate
+    on this page as a lower bound.</p>
+  </div>
+  <div class="callout c-warn">
+    <span class="ct">Named work is about 65 percent of capacity</span>
+    <p>406 hours of listed work against about 620 hours available now that the calendar runs to
+    mid-April rather than end of January. That is more slack than the original 79 percent, but for a
+    project with this much unknown bring-up it is still worth guarding rather than spending on scope
+    creep. The cut list above is not a formality.</p>
+  </div>
+</section>
+
+<section id="stretch">
+  <h2><span class="sn">Section 8</span>What we pick up if we run early</h2>
+  <p class="sub">The counterpart to the cut list. Decided in advance so an early finish produces
+  something instead of evaporating. Nothing here is promised to anyone and none of it is a dependency
+  of M8.</p>
+  <div class="scroller"><table>
+    <thead><tr><th>ID</th><th>Stretch goal</th><th>Owner</th><th>Why it is worth doing</th><th>Needs first</th></tr></thead>
+    <tbody>
+      <tr><td class="num">S1</td><td>Candidate-based grasping instead of the simple path</td>
+        <td><span class="who w-D">Dion</span></td>
+        <td>A flag in the state machine routes every grasp through one Cartesian step and a gripper close. The real path, with the candidate queue, the stability window and orientation interpolation, is about 150 lines of written but never-executed code in the same file. Turning it on is the difference between a demonstration and a grasp policy</td>
+        <td>M1, and the concurrency fixes landed first, because this path is what makes them reachable</td></tr>
+      <tr><td class="num">S2</td><td>The reasoning layer, if it was cut</td>
+        <td><span class="who w-Z">Zongzhe</span></td>
+        <td>Turns "find the mug" into "look near the sink as well". A reviewer will expect it from a paper that claims a memory graph</td>
+        <td>M6 through the merge test, plus the endpoint decision</td></tr>
+      <tr><td class="num">S3</td><td>Graph pruning with a real solver</td>
+        <td><span class="who w-Z">Zongzhe</span></td>
+        <td>Bounded graph growth over a long run. A weighted set multicover problem with mature open solvers, so it is a known quantity rather than a research question</td>
+        <td>The merge test, and a licence check on the solver</td></tr>
+      <tr><td class="num">S4</td><td>A second pose source, measured against the first</td>
+        <td><span class="who w-S">Sherman</span></td>
+        <td>If the error study says 2D localisation is the limiting factor this stops being optional. Either way the comparison is a paper section. The LiDAR's inertial sensor already publishes with no subscriber, so the input exists</td>
+        <td>The duplicate-object rate measured on the existing source first</td></tr>
+      <tr><td class="num">S5</td><td>The return-to-user leg</td>
+        <td><span class="who w-D">Dion</span></td>
+        <td>Out of scope, but <code>goto_glasses.py</code> has to be corrected regardless, because its outbound half fires on the same spoken command as the forward leg and competes for the same Nav2 action server. Once that is fixed the return leg is closer than the scope decision assumes</td>
+        <td>The frame defect fixed, and the pose fusion node reconciled with its own documentation</td></tr>
+      <tr><td class="num">S6</td><td>Frontier scoring and visit ordering, if M9 was cut</td>
+        <td><span class="who w-Z">Zongzhe</span></td>
+        <td>The largest reported benefit in the paper. Not ours and not on the path to our claim, which is why it was cut, but it is the most complete second result available</td>
+        <td>M6 done, and the upstream evaluation running as a baseline</td></tr>
+      <tr><td class="num">S7</td><td>Replay a recording as a regression test</td>
+        <td><span class="who w-D">Dion</span></td>
+        <td>The bench catches renamed channels but nothing catches a perception regression. It is also the cheapest way to make the results reproducible by someone else</td>
+        <td>A recorded run</td></tr>
+      <tr><td class="num">S8</td><td>One configuration tree</td>
+        <td><span class="who w-A">whoever has a spare week</span></td>
+        <td>Channel names declared as parameters rather than constants, so they stay overridable at launch. Today 38 of 54 owned channel names are declared outside the shared config</td>
+        <td>The naming pass, and the bench's extractor fixed so it can still read them</td></tr>
+      <tr><td class="num">S9</td><td>Pick the gazed object by geometry</td>
+        <td><span class="who w-D">Dion</span></td>
+        <td>Two identical objects defeat matching by appearance, and so does M8's image feature as planned. Casting the gaze ray in the robot's frame does not care what the objects look like. Three methods, cheapest first: map the gaze point using the whole scene's matches, solve the glasses pose from the shared scene against the robot's depth, or full pose fusion. Could strengthen M8's claim. Added 19 September</td>
+        <td>An identical pair in the T2.5 two-box test, so today's failure is measured first. <code>NEXT_STEPS.md</code> &sect;2.13</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout c-note">
+    <span class="ct">How to use this list</span>
+    <p>If a milestone lands early, the default is not to start the next one early. It is to take the
+    top item here that your own stream unblocks. That keeps the slack where the schedule can still
+    absorb it.</p>
+  </div>
+</section>
+
+<section id="track">
+  <h2><span class="sn">Section 9</span>How we track it</h2>
+  <p class="sub">This page and the plan hold the reasoning and the dependencies. Linear holds state,
+  assignment and what moved this week. The two stay in step because the task identifiers are the same
+  in both.</p>
+  <div class="scroller"><table>
+    <thead><tr><th>In Linear</th><th>What we put in it</th></tr></thead>
+    <tbody>
+      <tr><td>Team</td><td>One team, Gappler</td></tr>
+      <tr><td>Project</td><td>One per milestone, M0 to M10, with the "done means" text as the description and the end-of-week date as the target</td></tr>
+      <tr><td>Issue</td><td>One per task node, titled with its identifier, for example <code>T1.8 Fix the three interlocking grasp path defects</code></td></tr>
+      <tr><td>Sub-issue</td><td>The steps inside a task, added by the owner when they start it, not planned in advance</td></tr>
+      <tr><td>Blocking relation</td><td>Copied from the "after" list on each task above. This is what makes Linear's dependency view match this page</td></tr>
+      <tr><td>Labels</td><td><code>owner:dion</code>, <code>owner:zongzhe</code>, <code>owner:sherman</code>, and <code>where:off</code>, <code>where:box</code>, <code>where:lab</code></td></tr>
+      <tr><td>Estimate</td><td>The hours on each task, so the load stays visible as things change</td></tr>
+      <tr><td>Cycle</td><td>Two weeks, matching the milestone boundaries</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="owns">
+  <h2><span class="sn">Section 10</span>Who owns what</h2>
+  <p class="sub">Settled on 20 September 2026 in task T0.7, the channel contract. This is the short
+  version so that everyone can see, on one page, what they are accountable for. The full version,
+  including message types, frames, delivery settings and the parked channels, is
+  <code>docs/CHANNEL_CONTRACT.md</code> in the repository, which is the single source. If this page
+  and that file ever disagree, that file wins.</p>
+
+  <h3>The four subsystems</h3>
+  <div class="scroller"><table>
+    <thead><tr><th>Subsystem</th><th>What it is</th><th>Owner</th></tr></thead>
+    <tbody>
+      <tr><td>Aria</td><td>The glasses: voice, gaze, images, pose</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>Grasp</td><td>Segmentation and grasp prediction: SAM 3, AnyGrasp</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>Bot</td><td>The arm: driver, MoveIt, the grasp state machine, the coordinator, the stop</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>Nav</td><td>The mobile base: LiDAR, SLAM, Nav2, the bridge nodes, later the memory graph</td><td><span class="who w-S">Sherman</span> <span class="who w-Z">Zongzhe</span>, split below</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>The line inside navigation is the goal</h3>
+  <div class="lanes">
+    <div class="lane L-S">
+      <h4>Sherman: getting there</h4>
+      <p class="role">Motion and sensing</p>
+      <p>Base driver, LiDAR, the message-rate relay, SLAM and Nav2 settings, the static transforms,
+      mapping, localisation, the base camera driver, the pose-source and FAST-LIVO2 study, the drive
+      commands, and the Nav2 goal server.</p>
+      <ul><li>Tasks T3.3 to T3.6, T4.2, T5.1 to T5.4, T5.8, T5.9</li></ul>
+    </div>
+    <div class="lane L-Z">
+      <h4>Zongzhe: deciding where</h4>
+      <p class="role">Goals and algorithms</p>
+      <p>The memory graph, the reasoning layer, goal ordering, the node that emits drive goals, the
+      graph query service, and the two bridge nodes that turn an object position into a drive goal.</p>
+      <ul><li>Tasks T3.8, T6.1 to T6.8, T9.1 to T9.4 (T0.4 was done by Dion, 21 September)</li></ul>
+    </div>
+    <div class="lane L-D">
+      <h4>Dion: the object and the arm</h4>
+      <p class="role">Arm and perception</p>
+      <p>Everything between a camera frame and the gripper closing, the glasses, the segmentation
+      service and its trigger, the calibration numbers, the test bench and CI, and the research
+      claim.</p>
+      <ul><li>Tasks T0.0, T0.10, T0.11, T1.x, T2.x, T5.5 to T5.7, T7.1, T8.x</li></ul>
+    </div>
+  </div>
+
+  <h3>The channels that cross between us</h3>
+  <p>These are the contract. Everything else belongs to whichever subsystem it sits inside, and its
+  owner can change it without asking. Change one of these and you tell the other side first.</p>
+  <div class="scroller"><table>
+    <thead><tr><th>Channel</th><th>Means</th><th>From</th><th>To</th><th>Owner</th></tr></thead>
+    <tbody>
+      <tr><td><span class="chan">/aria/audio/prompt</span></td><td>The object word you spoke</td><td>Aria</td><td>Nav, and segmentation once it listens</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td><span class="chan">/manipulation/goal_pose</span></td><td>The object is here</td><td>Grasp, later the graph</td><td>Nav</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td><span class="chan">/goal_pose</span></td><td>Drive to this point on the map</td><td>Nav bridge</td><td>Nav2</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td><span class="chan">/manipulation/start</span></td><td>In position, the arm may go</td><td>Nav</td><td>Bot</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td><span class="chan">/manipulation/done</span></td><td>Grasp cycle finished</td><td>Bot, once it is written</td><td>Nav</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td><span class="chan">/manipulator/release</span></td><td>Let go</td><td>Aria, once it is written</td><td>Bot and Nav</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td><span class="chan">/object_centroid_2d</span>, <span class="chan">/grasp_candidates</span>, <span class="chan">/pipeline_state</span></td><td>Inside the grasp path, between perception and the arm</td><td>Grasp and Bot</td><td>each other</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>The measured geometry</td><td>Where the arm, the LiDAR and the camera sit on the base</td><td>Sherman</td><td>everyone</td><td><span class="who w-S">Sherman</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout c-warn">
+    <span class="ct">Two rules that keep this working</span>
+    <p><strong>One publisher per channel, one owner per channel.</strong> Three channels have two
+    publishers today and each one is a known defect. If you need a second source, that is a
+    conversation, not a commit.</p>
+    <p><strong>Run <code>./bench/run.sh</code> before and after any change that touches a name.</strong>
+    Names are matched as plain text when the robot runs, so a rename applied to four places out of
+    five starts cleanly and quietly does nothing.</p>
+  </div>
+</section>
+
+<p class="foot"><strong>Reading this without Claude.</strong> The page is one self-contained file in
+the repository at <code>docs/task-tree.html</code>. No build step, no server needed,
+nothing loaded from Claude. Open it straight off disk, or if your browser is fussy about local files,
+serve the folder: <code>cd docs &amp;&amp; python3 -m http.server 8000</code> then open
+<code>http://localhost:8000/task-tree.html</code>. The only thing it fetches from the internet is
+the web font, and it falls back to system fonts without it. Everything works offline, including the
+task filters and the dependency trace.</p>
+
+<p class="foot">Source: <code>docs/task-tree.html</code>. The full written plan with the
+evidence and the risk register is <code>docs/PROJECT_PLAN.md</code>. The system it plans
+work on is described in <code>ORIENTATION.md</code> and drawn in the wiring map. Everything on this
+page is a decision, not a measurement, and it is expected to change as the first hardware sessions
+tell us what the estimates were worth.</p>
+
+</main>
+</div>
+<script>
+(function(){
+"use strict";
+
+var NAME = {D:"Dion", Z:"Zongzhe", S:"Sherman", A:"all three"};
+var WHERE = {off:"anywhere", box:"lab box", lab:"at the robot", mix:"mixed"};
+var WT = {build:"build", fix:"fix", wire:"rewire", bringup:"bring-up",
+          measure:"measure", plan:"decide"};
+var WT_ORDER = ["build","fix","wire","bringup","measure","plan"];
+
+var MS = [
+ ["M0","Everyone can build and run","14\u201327 Sep 2026","Z","Two people who are not Dion can clone, build and run the bench, and the arm and the LiDAR answer together",""],
+ ["M1","The arm picks something up","5 Oct\u20131 Nov 2026","D","Five grasp attempts on a box, success rate recorded, with the stop verified first",""],
+ ["M2","Voice and gaze reach the arm","26 Oct 2026\u20133 Jan 2027","D","Two boxes on the table, the arm picks the one you looked at, three times in four",""],
+ ["M3","The base navigates","12 Oct\u201327 Dec 2026","S","A map exists, the robot localises, and ten drives to a point have their error recorded",""],
+ ["M4","The current system, closed loop","28 Dec 2026\u201317 Jan 2027","D","One recorded run: speak, look, drive, grasp, with per-stage timing",""],
+ ["M5","A calibrated camera on the base","5 Oct 2026\u201317 Jan 2027","SD","LiDAR points projected into the camera image land on the right objects, and the camera-pose error is written down as a number. Sherman owns the mount, Dion owns the calibration",""],
+ ["M6","The memory graph, offline","28 Dec 2026\u20137 Feb 2027","Z","Object entries from a recorded drive, no duplicates, and a sentence query returns the right one",""],
+ ["M7","The graph drives the robot","1\u201328 Feb 2027","D","A spoken instruction with the object out of view gets the robot there, then close-range perception takes over",""],
+ ["M8","Gaze picks the instance","8 Feb\u201314 Mar 2027","D","The ablation: N trials with the gaze feature and N without, success rates side by side","prot"],
+ ["M9","Frontier scoring, visit ordering","2 Nov 2026\u201321 Feb 2027","Z","Exploration order beats a nearest-first baseline on a measured metric","opt"],
+ ["M10","Demonstration and paper","1\u201321 Mar 2027","A","A recorded end-to-end run and a draft whose central table is M8's number",""]
+];
+
+var T = [
+ ["T0.0","M0","D",3,"off","DONE 2026-09-21. Box checks passed for the calibration file and env.sh, so env.sh and anygrasp_node.sh are taken. Still owed: compare the glasses serial with the calibration file when the glasses are plugged in. Earlier: calibration.json taken, startup guide archived to docs/archive/, SETUP.md skipped. Cherry-pick what is worth keeping off the realman_manip branch onto main, then stop treating that branch as live. Four files plus anygrasp_node.sh, which records that the verified session ran checkpoint_tracking.tar while main launches checkpoint_detection.tar. No code comes across. This is the first thing to do",[],"bringup","**DONE 2026-09-21.** ~~Cherry-pick what is worth keeping off the `realman_manip` branch onto `main`, then stop treating that branch as live~~. `calibration.json`, `env.sh` and `anygrasp_node.sh` taken, the startup guide archived, `SETUP.md` skipped. Box checks passed for the calibration file and `env.sh`. One check still owed: compare the glasses serial with the file's, when the glasses are plugged in. Per-file table in `NEXT_STEPS` §3.3"],
+  ["T0.1","M0","S",2,"lab","DONE 2026-09-22. D455 on USB 3 (5000M) after a port/cable swap; ROS driver delivered color, depth, and aligned depth at ~30 Hz sustained over a 60 s three-topic bag. Earlier hz swings were a measurement artifact. Evidence: docs/sherman_docs/T0.1_D455_VALIDATION.md",[],"plan"],
+  ["T0.2","M0","SD",5,"lab","DONE 2026-09-16. Switch wired: workstation port 1, LiDAR port 2, arm port 3. NetworkManager persists .100, .10, and .5; RM65 and MID-360 each replied from their required host address after a connection cycle",[],"bringup","~~Get a network switch. Add the second host address to the wired port. Prove the arm and the LiDAR both answer in one session~~ **Done 2026-09-16.** Switch wired: workstation port 1, LiDAR port 2, arm port 3. NetworkManager persists `.100`, `.10`, and `.5`; RM65 and MID-360 each replied from their required host address after a connection cycle"],
+ ["T0.3","M0","Z",12,"off","DONE 2026-09-19. Make the repository run from a fresh clone. Paths inside it computed from the repository root, paths outside it in one configuration file",[],"fix","**DONE 2026-09-19.** Make the repository run from a fresh clone. Paths inside the repository are computed from the repository root. Paths outside it move to one configuration file with sensible defaults"],
+ ["T0.4","M0","Z",6,"box","DONE 2026-09-21, by Dion. robot_navigation and xpkg_demo in the repo and building, the Livox manifest in its package, the map left outside git by design (see ASSETS.md), mtc_sim_test.launch.py deleted because its source moves the arm. ./bench/run.sh exits 0. Left for Dion: branch protection once CI is green on the PR. Bring into git the four things the robot needs that are in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR manifest, the saved map. Added 2026-09-19: also settle mtc_sim_test.launch.py, which starts an executable rm_mtc never builds (add the target or delete the launch file). Done means ./bench/run.sh exits 0 and Dion turns on branch protection so CI blocks merges into main",["T0.3"],"bringup","**DONE 2026-09-21, by Dion (was Zongzhe's).** `robot_navigation` and `xpkg_demo` copied from `~/rcp-old-ros-wkspace`, both build on the box. The Livox manifest moved out of `bench/nodes/` into its package. The map stays outside git by design (T0.3), recorded in `ASSETS.md`. `mtc_sim_test.launch.py` deleted rather than built, because `trivial_mtc.cpp` executes arm motion to an all-zero pose. `./bench/run.sh` exits 0 locally. **Left for Dion:** confirm the `bench` check is green on the PR, then turn on branch protection. ~~Bring into git the four things the robot needs that live in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR package manifest, and the saved map~~. **Added 2026-09-19, to turn CI green:** also settle `rm_mtc/launch/mtc_sim_test.launch.py`, which starts an executable `rm_mtc` never builds. Either add the build target (`src/trivial_mtc.cpp` may be the missing source `[inferred]`) or delete the launch file. With that, all 7 static findings CI fails on today are cleared. **Done means `./bench/run.sh` exits 0, then Dion turns on branch protection for `main`** (require the `bench` check), so a red bench blocks merges from then on"],
+ ["T0.5","M0","ZS",8,"off","Zongzhe and Sherman each clone the repository on their own machine, build it and run the bench. This is the acceptance test for M0. Unblocked 2026-09-22: the refactor is merged into dev. Clone dev, not main (not promoted yet). ./build.sh and ./build.sh nav, source global_env.sh, then ./bench/run.sh. Off the box L3-L4 report SKIPPED, which is expected",["T0.3"],"bringup","Zongzhe and Sherman each clone the repository on their own machine, build it and run the bench. This is the acceptance test for M0. **Unblocked 2026-09-22:** the refactor is merged into `dev` (`NEXT_STEPS` §2.15). Clone `dev`, not `main`, which has not been promoted yet. Build with `./build.sh` and `./build.sh nav`, set up a shell with `source global_env.sh`, then run `./bench/run.sh`. Without ROS 2 Humble, L3-L4 report SKIPPED, which is expected off the box"],
+ ["T0.6","M0","A",24,"box","ROS 2 ramp, all three of us. Reading guide round 1, then run the simulated arm test and read what it printed",["T0.5"],"bringup"],
+ ["T0.7","M0","D",4,"off","DONE 2026-09-20. The channel contract is written: docs/CHANNEL_CONTRACT.md. 12 live handover channels, 4 parked with the out-of-scope return leg, 4 planned, 5 measurements, 11 hidden channels, the transform tree edge by edge, and 28 decisions including how navigation splits between Sherman and Zongzhe. It is the single source, everything else points to it",[],"plan","~~Write the channel contract: which stream owns which message channels, and the exact handover points between streams~~ **DONE 2026-09-20.** [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md): 12 live handovers, 4 parked with the return leg, 4 planned, 5 measurements, 11 hidden channels, the TF edge table, and 28 decisions including the nav split and the rename targets. It is the single source. `ORIENTATION` §5, §3.5 above and both HTML pages point to it"],
+ ["T0.8","M0","D",5,"box","DONE 2026-09-14. The environment check, the navigation build and the ten navigation node tests all ran and all passed. What is left is W6, blocked on a faulty camera, and W8, which needs a person at the robot",[],"measure","~~Clear the bench backlog that has been waiting since the box went off~~ **Done 2026-09-14.** Environment check, navigation build and the ten navigation node tests all ran, all passed, no fix needed. What is left of this task is W6, which is blocked on the faulty camera, and W8, which needs a person at the robot. See §2.6 Hours: 5 of 5 spent."],
+  ["T0.9","M0","S",3,"lab","DONE 2026-09-16 for the manufacturer chassis. The Hexman Robotics ECHO-PLUS manual specifies 460 x 380 x 140 mm and a 265 mm stated rotation radius, so the 200 mm Nav2 radius is not conservative. Recheck the integrated footprint after mount fabrication",[],"measure","~~Measure the real base footprint and compare it with the 0.2 metre radius the navigation configuration assumes~~ **Done 2026-09-16 for the manufacturer chassis.** The Hexman Robotics ECHO-PLUS manual specifies `460 x 380 x 140 mm` and a `265 mm` stated rotation radius, so the `200 mm` Nav2 radius is not supported as conservative. Recheck the integrated footprint after mount fabrication"],
+ ["T0.10","M0","D",6,"off","DONE 2026-09-21. bench (L0-L2) runs on every PR into and push to main and dev, both protected, dev is the default branch. L3-L4 in CI moved to T0.11. Added 2026-09-16. CI: wire up ./bench/run.sh (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. The real arm, base and glasses can never be in CI. Progress 2026-09-19: .github/workflows/bench.yml runs Tiers 0-1 strictly on PRs into main. T0.4 cleared the 7 static findings on 2026-09-21, so it can go green. Branch protection is next. Tiers 2-3 still open",["T0.5"],"build","**DONE 2026-09-21.** `bench` (L0-L2) runs on every PR into and push to `main` and `dev`, and both branches are protected, requiring `bench`. `dev` is the default branch. L3-L4 in CI moved to T0.11. **Stays with Dion (2026-09-20).** Briefly reassigned to Zongzhe in the rebalance, then kept: Dion wrote the bench and already has the design in mind, so it is faster with him even though it is not on the critical path. **Added 2026-09-16.** CI: wire up `./bench/run.sh` (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. See `NEXT_STEPS.md` §2.12 for scope, provider choice, and what a green run does and does not prove. **Progress 2026-09-19:** started ahead of T0.5 on purpose, to test it on the next merge. `.github/workflows/bench.yml` runs Tiers 0-1 on every PR into `main` and every push to `main`. It fails strictly. It was red on the 7 known static findings until T0.4 cleared all of them on 2026-09-21. Tiers 2-3 still open. Later, with a `dev` branch: fast per-subsystem tests on PRs into `dev`, the full suite on `dev` into `main`. Merges are not blocked yet: branch protection goes on when T0.4 turns the bench green"],
+ ["T0.11","M0","D",8,"off","DONE 2026-09-22. CI runs the full bench (L0-L4, no level skipped) on the lab box: the full job in bench.yml runs on every PR into main, on Monday and Wednesday nights on dev, and from the Run workflow button. It passed on its first run (PR #7, dev into main, bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt) and main now requires both bench and full. Deferred, not part of this task: one test suite per subsystem (PROJECT_PLAN 4.3), and the fork-PR guard until the repo goes private",["T0.10"],"build","**Added 2026-09-19.** Split the bench into one test suite per subsystem: glasses (`aria`), arm (`rm_mtc`), grasp (AnyGrasp and MinkowskiEngine), and navigation. Each suite covers its own code plus the channels it shares with other subsystems. CI then runs only the suites whose files a PR touched, plus the contract check. Do it alongside the one-folder-per-node refactor, since the folder layout decides how files map to suites. Also add a scheduled run of the full suite on `dev` every Monday and Wednesday night, so a break is traced to a few days of commits rather than a whole release. **Open, decide when this task starts:** Tiers 2-3 need ROS Humble and today only run on the lab box. Either register the lab box as a self-hosted GitHub runner (free, but tied to a box we may lose after 2026-11-16) or build a Docker image of the environment (portable, may cost image storage). **Decided 2026-09-19: self-hosted runner on the lab box, running L0-L4 only, never L5-L6 (robot check and hardware, not needed to merge; L6 was L5 until 2026-09-21).** Then create the `dev` branch: PRs into `dev` may pass with L3-L4 skipped, PRs into `main` must run L0-L4 with no level skipped. `run.sh` already runs every level a machine can and skips the rest; what remains is the runner, the branch, a no-skips switch for `main`, and branch protection. Before registering the runner, check the fork-PR risk: the repo is public. **Progress 2026-09-21 (PR #4):** the lab box is registered as a self-hosted runner (`~/actions-runner`, label `lab-box`) and `bench-nightly.yml` runs the full bench on `dev` at 23:00 Singapore time on Mondays and Wednesdays, plus a manual button. `concurrency: lab-box` keeps it to one run at a time. It never runs on a PR, so no outside code reaches the box, which settles the fork-PR risk for this job `[observed]`. First runs: one cancelled, one failed only at L2 (no model weights in the runner's copy), L3-L4 passed. **Progress 2026-09-22:** the one-folder-per-node refactor is done (`NEXT_STEPS` §2.15), so the per-subsystem suites can map onto `aria/`, `arm/`, `grasp/`, `nav/`. **After the refactor merges into `dev`, before the next nightly:** in the runner's copy `~/actions-runner/_work/Gappler/Gappler`, run `rm -rf build install build_nav install_nav Navigation_Module` once (ignored leftovers of the old layout; the generated Livox `package.xml` in `Navigation_Module/` would clash with the one in `nav/vendor/`), and link `aria/aria_app/models/sam3/sam3.pt` and `grasp/anygrasp_node/log/checkpoint_*.tar` from `~/rcp-Gappler`, so L2 stops failing on missing weights. **Progress 2026-09-21:** `dev` created and made the default branch, both branches protected. Left: the runner, the no-skips `full` job on `dev` into `main`, the night schedule, the per-subsystem suites, and the fork-PR risk. Runner details: `runs-on: [self-hosted, lab-box]`, `concurrency: lab-box` so two runs never share the GPU and ROS channel, run it in `tmux` under `rcp2026` (no sudo). The night `schedule` only reads workflow files on the default branch, `dev`. Fork-PR risk, settle before registering: a self-hosted runner runs whatever a PR contains, on a box wired to the arm and base network. Either make the repo private (after GitHub Pro) or run the lab job only for PRs from this repo. Promote `dev` to `main` with a merge commit, never a squash, or later promotions conflict. **Left (2026-09-22):** one suite per subsystem with CI running only the touched ones, the no-skips `full` job required on `dev` into `main` (it would run on a PR, so the fork-PR question comes back for it), and the weights in the runner's copy. **Decided 2026-09-22 (Dion):** finish it on a new branch after the refactor merges. **Progress 2026-09-22:** the refactor merged into `dev` (PR #5). The runner's copy was cleaned of old-layout leftovers and the model weights linked in, so L2 passes there (17 pass, 0 fail). Branch `t0.11-ci-full-job` is open for the no-skips `full` job, see `TESTBENCH_PLAN` \"Start here\". The fork-PR guard for the `full` job is waived for now: the repo stays public without GitHub Pro, so revisit when it goes private. The per-subsystem suites are deferred to a later branch. **Progress 2026-09-22 (branch `t0.11-ci-full-job`):** `bench/run.sh --no-skips` fails the run if any of L0-L4 is SKIPPED. `bench.yml` now holds two jobs: `bench` (L0-L2, GitHub's machines, unchanged) and `full` (`--no-skips` on the lab box, on PRs into `main`, Mon and Wed nights and the button). `bench-nightly.yml` is removed, `full` took over its schedule. Left: run `full` once, make it required on `main`, test with a real `dev` into `main` PR `[unverified]`. **Decided 2026-09-22 (Dion): the per-subsystem suites are paused until a need arises.** L0-L2 take about 30 s, so a split saves nothing, and every lab box run is the full L0-L4. T0.11 closes without them. **Stays with Dion (2026-09-20)**, same reason as T0.10"],
+ ["T0.12","M0","D",6,"box","DONE 2026-09-22. AnyGrasp gate test and perception replay (was TESTBENCH_PLAN W6). After the camera replug, grasp/tools/record_wrist_camera.sh recorded a 10 s bag of the wrist camera, and bench/anygrasp_replay.sh (L4) replays it through SAM 3 and AnyGrasp. Segmentation and grasp detection work on real frames, and A1 is reproduced: candidates only while IDLE. Evidence: bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt",[],"measure"],
+ ["T0.13","M0","D",1,"box","DONE 2026-09-23. Stop the AnyGrasp licence clock record dirtying every checkout. grasp/anygrasp_node/.TimeRecord was tracked by mistake (cf6f3b0) and the SDK rewrites it on every run, so the lab box and the CI runner copy (clean: false) both showed a modified file forever. Untracked it and added .TimeRecord to .gitignore. Checked first that the SDK recreates it when absent: bench/anygrasp_env.sh passed with no file present and wrote a fresh one in the demo cwd",[],"fix"],
+
+ ["T1.1","M1","D",3,"off","DONE 2026-09-22. All six code audit questions are answered or parked: question 5 on 2026-09-20, the other five the same day in T0.7 (CHANNEL_CONTRACT section 6). The answers are recorded in CODE_AUDIT \"Open questions\". Two follow-ups surfaced and are not yet decided: whether M1 grasps on the simple path or with AnyGrasp candidates, and who publishes /manipulation/done and /manipulator/release. Both are parked on the tasks they affect: the first on T1.8, the second on T1.9 and T1.11",["T0.7"],"plan","Before closing, 2026-09-20: PROGRESS 2026-09-20. Question 5 answered: the arm bring-up file is owned by the grasp launcher, so the duplicate launch in the orchestrator is deleted. Five left. Answer the six open questions in the code audit and record the decisions. Several are choices, not fixes"],
+ ["T1.2","M1","D",8,"off","DONE 2026-09-22, by Sherman (owner aware). All three safety fixes evidenced: stop program fixed 2026-09-21 (B2, B2a, B2c, bench-checked every path); launcher wording corrected (B1, 2 lines, no phantom q key); orchestrator double-launch copy deleted behind a new failing-first L0 check (I1). Evidence: docs/sherman_docs/T1.2_SAFETY_FIXES.md. Safety fixes before any power: the stop key the launcher promises but does not have, the stop program ignoring Ctrl+C, and the arm driver being launched twice. Decided 2026-09-20 for the third one: the grasp launcher owns the arm bring-up, delete the orchestrator copy",["T1.1"],"fix","Safety fixes before any power: the emergency stop key that the launcher promises but does not exist, the stop program ignoring Ctrl+C, and the arm driver being launched twice. **Progress 2026-09-21:** the stop program is fixed (`CODE_AUDIT` B2, B2a, B2c). Ctrl+C, kill and a closed terminal all send the stop, no key is lost, and `bench/estop_delivery.sh` checks every path. Left: the launcher's stop key and the double driver launch"],
+ ["T1.3","M1","D",4,"box","DONE 2026-09-23. MAIN home row adopted final (sim-validated + documented): Round A placement TF-matches FK to the millimetre (C1 lowest grasp, 44-deg view), Round B behavior PASS (approach + close; return FAIL attributed to stale test RETURN, fixed test-only). No code change: HOME_JOINTS already MAIN; RETURN interim 2.3000 stands. Evidence: docs/sherman_docs/T1.3_HOME_POSE.md. Residuals: variant matrix not run, T1.1 supersession owed, box green re-run owed, live validation T1.7. Added 2026-09-23 (Dion): this task now decides the RETURN pose as well as the home pose, because both are hard-coded joint rows with the same class of defect. RETURN_JOINTS set joint3 to 2.3562 against a 2.355 limit, so the pose was unreachable and moveToReturn() retried it forever; patched to an interim 2.3000 on branch t1.3-pose-joint-limit-check, final value decided here. That branch also adds L0 check joint-poses-within-limits, which fails any hard-coded joint row outside the URDF limits, so this class cannot come back. Decide which home pose is correct and validate it on the simulated arm before using it on the real one. Fix the safety warning that still quotes the old pose (CODE_AUDIT B4)",["T1.1"],"plan"],
+ ["T1.4","M1","S",3,"lab","DONE 2026-09-23. Physical safety setup at the robot: visit recorded, power-on ready with no motion. A taped 0.380x0.460, mount truth matches model, area cleared, camera 243222074878 confirmed. Residuals: D3 figure transcription, T1.4-cell blocked. Evidence: docs/sherman_docs/T1.4_PHYSICAL_SETUP.md. D3 answered 2026-09-23 by the T1.6 session (Dion and Sherman at the robot): there is no emergency stop button and no separate controller box. The only physical control is a power button at the rear of the arm, so the stop is cutting power. Record how long it takes to go dead and the distance from the operator mark",[],"bringup"],
+ ["T1.5","M1","S",8,"lab","Write the bring-up runbook. Power on to ready, in order, with the check at each step and what a failure looks like",["T1.6"],"plan"],
+ ["T1.6","M1","DS",3,"lab","DONE 2026-09-23. Session run at the robot by Dion and Sherman using Sherman's driver-only runbook. Network half PASS: arm reachable at 192.168.1.18 (MAC 00:00:3e:9e:9f:a0), ping 0.4 ms 0% loss, control port 8080 open. Note: the arm was unreachable for about the first minute after power-on, which is normal boot time, not a fault. Driver handshake PASS: product_version RM65-BI observed for the first time (was only reported from the 2026-08-25 guide), controller version 3, UDP config matches the config file. Six named joints reading the straight-up posture, no motion commanded or observed. The rest reading corroborates Sherman's T1.3 readings to 0.14 deg, and its tightest joint margin is 127.9 deg, which makes it a third home-pose candidate for T1.3. Feedback measured at 199.5 to 199.9 Hz on a steady 5 ms interval with no jitter, matching the driver's declared cycle. This is the first measured rate for /joint_states on this robot; the runbook noted no threshold had been verified. All seven pass criteria evidenced. Evidence: docs/dion_docs/T1.6_FIRST_POWERED_SESSION.md. First powered arm session. Driver handshake, joint feedback arriving, no motion commanded",["T0.2","T1.2","T1.4"],"bringup"],
+ ["T1.7","M1","DS",3,"lab","HOME validated on the real arm 2026-09-23 (Dion and Sherman): one joint at a time through /rm_driver/movej_cmd at speed 1, every joint within 0.02 deg of the HOME row, slow and smooth, the tool extends slightly outside the base footprint, accepted because HOME is the arrival pose, not a driving pose (T1.18). HOME row kept unchanged in mtc_planner.hpp. Evidence: docs/dion_docs/T1.7_FIRST_COMMANDED_MOTION.md, joint readings in bench-runs/2026-09-23-labbox-t1.7-home-joint-states.txt. Still open: RETURN on the real arm. First commanded motion, to the validated home pose, with a hand on the stop. Both poses decided in T1.3 are validated here on the real arm: home and return. Whatever joint values the arm actually reaches go back into mtc_planner.hpp (Dion, 2026-09-23). Changed 2026-09-23 by the T1.6 session: there is no teach pendant and no e-stop button, so the arm cannot be hand-jogged. The first motion goes through /rm_driver/movej_cmd at a low speed value with a hand on the arm's rear power button, which is the only physical stop. That path bypasses MoveIt, so it does no planning and no collision checking and the pose must be correct before it is sent. This is the one sanctioned exception to the CLAUDE.md rule against publishing to /rm_driver/*_cmd, and it needs two people present",["T1.3","T1.6"],"bringup"],
+ ["T1.8","M1","D",10,"mix","Fix the three interlocking defects that stop the grasp path working: the inverted state condition in the grasp predictor, the consumer that accepts candidates in one state only, and the flag that makes the whole path unreachable. Check the A1 fix with ./bench/anygrasp_replay.sh: its gate case turns from XFAIL to XPASS. Open decision, parked here from T1.1 on 2026-09-22: with USE_SIMPLE_EXECUTE kept true for bring-up (CHANNEL_CONTRACT B-1), the first hardware grasps never use AnyGrasp. Decide whether T1.11 still waits on this task and T1.10, or whether they move after T1.12 with a new task to switch AnyGrasp on",["T1.1"],"fix"],
+ ["T1.9","M1","D",8,"mix","Fix the concurrency defects in the state machine. One condition variable with two locks, and an unlocked read, are undefined behaviour rather than untidiness. Also the queue that grows without limit after a successful grasp (CODE_AUDIT C7, observed on the simulated arm). Also (from T1.1, 2026-09-22): publish /manipulation/done at the end of each cycle, as CHANNEL_CONTRACT B-5 assigns to T1.8 or T1.9. Nothing publishes it today",["T1.8"],"fix"],
+ ["T1.10","M1","D",6,"box","PROGRESS 2026-09-21. The environment half is done: ./grasp/anygrasp_venv/build_anygrasp_venv.sh (was envs/anygrasp/build.sh) rebuilds the AnyGrasp env from nothing and the SDK demo passes. Left: decide which grasp prediction program is authoritative, and stop main.py launching it through conda run. Decide which grasp prediction program is authoritative and make its Python environment reproducible from a script in the repository",["T1.1"],"plan","Decide which grasp prediction program is authoritative and make its Python environment reproducible from a script in the repository. **Progress 2026-09-21:** the environment half is done, `./grasp/anygrasp_venv/build_anygrasp_venv.sh` (was `envs/anygrasp/build.sh`) (TESTBENCH_PLAN W5). Left: the decision, and stopping `main.py` launching it through `conda run`"],
+ ["T1.11","M1","DS",4,"lab","Grasp using the stand-in mask publisher, on hardware. Fix its wrong channel name first. Gap found in T1.1 (2026-09-22): nothing publishes /manipulator/release, so after each grasp the gripper stays closed until someone sends it by hand. CHANNEL_CONTRACT A-1 says the glasses side publishes it, no task builds it yet",["T1.7","T1.8","T1.9","T1.10"],"bringup"],
+ ["T1.12","M1","DS",4,"lab","Grasp using a live mask from the wrist camera with a fixed prompt word. Five attempts, success rate recorded",["T1.11"],"measure"],
+ ["T1.13","M1","D",1,"box","Added 2026-09-22. Start the wrist camera by serial number. Two RealSense cameras are now plugged in (D435i and D455), and both places that start the driver (launchers/start_grasp_pipeline.py, aria/aria_app/main.py) pass no serial, so the driver opens whichever it finds first. Take the serial from config (grasp/tools/record_wrist_camera.sh already does, WRIST_CAMERA_SERIAL)",[],"fix"],
+ ["T1.18","M1","DS",4,"mix","Added 2026-09-23 after T1.7. Find a navigation_rest_pose: an arm posture that sits entirely inside the base footprint, for driving and for parking. HOME is not it: at HOME the tool extends slightly outside the base (T1.7, observed at the robot). Screen candidates by FK against the base edges (Sherman's G4a in sherman_docs/T1.4_PHYSICAL_SETUP.md), check joint-limit margins, run it on the simulated arm, then validate on the real arm the T1.7 way: one joint at a time through /rm_driver/movej_cmd at speed 1, two people. Then decide where the state machine uses it, for example on startup and before any drive",["T1.7"],"plan"],
+ ["T1.19","M1","D",2,"off","Added 2026-09-23 after T1.7. Rename HOME to a name that says what it is: the pose the arm takes when navigation has arrived and it looks at the table (for example arrival_view_pose, ARRIVAL_VIEW_JOINTS). Covers HOME_JOINTS in mtc_planner.hpp, the home functions in the state machine (homeWithRetry and friends), the bench tests that hard-code the row (test_state_machine_sim.py, test_sim_moveit.py) and the docs. Pick the name together with T1.18 so the two poses read as a pair",["T1.7"],"wire"],
+
+ ["T2.0","M2","D",2,"off","DONE 2026-09-20. Settle the open decision in NEXT_STEPS 2.2: patch the spoken word into the arm-side segmentation program, or retire it and restore the pipeline call site. Decided: retire it. The pipeline already reads both cameras and already has gaze, and the duplicate model is the biggest memory saving in the system",["T1.1"],"plan","**DONE 2026-09-20.** Settle the open decision in `NEXT_STEPS` 2.2: patch the spoken word into the existing arm-side segmentation program, or retire it and restore the pipeline call site. **Decided: retire it** (`NEXT_STEPS` 2.2)"],
+ ["T2.1","M2","D",12,"mix","Build one segmentation service that owns the model and is the only publisher of the three mask channels. Both current call sites become clients Also (added 2026-09-22): decide whether grasp/tools/dummy_mask_publisher.py, the broken no-perception stand-in, is still needed. Fix it or delete it",["T1.12","T2.0"],"wire","Build one segmentation service that owns the model and is the only publisher of the three mask channels. Both current call sites become clients of it. **Also (added 2026-09-22):** decide whether `grasp/tools/dummy_mask_publisher.py`, the no-perception stand-in, is still needed. It is broken (`NEXT_STEPS` §2.3). Fix it or delete it"],
+ ["T2.2","M2","D",6,"lab","Switch the glasses image stream back on, one stage at a time so failures are attributable",["T0.3"],"wire"],
+ ["T2.3","M2","D",6,"lab","Verify the gaze path and measure the error introduced by the fixed 1.5 metre depth assumption. Record the usable distance range",["T2.2"],"measure"],
+ ["T2.4","M2","D",8,"off","Decide when segmentation runs, instead of on every frame, and add an age limit so the arm never moves toward a stale position",["T2.1"],"build"],
+ ["T2.5","M2","DS",5,"lab","Voice and gaze to grasp, on hardware. Two boxes, pick the one you looked at",["T1.12","T2.3","T2.4"],"measure"],
+
+ ["T3.1","M3","Z",4,"box","DONE 2026-09-14. The navigation workspace compiles: 10 of 10 packages in 2 min 34 s, no Livox blocker. What remains is repeating it on Zongzhe's own machine as part of T0.5",["T0.4"],"bringup","~~Compile the navigation workspace~~ **Done 2026-09-14**, 10 of 10 packages in 2 min 34 s, and it needed neither `xpkg_demo` nor `robot_navigation` because both are run-time dependencies. What remains for Zongzhe is to repeat it on his own machine as part of T0.5 Hours: 1 of 4 left."],
+ ["T3.2","M3","Z",5,"box","DONE 2026-09-14. Passed on the first run: 6 controls pass, all 4 expected failures reproduced, 0 skipped. E1, F1 and F2 are now observed rather than inferred, and F4 is new",["T3.1"],"measure","~~Run the ten navigation node tests~~ **Done 2026-09-14**, passed first run: 6 controls, 4 expected failures reproduced, 0 skipped. E1, F1 and F2 are now `[observed]`, F4 is new. Read the result before starting T3.3 Hours: 0 of 5 left."],
+ ["T3.3","M3","S",2,"off","Owner changed to Sherman 2026-09-20, Zongzhe reviews. Fix the missing arm-to-base transform during a mapping run, which today leaves the arm unconnected to the position tree",["T3.2"],"fix","Fix the missing arm-to-base transform during a mapping run, which today leaves the arm unconnected to the position tree. **Owner changed to Sherman 2026-09-20**, Zongzhe reviews the change"],
+ ["T3.4","M3","S",4,"lab","Owner changed to Sherman 2026-09-20. Drive the base under keyboard control. Confirm the LiDAR publishes",["T0.2","T3.1"],"bringup"],
+ ["T3.5","M3","SD",6,"lab","Owner changed 2026-09-20: Sherman leads, Dion joins because he is at the robot for the camera and LiDAR calibration anyway. Build a map of the lab and localise in it. Read first (2026-09-21): NEXT_STEPS 2.15 \"For Sherman\". Two launch files localise differently and read different map files, navigation.launch.py fails without map:=, and which one the team drives with is still open",["T3.4"],"bringup","Build a map of the lab and localise in it. **Owner changed 2026-09-20:** Sherman leads, Dion joins, since he is at the robot for the camera and LiDAR calibration anyway (T5.5). **Read first (2026-09-21):** `NEXT_STEPS` §2.15 \"For Sherman\". Two launch files localise differently and read different map files, `navigation.launch.py` fails without `map:=`, and which one the team drives with is still open"],
+ ["T3.6","M3","S",5,"lab","Owner changed to Sherman 2026-09-20. Drive to a commanded point ten times. Record the position error each time",["T3.5"],"measure"],
+ ["T3.7","M3","DS",6,"lab","The navigation to arm handover on hardware: object position in, drive, arrived signal out. The channels are CHANNEL_CONTRACT H2, H3 and H9",["T1.12","T3.6","T3.8"],"wire"],
+ ["T3.8","M3","Z",6,"off","Added 2026-09-21. Fix the bridge-node defects the bench found: goal_reached_publisher has three silent-failure paths, so a second object after any navigation failure gets no goal (CODE_AUDIT F1), and all five nav nodes crash with a traceback on Ctrl+C (F4). Both observed by bench/nav_nodes.sh. The return-leg defects E1 and F2 stay with stretch goal S5. Moved 2026-09-22: each node is now its own package in nav/, for example nav/goal_reached/goal_reached_publisher.py, line numbers unchanged (NEXT_STEPS 2.15 For Zongzhe)",["T3.2"],"fix","**Added 2026-09-21.** Fix the bridge-node defects the bench found: `goal_reached_publisher` has three silent-failure paths, so a second object after any navigation failure gets no goal (`CODE_AUDIT` F1), and all five nav nodes crash with a traceback on Ctrl+C (F4). Both `[observed]` by `bench/nav_nodes.sh`. The return-leg defects E1 and F2 stay with stretch goal S5. **Moved 2026-09-22 (refactor):** each node is now its own package in `nav/`, for example `nav/goal_reached/goal_reached_publisher.py`. Line numbers unchanged, see `NEXT_STEPS` §2.15 \"For Zongzhe\""],
+
+ ["T4.1","M4","A",8,"lab","One complete run, recorded on video: speak, look, drive, grasp",["T2.5","T3.7"],"measure"],
+ ["T4.2","M4","S",6,"lab","Owner changed to Sherman 2026-09-20. Measure how long each stage takes. Report the 99th percentile, not the average",["T4.1"],"measure"],
+ ["T4.3","M4","A",0,"off","Keep the defect log from the first powered session onward. One line per bug: symptom, guess, actual cause. Ongoing, not a block",["T1.6"],"measure"],
+
+  ["T5.1","M5","S",2,"lab","DONE 2026-09-16. An Intel RealSense D455 is provided to the project. USB 3 connection and live RGB-D stream verification remain T0.1",["T0.1"],"plan","~~Camera secured. Found in the lab, or ordered with a date~~ **Done 2026-09-16.** An Intel RealSense D455 is provided to the project. USB 3 connection and live RGB-D stream verification remain T0.1"],
+  ["T5.2","M5","S",10,"off","DONE 2026-09-16 [reported]. Sherman completed the forward-facing D455 mount CAD and measurements: 20 x 20 mm aluminum extrusion, 190 mm required length. Physical fabrication and fit verification remain T5.3",["T5.1"],"build","~~Design the mount. Forward facing, rigid, clear of the arm's swept volume, not looking at the robot's own body. The arm is mounted facing backward, which makes this a real constraint rather than a formality~~ **Done 2026-09-16 `[reported]`.** Sherman completed the forward-facing D455 mount CAD and measurements: `20 x 20 mm` aluminum extrusion, `190 mm` required length. Physical fabrication and fit verification remain T5.3"],
+  ["T5.3","M5","S",8,"lab","Fabricate, fit, and verify the mount's rigidity, arm clearance, cable route, and camera view",["T5.2"],"build"],
+ ["T5.4","M5","SZ",5,"mix","Measure the mount geometry and make it one source of truth. Today the same 0.18 metre offset is written in three independent places and the robot model carries a fourth",["T5.3"],"fix"],
+ ["T5.5","M5","DS",12,"lab","Calibrate the position of the camera relative to the LiDAR. Dion owns the procedure and the numbers, Sherman owns the rig and the target",["T5.3"],"measure"],
+ ["T5.6","M5","D",4,"box","Verify the calibration by projecting LiDAR points into the camera image. Keep the picture, it goes in the paper",["T5.5"],"measure"],
+ ["T5.7","M5","D",12,"box","Choose where camera poses come from and characterise the error: drift over a run, and the duplicate-object rate it causes in the graph. Start with the existing 2D localisation because it is free. A measurement study, not a configuration choice",["T3.5","T5.6"],"measure","Choose where camera poses come from and characterise the error: drift over a run, and the duplicate-object rate it causes in the graph. Start with the existing 2D localisation because it is free. This is a measurement study, not a configuration choice"],
+ ["T5.8","M5","S",8,"lab","Build a trial fixture: marked object positions and marked robot start positions, so a trial can be repeated exactly",["T5.3"],"build"],
+ ["T5.9","M5","S",24,"mix","Added 2026-09-20. The escalation half of the pose-source study: if T5.7 says 2D localisation is the limiting factor, bring up FAST-LIVO2 and measure it on the same drift and duplicate-object metrics. Staged on purpose, do not start before T5.7 has a number. The known blocker is a time-synchronised camera, so the first hour goes on sensor synchronisation, not the algorithm. Sherman owns the hardware, recording and evaluation runs, paired with Zongzhe for the software bring-up",["T5.7"],"measure","**Added 2026-09-20 (decision D4).** The escalation half of the pose-source study: if T5.7 says 2D localisation is the limiting factor, bring up FAST-LIVO2 and measure it against the same drift and duplicate-object metrics. Staged deliberately: do not start it before T5.7 has a number. The known blocker is a time-synchronised camera, so the first hour is spent on sensor synchronisation, not on the algorithm. Sherman owns the hardware, the recording and the evaluation runs; pair with Zongzhe for the software bring-up"],
+
+ ["T6.1","M6","Z",4,"off","Read the upstream HiCo-Nav code. Settle which solvers it needs and whether their licences are acceptable. Also confirm or kill the three [inferred] claims in MEMORY_GRAPH_DESIGN.md §3 and §4",[],"plan"],
+ ["T6.2","M6","S",4,"lab","Record data of the lab with the base camera: images, depth, LiDAR, positions",["T5.6"],"measure"],
+ ["T6.3","M6","Z",14,"off","Build object entries from recorded data: mask, depth, camera position, image feature",["T6.2"],"build"],
+ ["T6.4","M6","Z",10,"off","The merge test, so the same physical object seen twice becomes one entry: 3D overlap combined with image feature similarity",["T6.3"],"build"],
+ ["T6.5","M6","Z",8,"off","The two-stage trigger. A cheap detector runs always, the expensive one only when a new object class appears or the robot has moved enough. This also closes the when-should-segmentation-run question",["T2.4","T6.3"],"build","The two-stage trigger. A cheap detector runs always, the expensive one runs only when a new object class appears or the robot has moved enough. This also closes the \"when should segmentation run\" question from M2"],
+ ["T6.6","M6","S",4,"off","Decide the reasoning model endpoint, cloud or local, and check whether sending lab images off site is permitted. A procurement and policy question of the same kind as T0.1",[],"plan"],
+ ["T6.7","M6","Z",10,"off","The reasoning layer. Called once at the start of a task, off the control loop, expanding the instruction into related objects",["T6.4","T6.6"],"build"],
+ ["T6.8","M6","ZD",8,"off","Query the graph with a sentence and get an object position back",["T6.4"],"build"],
+
+ ["T7.1","M7","D",16,"box","Publish the approach goal from the graph instead of from live perception. The channel and its meaning do not change, only who writes to it. Written in C++ with rclcpp, not Python. object_approach_node.py is a working reference for the same behaviour, so you can diff against it and know when the C++ one is right",["T3.7","T6.8"],"build","Publish the approach goal from the graph instead of from live perception. The channel and its meaning do not change, only who writes to it. **Write this node in C++ with rclcpp**, not Python. `object_approach_node.py` is a working reference for the same behaviour, so you can diff against it and know when the C++ one is right"],
+ ["T7.2","M7","Z",10,"lab","Build the graph while the robot drives, rather than from a recording",["T5.7","T7.1"],"build"],
+ ["T7.3","M7","A",8,"lab","Spoken instruction to arrival at the right object, on hardware, with the object not in view when the instruction is given",["T7.2"],"measure"],
+
+ ["T8.1","M8","D",8,"off","Produce an image feature from the gaze-cropped region of the glasses frame",["T2.3"],"build"],
+ ["T8.2","M8","D",10,"off","Carry that feature into the graph query so it selects an instance rather than a class",["T6.8","T8.1"],"build"],
+ ["T8.3","M8","DS",18,"lab","Run the ablation. N trials with the feature and N without, same objects, same start positions, using the fixture",["T5.8","T7.3","T8.2"],"measure"],
+ ["T8.4","M8","D",4,"box","Re-measure the cross-camera matching baseline so the comparison number is ours rather than remembered",["T2.1"],"measure"],
+
+ ["T9.1","M9","Z",8,"off","Get the upstream simulator evaluation running as a baseline",["T6.1"],"bringup"],
+ ["T9.2","M9","Z",12,"off","Implement frontier scoring",["T9.1"],"build"],
+ ["T9.3","M9","Z",10,"off","Implement visit ordering with an openly licensed solver",["T9.2"],"build"],
+ ["T9.4","M9","ZD",8,"box","A node that emits drive goals, sitting beside the existing bridge, with Nav2 unchanged",["T9.3"],"build"],
+
+ ["T10.1","M10","A",8,"lab","Full demonstration run, recorded",["T8.3"],"measure"],
+ ["T10.2","M10","A",24,"off","Paper draft. The central table is the ablation from T8.3",["T8.3"],"plan"],
+ ["T10.3","M10","D",6,"off","Reproducibility artifacts: the bench, the recorded data, this plan, the defect log",["T10.2"],"plan"]
+];
+
+var byId = {}, kids = {};
+T.forEach(function(t){ byId[t[0]] = t; kids[t[0]] = []; });
+T.forEach(function(t){ t[6].forEach(function(d){ if(kids[d]) kids[d].push(t[0]); }); });
+
+function ownerChips(o){
+  if(o === "A") return '<span class="who w-A">all three</span>';
+  return o.split("").map(function(c){
+    var cls = c === "D" ? "w-D" : c === "Z" ? "w-Z" : "w-S";
+    return '<span class="who ' + cls + '">' + NAME[c] + "</span>";
+  }).join(" ");
+}
+// Task notes are the full text that used to sit in PROJECT_PLAN.md section 6, in light markdown.
+function notes(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g,"$1")
+    .replace(/~~([^~]+)~~/g,"<s>$1</s>")
+    .replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>")
+    .replace(/`([^`]+)`/g,"<code>$1</code>");
+}
+function primary(o){ return o === "A" ? "A" : o.charAt(0); }
+
+var root = document.getElementById("tree-root");
+var DONE = {};
+try { DONE = JSON.parse(localStorage.getItem("gappler.tasks.done") || "{}"); } catch(e) { DONE = {}; }
+// A task whose title in T starts with "DONE" is done for every viewer, from the source data itself
+// -- not just in whoever's browser clicked the button. Re-seeded on every load so it can't drift.
+T.forEach(function(t){ if(/^DONE\b/.test(t[5])) DONE[t[0]] = 1; });
+function save(){ try { localStorage.setItem("gappler.tasks.done", JSON.stringify(DONE)); } catch(e) {} }
+
+var html = "";
+MS.forEach(function(m){
+  var tasks = T.filter(function(t){ return t[1] === m[0]; });
+  var hrs = tasks.reduce(function(a,t){ return a + t[3]; }, 0);
+  var flag = m[5] === "prot" ? '<span class="flag flag-prot">protected</span>'
+           : m[5] === "opt"  ? '<span class="flag flag-opt">optional, cut first</span>' : "";
+  html += '<div class="ms' + (m[5] === "opt" ? " opt" : "") + '" data-ms="' + m[0] + '">';
+  html += "<header><span class=\"mid\">" + m[0] + "</span><h4>" + m[1] + "</h4>";
+  html += '<span class="wks">' + m[2] + "</span>";
+  html += '<span class="wks">' + hrs + " h</span>";
+  html += ownerChips(m[3]) + flag;
+  html += '<p class="goal">Done means: ' + m[4] + ".</p></header>";
+  html += '<div class="nodes">';
+  tasks.forEach(function(t){
+    var deps = t[6];
+    var depHtml = deps.length
+      ? '<span class="k">after</span>' + deps.map(function(d){ return '<span class="dep">' + d + "</span>"; }).join("")
+      : '<span class="free">nothing blocking it</span>';
+    html += '<div class="node own-' + primary(t[2]) + " wk-" + t[7] + (DONE[t[0]] ? " done" : "") +
+            '" data-id="' + t[0] + '" data-owner="' + t[2] + '" data-wt="' + t[7] +
+            '" data-free="' + (deps.length ? "0" : "1") +
+            '" tabindex="0" role="button" aria-label="Task ' + t[0] + ', ' + WT[t[7]] + '">';
+    html += '<div class="top"><span class="tid">' + t[0] + "</span>" + ownerChips(t[2]) +
+            '<span class="wt wt-' + t[7] + '">' + WT[t[7]] + "</span>" +
+            '<span class="loc">' + WHERE[t[4]] + "</span>" +
+            '<span class="hrs">' + (t[3] ? t[3] + " h" : "ongoing") + "</span></div>";
+    html += '<p class="title">' + t[5] + "</p>";
+    if(t[8]) html += '<div class="notes">' + notes(t[8]) + "</div>";
+    html += '<div class="deps">' + depHtml + "</div>";
+    var srcDone = /^DONE\b/.test(t[5]);
+    html += '<span class="mark" data-mark="' + t[0] + '">' + (srcDone ? "done" : "mark done") + "</span>";
+    html += "</div>";
+  });
+  html += "</div></div>";
+});
+root.innerHTML = html;
+
+var nodes = Array.prototype.slice.call(root.querySelectorAll(".node"));
+var selected = null, filter = "all", wfilter = "all";
+
+function upstream(id, acc){
+  acc = acc || {};
+  (byId[id][6] || []).forEach(function(d){ if(!acc[d]){ acc[d] = 1; upstream(d, acc); } });
+  return acc;
+}
+function downstream(id, acc){
+  acc = acc || {};
+  (kids[id] || []).forEach(function(d){ if(!acc[d]){ acc[d] = 1; downstream(d, acc); } });
+  return acc;
+}
+
+function paint(){
+  var up = selected ? upstream(selected) : {};
+  var dn = selected ? downstream(selected) : {};
+  nodes.forEach(function(n){
+    var id = n.dataset.id;
+    n.classList.remove("sel","up","down","dim");
+    var byWho = filter === "all"
+      || (filter === "free" && n.dataset.free === "1")
+      || (filter !== "free" && (n.dataset.owner === "A" || n.dataset.owner.indexOf(filter) !== -1));
+    var byWork = wfilter === "all" || n.dataset.wt === wfilter;
+    if(!(byWho && byWork)){ n.classList.add("dim"); return; }
+    if(!selected) return;
+    if(id === selected) n.classList.add("sel");
+    else if(up[id]) n.classList.add("up");
+    else if(dn[id]) n.classList.add("down");
+    else n.classList.add("dim");
+  });
+  root.querySelectorAll(".ms").forEach(function(ms){
+    var any = Array.prototype.some.call(ms.querySelectorAll(".node"), function(n){
+      return !n.classList.contains("dim");
+    });
+    ms.style.opacity = any ? "1" : "0.45";
+  });
+}
+
+function toggle(id, n){
+  if(/^DONE\b/.test(byId[id][5])) return; // done in the source data -- not a per-viewer toggle
+  if(DONE[id]){ delete DONE[id]; n.classList.remove("done"); }
+  else { DONE[id] = 1; n.classList.add("done"); }
+  save();
+}
+
+root.addEventListener("click", function(e){
+  var mark = e.target.closest("[data-mark]");
+  var node = e.target.closest(".node");
+  if(!node) return;
+  if(mark){ e.stopPropagation(); toggle(mark.dataset.mark, node); return; }
+  selected = (selected === node.dataset.id) ? null : node.dataset.id;
+  paint();
+});
+root.addEventListener("keydown", function(e){
+  if(e.key !== "Enter" && e.key !== " ") return;
+  var node = e.target.closest(".node");
+  if(!node) return;
+  e.preventDefault();
+  selected = (selected === node.dataset.id) ? null : node.dataset.id;
+  paint();
+});
+
+var wbuttons = Array.prototype.slice.call(document.querySelectorAll("button.f[data-work]"));
+wbuttons.forEach(function(b){
+  b.addEventListener("click", function(){
+    wfilter = b.dataset.work;
+    wbuttons.forEach(function(o){ o.setAttribute("aria-pressed", String(o === b)); });
+    paint();
+  });
+});
+
+var buttons = Array.prototype.slice.call(document.querySelectorAll("button.f[data-filter]"));
+buttons.forEach(function(b){
+  b.addEventListener("click", function(){
+    filter = b.dataset.filter;
+    buttons.forEach(function(o){ o.setAttribute("aria-pressed", String(o === b)); });
+    paint();
+  });
+});
+document.getElementById("clearsel").addEventListener("click", function(){
+  selected = null;
+  filter = "all";
+  wfilter = "all";
+  buttons.forEach(function(o){ o.setAttribute("aria-pressed", String(o.dataset.filter === "all")); });
+  wbuttons.forEach(function(o){ o.setAttribute("aria-pressed", String(o.dataset.work === "all")); });
+  paint();
+});
+
+(function(){
+  var counts = {}, total = T.length;
+  T.forEach(function(t){ counts[t[7]] = (counts[t[7]] || 0) + 1; });
+  var el = document.getElementById("mix");
+  if(!el) return;
+  el.innerHTML = WT_ORDER.map(function(k){
+    var n = counts[k] || 0;
+    return '<span class="seg" style="background:var(--' + k + ');flex-grow:' + n +
+           '" title="' + n + ' of ' + total + ' tasks">' +
+           "<b>" + n + "</b>" + WT[k] + "</span>";
+  }).join("");
+})();
+
+paint();
+})();
+</script>

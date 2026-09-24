@@ -1,5 +1,10 @@
 # PROJECT PLAN: milestones, task tree and who does what
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **What this is.** The layer above [`NEXT_STEPS.md`](NEXT_STEPS.md). `NEXT_STEPS` is a register of
 everything we could do. This file decides what we *will* do, in what order, by when, and who owns
 each piece. It also answers one question Dion raised directly: can three people work on this at the
@@ -28,7 +33,7 @@ this plan comes to roughly 406 hours excluding the optional milestone, which is 
 capacity — more slack than the original 79 percent, because the real deadline is mid-April, not the
 end of January. Section 8 says what we drop first if that slack does not hold.
 
-**The visual version** of this plan is [`next-steps-map.html`](next-steps-map.html), published at
+**The visual version** of this plan is [`task-tree.html`](task-tree.html), published at
 <https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>. It carries the milestone
 schedule as a picture and the task tree as something you can click through to see who is waiting on
 whom. Republish it to the same link after any change here.
@@ -125,7 +130,7 @@ here is new. It is here so the plan can be read without the other five documents
 | The grasp path cannot produce a grasp as written, for three interlocking reasons | The arm cannot pick anything up under its own perception | `CODE_AUDIT` A |
 | The navigation code compiles and its nodes run, but nothing has ever driven the base from this repository | Navigation is untested above the node level | `TESTBENCH_PLAN` W4b, W7 |
 | Four things the robot needs are in nobody's repository | The navigation launch fails at run time | `NEXT_STEPS` 2.9 |
-| The wrist D435i is faulty. Its colour stream fails with an I/O error, and a reset took it off the USB bus entirely | No live mask for the arm, and no recorded frames for anything else, until someone replugs it and it is confirmed working | `TESTBENCH_PLAN` W6, 2026-09-14 `[observed]` |
+| ~~The wrist D435i is faulty~~ **Recovered 2026-09-22 after a replug.** Colour and depth stream at 15 Hz, and a 10 s bag is recorded for replay (T0.12) | Resolved. A D455 is now plugged in too, so the driver must be started by serial (T1.13) | `bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt` `[observed]` |
 | The glasses publish only the spoken word. Images, gaze, and pose are switched off | Gaze cannot reach the robot | `ORIENTATION` 6.1 |
 | Two different programs claim the same three segmentation channels | Turning one on collides with the other | `ORIENTATION` 6.5 |
 | The segmentation program the arm actually uses never listens for the spoken word. It looks for the literal word "box", fixed in the source | Speech cannot change what the arm looks for, and nothing reports that the request was dropped | `CODE_AUDIT` L1 |
@@ -170,7 +175,7 @@ never-executed candidate-handling code, and that debugging is the real cost. C1 
 in `src/main.py:102-113`, which is four comment characters. Behind them sit `rgb_worker` (71 lines),
 `et_worker` (42 lines), a 184-line `EyeTrackingPipeline` and its weights on disk at
 `src/models/projectaria_eyetracking/weights.pth`. Gaze estimation is complete and publishes to a real
-topic declared in `shared/config.yaml:11`. **What is absent is the consumer:** nothing in
+topic declared in `shared/global_config.yaml:13`. **What is absent is the consumer:** nothing in
 `ros2_robot_ws/` subscribes to it. T2.2 is therefore much smaller than budgeted and the real work is
 on the arm side.
 
@@ -232,7 +237,7 @@ device. Passing librealsense's own documented `initial_reset` made it worse and 
 off the USB bus entirely, with no re-enumeration. It **needs a physical replug**, and whether it
 survives one is unknown `[observed]`. Until then there is no live mask for the arm and no recorded
 frames for anything. This touches T1.12, the M5 fallback and T6.2. It is now a named risk in §8.2
-and a new open decision, D8.
+and a new open decision, D8. **Update 2026-09-22:** the replug worked, see T0.12.
 
 **Two bench bugs found and fixed.** The glasses check used to pass with no glasses plugged in, and
 the camera check used to pass on the USB vendor id alone, matching even the Bluetooth adapter. Both
@@ -353,7 +358,7 @@ not relitigated later, and so a supervisor cannot reasonably expect both.
 | Cross-camera feature matching as a requirement | The contribution proposes replacing it. It stays as the comparison baseline, not as a dependency | `ORIENTATION` 5 |
 | The HiCo-Nav motion layer, meaning its own planner and controller | Nav2 already does this and is tuned for this chassis. Adopting it means retuning the part that can drive a robot into a wall, for no benefit to the claim | Paper review 5.1 tier C |
 | FAST-LIVO2 localisation | A bring-up project of its own. Start with the existing 2D localisation and measure whether it is good enough | Paper review 6.2 |
-| The full repository reorganisation into one folder per node | Referenced in four documents and specified in none. Do the vendor separation only, as part of M0, and leave the rest | `NEXT_STEPS` 2.11 |
+| ~~The full repository reorganisation into one folder per node~~ **In scope since 2026-09-21 (Dion).** Specified in `NEXT_STEPS` §2.15, done on the T0.10/T0.11 branch alongside T0.11's per-subsystem suites | ~~Referenced in four documents and specified in none. Do the vendor separation only, as part of M0, and leave the rest~~ | `NEXT_STEPS` 2.11, 2.15 |
 | The Habitat simulator baseline | Only needed to evaluate goal ordering, which is the optional milestone | Paper review 5.6 |
 
 ### 4.3 Deferred, meaning wanted but after this plan ends (mid-April 2027)
@@ -365,6 +370,12 @@ recorded data as a regression test.
 It is now `T0.10` in the task tree below, gated on `T0.5` (M0's acceptance test, a second clone
 building and passing the bench) rather than on the whole plan finishing — see `NEXT_STEPS.md` §2.12
 for the reasoning and scope.
+
+**Deferred 2026-09-22 (Dion): one bench suite per subsystem**, with CI running only the suites a PR
+touched. It was part of `T0.11`, which closed without it. L0-L2 take about 30 seconds, so splitting
+them by subsystem saves nothing, and every lab box run is the full L0-L4 anyway. Pick it up if the
+bench gets slow enough that a PR waits on suites it did not touch. Also deferred with it: the fork-PR
+guard for the lab box `full` job, until the repository goes private.
 
 ---
 
@@ -502,7 +513,12 @@ object entries, the same physical object is not registered twice, and a sentence
 Risk: the merge test depends on camera pose accuracy, and our pose comes from 2D localisation which
 has no reliable pitch or roll `[inferred]` paper review 6.2. Mitigation: duplicated object entries
 are directly visible, so measure the duplication rate and decide from data whether a better pose
-source is needed.
+source is needed. **The data structure is specified ahead of T6.3 in
+[`MEMORY_GRAPH_DESIGN.md`](MEMORY_GRAPH_DESIGN.md)**, which also records a finding bearing
+directly on this risk: with the upstream merge weights, appearance similarity alone can never
+merge two entries `[inferred]`, so the duplication rate becomes a pure function of pose quality
+unless T6.4 changes them. That document's §4 lists three cheaper options than a better pose
+source, to decide on the recorded data from T6.2.
 
 **M7. The graph drives the robot.** Accept when a spoken instruction with no object in view causes
 the robot to drive to the right place and then grasp. Risk: the graph's object position is at
@@ -528,12 +544,21 @@ central table is M8's ablation.
 
 ### 6.1 How to read it
 
-Each row is a task node. A task can start when every task in its "after" column is finished.
+**The tasks themselves live in one place: [`task-tree.html`](task-tree.html), section 4**
+(published at <https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>). Until
+2026-09-22 this section also held every task as a table row, a second copy that had to be kept in
+step by hand. The full text of those rows moved into the page as each task's notes, shown when you
+click the task. The source is the `T` array near the bottom of the file, one line per task, so
+`grep '"T1.1"' docs/task-tree.html` still finds a task from the terminal. This section keeps what
+the tasks alone do not say: how to read them, the longer write-ups under some milestones, and the
+critical path.
+
+Each task is a node. A task can start when every task in its "after" list is finished.
 `Where` says `off` for anywhere with a laptop, `box` for the lab workstation over the network, and
 `lab` for physically at the robot. `Hours` is one person's time unless two owners are listed, in
 which case it is the total across both.
 
-The point of the tree is not the estimates. It is the "after" column. If your task has nothing in
+The point of the tree is not the estimates. It is the "after" list. If your task has nothing in
 that column and nobody has started it, you are free to pick it up.
 
 ### 6.1b What kind of work each task is
@@ -544,39 +569,25 @@ turns out to matter more for estimating than who does it.
 | Type | Means | Count |
 |---|---|---|
 | `build` | New code. None of it exists today | 18 |
-| `fix` | Repair of existing code that is written but defective | 6 |
+| `fix` | Repair of existing code that is written but defective | 7 |
 | `rewire` | Existing, complete code reconnected, re-enabled or consolidated. No new logic | 3 |
 | `bring-up` | Make existing things run: retrieve, compile, install, mount, power on | 13 |
-| `measure` | Trials, calibration, error characterisation, tests. Produces numbers, not code | 18 |
+| `measure` | Trials, calibration, error characterisation, tests. Produces numbers, not code | 20 |
 | `decide` | A decision to settle, or a document to write | 12 |
 
-**Read that table before the schedule.** Eighteen of seventy tasks are new code and nine are
-repair or rewiring. The remaining forty-three are bring-up, measurement and decisions. This is not a
+**Read that table before the schedule.** Eighteen of seventy-three tasks are new code and ten are
+repair or rewiring. The remaining forty-five are bring-up, measurement and decisions. This is not a
 project that builds a robot. It repairs one, measures it, and adds one new component, which is the
 memory graph. (`T0.10`, the CI job added 2026-09-16, and `T0.11`, per-subsystem tests added 2026-09-19, are the seventeenth and eighteenth `build` tasks.)
 
-Two consequences for the hours in the tables below. Where the work is `fix`, the code change is
+Two consequences for the hours on the tasks. Where the work is `fix`, the code change is
 usually small and almost all the time goes into verifying it, so an estimate that looks large for the
 line count is not necessarily wrong. Where the work is `measure`, the time is lab hours and travel
 and cannot be compressed by working harder.
 
 ### 6.2 M0. Everyone can build and run (14–27 Sep 2026)
 
-| ID | Task | Type | Owner | Hours | Where | After |
-|---|---|---|---|---|---|---|
-| T0.0 | **DONE 2026-09-21.** ~~Cherry-pick what is worth keeping off the `realman_manip` branch onto `main`, then stop treating that branch as live~~. `calibration.json`, `env.sh` and `anygrasp_node.sh` taken, the startup guide archived, `SETUP.md` skipped. Box checks passed for the calibration file and `env.sh`. One check still owed: compare the glasses serial with the file's, when the glasses are plugged in. Per-file table in `NEXT_STEPS` §3.3 | bring-up | Dion | 3 | off | none |
-| T0.1 | **Progress 2026-09-16:** an Intel RealSense D455 is provided to the project. USB 3 connection and live RGB-D stream remain unverified | decide | Sherman | 2 | lab | none |
-| T0.2 | ~~Get a network switch. Add the second host address to the wired port. Prove the arm and the LiDAR both answer in one session~~ **Done 2026-09-16.** Switch wired: workstation port 1, LiDAR port 2, arm port 3. NetworkManager persists `.100`, `.10`, and `.5`; RM65 and MID-360 each replied from their required host address after a connection cycle | bring-up | Sherman, Dion | 5 | lab | none |
-| T0.3 | **DONE 2026-09-19.** Make the repository run from a fresh clone. Paths inside the repository are computed from the repository root. Paths outside it move to one configuration file with sensible defaults | fix | Zongzhe | 12 | off | none |
-| T0.4 | **DONE 2026-09-21, by Dion (was Zongzhe's).** `robot_navigation` and `xpkg_demo` copied from `~/rcp-old-ros-wkspace`, both build on the box. The Livox manifest moved out of `bench/nodes/` into its package. The map stays outside git by design (T0.3), recorded in `ASSETS.md`. `mtc_sim_test.launch.py` deleted rather than built, because `trivial_mtc.cpp` executes arm motion to an all-zero pose. `./bench/run.sh` exits 0 locally. **Left for Dion:** confirm the `bench` check is green on the PR, then turn on branch protection. ~~Bring into git the four things the robot needs that live in nobody's repository: the base bring-up package, the navigation launch package, the LiDAR package manifest, and the saved map~~. **Added 2026-09-19, to turn CI green:** also settle `rm_mtc/launch/mtc_sim_test.launch.py`, which starts an executable `rm_mtc` never builds. Either add the build target (`src/trivial_mtc.cpp` may be the missing source `[inferred]`) or delete the launch file. With that, all 7 static findings CI fails on today are cleared. **Done means `./bench/run.sh` exits 0, then Dion turns on branch protection for `main`** (require the `bench` check), so a red bench blocks merges from then on | bring-up | Zongzhe | 6 | box | T0.3 |
-| T0.5 | **Progress 2026-09-21:** Sherman fresh-cloned `main` at `9bbb26a` and ran `./bench/run.sh`: L0-L2 passed; L3-L4 correctly skipped on the Mac without ROS/NVIDIA. An independent Orin clone was attempted but GitHub transfers disconnected before any bench ran. Evidence: [`sherman_docs/T0.5_FRESH_CLONE.md`](sherman_docs/T0.5_FRESH_CLONE.md). A successful independent clone result remains required | bring-up | Zongzhe, Sherman | 8 | off | T0.3 |
-| T0.6 | ROS 2 ramp, all three of us. Reading guide round 1, then run the simulated arm test and read what it printed | bring-up | All | 24 | box | T0.5 |
-| T0.7 | ~~Write the channel contract: which stream owns which message channels, and the exact handover points between streams~~ **DONE 2026-09-20.** [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md): 12 live handovers, 4 parked with the return leg, 4 planned, 5 measurements, 11 hidden channels, the TF edge table, and 28 decisions including the nav split and the rename targets. It is the single source. `ORIENTATION` §5, §3.5 above and both HTML pages point to it | decide | Dion | 4 | off | none |
-| T0.8 | ~~Clear the bench backlog that has been waiting since the box went off~~ **Done 2026-09-14.** Environment check, navigation build and the ten navigation node tests all ran, all passed, no fix needed. What is left of this task is W6, which is blocked on the faulty camera, and W8, which needs a person at the robot. See §2.6 | measure | Dion | 5 of 5 spent | box | none |
-| T0.9 | ~~Measure the real base footprint and compare it with the 0.2 metre radius the navigation configuration assumes~~ **Done 2026-09-16 for the manufacturer chassis.** The Hexman Robotics ECHO-PLUS manual specifies `460 x 380 x 140 mm` and a `265 mm` stated rotation radius, so the `200 mm` Nav2 radius is not supported as conservative. Recheck the integrated footprint after mount fabrication | measure | Sherman | 3 | lab | none |
-| T0.10 | **Stays with Dion (2026-09-20).** Briefly reassigned to Zongzhe in the rebalance, then kept: Dion wrote the bench and already has the design in mind, so it is faster with him even though it is not on the critical path. **Added 2026-09-16.** CI: wire up `./bench/run.sh` (and whichever Tier 3 scripts prove containerizable) to run automatically on every push, once a second clone has actually proven the fresh-clone story works. See `NEXT_STEPS.md` §2.12 for scope, provider choice, and what a green run does and does not prove. **Progress 2026-09-19:** started ahead of T0.5 on purpose, to test it on the next merge. `.github/workflows/bench.yml` runs Tiers 0-1 on every PR into `main` and every push to `main`. It fails strictly. It was red on the 7 known static findings until T0.4 cleared all of them on 2026-09-21. Tiers 2-3 still open. Later, with a `dev` branch: fast per-subsystem tests on PRs into `dev`, the full suite on `dev` into `main`. Merges are not blocked yet: branch protection goes on when T0.4 turns the bench green | build | Dion | 6 | off | T0.5 |
-| T0.11 | **Added 2026-09-19.** Split the bench into one test suite per subsystem: glasses (`aria`), arm (`rm_mtc`), grasp (AnyGrasp and MinkowskiEngine), and navigation. Each suite covers its own code plus the channels it shares with other subsystems. CI then runs only the suites whose files a PR touched, plus the contract check. Do it alongside the one-folder-per-node refactor, since the folder layout decides how files map to suites. Also add a scheduled run of the full suite on `dev` every Monday and Wednesday night, so a break is traced to a few days of commits rather than a whole release. **Open, decide when this task starts:** Tiers 2-3 need ROS Humble and today only run on the lab box. Either register the lab box as a self-hosted GitHub runner (free, but tied to a box we may lose after 2026-11-16) or build a Docker image of the environment (portable, may cost image storage). **Decided 2026-09-19: self-hosted runner on the lab box, running L0-L4 only, never L5-L6 (robot check and hardware, not needed to merge; L6 was L5 until 2026-09-21).** Then create the `dev` branch: PRs into `dev` may pass with L3-L4 skipped, PRs into `main` must run L0-L4 with no level skipped. `run.sh` already runs every level a machine can and skips the rest; what remains is the runner, the branch, a no-skips switch for `main`, and branch protection. Before registering the runner, check the fork-PR risk: the repo is public. **Stays with Dion (2026-09-20)**, same reason as T0.10 | build | Dion | 8 | off | T0.10 |
-| T0.12 | **Added 2026-09-21, was `TESTBENCH_PLAN` W6.** AnyGrasp gate test and perception replay: record frames from the wrist camera, then replay them through segmentation and AnyGrasp on the box, so a perception change can be tested without the arm. Blocked: the wrist D435i is off the USB bus and needs a replug (T1.12 needs the same camera) | measure | Dion | 6 | box | none |
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
 **T0.0 in detail. Done 2026-09-21, kept as the record.** `origin/realman_manip` shares no commit history
 with `main`, so this is a file copy, not a merge `[code]` `ORIENTATION` 7. **Exactly 15 files exist
@@ -604,31 +615,11 @@ now means the startup guide and `SETUP.md` are on `main` before Zongzhe and Sher
 
 ### 6.3 M1. The arm picks something up (5 Oct – 1 Nov 2026)
 
-| ID | Task | Type | Owner | Hours | Where | After |
-|---|---|---|---|---|---|---|
-| T1.1 | Answer the six open questions in the code audit and record the decisions. Several are choices, not fixes | decide | Dion | 3 | off | T0.7 |
-| T1.2 | Safety fixes before any power: the emergency stop key that the launcher promises but does not exist, the stop program ignoring Ctrl+C, and the arm driver being launched twice. **Progress 2026-09-21:** the stop program is fixed (`CODE_AUDIT` B2, B2a, B2c). Ctrl+C, kill and a closed terminal all send the stop, no key is lost, and `bench/estop_delivery.sh` checks every path. Left: the launcher's stop key and the double driver launch | fix | Dion | 8 | off | T1.1 |
-| T1.3 | Decide which home pose is correct and validate it on the simulated arm before using it on the real one. Fix the safety warning that still quotes the old pose (`CODE_AUDIT` B4) | decide | Dion | 4 | box | T1.1 |
-| T1.4 | Physical safety setup at the robot: clear working volume, stop button within reach, mount and cable check | bring-up | Sherman | 3 | lab | none |
-| T1.5 | Write the bring-up runbook. Power on to ready, in order, with the check at each step and what a failure looks like | decide | Sherman | 8 | lab | T1.6 |
-| T1.6 | First powered arm session. Driver handshake, joint feedback arriving, no motion commanded | bring-up | Dion, Sherman | 3 | lab | T0.2, T1.2, T1.4 |
-| T1.7 | First commanded motion, to the validated home pose, with a hand on the stop | bring-up | Dion, Sherman | 3 | lab | T1.3, T1.6 |
-| T1.8 | Fix the three interlocking defects that stop the grasp path working: the inverted state condition in the grasp predictor, the consumer that only accepts candidates in one state, and the flag that makes the whole path unreachable | fix | Dion | 10 | off, box | T1.1 |
-| T1.9 | Fix the concurrency defects in the state machine. One condition variable with two locks, and an unlocked read, are undefined behaviour rather than untidiness. Also the queue that grows without limit after a successful grasp (`CODE_AUDIT` C7, `[observed]` on the simulated arm) | fix | Dion | 8 | off, box | T1.8 |
-| T1.10 | Decide which grasp prediction program is authoritative and make its Python environment reproducible from a script in the repository. **Progress 2026-09-21:** the environment half is done, `./envs/anygrasp/build.sh` (TESTBENCH_PLAN W5). Left: the decision, and stopping `main.py` launching it through `conda run` | decide | Dion | 6 | box | T1.1 |
-| T1.11 | Grasp using the stand-in mask publisher, on hardware. Fix its wrong channel name first | bring-up | Dion, Sherman | 4 | lab | T1.7, T1.8, T1.9, T1.10 |
-| T1.12 | Grasp using a live mask from the wrist camera with a fixed prompt word. Five attempts, success rate recorded | measure | Dion, Sherman | 4 | lab | T1.11 |
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
 ### 6.4 M2. Voice and gaze reach the arm (26 Oct 2026 – 3 Jan 2027)
 
-| ID | Task | Type | Owner | Hours | Where | After |
-|---|---|---|---|---|---|---|
-| T2.0 | Settle the open decision in `NEXT_STEPS` 2.2: patch the spoken word into the existing arm-side segmentation program, or retire it and restore the pipeline call site. Recommendation below | decide | Dion | 2 | off | T1.1 |
-| T2.1 | Build one segmentation service that owns the model and is the only publisher of the three mask channels. Both current call sites become clients of it | rewire | Dion | 12 | off, box | T1.12, T2.0 |
-| T2.2 | Switch the glasses image stream back on, one stage at a time so failures are attributable | rewire | Dion | 6 | lab | T0.3 |
-| T2.3 | Verify the gaze path and measure the error introduced by the fixed 1.5 metre depth assumption. Record the usable distance range | measure | Dion | 6 | lab | T2.2 |
-| T2.4 | Decide when segmentation runs, instead of on every frame, and add an age limit so the arm never moves toward a stale position | build | Dion | 8 | off | T2.1 |
-| T2.5 | Voice and gaze to grasp, on hardware. Two boxes, pick the one you looked at | measure | Dion, Sherman | 5 | lab | T1.12, T2.3, T2.4 |
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
 **Recommendation on T2.0: option 2, retire the arm-side program.** The reasoning is that M2's
 acceptance test needs gaze, and gaze disambiguation exists only in the pipeline, not in the arm-side
@@ -640,85 +631,35 @@ local and reversible. Evidence for both is `CODE_AUDIT` L1 and `NEXT_STEPS` 2.2.
 
 ### 6.5 M3. The base navigates (12 Oct – 27 Dec 2026)
 
-| ID | Task | Type | Owner | Hours | Where | After |
-|---|---|---|---|---|---|---|
-| T3.1 | ~~Compile the navigation workspace~~ **Done 2026-09-14**, 10 of 10 packages in 2 min 34 s, and it needed neither `xpkg_demo` nor `robot_navigation` because both are run-time dependencies. What remains for Zongzhe is to repeat it on his own machine as part of T0.5 | bring-up | Zongzhe | 1 of 4 left | box | T0.4 |
-| T3.2 | ~~Run the ten navigation node tests~~ **Done 2026-09-14**, passed first run: 6 controls, 4 expected failures reproduced, 0 skipped. E1, F1 and F2 are now `[observed]`, F4 is new. Read the result before starting T3.3 | measure | Zongzhe | 0 of 5 left | box | T3.1 |
-| T3.3 | Fix the missing arm-to-base transform during a mapping run, which today leaves the arm unconnected to the position tree. **Owner changed to Sherman 2026-09-20**, Zongzhe reviews the change | fix | Sherman | 2 | off | T3.2 |
-| T3.4 | Drive the base under keyboard control. Confirm the LiDAR publishes. **Owner changed to Sherman 2026-09-20** | bring-up | Sherman | 4 | lab | T0.2, T3.1 |
-| T3.5 | Build a map of the lab and localise in it. **Owner changed 2026-09-20:** Sherman leads, Dion joins, since he is at the robot for the camera and LiDAR calibration anyway (T5.5) | bring-up | Sherman, Dion | 6 | lab | T3.4 |
-| T3.6 | Drive to a commanded point ten times. Record the position error each time. **Owner changed to Sherman 2026-09-20** | measure | Sherman | 5 | lab | T3.5 |
-| T3.7 | The navigation to arm handover on hardware: object position in, drive, arrived signal out. The channels are `CHANNEL_CONTRACT` H2, H3 and H9 | rewire | Dion, Sherman | 6 | lab | T1.12, T3.6, T3.8 |
-| T3.8 | **Added 2026-09-21.** Fix the bridge-node defects the bench found: `goal_reached_publisher` has three silent-failure paths, so a second object after any navigation failure gets no goal (`CODE_AUDIT` F1), and all five nav nodes crash with a traceback on Ctrl+C (F4). Both `[observed]` by `bench/nav_nodes.sh`. The return-leg defects E1 and F2 stay with stretch goal S5 | fix | Zongzhe | 6 | off | T3.2 |
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
 ### 6.6 M4. The current system, closed loop (28 Dec 2026 – 17 Jan 2027)
 
-| ID | Task | Type | Owner | Hours | Where | After |
-|---|---|---|---|---|---|---|
-| T4.1 | One complete run, recorded on video: speak, look, drive, grasp | measure | All | 8 | lab | T2.5, T3.7 |
-| T4.2 | Measure how long each stage takes. Report the 99th percentile, not the average. **Owner changed to Sherman 2026-09-20** | measure | Sherman | 6 | lab | T4.1 |
-| T4.3 | Keep the defect log from the first powered session onward. One line per bug: symptom, guess, actual cause | measure | All | ongoing | off | T1.6 |
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
 ### 6.7 M5. The base has a calibrated forward camera (5 Oct 2026 – 17 Jan 2027)
 
-| ID | Task | Type | Owner | Hours | Where | After |
-|---|---|---|---|---|---|---|
-| T5.1 | ~~Camera secured. Found in the lab, or ordered with a date~~ **Done 2026-09-16.** An Intel RealSense D455 is provided to the project. USB 3 connection and live RGB-D stream verification remain T0.1 | decide | Sherman | 2 | lab | T0.1 |
-| T5.2 | ~~Design the mount. Forward facing, rigid, clear of the arm's swept volume, not looking at the robot's own body. The arm is mounted facing backward, which makes this a real constraint rather than a formality~~ **Done 2026-09-16 `[reported]`.** Sherman completed the forward-facing D455 mount CAD and measurements: `20 x 20 mm` aluminum extrusion, `190 mm` required length. Physical fabrication and fit verification remain T5.3 | build | Sherman | 10 | off | T5.1 |
-| T5.3 | Fabricate, fit, and verify the mount's rigidity, arm clearance, cable route, and camera view | build | Sherman | 8 | lab | T5.2 |
-| T5.4 | Measure the mount geometry and make it one source of truth. Today the same 0.18 metre offset is written in three independent places and the robot model carries a fourth | fix | Sherman, Zongzhe | 5 | off, lab | T5.3 |
-| T5.5 | Calibrate the position of the camera relative to the LiDAR. Dion owns the procedure and the numbers, Sherman owns the rig and the target | measure | Dion, Sherman | 12 | lab | T5.3 |
-| T5.6 | Verify the calibration by projecting LiDAR points into the camera image. Keep the picture, it goes in the paper | measure | Dion | 4 | box | T5.5 |
-| T5.7 | Choose where camera poses come from and characterise the error: drift over a run, and the duplicate-object rate it causes in the graph. Start with the existing 2D localisation because it is free. This is a measurement study, not a configuration choice | measure | Dion | 12 | box | T3.5, T5.6 |
-| T5.8 | Build a trial fixture: marked object positions and marked robot start positions, so a trial can be repeated exactly | build | Sherman | 8 | lab | T5.3 |
-| T5.9 | **Added 2026-09-20 (decision D4).** The escalation half of the pose-source study: if T5.7 says 2D localisation is the limiting factor, bring up FAST-LIVO2 and measure it against the same drift and duplicate-object metrics. Staged deliberately: do not start it before T5.7 has a number. The known blocker is a time-synchronised camera, so the first hour is spent on sensor synchronisation, not on the algorithm. Sherman owns the hardware, the recording and the evaluation runs; pair with Zongzhe for the software bring-up | measure | Sherman | 24 | box, lab | T5.7 |
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
 ### 6.8 M6. The memory graph, offline (28 Dec 2026 – 7 Feb 2027)
 
-| ID | Task | Type | Owner | Hours | Where | After |
-|---|---|---|---|---|---|---|
-| T6.1 | Read the upstream HiCo-Nav code. Settle which solvers it needs and whether their licences are acceptable | decide | Zongzhe | 4 | off | none |
-| T6.2 | Record data of the lab with the base camera: images, depth, LiDAR, positions | measure | Sherman | 4 | lab | T5.6 |
-| T6.3 | Build object entries from recorded data: mask, depth, camera position, image feature | build | Zongzhe | 14 | off | T6.2 |
-| T6.4 | The merge test, so the same physical object seen twice becomes one entry: 3D overlap combined with image feature similarity | build | Zongzhe | 10 | off | T6.3 |
-| T6.5 | The two-stage trigger. A cheap detector runs always, the expensive one runs only when a new object class appears or the robot has moved enough. This also closes the "when should segmentation run" question from M2 | build | Zongzhe | 8 | off | T2.4, T6.3 |
-| T6.6 | Decide the reasoning model endpoint, cloud or local, and check whether sending lab images off site is permitted. A procurement and policy question of the same kind as T0.1 | decide | Sherman | 4 | off | none |
-| T6.7 | The reasoning layer. Called once at the start of a task, off the control loop, expanding the instruction into related objects | build | Zongzhe | 10 | off | T6.4, T6.6 |
-| T6.8 | Query the graph with a sentence and get an object position back | build | Zongzhe, Dion | 8 | off | T6.4 |
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
 ### 6.9 M7. The graph drives the robot (1–28 Feb 2027)
 
-| ID | Task | Type | Owner | Hours | Where | After |
-|---|---|---|---|---|---|---|
-| T7.1 | Publish the approach goal from the graph instead of from live perception. The channel and its meaning do not change, only who writes to it. **Write this node in C++ with rclcpp**, not Python. `object_approach_node.py` is a working reference for the same behaviour, so you can diff against it and know when the C++ one is right | build | Dion | 16 | box | T3.7, T6.8 |
-| T7.2 | Build the graph while the robot drives, rather than from a recording | build | Zongzhe | 10 | lab | T5.7, T7.1 |
-| T7.3 | Spoken instruction to arrival at the right object, on hardware, with the object not in view when the instruction is given | measure | All | 8 | lab | T7.2 |
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
 ### 6.10 M8. Gaze picks the instance (8 Feb – 14 Mar 2027). Protected
 
-| ID | Task | Type | Owner | Hours | Where | After |
-|---|---|---|---|---|---|---|
-| T8.1 | Produce an image feature from the gaze-cropped region of the glasses frame | build | Dion | 8 | off | T2.3 |
-| T8.2 | Carry that feature into the graph query so it selects an instance rather than a class | build | Dion | 10 | off | T6.8, T8.1 |
-| T8.3 | Run the ablation. N trials with the feature and N without, same objects, same start positions, using the fixture | measure | Dion, Sherman | 18 | lab | T5.8, T7.3, T8.2 |
-| T8.4 | Re-measure the cross-camera matching baseline so the comparison number is ours rather than remembered | measure | Dion | 4 | box | T2.1 |
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
 ### 6.11 M9. Frontier scoring and visit ordering (2 Nov 2026 – 21 Feb 2027). Optional
 
-| ID | Task | Type | Owner | Hours | Where | After |
-|---|---|---|---|---|---|---|
-| T9.1 | Get the upstream simulator evaluation running as a baseline | bring-up | Zongzhe | 8 | off | T6.1 |
-| T9.2 | Implement frontier scoring | build | Zongzhe | 12 | off | T9.1 |
-| T9.3 | Implement visit ordering with an openly licensed solver | build | Zongzhe | 10 | off | T9.2 |
-| T9.4 | A node that emits drive goals, sitting beside the existing bridge, with Nav2 unchanged | build | Zongzhe, Dion | 8 | box | T9.3 |
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
 ### 6.12 M10. Demonstration and paper (1–21 Mar 2027)
 
-| ID | Task | Type | Owner | Hours | Where | After |
-|---|---|---|---|---|---|---|
-| T10.1 | Full demonstration run, recorded | measure | All | 8 | lab | T8.3 |
-| T10.2 | Paper draft. The central table is T8.3's ablation | decide | All | 24 | off | T8.3 |
-| T10.3 | Reproducibility artifacts: the bench, the recorded data, this plan, the defect log | decide | Dion | 6 | off | T10.2 |
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
 ### 6.13 The critical path
 
@@ -895,7 +836,7 @@ to tell the supervisor early rather than late.
 |---|---|---|---|
 | The first powered arm sessions take far longer than estimated. The arm has never moved | High | M1 slips past 1 Nov and collides with the November exam period, which is no-work time regardless of how the team is running | Three short sessions rather than one long one. M3 runs in parallel and is not blocked by it |
 | The camera is not in the lab and procurement takes weeks | Medium | M5 slips, M6 loses its input | Confirm in week 1. The wrist-camera fallback below is no longer safe to assume |
-| **The wrist D435i is faulty and may not survive a replug** `[observed]` 2026-09-14 | **Certain that it is faulty. Unknown whether it recovers** | T1.12 has no live mask, T6.2 has no recorded frames, and the M5 fallback of parking the arm is gone, so a single camera fault removes both camera paths at once | Replug it and re-run `python3 bench/preflight.py -g net` before booking any session that needs it. Settle D8 in week 1 and buy alongside the D455 if it is dead, since one order beats two |
+| ~~**The wrist D435i is faulty and may not survive a replug**~~ **Recovered 2026-09-22:** the replug brought it back, colour and depth both work `[observed]` | **Resolved** | T1.12 has no live mask, T6.2 has no recorded frames, and the M5 fallback of parking the arm is gone, so a single camera fault removes both camera paths at once | Replug it and re-run `python3 bench/preflight.py -g net` before booking any session that needs it. Settle D8 in week 1 and buy alongside the D455 if it is dead, since one order beats two |
 | Camera position accuracy from 2D localisation is too poor and the graph registers duplicates | Medium | M6 quality drops | The duplication rate is directly measurable. Measure it in T5.7 before building on it |
 | The reasoning model does not fit in graphics memory alongside the segmentation model | Medium | T6.7 blocked | Cut item 2 on the list above, or use a cloud endpoint if the imagery policy permits |
 | Dion is the contention point on thirteen consecutive tasks | High | Everything | T0.7 in week 1. Navigation handed to Zongzhe outright. Sherman runs the trials |
@@ -994,13 +935,13 @@ take from the top of this list, and say so in the weekly note so the others know
 |---|---|---|---|---|
 | S1 | **Candidate-based grasping instead of the simple path** | Dion | `grasp_state_machine.cpp:41` sets `USE_SIMPLE_EXECUTE = true`, which routes every grasp through one Cartesian step and a gripper close. The real path, with the candidate queue, the stability window and orientation interpolation, is about 150 lines of written but never-executed code in the same file `[code]`. Turning it on is the difference between a demonstration and a grasp policy | M1 complete, and the concurrency fixes in T1.9 landed first, because this path is what makes them reachable |
 | S2 | **The reasoning layer, if it was cut** | Zongzhe | Cut item 2 in section 8. It is what turns "find the mug" into "look near the sink as well", and it is the piece a reviewer will expect from a paper that claims a memory graph | M6 through T6.4, plus the endpoint decision in T6.6 |
-| S3 | **Graph pruning with a real solver** | Zongzhe | Cut item 3. Bounded graph growth over a long run. A weighted set multicover problem with mature open solvers, so it is a known quantity rather than a research question | T6.4, and a licence check on the solver |
+| S3 | **Graph pruning with a real solver** | Zongzhe | Cut item 3. Bounded graph growth over a long run. A weighted set multicover problem with mature open solvers, so it is a known quantity rather than a research question. [`MEMORY_GRAPH_DESIGN.md`](MEMORY_GRAPH_DESIGN.md) §6 makes this a drop-in: an exact solver replaces the greedy body without changing the interface, and greedy becomes the baseline it is measured against | T6.4, and a licence check on the solver |
 | S4 | **A second pose source, measured against the first** | Sherman | If T5.7 says 2D localisation is the limiting factor, this stops being a stretch goal and becomes required work. Either way the comparison is a paper section. The LiDAR's inertial sensor already publishes on `livox/imu` with no subscriber `[code]`, so the input exists | T5.7, and the duplicate-object rate measured on the existing source first |
 | S5 | **The return-to-user leg** | Dion | Out of scope in section 4.2, but `goto_glasses.py` has to be corrected regardless, because its outbound half fires on the same spoken command as the forward leg and competes for the same Nav2 action server `[code]`. Once that is fixed the return leg is closer than the scope decision assumes | The frame defect fixed, and the pose fusion node reconciled with its own documentation |
 | S6 | **Frontier scoring and visit ordering, if M9 was cut** | Zongzhe | Cut item 1. The largest reported benefit in the paper. It is not ours and it is not on the path to our claim, which is why it was cut, but it is the most complete second result available | M6 done, and the upstream evaluation running as a baseline |
 | S7 | **Replay a recording as a regression test** | Dion | The bench catches renamed channels but nothing catches a perception regression. A recorded drive replayed through the graph would. It is also the cheapest way to make the results reproducible by someone else | A recorded run from T6.2 |
 | S9 | **Pick the gazed object by geometry** | Dion | Two identical objects defeat appearance matching. Casting the gaze ray in the robot's frame does not care what the objects look like. Three methods, cheapest first: map the gaze point by the whole-scene matches, then solve the glasses pose from the shared scene against robot depth, then full pose fusion. Could become part of M8's claim, per D9 | An identical pair included in T2.5, so the failure of today's method is measured first. `NEXT_STEPS` §2.13 |
-| S8 | **One configuration tree** | anyone with a spare week | Channel names declared as parameters rather than constants, so they stay overridable at launch. Today 38 of 54 owned channel names are declared outside `shared/config.yaml` `[code]` `CODE_AUDIT` K1 | The naming pass, and `TESTBENCH_PLAN` C1 fixed so the bench can still read them |
+| S8 | **One configuration tree** | anyone with a spare week | Channel names declared as parameters rather than constants, so they stay overridable at launch. Today 38 of 54 owned channel names are declared outside `shared/global_config.yaml` `[code]` `CODE_AUDIT` K1 | The naming pass, and `TESTBENCH_PLAN` C1 fixed so the bench can still read them |
 
 **How to use this list.** If a milestone lands early, the default is not to start the next one early.
 It is to take the top item here that your own stream unblocks. That keeps the slack where the
@@ -1037,5 +978,24 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-21 | Claude (Opus 5) + Dion | **T0.4 done**, by Dion at his request, ahead of Zongzhe. Both nav packages in the repo, the Livox manifest in its package, the orphan `mtc_sim_test` launch file deleted (building its source would add a second program that moves the arm). The saved map stays out of git, per T0.3. L0-L2 green locally. Branch protection is Dion's last step once CI is green on the PR. |
 | 2026-09-21 | Claude (Opus 5) + Dion | T0.11: L5 is now the robot check, L6 the hardware. Neither runs on the CI runner or gates a merge. Map text updated to match. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Every open bench finding is now a task, so TESTBENCH_PLAN holds no work items. New **T0.12** (was W6, AnyGrasp replay) and **T3.8** (nav bridge fixes F1, F4, before T3.7). B4 folded into T1.3, C7 into T1.9, `conda run` into T1.10. **T1.2 progress:** `estop.py` fixed (B2, B2a, B2c). Task tree updated to match and republished. |
-| 2026-09-21 | OpenCode (GPT-5.6 Terra) + Sherman | T0.5 progress: Sherman cloned `main` at `9bbb26a` into an isolated Mac path and ran the safe bench. L0 static checks, L1 contracts, and L2 preflight passed; L3-L4 were correctly skipped without the lab ROS/NVIDIA environment. The independent-clone acceptance result remains open. Evidence: `docs/sherman_docs/T0.5_FRESH_CLONE.md`. |
-| 2026-09-21 | OpenCode (GPT-5.6 Terra) + Sherman | T0.5 Orin attempt: full, shallow, HTTP/1.1, and partial GitHub clones all disconnected before checkout or a bench run. The independent-clone gate remains blocked by Orin-to-GitHub transfer reliability; incomplete Orin directories were left untouched. |
+| 2026-09-21 | Claude (Opus 5) + Dion | **T0.10 done.** `bench` on `main` and `dev`, both protected, `dev` the default branch. T0.11 progress: branch step done, runner and no-skips job left. `next-steps-map.html` task data updated. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §4.2: the full reorg moved into scope. Spec in `NEXT_STEPS` §2.15. No new task ID: it rides with T0.11, whose suites follow the folder layout. |
+| 2026-09-21 | Claude (Opus 5) + Dion | T3.5 points to the nav map findings in `NEXT_STEPS` §2.15 "For Sherman". `next-steps-map.html` task data updated to match, republish owed (the refactor is still going). |
+| 2026-09-21 | Claude (Opus 5) + Dion | `shared/config.yaml` renamed to `shared/global_config.yaml` in the two current mentions (reorg step 2). The gaze topic's line cite corrected to `:13`. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-21 | Claude (Opus 5) + Zongzhe | Added [`MEMORY_GRAPH_DESIGN.md`](MEMORY_GRAPH_DESIGN.md), the anchor-object graph specified ahead of M6's T6.3, and linked it from M6's acceptance text, T6.1 and S3. It carries a finding that bears on M6's named pose risk: with the upstream merge weights, appearance alone can never merge two entries, so duplication rate tracks pose quality unless T6.4 changes them. Proposed only, nothing implemented, no task changed state. T6.1 text in `task-tree.html` updated, republish owed until this merges. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T2.1 gains the fix-or-delete check for `dummy_mask_publisher.py`, parked in `grasp/tools/` by the reorg. `next-steps-map.html` task data updated, republish owed. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T0.11: refactor done, post-merge cleanup of the nightly runner's copy recorded. `next-steps-map.html` republish still owed. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T0.11: recorded the runner and the nightly run from PR #4, the fork-PR risk settled for the nightly, and what is left. `next-steps-map.html` updated and republished. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T0.11: fork-PR guard waived until the repo goes private, per-subsystem suites deferred. The refactor branch is now `t0.10-refactor`. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T0.11: refactor merged, runner copy cleaned and weights linked, branch `t0.11-ci-full-job` opened. `next-steps-map.html` updated and republished. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T0.11: `--no-skips` added and the `full` job written into `bench.yml`, replacing `bench-nightly.yml`. Left: first run, branch protection, a real `dev` into `main` PR. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T0.11: per-subsystem suites paused until a need arises. The task closes on the `full` job alone. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T1.10: the AnyGrasp venv recipe moved to `grasp/anygrasp_venv/build_anygrasp_venv.sh`, and `grasp_env.sh` builds it on first use. The launcher still uses conda, which T1.10 still has to switch. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T0.5 marked unblocked (clone `dev`, build, bench). T2.0 marked done, matching the tracker and `NEXT_STEPS` 2.2. T3.8 points at the nodes' new packages. `next-steps-map.html` updated and republished. |
+| 2026-09-22 | Claude (Opus 5) + Dion | **Task list condensed to one place.** The per-milestone task tables in §6 are gone. Their full text moved into `task-tree.html` (renamed from `next-steps-map.html`) as each task's notes, checked word by word so nothing was lost. §6 keeps how to read the tree, the longer write-ups and the critical path. Type counts corrected to 73 tasks. **T0.11 done:** `full` passed on PR #7 and is required on `main`. The per-subsystem suites and the fork-PR guard are recorded as deferred in §4.3. Map republished to the same link. |
+| 2026-09-22 | OpenCode (Muse Spark) + Sherman | T0.1 progress: D455 validated on the lab box — USB 3 link after a port/cable swap, ROS-driver color/depth/aligned-depth at ~30 Hz sustained over a 60 s bag. Earlier `hz` swings were a measurement artifact. `task-tree.html` T0.1 entry updated. Evidence: `docs/sherman_docs/T0.1_D455_VALIDATION.md`. |
+| 2026-09-22 | OpenCode (Muse Spark) + Sherman | **T0.1 done.** USB 3, live RGB-D, and ROS-driver delivery all evidenced on the lab box; no open verification items remain. `task-tree.html` T0.1 entry flipped to DONE. |
+| 2026-09-22 | Claude (Opus 5) + Dion | **T1.1 done.** All six code audit questions were already answered or parked on 2026-09-20. Two follow-ups raised with Dion, not yet decided: whether M1 grasps on the simple path or with AnyGrasp (T1.11 currently waits on T1.8 and T1.10), and who builds the `/manipulation/done` and `/manipulator/release` publishers. Parked on T1.8 (the first), T1.9 and T1.11 (the second). Map republished. |
+| 2026-09-22 | Claude (Opus 5) + Dion | **T0.12 done**: wrist camera recovered after the replug, recording and L4 replay added, A1 reproduced on real frames. The two camera risk rows marked resolved. New **T1.13** (start the wrist camera by serial). `task-tree.html` updated. |
+| 2026-09-22 | OpenCode (Muse Spark) + Sherman | **T1.2 done** (owner aware). B1 launcher wording corrected (2 lines, no phantom `q` key); I1 orchestrator double-launch copy deleted behind a new failing-first L0 check (`arm-bringup-single-launch`: RED with 2 sites, GREEN with 1). Full L0/L1/bench green. `task-tree.html` T1.2 entry flipped to DONE. Evidence: `docs/sherman_docs/T1.2_SAFETY_FIXES.md`. |

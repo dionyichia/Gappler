@@ -10,8 +10,9 @@ refactored toward one-folder-per-node modular code.
 
 - **Global docs live directly in `docs/`** — they describe state shared by everyone, not one
   person's session: `ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`,
-  `CHANNEL_CONTRACT`, `NEXT_STEPS`, `PROJECT_PLAN`, `TESTBENCH_PLAN`, `hico-nav/`, `bench-runs/`,
-  and the three published HTML pages (`next-steps-map.html`, `wiring-map.html`, `testbench-map.html`).
+  `CHANNEL_CONTRACT`, `MEMORY_GRAPH_DESIGN`, `NEXT_STEPS`, `PROJECT_PLAN`, `TESTBENCH_PLAN`,
+  `hico-nav/`, `bench-runs/`,
+  and the three published HTML pages (`task-tree.html`, `wiring-map.html`, `testbench-map.html`).
 - **Personal docs live in per-person folders**, `docs/<name>_docs/` — session notes, handoffs and
   evidence write-ups not yet folded into the shared docs above.
 
@@ -24,13 +25,14 @@ Rules:
   confirmed, a decision is settled), **update that doc directly, in the same session**, following
   its citation/tag/changelog conventions. Don't leave the correction in a personal folder waiting
   for someone else to notice.
-  - When a task tracked in `NEXT_STEPS.md` / `PROJECT_PLAN.md` is done, also update its entry in
-    `next-steps-map.html`'s task data (the `T` array): prefix the task's description with
+  - **Tasks live in one place: `docs/task-tree.html`'s task data (the `T` array).** `PROJECT_PLAN.md`
+    §6 explains how to read it but no longer repeats the tasks (since 2026-09-22). Add a new task
+    there. A task's optional 9th field holds its long notes. When a task is done, prefix the task's description with
     `"DONE <date>. ..."`. The page derives its done state (strikethrough, green mark) from that
     prefix on load for every viewer — it is not enough to just narrate completion in the markdown
     while the tracker still shows the task open.
   - If your tooling can publish Artifacts (the Claude Code `Artifact` tool), republish
-    `next-steps-map.html` (and any other HTML page you edited) after the edit so the live page
+    `task-tree.html` (and any other HTML page you edited) after the edit so the live page
     matches the file. If it can't, say in the doc's changelog that a republish is still owed, so the
     next session with publish access does it.
 - **Personal work** — plans, session notes, handoffs not yet ready to be shared fact — goes in your
@@ -52,18 +54,32 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
 
 ## Safety — this code moves a real robot arm
 
-- Never launch `grasp_state_machine`, `ros2_robot_ws/src/main.py`, `ros2_robot_ws/src/orchestrator.py`
-  or root `main.py`. The state machine homes the arm within seconds, unprompted, to a home pose that
-  has never been validated. **One exception (Dion, 2026-09-11):** `bench/state_machine_sim.sh` may
+- Never launch `grasp_state_machine`, `launchers/start_grasp_pipeline.py`, `launchers/grasp_orchestrator.py`
+  or root `main.py` (the two launchers were `ros2_robot_ws/src/main.py` and `orchestrator.py` until
+  2026-09-21). The state machine homes the arm within seconds, unprompted. The home pose itself
+  was validated on the real arm by direct command in T1.7 (2026-09-23), but the state machine has
+  never run on the real arm. **One exception (Dion, 2026-09-11):** `bench/state_machine_sim.sh` may
   launch the state machine against the *simulated* arm, behind its guards (mock hardware, private
   channel, no `rm_driver`, preflight shows the arm unreachable).
 - Never publish to `/rm_driver/*_cmd`, `/goal_pose`, `/cmd_vel`, `/manipulation/*`, or
   `/object_centroid_2d` on the real ROS domain. Isolate tests with `ROS_DOMAIN_ID` + `ROS_LOCALHOST_ONLY=1`.
   Other users (`iot22`, and other people logged in as `rcp2026`) share the box; localhost-only does
   not separate you from their processes — a unique, empty domain id does.
+- **The box's hardware is shared: check before you use it** (Dion, 2026-09-22). `rcp2026` is used by
+  three people. Before starting anything that uses a camera, the GPU, the arm, the glasses or the LiDAR,
+  check whether someone else is already using it:
+  `ps -eo pid,user,etime,args | grep -iE "realsense|rs_launch|ros2 launch|bench/run.sh|Runner.Worker"`,
+  `nvidia-smi`, `fuser /dev/video*`. If anyone is, stop and tell the user who and what, then wait.
+  **Never stop a process you did not start.** `pkill -u rcp2026 -f <pattern>` also hits other people's
+  work (on 2026-09-22 it stopped someone's camera driver mid-test). Start your processes with `setsid`
+  and stop them only by their own process group: `kill -INT -<pgid>`.
 - **Fixes go on branches for review** (Dion, 2026-09-19, replacing the 2026-09-11 "no fixes yet"
-  rule). The project is in implementation. Each fix lands through a PR into `main`, where CI runs the
-  bench.
+  rule). The project is in implementation. Each fix lands through a PR into `dev`
+  (the default branch), where CI runs the bench. `dev` is promoted to `main` by PR.
+- **Branch names start with the task ID** (Dion, 2026-09-22), lower case, then a short
+  description: `t1.8-anygrasp-gate`, `t1.2-t1.3-estop-and-home-pose`. Anyone reading the branch
+  list should see which task it serves without opening it. Put the same ID at the start of the PR
+  title (`T1.8: ...`). If no task in `docs/task-tree.html` covers the work, add one there first.
 
 ## The lab machine
 
@@ -79,6 +95,10 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
   `iot22`'s nav workspace) are old code / reference: never modify them or their `install/` overlays.
   Don't touch `/home/iot22`; never set `PYTHONNOUSERSITE=1`; never `pip install --user`.
 - MoveIt with `mock_components` (simulated arm) is allowed; anything with `rm_driver` is not.
+- **The GitHub Actions runner** lives in `~/actions-runner` (tmux session `gh-runner`, stops on reboot).
+  Its checkout `~/actions-runner/_work/Gappler/Gappler` belongs to CI: don't work in it. Only one bench
+  run at a time on the box, so check `pgrep -af "Runner.Worker|bench/run.sh"` before starting one.
+  Details in TESTBENCH_PLAN "Start here".
 - `/home` is nearly full (14 GB free on 2026-09-11) — check `df -h ~` before large builds or downloads.
 
 ## The bench
@@ -91,7 +111,7 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
 ./bench/run.sh report                  # contract inventory + orphan analysis
 python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract change
 # lab box only (ROS + the built overlay):
-./bench/build.sh [nav]                 # L3: colcon build into this checkout
+./build.sh [nav]                       # L3: colcon build into this checkout (was bench/build.sh)
 ./bench/sim_moveit.sh                  # L4: MoveIt on a simulated arm
 ./bench/estop_delivery.sh              # L4: does estop.py's stop message leave
 ./bench/state_machine_sim.sh           # L4: grasp state machine on the simulated arm
@@ -102,7 +122,8 @@ python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract
 Levels L0-L6 are defined in `bench/README.md` (renamed from Tiers 0-4 on 2026-09-19, L5 robot
 check added 2026-09-21). L0-L2 are stdlib-only and need no ROS. Run them before and after any
 refactor. L5 checks the robot is connected and gates L6. L6 is the real robot and is
-never automated. When the reorg moves code, update `OWNED_PREFIXES` in `bench/_common.py` (the one copy, shared by all three tools).
+never automated. What counts as our code is one rule, `is_owned` in `bench/_common.py`: everything
+except what sits under a `vendor/` folder. Put third-party code under its subsystem's `vendor/`.
 Every L4 (simulation) script refuses to start unless its ROS channel is private and empty. Results go in
 `docs/bench-runs/`; status and next work in TESTBENCH_PLAN "▶ Start here".
 

@@ -3,17 +3,22 @@
 # mock_components/GenericSystem: joint positions exist only in memory.
 # rm_driver is never started, and the script refuses to run if one exists.
 #
-#   ./bench/sim_moveit.sh        needs ./bench/build.sh to have passed
+#   ./bench/sim_moveit.sh        needs ./build.sh to have passed
+#
+#   BENCH_RVIZ=true BENCH_POSE_HOLD=10 ./bench/sim_moveit.sh
+#       opens RViz on the local monitor and holds each settled pose 10 s for
+#       viewing, printing the same placement record. Guards unchanged.
 #
 # Isolation: private ROS channel (ROS_DOMAIN_ID, default 77) + localhost only.
 # Exit: 0 pass, 1 fail or refused, 3 SKIPPED (no build / no ROS -- never a pass).
 set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOMAIN="${BENCH_DOMAIN:-77}"
+RVIZ="${BENCH_RVIZ:-false}"  # true opens RViz; every guard below still applies first
 CFG=rm_65_w_gripper_config
 
 [ -f /opt/ros/humble/setup.bash ] || { echo "SKIP: no ROS 2 Humble here"; exit 3; }
-[ -f "$REPO/install/setup.bash" ] || { echo "SKIP: no $REPO/install -- run ./bench/build.sh first"; exit 3; }
+[ -f "$REPO/install/setup.bash" ] || { echo "SKIP: no $REPO/install -- run ./build.sh first"; exit 3; }
 export ROS_DOMAIN_ID="$DOMAIN" ROS_LOCALHOST_ONLY=1
 set +u; source /opt/ros/humble/setup.bash; source "$REPO/install/setup.bash"; set -u
 cd "$REPO"; mkdir -p log
@@ -36,8 +41,9 @@ busy="$(timeout 15 ros2 topic list --no-daemon 2>/dev/null | grep -vE '^/(parame
 [ -z "$busy" ] || refuse "ROS channel $DOMAIN is not empty: $(echo $busy | head -c 200)"
 echo "guards ok: mock_components, no rm_driver, channel $DOMAIN empty, localhost only"
 
-# ---- launch the simulated arm, headless -------------------------------------
-setsid ros2 launch "$LAUNCH" use_rviz:=false >"$LOG" 2>&1 &
+# ---- launch the simulated arm (headless unless BENCH_RVIZ=true) -------------
+# RViz mode changes only the viewer flag: same launch, same guards, same test.
+setsid ros2 launch "$LAUNCH" use_rviz:="$RVIZ" >"$LOG" 2>&1 &
 PG=$!
 cleanup() { kill -INT -"$PG" 2>/dev/null; sleep 4; kill -KILL -"$PG" 2>/dev/null; }
 trap cleanup EXIT

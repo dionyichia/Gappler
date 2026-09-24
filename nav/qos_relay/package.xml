@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>qos_relay</name>
+  <version>0.0.1</version>
+  <description>Relays the Livox point cloud from RELIABLE to BEST_EFFORT for pointcloud_to_laserscan. Was a script in robot_slam until 2026-09-22.</description>
+  <maintainer email="you@email.com">Your Name</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

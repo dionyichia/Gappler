@@ -29,8 +29,11 @@ say — see `docs/START_HERE.md` rule 4 and the root `CLAUDE.md`.
 - [`../NEXT_STEPS.md`](../NEXT_STEPS.md) — open work register and decisions.
 - [`../ORIENTATION.md`](../ORIENTATION.md) — system facts, network contract, and safety constraints.
 - [`../TESTBENCH_PLAN.md`](../TESTBENCH_PLAN.md) — lab test evidence and safe bench procedures.
-- [`../next-steps-map.html`](../next-steps-map.html) — the interactive task tracker. Keep its task
-  data in step with `NEXT_STEPS.md` / `PROJECT_PLAN.md` and republish it when they change.
+- [`../task-tree.html`](../task-tree.html) — the one task list (73 tasks). Edit tasks there, in
+  the `T` array, and republish it after a change.
+- [`grasp-pipeline-explainer.html`](grasp-pipeline-explainer.html): how the arm grasps, end to end:
+  the six programs, the state machine step by step, the simple path versus AnyGrasp, and the open
+  decisions. Start here before any grasp work (T1.x).
 
 ## Recording work
 

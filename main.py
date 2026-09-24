@@ -2,7 +2,8 @@
 """
 Top-level entry point.
 Launches orchestrator and AriaApplication in parallel.
-Press 'q' or Ctrl+C for emergency stop.
+Ctrl+C shuts down the launchers. For the arm emergency stop,
+run arm/estop/ in its own terminal.
 """
 
 import os
@@ -10,11 +11,11 @@ import signal
 import subprocess
 import sys
 import time
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
-ORCHESTRATOR_PATH = ROOT / "ros2_robot_ws" / "src" / "orchestrator.py"
-ARIA_APP_PATH = ROOT / "src" / "main.py"
+from gappler_common import ROOT
+
+ORCHESTRATOR_PATH = ROOT / "launchers" / "grasp_orchestrator.py"
+ARIA_APP_PATH = ROOT / "aria" / "aria_app" / "main.py"
 # The uv venv lives at the repo root. "uv sync" creates it on a fresh clone.
 ARIA_PYTHON = ROOT / ".venv" / "bin" / "python"
 
@@ -59,13 +60,13 @@ if __name__ == "__main__":
         label="aria_app",
         env={
             **os.environ,
-            "PYTHONPATH": str(ROOT / "src")
+            "PYTHONPATH": str(ROOT / "aria" / "aria_app")
             + os.pathsep
             + os.environ.get("PYTHONPATH", ""),
         },
     )
 
-    print("[root] Running — press 'q' for emergency stop.")
+    print("[root] Running — Ctrl+C shuts down launchers. Arm e-stop: arm/estop/ (separate terminal).")
 
     try:
         while True:

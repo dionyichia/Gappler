@@ -1,5 +1,10 @@
 # CHANNEL CONTRACT
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **What this is.** The one place that says which subsystem owns which message channel, and what
 passes between subsystems. It is task `T0.7` in [`PROJECT_PLAN.md`](PROJECT_PLAN.md), settled by
 Dion on 2026-09-20.
@@ -9,7 +14,7 @@ type, change a frame, or add a channel that another subsystem reads, this file s
 yours to change and who you have to tell.
 
 **This file is the single source.** [`ORIENTATION.md`](ORIENTATION.md) §5, `PROJECT_PLAN` §3.5,
-[`next-steps-map.html`](next-steps-map.html) and [`wiring-map.html`](wiring-map.html) used to carry
+[`task-tree.html`](task-tree.html) and [`wiring-map.html`](wiring-map.html) used to carry
 their own copies of the handover list. They now point here.
 
 **Provenance tags** are the same as the rest of `docs/`: `[code]` read from source, `[reported]` a
@@ -174,6 +179,10 @@ All of these were decided by Dion. Each names where the detail lives.
 - **B-2. Use the `realman_manip` home pose values**, the ones the safety document describes.
   ⚠️ **Do not trust either set.** Recalibrate and validate on the simulated arm before any powered
   run. Answers `CODE_AUDIT` open question 2.
+  **Superseded 2026-09-23.** T1.3 kept `main`'s row after the simulated arm checks, and T1.7
+  validated it on the real arm: every joint within 0.02° (`dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`).
+  The tool sits slightly outside the base footprint at this pose, so it is not a rest pose for
+  driving. A tucked pose inside the base is T1.18.
 - **B-3. `ros2_robot_ws/src/main.py` owns `background.launch.py`.** Delete the launch in
   `orchestrator.py:69-74`. Already recorded in `CODE_AUDIT` open question 5.
 - **B-4. "Arrived" stops launching processes.** The arm stack is already running and the state
@@ -208,7 +217,8 @@ All of these were decided by Dion. Each names where the detail lives.
 - **T-2. Dion keeps `T5.5` to `T5.7`**, the calibration and localisation-error work. Answers
   `PROJECT_PLAN` D2.
 - **T-3. Buy a replacement wrist camera** if the D435i does not survive a replug. Replacements are
-  available `[reported]`. Answers `PROJECT_PLAN` D8.
+  available `[reported]`. Answers `PROJECT_PLAN` D8. **Not needed so far:** the D435i survived the
+  replug on 2026-09-22, colour and depth at 15 Hz `[observed]` (T0.12).
 - **T-4. Config: one tree per subsystem, with a shared constants package underneath.**
   `NEXT_STEPS` §2.10.
 - **T-5. This file is the single source** for the contract.
@@ -257,7 +267,7 @@ Channels that a topic list does not show. Each says whether it is assigned.
 | X4 | MoveIt `move_group` action and services | Yes, as one block | Dion | Internal to the bot, not a handover. `mtc_planner.cpp:16` plans for `rm_group` |
 | X5 | Process launches | Yes | Dion | One launcher per program. `main.py` owns `background.launch.py` (B-3). Launching stops being an interlock (B-4) |
 | X6 | Vendor driver topics | Owner per driver, not per topic | `rm_driver` and the wrist camera: Dion. Livox, the base driver and the base camera: Sherman | The vendor owns the names. `/rm_driver/*` is the driver's API, not ours |
-| X7 | ROS parameters, 201 of them | Per file | Nav and SLAM YAML: Sherman. MoveIt config: Dion. `shared/config.yaml`: Dion | Assigning individual parameters is not useful |
+| X7 | ROS parameters, 201 of them | Per file | Nav and SLAM YAML: Sherman. MoveIt config: Dion. `shared/global_config.yaml`: Dion | Assigning individual parameters is not useful |
 | X8 | QoS | Written into this contract | Dion | Rule 4 in §2 |
 | X9 | Visualisation and debug topics | No | whoever publishes them | `/debug/*`, the markers, `/object_marker`, `/object_map_pose`, `/aria/glasses_marker`, and the pickled mask topics. The pickled ones go when `T2.1` lands |
 | X10 | OpenVINS and `/aria/vio_pose` | No, out of scope | none | Launched from `src/main.py:309`, no publisher in this repo, only feeds pose fusion |
@@ -312,3 +322,7 @@ Known problems inside subsystems, so they are not lost:
 | 2026-09-20 | Claude (Opus 5) + Dion | Created. `T0.7`. Twelve live handovers, four parked with the return leg, four planned, five measurements, eleven hidden channels and the TF edge table. Twenty-eight decisions recorded, including the nav split between Sherman and Zongzhe, FAST-LIVO2 staged into scope, the phase table, and the target names for the rename pass. |
 | 2026-09-20 | Claude (Opus 5) + Dion | `next-steps-map.html` republished with the new ownership section, the owner changes and T0.7 marked done. `wiring-map.html` §8 gained a pointer to this file and was republished (version 5). ⚠️ Its share pin still points at the old version, so viewers see the previous page until the pin is moved from the page's Share menu. |
 | 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |
+| 2026-09-21 | Claude (Opus 5) + Dion | X7: `shared/config.yaml` renamed to `shared/global_config.yaml` (reorg step 2). |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T-3: the wrist D435i survived the replug (T0.12), so no replacement is needed so far. Same camera update in `testbench-map.html` and the task tree's 14 September note. |
+| 2026-09-23 | Claude Opus 5.5 + Dion | B-2 superseded: HOME is `main`'s row, validated on the real arm in T1.7. It extends slightly outside the base, tucked pose is T1.18. |

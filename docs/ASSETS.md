@@ -1,5 +1,10 @@
 # ASSETS — the files the code needs that git does not hold
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **Why this exists:** four things the stack needs at runtime are deliberately not in git. A fresh
 clone has none of them, and until 2026-09-11 nothing recorded where they came from. This is that
 record. Tags as elsewhere: `[code]` read from source · `[observed]` measured on the lab box ·
@@ -12,6 +17,7 @@ record. Tags as elsewhere: `[code]` read from source · `[observed]` measured on
 | `src/models/sam3/sam3.pt` | 3,450,062,241 B | `9999e2341ceef5e136daa386eecb55cb414446a00ac2b55eb2dfd2f7c3cf8c9e` | SAM 3 segmentation weights | Over GitHub's 100 MB limit; Meta's weights are licence-gated `[inferred]`. Ignored by root `.gitignore:16` |
 | `ros2_robot_ws/src/rm_mtc/src/perception/log/checkpoint_detection.tar` | 296,408,957 B | `a05c3690b95c8b65e78b1bb8a28f1d5ca96613391946e450afacae840bbcf7b2` | AnyGrasp detection network — what `main` launches (`ros2_robot_ws/src/main.py:30`) | Over 100 MB, and ignored **by accident**: `ros2_robot_ws/.gitignore:3` ignores every folder named `log` (meant for colcon logs) |
 | `ros2_robot_ws/src/rm_mtc/src/perception/log/checkpoint_tracking.tar` | 23,723,468 B | `98271b6125c2cc05e118ac0537fefb335c06dbd7d55fdd36fee25f55fd6eccd6` | AnyGrasp tracking network — the one verified on 2026-08-25 | Same accidental `log` rule |
+| `assets/recordings/wrist_camera/` | 227,774,464 B (`wrist_camera_0.db3`) + `metadata.yaml` | `f86a69ee212209b98673ffe909a13a81bad91586eea55713e1596d8aa8129613` (the `.db3`) | 10 s ROS bag from the wrist D435i, 2026-09-22: colour, aligned depth, camera info, a hand holding a cardboard box. Replayed by `bench/anygrasp_replay.sh`. Remake with `grasp/tools/record_wrist_camera.sh` | Over 100 MB. On the lab box in `~/rcp-Gappler` and a copy on Dion's Mac. Ignored by the root `.gitignore` `recordings` rule |
 | `.venv/` | several GB | — | Installed Python packages (SAM 3, Aria SDK, torch, whisper) | Generated and machine-specific. **Never copy it — rebuild it:** `uv sync` from `pyproject.toml` + `uv.lock`, which are in git |
 
 Checksums `[observed]` 2026-09-11: identical in `~/rcp-github`, `~/rcp-desktop` and `~/rcp-Gappler`
@@ -88,3 +94,5 @@ one configurable path instead of hardcoded ones. Tracked as NEXT_STEPS §2.8. Wh
 | 2026-09-11 | Claude (Opus 5) + Dion | Moved to `docs/`. Root `.gitignore` now covers weights, recordings and archives explicitly; recorded why already-tracked big files stay. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added the `~/rcp-old-ros-wkspace` pointer (NEXT_STEPS §2.9). |
 | 2026-09-21 | Claude (Opus 5) + Dion | `robot_navigation` and `xpkg_demo` are now in the repo (T0.4). Recorded the saved lab map: where it is, its files, and why it stays out of git. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-22 | Claude (Opus 5) + Dion | Added the wrist-camera recording (T0.12): where it is, checksum, how to remake it. |

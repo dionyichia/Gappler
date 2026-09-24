@@ -1,5 +1,10 @@
 # CODE AUDIT — 2026-09-10
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 **What this is:** a line-by-line read of every file this project owns (~10,600 lines), tracing each
 connection from publisher to subscriber. Companion to [`ORIENTATION.md`](ORIENTATION.md) (what the
 system is) and [`NEXT_STEPS.md`](NEXT_STEPS.md) (what we intend to do).
@@ -25,7 +30,12 @@ pipeline cannot work as written.
 
 *Box 2026-09-11:* the `main` checkout on the machine (`~/rcp-github`, byte-identical to `main` @
 `2d36a89`) has the same line. The hardware-verified `~/rcp-desktop` has no
-`anygrasp_detection_node.py` at all. Behaviour still `[unverified]` — nothing has been run.
+`anygrasp_detection_node.py` at all.
+
+**`[observed]` 2026-09-22** (T0.12, `bench/anygrasp_replay.sh`, [`bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt`](bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt)): on a
+recorded wrist-camera bag, AnyGrasp published 154 candidate sets while `/pipeline_state` was IDLE
+and 0 while it was EXECUTING. The code is now at `grasp/anygrasp_node/anygrasp_detection_node.py:182`.
+Fixed by T1.8.
 
 ```python
 def synced_callback(self, rgb_msg: Image, depth_msg: Image):
@@ -208,6 +218,11 @@ validated, and anyone who cleared space based on the guide cleared the wrong vol
 
 *Simulated arm 2026-09-11* `[observed]`: a build of `main` homes to `main`'s row (within 0.0001 rad) —
 `bench/state_machine_sim.sh`. Reachable and collision-free in the model; that says nothing about the real cell.
+
+*Real arm 2026-09-23* `[observed]`: T1.3 kept `main`'s row. T1.7 sent it straight to the driver, one
+joint at a time at speed 1, and every joint landed within 0.02° of it
+(`dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`). The tool ends slightly outside the base footprint.
+The state machine itself has still never homed the real arm, so the unprompted-homing risk stands.
 
 ### B5. The orchestrator orphans the arm driver and state machine on exit
 
@@ -830,7 +845,8 @@ publishers racing on the same three topics.
 2. ✅ **B4 — who changed `HOME_JOINTS`? Answered 2026-09-20: use the `realman_manip` values**, the
    ones the safety document describes. ⚠️ **Trust neither set.** Dion's instruction is to
    recalibrate and validate the pose on the simulated arm before any powered run.
-   `CHANNEL_CONTRACT` §6 B-2, task T1.3.
+   `CHANNEL_CONTRACT` §6 B-2, task T1.3. **Superseded 2026-09-23:** T1.3 kept `main`'s row and T1.7
+   validated it on the real arm (§B4).
 3. ✅ **A1 — typo. Answered 2026-09-20: AnyGrasp runs during `EXECUTING`, so A1 is the bug and A2
    is correct.** `[code]` The sequence is `SELECTING` (step the arm toward the segmentation centroid
    4 cm at a time until the object is under 0.18 m away), then `EXECUTING` (AnyGrasp proposes, wait
@@ -891,3 +907,8 @@ publishers racing on the same three topics.
 | 2026-09-20 | Claude (Opus 5) + Dion | **Five more open questions answered in `T0.7`** (see [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) §6): A3 stays `true` for bring-up, B4 uses the `realman_manip` home pose but recalibrate first, A1 is a typo so AnyGrasp runs during `EXECUTING`, `/manipulator/release` comes from the Aria side after `/manipulation/done`, and E1/E2 is parked with the out-of-scope return leg. All six open questions are now answered or parked. |
 | 2026-09-21 | Claude (Opus 5) + Dion | **B2 now `[observed]`**: the e-stop's SIGINT stop was lost in 0-5 of 5 trials across four box runs. **New B2c `[observed]`**: `estop.py` drops a key pressed while the previous one is being handled, so S then E fast can lose the e-stop. Both found by `bench/estop_delivery.sh`. `code-audit-page.html` not yet updated with either, still owed. |
 | 2026-09-21 | Claude (Opus 5) + Dion | **B2, B2a and B2c fixed** in `estop.py` (task T1.2) and confirmed on the box: five runs of `bench/estop_delivery.sh`, every key and every stop path delivered, `kill -INT` 25 of 25. The Ctrl+C and SIGINT cases are now required checks. `code-audit-page.html` still owes these updates. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T1.1 closed in the task tree. Checked the six answers against the code: A1's gate is still inverted (`anygrasp_detection_node.py:182`), the duplicate arm bring-up launch is still in `launchers/grasp_orchestrator.py:69` (T1.2), and nothing yet publishes `/manipulation/done` or `/manipulator/release`. |
+| 2026-09-22 | Claude (Opus 5) + Dion | **A1 now `[observed]`** on real wrist-camera frames by the new L4 replay (T0.12). |
+| 2026-09-23 | Claude Opus 5.5 + Dion | B4: real-arm result from T1.7 added. Open question 2 answer superseded by T1.3 and T1.7. |
+

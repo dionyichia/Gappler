@@ -1,5 +1,10 @@
 # NEXT STEPS — work register
 
+> **Paths moved 2026-09-21 (reorg).** Many cites below use the old layout (`src/`, `ros2_robot_ws/`,
+> `Navigation_Module/`). Look up the new path in §2.15 of this file,
+> "Where things moved". Line numbers inside moved files did not change with the move.
+
+
 Companion to [`ORIENTATION.md`](ORIENTATION.md) (what the system *is*),
 [`ARCHITECTURE.md`](ARCHITECTURE.md) (diagrams) and [`READING_GUIDE.md`](READING_GUIDE.md) (a
 guided walk through the code). **This file is what we intend to *do*.** Index:
@@ -15,14 +20,12 @@ session · `[inferred]` reasoning, not fact · `[open]` genuinely undecided ·
 
 **Priority key:** 🔴 blocks other work · 🟠 needed for the HiCo-Nav milestone · 🟡 quality/debt
 
-> ➡️ **This file is the register of everything we *could* do. What we *will* do, in what order and
-> who owns it, is now in [`PROJECT_PLAN.md`](PROJECT_PLAN.md)** — 11 milestones and 70 tasks, mapped
-> onto the real capstone calendar from 2026-09-14 to 2027-04-18 (recess, exam period and winter break
-> excluded, the four official deadlines marked), with the three-way split validated, the scope
-> written down, and the cut list decided in advance. Visual version:
-> [`next-steps-map.html`](next-steps-map.html)
+> ➡️ **This file is the register of everything we *could* do, and why.** What we *will* do, in what
+> order and who owns it, is in [`PROJECT_PLAN.md`](PROJECT_PLAN.md): 11 milestones mapped onto the
+> capstone calendar from 2026-09-14 to 2027-04-18. **The tasks themselves (73) are listed in one
+> place, [`task-tree.html`](task-tree.html)**
 > (<https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>). Items here map onto task
-> IDs there — for example §2.5 is T0.3, §2.9 is T0.4, §2.2 is T2.0 and T2.1, §3.2 is T3.1, and
+> IDs there. For example §2.5 is T0.3, §2.9 is T0.4, §2.2 is T2.0 and T2.1, §3.2 is T3.1, and
 > §3.3 is **T0.0, done 2026-09-21**.
 
 ---
@@ -233,6 +236,9 @@ drifted and the stand-in was left behind. Since this is the tool for testing the
 the perception stack, it is worth 30 seconds to fix — retarget it to `/camera/sam/mask`. Note
 `docs/SETUP.md` on `realman_manip` still describes it as the working bridge.
 
+**Parked 2026-09-22** in `grasp/tools/dummy_mask_publisher.py`, with a "consider deleting" note at the
+top. Fix it or delete it when the one segmentation service is built (`PROJECT_PLAN` T2.1).
+
 ### 2.4 🟡 Naming cleanup — do it in one deliberate pass, not opportunistically
 
 `[code]` The audit in ORIENTATION §0b found nine name collisions and two defects already caused by
@@ -337,7 +343,7 @@ already parameterised. `rm_driver.cpp:114` is a commented-out line with a strang
 
 `[code]` `src/main.py:303` launches OpenVINS from `~/Ros2Workspaces/OpenVINS/install/` — an
 external workspace **that is not in this repo**. Meanwhile the repo *vendors* OpenVINS source at
-`Navigation_Module/OpenVINS/`, which **has never been built** (no `install/` anywhere).
+`Navigation_Module/OpenVINS/` (now `aria/vendor/open_vins/`, unused), which **has never been built** (no `install/` anywhere).
 
 So there are two OpenVINS in play: a vendored copy nobody has compiled, and a compiled copy that
 exists only on the lab machine. **Decide which is authoritative before touching these paths** — if
@@ -391,7 +397,7 @@ in the first ten minutes of the next lab session, before anything else — they 
 | 1 | `mtc_sim_test.launch.py` names an executable `rm_mtc` does not build (ORIENTATION §8.12) | `ros2 launch rm_mtc mtc_sim_test.launch.py` | The project has no hardware-free MoveIt test. Wire up `trivial_mtc.cpp`, or delete the launch file. |
 | 2 | ~~Arm needs host `.10`, LiDAR needs host `.5`, one NIC (§8.13)~~ **Done 2026-09-16.** Switch connected; persistent `Wired connection 1` profile carries `.100`, `.10`, and `.5`; RM65 and MID-360 each replied from the required source address after a connection cycle | | Resolved. Do not use the old base scripts unchanged: they flush the arm's `.10` address. |
 | 3 | `main` launches an AnyGrasp node/checkpoint that was never verified (§8.14) | `ls .../perception/log/` — is `checkpoint_detection.tar` even there? | Decide which node is authoritative before closing seam §6.2. |
-| 4 | `livox_ros_driver2` has no ROS 2 manifest, so §3.2 cannot compile (§8.15) | `ls Navigation_Module/src/livox_ros_driver2/package*.xml` | Commit `package_ROS2.xml` from upstream. Unblocks §3.2. |
+| 4 | `livox_ros_driver2` has no ROS 2 manifest, so §3.2 cannot compile (§8.15) | `ls nav/vendor/livox_ros_driver2/package*.xml` | Commit `package_ROS2.xml` from upstream. Unblocks §3.2. |
 
 `bench/preflight.py` automates 2, 3 and 4; `bench/static.py` automates 1 and 4.
 **Retag them in ORIENTATION when you settle them** — a stale `[unverified]` is worse than none.
@@ -458,8 +464,7 @@ contract that actually changed.
 there is no observed behaviour to regress against — the arm has never been commanded to move. Every
 run ends with an explicit list of what could not be checked and why. See `bench/README.md`.
 
-⚠️ **When the reorg moves code, update `OWNED_PREFIXES` in `bench/_common.py`** (one copy, used by all
-three tools) — otherwise moved files get classified as vendor and stop failing the build.
+✅ **Since 2026-09-22 this needs no upkeep:** Ownership is one rule, `is_owned` in `bench/_common.py` (since 2026-09-22): our code is everything except what sits under a folder named `vendor/`. Put third-party code under its subsystem's `vendor/`, and nothing in the bench needs editing when code moves. (Was `OWNED_PREFIXES`, a list that had to be edited on every move.)
 
 **Tiers built since (on the lab box, 2026-09-11):** `bench/build.sh` (colcon, Tier 2) and Tier 3 scripts
 on a private ROS channel with a simulated arm — no container needed, the box has ROS. **Still to build:**
@@ -502,7 +507,7 @@ is built against `/home/iot22/Ros2Workspaces/install`, so it is reference, not s
 | `robot_slam`, `simple_teleop`, `echo_plus_driver`, `base`, `drivers`, `urdf`, `Livox-SDk2` | same | — | Already in the repo; the repo's copies are newer and equivalent (W4a) |
 | OpenVINS workspace | same, `OpenVINS/` | 3.2 GB | Unclear — which OpenVINS is authoritative is open (§2.5); keep as reference |
 | Orbbec camera driver (`orbbec_camera*` in `install/`) | same | — | Unknown — nobody has mentioned an Orbbec camera; ask |
-| MoveIt / MTC source builds in `install/` | same | — | No — MoveIt comes from apt; MTC is in `deps_ws/` |
+| MoveIt / MTC source builds in `install/` | same | — | No — MoveIt comes from apt; MTC is in `grasp/vendor/` (was `deps_ws/`) |
 | `build/`, `log/` | same | 700 MB | No |
 | AnyGrasp conda env, `~/.local` CUDA torch | `~iot22/` | GBs | No — replaced by the uv env (W1, W5) |
 | `~/.aria` certificates | `~iot22/` | small | Covered — `aria auth check` already passes for `rcp2026` |
@@ -516,7 +521,7 @@ needs should live only in someone's home folder.
 ### 2.10 🟠 One config tree — state every channel and constant in one place
 
 `[code]` Raised by Dion, 2026-09-13, after finding that the `/rm_driver/*` topics are not in
-`shared/config.yaml`. The inventory is CODE_AUDIT §K: **38 of the 54 topics our code declares are
+`shared/config.yaml` (now `shared/global_config.yaml`). The inventory is CODE_AUDIT §K: **38 of the 54 topics our code declares are
 written somewhere other than the shared config**, and the constants pattern in `src/config/` is not
 used outside `src/`.
 
@@ -546,7 +551,7 @@ place instead of being discovered file by file.
 **Two real constraints, both of which affect sequencing:**
 
 - **Three colcon workspaces, two languages, separate Python environments.** No single Python import
-  reaches all of it. C++ reads none of `shared/config.yaml` today (checked: no `.cpp` or `.hpp` we
+  reaches all of it. C++ reads none of `shared/global_config.yaml` today (checked: no `.cpp` or `.hpp` we
   own opens it). ROS parameters are the only mechanism that spans all of it natively.
 - **⚠️ Indirection currently blinds the bench.** `src/config/ros2.py:11-14` builds the topics enum
   *dynamically at import time*, and the bench's static extractor cannot resolve `ROS2Topics.X.value`
@@ -594,6 +599,11 @@ as ours.
 
 #### The proposal
 
+> ✅ **Steps 1, 2 and 4 done 2026-09-21** as `NEXT_STEPS` §2.15 step 3, in the final layout rather
+> than one `vendor/` per workspace: vendor code is in `aria/vendor/`, `arm/vendor/`, `grasp/vendor/`
+> and `nav/vendor/`. `COLCON_IGNORE` only on `aria/vendor/open_vins` (unused). Step 3, the
+> `rm_ros_interfaces` split, is §2.15 step 5.
+
 1. **One `vendor/` folder per workspace.** Move vendor packages down one level, into
    `ros2_robot_ws/src/vendor/`, `Navigation_Module/src/vendor/`. What remains at `src/` is ours and
    is readable at a glance.
@@ -618,7 +628,10 @@ as ours.
 
 #### What would actually break, and it is a short list `[code]`
 
-Three places hardcode a vendor path as a string, so a move invalidates them:
+Three places hardcode a vendor path as a string, so a move invalidates them. **All three handled
+2026-09-21 (reorg step 3):** the OpenVINS path is `openvins_ws` in `shared/global_config.yaml`,
+`BLOCKING_VENDOR` points at `nav/vendor/`, and the `deps_ws/install` checks stay on purpose, to catch
+a stale overlay left in old clones.
 
 | File | What it hardcodes |
 |---|---|
@@ -638,7 +651,16 @@ by file location, so a pure move should show as informational and fail nothing.
 reorg starts, it needs its own item saying what the target layout actually is. This section covers
 only the vendor half of it.
 
-### 2.12 🟡 CI: run the bench automatically on every push, once M0 is done
+**Specified 2026-09-21 in §2.15**, which also puts the full reorg in scope.
+
+### 2.12 ✅ CI: run the bench automatically on every push, **done 2026-09-22 (T0.10, T0.11)**
+
+**Status 2026-09-22.** Done. `bench` (L0-L2) runs on GitHub's machines for every PR and push to `dev`
+and `main`. `full` (L0-L4, no level skipped) runs on the lab box for PRs into `main`, on Monday and
+Wednesday nights on `dev`, and from the button. Both are required on `main`. First `full` run:
+[`bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt`](bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt).
+One bench suite per subsystem is deferred (`PROJECT_PLAN` §4.3). The text below is the original
+reasoning, kept for the record.
 
 Dion, 2026-09-16. Raised as a task rather than left as the "deferred, after this plan ends" item
 `PROJECT_PLAN.md` §4.3 used to call it — a running CI job now has real value once there is more
@@ -706,6 +728,13 @@ L3-L4 skip. Runner on the lab box and the `dev`/`main` rules are T0.11.
 ROS graph) and gates L6, the real arm test, the way L2 gates L3-L4. These checks left L2, so an
 unplugged robot no longer fails the bench. With no arm on the network L5 and L6 are SKIPPED.
 Neither is needed to merge into `dev` or `main`.
+
+**Branches, 2026-09-21** `[observed]`. `dev` exists and is the default branch. `bench` runs on
+every PR into and push to `main` or `dev`, and both branches are protected: a PR is required and
+`bench` must pass. T0.10 is done. What remains is T0.11: the lab box runner, the no-skips `full`
+job required on `dev` into `main`, the Monday and Wednesday night run, and the per-subsystem
+suites. The fork-PR risk of a self-hosted runner on a public repo is still open. Steps in
+`TESTBENCH_PLAN.md` "Start here".
 
 Owner: Dion, since he owns `bench/` itself. Depends on `T0.5` (both other clones build and pass the
 bench) — see `PROJECT_PLAN.md` §6.2, task `T0.10`.
@@ -916,9 +945,272 @@ Nothing here is scheduled work until Dion adds it.
 
 ---
 
+### 2.15 ✅ The full reorg: target layout, config levels, and the order of moves
+
+> ✅ **All seven steps done 2026-09-22 on `t0.10-refactor` (was `t0.10-t0.11-refactor`), verified on the lab box**: full bench
+> L0-L4 PASS after each stage (`bench-runs/2026-09-21-labbox-reorg-step2-bench.txt`,
+> `…-step4-bench.txt`, `2026-09-22-…-step5-grasp-arm-bench.txt`, `…-step5-7-bench.txt`), and every
+> `<subsystem>_env.sh` checked in an empty shell. Merges into `dev` by PR. **After the merge:** clean
+> the nightly runner's copy once (`~/actions-runner/_work/Gappler/Gappler`: delete `build/`,
+> `install/`, `build_nav/`, `install_nav/` and the leftover `Navigation_Module/`, which holds a
+> generated Livox `package.xml` that would clash) and link the SAM3 weights and AnyGrasp checkpoints
+> in at the new paths, see `PROJECT_PLAN` T0.11.
+
+Dion, 2026-09-21. **The full reorg is now in scope** (was out, `PROJECT_PLAN` §4.2). This section is
+the spec §2.11 said was missing. It builds on two decisions already made on 2026-09-20: the layout
+(`CHANNEL_CONTRACT.md` §6 G-2) and one config tree per subsystem over a shared package (T-4, §2.10).
+All steps happen on one branch, `t0.10-refactor` (renamed from `t0.10-t0.11-refactor` 2026-09-22), which merges into `dev` by PR.
+
+#### Target layout
+
+Four subsystem folders. Inside each, one folder per ROS package, which in practice is one per node.
+The exception is code that builds into one program: the state machine and the MTC planner share a
+folder. Each subsystem keeps its third-party code in its own `vendor/`.
+
+```
+shared/                     used by more than one subsystem
+  global_config.yaml        values two or more subsystems read
+  gappler_common/           the path helper and shared constants (T-4)
+aria/                       glasses: stream, gaze, voice, glasses pose
+  aria_app/                 from src/ (main.py, services/aria_device, ros, visualizer, ...)
+  pose_fusion/              from src/services/pose_fusion (parked, §4)
+  aria_config.yaml
+  vendor/open_vins/         from Navigation_Module/OpenVINS
+grasp/                      what to grasp and how
+  grasp_state_machine/      rm_mtc C++: state machine + MTC planner
+  anygrasp_node/            from rm_mtc/src/perception, with its 3 .so files
+  segmentation/             SAM3: src/services/object_recognition + sam3_ros_node.py (G-2, §2.2)
+  grasp_interfaces/         GraspCandidate, GraspCandidateArray, split out of rm_ros_interfaces
+  grasp_config.yaml
+  vendor/                   anygrasp_sdk, MinkowskiEngine, moveit_task_constructor (from deps_ws)
+arm/                        the RM65 itself
+  estop/                    from ros2_robot_ws/src/estop.py
+  arm_config.yaml
+  vendor/                   rm_driver, rm_description, rm_moveit2_config, rm_control, rm_bringup,
+                            rm_ros_interfaces, eg2_4b_description, the other rm_* packages
+nav/
+  object_approach/  goto_glasses/  goal_reached/  pose_publisher/   from robot_slam/scripts
+  echo_plus_driver/  simple_teleop/
+  nav_bringup/              launch files and Nav2/SLAM params from robot_navigation + robot_slam
+  nav_config.yaml
+  vendor/                   livox_ros_driver2, Livox-SDk2, base, drivers, urdf, demo
+bench/  docs/  main.py
+```
+
+`arm/` holds almost none of our code (only `estop`). That is accurate, not a problem: the arm
+subsystem is mostly RealMan's.
+
+#### Config: three levels, each value written once
+
+| Level | File | Holds |
+|---|---|---|
+| global | `shared/global_config.yaml` | values two or more subsystems read: shared topic names, frame names, machine paths |
+| subsystem | `<subsystem>/<subsystem>_config.yaml` | values two or more nodes in that subsystem read |
+| node | `<subsystem>/<node>/config.yaml` | values only that node reads |
+
+- **A value lives at the lowest level that covers all its readers.** When it gains a reader in
+  another subsystem, move it up and delete it below.
+- **References only point down.** Global has no list of subsystem files, and a subsystem file never
+  copies a global value. So editing a subsystem file never touches global.
+- **ROS nodes get their values as ROS parameters.** The launch file loads global, then subsystem,
+  then node, and later files win. One file can hold several nodes, keyed by node name, with `/**:`
+  for values every node in the file shares. Nodes still declare each parameter with a default, so
+  launch can remap (§2.10 point 2).
+- **The Aria app is not launched by ROS.** It reads the same files through `gappler_common`.
+- **Vendor parameter files keep their own format and place** (`nav2_params.yaml`, the SLAM Toolbox
+  files). Our levels are for our nodes.
+- **A bench check fails when one key is defined in two files**, so duplicates cannot creep back.
+  L0 is stdlib only, so it reads keys line by line rather than with a YAML parser. `[open]` whether
+  that is enough, decide when writing it.
+
+#### Paths: no file finds the repo by itself
+
+Today files find the repo root by counting parent folders, for example `src/config/ros2.py:7` goes
+up 3 and `ros2_robot_ws/src/main.py:28` goes up 2 `[code]`. Every move breaks them. It also cannot
+work for ROS nodes, which run from `install/`, not from the repo.
+
+- **`shared/gappler_common.py` is the only file that works out the repo root.** It lives in
+  `shared/`, which never moves, so it takes the folder above itself. Every other file imports
+  `ROOT`, `config()` or `path(name)` from it. (Decided 2026-09-21 instead of a `GAPPLER_ROOT`
+  variable: one less setting, same result.)
+- **`global_env.sh` puts `shared/` on `PYTHONPATH`** (through `shared/base_envs/ros_humble_and_helper.sh`, which every
+  `<subsystem>_env.sh` sources), so any program started after it can import the helper. Source
+  `global_env.sh`, or one subsystem's own file, before starting anything, nav included.
+- **Shell scripts ask git**: `git rev-parse --show-toplevel` works from any folder depth and stops
+  with an error outside a git clone, instead of guessing. Needed because config cannot say where
+  the repo is: you must already know the repo to read config.
+- **Machine paths live in `global_config.yaml` with defaults**, each one overridable by an environment
+  variable, as `GAPPLER_MAP_DIR` already is. This settles §2.5's open "config file or environment
+  variables": both, for different jobs.
+- **Config is read from the repo, not from `install/`**, so editing a YAML file needs no rebuild.
+- The last hardcoded external path, OpenVINS under `~/Ros2Workspaces/`, is now `openvins_ws` in
+  `global_config.yaml` (step 2).
+
+#### Order
+
+Run `./bench/run.sh` before and after every step.
+
+1. ✅ **Done 2026-09-21 (on the branch).** **Teach the bench's extractor to read YAML** (TESTBENCH_PLAN C1). Topic names that move into
+   config files are otherwise invisible to the contract check, and the refactor removes its own
+   safety net (§2.10). Re-snapshot.
+2. ✅ **Done 2026-09-21 (on the branch).** **Paths and config.** `shared/config.yaml` became
+   `shared/global_config.yaml` (a ROS parameter file, plus `paths:` for `openvins_ws` and `map_dir`).
+   `shared/gappler_common.py` added. The launchers, `src/config/`, `src/main.py`, both SLAM launch
+   files and two shell scripts no longer count folders. Hardcoded absolute paths in L1 went from 5
+   to 3 (two vendor, one the OpenVINS default in `global_config.yaml`). `[unverified]` at runtime:
+   compiled and import-checked, not yet started on the box. **Scope narrowed:** `src/config/*.py`
+   (the Aria settings classes) folds into `aria_config.yaml` in step 4, when `aria/` exists, and so
+   does sorting the aria-only topics out of `global_config.yaml`.
+3. ✅ **Done 2026-09-21 (on the branch).** **Vendor moves**, as pure moves (§2.11 steps 1 and 2).
+   Commit `2cd2297` is 2,145 renames and nothing else. The next commit fixed the references:
+   `bench/build.sh` base paths (and `--symlink-install`), bench exclusions, the AnyGrasp env
+   script, `env.sh`. `deps_ws/` and `grasp_module/` are gone. `rm_ros_interfaces` stays until
+   step 5, and the AnyGrasp `.so` files stay in `rm_mtc` until the node moves. `temp.urdf` deleted.
+   **OpenVINS (`aria/vendor/open_vins/`) is unused and a candidate for deletion**: nothing builds
+   or runs it, and pose fusion, its only user, is parked. It carries a `COLCON_IGNORE` saying so.
+4. ✅ **Done 2026-09-21 (on the branch).** **Our code moves.** Package names stay the same, so
+   launch files and `ros2 run` keep working. Commit `9d0cc60` is the moves (207 renames) plus the 4
+   `.gitignore` rules that name moved files. The next commit fixed the references: launchers,
+   `PYTHONPATH`, both builds (`arm grasp` and `nav`), `OWNED_PREFIXES`, the bench, CLAUDE.md's safety
+   rule. L1 shows only moves. SAM3 segmentation stays inside the Aria app until §2.2 merges the two
+   copies. `ros2_robot_ws/install.sh` deleted and `bench/build.sh` moved to the repo root as
+   `build.sh` (Dion: `bench/` holds test-bench tools only), so `ros2_robot_ws/` and
+   `Navigation_Module/` are gone. The launchers got
+   descriptive names in `launchers/` (not `launch/`, which would shadow ROS's `launch` library).
+
+   **Where things moved (old path → new path).** Use this to read older cites in every doc:
+
+   | Old | New |
+   |---|---|
+   | `src/` (the Aria app) | `aria/aria_app/` |
+   | `src/services/object_recognition/` (SAM3) | `aria/aria_app/services/object_recognition/` |
+   | `src/models/` | `aria/aria_app/models/` |
+   | `ros2_robot_ws/src/rm_mtc/` | `grasp/rm_mtc/`, then split in step 5 (rows below) |
+   | `rm_mtc` package (C++, `include/rm_mtc/`, `launch/grasp_state_machine.launch.py`) | `grasp/grasp_state_machine/` (package `grasp_state_machine`) |
+   | `rm_mtc/launch/background.launch.py` | `arm/arm_bringup/launch/arm_bringup.launch.py` (package `arm_bringup`) |
+   | `rm_mtc/src/perception/anygrasp_*.py`, `*.so`, `license/`, `log/` | `grasp/anygrasp_node/` |
+   | `rm_mtc/src/perception/sam3_ros_node.py` | `grasp/segmentation/sam3_ros_node.py` |
+   | `rm_mtc/src/perception/grasp_viz.py`, `rviz_config.rviz` | `grasp/grasp_viz/` |
+   | `rm_mtc/src/perception/dummy_mask_publisher.py` | `grasp/tools/` (consider deleting, T2.1) |
+   | `rm_ros_interfaces/msg/GraspCandidate*.msg` | `grasp/grasp_interfaces/msg/` (package `grasp_interfaces`) |
+   | `ros2_robot_ws/src/rm_ros_interfaces/` | `arm/rm_ros_interfaces/`, then `arm/vendor/rm_ros_interfaces/` in step 5 |
+   | `ros2_robot_ws/src/estop.py` | `arm/estop/estop.py` |
+   | `ros2_robot_ws/src/main.py` | `launchers/start_grasp_pipeline.py` |
+   | `ros2_robot_ws/src/orchestrator.py` | `launchers/grasp_orchestrator.py` |
+   | `Navigation_Module/src/<pkg>/` (`robot_slam`, `robot_navigation`, `simple_teleop`, `echo_plus_driver`) | `nav/<pkg>/` |
+   | `robot_slam/scripts/<script>.py` | `nav/<package>/<script>.py`: `object_approach`, `goto_glasses`, `goal_reached` (`goal_reached_publisher.py`), `pose_publisher`, `qos_relay`, `aria_image_relay`. `ros2 run robot_slam X.py` becomes `ros2 run <package> X.py` |
+   | `ros2_robot_ws/src/rm_*`, `eg2_4b_description` (RealMan) | `arm/vendor/` |
+   | `deps_ws/src/moveit_task_constructor/`, `grasp_module/src/anygrasp_sdk/`, `grasp_module/dependencies/MinkowskiEngine/` | `grasp/vendor/` |
+   | `Navigation_Module/src/{livox_ros_driver2,Livox-SDk2,base,drivers,urdf,demo}/` | `nav/vendor/` |
+   | `Navigation_Module/OpenVINS/` | `aria/vendor/open_vins/` (unused) |
+   | `shared/config.yaml` | `shared/global_config.yaml` |
+   | `ros2_robot_ws/src/output.log` | `docs/archive/output.log` |
+   | `bench/build.sh` | `build.sh` (repo root: it is the real build, not only a bench tool) |
+   | `assets/gripper/` | `assets/vendor/gripper/` |
+   | `env.sh` | `global_env.sh`, plus `aria/aria_env.sh`, `arm/arm_env.sh`, `grasp/grasp_env.sh`, `nav/nav_env.sh` |
+   | `ros2_robot_ws/install.sh` | deleted, replaced by `build.sh` |
+
+   Line numbers inside moved files are unchanged by the move itself.
+5. ✅ **Done 2026-09-22 (on the branch): grasp and arm (`cf6f3b0`), then nav.** Nav: the six
+   `robot_slam` scripts are one package each, `robot_slam` and `robot_navigation` stay two packages
+   until Sherman decides (see "For Sherman"). Decided 2026-09-22: Python nodes
+   that run in their own environment (AnyGrasp, SAM3, the visualiser, the e-stop) get a plain folder
+   each, not a ROS package, because a ROS Python package runs under colcon's interpreter and would
+   fight those environments. `rm_mtc` is now `grasp_state_machine`, arm bring-up is `arm_bringup`,
+   our two grasp messages are `grasp_interfaces` (the `/grasp_candidates` type changed on purpose,
+   contracts re-snapshotted), and `rm_ros_interfaces` is in `arm/vendor/`. The refactor deletes no
+   code: `dummy_mask_publisher.py` is parked in `grasp/tools/` with a "consider deleting" note.
+   **Splits into per-node packages.** `rm_mtc` into `grasp_state_machine`, `anygrasp_node` and
+   `segmentation`, the `robot_slam` scripts into their own packages, and `rm_ros_interfaces` into
+   ours and theirs (§2.11 step 3). These change package names, so launch files change too. L1 will
+   show those renames as deliberate changes, re-snapshot after each.
+6. ✅ **Done 2026-09-22 (on the branch).** `OWNED_PREFIXES` replaced by one rule, `is_owned` in
+   `bench/_common.py`: our code is anything not under a `vendor/` folder. RealMan's gripper test code
+   and serial debugger moved from `assets/gripper/` to `assets/vendor/gripper/` so the rule needs no
+   exceptions. Newly counted as ours: `envs/` and `.github/`, with 0 findings. Static and L1 results
+   unchanged.
+7. ✅ **Done 2026-09-22 (on the branch).** One env file per subsystem: `aria/aria_env.sh`,
+   `arm/arm_env.sh`, `grasp/grasp_env.sh`, `nav/nav_env.sh`, each setting up only its own subsystem,
+   so one subsystem can be started on its own (against stub data from the others, once T0.11 has
+   stubs). The root `env.sh` is now **`global_env.sh`** (Dion: explicit names) and sources all four.
+   Shared setup lives once in `shared/base_envs/ros_humble_and_helper.sh` (ROS, `shared/` on `PYTHONPATH`) and
+   `shared/base_envs/uv_venv.sh` (the `.venv`, only for aria and grasp). New: **nav's `install_nav/` is
+   now sourced**, which `env.sh` never did. Overlays use `local_setup.bash` so several can stack
+   in one shell. Each file finds the repo with git, so none counts folders.
+
+Steps 3 and 4 are pure moves: a commit that only moves files lets git track them as renames, which
+keeps merges manageable for everyone else.
+
+#### Open, decide in the PR that needs it
+
+- ✅ **Where the three launchers go. Settled in step 4 (2026-09-21).** `launchers/start_grasp_pipeline.py`
+  and `launchers/grasp_orchestrator.py`, root `main.py` stays. Which launcher owns arm bring-up is
+  `CODE_AUDIT` I1, part of T1.2.
+- **One build or two. Two today, one question left for Zongzhe** (updated 2026-09-22). `./build.sh`
+  builds `arm/` and `grasp/` with their vendor code into `install/`, and `./build.sh nav` builds
+  `nav/` into `install_nav/`. `deps_ws/` and `ros2_robot_ws/install.sh` are gone, so MoveIt Task
+  Constructor now builds inside the arm overlay. **Open, deferred (Dion):** Zongzhe's
+  `zongzhe_docs/BUILD_WORKSPACES.md` "For Dion" item 2. With MTC in the same overlay, clearing a bad
+  `install/` rebuilds MTC too (10 to 15 minutes). Giving MTC its own underlay again would avoid
+  that. Not blocking: colcon is incremental, so ordinary rebuilds are fast either way. Raised with
+  Zongzhe 2026-09-22, see "For Zongzhe" below.
+- ~~Tell Zongzhe and Sherman before step 3.~~ Not needed: neither had open work, both are waiting on the refactor (Dion, 2026-09-21).
+
+#### For Sherman (nav), found during step 2, not changed
+
+Left for the nav owner, part of `PROJECT_PLAN` T3.5. Checked 2026-09-21 `[code]`.
+
+- **There are two ways to drive, with two kinds of saved map.**
+
+  | Launch file | Localises with | Map it reads | Written by |
+  |---|---|---|---|
+  | `robot_slam/launch/slam_localization.launch.py` | SLAM Toolbox, and starts Nav2 itself (line 210) | `<map_dir>/completed_map` (`.posegraph`, `.data`), line 150 | no launch file, saved by hand `[inferred]` |
+  | `robot_navigation/launch/navigation.launch.py` | Nav2's own AMCL | `map:=` argument, default `<package>/maps/my_map.yaml` (line 16) | `slam_mapping.launch.py:39` writes `<map_dir>/current_map` (`.pgm`, `.yaml`) every 30 s |
+
+- **`navigation.launch.py` fails without `map:=`**, because `my_map.yaml` does not exist
+  (`robot_navigation/maps/README.md`). **Recommendation:** default it to
+  `path("map_dir") / "current_map.yaml"` (from `gappler_common`), the image map the mapping launch
+  writes, which is the format Nav2's map loader needs. It breaks no launch that works today, and
+  `map:=` still overrides it.
+- **`[open]` Which of the two launch files the team drives with.** Not decided. Sherman starts after
+  the refactor.
+- **`robot_slam` and `robot_navigation` stay two packages for now** (Dion, 2026-09-22). The plan was
+  to merge them into one `nav_bringup`, but their `config/nav2_params.yaml` files differ: the SLAM
+  one is 203 lines with `robot_base_link`, the AMCL one 105 lines with `base_link`. Merging would bake
+  in a choice between them. Decide the merge together with the question above. The six node scripts
+  already moved out of `robot_slam` into one package each (§2.15 step 5).
+- **Where the saved maps are.** `paths.map_dir` in `shared/global_config.yaml`, default `~/maps`,
+  overridden by `GAPPLER_MAP_DIR`. On the lab box the existing map is under `/home/iot22/maps/`, so
+  set the variable there rather than editing the file `[code]`.
+- **Build and run nav after the refactor.** `./build.sh nav` builds into `install_nav/`, and
+  `source nav/nav_env.sh` (or `global_env.sh`) sets up a shell, nav overlay included.
+- **`slam_toolbox_localization.yaml:17`**, `map_file_name`, is commented out with a note: the launch
+  file always overrode it. Delete it when next working on that file.
+
+#### For Zongzhe (graph, bridge nodes), after the refactor
+
+Checked 2026-09-22 `[code]`.
+
+- **The bridge nodes moved.** `robot_slam/scripts/` is gone. Each script is its own package in
+  `nav/`: `goal_reached/goal_reached_publisher.py`, `object_approach/object_approach_node.py`,
+  `goto_glasses/goto_glasses.py`, `pose_publisher/`, `qos_relay/`, `aria_image_relay/`.
+  `ros2 run robot_slam X.py` is now `ros2 run <package> X.py`. Line numbers did not change, so the
+  T3.8 cites (`CODE_AUDIT` F1, F4) still hold.
+- **`zongzhe_docs/BUILD_WORKSPACES.md` describes a build that no longer exists** (`deps_ws/`,
+  `install.sh`). The note `zongzhe_docs/NOTE_deps_ws_removed.md` asks Zongzhe to update or retire it.
+  The underlay question in it is still open, see "One build or two" above.
+- **T0.3's items for Dion, where they ended up.** The OpenVINS paths are now `paths.openvins_ws` in
+  `shared/global_config.yaml`, and the in-repo copy is `aria/vendor/open_vins/`, unused and a
+  deletion candidate (step 3). `install.sh` is deleted (step 4). AnyGrasp through `conda run` is
+  T1.10.
+- **T0.5 is unblocked.** Clone `dev`, not `main`: the refactor is on `dev` and has not been
+  promoted yet.
+
+---
+
 ## 3. Bring-up (needs the lab machine)
 
-### 3.1 ✅ Find `xpkg_demo` — **in the repo since 2026-09-21 (T0.4)**, at `Navigation_Module/src/demo/demo_general_chassis/`
+### 3.1 ✅ Find `xpkg_demo` — **in the repo since 2026-09-21 (T0.4)**, at `nav/vendor/demo/demo_general_chassis/`
 
 `[code]` Both SLAM launch files include `bringup_basic_ctrl.launch.py` from a package `xpkg_demo`
 that is **not in this repo** (declared `exec_depend` in `robot_slam/package.xml:12`). `[inferred]`
@@ -939,7 +1231,7 @@ dependency — but launching will fail. **Ask whoever set up the base before boo
 > built by colcon as `livox_sdk2` through plain-CMake support **despite having no `package.xml`**, so
 > the `[code]` claim that colcon ignores it is **wrong**. `robot_navigation` and `xpkg_demo` were not
 > needed for the build, only for the launch, because they are `exec_depend`s. Undo with
-> `rm -rf build_nav install_nav log_nav Navigation_Module/src/livox_ros_driver2/package.xml`.
+> `rm -rf build_nav install_nav log_nav nav/vendor/livox_ros_driver2/package.xml` (path since 2026-09-21).
 
 No `install/` exists for it anywhere. Pure compile, touches no hardware, safe remotely. Blocked on
 3.1 for actually *running* it, but the build itself is independent and worth doing first.
@@ -947,7 +1239,7 @@ No `install/` exists for it anywhere. Pure compile, touches no hardware, safe re
 ⚠️ `[unverified]` **There is a second blocker, and it stops the build rather than the launch.**
 `livox_ros_driver2/build.sh:50` generates `package.xml` from `package_ROS2.xml`; the repo ships only
 `package_ROS1.xml` and gitignores the result, so colcon cannot see the package at all. See
-ORIENTATION §8.15 and §2.6 item 4. Check `ls Navigation_Module/src/livox_ros_driver2/package*.xml`
+ORIENTATION §8.15 and §2.6 item 4. Check `ls nav/vendor/livox_ros_driver2/package*.xml`
 on the lab clone before booking time for this.
 
 ### 3.3 ✅ Consolidate the `realman_manip` docs onto `main` — **T0.0, done 2026-09-21**
@@ -1091,3 +1383,17 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-21 | Claude (Opus 5) + Dion | **§3.3 closed, T0.0 done.** Box checks run: the Aria calibration file parses, `env.sh` works unchanged in `~/rcp-Gappler`, glasses serial skipped (not plugged in). Took `env.sh` (plus a guard against sourcing a copy outside the repo) and `anygrasp_node.sh` (plus a header comment). Struck the claim that `env.sh` needs `REPO_ROOT` re-pointed. Evidence in `bench-runs/2026-09-21-labbox-t0.0-box-checks.txt`. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.9 and §3.1: T0.4 done. `robot_navigation` and `xpkg_demo` in the repo, Livox template in its package, map recorded in `ASSETS.md` rather than committed. §2.9 drops from 🔴 to 🟠, the unclear rows stay open. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §2.12: L5 robot check added, it gates L6 hardware (was L5). Robot checks left L2. Not needed to merge. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §2.12: T0.10 done. `dev` created as the default branch, `bench` on `main` and `dev`, both protected. The runner and the no-skips job stay in T0.11. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Added §2.15: the full reorg is in scope. Target layout (four subsystems, one folder per package, `vendor/` per subsystem), three config levels with each value written once, `GAPPLER_ROOT` plus one path helper so no file finds the repo by itself, and a six-step order that teaches the bench to read YAML first. §2.11's gap note points to it. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §2.15: steps 1 and 2 done on the branch, now one branch `t0.10-t0.11-refactor`. Flat config names (`shared/global_config.yaml`, `<subsystem>/<subsystem>_config.yaml`). `gappler_common` finds the root from its own place, replacing the `GAPPLER_ROOT` plan. New step 7, per-subsystem env files, last. New block for Sherman: the two nav launch files, the missing Nav2 map default, the dead `map_file_name` line. Docs renamed to `shared/global_config.yaml` where they describe today. **Republish owed** for `wiring-map.html` (cites and the C1 fix) and `next-steps-map.html` (T3.5), held until the refactor ends. |
+| 2026-09-21 | Claude (Opus 5) + Dion | §2.15 step 3 done on the branch: vendor code in `<subsystem>/vendor/`, `deps_ws/` and `grasp_module/` gone, OpenVINS marked unused and a deletion candidate. §2.11 steps 1, 2 and 4 marked done, its hardcoded-path table resolved. Current paths updated in §2.5, §2.6, §2.9, §3.1 and §3.2. Step 2 passed the full bench on the box (L0-L4). |
+| 2026-09-21 | Claude (Opus 5) + Dion | §2.15 step 4 done on the branch: our code in `aria/`, `arm/`, `grasp/`, `nav/`, launchers renamed into `launchers/`. Added the old-to-new path table that older cites across the docs rely on. |
+| 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 5: grasp and arm split done on the branch (per-node folders, `grasp_state_machine`, `grasp_interfaces`, `arm_bringup`), path table extended. §2.3: the dummy mask publisher is parked in `grasp/tools/`, fix-or-delete decided in T2.1. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 5, nav: the six robot_slam scripts are one package each, path table row added. `robot_slam` and `robot_navigation` stay two packages (Dion, decision b): their `nav2_params.yaml` differ, so the merge is left to Sherman, noted in "For Sherman". |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 6 done on the branch: ownership is the `is_owned` rule (not under `vendor/`), gripper tools moved to `assets/vendor/`. §2.7 note updated. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 7 done on the branch: `global_env.sh` plus one env file per subsystem, shared setup in `shared/`, nav's overlay now sourced. The refactor's seven steps are all done on the branch. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 marked done: all seven steps verified on the box. Post-merge cleanup of the nightly runner's copy recorded. |
+| 2026-09-22 | Claude (Opus 5) + Dion | Republished `next-steps-map.html` (T0.11, T2.1, T3.5, reorg row), `wiring-map.html` (new paths, folder and entry-point tables) and `testbench-map.html` (`./build.sh`). The republish owed since 2026-09-21 is done. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 "Open": launchers marked settled (step 4), "one build or two" rewritten to today's two builds, with Zongzhe's MTC underlay question recorded as open and deferred. New "For Zongzhe" block (bridge nodes moved, stale `BUILD_WORKSPACES.md`, T0.3 items resolved, T0.5 unblocked). "For Sherman" gained the map folder setting and the nav build and env commands. `wiring-map.html`: the last four old launcher paths renamed, and "what is ours" now states the `vendor/` rule. Both HTML pages republished. |
+| 2026-09-22 | Claude (Opus 5) + Dion | Header now points at `task-tree.html` (renamed from `next-steps-map.html`) as the one task list. §2.12 marked done (T0.10, T0.11). |

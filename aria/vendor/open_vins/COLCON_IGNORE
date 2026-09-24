@@ -1,0 +1,8 @@
+colcon skips this folder because this file exists. Its content is only a note.
+
+UNUSED, candidate for deletion (Dion, 2026-09-21, NEXT_STEPS 2.15).
+Nothing builds or runs this copy of OpenVINS. The Aria app starts a separate OpenVINS
+build outside the repo (`openvins_ws` in shared/global_config.yaml, used by src/main.py).
+OpenVINS only estimates the glasses' position for pose fusion, which is parked with the
+return leg (CHANNEL_CONTRACT). Delete this folder once that is confirmed not needed.
+Without this file, a build that includes aria/vendor would try to compile it.

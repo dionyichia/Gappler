@@ -17,7 +17,7 @@ haven't been folded into the shared docs yet.
 
 | Location | Scope | What's in it |
 |---|---|---|
-| **`docs/`** (this folder, directly) | **Global — shared by everyone** | What the system is (`ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `hico-nav/`), the team plan (`PROJECT_PLAN`, `NEXT_STEPS`), the bench handoff (`TESTBENCH_PLAN`, `bench-runs/`), and the three published HTML pages (`next-steps-map.html`, `wiring-map.html`, `testbench-map.html`). |
+| **`docs/`** (this folder, directly) | **Global — shared by everyone** | What the system is (`ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `MEMORY_GRAPH_DESIGN`, `hico-nav/`), the team plan (`PROJECT_PLAN`, `NEXT_STEPS`), the bench handoff (`TESTBENCH_PLAN`, `bench-runs/`), and the three published HTML pages (`task-tree.html`, `wiring-map.html`, `testbench-map.html`). |
 | `docs/<name>_docs/` | Personal to that contributor | Their own plans, session notes, handoffs and evidence records not yet folded into the shared docs above. |
 | `docs/archive/` | Global, historical | Old documents kept as evidence, not as instructions. Today: the 2026-08-25 startup guide from `realman_manip`. |
 | `bench/` | Shared | The regression bench — tooling, not docs. |
@@ -59,13 +59,13 @@ to notice.
    correction in your own folder (cite file and section) and tell its owner.
 4. **Global docs live directly in `docs/`, and everyone keeps them current.** `ORIENTATION`,
    `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `NEXT_STEPS`, `PROJECT_PLAN`,
-   `TESTBENCH_PLAN`, `hico-nav/`, `bench-runs/` and the three published HTML pages are shared state,
-   not any one person's file. **If your session's work changes what one of them says — a task moves
-   from open to done, a finding gets confirmed, a decision gets settled — update that doc in the same
-   session, following its citation/tag/changelog conventions.** Don't leave shared docs to drift
+   `TESTBENCH_PLAN`, `CHANNEL_CONTRACT`, `MEMORY_GRAPH_DESIGN`, `hico-nav/`, `bench-runs/` and the
+   three published HTML pages are shared state, not any one person's file. **If your session's
+   work changes what one of them says — a task moves from open to done, a finding gets
+   confirmed, a decision gets settled — update that doc in the same session, following its
+   citation/tag/changelog conventions.** Don't leave shared docs to drift
    while the correction sits in a personal folder waiting for someone else to notice it. See
-   `CLAUDE.md` for the specific rule about `next-steps-map.html` staying in sync with `NEXT_STEPS.md`
-   / `PROJECT_PLAN.md`.
+   `CLAUDE.md` for the specific rule about `task-tree.html`, which is the one task list.
 5. **Code, `bench/` and `CLAUDE.md` are shared.** Change them by commit; robot code goes on a branch
    for review. The safety rules in `CLAUDE.md` bind everyone.
 6. **Keep the conventions:** provenance tags (below), `file.py:123` citations, a changelog on any
@@ -82,10 +82,12 @@ to notice.
 | **[`ORIENTATION.md`](ORIENTATION.md)** | **What the system *is*.** Repo map, ROS 2 primer, the full topic reference, the five severed seams, known defects and traps, hardware facts, the HiCo-Nav integration surface. | **First.** The main reference. Stays stable. |
 | **[`ARCHITECTURE.md`](ARCHITECTURE.md)** | The same information as **diagrams** — 9 Mermaid diagrams, L0 system down to L2 module level. Renders on GitHub. | Alongside ORIENTATION. Prose there, pictures here. |
 | **[`READING_GUIDE.md`](READING_GUIDE.md)** | A **guided walk through the code**, round by round, for someone new to ROS 2. What to notice in each file and why. Has check-yourself questions. | When you actually sit down to read the code. |
-| **[`PROJECT_PLAN.md`](PROJECT_PLAN.md)** | **The plan the team works to** — 11 milestones and 70 tasks over the 20 weeks from 2026-09-14, who owns each, what blocks what, what is in scope and what is not, and the cut list decided in advance. Answers whether three people can work in parallel (yes, from week 3, after two specific obstacles go). | **Before planning your own week.** Visual version: [`next-steps-map.html`](next-steps-map.html). |
+| **[`PROJECT_PLAN.md`](PROJECT_PLAN.md)** | **The plan the team works to** — 11 milestones over the 31 calendar weeks from 2026-09-14, who owns each, what blocks what, what is in scope and what is not, and the cut list decided in advance. Answers whether three people can work in parallel (yes, from week 3, after two specific obstacles go). | **Before planning your own week.** Visual version: [`task-tree.html`](task-tree.html). |
 | **[`NEXT_STEPS.md`](NEXT_STEPS.md)** | **What we intend to *do*** — prioritised work register with the open decisions. | Planning. Churns; expect it to change. |
 | **[`CODE_AUDIT.md`](CODE_AUDIT.md)** | A **line-by-line read of every file we own**, publisher to subscriber. 45 findings, all `[unverified]` — static analysis only, nothing was run. Starts with the three interlocking defects that stop the grasp path working. | Before touching the grasp path, and before the first hardware run. |
 | **[`TESTBENCH_PLAN.md`](TESTBENCH_PLAN.md)** | **The cold-start handoff for building the test bench.** State at handoff, safety rules for the lab machine, known bench bugs, and a phased plan from "establish which machine this is" through build, node-behaviour and replay tiers. | **When you pick up bench work.** Read §0–§3 before touching the lab machine. |
+| **[`ARM_BRINGUP.md`](ARM_BRINGUP.md)** | **Shared RM65 driver-only bring-up procedure (UNVALIDATED DRAFT).** Covers the attended T1.6 handshake, independent UDP receipt and ROS joint feedback, including failure and shutdown paths. | Review with Dion before any first-power session; do not treat as verified until T1.6 evidence is recorded. |
+| **[`MEMORY_GRAPH_DESIGN.md`](MEMORY_GRAPH_DESIGN.md)** | **The data structure M6 builds on**, specified before the code exists. Requirements traced to the M6 acceptance test, why we are not copying HiCo-Nav's edge storage, the merge-threshold finding that bears on M6's pose risk, and five open decisions. Proposed, not built. | Before T6.3, and before any code that stores object entries. |
 | [`ASSETS.md`](ASSETS.md) | The files git doesn't hold — model weights and the `.venv` — with sizes, checksums, sources and why each is ignored. | Before copying or re-downloading a model file, or setting up a new machine. |
 | [`bench-runs/`](bench-runs/) | Raw results of every lab-box bench run, one file per run, with what each result means and what it does not show. | For the evidence behind any ✅ in TESTBENCH_PLAN. |
 
@@ -105,12 +107,13 @@ changes. Read it before renaming anything or adding a channel another subsystem 
 records the decisions settled on 2026-09-20, including how navigation is split between Sherman and
 Zongzhe.
 
-Plus [`next-steps-map.html`](next-steps-map.html), the visual version of the project plan: the
-milestone schedule as a picture and a task tree you can click through to see who is waiting on whom.
+Plus [`task-tree.html`](task-tree.html), the visual version of the project plan and **the one list of
+tasks** (73 of them): the milestone schedule as a picture and a task tree you can click through to see
+who is waiting on whom and each task's full notes. It was called `next-steps-map.html` until 2026-09-22.
 Published at <https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>. **It needs no
 Claude account to read** — it is one self-contained file, so open it straight off disk, or serve the
 folder with `cd docs && python3 -m http.server 8000` and open
-`http://localhost:8000/next-steps-map.html`.
+`http://localhost:8000/task-tree.html`.
 
 Plus [`wiring-map.html`](wiring-map.html), the visual version of ORIENTATION in plain language. Its
 second tab, **"One grasp, start to finish"**, follows one grasp from your voice to the gripper opening:
@@ -182,7 +185,8 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 - **Pages:** the wiring map and the test bench page are rewritten in plain language for readers new to
   code (links above). Dion's docs follow the same rule.
 - **Standing rule: fixes go on branches for review.** Since 2026-09-19 the project is in
-  implementation. Each fix lands through a PR into `main`, where CI runs the bench.
+  implementation. Each fix lands through a PR into `dev` (the default branch since 2026-09-21), where CI
+  runs the bench. `dev` is promoted to `main` by PR.
 - **Things the robot needs that live outside git** — `robot_navigation`, `xpkg_demo`, the SLAM map and
   more: [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.9. The lab box now has a copy of `iot22`'s navigation
   workspace at `~/rcp-old-ros-wkspace`.
@@ -209,3 +213,7 @@ confidently wrong doc is worse than none. Anyone else: rule 3 above.
 | 2026-09-19 | Claude (Opus 5) + Dion | Replaced the "no fixes yet" rule. Fixes now go on branches, through a PR into `main`. |
 | 2026-09-19 | Claude (Opus 5) + Dion | Tier wording changed to bench Levels, with the old-to-new mapping so older docs still read correctly. |
 | 2026-09-20 | Claude (Opus 5) + Dion | Added `CHANNEL_CONTRACT.md` to the global docs, the single source for channel ownership (T0.7). |
+| 2026-09-21 | Claude (Opus 5) + Dion | Fixes now go through a PR into `dev`, the new default branch. |
+| 2026-09-21 | Claude (Opus 5) + Zongzhe | Added `MEMORY_GRAPH_DESIGN.md` to the global docs: the anchor-object graph specified ahead of M6's T6.3. Proposed only, nothing built. |
+| 2026-09-22 | Claude (Opus 5) + Dion | `next-steps-map.html` renamed `task-tree.html`, same published link. It is now the one task list. `PROJECT_PLAN` §6 no longer repeats the tasks. |
+| 2026-09-23 | OpenCode + Sherman | Indexed ARM_BRINGUP.md as a shared, unvalidated driver-only procedure for T1.6. |

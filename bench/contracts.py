@@ -49,7 +49,7 @@ GOLDEN = REPO / "bench" / "golden" / "contracts.json"
 EXCLUDE_DIRS = {
     ".git", "install", "build", "log", "install_nav", "build_nav", "log_nav",
     "__pycache__", ".venv", "node_modules",
-    "OpenVINS", "MinkowskiEngine", "moveit_task_constructor", "anygrasp_sdk",
+    "open_vins", "MinkowskiEngine", "moveit_task_constructor", "anygrasp_sdk",
     "archive",
 }
 
@@ -60,13 +60,13 @@ MSG_PKG_RE = re.compile(r"^([a-z0-9_]+_(?:msgs|interfaces))(?:\.(msg|srv|action)
 # vendor code that ships with the arm, the base or the LiDAR: its contracts still
 # matter (we call into them) but they are not going to move because *we* moved a
 # file, so the report separates them.
-from _common import OWNED_PREFIXES   # noqa: E402 -- single source; edit there
+from _common import is_owned   # noqa: E402 -- single source; the rule lives there
 
 
 def owned(loc: str) -> bool:
     """loc is a 'path:line' or 'path(tag)' string."""
     path = re.split(r"[:(]", loc)[0]
-    return path.startswith(OWNED_PREFIXES)
+    return is_owned(path)
 
 
 def any_owned(locs) -> bool:
@@ -104,8 +104,10 @@ class PyExtractor(ast.NodeVisitor):
     A regex over the create_publisher call sees only the identifier.
     """
 
-    def __init__(self, path: Path, src: str):
+    def __init__(self, path: Path, src: str, config: dict | None = None):
         self.path = path
+        self.config = config or {}               # key -> {values} from our YAML files
+        self.param_defaults: dict[str, str] = {}  # declare_parameter("x", "/default")
         self.loc = rel(path)
         self.consts: dict[str, str] = {}          # NAME -> literal str
         self.attr_consts: dict[str, str] = {}     # Class.NAME / Class.NAME.value -> literal str
@@ -139,6 +141,31 @@ class PyExtractor(ast.NodeVisitor):
                             if isinstance(t, ast.Name):
                                 self.attr_consts[f"{node.name}.{t.id}"] = val
                                 self.attr_consts[f"{node.name}.{t.id}.value"] = val
+            elif isinstance(node, ast.Call) and _fn_name(node) == "declare_parameter" \
+                    and len(node.args) >= 2:
+                name, val = literal_str(node.args[0]), literal_str(node.args[1])
+                if name and val is not None:
+                    self.param_defaults[name] = val
+        # Second pass: `topic = self.get_parameter("x").value`, `self.t = ROS2Topics.X.value`.
+        # Needs the tables above, so it cannot run in the same walk.
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and literal_str(node.value) is None:
+                val = self.resolve(node.value)
+                if val is None:
+                    continue
+                for t in node.targets:
+                    if isinstance(t, ast.Name):
+                        self.consts[t.id] = val
+                    elif isinstance(t, ast.Attribute) and attr_path(t):
+                        self.attr_consts[attr_path(t)] = val
+
+    def from_config(self, key: str) -> str | None:
+        """A value read from config: our YAML first, then the declare_parameter default.
+        Ambiguous keys (two different values) resolve to nothing rather than a guess."""
+        vals = self.config.get(key, set())
+        if len(vals) == 1:
+            return next(iter(vals))
+        return self.param_defaults.get(key)
 
     def resolve(self, node: ast.AST | None) -> str | None:
         """Best-effort: literal -> constant -> class attribute -> give up."""
@@ -160,6 +187,17 @@ class PyExtractor(ast.NodeVisitor):
                     cand = ".".join(parts[i:])
                     if cand in self.attr_consts:
                         return self.attr_consts[cand]
+                # An enum built from config at import time (src/config/ros2.py):
+                # `ROS2Topics.RGB_CAMERA_RAW.value` -> YAML key `rgb_camera_raw`
+                if len(parts) >= 3 and parts[-1] == "value":
+                    return self.from_config(parts[-2].lower())
+        # `self.get_parameter("x").value`, `.get_parameter_value().string_value`, ...
+        while isinstance(node, (ast.Attribute, ast.Call)):
+            if isinstance(node, ast.Call) and _fn_name(node) in ("get_parameter", "declare_parameter") \
+                    and node.args:
+                name = literal_str(node.args[0])
+                return self.from_config(name) if name else None
+            node = node.func if isinstance(node, ast.Call) else node.value
         return None
 
     def resolve_type(self, node: ast.AST | None) -> str:
@@ -193,6 +231,12 @@ class PyExtractor(ast.NodeVisitor):
                 if f:
                     self.out["frames"][f].append(f"{self.loc}:{node.lineno}")
 
+        # src/services/ros/ros_publisher.py: ROSPublisher(node_name, MsgType, topic, ...)
+        elif fn == "ROSPublisher" and len(node.args) >= 3:
+            topic = self.resolve(node.args[2])
+            if topic and topic.startswith("/"):
+                self._topic(topic, self.resolve_type(node.args[1]), "publishers", node.lineno)
+
         # message_filters.Subscriber(node, MsgType, "/topic")
         elif fn == "Subscriber" and len(node.args) >= 3:
             topic = self.resolve(node.args[2])
@@ -214,6 +258,11 @@ class PyExtractor(ast.NodeVisitor):
         e = self.out["topics"][topic]
         e["types"].add(mtype)
         e[direction].append(f"{self.loc}:{line}")
+
+
+def _fn_name(node: ast.Call) -> str | None:
+    f = node.func
+    return f.attr if isinstance(f, ast.Attribute) else (f.id if isinstance(f, ast.Name) else None)
 
 
 def literal_str(node: ast.AST) -> str | None:
@@ -482,8 +531,26 @@ def collect_const_defs(path: Path, src: str, out: dict) -> None:
                 out["const_defs"][name][val].append(f"{loc}:{i}")
 
 
+def config_values() -> dict:
+    """key -> {values} across our own YAML files, so code that reads a topic from
+    config (NEXT_STEPS 2.15) stays visible. Vendor YAML is left out: its keys
+    would make ours ambiguous."""
+    cfg: dict[str, set] = defaultdict(set)
+    for p in walk(".yaml", ".yml"):
+        if not owned(rel(p)):
+            continue
+        for line in p.read_text(errors="replace").splitlines():
+            m = YAML_KV.match(line)
+            if m and not line.lstrip().startswith("#"):
+                val = m.group(3).split("#")[0].strip().strip('"').strip("'")
+                if val:
+                    cfg[m.group(2)].add(val)
+    return cfg
+
+
 def extract_all() -> dict:
     out = new_bucket()
+    cfg = config_values()
 
     for p in walk(".py"):
         src = p.read_text(errors="replace")
@@ -493,7 +560,7 @@ def extract_all() -> dict:
             extract_launch(p, src, out)
             continue
         try:
-            ex = PyExtractor(p, src)
+            ex = PyExtractor(p, src, cfg)
             ex.visit(ast.parse(src))
             merge(out, ex.out)
         except SyntaxError as e:
