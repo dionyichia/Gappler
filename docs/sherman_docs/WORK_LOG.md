@@ -134,6 +134,12 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: MAIN survives off-center and shortened geometries. Remaining residuals: T1.1 supersession owed (Dion), live validation T1.7, D3 transcription, table frame.
 - Next: PR `t1.3-variant-matrix` to `dev` on Sherman's word (CI + merge word; box already verified).
 
+## [2026-09-24] T5.4 | D455 TF determination opened (CAD + package sources)
+
+- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md)
+- Verified (Mac, no lab access): replacement-mount CAD inputs recorded (hole origin, platform edge −13.05/+29.50 mm, y = 0 centered, 3 mm middle plate vs 5 mm top platform — all design-intent, unverified as-built); D455 package facts read from Intel URDF (origin = bottom screw, color y −0.059, baseline 95 mm, fixed optical flip, driver overwrites fine extrinsics live).
+- Outcome: chain derived with one UNKNOWN (platform↔base placement); frame-collision flag to Dion/T5.5; October taping list referenced under T5.4-after-T5.3-fit. No PR; T5.4 stays OPEN.
+
 ## Record Template
 
 ```markdown
