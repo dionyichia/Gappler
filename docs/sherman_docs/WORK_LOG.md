@@ -31,6 +31,29 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: Test the D455 under T0.1, then validate the completed design against the physical base before
   fabrication.
 
+## [2026-09-21] T0.5 | Fresh Mac clone bench
+
+- Evidence: [`T0.5_FRESH_CLONE.md`](T0.5_FRESH_CLONE.md)
+- Verified: An isolated clone at `9bbb26a` passed L0 static checks, L1 contracts, and L2 preflight.
+  L3-L4 skipped as expected because the Mac has no ROS 2 Humble or NVIDIA environment.
+- Outcome: Sherman's clean-clone evidence is complete. The independent-clone half of T0.5 remains open.
+- Next: Resolve the Orin-to-GitHub transfer failure, create a new clean Orin clone, and record its
+  bench result before closing T0.5.
+
+## [2026-09-24] T0.5 | Refreshed on current dev, both halves on one branch
+
+- Evidence: [`T0.5_FRESH_CLONE.md`](T0.5_FRESH_CLONE.md), [`../bench-runs/2026-09-24-sherman-mac-t0.5-fresh-clone.txt`](../bench-runs/2026-09-24-sherman-mac-t0.5-fresh-clone.txt)
+- Verified: fresh clone of `dev` @ `787f2cc` on this Mac, `./bench/run.sh quick` PASS (L0-L2, 10/0/0/13; L3-L6 SKIPPED off-box as expected). Merged Sherman evidence with Zongzhe's `origin/t0.5` log onto the shared `t0.5` line; brought to current `dev` (stale plan/table touches resolved to current content).
+- Outcome: single T0.5 branch carrying both halves, PR to `dev` unmerged. T0.5 task flip needs owner sign-off (Zongzhe's half is his Sep-21 run).
+- Next: PR review + merge word; delete probe clone `~/fresh-clone-t05` after merge.
+
+## [2026-09-24] T0.5 | Flipped DONE in PR #29 (merge pending)
+
+- Evidence: same as above; task-tree T0.5 → DONE with both-halves rationale + finding disposition.
+- Verified: full-run evidence current (Sherman @ `787f2cc`); Zongzhe's Sep-21 log stands per task letter (no version pin); anygrasp-env finding non-blocking, tracked under T1.10.
+- Outcome: T0.5 DONE on the branch. PR #29 still unmerged — merge needs the merge word (Zongzhe sign-off requested in PR text).
+- Next: merge PR #29 on word; then delete `~/fresh-clone-t05`, the `t0.5-sherman-evidence` feeder, and the remote `t0.5` post-merge.
+
 ## [2026-09-22] T0.1 | D455 ROS-driver validation
 
 - Evidence: [`T0.1_D455_VALIDATION.md`](T0.1_D455_VALIDATION.md)
