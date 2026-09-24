@@ -44,6 +44,8 @@ RETURN = [0.0, -0.2443, 2.3000, 0.0, -0.5585, 1.5708]    # mtc_planner.hpp RETUR
 FX, FY, CX, CY, W, H = 607.18, 606.92, 331.95, 250.13, 640, 480
 OFFSET_X = 55.0        # CENTROID_TARGET_OFFSET_X: a centroid here means "no lateral error"
 FAR, NEAR = 0.30, 0.15  # m; the code switches to EXECUTING below EXECUTE_DEPTH_THRESH_M = 0.18
+CY_OFF = float(os.environ.get("SM_CY", "0"))    # lateral px added to the fake centroid
+FAR = float(os.environ.get("SM_FAR", "0.30"))   # start depth (m); keep above 0.18
 OPT = "camera_color_optical_frame"
 TOL = 0.02  # rad
 
@@ -81,7 +83,7 @@ class Actors(Node):
             return
         m = PointStamped()
         m.header.frame_id, m.header.stamp = OPT, self.get_clock().now().to_msg()
-        m.point.x, m.point.y, m.point.z = CX + OFFSET_X, CY, self.depth
+        m.point.x, m.point.y, m.point.z = CX + OFFSET_X + CY_OFF, CY, self.depth
         self.cen_pub.publish(m)
 
     def spin_until(self, pred, sec):
@@ -146,6 +148,7 @@ def main():
         return ok
 
     def run():
+        print(f"scenario: CY_OFF={CY_OFF:.0f}px FAR={FAR:.2f}m")
         # ---- startup: safety walls, home, IDLE ---------------------------------
         t0 = time.time()
         if not n.spin_until(lambda: len(n.js) >= 6, 30):
