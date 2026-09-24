@@ -168,7 +168,7 @@ def main():
             return
         realman = n.near(HOME_REALMAN)[0]
         R.append(("home pose actually used", "info", "INFO",
-                  "main's (joint4 0.0) -- unvalidated on the real arm, CODE_AUDIT B4" if ok else
+                  "main's (joint4 0.0) -- validated on the real arm 2026-09-23 (T1.7)" if ok else
                   "realman_manip's" if realman else f"neither table row: {[round(x, 3) for x in n.joints()]}"))
 
         # ---- camera frames -----------------------------------------------------
