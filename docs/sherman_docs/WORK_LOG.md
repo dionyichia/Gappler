@@ -47,6 +47,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: single T0.5 branch carrying both halves, PR to `dev` unmerged. T0.5 task flip needs owner sign-off (Zongzhe's half is his Sep-21 run).
 - Next: PR review + merge word; delete probe clone `~/fresh-clone-t05` after merge.
 
+## [2026-09-24] T0.5 | Flipped DONE in PR #29 (merge pending)
+
+- Evidence: same as above; task-tree T0.5 → DONE with both-halves rationale + finding disposition.
+- Verified: full-run evidence current (Sherman @ `787f2cc`); Zongzhe's Sep-21 log stands per task letter (no version pin); anygrasp-env finding non-blocking, tracked under T1.10.
+- Outcome: T0.5 DONE on the branch. PR #29 still unmerged — merge needs the merge word (Zongzhe sign-off requested in PR text).
+- Next: merge PR #29 on word; then delete `~/fresh-clone-t05`, the `t0.5-sherman-evidence` feeder, and the remote `t0.5` post-merge.
+
 ## [2026-09-22] T0.1 | D455 ROS-driver validation
 
 - Evidence: [`T0.1_D455_VALIDATION.md`](T0.1_D455_VALIDATION.md)
