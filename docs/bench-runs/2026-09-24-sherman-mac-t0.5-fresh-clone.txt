@@ -3,15 +3,15 @@ T0.5 half 2 (refresh): fresh clone + bench on Sherman's Mac, 2026-09-24
 Host: Darwin arm64 (Apple silicon), no ROS 2 Humble, no NVIDIA environment.
 Clone: git clone --branch dev https://github.com/dionyichia/Gappler.git
   -> ~/fresh-clone-t05 @ 787f2cc (Merge PR #28, T1.7-home-validated)
-Command: ./bench/run.sh quick   (L0-L2; L3-L6 need the lab box)
+Command: ./build.sh, then ./bench/run.sh   (full, not quick)
 
 RESULT: PASS (every level that ran passed)
   L0  Static checks              PASS
   L1  Contracts                  PASS  (RESULT 10 pass, 0 fail, 0 warn, 13 skipped)
   L2  Lab box check              PASS  (no ROS 2 Humble, so not the lab box)
-  L3  Build                      SKIPPED  quick mode
-  L4  Simulation                 SKIPPED  quick mode
-  L5  Robot check                SKIPPED  quick mode
+  L3  Build                      SKIPPED  needs the lab box (./build.sh: clean SKIP, exit 0)
+  L4  Simulation                 SKIPPED  needs the lab box
+  L5  Robot check                SKIPPED  needs the lab box
   L6  Hardware                   SKIPPED  L5 did not pass. Not needed to merge
 
 Notes:
