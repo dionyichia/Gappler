@@ -134,6 +134,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: MAIN survives off-center and shortened geometries. Remaining residuals: T1.1 supersession owed (Dion), live validation T1.7, D3 transcription, table frame.
 - Next: PR `t1.3-variant-matrix` to `dev` on Sherman's word (CI + merge word; box already verified).
 
+## [2026-09-24] T5.2 | v2 plate revision DONE
+
+- Evidence: [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md) (v2 section + changelog)
+- Verified: same mount, revised plate stack (3 mm middle, 5 mm top platform current); requirement recorded (Dion via Sherman: camera higher to see higher for navigation); positions carry over from verified v1 geometry. Task-tree T5.2 → DONE (v2).
+- Outcome: v2 design closed remotely (no lab access). Physical fit + view verification remain T5.3 (Oct 5+); geometry measurement remains T5.4.
+- Next: PR `t5.2-mount-v2` to `dev` (docs-only: CI + merge word, no box needed).
+
 ## Record Template
 
 ```markdown
