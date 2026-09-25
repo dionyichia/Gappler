@@ -1,10 +1,11 @@
 # ARM Bring-Up: Driver Handshake and Joint Feedback (Draft)
 
-> **UNVALIDATED.** This shared runbook is a draft for T1.6's first powered arm session. Sherman
-> and Dion must review it together **before** its attended trial at the robot. It is not yet an
-> independently verified operating procedure. T1.5 and T1.6 remain open in
-> [`task-tree.html`](task-tree.html); incorporate the T1.6 observations before treating it as
-> validated or marking T1.5 done.
+> **NOT YET INDEPENDENTLY VALIDATED.** T1.6's attended driver-only session passed its seven
+> recorded checks on 2026-09-23 ([evidence](dion_docs/T1.6_FIRST_POWERED_SESSION.md)), and its
+> observed stop, boot and feedback findings are incorporated below. That record does **not**
+> include the independent UDP packet capture required by this runbook to distinguish live arm
+> feedback from cached joint readings. T1.6 is DONE; T1.5 remains open in
+> [`task-tree.html`](task-tree.html) until that evidence is collected and this procedure reviewed.
 
 ## Goal and boundary
 
@@ -36,11 +37,14 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    reopening its measurements: the 0.03 m rear overhang is recorded, D1 area figures were waived,
    and the physical-stop reach was confirmed verbally with its D3 number still owed. There is no
    fenced zone or table/cell. Before **this** session, confirm the arm remains in its as-found
-   posture, the area and mount/cables have not changed, and an identified **physical** controller
-   stop is within reach of the operator's actual standing position (not just the `estop.py`
-   terminal). Do not force braked joints into position. If current conditions have changed or the
-   physical stop is not reachable, stop and reassess; the waived D3 number is not itself a new
-   T1.6 power-on gate. The table/cell and arm sweep remain out of scope until T1.3/T1.7 motion work.
+   posture, the area and mount/cables have not changed. `[observed]` There is **no separate
+   emergency-stop button, controller box or pendant**: the physical stop is cutting power at the
+   arm's rear button or plug (`dion_docs/T1.6_FIRST_POWERED_SESSION.md:14-28`). The stop operator
+   must be able to reach it from their actual standing position. `estop.py` is a secondary,
+   network-dependent stop, not a substitute. Do not force braked joints into position. If current
+   conditions have changed or the physical stop is not reachable, stop and reassess; the waived D3
+   number is not itself a new T1.6 power-on gate. The table/cell and arm sweep remain out of scope
+   until T1.3/T1.7 motion work.
 2. **Roles and shared equipment.** Name the computer operator and a *different* person at the
    physical stop; both must remain present. The stop operator stays with the physical stop while
    the computer operator handles terminals. Record the controller's as-found power state. If it
@@ -101,7 +105,7 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    when its binary was built. The stop program, driver, and inspection terminal **must** agree on
    domain and localhost setting. T-NET observes the physical wired interface directly; ROS
    domain settings do not filter the arm's TCP and UDP traffic.
-4. **Software stop ready, physical stop primary.** The computer operator starts T-ESTOP in a
+4. **Software stop ready, physical power cut primary.** The computer operator starts T-ESTOP in a
    separate, attended terminal after step 3:
 
    ```bash
@@ -110,8 +114,9 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
 
    Expect `E-stop ready` and an open terminal. `E` sends a ROS emergency-stop command **only when
    T-ESTOP has focus**; switching to T-DRIVER, T-NET, or T-INSPECT removes that focus. The physical
-   stop operator remains ready throughout. Ctrl+C *in T-ESTOP* sends a stop and exits. `Q` exits
-   without a stop; `R` sends resume and must not be used as a setup check
+   stop operator remains ready throughout. `S` requests a soft stop of the current motion;
+   `E` requests an emergency stop; Ctrl+C *in T-ESTOP* sends an emergency stop and exits.
+   `Q` exits without a stop; `R` sends resume and must not be used as a setup check
    (`arm/estop/estop.py:3-13,32-55,94-125`). Before the driver subscribes, a ROS stop message may
    have no recipient; the physical stop remains the immediate fallback. The code waits for DDS
    acknowledgement but **does not check its return value** (`arm/estop/estop.py:57-61,119-125`):
@@ -132,8 +137,10 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
 
    Expect a link with carrier and `.10/24`; stop if either is missing. Record discrepancies in
    `.100` or `.5` for the network owner, but those addresses are not the arm-feedback path. The
-   person at the robot then powers the controller; record the power-on time. After power-on, check
-   reachability and its
+   person at the robot then powers the controller; record the power-on time. **Allow roughly one
+   minute for boot before judging a failed ping or refused port 8080 connection.** T1.6 observed
+   an initial unreachable host followed by successful checks about a minute later
+   (`dion_docs/T1.6_FIRST_POWERED_SESSION.md:48-79`). After boot, check reachability and its
    control port:
 
    ```bash
@@ -141,9 +148,7 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    nc -zv -w 3 192.168.1.18 8080
    ```
 
-   Expect ping replies and a successful connection. `[reported]` The archived 2026-08-25 guide
-   says port 8080 can take about 60 seconds after power-on
-   (`archive/RCP_NEW_USER_STARTUP_GUIDE.md` §3.3). A refusal immediately after power-on merits
+   Expect ping replies and a successful connection. An initial failure during boot merits
    waiting and retrying; record how long it actually takes. If the port remains unavailable
    after the session's agreed boot window, **do not start the driver**. A timeout or unreachable
    host also requires checking power, cable, and addressing.
@@ -169,9 +174,9 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    Keep this terminal open and record its output. `[code]` The driver logs
    `product_version = ...` after querying the controller, and a successful UDP setup logs
    `UDP_Configuration is cycle:5ms,port:8089,...,ip:192.168.1.10,...`
-   (`arm/vendor/rm_driver/src/rm_driver.cpp:778-815,818-838`). `[reported]` The older checkout
-   reported `product_version = RM65-BI` (`archive/RCP_NEW_USER_STARTUP_GUIDE.md` §4 T2).
-   **Both expected lines need confirmation on this checkout during T1.6.** If the driver exits,
+   (`arm/vendor/rm_driver/src/rm_driver.cpp:778-815,818-838`). `[observed]` T1.6 saw
+   `product_version = RM65-BI`, controller version 3 and that UDP configuration
+   (`dion_docs/T1.6_FIRST_POWERED_SESSION.md:81-106`). If the driver exits,
    reports an error, or the identity/configuration differs, end the attempt and preserve the logs.
    Before inspecting feedback, check in T-INSPECT that the software stop publishes and the driver
    subscribes on the same ROS topic:
@@ -197,8 +202,10 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    T-INSPECT, then Ctrl+C in T-NET to show its packet count. The driver config declares six joints
    (`arm/vendor/rm_driver/config/rm_65_config.yaml:7-8,25`); the bench treats an advertised but
    silent topic as failure (`bench/preflight.py:790-799`). A fresh ROS timestamp alone is **not**
-   proof of fresh arm data; stationary joint positions may legitimately stay constant. There is
-   no verified minimum rate: record the observed rate and packet count, not an invented threshold.
+   proof of fresh arm data; stationary joint positions may legitimately stay constant.
+   `[observed]` T1.6 measured about 200 Hz (5 ms intervals), matching the configured cycle
+   (`dion_docs/T1.6_FIRST_POWERED_SESSION.md:162-179`). Record the observed rate and packet count;
+   a matching rate **alone** does not prove the packets arrived.
    Compare readings with the as-found posture; investigate non-finite, out-of-model or obviously
    implausible readings without calling this a home-pose calibration (T1.3/T1.7). If ROS messages
    are absent, or the packet stream does not persist, the session is **not READY**. Check `.10`,
@@ -243,7 +250,7 @@ it also checks the LiDAR, glasses, and wrist camera (`bench/preflight.py:908-929
 | T-NET sees packets but ROS joint messages are absent, malformed, or implausible | FAIL: receipt on the NIC does not establish the driver decoded and published valid joints. |
 | Any unrequested motion | Physical-stop operator uses the controller stop immediately. FAIL; record the event and end the session. |
 
-## Evidence to collect during T1.6
+## Evidence to collect for independent validation
 
 Record date/time, people and roles, T1.4 sign-off and any remaining overhang or stop-reach issues,
 as-found posture and power state, physical-stop position, ROS domain, approved checkout commit and
@@ -253,8 +260,10 @@ software-stop publisher/subscriber counts, **filtered tcpdump output and packet 
 interval overlapping the ROS observation**, joint names/positions/timestamps, measured ROS rate
 and watch duration, any movement, failure symptoms, and final process/controller power states.
 Label values from code `[code]`, the archived guide `[reported]`, and T1.6 results `[observed]`.
-Record a T4.3 defect-log entry for surprises. Revise this draft from those results before marking
-T1.5 done or treating it as an independently validated shared runbook.
+The 2026-09-23 T1.6 record has the handshake and ROS observations but **no overlapping tcpdump
+output or UDP packet count**. Do not infer that capture from the 200 Hz ROS output. Record a T4.3
+defect-log entry for surprises; keep T1.5 open until an attended capture verifies this remaining
+gate and the procedure is reviewed.
 
 ## Changelog
 
@@ -264,3 +273,4 @@ T1.5 done or treating it as an independently validated shared runbook.
 | 2026-09-23 | OpenCode + Sherman | Moved the shared draft to docs/; required independent UDP receipt, clarified stop-terminal roles and first-power shutdown. Still unvalidated. |
 | 2026-09-23 | OpenCode + Sherman | After merging current dev, replaced the stale open-T1.4 blocker with its accepted no-motion verdict, documented rear overhang and D3 residual, and a day-of-condition check. No hardware run. |
 | 2026-09-23 | OpenCode + Sherman | Added a checkout/overlay provenance gate after a read-only lab-box check found an older branch with local changes; do not change that checkout during first-power verification. |
+| 2026-09-26 | OpenCode + Sherman | Incorporated Dion's T1.6 feedback: physical power cut, `S` soft-stop key, explicit boot wait, observed handshake and ~200 Hz feedback. T1.5 stays open: T1.6 recorded no independent UDP capture, so the runbook's live-feedback gate remains unverified. |

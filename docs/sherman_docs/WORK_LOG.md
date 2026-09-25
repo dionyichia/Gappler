@@ -148,6 +148,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: mapping launch now joins the arm tree during mapping runs. Residuals: 0.18/0.48 values duplicated across both SLAM launches (plus `bench/nodes/test_nav_nodes.py` fixture) until T5.4 single-sources them; full mapping-launch TF tree untested (no base bring-up remote).
 - Next: PR `t3.3-mapping-tf` to `dev`; Zongzhe review; merge on Sherman's word (robot-adjacent: CI + box evidence + word).
 
+## [2026-09-26] T1.5 | T1.6 feedback folded into shared runbook (OPEN)
+
+- Evidence: [`../ARM_BRINGUP.md`](../ARM_BRINGUP.md); Dion's [`T1.6_FIRST_POWERED_SESSION.md`](../dion_docs/T1.6_FIRST_POWERED_SESSION.md) (seven recorded checks PASS on 2026-09-23).
+- Verified: the physical stop is the rear arm power button or plug, not a dedicated e-stop; `S` soft-stops current motion; first ping can fail during roughly one minute of boot; the driver reported RM65-BI / controller version 3 and six-joint ROS feedback near 200 Hz. Correct `/joint_states` commands were already in the runbook; `/j` was a session typo.
+- Outcome: runbook updated with observed findings, but **T1.5 remains OPEN**. T1.6 contains no independent UDP packet capture overlapping ROS feedback; matching 200 Hz ROS output does not rule out cached joint readings. No new hardware test performed.
+- Next: attended filtered UDP capture and joint feedback observation (October 5 or later), then review the procedure and close T1.5 with task-tree DONE flip in the same change. Do not infer a T1.6 packet result from its seven-check verdict.
+
 ## Record Template
 
 ```markdown
