@@ -118,7 +118,7 @@ One subsystem writes these down and the others depend on them. Sherman owns the 
 
 | # | Measurement | Where it is written today | Owner |
 |---|---|---|---|
-| M1 | Arm on the base, `robot_base_link` → `base_link`: 0.18 m forward, 0.48 m up, yawed 180° | `slam_localization.launch.py:98-103`, missing from `slam_mapping.launch.py` (`T3.3`) | Sherman |
+| M1 | Arm on the base, `robot_base_link` → `base_link`: 0.18 m forward, 0.48 m up, yawed 180° | `slam_localization.launch.py:107-112` and `slam_mapping.launch.py:117-122` (`T3.3` DONE 2026-09-26) | Sherman |
 | M2 | LiDAR on the base, `robot_base_link` → `livox_frame`: 0.18 m forward, 0.2 m up | both SLAM launch files | Sherman |
 | M3 | Forward offset `CAMERA_X_OFFSET = 0.18` | `object_approach_node.py:51`, `goto_glasses.py:35`, and the robot model. `T5.4` makes it one source | Sherman |
 | M4 | Base camera pose relative to the LiDAR | not measured. `T5.5` | Dion, with Sherman's rig |
@@ -279,7 +279,7 @@ Channels that a topic list does not show. Each says whether it is assigned.
 |---|---|---|
 | `map` → `odom` | SLAM Toolbox | Sherman |
 | `odom` → `robot_base_link` | base driver, `ros2_interface.cpp:165` | Sherman |
-| `robot_base_link` → `base_link` | static, `slam_localization.launch.py:98-103` only | Sherman |
+| `robot_base_link` → `base_link` | static, both SLAM launch files (`T3.3` DONE 2026-09-26) | Sherman |
 | `robot_base_link` → `livox_frame` | static, both SLAM launch files | Sherman |
 | `base_link` → `Link1…Link6` → `camera_link` | the arm's robot model | Dion |
 | `camera_link` → `camera_color_optical_frame` | the RealSense driver at run time | Dion |
@@ -289,8 +289,7 @@ Channels that a topic list does not show. Each says whether it is assigned.
 `/aria/aruco_pose`, and `camera_color_optical_frame`, which exists only if the camera driver is
 running. Every TF lookup against a missing frame fails silently.
 
-⚠️ `[code]` The `robot_base_link` → `base_link` edge exists in the localisation launch file and not
-in the mapping one, so during a mapping run the arm is not attached to the tree at all. `T3.3`.
+✅ `[code]` The `robot_base_link` → `base_link` edge is now published by both the localisation and the mapping launch files (`T3.3` DONE 2026-09-26). Full mapping-launch TF tree still untested; values stay duplicated until `T5.4` single-sources them.
 
 ---
 
@@ -326,3 +325,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
 | 2026-09-22 | Claude (Opus 5) + Dion | T-3: the wrist D435i survived the replug (T0.12), so no replacement is needed so far. Same camera update in `testbench-map.html` and the task tree's 14 September note. |
 | 2026-09-23 | Claude Opus 5.5 + Dion | B-2 superseded: HOME is `main`'s row, validated on the real arm in T1.7. It extends slightly outside the base, tucked pose is T1.18. |
+| 2026-09-26 | OpenCode + Sherman | T3.3 DONE: `slam_mapping.launch.py:117-122` publishes `robot_base_to_arm`, same arguments as localization. M1 and the TF edge table updated; full mapping-launch tree still untested, values duplicated until T5.4. |

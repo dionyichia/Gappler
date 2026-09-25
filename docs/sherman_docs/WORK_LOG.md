@@ -141,6 +141,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: v2 design closed remotely (no lab access). Physical fit + view verification remain T5.3 (Oct 5+); geometry measurement remains T5.4.
 - Next: PR `t5.2-mount-v2` to `dev` (docs-only: CI + merge word, no box needed).
 
+## [2026-09-26] T3.3 | Mapping launch arm TF DONE
+
+- Evidence: `nav/robot_slam/launch/slam_mapping.launch.py:117-122` (`robot_base_to_arm`), mirroring `nav/robot_slam/launch/slam_localization.launch.py:107-112`; task-tree T3.3 → DONE.
+- Verified: Mac `./bench/run.sh quick` PASS (L0/L1/L2; L3-L6 skipped off-box). Box (isolated domain, publisher stopped after): py_compile OK, exactly 1 `robot_base_to_arm` definition, exact args `0.18 0 0.48 3.14159 0 0 robot_base_link base_link`; live `tf2_echo` → Translation `[0.180, 0.000, 0.480]`, quaternion `[0, 0, 1, 0]`, yaw 180°. Branch rebased onto `dev` via merge (clean), pushed @ `f1f1a47` + close-out.
+- Outcome: mapping launch now joins the arm tree during mapping runs. Residuals: 0.18/0.48 values duplicated across both SLAM launches (plus `bench/nodes/test_nav_nodes.py` fixture) until T5.4 single-sources them; full mapping-launch TF tree untested (no base bring-up remote).
+- Next: PR `t3.3-mapping-tf` to `dev`; Zongzhe review; merge on Sherman's word (robot-adjacent: CI + box evidence + word).
+
 ## Record Template
 
 ```markdown
