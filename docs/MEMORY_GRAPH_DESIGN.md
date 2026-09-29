@@ -294,8 +294,15 @@ section 3's case for our own structure weakens to R4 and R5 alone, which is stil
 | S3 pruning with a real solver | Section 6: a drop-in replacement for `prune`, with greedy as the baseline |
 | M8 gaze picks the instance | R4 is the edge-level information the gaze feature is compared against |
 
+Since 2026-09-29 these tasks are split into sub-tasks in `task-tree.html`, following the stages in
+HiCo-Nav's `docs/cmg_construction_pipeline.md`. The parts this document governs: **T6.3a** moves the
+prototype into the source tree (D-MG4), **T6.4c** and **T6.4d** write through `merge_objects`,
+`observe` and `check_invariants`, **T6.4f** is the greedy `prune` and settles `kappa` (D-MG1), and
+**T6.4** settles D-MG2 on the recorded drive.
+
 ## Changelog
 
 | Date | Who | Change |
 |---|---|---|
 | 2026-09-21 | Claude (Opus 5) + Zongzhe | Created. Specifies the anchor-object graph for M6 ahead of T6.3: requirements traced to the M6 acceptance text, the case against copying upstream's two-set edge storage, the merge-threshold finding that bears on M6's stated pose risk, the interface, the multicover pruning and its redundancy parameter, and five open decisions. Proposed only, nothing implemented in `src/`. No task changed state, so `next-steps-map.html` was not edited. |
+| 2026-09-29 | Claude (Opus 5.5) + Zongzhe | §9: noted the M6 split into sub-tasks and which of them carry D-MG1, D-MG2 and D-MG4. No design change. |
