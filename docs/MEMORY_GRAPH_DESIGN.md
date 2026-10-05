@@ -87,6 +87,25 @@ side may keep ids for anchors that are gone, and object merge, where anchors may
 the absorbed id. Neither is confirmed against upstream source, and the point here is not to accuse
 upstream of a bug. It is that the arrangement has no way to rule one out.
 
+**Counter-evidence from the HiCo-Nav reference docs (added 2026-10-05).** `[unverified]` The docs
+in [`hico-nav/hico-nav-github-docs/`](hico-nav/hico-nav-github-docs/) are another second-hand
+reading of upstream at `ffc1517`, and they suggest neither path occurs in upstream as written:
+
+- *Anchor eviction.* `cmg_construction_pipeline.md` S13 says dropping a keyframe "removes its id
+  from each object's `observers`" (`map.py:420`). If so, eviction is clean, and the stale-degree
+  path to an infeasible pruning program does not arise. `map_class_diagram.md` §2 still describes
+  `delete_keyframe` as unwinding "from the anchor side", which is the wording this section relied on.
+  The two docs read differently.
+- *Object merge.* In S11 a match folds a **new sighting** into an existing object. The sighting has
+  no id yet and no anchor refers to it, because the anchor is built afterwards in S12. So no anchor
+  can be left pointing at an absorbed id. The prototype's `merge_objects(surviving, absorbed)` merges
+  two existing objects, which the reference pipeline never does. S11 needs only `observe`.
+
+The prototype's `TwoSetFailureModes` tests are unaffected: they show what the two-set layout
+permits and claim nothing about upstream. If T6.1 confirms both points against source, this
+section's case rests on R4 (edge payload), R5 (self-check) and R7 (no dependencies), as the note
+under section 8 anticipates.
+
 Stale values here are integers, and a stale integer does not announce itself. Some code never
 dereferences it, it counts: the pruning requirement `r_j = min(kappa, degree)` is `len(observers)`.
 A ghost id inflates the degree, so the solver can be asked for more anchors than exist. That is an
@@ -278,12 +297,24 @@ Recorded here in the style of `PROJECT_PLAN.md` §1.1. None blocks anything befo
 | D-MG2 | Does the merge test stay geometry-dominant? | Section 4. With upstream's weights, appearance cannot rescue a pose error, so M6's duplication-rate mitigation has one expensive lever | T6.4, measured |
 | D-MG3 | Greedy, or a solver in M6 rather than as S3? | Greedy has no dependency and satisfies R7. A solver needs T6.1's licence check | T6.1 |
 | D-MG4 | Where does the code live once it is real? | It is not a ROS node, it is a library used by one. Provisionally a top-level `memory_graph/` package since 2026-10-05 (T6.3a). The name is temporary too: it will change when the code is integrated into the navigation module (Zongzhe, 2026-10-05). No bench edit is needed wherever it goes, since `is_owned` counts everything outside `vendor/` | T6.3, team to confirm |
-| D-MG5 | Does the graph need to survive a restart? | M6 is offline and rebuilds from recordings, so no. M7 may differ | M7 planning |
+| D-MG5 | Does the graph need to survive a restart? | M6 is offline and rebuilds from recordings, so no. M7 may differ. Note the HiCo-Nav agent guide (§9, its milestone M6) does require save and load with `load(save(g)) == g`, since the reference has none | M7 planning |
 
 **Unverified claims carried by this document.** Section 3's two divergence paths and section 4's
 threshold arithmetic are `[inferred]` from a second-hand reading of upstream. T6.1 is "read the
 upstream HiCo-Nav code" and is the natural place to confirm or kill them. If they turn out wrong,
 section 3's case for our own structure weakens to R4 and R5 alone, which is still sufficient.
+Since 2026-10-05 the HiCo-Nav reference docs point the same way for both of section 3's paths (see
+the counter-evidence note there). Section 4's arithmetic is consistent with them: they describe the
+spatial term as the fraction of points with a neighbour within 2.5 cm, so it lies in [0, 1].
+
+**What the prototype does not cover, checked against the reference docs on 2026-10-05.** It stores
+edges only. Object and anchor data (points, boxes, labels, images, the next object id) need their
+own store (T6.4c, T6.4d). An object that loses every anchor drops out of `objects()`, while the
+reference never deletes objects, so T6.4c must not treat `objects()` as the list of all objects.
+Pruning cannot cause this, since coverage keeps every object at least one anchor. The task index
+with re-indexing on label change, the blacklist and the task score belong to T6.7a and T6.8a. On
+3,000 random graphs per kappa, `prune` met every coverage requirement, and with kappa = 1 never kept
+an anchor whose objects are a subset of another kept anchor's, which is the reference's S13 test.
 
 ## 9. How this maps onto the M6 task tree
 
@@ -310,3 +341,4 @@ prototype into the source tree (D-MG4), **T6.4c** and **T6.4d** write through `m
 | 2026-09-21 | Claude (Opus 5) + Zongzhe | Created. Specifies the anchor-object graph for M6 ahead of T6.3: requirements traced to the M6 acceptance text, the case against copying upstream's two-set edge storage, the merge-threshold finding that bears on M6's stated pose risk, the interface, the multicover pruning and its redundancy parameter, and five open decisions. Proposed only, nothing implemented in `src/`. No task changed state, so `next-steps-map.html` was not edited. |
 | 2026-09-29 | Claude (Opus 5.5) + Zongzhe | §9: noted the M6 split into sub-tasks and which of them carry D-MG1, D-MG2 and D-MG4. No design change. |
 | 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §7 and D-MG4: the prototype moved to `memory_graph/` (T6.3a), with the S2 to S10 stage code beside it. The folder and its name are provisional: D-MG4 is open and the name changes on integration into the navigation module. Replaced the stale `OWNED_PREFIXES` references with the `is_owned` rule. No design change. |
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §3: counter-evidence from the HiCo-Nav reference docs against both inferred divergence paths, tagged `[unverified]` pending T6.1. §8: D-MG5 notes the reference docs ask for save and load. Added what the prototype does not cover and the S13 subset check result. |

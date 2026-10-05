@@ -155,6 +155,11 @@ the write sites above. Neither is confirmed against source.
   write sites above rewrites the anchor side, so anchors that saw the absorbed object may keep
   pointing at an object id that is gone.
 
+**2026-10-05:** the HiCo-Nav reference docs suggest neither path occurs in upstream as written:
+eviction strips the id from `observers` (S13, `map.py:420`), and S11 only merges new sightings that
+no anchor refers to yet. Still `[unverified]` against source. Details in
+[`../MEMORY_GRAPH_DESIGN.md`](../MEMORY_GRAPH_DESIGN.md) §3.
+
 `[inferred]` The reason this is worth caring about rather than shrugging at is that the stale value
 is an integer, and a stale integer does not announce itself. A dead object reference raises or gets
 collected. A dead id is indistinguishable from a live one until someone dereferences it, and some
@@ -323,3 +328,4 @@ claims that want source confirmation first.
 | 2026-09-21 | Claude (Opus 5) + Zongzhe | Created. Records the multicover notation, what redundancy 1 gives up, the two-set edge storage and its two inferred failure paths, the merge threshold deduction, and a prototype replacement structure with 16 passing checks. No existing code changed. |
 | 2026-09-21 | Claude (Opus 5) + Zongzhe | Section 5's design promoted to the global doc `../MEMORY_GRAPH_DESIGN.md`, specified against M6's acceptance test and registered in `PROJECT_PLAN.md`. This document stays as the evidence behind it. |
 | 2026-10-05 | Claude (Opus 5.5) + Zongzhe | Prototype moved to `memory_graph/` (T6.3a). Links and the run command updated. |
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §3a: pointer to the counter-evidence from the HiCo-Nav reference docs. |
