@@ -233,13 +233,16 @@ against.
 
 ## 7. Reference implementation and its evidence
 
-[`zongzhe_docs/prototypes/anchor_object_graph.py`](zongzhe_docs/prototypes/anchor_object_graph.py),
-about 230 lines, stdlib only. It sits under `docs/` and so is outside `OWNED_PREFIXES` in
-`bench/_common.py`: it cannot affect the bench until someone moves it deliberately, which is correct
-for a prototype. When T6.3 starts, the code moves into `src/` and that prefix list gets updated.
+[`../memory_graph/anchor_object_graph.py`](../memory_graph/anchor_object_graph.py), about 230
+lines, stdlib only. Moved there from `docs/zongzhe_docs/prototypes/` on 2026-10-05 (T6.3a). Its
+tests run in the bench at L0. `OWNED_PREFIXES` no longer exists: since 2026-09-22 everything outside
+a `vendor/` folder counts as ours (`is_owned` in `bench/_common.py`), so the move needed no bench
+edit. The top-level `memory_graph/` folder is a **provisional** answer to D-MG4, chosen so T6.3a
+could proceed. The team may still move it, and **`memory_graph` is a temporary name**, to be
+changed when the code is integrated into the navigation module (Zongzhe, 2026-10-05).
 
 ```bash
-cd docs/zongzhe_docs/prototypes && python3 -m unittest -v test_anchor_object_graph
+python3 -m unittest -v memory_graph.tests.test_anchor_object_graph     # from the repo root
 ```
 
 16 checks, all passing on 2026-09-21 on Zongzhe's Mac. Three groups:
@@ -274,7 +277,7 @@ Recorded here in the style of `PROJECT_PLAN.md` §1.1. None blocks anything befo
 | D-MG1 | What is `kappa`, the anchors kept per object? | Section 6. Upstream's effective 1 gives up viewpoint redundancy; 3 costs 2.6x the anchors and still evicts most | T6.4, on recorded data from T6.2 |
 | D-MG2 | Does the merge test stay geometry-dominant? | Section 4. With upstream's weights, appearance cannot rescue a pose error, so M6's duplication-rate mitigation has one expensive lever | T6.4, measured |
 | D-MG3 | Greedy, or a solver in M6 rather than as S3? | Greedy has no dependency and satisfies R7. A solver needs T6.1's licence check | T6.1 |
-| D-MG4 | Where does the code live once it is real? | It is not a ROS node, it is a library used by one. `src/` needs a home for it, and `OWNED_PREFIXES` needs the entry | T6.3 |
+| D-MG4 | Where does the code live once it is real? | It is not a ROS node, it is a library used by one. Provisionally a top-level `memory_graph/` package since 2026-10-05 (T6.3a). The name is temporary too: it will change when the code is integrated into the navigation module (Zongzhe, 2026-10-05). No bench edit is needed wherever it goes, since `is_owned` counts everything outside `vendor/` | T6.3, team to confirm |
 | D-MG5 | Does the graph need to survive a restart? | M6 is offline and rebuilds from recordings, so no. M7 may differ | M7 planning |
 
 **Unverified claims carried by this document.** Section 3's two divergence paths and section 4's
@@ -306,3 +309,4 @@ prototype into the source tree (D-MG4), **T6.4c** and **T6.4d** write through `m
 |---|---|---|
 | 2026-09-21 | Claude (Opus 5) + Zongzhe | Created. Specifies the anchor-object graph for M6 ahead of T6.3: requirements traced to the M6 acceptance text, the case against copying upstream's two-set edge storage, the merge-threshold finding that bears on M6's stated pose risk, the interface, the multicover pruning and its redundancy parameter, and five open decisions. Proposed only, nothing implemented in `src/`. No task changed state, so `next-steps-map.html` was not edited. |
 | 2026-09-29 | Claude (Opus 5.5) + Zongzhe | §9: noted the M6 split into sub-tasks and which of them carry D-MG1, D-MG2 and D-MG4. No design change. |
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §7 and D-MG4: the prototype moved to `memory_graph/` (T6.3a), with the S2 to S10 stage code beside it. The folder and its name are provisional: D-MG4 is open and the name changes on integration into the navigation module. Replaced the stale `OWNED_PREFIXES` references with the `is_owned` rule. No design change. |
