@@ -26,6 +26,7 @@ import rclpy
 from geometry_msgs.msg import PoseStamped
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from scipy.spatial.transform import Rotation
 from std_msgs.msg import Bool, Empty, String
@@ -279,7 +280,14 @@ class GotoGlasses(Node):
 
 def main() -> None:
     rclpy.init()
-    rclpy.spin(GotoGlasses())
+    node = GotoGlasses()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # Ctrl+C: exit quietly (CODE_AUDIT F4)
+    finally:
+        node.destroy_node()
+        rclpy.try_shutdown()
 
 
 if __name__ == "__main__":
