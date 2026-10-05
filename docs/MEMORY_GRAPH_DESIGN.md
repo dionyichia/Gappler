@@ -80,36 +80,29 @@ connected components, no matching. A pair of integer sets is the right shape, an
 
 We are rejecting three consequences of storing the edge twice.
 
-**No single source of truth (R2, R3, R5).** `[inferred]` Every mutation has to touch both sets, so
-any path that touches one is a silent divergence, and there is no third record to check them
-against. Two such paths are visible from the write sites above: anchor eviction, where the object
-side may keep ids for anchors that are gone, and object merge, where anchors may keep pointing at
-the absorbed id. Neither is confirmed against upstream source, and the point here is not to accuse
-upstream of a bug. It is that the arrangement has no way to rule one out.
+**No single source of truth (R2, R5).** Every mutation has to touch both sets, and there is no third
+record to check them against. Two divergence paths were suspected here in September. **T6.1 read
+the source on 2026-10-05 and neither occurs in upstream as written** `[code]`:
 
-**Counter-evidence from the HiCo-Nav reference docs (added 2026-10-05).** `[unverified]` The docs
-in [`hico-nav/hico-nav-github-docs/`](hico-nav/hico-nav-github-docs/) are another second-hand
-reading of upstream at `ffc1517`, and they suggest neither path occurs in upstream as written:
+- *Anchor eviction is clean.* `delete_keyframe` (`map.py:420-431`) walks the keyframe's
+  `objects_3d` and discards the frame id from each object's `observers` before dropping the
+  keyframe. Both sides stay in step.
+- *No anchor can point at an absorbed id.* The only merge call (`map.py:493`) folds a sighting from
+  the current frame into an existing object (`Object3D.merge`, `map_elements.py:139-176`). The
+  sighting's own id was never added to any keyframe: the keyframe is built afterwards, from the ids
+  of the existing objects it touched (`map.py:871-881`). Objects are never deleted or merged with
+  each other anywhere in the code.
+- *Even a stale id could not make pruning infeasible.* The pruning program counts each object's
+  degree from the keyframe side (`keyframe_to_objs`, `map.py:1002-1007`), not from `observers`, and
+  clamps it with `min(r, len(Ks))` (`map.py:952`). One reader, `find_target`, also intersects
+  `observers` with the live keyframes before use (`map.py:302`).
 
-- *Anchor eviction.* `cmg_construction_pipeline.md` S13 says dropping a keyframe "removes its id
-  from each object's `observers`" (`map.py:420`). If so, eviction is clean, and the stale-degree
-  path to an infeasible pruning program does not arise. `map_class_diagram.md` §2 still describes
-  `delete_keyframe` as unwinding "from the anchor side", which is the wording this section relied on.
-  The two docs read differently.
-- *Object merge.* In S11 a match folds a **new sighting** into an existing object. The sighting has
-  no id yet and no anchor refers to it, because the anchor is built afterwards in S12. So no anchor
-  can be left pointing at an absorbed id. The prototype's `merge_objects(surviving, absorbed)` merges
-  two existing objects, which the reference pipeline never does. S11 needs only `observe`.
-
-The prototype's `TwoSetFailureModes` tests are unaffected: they show what the two-set layout
-permits and claim nothing about upstream. If T6.1 confirms both points against source, this
-section's case rests on R4 (edge payload), R5 (self-check) and R7 (no dependencies), as the note
-under section 8 anticipates.
-
-Stale values here are integers, and a stale integer does not announce itself. Some code never
-dereferences it, it counts: the pruning requirement `r_j = min(kappa, degree)` is `len(observers)`.
-A ghost id inflates the degree, so the solver can be asked for more anchors than exist. That is an
-infeasible program rather than a slightly wrong answer.
+So upstream's two sets are kept consistent by careful code, not by structure. The remaining
+argument is the weaker structural one: nothing checks the pair, so a future write site could break
+it silently. That is a reason for R5 (self-check), not evidence of a bug. The prototype's
+`TwoSetFailureModes` tests still show what the layout permits, and claim nothing about upstream.
+`merge_objects(surviving, absorbed)` in the prototype has no upstream counterpart. S11 needs only
+`observe`. Section 3's case for our own structure now rests on R4 (edge payload), R5 and R7.
 
 **Nowhere to put edge information (R4).** An edge is a bare membership fact. There is no place for
 the bounding box within that anchor, the occluded fraction, the pixel area, the confidence of that
@@ -130,8 +123,11 @@ with `phys_bias = 0.5` and acceptance threshold `sim_threshold = 0.6`, both from
 That is `1.5 * spatial + 0.5 * visual`. The weights sum to 2, so it is not the convex combination
 the paper's formula suggests (`hico-nav/PAPER_REPORT.md` §4.4).
 
-`[inferred]` If both similarities lie in `[0,1]`, the visual term contributes at most 0.5, which is
-below the 0.6 threshold. **Two sightings with no point-cloud overlap can never be merged, however
+`[code]` Both similarities lie in `[0,1]`: the spatial term is the fraction of the new sighting's
+points with a stored point within 2.5 cm, and 0 when the 3D boxes do not overlap
+(`pointcloud.py:704-714`), and the visual term is a cosine (`map_utils.py:372`). A match needs a
+score strictly above the threshold (`map_utils.py:396`). So the visual term contributes at most 0.5,
+which is below the 0.6 threshold. Confirmed by T6.1 on 2026-10-05. **Two sightings with no point-cloud overlap can never be merged, however
 certain the appearance match is.** Appearance cannot outvote geometry; it can only refine it.
 
 **Why this lands squarely on M6.** `PROJECT_PLAN.md:502-506` names the risk plainly: the merge test
@@ -295,17 +291,16 @@ Recorded here in the style of `PROJECT_PLAN.md` §1.1. None blocks anything befo
 |---|---|---|---|
 | D-MG1 | What is `kappa`, the anchors kept per object? | Section 6. Upstream's effective 1 gives up viewpoint redundancy; 3 costs 2.6x the anchors and still evicts most | T6.4, on recorded data from T6.2 |
 | D-MG2 | Does the merge test stay geometry-dominant? | Section 4. With upstream's weights, appearance cannot rescue a pose error, so M6's duplication-rate mitigation has one expensive lever | T6.4, measured |
-| D-MG3 | Greedy, or a solver in M6 rather than as S3? | Greedy has no dependency and satisfies R7. A solver needs T6.1's licence check | T6.1 |
+| D-MG3 | Greedy, or a solver in M6 rather than as S3? | **Decided 2026-10-05 (Zongzhe): greedy in M6, the solver stays stretch goal S3.** T6.4f prunes with the prototype's greedy multicover. Reasons: a solver adds a dependency that breaks R7 and the stdlib-only bench tests, it needs a time limit (upstream sets none) and so a greedy fallback anyway, and its benefit over greedy is unmeasured. Licences do not block it: T6.1 found upstream uses PuLP (MIT) with CBC (EPL-2.0). Reopen if the recorded drive (T6.4) shows greedy keeping noticeably more anchors than needed. S3 then drops in behind `prune()` | Settled |
 | D-MG4 | Where does the code live once it is real? | It is not a ROS node, it is a library used by one. Provisionally a top-level `memory_graph/` package since 2026-10-05 (T6.3a). The name is temporary too: it will change when the code is integrated into the navigation module (Zongzhe, 2026-10-05). No bench edit is needed wherever it goes, since `is_owned` counts everything outside `vendor/` | T6.3, team to confirm |
 | D-MG5 | Does the graph need to survive a restart? | M6 is offline and rebuilds from recordings, so no. M7 may differ. Note the HiCo-Nav agent guide (§9, its milestone M6) does require save and load with `load(save(g)) == g`, since the reference has none | M7 planning |
 
-**Unverified claims carried by this document.** Section 3's two divergence paths and section 4's
-threshold arithmetic are `[inferred]` from a second-hand reading of upstream. T6.1 is "read the
-upstream HiCo-Nav code" and is the natural place to confirm or kill them. If they turn out wrong,
-section 3's case for our own structure weakens to R4 and R5 alone, which is still sufficient.
-Since 2026-10-05 the HiCo-Nav reference docs point the same way for both of section 3's paths (see
-the counter-evidence note there). Section 4's arithmetic is consistent with them: they describe the
-spatial term as the fraction of points with a neighbour within 2.5 cm, so it lies in [0, 1].
+**Claims checked against source (T6.1, 2026-10-05).** Section 3's two divergence paths turned out
+not to occur upstream, and section 4's arithmetic is confirmed. Both are now tagged `[code]` with
+line citations at `ffc1517`. D-MG3's licence half is settled too: upstream prunes with PuLP (MIT)
+driving CBC (EPL-2.0), both acceptable (`map.py:18`, `map.py:956`). It calls the solver with
+`r = 1` written at the call site and no time limit (`map.py:1007`, default `time_limit=None` at
+`map.py:915`).
 
 **What the prototype does not cover, checked against the reference docs on 2026-10-05.** It stores
 edges only. Object and anchor data (points, boxes, labels, images, the next object id) need their
@@ -320,7 +315,7 @@ an anchor whose objects are a subset of another kept anchor's, which is the refe
 
 | Task | What this document gives it |
 |---|---|
-| T6.1 read upstream, settle solvers | Three specific claims to confirm (sections 3, 4), and D-MG3 |
+| T6.1 read upstream, settle solvers | Three specific claims to confirm (sections 3, 4), and D-MG3. Done 2026-10-05 |
 | T6.3 build object entries | The structure they go into, and D-MG4 |
 | T6.4 the merge test | R2, `merge_objects`, and section 4's input to the similarity decision |
 | T6.5 two-stage trigger | Not addressed. The trigger decides what becomes an anchor; this holds them once chosen |
@@ -342,3 +337,5 @@ prototype into the source tree (D-MG4), **T6.4c** and **T6.4d** write through `m
 | 2026-09-29 | Claude (Opus 5.5) + Zongzhe | §9: noted the M6 split into sub-tasks and which of them carry D-MG1, D-MG2 and D-MG4. No design change. |
 | 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §7 and D-MG4: the prototype moved to `memory_graph/` (T6.3a), with the S2 to S10 stage code beside it. The folder and its name are provisional: D-MG4 is open and the name changes on integration into the navigation module. Replaced the stale `OWNED_PREFIXES` references with the `is_owned` rule. No design change. |
 | 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §3: counter-evidence from the HiCo-Nav reference docs against both inferred divergence paths, tagged `[unverified]` pending T6.1. §8: D-MG5 notes the reference docs ask for save and load. Added what the prototype does not cover and the S13 subset check result. |
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | T6.1 checked §3 and §4 against upstream source at `ffc1517`. §3: both divergence paths do not occur upstream, replaced the counter-evidence note with `[code]` findings, and the case now rests on R4, R5, R7. §4: arithmetic confirmed, retagged `[code]`. §8: D-MG3 licence half settled (PuLP MIT, CBC EPL-2.0). |
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §8: D-MG3 settled. Greedy pruning in M6, the solver stays stretch goal S3, with the reasons and the condition for reopening. |

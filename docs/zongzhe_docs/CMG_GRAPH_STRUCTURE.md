@@ -131,8 +131,8 @@ lives in two places:
 | anchor to objects | `Keyframe.objects_3d : Set[int]` | `map.py:871`, construction |
 | object to anchors | `Object3D.observers : Set[int]` | `map.py:798` insert, `map_elements.py:172` merge |
 
-`delete_keyframe` (`map.py:420`) is recorded as the only place that unwinds an edge from the anchor
-side.
+`delete_keyframe` (`map.py:420`) is the only place that removes edges, and it updates both sides
+(`map.py:424-426`, checked in T6.1 on 2026-10-05).
 
 **The access pattern does not need a graph, and that is the honest defence of this design.** Nothing
 traverses it. Every query is one hop: which objects did this anchor see, which anchors saw this
@@ -155,10 +155,13 @@ the write sites above. Neither is confirmed against source.
   write sites above rewrites the anchor side, so anchors that saw the absorbed object may keep
   pointing at an object id that is gone.
 
-**2026-10-05:** the HiCo-Nav reference docs suggest neither path occurs in upstream as written:
-eviction strips the id from `observers` (S13, `map.py:420`), and S11 only merges new sightings that
-no anchor refers to yet. Still `[unverified]` against source. Details in
-[`../MEMORY_GRAPH_DESIGN.md`](../MEMORY_GRAPH_DESIGN.md) §3.
+**Checked against source 2026-10-05 (T6.1): neither path occurs upstream.** `[code]` Eviction
+strips the id from every `observers` set (`map.py:424-426`). The only merge folds a sighting from the
+current frame, which no keyframe refers to yet, into an existing object (`map.py:493`), and the
+keyframe is built afterwards from existing ids (`map.py:871-881`). Pruning counts degree from the
+keyframe side (`map.py:1002-1007`), so even a stale `observers` id would not reach the solver. The
+two bullets above and the paragraph below are kept as the reasoning that was checked, not as
+findings. Details in [`../MEMORY_GRAPH_DESIGN.md`](../MEMORY_GRAPH_DESIGN.md) §3.
 
 `[inferred]` The reason this is worth caring about rather than shrugging at is that the stale value
 is an integer, and a stale integer does not announce itself. A dead object reference raises or gets
@@ -329,3 +332,4 @@ claims that want source confirmation first.
 | 2026-09-21 | Claude (Opus 5) + Zongzhe | Section 5's design promoted to the global doc `../MEMORY_GRAPH_DESIGN.md`, specified against M6's acceptance test and registered in `PROJECT_PLAN.md`. This document stays as the evidence behind it. |
 | 2026-10-05 | Claude (Opus 5.5) + Zongzhe | Prototype moved to `memory_graph/` (T6.3a). Links and the run command updated. |
 | 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §3a: pointer to the counter-evidence from the HiCo-Nav reference docs. |
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §3 and §3a: both divergence paths checked against source in T6.1 and found not to occur. |
