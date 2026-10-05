@@ -190,8 +190,11 @@ id-set pairing**, maintained by hand in two places:
 | anchor → objects | `Keyframe.objects_3d : Set[int]` | [`map.py:871`](../map/map.py) (construction) |
 | object → anchors | `Object3D.observers : Set[int]` | [`map.py:798`](../map/map.py) (insert) / [`map_elements.py:172`](../map/map_elements.py) (`merge`) |
 
-Both must be kept in sync; `delete_keyframe` ([`map.py:420`](../map/map.py))
-is the only place that unwinds an edge from the anchor side.
+Both must be kept in sync. `delete_keyframe` ([`map.py:420`](../map/map.py))
+is the only place that removes edges, and it updates both sides: it walks the keyframe's
+`objects_3d` and discards the frame id from each object's `observers` (`map.py:424-426`).
+Corrected 2026-10-05 (T6.1, read at `ffc1517`): the earlier wording here, "unwinds an edge from
+the anchor side", was read as one-sided, and it is not.
 
 ---
 
@@ -483,3 +486,9 @@ classDiagram
   observation can reuse `keyframe_2d_to_3d`. Not a second construction site.
 - There is no serialization. `Map.save_to_disk` is called at
   `utils/build_map_rgbd.py:267` but commented out and never defined.
+
+## Changelog
+
+| Date | Who | Change |
+|---|---|---|
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §"The graph edges are implicit": `delete_keyframe` updates both sides of the edge, checked against source in T6.1. Changelog added. |

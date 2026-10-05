@@ -662,16 +662,29 @@ stating rather than discovering.
 
 Two optimisation solvers are load-bearing:
 
-- **An ILP solver** for graph pruning (Eq. 5–7, weighted set multicover). Open options exist
-  (CBC via PuLP, HiGHS, OR-Tools). `[inferred]` Low risk, but licensing should be checked before it
-  is embedded — this project already carries one machine-locked commercial licence in AnyGrasp, and
-  a second would be unwelcome.
+- **An ILP solver** for graph pruning (Eq. 5–7, weighted set multicover). **Checked 2026-10-05
+  (T6.1)** `[code]`: upstream builds the program with PuLP and solves it with CBC
+  (`map/map.py:18`, `map/map.py:956`). PuLP is MIT and CBC is EPL-2.0, both read from their own
+  LICENSE files, and both acceptable here. Upstream calls it with `r = 1` and no time limit
+  (`map/map.py:1007`, default `time_limit=None` at `map/map.py:915`). Whether we use a solver at all
+  is D-MG3 in `../MEMORY_GRAPH_DESIGN.md`.
 - **LKH** for the WTRP (§4.7). LKH's own licence is free for academic use but **not open source**
   and not redistributable. **Decided 2026-09-23 (Zongzhe): keep LKH.** This is an academic project,
   so the academic-use licence covers it. Because it is not redistributable, do not commit LKH's
   source or binaries to this repo (not even under `vendor/`). The build or a setup script fetches it
   instead. OR-Tools' routing solver stays the fallback if the project's use ever stops being
   academic.
+  **Found 2026-10-05 (T6.1)** `[code]`: upstream's code does not use LKH anywhere. Frontier ordering
+  calls an exact bitmask dynamic program for 6 or fewer frontiers and a greedy heuristic above that
+  (`habitat/policy.py:349-353`, `planner/wtrp.py`). An OR-Tools CP-SAT model (`solve_wmlp_or`) is
+  defined but never called, yet `planner/wtrp.py:4` imports OR-Tools at module level, and OR-Tools
+  is in neither `requirements.txt` nor `environment.yml`, so upstream does not start without
+  installing it by hand (relevant to T9.1). OR-Tools is Apache-2.0. **The LKH decision above rests on
+  the paper and needs revisiting by Zongzhe:** reproducing upstream needs no tour solver licence at
+  all. LKH's terms were not re-checked: its site refused the connection on 2026-10-05.
+- **Upstream itself has no licence file** `[code]` (none at `ffc1517`, none mentioned in its README).
+  By default that means no permission to copy its code. Reading it and writing our own, as
+  `memory_graph/` does, is fine. Copying functions across is not, unless the authors grant a licence.
 
 ### 6.6 🟡 Confirmed non-blockers
 
@@ -694,7 +707,7 @@ Recording these so they are not re-litigated:
 | 6.2 | Camera-pose source (FAST-LIVO2 vs slam_toolbox vs OpenVINS) | 🔴 | Days–weeks | Engineering, after §6.1 |
 | 6.3 | LiDAR↔camera extrinsic calibration | 🟠 | Days, after camera arrives | Engineering |
 | 6.4 | VLM endpoint: cloud vs local | 🟠 | Days + policy check | Dion + supervisor |
-| 6.5 | ILP solver choice / licensing (TSP settled 2026-09-23: LKH, fetched at build time) | 🟡 | Hours–days | Engineering |
+| 6.5 | Solver choice / licensing. ILP settled 2026-10-05 (PuLP MIT + CBC EPL-2.0). TSP: LKH chosen 2026-09-23, but upstream code uses no tour solver licence (exact search or greedy), so revisit | 🟡 | ILP settled, TSP revisit | Zongzhe |
 | — | Camera mount design | 🟠 | Weeks, **in parallel with 6.1** | Engineering |
 | 5.6 | A simulator to test navigation in | 🟡 | Days (Habitat), weeks (a robot simulation) | Engineering |
 
@@ -772,6 +785,7 @@ productive than forcing the binary.
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §6.5 and §6.7 (T6.1): ILP solver confirmed in code as PuLP (MIT) + CBC (EPL-2.0). Upstream uses no LKH: exact search or greedy for frontier ordering, OR-Tools imported but unused and unlisted. Upstream has no licence file. LKH decision flagged for revisit. |
 | 2026-09-23 | Claude (Opus 5.5) + Zongzhe | §6.5 and §6.7: LKH kept for the WTRP (academic use), not committed to the repo, fetched at build time. The ILP solver half of 6.5 stays open (T6.1). |
 | 2026-09-21 | Claude (Opus 5) + Dion | Vendor paths updated after reorg step 3 (`aria/vendor/open_vins`, `nav/vendor/urdf`, `arm/vendor/rm_gazebo`). |
 | 2026-09-12 | Claude (Opus 5) + Dion | Added §5.6 (testing needs a simulator: upstream is a Habitat evaluation setup with no ROS, and what exists here for a robot simulation). New `[upstream]` tag. Updated the §2 limitation note, §6.7 register, §7.1 ROS question and §7.2 steps 2–3. |
