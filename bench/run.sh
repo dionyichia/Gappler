@@ -3,6 +3,7 @@
 # run it, and a level that cannot run is reported as SKIPPED, never as a pass.
 #
 #   L0  Static checks    code parses, imports and launch names resolve   any machine
+#       + memory graph unit tests (stdlib only)
 #   L1  Contracts        no topic, frame or param name moved             any machine
 #   L2  Lab box check    preflight: can this machine run L3-L4?          any machine
 #   L3  Build            colcon build, arm and nav workspaces            needs ROS 2 Humble
@@ -59,6 +60,11 @@ step() {
 
 s=$(step "L0  Static checks" python3 bench/static.py)
 row L0 "Static checks" "$s" ""
+
+# The memory graph's stdlib-only tests (T6.3a). Its stage tests need numpy and
+# scipy, so they are not run here yet: python3 -m unittest discover -s memory_graph/tests -t .
+s=$(step "L0  Unit tests: memory graph" python3 -m unittest memory_graph.tests.test_anchor_object_graph)
+row L0 "Unit tests: memory graph" "$s" ""
 
 # The extractor self-test first: a broken extractor would make every check below pass.
 s=$(step "L1  Contracts" sh -c "python3 bench/test_contracts.py && python3 bench/contracts.py check")

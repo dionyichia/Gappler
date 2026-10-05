@@ -19,7 +19,7 @@ multicover into ordinary set cover and gives up the property the step existed to
 test and linked from `PROJECT_PLAN.md` at M6, T6.1 and S3. Read that one to decide anything.
 Read this one for how the findings were reached and what was not verified.
 
-A replacement is in [`prototypes/anchor_object_graph.py`](prototypes/anchor_object_graph.py), about
+A replacement is in [`memory_graph/anchor_object_graph.py`](../../memory_graph/anchor_object_graph.py), about
 230 lines of stdlib Python, with 16 passing checks. It stores each edge once, makes eviction and
 merge atomic, gives edges somewhere to carry a payload, and can verify its own consistency.
 
@@ -155,6 +155,11 @@ the write sites above. Neither is confirmed against source.
   write sites above rewrites the anchor side, so anchors that saw the absorbed object may keep
   pointing at an object id that is gone.
 
+**2026-10-05:** the HiCo-Nav reference docs suggest neither path occurs in upstream as written:
+eviction strips the id from `observers` (S13, `map.py:420`), and S11 only merges new sightings that
+no anchor refers to yet. Still `[unverified]` against source. Details in
+[`../MEMORY_GRAPH_DESIGN.md`](../MEMORY_GRAPH_DESIGN.md) §3.
+
 `[inferred]` The reason this is worth caring about rather than shrugging at is that the stale value
 is an integer, and a stale integer does not announce itself. A dead object reference raises or gets
 collected. A dead id is indistinguishable from a live one until someone dereferences it, and some
@@ -170,7 +175,7 @@ exist to satisfy it. That is not a slightly wrong answer, it is an infeasible pr
 feeds `TargetManager.compute_similarity_sum`.
 
 This failure class is demonstrated in
-[`prototypes/test_anchor_object_graph.py`](prototypes/test_anchor_object_graph.py), class
+[`memory_graph/tests/test_anchor_object_graph.py`](../../memory_graph/tests/test_anchor_object_graph.py), class
 `TwoSetFailureModes`, which writes out the two-set arrangement and shows all three consequences.
 That file demonstrates what the arrangement permits. It is not a copy of upstream code and proves
 nothing about upstream.
@@ -211,12 +216,12 @@ IoU the paper states.
 
 ## 5. The proposed structure
 
-[`prototypes/anchor_object_graph.py`](prototypes/anchor_object_graph.py). Stdlib only, so it runs at
-bench levels L0 to L2 with no ROS and no solver. Under `docs/`, so it is outside `OWNED_PREFIXES` in
-`bench/_common.py` and cannot affect the bench until someone deliberately moves it.
+[`memory_graph/anchor_object_graph.py`](../../memory_graph/anchor_object_graph.py). Stdlib only, so it runs at
+bench level L0 with no ROS and no solver. It lived in `docs/zongzhe_docs/prototypes/` until
+2026-10-05, when T6.3a moved it into the source tree and the bench.
 
 ```bash
-cd docs/zongzhe_docs/prototypes && python3 -m unittest -v test_anchor_object_graph
+python3 -m unittest -v memory_graph.tests.test_anchor_object_graph     # from the repo root
 ```
 
 16 checks, all passing as of 2026-09-21.
@@ -322,3 +327,5 @@ claims that want source confirmation first.
 |---|---|---|
 | 2026-09-21 | Claude (Opus 5) + Zongzhe | Created. Records the multicover notation, what redundancy 1 gives up, the two-set edge storage and its two inferred failure paths, the merge threshold deduction, and a prototype replacement structure with 16 passing checks. No existing code changed. |
 | 2026-09-21 | Claude (Opus 5) + Zongzhe | Section 5's design promoted to the global doc `../MEMORY_GRAPH_DESIGN.md`, specified against M6's acceptance test and registered in `PROJECT_PLAN.md`. This document stays as the evidence behind it. |
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | Prototype moved to `memory_graph/` (T6.3a). Links and the run command updated. |
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §3a: pointer to the counter-evidence from the HiCo-Nav reference docs. |

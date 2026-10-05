@@ -28,7 +28,7 @@ L5-L6 may always skip.
 
 | Level | Name | What it checks | Runs on | Was |
 |---|---|---|---|---|
-| L0 | Static checks | code parses, imports and launch file names resolve (`static.py`) | any machine | Tier 0-1 |
+| L0 | Static checks | code parses, imports and launch file names resolve (`static.py`). Also the memory graph's stdlib unit tests (`memory_graph/tests/test_anchor_object_graph.py`, since 2026-10-05) | any machine | Tier 0-1 |
 | L1 | Contracts | no topic, frame or parameter name moved since the snapshot (`contracts.py`) | any machine | Tier 0-1 |
 | L2 | Lab box check | preflight: can this machine run L3-L4? Does not look at the robot (`preflight.py`) | any machine | preflight |
 | L3 | Build | colcon build of the arm and nav code (`build.sh` at the repo root) | ROS 2 Humble | Tier 2 |

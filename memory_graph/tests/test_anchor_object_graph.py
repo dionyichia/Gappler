@@ -1,13 +1,13 @@
 """Checks for AnchorObjectGraph, plus a reproduction of the failure class
 the upstream two-set arrangement is open to.
 
-Stdlib unittest so this can run at bench level L0-L2 with no dependencies.
+Stdlib unittest so this runs at bench level L0 with no dependencies.
 """
 
 import unittest
 from collections import defaultdict
 
-from anchor_object_graph import AnchorObjectGraph, Sighting
+from memory_graph.anchor_object_graph import AnchorObjectGraph, Sighting
 
 
 # --------------------------------------------------------------------------
