@@ -35,6 +35,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import math
 import re
 import subprocess
 import sys
@@ -370,6 +371,27 @@ def extract_launch(path: Path, src: str, out: dict) -> None:
             # static_transform_publisher encodes the TF tree in its argv
             if exe == "static_transform_publisher":
                 args = kw.get("arguments")
+                if (isinstance(args, ast.Call) and isinstance(args.func, ast.Name)
+                        and args.func.id == "static_transform_args" and len(args.args) == 1):
+                    mount_name = literal_str(args.args[0])
+                    source = (REPO / "shared/global_config.yaml").read_text()
+                    match = re.search(r"^\s+" + re.escape(mount_name or "") + r":\s*(\{[^\n]+\})\s*$", source, re.M)
+                    if match:
+                        try:
+                            mount = json.loads(match.group(1))
+                            xyz = [float(v) for v in mount["xyz_m"]]
+                            rpy = [float(v) for v in mount["rpy_rad"]]
+                            parent, child = mount["parent"], mount["child"]
+                            if len(xyz) != 3 or len(rpy) != 3 or not all(math.isfinite(v) for v in xyz + rpy):
+                                raise ValueError("expected finite xyz/rpy triples")
+                            if not isinstance(parent, str) or not isinstance(child, str) or not parent or not child or parent == child:
+                                raise ValueError("expected distinct nonempty parent/child frames")
+                            values = [str(v) for v in xyz + list(reversed(rpy))] + [parent, child]
+                            args = ast.List(elts=[ast.Constant(value=v) for v in values])
+                        except (ValueError, KeyError, TypeError) as error:
+                            out["parse_errors"].append(f"{loc}: invalid shared mount {mount_name}: {error}")
+                    else:
+                        out["parse_errors"].append(f"{loc}: unresolved shared mount {mount_name}")
                 if isinstance(args, (ast.List, ast.Tuple)):
                     vals = [v for v in (literal_str(e) for e in args.elts) if v is not None]
                     nums = [v for v in vals if re.fullmatch(r"-?[\d.]+", v)]

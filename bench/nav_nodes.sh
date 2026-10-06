@@ -15,6 +15,7 @@ DOMAIN="${BENCH_DOMAIN:-77}"
 
 [ -f /opt/ros/humble/setup.bash ] || { echo "SKIP: no ROS 2 Humble here"; exit 3; }
 export ROS_DOMAIN_ID="$DOMAIN" ROS_LOCALHOST_ONLY=1 PYTHONUNBUFFERED=1
+export PYTHONPATH="$REPO/shared${PYTHONPATH:+:$PYTHONPATH}"
 set +u; source /opt/ros/humble/setup.bash; set -u
 cd "$REPO"; mkdir -p log
 export BENCH_NAV_LOG="log/bench_nav_nodes_$(date +%F_%H%M).txt"

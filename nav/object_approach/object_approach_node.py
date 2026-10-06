@@ -37,6 +37,7 @@ Manual testing (bypass SAM3):
     '{header: {frame_id: "base_link"}, pose: {position: {x: 0.5, y: 0.0, z: 0.5}, orientation: {w: 1.0}}}'
 """
 import math
+from gappler_common import config
 
 import rclpy
 from geometry_msgs.msg import PointStamped, PoseStamped
@@ -48,9 +49,10 @@ from tf2_geometry_msgs import do_transform_pose_stamped
 from tf2_ros import Buffer, TransformListener
 from visualization_msgs.msg import Marker
 
-# Forward offset of the camera/LiDAR from robot_base_link — used only for
-# computing the Nav2 approach goal (how far in front of the robot to stop).
-CAMERA_X_OFFSET = 0.18  # metres
+# Legacy approach reference, not the measured D455 screw or sensor position.
+# Preserve stopping behavior until its physical meaning is agreed with Dion.
+CAMERA_X_OFFSET = float(config()["geometry"]["legacy_approach_reference_x_m"])
+ARM_MOUNT_HEIGHT = float(config()["geometry"]["arm_mount"]["xyz_m"][2])
 # Target clearance: camera must be within this distance of the object
 APPROACH_DISTANCE = 0.6  # metres
 
@@ -140,7 +142,7 @@ class ObjectApproachNode(Node):
             return
         x = t.transform.translation.x
         y = t.transform.translation.y
-        z = t.transform.translation.z + 0.48  # arm height above base
+        z = t.transform.translation.z + ARM_MOUNT_HEIGHT
         self._publish_marker(x, y, z)
 
     def _on_goal_reached(self, msg: String) -> None:

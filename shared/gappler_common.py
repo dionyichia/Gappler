@@ -10,6 +10,7 @@ breaks a path (NEXT_STEPS 2.15). shared/base_envs/ros_humble_and_helper.sh, sour
 """
 
 import os
+import math
 from functools import lru_cache
 from pathlib import Path
 
@@ -47,6 +48,19 @@ def camera_serial(name: str) -> str:
             f"pass {name.upper()}_SERIAL in the environment"
         )
     return str(serial)
+
+
+def static_transform_args(name: str) -> list[str]:
+    """Fixed mount as TF publisher xyz/yaw/pitch/roll/parent/child arguments."""
+    mount = config()["geometry"][name]
+    xyz = [float(value) for value in mount["xyz_m"]]
+    rpy = [float(value) for value in mount["rpy_rad"]]
+    if len(xyz) != 3 or len(rpy) != 3 or not all(math.isfinite(v) for v in xyz + rpy):
+        raise ValueError(f"invalid finite xyz/rpy triple for mount {name}")
+    parent, child = mount["parent"], mount["child"]
+    if not isinstance(parent, str) or not isinstance(child, str) or not parent or not child or parent == child:
+        raise ValueError(f"invalid parent/child frames for mount {name}")
+    return [str(value) for value in xyz + list(reversed(rpy))] + [parent, child]
 
 
 if __name__ == "__main__":  # self-check: python3 shared/gappler_common.py

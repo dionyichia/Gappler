@@ -20,6 +20,13 @@ python3 bench/contracts.py snapshot   # re-baseline after a deliberate change
 
 Python 3.8+, stdlib only. Nothing to install.
 
+Shared-geometry wiring checks are stdlib-only. The separate runtime geometry
+checks use the existing PyYAML dependency of `gappler_common`; without it they
+report SKIPPED (and `--no-skips` fails). Run individually with
+`python3 bench/test_geometry.py --wiring` or `--runtime`. Mounts in
+`shared/global_config.yaml` use JSON flow mappings so the stdlib contract scanner
+can inspect the same source without importing ROS or executing launch code.
+
 ### Levels (renamed 2026-09-19)
 
 `run.sh` runs these in order. A level that this machine cannot run is reported as SKIPPED, never

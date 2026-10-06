@@ -21,6 +21,7 @@ Manual testing:
 """
 
 import math
+from gappler_common import config
 
 import rclpy
 from geometry_msgs.msg import PoseStamped
@@ -32,7 +33,8 @@ from std_msgs.msg import Bool, Empty, String
 
 SIDE_OFFSET_M = 0.6  # metres to the left of the user (outbound leg)
 RETURN_CLEARANCE = 0.5  # metres — front of robot to user (return leg)
-CAMERA_X_OFFSET = 0.18  # metres — front of robot from base_link centre
+# Legacy front reference, independent of camera geometry; not a measured edge.
+CAMERA_X_OFFSET = float(config()["geometry"]["legacy_return_front_x_m"])
 
 
 class GotoGlasses(Node):

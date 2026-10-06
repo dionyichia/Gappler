@@ -66,6 +66,11 @@ row L0 "Static checks" "$s" ""
 s=$(step "L0  Unit tests: memory graph" python3 -m unittest memory_graph.tests.test_anchor_object_graph)
 row L0 "Unit tests: memory graph" "$s" ""
 
+s=$(step "L0  Geometry wiring" python3 bench/test_geometry.py --wiring)
+row L0 "Geometry wiring" "$s" ""
+s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
+row L0 "Geometry runtime" "$s" "requires existing PyYAML"
+
 # The extractor self-test first: a broken extractor would make every check below pass.
 s=$(step "L1  Contracts" sh -c "python3 bench/test_contracts.py && python3 bench/contracts.py check")
 row L1 "Contracts" "$s" ""
