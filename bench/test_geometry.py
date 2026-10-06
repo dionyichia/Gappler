@@ -3,7 +3,10 @@ import ast
 import importlib.util
 import math
 import sys
+import shutil
+import subprocess
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from unittest.mock import patch
 
@@ -15,6 +18,16 @@ if HAS_YAML:
 
 
 class GeometryWiring(unittest.TestCase):
+    def test_camera_launch_is_camera_only_and_serial_selected(self):
+        path = ROOT / 'nav/robot_slam/launch/base_camera.launch.py'
+        self.assertTrue(path.exists(), 'camera-only mount/driver launch is missing')
+        source = path.read_text()
+        self.assertIn('camera_serial("mobile_base_camera")', source)
+        self.assertIn('"publish_tf": "true"', source)
+        self.assertIn('"robot_state_publisher"', source)
+        self.assertNotIn('rm_driver', source)
+        self.assertNotIn('bringup_basic_ctrl', source)
+
     def test_launch_mounts_use_shared_arguments(self):
         for name in ('slam_mapping.launch.py', 'slam_localization.launch.py'):
             tree = ast.parse((ROOT / 'nav/robot_slam/launch' / name).read_text())
@@ -69,8 +82,36 @@ class GeometryRuntime(unittest.TestCase):
                     gappler_common.static_transform_args('bad')
 
 
+@unittest.skipUnless(HAS_YAML and shutil.which('xacro'), 'installed ROS/xacro required for camera-model checks')
+class CameraModel(unittest.TestCase):
+    def test_intel_owns_body_offset_and_driver_owns_sensors(self):
+        mount = gappler_common.config()['geometry']['d455_bottom_screw']
+        output = subprocess.check_output([
+            'xacro', str(ROOT / 'nav/robot_slam/urdf/base_d455.urdf.xacro'),
+            'parent:=' + mount['parent'], 'name:=base_d455',
+            'xyz:=' + ' '.join(map(str, mount['xyz_m'])),
+            'rpy:=' + ' '.join(map(str, mount['rpy_rad'])),
+        ], text=True)
+        model = ET.fromstring(output)
+        self.assertEqual({link.attrib['name'] for link in model.findall('link')},
+                         {'robot_base_link', 'base_d455_bottom_screw_frame', 'base_d455_link'})
+        joints = {joint.find('child').attrib['link']: joint for joint in model.findall('joint')}
+        self.assertEqual(len(joints), 2, 'nominal sensor TFs must not duplicate driver extrinsics')
+        xyz = lambda joint: list(map(float, joint.find('origin').attrib['xyz'].split()))
+        self.assertEqual(xyz(joints['base_d455_bottom_screw_frame']), mount['xyz_m'])
+        for actual, expected in zip(xyz(joints['base_d455_link']), [0.01115, 0.0475, 0.0145]):
+            self.assertAlmostEqual(actual, expected, places=8)
+        self.assertEqual(gappler_common.camera_serial('mobile_base_camera'), '146222253541')
+
+
 if __name__ == '__main__':
-    if '--runtime' in sys.argv:
+    if '--camera-model' in sys.argv:
+        sys.argv.remove('--camera-model')
+        if not HAS_YAML or not shutil.which('xacro'):
+            print('SKIP: camera model checks require installed PyYAML and ROS/xacro')
+            sys.exit(3)
+        suite = unittest.defaultTestLoader.loadTestsFromTestCase(CameraModel)
+    elif '--runtime' in sys.argv:
         sys.argv.remove('--runtime')
         if not HAS_YAML:
             print('SKIP: runtime geometry tests require existing PyYAML (lab/ROS environment)')

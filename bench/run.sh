@@ -70,6 +70,8 @@ s=$(step "L0  Geometry wiring" python3 bench/test_geometry.py --wiring)
 row L0 "Geometry wiring" "$s" ""
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
+s=$(step "L0  D455 model" python3 bench/test_geometry.py --camera-model)
+row L0 "D455 model" "$s" "requires installed ROS/xacro camera description"
 
 # The extractor self-test first: a broken extractor would make every check below pass.
 s=$(step "L1  Contracts" sh -c "python3 bench/test_contracts.py && python3 bench/contracts.py check")

@@ -26,6 +26,9 @@ report SKIPPED (and `--no-skips` fails). Run individually with
 `python3 bench/test_geometry.py --wiring` or `--runtime`. Mounts in
 `shared/global_config.yaml` use JSON flow mappings so the stdlib contract scanner
 can inspect the same source without importing ROS or executing launch code.
+`python3 bench/test_geometry.py --camera-model` expands the installed Intel D455
+model and checks mount offsets/no nominal sensor joints; it needs ROS/xacro and
+PyYAML, otherwise reports SKIPPED. It opens no camera and launches no hardware.
 
 ### Levels (renamed 2026-09-19)
 

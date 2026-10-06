@@ -70,12 +70,7 @@ if __name__ == "__main__":  # self-check: python3 shared/gappler_common.py
     os.environ["WRIST_CAMERA_SERIAL"] = "999"
     assert camera_serial("wrist_camera") == "999"
     del os.environ["WRIST_CAMERA_SERIAL"]
-    # The base camera has no serial yet, so it must refuse rather than open any camera.
-    try:
-        camera_serial("mobile_base_camera")
-        raise AssertionError("expected a refusal for an unset serial")
-    except ValueError:
-        pass
+    assert camera_serial("mobile_base_camera") == "146222253541"
     assert path("openvins_ws") == Path(config()["paths"]["openvins_ws"]).expanduser()
     os.environ["GAPPLER_OPENVINS_WS"] = str(Path.home())
     assert path("openvins_ws") == Path.home()

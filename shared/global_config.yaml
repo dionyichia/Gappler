@@ -34,8 +34,7 @@
     wrist_camera:
       serial: "243222074878"   # D435i on the arm's wrist, Link6. Confirmed at the robot, T1.4
     mobile_base_camera:
-      serial: ""               # D455, forward facing on the base. Mounted. Read its serial off
-                               # the box and fill this in: rs-enumerate-devices -s (T1.13)
+      serial: "146222253541"   # D455, driver discovery + Sherman confirmation 2026-10-06
 
     # Fixed mounts: metres/radians relative to named parent frames.
     # rpy is roll/pitch/yaw; the helper converts to the legacy TF CLI order.
@@ -45,7 +44,7 @@
       arm_mount: {"parent": "robot_base_link", "child": "base_link", "xyz_m": [0.18, 0.0, 0.48], "rpy_rad": [0.0, 0.0, 3.14159]}
       # Retained launch geometry, not newly measured.
       lidar_mount: {"parent": "robot_base_link", "child": "livox_frame", "xyz_m": [0.18, 0.0, 0.2], "rpy_rad": [0.0, 0.0, 0.0]}
-      # Screw frame is reserved, not published yet. As-fitted 2026-10-06;
+      # Screw frame is published only by the opt-in base-camera launch. As-fitted 2026-10-06;
       # zero angles estimated by eye, uncertainty unknown.
       d455_bottom_screw: {"parent": "robot_base_link", "child": "base_d455_bottom_screw_frame", "xyz_m": [0.208, 0.0, 0.528], "rpy_rad": [0.0, 0.0, 0.0]}
       # Independent legacy references preserve behavior pending Dion's decision.
