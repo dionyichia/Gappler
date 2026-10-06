@@ -38,6 +38,7 @@ evidence into the shared documents.
 | [`T1.2_SAFETY_FIXES.md`](T1.2_SAFETY_FIXES.md) | B1 launcher wording + I1 double-launch deletion evidence | When reviewing M1 pre-power safety |
 | [`T1.3_HOME_POSE.md`](T1.3_HOME_POSE.md) | Final T1.3 sim verdicts; original row retained; replacement pose still owed | When reviewing the arm home pose |
 | [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md) | T1.4 physical visit and no-motion power-on verdict; cell and motion checks remain downstream | Before the attended T1.6 session |
+| [`T3.4_BASE_BRINGUP.md`](T3.4_BASE_BRINGUP.md) | Partial base bring-up: live LiDAR, chassis feedback, isolated limiter evidence and outstanding driving/stop checks | Before resuming T3.4 or planning T3.5 |
 | [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md) | Reported D455 mount design and remaining fabrication evidence | Before fabricating the camera mount |
 
 The shared, unvalidated T1.5 procedure is in [`../ARM_BRINGUP.md`](../ARM_BRINGUP.md). This
@@ -80,3 +81,4 @@ From [`../START_HERE.md`](../START_HERE.md) and the root `CLAUDE.md`:
 | 2026-09-23 | OpenCode + Sherman | Linked the draft T1.5 no-motion arm bring-up procedure; T1.5 and T1.6 remain open. |
 | 2026-09-23 | OpenCode + Sherman | Pointed at the shared draft in ../ARM_BRINGUP.md; no personal procedure copy remains. |
 | 2026-09-23 | OpenCode + Sherman | Updated the T1.4 pointer after its visit verdict was merged into dev (PR #22). |
+| 2026-10-06 | OpenCode + Sherman | Indexed T3.4 partial bring-up evidence; keyboard driving and physical stopping remain unproven. |

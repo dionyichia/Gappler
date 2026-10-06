@@ -1,0 +1,86 @@
+T3.4 session evidence excerpts, 2026-10-06
+Not a full bench run, bag, complete transcript, or hardware acceptance PASS.
+Record: docs/sherman_docs/T3.4_BASE_BRINGUP.md
+Hardware checkout: f1f1a476fdd9e4b8433cc38a286a010ef1b821d7
+Hardware ROS domain: 91, ROS_LOCALHOST_ONLY=1.
+Isolated limiter domain: 127, private /t34_probe/* topics, no hardware driver.
+
+1. LiDAR initialization and rate (Sherman supplied terminal output)
+[INFO] [1791279807.892621944] [livox_lidar_publisher]: Livox Ros Driver2 Version: 1.2.4
+[INFO] [1791279807.893603339] [livox_lidar_publisher]: Init lds lidar success!
+successfully change work mode, handle: 50440384
+[INFO] [1791279810.894575558] [livox_lidar_publisher]: livox/lidar publish use PointCloud2 format
+average rate: 9.998
+average rate: 10.009
+average rate: 9.991
+average rate: 10.002
+
+2. Base initialization (saved xnode_vehicle log, inspected read-only)
+[INFO] [1791280180.628553752] [xnode_vehicle]: Vehicle enable
+[INFO] [1791280180.628598875] [xnode_vehicle]: Device type = ECHO_PLUS
+[INFO] [1791280180.628608339] [xnode_vehicle]: ### Vehicle init finish ###
+[INFO] [1791280181.128791828] [xnode_vehicle]: cal_mode = odom ||| model = Differential
+[INFO] [1791280181.128846463] [xnode_vehicle]: track_width = 0.272m ||| wheel_base = 0.000m
+[INFO] [1791280181.128855734] [xnode_vehicle]: ### Odom init finish ###
+[INFO] [1791280181.128863394] [xnode_vehicle]: =========== VEHICLE READY TO GO ===========
+ANSI color escapes and padding removed from the saved-log lines above; values unchanged.
+
+3. Odometry rate (Sherman supplied terminal output)
+average rate: 49.984
+average rate: 50.004
+average rate: 49.952
+average rate: 50.009
+
+4. /cmd_vel inspection before teleop (OpenCode read-only snapshot)
+Type: geometry_msgs/msg/Twist
+Publisher count: 0
+Subscription count: 1
+Node name: xnode_vehicle
+
+5. Isolated software limiter probe (OpenCode execution output)
+PASS direction=+1: limits 0.05 m/s, 0.15 rad/s; zero after 0.500s
+PASS direction=-1: limits 0.05 m/s, 0.15 rad/s; zero after 0.500s
+PASS: private-topic limiter and stale-input stop; physical braking NOT tested
+Probe not integrated into repository bench; these are historical exploratory results.
+
+6. Communications-only raw frames (Sherman supplied terminal output)
+Hub heartbeat:
+id_c: 7
+id_t: 1
+id_n: 1
+id_f: 176
+len: 1
+data: [1, 0, 0, 0, 0, 0, 0, 0]
+time: {sec: 1791281523, nanosec: 875915584}
+
+Chassis system state:
+id_c: 1
+id_t: 3
+id_n: 1
+id_f: 177
+len: 8
+data: [0, 2, 205, 0, 0, 1, 0, 0]
+time: {sec: 1791281532, nanosec: 555918252}
+
+Chassis safety state:
+id_c: 1
+id_t: 3
+id_n: 1
+id_f: 186
+len: 8
+data: [0, 0, 0, 1, 0, 0, 0, 0]
+time: {sec: 1791281539, nanosec: 756062798}
+Arrays/time fields compacted from multiline output; values unchanged.
+Decoder: nav/vendor/drivers/xpkg_vehicle/src/FUNC/vehicle_func.cpp:343-351,417-425.
+Voltage = signed little-endian data[2:4] / 10 = 20.5 V.
+System mode data[1] = 2 (CAN); remote-loss data[5] = 1.
+Safety data[3] = 1: low-battery bit set, emergency-stop bit 0x08 clear.
+Flag meanings: nav/vendor/drivers/xpkg_vehicle/README.md:42-61.
+
+7. Handoff inspection (OpenCode, 21:01 local time)
+Communications-only xnode_comm still running.
+No xnode_vehicle, teleop, Livox driver, rm_driver or estop process observed.
+Chassis power/charging/custody not independently confirmed.
+
+Not proven: keyboard driving, physical stopping, odometry accuracy, navigation,
+charging completion, or a fresh-build reproduction of this hardware checkout.
