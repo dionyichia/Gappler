@@ -68,6 +68,8 @@ row L0 "Unit tests: memory graph" "$s" ""
 
 s=$(step "L0  Geometry wiring" python3 bench/test_geometry.py --wiring)
 row L0 "Geometry wiring" "$s" ""
+s=$(step "L0  Camera navigation geometry" python3 bench/test_camera_navigation.py)
+row L0 "Camera navigation geometry" "$s" ""
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
 s=$(step "L0  D455 model" python3 bench/test_geometry.py --camera-model)

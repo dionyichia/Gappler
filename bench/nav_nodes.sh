@@ -29,6 +29,6 @@ busy="$(timeout 15 ros2 topic list --no-daemon --include-hidden-topics 2>/dev/nu
 [ -z "$busy" ] || refuse "ROS channel $DOMAIN is not empty: $(echo $busy | head -c 200)"
 echo "guards ok: channel $DOMAIN empty (hidden topics included), localhost only"
 
-timeout 600 python3 "$REPO/bench/nodes/test_nav_nodes.py"; rc=$?
+timeout 600 python3 "$REPO/bench/nodes/test_nav_nodes.py" "$@"; rc=$?
 echo "node output: $BENCH_NAV_LOG"
 exit $rc

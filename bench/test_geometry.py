@@ -38,8 +38,10 @@ class GeometryWiring(unittest.TestCase):
     def test_navigation_references_are_distinct(self):
         approach = (ROOT / 'nav/object_approach/object_approach_node.py').read_text()
         returning = (ROOT / 'nav/goto_glasses/goto_glasses.py').read_text()
-        self.assertIn('["legacy_approach_reference_x_m"]', approach)
-        self.assertIn('["legacy_return_front_x_m"]', returning)
+        self.assertIn('camera_reference_frame()', approach)
+        self.assertIn('camera_reference_frame()', returning)
+        self.assertNotIn('legacy_approach_reference_x_m', approach)
+        self.assertNotIn('legacy_return_front_x_m', returning)
         self.assertNotIn('CAMERA_X_OFFSET = 0.18', approach + returning)
         self.assertNotIn('t.transform.translation.z + 0.48', approach)
 
@@ -52,8 +54,7 @@ class GeometryRuntime(unittest.TestCase):
         self.assertEqual(gappler_common.static_transform_args('lidar_mount'),
                          ['0.18', '0.0', '0.2', '0.0', '0.0', '0.0', 'robot_base_link', 'livox_frame'])
         geometry = gappler_common.config()['geometry']
-        self.assertEqual(geometry['legacy_approach_reference_x_m'], 0.18)
-        self.assertEqual(geometry['legacy_return_front_x_m'], 0.18)
+        self.assertEqual(gappler_common.camera_reference_frame(), 'base_d455_depth_optical_frame')
         self.assertEqual(geometry['d455_bottom_screw']['xyz_m'], [0.208, 0.0, 0.528])
 
     def test_changed_config_reaches_arguments_and_rpy_order(self):

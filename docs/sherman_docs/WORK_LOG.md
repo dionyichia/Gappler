@@ -183,6 +183,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: opt-in camera-only source launch integrated and verified in private domain 176, no arm/base driver or stopping-behavior change. Our camera-only browser preview remains running. Installed-package deployment/full-system operation/calibration not proven; no build performed.
 - Decision reported by Sherman: 180 mm refers to camera, not robot front. Which camera/frame and whether both navigation legs use it remain to be confirmed; fitted D455 screw/depth x are 208/219.15 mm. T5.4 stays PROGRESS. Task-tree artifact republish owed.
 
+## [2026-10-06] T5.4 | Both navigation legs reference D455 depth origin
+
+- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md), `shared/nav_geometry.py`, `bench/test_camera_navigation.py`, mock-nav log `bench_nav_nodes_2026-10-06_1642.txt` on the box.
+- Decision: Sherman explicitly selected the new base D455 for both approach and return. Distances are planar: 0.6/0.5 m, using actual TF sensor origin rather than old 180 mm or screw position. Separate arm/LiDAR geometry unchanged.
+- Verified: four new camera-reference mock cases failed old code; after implementation full mock-nav nine controls PASS/four existing XFAIL. Pure geometry/arrival-gate tests PASS; arrival map-TF loss regression failed before its guard fix. Box eight geometry/model tests and initial three pure geometry tests PASS. Missing camera TF produces no goal/start and return can retry when TF appears.
+- Outcome: legacy reference scalars removed. Camera launch must run on navigation's domain; private preview does not provide production TF. Full L0–L5 lab testing requested and pending, with real-arm-unreachable simulation guard intact; no real motion automated. Task remains PROGRESS until verification is reconciled.
+
 ## Record Template
 
 ```markdown

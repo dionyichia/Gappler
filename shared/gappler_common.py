@@ -63,6 +63,15 @@ def static_transform_args(name: str) -> list[str]:
     return [str(value) for value in xyz + list(reversed(rpy))] + [parent, child]
 
 
+def camera_reference_frame() -> str:
+    """Navigation's D455 depth origin, named consistently with its mount/driver."""
+    child = config()["geometry"]["d455_bottom_screw"]["child"]
+    suffix = "_bottom_screw_frame"
+    if not isinstance(child, str) or not child.endswith(suffix) or child == suffix:
+        raise ValueError("D455 screw frame requires a nonempty camera prefix")
+    return child[:-len(suffix)] + "_depth_optical_frame"
+
+
 if __name__ == "__main__":  # self-check: python3 shared/gappler_common.py
     assert (ROOT / "global_env.sh").exists(), ROOT
     assert config()["topics"]["imu"] == "/aria/imu"

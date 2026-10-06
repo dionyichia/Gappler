@@ -11,7 +11,7 @@ OUTBOUND (verbal command → robot goes to user):
 
 RETURN (manipulation done → robot returns to user):
   Triggered by /manipulator/return_to_user (Bool, true) from the manipulation team.
-  Robot navigates to face the user with front of robot 0.5 m from user.
+   Robot navigates to face the user with the D455 depth origin 0.5 m horizontally from user.
   Publishes result to /return_to_user/goal_reached ("success"/"failed").
 
 Manual testing:
@@ -21,25 +21,29 @@ Manual testing:
 """
 
 import math
-from gappler_common import config
+from gappler_common import camera_reference_frame
+from nav_geometry import camera_goal_xy
 
 import rclpy
 from geometry_msgs.msg import PoseStamped
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
 from rclpy.node import Node
+from rclpy.time import Time
 from scipy.spatial.transform import Rotation
 from std_msgs.msg import Bool, Empty, String
+from tf2_ros import Buffer, TransformException, TransformListener
 
 SIDE_OFFSET_M = 0.6  # metres to the left of the user (outbound leg)
-RETURN_CLEARANCE = 0.5  # metres — front of robot to user (return leg)
-# Legacy front reference, independent of camera geometry; not a measured edge.
-CAMERA_X_OFFSET = float(config()["geometry"]["legacy_return_front_x_m"])
+RETURN_CLEARANCE = 0.5  # metres, horizontal D455 depth-origin to user
+CAMERA_FRAME = camera_reference_frame()
 
 
 class GotoGlasses(Node):
     def __init__(self):
         super().__init__("goto_glasses")
+        self._tf_buffer = Buffer()
+        self._tf_listener = TransformListener(self._tf_buffer, self)
         self._glasses_pose: PoseStamped | None = None
         self._saved_user_pose: PoseStamped | None = None  # snapshotted at trigger time
         self._navigating: bool = False  # outbound nav in progress
@@ -127,8 +131,12 @@ class GotoGlasses(Node):
             self.get_logger().warn("Return ignored — no saved user pose available.")
             return
 
+        try:
+            goal_pose = self._compute_return_goal(self._saved_user_pose)
+        except (TransformException, ValueError) as e:
+            self.get_logger().warn(f"Camera return geometry unavailable; refusing return: {e}")
+            return
         self._returning = True
-        goal_pose = self._compute_return_goal(self._saved_user_pose)
         self.get_logger().info(
             f"Manipulation done. Returning to user. Goal: "
             f"x={goal_pose.pose.position.x:.2f} y={goal_pose.pose.position.y:.2f}"
@@ -187,30 +195,34 @@ class GotoGlasses(Node):
 
     def _compute_return_goal(self, glasses_pose: PoseStamped) -> PoseStamped:
         """
-        Return goal: robot stops in front of the user with the robot's front
-        face exactly RETURN_CLEARANCE (0.5 m) from the user, facing the user.
+        Stop with the D455 depth origin RETURN_CLEARANCE horizontally from the
+        user, facing toward them. Both forward and lateral TF offsets matter.
 
         The stop point is placed in the direction the user is facing so the
         robot ends up facing them. Nav2 plans whatever path avoids obstacles.
 
-          stop_x = ux + cos(yaw) * (RETURN_CLEARANCE + CAMERA_X_OFFSET)
-          stop_y = uy + sin(yaw) * (RETURN_CLEARANCE + CAMERA_X_OFFSET)
           robot_yaw = user_yaw + π  (facing back at the user)
         """
         q = glasses_pose.pose.orientation
         yaw = Rotation.from_quat([q.x, q.y, q.z, q.w]).as_euler("xyz")[2]
 
-        dist = RETURN_CLEARANCE + CAMERA_X_OFFSET  # centre of robot to user
+        offset = self._tf_buffer.lookup_transform(
+            "robot_base_link", CAMERA_FRAME, Time()
+        ).transform.translation
+        facing = yaw + math.pi
+        goal_x, goal_y = camera_goal_xy(
+            glasses_pose.pose.position.x, glasses_pose.pose.position.y,
+            facing, offset.x, offset.y, RETURN_CLEARANCE,
+        )
 
         goal = PoseStamped()
         goal.header.frame_id = "map"
         goal.header.stamp = self.get_clock().now().to_msg()
-        goal.pose.position.x = glasses_pose.pose.position.x + math.cos(yaw) * dist
-        goal.pose.position.y = glasses_pose.pose.position.y + math.sin(yaw) * dist
+        goal.pose.position.x = goal_x
+        goal.pose.position.y = goal_y
         goal.pose.position.z = 0.0
 
         # Robot faces opposite to the user's yaw (i.e. looks at the user)
-        facing = yaw + math.pi
         rq = Rotation.from_euler("z", facing).as_quat()
         goal.pose.orientation.x = float(rq[0])
         goal.pose.orientation.y = float(rq[1])
