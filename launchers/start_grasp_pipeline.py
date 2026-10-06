@@ -6,7 +6,7 @@ start-grasp message arrives. By hand, after `source global_env.sh`:
 Launches in order:
   1. ROS2 bringup (rm_driver, robot_state_publisher, move_group, rm_control)
   2. [TEMPORARY] Dummy mask publisher — replace with SAM node when ready
-  3. AnyGrasp node (conda env)
+  3. AnyGrasp node — commented out for bring-up, see the note at its call site (T1.17)
   4. Grasp visualizer
   5. Grasp state machine
 
@@ -20,7 +20,7 @@ import subprocess
 import sys
 import time
 
-from gappler_common import ROOT
+from gappler_common import ROOT, camera_serial
 
 # ---------------------------------------------------------------------------
 # Paths, from the repo root that gappler_common finds (NEXT_STEPS 2.15)
@@ -90,6 +90,8 @@ if __name__ == "__main__":
             "launch",
             "realsense2_camera",
             "rs_launch.py",
+            # The leading _ makes the launch file read the serial as text, not a number.
+            f"serial_no:='_{camera_serial('wrist_camera')}'",
             "align_depth.enable:=true",
             "pointcloud.enable:=true",
         ],
@@ -118,22 +120,29 @@ if __name__ == "__main__":
         },
     )
 
-    # 3. AnyGrasp node — runs in conda env
-    launch(
-        [
-            "conda",
-            "run",
-            "-n",
-            ANYGRASP_CONDA_ENV,
-            "python",
-            ANYGRASP_NODE_PATH,
-            "--checkpoint_path",
-            ANYGRASP_CHECKPOINT,
-        ],
-        label="anygrasp_detection_node",
-        delay=2.0,
-        cwd=ANYGRASP_DIR,
-    )
+    # 3. AnyGrasp node — OFF for bring-up (T1.17), commented out 2026-09-23.
+    #
+    # Nothing reads what it publishes while USE_SIMPLE_EXECUTE is true
+    # (grasp_state_machine.cpp:41, CHANNEL_CONTRACT B-1): the state machine grasps from
+    # /object_centroid_2d and ignores /grasp_candidates. Starting it anyway loads the model,
+    # takes the GPU and adds a startup failure mode for output nobody uses.
+    #
+    # Put it back in T1.17, when the flag is flipped, together with the T1.8 gate fixes.
+    # launch(
+    #     [
+    #         "conda",
+    #         "run",
+    #         "-n",
+    #         ANYGRASP_CONDA_ENV,
+    #         "python",
+    #         ANYGRASP_NODE_PATH,
+    #         "--checkpoint_path",
+    #         ANYGRASP_CHECKPOINT,
+    #     ],
+    #     label="anygrasp_detection_node",
+    #     delay=2.0,
+    #     cwd=ANYGRASP_DIR,
+    # )
 
     # 4. Grasp visualizer — runs in normal ROS2 env
     launch(["python3", GRASP_VIZ_NODE_PATH], label="grasp_viz", delay=2.0)

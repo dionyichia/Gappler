@@ -78,7 +78,7 @@ These cross a subsystem boundary. They are the contract.
 | H7 | `/pipeline_state` | `String`: `IDLE`, `SELECTING`, `EXECUTING` | Bot, `grasp_state_machine.cpp:156` | Grasp, `anygrasp_detection_node.py:65`, `anygrasp_node.py:55`, `grasp_viz.py:61` | Dion | works. The gate that reads it is inverted, see G-4 in §6 |
 | H8 | `/camera/camera/color/image_raw`, `/camera/camera/aligned_depth_to_color/image_raw`, `/camera/camera/color/camera_info` | `Image`, `Image`, `CameraInfo`. `BEST_EFFORT` | Wrist RealSense driver | Grasp, 5 nodes. Bot, `grasp_state_machine.cpp:138` | Dion | the wrist D435i is faulty. Replacement decided, T-3 in §6 |
 | H9 | `/manipulation/done` | `Empty` | **nobody** | Nav, `object_approach_node.py:83` | Dion | broken. The approach node stays latched without it (F1, observed) |
-| H10 | `/manipulator/release` | `Bool` | **nobody** | Nav, `object_approach_node.py:86`. Bot, `orchestrator.py:65` | Dion | broken. Aria will publish it, see A-1 in §6 |
+| H10 | `/manipulator/release` | `Bool` | **nobody** | Nav, `object_approach_node.py:86`. Bot, `orchestrator.py:65` | Dion | broken. Aria will publish it in `T1.15`, see A-1 in §6 |
 | H11 | `/aria/eye_tracking/gaze_estimate` | `Point` | Aria, `image_streaming_pipeline.py:153` | Grasp, the recognition pipeline | Dion | switched off. M2 and M8 need it, `T2.2` |
 | H12 | `/aria/rgb_camera/undistorted` | `CompressedImage`, `BEST_EFFORT` | Aria, `image_streaming_pipeline.py:85` | Nav, `aria_image_relay.py:27`, which decompresses to `/aria/rgb_camera/view` for viewing | Dion | switched off. The relay is kept, see A-4 in §6 |
 
@@ -139,6 +139,8 @@ All of these were decided by Dion. Each names where the detail lives.
 - **A-1. Aria publishes `/manipulator/release`** when the spoken word is "release". With the return
   leg out of scope, the order is: the grasp finishes, the state machine publishes
   `/manipulation/done`, then release is accepted. Closes `CODE_AUDIT` open question 4.
+  **Owned by `T1.15` since 2026-09-23.** Before that no task built it, so H10 stayed broken with
+  subscribers only.
 - **A-2. The return leg is out of scope.** H13 to H16 have no owner. Pose fusion is parked rather
   than dropped, because a later gaze-in-3D method would want the glasses transform. This settles
   `CODE_AUDIT` open question 6: `/aria/fused_pose`'s frame is not fixed now.
@@ -176,6 +178,11 @@ All of these were decided by Dion. Each names where the detail lives.
 
 - **B-1. `USE_SIMPLE_EXECUTE` stays `true` for bring-up.** Treated as deliberate, step by step.
   Answers `CODE_AUDIT` open question 1. It hides A1 and A2, so both are fixed before it is flipped.
+  **Consequence settled 2026-09-23:** while it is `true` a grasp uses the SAM3 centroid and never
+  calls AnyGrasp, so `T1.11` and `T1.12` no longer wait on `T1.8` or `T1.10`. Flipping the flag is
+  `T1.17`, after the first grasp works. The launcher still starts `anygrasp_detection_node`
+  (`launchers/start_grasp_pipeline.py:122`) although nothing reads its output, so bring-up runs
+  should skip it.
 - **B-2. Use the `realman_manip` home pose values**, the ones the safety document describes.
   ⚠️ **Do not trust either set.** Recalibrate and validate on the simulated arm before any powered
   run. Answers `CODE_AUDIT` open question 2.
@@ -188,8 +195,9 @@ All of these were decided by Dion. Each names where the detail lives.
 - **B-4. "Arrived" stops launching processes.** The arm stack is already running and the state
   machine subscribes to `/manipulation/start` as an arm and disarm gate. Closes `CODE_AUDIT` B6.
   The larger design is `NEXT_STEPS` §2.14.
-- **B-5. The state machine publishes `/manipulation/done`** at the end of each cycle, in `T1.8` or
-  `T1.9`. Closes H9 and the F1 latch.
+- **B-5. The state machine publishes `/manipulation/done`** at the end of each cycle. Closes H9 and
+  the F1 latch. **Owned by `T1.14` since 2026-09-23**, moved out of `T1.9` so it is not gated by the
+  AnyGrasp work.
 - **B-6. Today's names are frozen, target names recorded.** One rename pass later. §7.
 
 ### Nav
@@ -272,6 +280,7 @@ Channels that a topic list does not show. Each says whether it is assigned.
 | X9 | Visualisation and debug topics | No | whoever publishes them | `/debug/*`, the markers, `/object_marker`, `/object_map_pose`, `/aria/glasses_marker`, and the pickled mask topics. The pickled ones go when `T2.1` lands |
 | X10 | OpenVINS and `/aria/vio_pose` | No, out of scope | none | Launched from `src/main.py:309`, no publisher in this repo, only feeds pose fusion |
 | X11 | `/goto_glasses/trigger`, `/goto_glasses/cancel` | No, out of scope | none | Subscribed, never published. Return leg only |
+| X12 | Camera serial numbers | Yes, one key per camera | wrist: Dion. Base: Sherman | Added 2026-09-23 (`T1.13`). `wrist_camera.serial` and `mobile_base_camera.serial` in `shared/global_config.yaml`, read with `gappler_common.camera_serial()`. **One key per camera, named after the camera, not one `cameras:` block** (Dion, 2026-09-23): a reader should see which camera a value belongs to without tracing the mount. Every RealSense launch passes its serial, because two cameras are plugged in and a launch without one opens whichever the driver finds first. The base camera is mounted, so its serial is an open box check: `rs-enumerate-devices -s` |
 
 ### The TF tree, one owner per edge
 
@@ -326,3 +335,5 @@ Known problems inside subsystems, so they are not lost:
 | 2026-09-22 | Claude (Opus 5) + Dion | T-3: the wrist D435i survived the replug (T0.12), so no replacement is needed so far. Same camera update in `testbench-map.html` and the task tree's 14 September note. |
 | 2026-09-23 | Claude Opus 5.5 + Dion | B-2 superseded: HOME is `main`'s row, validated on the real arm in T1.7. It extends slightly outside the base, tucked pose is T1.18. |
 | 2026-09-26 | OpenCode + Sherman | T3.3 DONE: `slam_mapping.launch.py:117-122` publishes `robot_base_to_arm`, same arguments as localization. M1 and the TF edge table updated; full mapping-launch tree still untested, values duplicated until T5.4. |
+| 2026-09-23 | Claude Opus 5 + Dion | New X12: camera serial numbers, one key per camera (`wrist_camera.serial`, `mobile_base_camera.serial`), after T1.13 found that no shared config held the wrist serial. |
+| 2026-09-23 | Claude Opus 5 + Dion | B-1's ordering consequence settled: `T1.11` and `T1.12` no longer wait on `T1.8` or `T1.10`, and flipping the flag became `T1.17`. The two channels with subscribers but no publisher got owners: B-5 `/manipulation/done` is `T1.14` (moved out of `T1.9`), A-1 and H10 `/manipulator/release` is `T1.15`. |

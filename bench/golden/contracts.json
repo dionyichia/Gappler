@@ -12,7 +12,7 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:114"
     ],
     "~/Ros2Workspaces/OpenVINS": [
-      "shared/global_config.yaml:34"
+      "shared/global_config.yaml:42"
     ]
   },
   "divergent_constants": {
@@ -32,17 +32,6 @@
         "nav/vendor/drivers/xpkg_power/tools/hex-pkg-init.py:40",
         "nav/vendor/drivers/xpkg_vehicle/tools/hex-pkg-init.py:40",
         "nav/vendor/urdf/xpkg_urdf_echo_plus/tools/hex-pkg-init.py:41"
-      ]
-    },
-    "TOPIC_MASK": {
-      "\"/PLACEHOLDER/sam/mask\"": [
-        "grasp/tools/dummy_mask_publisher.py:19"
-      ],
-      "\"/camera/sam/mask\"": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:34",
-        "grasp/anygrasp_node/anygrasp_detection_node.py:42",
-        "grasp/anygrasp_node/anygrasp_node.py:35",
-        "grasp/segmentation/sam3_ros_node.py:31"
       ]
     }
   },
@@ -248,7 +237,8 @@
       "grasp/anygrasp_node/anygrasp_node.py:164",
       "grasp/grasp_state_machine/src/grasp_state_machine.cpp:243",
       "grasp/segmentation/sam3_ros_node.py:160",
-      "grasp/segmentation/sam3_ros_node.py:169"
+      "grasp/segmentation/sam3_ros_node.py:169",
+      "grasp/tools/dummy_mask_publisher.py:76"
     ],
     "camera_rgb": [
       "aria/aria_app/services/aria_device/stream/image_streaming_pipeline.py:60"
@@ -424,7 +414,7 @@
       "arm/vendor/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "75f398e-dirty",
+  "git": "c0cda6c-dirty",
   "launch_includes": [
     {
       "from": "arm/arm_bringup/launch/arm_bringup.launch.py",
@@ -1523,7 +1513,7 @@
       "nav/vendor/drivers/xpkg_power/src/ROS_INF/ros2_interface.cpp:121"
     ],
     "map_dir": [
-      "shared/global_config.yaml:35"
+      "shared/global_config.yaml:43"
     ],
     "map_frame": [
       "nav/robot_slam/config/slam_toolbox.yaml:11",
@@ -1702,7 +1692,7 @@
       "nav/robot_slam/config/nav2_params.yaml:200"
     ],
     "openvins_ws": [
-      "shared/global_config.yaml:34"
+      "shared/global_config.yaml:42"
     ],
     "origin_z": [
       "nav/robot_slam/config/nav2_params.yaml:89"
@@ -1871,6 +1861,9 @@
       "nav/robot_navigation/config/nav2_params.yaml:7",
       "nav/robot_slam/config/slam_toolbox.yaml:13",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:12"
+    ],
+    "serial": [
+      "shared/global_config.yaml:35"
     ],
     "show_loc": [
       "nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:124"
@@ -2164,19 +2157,6 @@
     }
   ],
   "topics": {
-    "/PLACEHOLDER/sam/mask": {
-      "n_publishers": 1,
-      "n_subscribers": 0,
-      "owned": true,
-      "publishers": [
-        "grasp/tools/dummy_mask_publisher.py:26"
-      ],
-      "subscribers": [],
-      "types": [
-        "sensor_msgs/Image"
-      ],
-      "yaml_refs": []
-    },
     "/aria/aruco_pose": {
       "n_publishers": 1,
       "n_subscribers": 1,
@@ -2460,7 +2440,7 @@
         "grasp/anygrasp_node/anygrasp_detection_node.py:87",
         "grasp/anygrasp_node/anygrasp_node.py:82",
         "grasp/segmentation/sam3_ros_node.py:73",
-        "grasp/tools/dummy_mask_publisher.py:28"
+        "grasp/tools/dummy_mask_publisher.py:45"
       ],
       "types": [
         "sensor_msgs/Image"
@@ -2501,12 +2481,13 @@
       "yaml_refs": []
     },
     "/camera/sam/mask": {
-      "n_publishers": 2,
+      "n_publishers": 3,
       "n_subscribers": 3,
       "owned": true,
       "publishers": [
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:189",
-        "grasp/segmentation/sam3_ros_node.py:65"
+        "grasp/segmentation/sam3_ros_node.py:65",
+        "grasp/tools/dummy_mask_publisher.py:42"
       ],
       "subscribers": [
         "grasp/anygrasp_node/anygrasp_detection_node.py:76",
@@ -2818,12 +2799,13 @@
       "yaml_refs": []
     },
     "/object_centroid_2d": {
-      "n_publishers": 2,
+      "n_publishers": 3,
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:192",
-        "grasp/segmentation/sam3_ros_node.py:66"
+        "grasp/segmentation/sam3_ros_node.py:66",
+        "grasp/tools/dummy_mask_publisher.py:43"
       ],
       "subscribers": [
         "grasp/grasp_state_machine/src/grasp_state_machine.cpp:146"

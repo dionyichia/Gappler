@@ -6,8 +6,9 @@
 #   ./grasp/tools/record_wrist_camera.sh [SECONDS]     default 10
 #
 # Env, all optional:
-#   WRIST_CAMERA_SERIAL  default 243222074878 (the wrist D435i). Pass it explicitly: with two
-#                        cameras plugged in, the driver otherwise opens whichever it finds first.
+#   WRIST_CAMERA_SERIAL  default wrist_camera.serial in shared/global_config.yaml (the wrist
+#                        D435i). Pass it explicitly: with two cameras plugged in, the driver
+#                        otherwise opens whichever it finds first.
 #   WRIST_CAMERA_BAG     default assets/recordings/wrist_camera (gitignored). Must not exist yet.
 #   ROS_DOMAIN_ID        default 79. Must be private and empty.
 # Never passes initial_reset:=true. On 2026-09-14 it took this camera off the USB bus.
@@ -15,11 +16,14 @@
 set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SECS="${1:-10}"
-SERIAL="${WRIST_CAMERA_SERIAL:-243222074878}"
+# One source of truth for the serial: shared/global_config.yaml (T1.13).
+SERIAL="$(PYTHONPATH="$REPO/shared" python3 -c \
+  'from gappler_common import camera_serial; print(camera_serial("wrist_camera"))')"
 BAG="${WRIST_CAMERA_BAG:-$REPO/assets/recordings/wrist_camera}"
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-79}" ROS_LOCALHOST_ONLY=1
 
 refuse() { echo "REFUSED: $*"; exit 1; }
+[ -n "$SERIAL" ] || refuse "no wrist camera serial. Set wrist_camera.serial in shared/global_config.yaml"
 [ -f /opt/ros/humble/setup.bash ] || refuse "no ROS 2 Humble here"
 set +u; source /opt/ros/humble/setup.bash; set -u
 [ "$ROS_DOMAIN_ID" != "0" ] || refuse "ROS_DOMAIN_ID 0 is the default channel the real robot uses"
