@@ -1,0 +1,71 @@
+# Grasp config. Values only the grasp subsystem reads (NEXT_STEPS 2.15).
+# Values another subsystem also reads (the wrist camera topics, the mask and centroid, the
+# gripper commands) live in shared/global_config.yaml. Each value is written once.
+#
+# How it is read:
+#   Python nodes:  gappler_common.config("grasp", "<node name>"), which adds global + "/**" below
+#                  + that node's section.
+#   grasp_state_machine (C++): grasp_state_machine.launch.py loads global_config.yaml, then this
+#                  file, as ROS parameters. A missing parameter stops the node at start-up.
+# Edit a value and restart the node. No rebuild: the launch file reads this file from the repo.
+#
+# Format: a ROS parameter file. "/**" holds values two or more grasp nodes read. Each other
+# top-level key is one node, by its ROS node name.
+/**:
+  ros__parameters:
+    # Topics only grasp publishes and reads. publisher -> subscribers.
+    topics:
+      # anygrasp_node, anygrasp_detection_node -> grasp_state_machine, grasp_viz
+      grasp_candidates: "/grasp_candidates"
+      # grasp_state_machine -> anygrasp_node, anygrasp_detection_node, grasp_viz
+      pipeline_state: "/pipeline_state"
+      # grasp_viz -> RViz (debug only, these four)
+      grasp_candidate_markers: "/grasp_candidate_markers"
+      debug_sam_mask: "/debug/sam_mask"
+      debug_centroid_marker: "/debug/centroid_marker"
+      debug_state_marker: "/debug/state_marker"
+    # How many grasp candidates AnyGrasp publishes per frame.
+    # read by: anygrasp_node, anygrasp_detection_node
+    num_grasp_candidates: 5
+
+# grasp/segmentation/sam3_ros_node.py
+sam3_ros_node:
+  ros__parameters:
+    text_prompt: "box"   # fixed object word until voice is wired in (T1.12)
+    confidence: 0.5      # SAM3 score below this is not a detection
+
+# grasp/anygrasp_node/anygrasp_detection_node.py
+anygrasp_detection_node:
+  ros__parameters:
+    # Workspace box in the camera frame, metres: [x_min, x_max, y_min, y_max, z_min, z_max].
+    # Wide on purpose: the SAM mask does the spatial filtering.
+    workspace_limits_m: [-1.0, 1.0, -1.0, 1.0, 0.0, 1.5]
+
+# grasp/grasp_viz/grasp_viz.py. Size of the gripper drawn in RViz, metres.
+grasp_visualizer:
+  ros__parameters:
+    palm_length_m: 0.04     # cylinder along the approach axis
+    palm_radius_m: 0.006
+    finger_length_m: 0.04   # finger bar length along the approach axis
+    finger_radius_m: 0.005
+    finger_offset_m: 0.01   # finger offset along the approach axis from the palm centre
+
+# grasp/grasp_state_machine/src/grasp_state_machine.cpp. These move the real arm: change them
+# only with a plan to test on the simulated arm first (./bench/state_machine_sim.sh).
+grasp_state_machine:
+  ros__parameters:
+    approach_step_m: 0.04            # step towards the object while approaching
+    approach_step_final_m: 0.10      # step in the final simple execute
+    max_approach_steps: 50
+    execute_depth_thresh_m: 0.18     # stop approaching when the object is this close
+    final_exec_thresh_m: 0.25
+    centroid_target_offset_x_px: 55.0   # where the object should sit in the image, from centre
+    centroid_target_offset_y_px: 0.0
+    min_approach_angle_deg: 20.0     # reject grasps steeper than this
+    max_orient_step_deg: 5.0         # slerp step size, used when use_slerp_execute is true
+    use_simple_execute: true         # grasp from the centroid, not AnyGrasp (CHANNEL_CONTRACT B-1, T1.17)
+    use_slerp_execute: false
+    # A grasp is stable when the last N candidates agree within these limits
+    stability_n_frames: 5
+    stability_trans_mm: 15.0
+    stability_rot_deg: 10.0

@@ -1,57 +1,116 @@
-# Settings more than one subsystem reads. Each value is written once (NEXT_STEPS 2.15).
-# This is a ROS parameter file, so a launch file can pass it to any node as is.
-# Python outside ROS reads it through shared/gappler_common.py.
+# Global config. Holds two kinds of value (NEXT_STEPS 2.15):
+#   1. Values two or more subsystems read, such as a topic aria publishes and nav subscribes to.
+#   2. This robot's hardware and this machine's paths (camera serials, mount geometry, folders),
+#      kept together so moving to another robot or machine means editing this one file.
+# A value only one subsystem reads goes in <subsystem>/<subsystem>_config.yaml instead.
+# Each value is written once. gappler_common.config() refuses a key set in two files.
+#
+# Every entry says who uses it. For topics: publisher -> subscribers.
+# Edit a value and restart the nodes that use it. No rebuild: config is read from the repo.
+#
+# How it is read:
+#   Python:  from gappler_common import config
+#            config()["topics"]["object_centroid_2d"]           global only
+#            config("nav", "goto_glasses")["side_offset_m"]     global + nav_config.yaml + that node
+#   C++ (grasp_state_machine): its launch file loads this file, then grasp/grasp_config.yaml,
+#            as ROS parameters, for example "topics.object_centroid_2d".
+#
+# Format: a ROS parameter file. "/**" means "every node".
 /**:
   ros__parameters:
-    # Some of these are only read inside aria. They move to aria/config in reorg step 4.
     topics:
-      rgb_camera_raw: "/aria/rgb_camera/raw"
+      # ---- Wrist camera (D435i on the arm). Published by the RealSense driver, started by
+      # ---- launchers/start_camera_arm_sam3_grasp.py and aria/aria_app/main.py.
+      # driver -> grasp: sam3_ros_node, anygrasp_node, anygrasp_detection_node. aria: object_recognition_pipeline
+      wrist_camera_color: "/camera/camera/color/image_raw"
+      # driver -> grasp: sam3_ros_node, anygrasp_node, anygrasp_detection_node, dummy_mask_publisher.
+      #           aria: object_recognition_pipeline
+      wrist_camera_aligned_depth: "/camera/camera/aligned_depth_to_color/image_raw"
+      # driver -> grasp: sam3_ros_node, anygrasp_node, anygrasp_detection_node, grasp_state_machine.
+      #           aria: object_recognition_pipeline
+      wrist_camera_info: "/camera/camera/color/camera_info"
+
+      # ---- What to grasp: segmentation output on the wrist camera image
+      # grasp: sam3_ros_node, dummy_mask_publisher. aria: object_recognition_pipeline
+      #   -> grasp: anygrasp_node, anygrasp_detection_node, grasp_viz
+      wrist_camera_object_mask: "/camera/sam/mask"
+      # grasp: sam3_ros_node, dummy_mask_publisher. aria: object_recognition_pipeline
+      #   -> grasp: grasp_state_machine (any message starts a grasp cycle)
+      object_centroid_2d: "/object_centroid_2d"
+      # grasp: sam3_ros_node. aria: object_recognition_pipeline -> grasp: grasp_viz
+      object_centroid_viz: "/object_centroid"
+
+      # ---- From the glasses (aria)
+      # aria: image_streaming_pipeline -> aria: feature_matching, object_recognition_pipeline,
+      #   visualizer. nav: aria_image_relay
       rgb_camera_undistorted: "/aria/rgb_camera/undistorted"
-      slam_left_raw: "/aria/slam_left/raw"
-      slam_right_raw: "/aria/slam_right/raw"
-      eye_tracking_raw: "/aria/eye_tracking/raw"
-      eye_tracking_gaze_estimate: "/aria/eye_tracking/gaze_estimate"
-      rgb_camera_with_object_masks: "/aria/rgb_camera/object_masks"
-      ros_camera_with_object_masks: "/realman/rgb_camera/object_masks"
-      combined_visualization: "/combined/object_masks"
-      feature_match_results: "/aria/rgb_camera/feature_match"
+      # aria: audio_streaming_pipeline -> aria: object_recognition_pipeline.
+      #   nav: object_approach_node, goto_glasses
       audio_transcription_prompt: "/aria/audio/prompt"
-      imu: "/aria/imu"
-      aruco_pose: "/aria/aruco_pose"
-      vio_pose: "/aria/vio_pose"
+      # aria: pose_fusion_node -> nav: goto_glasses
       fused_pose: "/aria/fused_pose"
-      is_stationary: "/aria/is_stationary"
 
-    qos:
-      video:
-        reliability: "BEST_EFFORT"
-        history: "KEEP_LAST"
-        depth: 10
+      # ---- Handovers between nav and grasp
+      # aria: object_recognition_pipeline -> nav: object_approach_node
+      manipulation_goal_pose: "/manipulation/goal_pose"
+      # nav: object_approach_node -> launchers/grasp_orchestrator.py (starts the grasp pipeline)
+      manipulation_start: "/manipulation/start"
+      # nobody yet (grasp, T1.14) -> nav: object_approach_node
+      manipulation_done: "/manipulation/done"
+      # nobody yet (T1.15) -> nav: object_approach_node, launchers/grasp_orchestrator.py
+      manipulator_release: "/manipulator/release"
+      # grasp: grasp_state_machine -> nav: goto_glasses
+      manipulator_return_to_user: "/manipulator/return_to_user"
+      # nav: pose_publisher -> aria: pose_fusion_node
+      robot_pose: "/robot_pose"
 
-    # Camera serial numbers. Two RealSense cameras are plugged into the box, so every launch
-    # names the one it wants (T1.13). Without a serial the driver opens whichever it finds
-    # first. Override per machine with WRIST_CAMERA_SERIAL and MOBILE_BASE_CAMERA_SERIAL.
+      # ---- Arm driver commands. RealMan's rm_driver (arm/vendor) sets these names, not us.
+      # grasp: grasp_state_machine, launchers/grasp_orchestrator.py -> arm: rm_driver
+      rm_driver_set_gripper_position_cmd: "/rm_driver/set_gripper_position_cmd"
+      # grasp: grasp_state_machine -> arm: rm_driver
+      rm_driver_set_gripper_pick_on_cmd: "/rm_driver/set_gripper_pick_on_cmd"
+
+    # ---- Cameras. Two RealSense cameras are plugged into the box, so every launch names the one
+    # ---- it wants by serial (T1.13). Without a serial the driver opens whichever it finds first.
+    # ---- Read through gappler_common.camera_serial(). Override per machine with
+    # ---- WRIST_CAMERA_SERIAL and MOBILE_BASE_CAMERA_SERIAL.
     wrist_camera:
+      # read by: launchers/start_camera_arm_sam3_grasp.py, aria/aria_app/main.py,
+      #          grasp/tools/record_wrist_camera.sh
       serial: "243222074878"   # D435i on the arm's wrist, Link6. Confirmed at the robot, T1.4
+      # Metres per depth unit in the aligned depth image (the driver publishes millimetres).
+      # read by: grasp: sam3_ros_node, anygrasp_node, anygrasp_detection_node, dummy_mask_publisher.
+      #          aria: object_recognition_pipeline
+      depth_scale_m: 0.001
     mobile_base_camera:
+      # read by: nav/robot_slam/launch/base_camera.launch.py
       serial: "146222253541"   # D455, driver discovery + Sherman confirmation 2026-10-06
 
-    # Fixed mounts: metres/radians relative to named parent frames.
-    # rpy is roll/pitch/yaw; the helper converts to the legacy TF CLI order.
+    # ---- Fixed mounts: metres/radians relative to named parent frames.
+    # ---- rpy is roll/pitch/yaw. gappler_common.static_transform_args() converts to the TF CLI order.
     geometry:
       # JSON flow mappings are valid YAML and keep the stdlib contract scanner
       # able to resolve these entries without importing ROS or PyYAML.
+      # read by: nav: slam_mapping.launch.py, slam_localization.launch.py (static TF),
+      #          object_approach_node (mount height)
       arm_mount: {"parent": "robot_base_link", "child": "base_link", "xyz_m": [0.18, 0.0, 0.48], "rpy_rad": [0.0, 0.0, 3.14159]}
       # Retained launch geometry, not newly measured.
+      # read by: nav: slam_mapping.launch.py, slam_localization.launch.py (static TF)
       lidar_mount: {"parent": "robot_base_link", "child": "livox_frame", "xyz_m": [0.18, 0.0, 0.2], "rpy_rad": [0.0, 0.0, 0.0]}
-      # Screw frame is published only by the opt-in base-camera launch. As-fitted 2026-10-06;
+      # Screw frame is published only by the opt-in base-camera launch. As-fitted 2026-10-06,
       # zero angles estimated by eye, uncertainty unknown.
+      # read by: nav: base_camera.launch.py (static TF), object_approach_node and goto_glasses
+      #          (camera frame name, through gappler_common.camera_reference_frame())
       d455_bottom_screw: {"parent": "robot_base_link", "child": "base_d455_bottom_screw_frame", "xyz_m": [0.208, 0.0, 0.528], "rpy_rad": [0.0, 0.0, 0.0]}
       # Both approach and return clearances reference the D455 depth origin,
       # looked up from TF. No independent camera-offset scalar is maintained.
 
-    # Paths outside the repo. Each can be overridden per machine with GAPPLER_<NAME>,
-    # for example GAPPLER_MAP_DIR for map_dir. A relative path is from the repo root.
+    # ---- Paths outside the repo. Read through gappler_common.path(). Each can be overridden per
+    # ---- machine with GAPPLER_<NAME>, for example GAPPLER_MAP_DIR for map_dir.
+    # ---- A relative path is from the repo root.
     paths:
-      openvins_ws: "~/Ros2Workspaces/OpenVINS"   # an OpenVINS build outside this repo
-      map_dir: "~/maps"                          # saved SLAM maps (nav): current_map, completed_map
+      # read by: aria/aria_app/main.py. An OpenVINS build outside this repo
+      openvins_ws: "~/Ros2Workspaces/OpenVINS"
+      # read by: nav: slam_mapping.launch.py (writes current_map), slam_localization.launch.py
+      #          (reads completed_map)
+      map_dir: "~/maps"

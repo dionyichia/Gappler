@@ -122,8 +122,8 @@ if __name__ == "__main__":
 
     # 3. AnyGrasp node — OFF for bring-up (T1.17), commented out 2026-09-23.
     #
-    # Nothing reads what it publishes while USE_SIMPLE_EXECUTE is true
-    # (grasp_state_machine.cpp:41, CHANNEL_CONTRACT B-1): the state machine grasps from
+    # Nothing reads what it publishes while use_simple_execute is true
+    # (grasp/grasp_config.yaml, CHANNEL_CONTRACT B-1): the state machine grasps from
     # /object_centroid_2d and ignores /grasp_candidates. Starting it anyway loads the model,
     # takes the GPU and adds a startup failure mode for output nobody uses.
     #

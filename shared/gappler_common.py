@@ -1,12 +1,16 @@
-"""The one place that knows where the repo is and reads shared/global_config.yaml.
+"""The one place that knows where the repo is and reads the config files.
 
 Import this instead of working out paths from __file__, so moving a file never
 breaks a path (NEXT_STEPS 2.15). shared/base_envs/ros_humble_and_helper.sh, sourced by every
 <subsystem>_env.sh and so by global_env.sh, puts shared/ on PYTHONPATH.
 
+Config has two levels: shared/global_config.yaml, and one <subsystem>/<subsystem>_config.yaml
+per subsystem with a section per node. config() merges them, global first.
+
     from gappler_common import ROOT, config, path
-    config()["topics"]["imu"]      -> "/aria/imu"
-    path("openvins_ws")            -> the OpenVINS folder, ~ expanded
+    config()["topics"]["object_centroid_2d"]           -> "/object_centroid_2d" (global only)
+    config("grasp", "sam3_ros_node")["confidence"]     -> global + grasp + that node's section
+    path("openvins_ws")                                -> the OpenVINS folder, ~ expanded
 """
 
 import os
@@ -21,11 +25,36 @@ ROOT = Path(__file__).resolve().parent.parent
 GLOBAL_YAML = ROOT / "shared" / "global_config.yaml"
 
 
+def _section(yaml_path: Path, section: str = "/**") -> dict:
+    """One section of a ROS parameter file, without the ros__parameters wrapper."""
+    with open(yaml_path) as f:
+        return ((yaml.safe_load(f) or {}).get(section) or {}).get("ros__parameters") or {}
+
+
+def _merge(into: dict, new: dict, where: str) -> None:
+    """Add new's keys to into. A key set in two places is refused: each value lives in one file."""
+    for key, value in new.items():
+        if isinstance(value, dict) and isinstance(into.get(key), dict):
+            _merge(into[key], value, where)
+        elif key in into:
+            raise ValueError(f"config key {key!r} is set twice, again in {where}. "
+                             "Each value lives in one file (NEXT_STEPS 2.15)")
+        else:
+            into[key] = value
+
+
 @lru_cache(maxsize=None)
-def config() -> dict:
-    """The values in global_config.yaml, without the ROS parameter-file wrapper."""
-    with open(GLOBAL_YAML) as f:
-        return yaml.safe_load(f)["/**"]["ros__parameters"]
+def config(subsystem: str | None = None, node: str | None = None) -> dict:
+    """Global values, plus one subsystem's shared values and one node's section when named.
+    The same merge a launch file does when it loads global, then the subsystem file.
+    Treat the result as read-only: it is cached."""
+    merged = _section(GLOBAL_YAML)
+    if subsystem:
+        sub_yaml = ROOT / subsystem / f"{subsystem}_config.yaml"
+        _merge(merged, _section(sub_yaml), str(sub_yaml.relative_to(ROOT)))
+        if node:
+            _merge(merged, _section(sub_yaml, node), f"{sub_yaml.relative_to(ROOT)} {node}:")
+    return merged
 
 
 def path(name: str) -> Path:
@@ -74,7 +103,18 @@ def camera_reference_frame() -> str:
 
 if __name__ == "__main__":  # self-check: python3 shared/gappler_common.py
     assert (ROOT / "global_env.sh").exists(), ROOT
-    assert config()["topics"]["imu"] == "/aria/imu"
+    assert config()["topics"]["object_centroid_2d"] == "/object_centroid_2d"
+    assert "imu" not in config()["topics"]  # aria-only, so not in global
+    assert config("aria")["topics"]["imu"] == "/aria/imu"
+    assert config("grasp", "sam3_ros_node")["confidence"] == 0.5
+    assert "confidence" not in config("grasp")  # node sections only when the node is named
+    for sub in ("aria", "arm", "grasp", "nav"):  # every file loads, no key set twice
+        config(sub)
+    try:
+        _merge({"a": {"b": 1}}, {"a": {"b": 2}}, "test")
+        raise AssertionError("a duplicate key was accepted")
+    except ValueError:
+        pass
     assert camera_serial("wrist_camera") == "243222074878"
     os.environ["WRIST_CAMERA_SERIAL"] = "999"
     assert camera_serial("wrist_camera") == "999"

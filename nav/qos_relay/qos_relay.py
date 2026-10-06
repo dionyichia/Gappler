@@ -17,6 +17,10 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import PointCloud2
+from gappler_common import config
+
+# nav/nav_config.yaml
+TOPICS = config("nav")["topics"]
 
 RELIABLE_QOS = QoSProfile(
     reliability=ReliabilityPolicy.RELIABLE,
@@ -35,12 +39,12 @@ BEST_EFFORT_QOS = QoSProfile(
 class QoSRelay(Node):
     def __init__(self) -> None:
         super().__init__("qos_relay")
-        self._pub = self.create_publisher(PointCloud2, "/cloud_relay", BEST_EFFORT_QOS)
+        self._pub = self.create_publisher(PointCloud2, TOPICS["cloud_relay"], BEST_EFFORT_QOS)
         self.create_subscription(
-            PointCloud2, "/livox/lidar", self._relay, RELIABLE_QOS
+            PointCloud2, TOPICS["livox_lidar"], self._relay, RELIABLE_QOS
         )
         self.get_logger().info(
-            "QoS relay: /livox/lidar (RELIABLE) → /cloud_relay (BEST_EFFORT)"
+            f"QoS relay: {TOPICS['livox_lidar']} (RELIABLE) → {TOPICS['cloud_relay']} (BEST_EFFORT)"
         )
 
     def _relay(self, msg: PointCloud2) -> None:

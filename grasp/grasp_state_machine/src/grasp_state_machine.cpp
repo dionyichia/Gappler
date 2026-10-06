@@ -6,6 +6,7 @@
 #include <queue>
 #include <thread>
 #include <cmath>
+#include <stdexcept>
 
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/msg/collision_object.hpp>
@@ -26,25 +27,9 @@
 #include <grasp_interfaces/msg/grasp_candidate_array.hpp>
 #include "grasp_state_machine/mtc_planner.hpp"
 
-// ===========================================================================
-// Tuning constants
-// ===========================================================================
-static constexpr double APPROACH_STEP_M = 0.04;
-static constexpr double APPROACH_STEP_FINAL = 0.10;
-static constexpr int MAX_APPROACH_STEPS = 50;
-static constexpr double EXECUTE_DEPTH_THRESH_M = 0.18;
-static constexpr double FINAL_EXEC_THRESH_M = 0.25;
-static constexpr double CENTROID_TARGET_OFFSET_X = 55.0;
-static constexpr double CENTROID_TARGET_OFFSET_Y = 0.0;
-static constexpr double MIN_APPROACH_ANGLE_DEG = 20.0;
-static constexpr double MAX_ORIENT_STEP_DEG = 5.0;
-static constexpr bool USE_SIMPLE_EXECUTE = true;
-static constexpr bool USE_SLERP_EXECUTE = false;
-
-// Stability criterion
-static constexpr int STABILITY_N_FRAMES = 5;
-static constexpr double STABILITY_TRANS_MM = 15.0;
-static constexpr double STABILITY_ROT_DEG = 10.0;
+// Tuning values and topic names come from grasp/grasp_config.yaml (section grasp_state_machine)
+// and shared/global_config.yaml, loaded as ROS parameters by grasp_state_machine.launch.py.
+// See the members under "Tuning values" below.
 
 // ===========================================================================
 // State definitions
@@ -135,31 +120,60 @@ private:
         state_(State::IDLE),
         shutdown_(false)
   {
+    APPROACH_STEP_M = param("approach_step_m").as_double();
+    APPROACH_STEP_FINAL = param("approach_step_final_m").as_double();
+    MAX_APPROACH_STEPS = static_cast<int>(param("max_approach_steps").as_int());
+    EXECUTE_DEPTH_THRESH_M = param("execute_depth_thresh_m").as_double();
+    FINAL_EXEC_THRESH_M = param("final_exec_thresh_m").as_double();
+    CENTROID_TARGET_OFFSET_X = param("centroid_target_offset_x_px").as_double();
+    CENTROID_TARGET_OFFSET_Y = param("centroid_target_offset_y_px").as_double();
+    MIN_APPROACH_ANGLE_DEG = param("min_approach_angle_deg").as_double();
+    MAX_ORIENT_STEP_DEG = param("max_orient_step_deg").as_double();
+    USE_SIMPLE_EXECUTE = param("use_simple_execute").as_bool();
+    USE_SLERP_EXECUTE = param("use_slerp_execute").as_bool();
+    STABILITY_N_FRAMES = static_cast<int>(param("stability_n_frames").as_int());
+    STABILITY_TRANS_MM = param("stability_trans_mm").as_double();
+    STABILITY_ROT_DEG = param("stability_rot_deg").as_double();
+
     camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
-        "/camera/camera/color/camera_info", 1,
+        topic("wrist_camera_info"), 1,
         std::bind(&GraspStateMachine::cameraInfoCallback, this, std::placeholders::_1));
 
     grasp_sub_ = this->create_subscription<grasp_interfaces::msg::GraspCandidateArray>(
-        "/grasp_candidates", 10,
+        topic("grasp_candidates"), 10,
         std::bind(&GraspStateMachine::graspCallback, this, std::placeholders::_1));
 
     centroid_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
-        "/object_centroid_2d", 10,
+        topic("object_centroid_2d"), 10,
         std::bind(&GraspStateMachine::centroidCallback, this, std::placeholders::_1));
 
     gripper_position_pub_ = this->create_publisher<rm_ros_interfaces::msg::Gripperset>(
-        "/rm_driver/set_gripper_position_cmd", 10);
+        topic("rm_driver_set_gripper_position_cmd"), 10);
 
     gripper_pick_on_pub_ = this->create_publisher<rm_ros_interfaces::msg::Gripperpick>(
-        "/rm_driver/set_gripper_pick_on_cmd", 10);
+        topic("rm_driver_set_gripper_pick_on_cmd"), 10);
 
     pipeline_state_pub_ = this->create_publisher<std_msgs::msg::String>(
-        "/pipeline_state", 10);
+        topic("pipeline_state"), 10);
 
-    return_to_user_pub_ = this->create_publisher<std_msgs::msg::Bool>("/manipulator/return_to_user", 10);
+    return_to_user_pub_ = this->create_publisher<std_msgs::msg::Bool>(topic("manipulator_return_to_user"), 10);
 
     RCLCPP_INFO(this->get_logger(), "Grasp state machine constructed");
   }
+
+  // A parameter from the config files. There is no fallback value: a missing one stops the node
+  // at start-up rather than letting the arm run on a guessed value.
+  rclcpp::Parameter param(const std::string &name)
+  {
+    if (!this->has_parameter(name))
+      throw std::runtime_error("missing parameter '" + name + "'. Start the node with "
+                               "grasp_state_machine.launch.py, which loads shared/global_config.yaml "
+                               "and grasp/grasp_config.yaml");
+    return this->get_parameter(name);
+  }
+
+  // A topic name from the config files: key "x" is parameter "topics.x".
+  std::string topic(const std::string &key) { return param("topics." + key).as_string(); }
 
   // =========================================================================
   // Callbacks
@@ -788,6 +802,24 @@ private:
   // Flags
   bool debug_flag_ = false;
   bool grasped_ = false;
+
+  // Tuning values, set once in the constructor from grasp/grasp_config.yaml before the worker
+  // thread starts. Names kept from when these were constants.
+  double APPROACH_STEP_M;
+  double APPROACH_STEP_FINAL;
+  int MAX_APPROACH_STEPS;
+  double EXECUTE_DEPTH_THRESH_M;
+  double FINAL_EXEC_THRESH_M;
+  double CENTROID_TARGET_OFFSET_X;
+  double CENTROID_TARGET_OFFSET_Y;
+  double MIN_APPROACH_ANGLE_DEG;
+  double MAX_ORIENT_STEP_DEG;
+  bool USE_SIMPLE_EXECUTE;
+  bool USE_SLERP_EXECUTE;
+  // Stability criterion
+  int STABILITY_N_FRAMES;
+  double STABILITY_TRANS_MM;
+  double STABILITY_ROT_DEG;
 };
 
 // ===========================================================================

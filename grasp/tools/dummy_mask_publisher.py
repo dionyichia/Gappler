@@ -26,12 +26,15 @@ import rclpy
 from geometry_msgs.msg import PointStamped
 from rclpy.node import Node
 from sensor_msgs.msg import Image
+from gappler_common import config
 
-# The real channels, published by sam3_ros_node.py:31-33 when perception is running.
-TOPIC_DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
-TOPIC_MASK = "/camera/sam/mask"
-TOPIC_CENTROID_2D = "/object_centroid_2d"
-DEPTH_SCALE = 0.001  # metres per depth unit, same as sam3_ros_node.py:36
+# The real channels, the same ones sam3_ros_node.py publishes when perception is running.
+# From shared/global_config.yaml.
+CFG = config("grasp")
+TOPIC_DEPTH = CFG["topics"]["wrist_camera_aligned_depth"]
+TOPIC_MASK = CFG["topics"]["wrist_camera_object_mask"]
+TOPIC_CENTROID_2D = CFG["topics"]["object_centroid_2d"]
+DEPTH_SCALE = CFG["wrist_camera"]["depth_scale_m"]  # metres per depth unit
 CENTROID_FRAME = "camera_color_optical_frame"
 
 

@@ -725,6 +725,12 @@ Aria-side publishers are under-counted, not over-counted.
 
 ### K1. 38 of 54 owned channel names are declared outside `shared/config.yaml` `[code]`
 
+> **Resolved 2026-10-06 (T0.14) `[code]`.** All 53 owned channels are now in a config file: 50 in
+> `shared/global_config.yaml` or a `<subsystem>/<subsystem>_config.yaml`, 3 (`/scan`, `/odom`,
+> `/livox/lidar_2d`) in the Nav2 and SLAM parameter files. Nodes read them through
+> `gappler_common.config()`, the C++ state machine as ROS parameters. The bench's extractor sees the
+> same publishers and subscribers as before. Kept below as the 2026-09-13 record.
+
 | | Topics |
 |---|---|
 | Declared by code we own | 54 |
@@ -911,4 +917,4 @@ publishers racing on the same three topics.
 | 2026-09-22 | Claude (Opus 5) + Dion | **A1 now `[observed]`** on real wrist-camera frames by the new L4 replay (T0.12). |
 | 2026-09-23 | Claude Opus 5.5 + Dion | B4: real-arm result from T1.7 added. Open question 2 answer superseded by T1.3 and T1.7. |
 | 2026-09-26 | OpenCode + Sherman | E4: T3.3 DONE — `slam_mapping.launch.py` now carries `robot_base_to_arm`. Shared 0.18 still duplicated; single-sourcing stays with T5.4. |
-
+| 2026-10-06 | Claude (Opus 5.5) + Dion | K1 resolved by T0.14: every owned channel name is in a config file. Note added at the top of K1, record kept. |

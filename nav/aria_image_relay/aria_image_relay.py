@@ -12,6 +12,10 @@ from cv_bridge import CvBridge
 from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import CompressedImage, Image
+from gappler_common import config
+
+# shared/global_config.yaml and nav/nav_config.yaml
+TOPICS = config("nav")["topics"]
 
 BEST_EFFORT_QOS = QoSProfile(
     reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -26,11 +30,11 @@ class AriaImageRelay(Node):
         self._bridge = CvBridge()
         self.create_subscription(
             CompressedImage,
-            "/aria/rgb_camera/undistorted",
+            TOPICS["rgb_camera_undistorted"],
             self._on_image,
             BEST_EFFORT_QOS,
         )
-        self._pub = self.create_publisher(Image, "/aria/rgb_camera/view", 10)
+        self._pub = self.create_publisher(Image, TOPICS["aria_rgb_camera_view"], 10)
         self.get_logger().info("AriaImageRelay started.")
 
     def _on_image(self, msg: CompressedImage) -> None:
