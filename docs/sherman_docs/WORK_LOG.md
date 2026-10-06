@@ -228,6 +228,14 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Residuals: installed box overlay unchanged; no build/live LiDAR/scan/navigation acceptance or whole box suite claimed. Prior separate-checkout weight preflight gaps unchanged. Map route and save/load alignment still open; T3.4 physical stop/driving acceptance still open.
 - Handoff: original checkout/untracked logs, Ethernet addresses and user-started communications node preserved. T3.5 PROGRESS; no PR/merge. Hosted task-tree Artifact republish owed.
 
+## [2026-10-07] T3.5 | Synthetic point-cloud conversion
+
+- Evidence: [`T3.5_CLOUD_SCAN.md`](T3.5_CLOUD_SCAN.md), [reviewed 12-case box output](../bench-runs/2026-10-07-sherman-t3.5-cloud-scan.txt), five matching source hashes.
+- Changed: maintained domain-127 synthetic bench and L0 fixture/source-contract tests; no production node/configuration change. Actual source parameters/routes used, including relay paths for SLAM and direct cloud input for AMCL.
+- Verified: all 12 box cases received 10/10 distinct scans; known geometry/nearest beam, height/range limits, invalid/empty clouds, frame/timestamps and full relay metadata/payload checked. Input/output reliability and durability observed; history/depth declared/use-checked because DDS introspection reports UNKNOWN/0. Final domain empty. Five stdlib tests and available Mac quick levels passed; explicit skips retained.
+- Review: timeout cleanup grace, source routing/returned actions, full QoS contract, duplicate-frame rejection and full metadata checks strengthened. Follow-up found no remaining blockers. Interim unavailable depth/history assertion failure recorded, not hidden or fixed by altering production QoS.
+- Residuals: no full box suite/build/load test, live LiDAR/physical TF, obstacle safety or map/localization acceptance. Existing preflight weight gaps unchanged. Original lab checkout/overlay and user-started communications node preserved. T3.5 PROGRESS; no PR or merge.
+
 ## Record Template
 
 ```markdown

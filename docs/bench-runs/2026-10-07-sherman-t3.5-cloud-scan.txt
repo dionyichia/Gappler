@@ -1,0 +1,55 @@
+T3.5 synthetic cloud-to-scan verification, 2026-10-07
+Candidate: 2871152 + maintained bench changes on t3.5-launch-prep.
+ros-humble-pointcloud-to-laserscan: 2.0.1-3jammy.20260219.030022
+Fixed ROS_DOMAIN_ID=127, ROS_LOCALHOST_ONLY=1; /t35_scan/* data topics.
+No sensor, base, arm, SLAM or Nav2 controller launched.
+Final runner: bash bench/cloud_scan.sh; exit 0.
+
+guards ok: domain 127 empty, localhost only
+guards ok: domain 127 empty, localhost only
+PASS slam_mapping: relay input/output reliability+durability; declared history/depth checked
+PASS slam_mapping/known_geometry: 10/10 scans; 4 occupied bins; relay route (/cloud_relay → /scan)
+PASS slam_mapping/bounds: 10/10 scans; 4 occupied bins; relay route (/cloud_relay → /scan)
+PASS slam_mapping/invalid_only: 10/10 scans; 0 occupied bins; relay route (/cloud_relay → /scan)
+PASS slam_mapping/empty: 10/10 scans; 0 occupied bins; relay route (/cloud_relay → /scan)
+PASS slam_localization: relay input/output reliability+durability; declared history/depth checked
+PASS slam_localization/known_geometry: 10/10 scans; 4 occupied bins; relay route (/cloud_relay → /scan)
+PASS slam_localization/bounds: 10/10 scans; 4 occupied bins; relay route (/cloud_relay → /scan)
+PASS slam_localization/invalid_only: 10/10 scans; 0 occupied bins; relay route (/cloud_relay → /scan)
+PASS slam_localization/empty: 10/10 scans; 0 occupied bins; relay route (/cloud_relay → /scan)
+PASS navigation: relay input/output reliability+durability; declared history/depth checked
+PASS navigation/known_geometry: 10/10 scans; 4 occupied bins; direct route (/livox/lidar → /livox/lidar_2d)
+PASS navigation/bounds: 10/10 scans; 4 occupied bins; direct route (/livox/lidar → /livox/lidar_2d)
+PASS navigation/invalid_only: 10/10 scans; 0 occupied bins; direct route (/livox/lidar → /livox/lidar_2d)
+PASS navigation/empty: 10/10 scans; 0 occupied bins; direct route (/livox/lidar → /livox/lidar_2d)
+guards ok: domain 127 empty, localhost only
+PASS: synthetic geometry/filtering only; live LiDAR, TF alignment and obstacle safety NOT proven
+
+Counts require distinct input timestamps and reject duplicate output frames.
+Relayed messages equal their entire timestamped input, including payload/metadata.
+Actual source routes and returned converter/relay actions are checked.
+DDS graph introspection reports history UNKNOWN/depth0 on this installation.
+An interim strict depth/history assertion failed; no production QoS was changed.
+Final checks use runtime reliability/durability, source declaration/constructor
+use for KEEP_LAST/depth10, and reject wrong reported values where available.
+No runtime depth/history guarantee is claimed.
+
+Five stdlib tests passed, including route/returned-action and QoS-use mutations.
+Fixture tests were introduced before the helper implementation; missing-helper
+failures were observed. Mac quick bench: exit0, available checks PASS; runtime
+geometry/model and L3-L6 SKIPPED, two unchanged vendor dependency warnings.
+Read-only follow-up review found no remaining blockers. No full box bench,
+build/install, live sensor, physical TF, load-test or hardware acceptance claim.
+Earlier separate-checkout weight preflight gaps remain outside this change.
+
+Final tested SHA256, matching Mac and box:
+6be2d11a11d7ddef248ae0c369b3eadbbb5873c2e9377960993963061fd5677d  bench/cloud_scan.sh
+8e3f9acccc5a491cccee4d4ef746c49479d2796e535858bef5f2c6349bc4ba79  bench/nodes/test_cloud_scan_pipeline.py
+d33b15cd4738769b20554d24e674085be0d38b6b601ac72c8d6ec71b30691e35  bench/test_cloud_scan.py
+0d1dd96fed555e06fc43f5cbbf7f8a11047310e501d63951113dd8eace18dd72  bench/run.sh
+8f849fcccbd3647ed4ebe2ec0a2a22b671e5f614b34f4240cce4e59c4153754b  nav/qos_relay/qos_relay.py (unchanged)
+
+Cleanup grace is 30 s, exceeding two owned groups' normal escalation bound.
+Original checkout, installed overlay and user-started communications node
+unchanged. No relay/converter/test process remained after successful cleanup.
+T3.4 physical driving/stopping and T3.5 lab mapping/localization remain open.
