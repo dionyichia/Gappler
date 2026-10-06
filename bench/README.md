@@ -136,7 +136,7 @@ system's interface — which is worth having in review on its own.
 
 `preflight.py` runs everything up to **but not including** commanding the arm. That line is
 enforced in the code, not just in a comment: the script never publishes to any `/rm_driver/*_cmd`
-topic and never launches `grasp_state_machine` or `launchers/start_grasp_pipeline.py`, because both home
+topic and never launches `grasp_state_machine` or `launchers/start_camera_arm_sam3_grasp.py`, because both home
 the arm within seconds of start, unprompted (`ORIENTATION.md` §8.1).
 
 Everything short of that is checked, in two runs. The default run (L2) covers the machine: GPU

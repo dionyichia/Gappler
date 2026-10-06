@@ -1095,7 +1095,7 @@ Run `./bench/run.sh` before and after every step.
    | `rm_ros_interfaces/msg/GraspCandidate*.msg` | `grasp/grasp_interfaces/msg/` (package `grasp_interfaces`) |
    | `ros2_robot_ws/src/rm_ros_interfaces/` | `arm/rm_ros_interfaces/`, then `arm/vendor/rm_ros_interfaces/` in step 5 |
    | `ros2_robot_ws/src/estop.py` | `arm/estop/estop.py` |
-   | `ros2_robot_ws/src/main.py` | `launchers/start_grasp_pipeline.py` |
+   | `ros2_robot_ws/src/main.py` | `launchers/start_camera_arm_sam3_grasp.py` |
    | `ros2_robot_ws/src/orchestrator.py` | `launchers/grasp_orchestrator.py` |
    | `Navigation_Module/src/<pkg>/` (`robot_slam`, `robot_navigation`, `simple_teleop`, `echo_plus_driver`) | `nav/<pkg>/` |
    | `robot_slam/scripts/<script>.py` | `nav/<package>/<script>.py`: `object_approach`, `goto_glasses`, `goal_reached` (`goal_reached_publisher.py`), `pose_publisher`, `qos_relay`, `aria_image_relay`. `ros2 run robot_slam X.py` becomes `ros2 run <package> X.py` |
@@ -1143,7 +1143,7 @@ keeps merges manageable for everyone else.
 
 #### Open, decide in the PR that needs it
 
-- ✅ **Where the three launchers go. Settled in step 4 (2026-09-21).** `launchers/start_grasp_pipeline.py`
+- ✅ **Where the three launchers go. Settled in step 4 (2026-09-21).** `launchers/start_camera_arm_sam3_grasp.py`
   and `launchers/grasp_orchestrator.py`, root `main.py` stays. Which launcher owns arm bring-up is
   `CODE_AUDIT` I1, part of T1.2.
 - **One build or two. Two today, one question left for Zongzhe** (updated 2026-09-22). `./build.sh`

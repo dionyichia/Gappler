@@ -524,7 +524,7 @@ review. The rules below were written before the 2026-09-21 layout move; current 
 the driver-only boundary are in the runbook.
 
 1. **Never launch** `grasp_state_machine` (directly or via `grasp_state_machine.launch.py`),
-   `launchers/start_grasp_pipeline.py`, `launchers/grasp_orchestrator.py`, or root `main.py`. The state
+   `launchers/start_camera_arm_sam3_grasp.py`, `launchers/grasp_orchestrator.py`, or root `main.py`. The state
    machine homes the arm within seconds, unprompted (ORIENTATION §8.1) — and to the home pose. That pose
    was reached on the real arm by direct command in T1.7 (2026-09-23), but the state machine has never
    homed the real arm, and it homes without asking (CODE_AUDIT §B4). T1.2 removed the orchestrator's duplicate
