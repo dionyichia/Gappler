@@ -10,6 +10,7 @@ breaks a path (NEXT_STEPS 2.15). shared/base_envs/ros_humble_and_helper.sh, sour
 """
 
 import os
+import math
 from functools import lru_cache
 from pathlib import Path
 
@@ -49,6 +50,28 @@ def camera_serial(name: str) -> str:
     return str(serial)
 
 
+def static_transform_args(name: str) -> list[str]:
+    """Fixed mount as TF publisher xyz/yaw/pitch/roll/parent/child arguments."""
+    mount = config()["geometry"][name]
+    xyz = [float(value) for value in mount["xyz_m"]]
+    rpy = [float(value) for value in mount["rpy_rad"]]
+    if len(xyz) != 3 or len(rpy) != 3 or not all(math.isfinite(v) for v in xyz + rpy):
+        raise ValueError(f"invalid finite xyz/rpy triple for mount {name}")
+    parent, child = mount["parent"], mount["child"]
+    if not isinstance(parent, str) or not isinstance(child, str) or not parent or not child or parent == child:
+        raise ValueError(f"invalid parent/child frames for mount {name}")
+    return [str(value) for value in xyz + list(reversed(rpy))] + [parent, child]
+
+
+def camera_reference_frame() -> str:
+    """Navigation's D455 depth origin, named consistently with its mount/driver."""
+    child = config()["geometry"]["d455_bottom_screw"]["child"]
+    suffix = "_bottom_screw_frame"
+    if not isinstance(child, str) or not child.endswith(suffix) or child == suffix:
+        raise ValueError("D455 screw frame requires a nonempty camera prefix")
+    return child[:-len(suffix)] + "_depth_optical_frame"
+
+
 if __name__ == "__main__":  # self-check: python3 shared/gappler_common.py
     assert (ROOT / "global_env.sh").exists(), ROOT
     assert config()["topics"]["imu"] == "/aria/imu"
@@ -56,12 +79,7 @@ if __name__ == "__main__":  # self-check: python3 shared/gappler_common.py
     os.environ["WRIST_CAMERA_SERIAL"] = "999"
     assert camera_serial("wrist_camera") == "999"
     del os.environ["WRIST_CAMERA_SERIAL"]
-    # The base camera has no serial yet, so it must refuse rather than open any camera.
-    try:
-        camera_serial("mobile_base_camera")
-        raise AssertionError("expected a refusal for an unset serial")
-    except ValueError:
-        pass
+    assert camera_serial("mobile_base_camera") == "146222253541"
     assert path("openvins_ws") == Path(config()["paths"]["openvins_ws"]).expanduser()
     os.environ["GAPPLER_OPENVINS_WS"] = str(Path.home())
     assert path("openvins_ws") == Path.home()

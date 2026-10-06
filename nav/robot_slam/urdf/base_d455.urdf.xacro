@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<robot name="base_d455_mount" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:arg name="parent" default="robot_base_link"/>
+  <xacro:arg name="name" default="base_d455"/>
+  <xacro:arg name="xyz" default="0 0 0"/>
+  <xacro:arg name="rpy" default="0 0 0"/>
+  <xacro:include filename="$(find realsense2_description)/urdf/_d455.urdf.xacro"/>
+  <link name="$(arg parent)"/>
+  <!-- Only mount/body joints here. The RealSense driver publishes calibrated
+       sensor extrinsics and optical rotations, never duplicate those joints. -->
+  <xacro:sensor_d455 parent="$(arg parent)" name="$(arg name)" use_nominal_extrinsics="false">
+    <origin xyz="$(arg xyz)" rpy="$(arg rpy)"/>
+  </xacro:sensor_d455>
+</robot>
