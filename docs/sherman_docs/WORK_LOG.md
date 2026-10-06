@@ -197,6 +197,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Clarified: initial CAD/no-runtime statements are historical; mount orientation remains visually estimated. Latest-available/cached TF is not fresh localisation or live camera health. Arrival still trusts nav success; calibration and physical stopping accuracy remain unproven. Original measurement-plan checks not evidenced are now labelled residuals.
 - Outcome: documentation prerequisite work progressed while the box suite runs. Navigation build and final-code mock navigation still pending at this entry. Existing environments/weights reused; fresh-machine reproducibility not claimed. T5.4 stays PROGRESS, no PR yet, merge approval withdrawn until results are reviewed and Sherman approves again.
 
+## [2026-10-06] T5.4 | Final box evidence and geometry/software close-out
+
+- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md), [`full box output`](../bench-runs/2026-10-06-sherman-t5.4-full.txt), candidate code `12d784c` (subsequent commits documentation-only).
+- Verified: L0–L2 PASS; both builds PASS (24 arm/grasp, 18 nav); final-code mock navigation nine controls PASS/four known XFAIL. MoveIt, e-stop and AnyGrasp environment PASS; recorded-image replay controls PASS/known A1 XFAIL.
+- Whole-suite disposition: FAIL, exit 1. State-machine simulation safely refused before launch with arm reachable; L5 failed because Aria USB absent, with six private-domain graph checks skipped. No guards bypassed and no real motion commanded. Unchanged vendor-driver compiler warnings recorded, not dismissed as proof of hardware safety.
+- Outcome: T5.4 marked DONE for geometry/software integration in task-tree, not calibration or real driving acceptance. Visual mount angles/measurement uncertainty, cached-TF health limitations, known defects and physical stopping accuracy remain explicit residuals. PR/CI next; no active merge approval. Hosted task-tree Artifact republish owed.
+
 ## Record Template
 
 ```markdown
