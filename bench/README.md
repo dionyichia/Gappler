@@ -76,11 +76,39 @@ refused, 3 skipped — never a pass.
 | `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s` sent back to back, the Ctrl+C key and SIGINT (5 trials) all deliver? Every case is required since the 2026-09-21 fix | — |
 | `state_machine_sim.sh` | `grasp_state_machine` runs a full grasp cycle on the simulated arm; the test plays camera, detector and gripper | mock hardware; preflight's `arm-ping`/`arm-port` must not pass (Dion's exception in `CLAUDE.md`) |
 | `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 10 cases, 4 expected-fail (F1 ×2, F2, E1). Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
+| `velocity_smoother.sh` | T3.4: installed Nav2 smoother plus the owned keyboard node under scripted pseudo-terminals; direction/caps, silence, explicit stop, quit, Ctrl+C, SIGINT, teleop crash and terminal restoration. No base driver | fixed domain 127, localhost only; nodes and hidden topics empty; discovery errors/timeouts refuse |
 | `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `grasp/anygrasp_venv/.venv`, built by `./grasp/anygrasp_venv/build_anygrasp_venv.sh` | GPU only, no ROS |
 | `anygrasp_replay.sh` | a recorded wrist-camera bag (`WRIST_CAMERA_BAG`, default `assets/recordings/wrist_camera`, made by `grasp/tools/record_wrist_camera.sh`) through `sam3_ros_node` and `anygrasp_detection_node`, with `/pipeline_state` played as EXECUTING then IDLE. 2 controls (a mask, candidates) and the A1 gate case, expected-fail. SKIPPED with no recording | channel must be empty **including hidden topics**. No camera, no state machine |
 
 Tests that encode a CODE_AUDIT finding assert the *intended* behaviour and report **XFAIL** while the
 bug is there, **XPASS** once it isn't — then retag the finding.
+
+### T3.4 remote software check
+
+Run `bash bench/velocity_smoother.sh` individually on an idle ROS box; it needs the installed
+`nav2_velocity_smoother`, not a new workspace build. It uses only `/t34_probe/keyboard_input`
+and `/t34_probe/output`, fixed domain 127 and a recording subscriber. `BENCH_DOMAIN` values
+other than 127 are refused. Do not join that domain while the check is running.
+The generic domain-77 description above does not apply to this script.
+
+Caps are 0.05 m/s and 0.15 rad/s, smoothing at 20 Hz. Keyboard silence times out after 0.25 s;
+the smoother's independent stale-input timeout is 0.25 s. Checks allow at most 0.65 s for
+the smoother alone and 1.0 s for keyboard-to-output silence, including ramp-down and scheduling.
+These are software output bounds, **not braking times**. A surviving smoother can handle teleop
+loss; losing the smoother, controller firmware timeout, network loss and physical stopping are
+not established. SIGKILL cannot restore a terminal or publish a final zero.
+
+Logs go to `log/t34-smoother.log` and `log/t34-teleop-*.log`. Capture the runner's output for
+measured timings. Its cleanup signals only owned process groups and verifies domain emptiness
+after a successful run. L0 also runs stdlib guard and LiDAR launch-wiring tests.
+`python3 bench/test_t34_launch.py --runtime` constructs the real ROS LiDAR launch without
+executing its actions; source an existing nav overlay for that check. No LiDAR is opened.
+
+### Changelog
+
+| Date | Who | Change |
+|---|---|---|
+| 2026-10-06 | OpenCode + Sherman | Added maintained T3.4 isolated controls and LiDAR launch checks; physical acceptance remains separate. |
 
 ---
 

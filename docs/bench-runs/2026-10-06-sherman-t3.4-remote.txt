@@ -1,0 +1,91 @@
+T3.4 remote software verification, 2026-10-06
+Candidate: c41d94a + branch implementation; tested source hashes below.
+Private ROS domain 127, ROS_LOCALHOST_ONLY=1; no hardware driver launched.
+Python 3.10.12
+ros-humble-nav2-velocity-smoother 1.1.20-1jammy.20251228.102027
+ros-humble-rclpy 3.3.19-1jammy.20251222.192920
+Runner: bash bench/velocity_smoother.sh; exit 0.
+Selected runner output (all functional PASS lines and cleanup):
+
+guards ok: domain 127 empty, localhost only
+guards ok: domain 127 empty, localhost only
+PASS: real hidden-node occupancy refused
+PASS input=(1,0) explicit_zero=False: zero after 0.506s
+PASS input=(1,0) explicit_zero=True: zero after 0.203s
+PASS input=(-1,0) explicit_zero=False: zero after 0.489s
+PASS input=(-1,0) explicit_zero=True: zero after 0.229s
+PASS input=(0,1) explicit_zero=False: zero after 0.500s
+PASS input=(0,1) explicit_zero=True: zero after 0.239s
+PASS input=(0,-1) explicit_zero=False: zero after 0.489s
+PASS input=(0,-1) explicit_zero=True: zero after 0.219s
+PASS input=(1,1) explicit_zero=False: zero after 0.458s
+PASS input=(1,1) explicit_zero=True: zero after 0.239s
+PASS input=(-1,-1) explicit_zero=False: zero after 0.497s
+PASS input=(-1,-1) explicit_zero=True: zero after 0.230s
+PASS teleop q: idle publication 10.13 Hz
+PASS teleop q/w: silence → zero after 0.603s
+PASS teleop q/s: silence → zero after 0.507s
+PASS teleop q/a: silence → zero after 0.457s
+PASS teleop q/d: silence → zero after 0.497s
+PASS teleop x: zero after 0.305s
+PASS teleop q: zero after 0.224s
+PASS teleop ctrl_c: idle publication 10.00 Hz
+PASS teleop ctrl_c/w: silence → zero after 0.561s
+PASS teleop ctrl_c/s: silence → zero after 0.602s
+PASS teleop ctrl_c/a: silence → zero after 0.533s
+PASS teleop ctrl_c/d: silence → zero after 0.577s
+PASS teleop x: zero after 0.307s
+PASS teleop ctrl_c: zero after 0.212s
+PASS teleop sigint: idle publication 10.09 Hz
+PASS teleop sigint/w: silence → zero after 0.526s
+PASS teleop sigint/s: silence → zero after 0.579s
+PASS teleop sigint/a: silence → zero after 0.528s
+PASS teleop sigint/d: silence → zero after 0.498s
+PASS teleop x: zero after 0.239s
+PASS teleop sigint: zero after 0.222s
+PASS teleop crash: idle publication 10.01 Hz
+PASS teleop crash/w: silence → zero after 0.500s
+PASS teleop crash/s: silence → zero after 0.558s
+PASS teleop crash/a: silence → zero after 0.500s
+PASS teleop crash/d: silence → zero after 0.540s
+PASS teleop x: zero after 0.279s
+PASS teleop crash: zero after 0.369s
+PASS rejected invalid teleop parameter speed:=-0.1
+PASS rejected invalid teleop parameter turn:=-0.1
+PASS rejected invalid teleop parameter key_timeout:=0.0
+PASS: software velocity limits and timeout; physical braking NOT tested
+guards ok: domain 127 empty, localhost only
+
+Other checks:
+- Mac ./bench/run.sh quick: exit 0; L0/L1 and available L2 checks PASS;
+  runtime geometry/camera model and L3-L6 SKIPPED. Two vendor warnings unchanged.
+- Box ./bench/run.sh quick: exit 1, NOT whole-suite PASS. L0/L1 including
+  runtime geometry/camera model PASS. L2: 14 pass, 3 fail, 2 warn, 4 skipped.
+  FAIL: sam3-weights, anygrasp-detection, anygrasp-tracking absent in separate
+  test checkout. WARN: disk 17.4 GB and saved map absent. No assets copied or
+  guards bypassed; these are full-stack preflight gaps, not control-test failures.
+  L3-L6 SKIPPED; no production build, driver launch or hardware acceptance run.
+- python3 bench/test_t34_launch.py --runtime: exit 0:
+  PASS: real LiDAR-only launch construction and config path; no actions executed
+- Mac link/script checks: 26 local links valid, task-tree JavaScript parses,
+  T3.4 remains PROGRESS.
+- Read-only follow-up code review: no remaining important defects identified.
+
+SHA256: identical on Mac and box for all six files tested:
+f57403c6047f17fb8655d2df8517daf7607eac3efd0a32a21ec1f4d8db1eb9b8  bench/t34_guard.py
+4c9b6c4c069c24e8cf48f90d815c073a150dc8ebe6660777d8bcfc1af7851ef3  bench/velocity_smoother.sh
+6daa717ed6c47cfc0e6abcc685144cf31c7c81eec8d3b4b555dbb13edd7de322  bench/nodes/test_velocity_smoother.py
+7da757d9e1f3c0b57666f24820929a519ad7f5e912aa6448ad2607231c590d03  bench/nodes/test_teleop.py
+ca3a9c8f4ed00db39a829617362b338fd47b2b58cb6a7bfa482b399e02fd339c  nav/simple_teleop/simple_teleop/teleop_node.py
+e5ec2d8d681416a698fb741315805f084e8e9d1638441210ac548a4c076d8b99  nav/robot_slam/launch/lidar_only.launch.py
+
+Reproduced before fixes: existing teleop blocked periodic publication; buffered
+PTY burst hid X after W; scanner rejected Livox's valid PROJECT_NAME executable.
+Interim guard attempts refused (unsupported CLI flag; CLI inspector included
+itself). Final native graph inspector excludes only its own node and passes
+real hidden-node refusal. Earlier attempts are not represented as successful.
+
+Handoff: original checkout/branch and untracked files preserved. Existing
+communications-only xnode_comm still running and not terminated by OpenCode.
+No vehicle, teleop, smoother, LiDAR or arm driver observed after test cleanup.
+Physical battery readiness, charging, custody and wheel stopping unverified.

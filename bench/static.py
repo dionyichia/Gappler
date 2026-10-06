@@ -336,11 +336,13 @@ def check_launch_executables() -> Result:
                "every executable a launch file names is installed by its package")
     pkgs = repo_packages()
 
-    def installed(pkg_dir: Path) -> set[str]:
+    def installed(pkg_dir: Path, pkg_name: str) -> set[str]:
         names: set[str] = set()
         cml = pkg_dir / "CMakeLists.txt"
         if cml.exists():
-            txt = cml.read_text(errors="replace")
+            # ROS CMake projects use the package name for PROJECT_NAME; Livox's
+            # component macro installs ${PROJECT_NAME}_node rather than a literal.
+            txt = cml.read_text(errors="replace").replace("${PROJECT_NAME}", pkg_name)
             for m in re.finditer(r"install\s*\(\s*(?:PROGRAMS|TARGETS)([^)]*)\)", txt, re.S):
                 for tok in re.split(r"[\s\n]+", m.group(1)):
                     tok = tok.strip().strip('"')
@@ -382,7 +384,7 @@ def check_launch_executables() -> Result:
                 continue  # covered by check_launch_packages
             r.n_checked += 1
             if pkg not in cache:
-                cache[pkg] = installed(pkgs[pkg])
+                cache[pkg] = installed(pkgs[pkg], pkg)
             if exe not in cache[pkg] and Path(exe).stem not in cache[pkg]:
                 r.fail(f"{rel(p)}:{n.lineno}: Node(package='{pkg}', executable='{exe}') "
                        f"-- '{exe}' is not installed by {pkg}")

@@ -70,6 +70,12 @@ s=$(step "L0  Geometry wiring" python3 bench/test_geometry.py --wiring)
 row L0 "Geometry wiring" "$s" ""
 s=$(step "L0  Camera navigation geometry" python3 bench/test_camera_navigation.py)
 row L0 "Camera navigation geometry" "$s" ""
+s=$(step "L0  T3.4 isolation guards" python3 bench/test_t34_guard.py)
+row L0 "T3.4 isolation guards" "$s" ""
+s=$(step "L0  T3.4 keyboard burst" python3 bench/test_t34_keyboard.py)
+row L0 "T3.4 keyboard burst" "$s" ""
+s=$(step "L0  T3.4 LiDAR-only wiring" python3 bench/test_t34_launch.py)
+row L0 "T3.4 LiDAR-only wiring" "$s" ""
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
 s=$(step "L0  D455 model" python3 bench/test_geometry.py --camera-model)
@@ -99,7 +105,7 @@ else
   if [ "$arm" != PASS ]; then
     row L4 "Simulation" SKIPPED "arm build did not pass (see L3)"
   else
-    for t in sim_moveit estop_delivery state_machine_sim nav_nodes anygrasp_env anygrasp_replay; do
+    for t in sim_moveit estop_delivery state_machine_sim nav_nodes velocity_smoother anygrasp_env anygrasp_replay; do
       s=$(step "L4  Simulation: $t" ./bench/$t.sh)
       row L4 "Sim: $t" "$s" ""
     done
