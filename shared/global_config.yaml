@@ -28,6 +28,15 @@
         history: "KEEP_LAST"
         depth: 10
 
+    # Camera serial numbers. Two RealSense cameras are plugged into the box, so every launch
+    # names the one it wants (T1.13). Without a serial the driver opens whichever it finds
+    # first. Override per machine with WRIST_CAMERA_SERIAL and MOBILE_BASE_CAMERA_SERIAL.
+    wrist_camera:
+      serial: "243222074878"   # D435i on the arm's wrist, Link6. Confirmed at the robot, T1.4
+    mobile_base_camera:
+      serial: ""               # D455, forward facing on the base. Mounted. Read its serial off
+                               # the box and fill this in: rs-enumerate-devices -s (T1.13)
+
     # Paths outside the repo. Each can be overridden per machine with GAPPLER_<NAME>,
     # for example GAPPLER_MAP_DIR for map_dir. A relative path is from the repo root.
     paths:

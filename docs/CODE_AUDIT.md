@@ -428,8 +428,7 @@ measurement, in a fifth place.
 **Recount 2026-09-14 `[code]`.** The full set is larger than "three plus a fourth". Six source
 literals plus a test fixture carry the same two measurements: `slam_localization.launch.py:90` and
 `:102`, `slam_mapping.launch.py:97`, `object_approach_node.py:53` and `:143`, `goto_glasses.py:35`,
-and `bench/nodes/test_nav_nodes.py:52`. Note `slam_mapping.launch.py` has the LiDAR offset but **no**
-`robot_base_to_arm` transform at all, which is the defect T3.3 addresses.
+and `bench/nodes/test_nav_nodes.py:52`. `slam_mapping.launch.py` carried only the LiDAR offset until **T3.3 (DONE 2026-09-26)** added its `robot_base_to_arm` transform; the shared 0.18 stays duplicated until T5.4 single-sources it.
 
 ### E5. 🔴 Two nodes race for Nav2 on the same spoken word `[code]`
 
@@ -911,4 +910,5 @@ publishers racing on the same three topics.
 | 2026-09-22 | Claude (Opus 5) + Dion | T1.1 closed in the task tree. Checked the six answers against the code: A1's gate is still inverted (`anygrasp_detection_node.py:182`), the duplicate arm bring-up launch is still in `launchers/grasp_orchestrator.py:69` (T1.2), and nothing yet publishes `/manipulation/done` or `/manipulator/release`. |
 | 2026-09-22 | Claude (Opus 5) + Dion | **A1 now `[observed]`** on real wrist-camera frames by the new L4 replay (T0.12). |
 | 2026-09-23 | Claude Opus 5.5 + Dion | B4: real-arm result from T1.7 added. Open question 2 answer superseded by T1.3 and T1.7. |
+| 2026-09-26 | OpenCode + Sherman | E4: T3.3 DONE — `slam_mapping.launch.py` now carries `robot_base_to_arm`. Shared 0.18 still duplicated; single-sourcing stays with T5.4. |
 

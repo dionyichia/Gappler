@@ -208,7 +208,7 @@ Top-level, with an honest note on whether you will ever need to touch each one.
 |---|---|---|
 | `aria/aria_app/` (was `src/`) | **Subsystem A.** All Aria glasses code: streaming, eye tracking, ASR, LLM, SAM3, feature matching, pose fusion, OpenCV visualiser. | **Yes, a lot.** |
 | `arm/` | **Subsystem C, the arm.** `estop/`, `rm_ros_interfaces/`, and RealMan's code in `vendor/`. Built together with `grasp/` by `./build.sh`. Replaced the `ros2_robot_ws/` workspace 2026-09-21. | `estop/` and `rm_ros_interfaces/` only. |
-| `launchers/` | `start_grasp_pipeline.py` (camera, arm bring-up, SAM3, AnyGrasp, state machine) and `grasp_orchestrator.py` (waits for the start-grasp message, then runs the pipeline). Were `ros2_robot_ws/src/main.py` and `orchestrator.py`. **Never launch either** (CLAUDE.md). | Yes. |
+| `launchers/` | `start_camera_arm_sam3_grasp.py` (camera, arm bring-up, SAM3, AnyGrasp, state machine) and `grasp_orchestrator.py` (waits for the start-grasp message, then runs the pipeline). Were `ros2_robot_ws/src/main.py` and `orchestrator.py`. **Never launch either** (CLAUDE.md). | Yes. |
 | `grasp/` (was `ros2_robot_ws/src/rm_mtc/`) | **Ours.** One folder per node: `grasp_state_machine/` (with the MoveIt Task Constructor planner), `anygrasp_node/`, `segmentation/`, `grasp_viz/`, plus `grasp_interfaces/` (our messages) and `tools/`. | **Yes.** This is the heart of the arm logic. |
 | `arm/vendor/`: `rm_driver`, `rm_control`, `rm_description`, `rm_moveit2_config`, `rm_gazebo`, `rm_example`, `rm_arm_examples`, `rm_doc`, `rm_install` | RealMan's shipped vendor packages — driver, URDF model, MoveIt config, sim, docs, install scripts. | **No.** Read `rm_description`'s URDF when you need to know where the camera is mounted. |
 | `arm/rm_ros_interfaces/` | 79 custom message definitions. Includes ours: `GraspCandidate.msg`, `GraspCandidateArray.msg`. | Only if you add a message. |
@@ -491,12 +491,11 @@ map → odom → robot_base_link → ... → base_link → Link1..Link6 → came
 They are different and confusing them is a classic bug. Everything the arm plans happens in
 `base_link`; everything Nav2 plans happens in `map` with `robot_base_frame: robot_base_link`.
 
-⚠️ **The static transform bridging them exists in only ONE launch file.** `[code]`
-`slam_localization.launch.py:98-103` publishes
+✅ **Both launch files now publish the bridging static transform.** `[code]`
+`slam_localization.launch.py:107-112` and `slam_mapping.launch.py:117-122` (added by T3.3, DONE 2026-09-26) each publish
 `0.18 0 0.48 3.14159 0 0 robot_base_link base_link` — the arm sits 0.18 m forward, 0.48 m up, and
-**yawed 180° (it faces backward)**. `slam_mapping.launch.py` does **not** publish it. So during a
-mapping run the arm is not connected to the TF tree at all, and anything transforming
-`base_link → map` fails silently.
+**yawed 180° (it faces backward)**. Full mapping-launch TF tree still untested, and the values stay
+duplicated across both files until T5.4 single-sources them.
 
 ---
 
@@ -1269,4 +1268,5 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-22 | Claude (Opus 5) + Dion | `assets/gripper/` is now `assets/vendor/gripper/` (reorg step 6). |
 | 2026-09-22 | Claude (Opus 5) + Dion | `env.sh` is now `global_env.sh`, which sources `aria/aria_env.sh`, `arm/arm_env.sh`, `grasp/grasp_env.sh` and `nav/nav_env.sh` (reorg step 7). |
 | 2026-09-23 | Claude Opus 5.5 + Dion | §8.1 and the §B4 bullet: HOME validated on the real arm in T1.7, extends slightly outside the base. |
+| 2026-09-26 | OpenCode + Sherman | §5: T3.3 DONE — both SLAM launches publish `robot_base_to_arm` (mapping `:117-122`, localization `:107-112`). Full mapping-launch tree untested; values duplicated until T5.4. |
 

@@ -2,7 +2,7 @@
 
 Run by bench/anygrasp_replay.sh, which has already proven the ROS channel is private and
 empty. Plays the bag on a loop, starts sam3_ros_node (.venv) and anygrasp_detection_node
-(grasp/anygrasp_venv/.venv) as launchers/start_grasp_pipeline.py does, then publishes
+(grasp/anygrasp_venv/.venv) as launchers/start_camera_arm_sam3_grasp.py does, then publishes
 /pipeline_state the way grasp_state_machine does: EXECUTING for a while, then IDLE.
 
   control  segmentation      SAM 3 publishes a mask on the recorded frames

@@ -106,6 +106,21 @@ def generate_launch_description():
         arguments=["0.18", "0", "0.2", "0", "0", "0", "robot_base_link", "livox_frame"],
     )
 
+    # Arm is physically mounted 0.18 m forward and 0.48 m above robot_base_link.
+    # Yaw=π rotates the arm frame 180° so its X-axis (forward) aligns with the
+    # robot's forward direction (arm was mounted facing backward).
+    # This static TF bridges the SLAM tree and the arm tree so object_approach_node
+    # can transform directly from base_link (arm frame) → map via TF.
+    # (T3.3: mirrors slam_localization.launch.py. The shared 0.18 belongs to T5.4's
+    # single source when it lands — do not tune one copy alone. A future combined
+    # URDF with this edge as a fixed joint retires both publishers instead.)
+    arm_mount_tf = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="robot_base_to_arm",
+        arguments=["0.18", "0", "0.48", "3.14159", "0", "0", "robot_base_link", "base_link"],
+    )
+
     pointcloud_to_laserscan = Node(
         package="pointcloud_to_laserscan",
         executable="pointcloud_to_laserscan_node",
@@ -198,6 +213,7 @@ def generate_launch_description():
             livox_launch,
             qos_relay_node,
             static_tf_node,
+            arm_mount_tf,
             pointcloud_to_laserscan,
             slam_toolbox,
             delayed_nav2,

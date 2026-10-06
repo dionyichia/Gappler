@@ -20,7 +20,7 @@ good `ros2 topic hz` rate alone do not prove fresh arm data. A stationary arm ne
 joint positions, so changing angles are not a requirement for this no-motion test either.
 
 The checks below must be performed by people at the robot, not by automation. `grasp_state_machine`,
-`launchers/start_grasp_pipeline.py`, `launchers/grasp_orchestrator.py`, and root `main.py` are
+`launchers/start_camera_arm_sam3_grasp.py`, `launchers/grasp_orchestrator.py`, and root `main.py` are
 **not** part of this procedure: the state machine homes the arm unprompted
 (`ORIENTATION.md` §8.1; repository `CLAUDE.md` §Safety). The full
 `arm/arm_bringup/launch/arm_bringup.launch.py` also starts `rm_control` and MoveIt as well as the
@@ -49,7 +49,7 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    else's process. Read-only shared-hardware checks (`CLAUDE.md` §Safety):
 
    ```bash
-   ps -eo pid,user,etime,args | grep -iE 'rm_driver|arm_bringup|grasp_state_machine|start_grasp_pipeline|grasp_orchestrator|realsense|rs_launch|ros2 launch|Runner.Worker|bench/run.sh'
+   ps -eo pid,user,etime,args | grep -iE 'rm_driver|arm_bringup|grasp_state_machine|start_camera_arm_sam3_grasp|grasp_orchestrator|realsense|rs_launch|ros2 launch|Runner.Worker|bench/run.sh'
    nvidia-smi
    fuser /dev/video*
    ```

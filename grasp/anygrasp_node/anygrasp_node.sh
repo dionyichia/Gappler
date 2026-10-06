@@ -1,5 +1,5 @@
 # Record of how the 2026-08-25 hardware session ran AnyGrasp: the tracker node with
-# checkpoint_tracking.tar. main.py launches the detector instead (launchers/start_grasp_pipeline.py).
+# checkpoint_tracking.tar. main.py launches the detector instead (launchers/start_camera_arm_sam3_grasp.py).
 # Which one is authoritative is PROJECT_PLAN T1.10. Nothing calls this file.
 # Run it from this directory, since the checkpoint path is relative (log/ here).
 # Taken from the realman_manip branch 2026-09-21 (T0.0), command line unchanged.

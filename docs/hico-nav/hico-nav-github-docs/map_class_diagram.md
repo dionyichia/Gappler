@@ -6,9 +6,135 @@ Reference for the Layer 2 "Memory Construction" subsystem. The paper's
 
 All line references are against the tree at commit `ffc1517`.
 
+See [`cmg_usage_flow.md`](cmg_usage_flow.md) for how the graph is driven
+and consumed at runtime, and for a replication checklist. See
+[`cmg_construction_pipeline.md`](cmg_construction_pipeline.md) for the
+pixels-to-nodes pipeline, split into stages that can be built independently.
+
 ---
 
-## 1. Core graph classes
+## 1. Inputs the graph requires
+
+`Map` has exactly two input channels: a per-observation call and a per-task
+setup call. Everything else is config plus models it loads itself.
+
+### 1.1 Per observation — `update_scene_graph`
+
+[`map.py:551`](../map/map.py)
+
+```python
+scene_map.update_scene_graph(
+    image_rgb,   # uint8 (H, W, 3), RGB order
+    depth,       # float32 (H, W), metres, 0 = invalid
+    intrinsics,  # (3,3) or (4,4) pinhole
+    cam_pos,     # (4,4) T_world_camera
+    img_path,    # str, label only
+    frame_idx,   # int, globally unique
+    detections,  # dict, see 1.2
+    visualization=False,
+)
+```
+
+| Arg | Type / shape | Contract |
+|---|---|---|
+| `image_rgb` | `uint8 (H,W,3)` | **RGB order**, not BGR. The Habitat path calls `rgba2rgb` first ([`habitat_data.py:304`](../habitat/habitat_data.py)) |
+| `depth` | `float32 (H,W)` | **metres**, same `H,W` as `image_rgb`. `0` means invalid — `z > 0` is the validity test ([`pointcloud.py:178`](../map/pointcloud.py)) |
+| `intrinsics` | `(3,3)` or `(4,4)` | Pinhole `fx, fy, cx, cy`. Only `[:3,:3]` is used; `[0,0]` also yields the stored FOV |
+| `cam_pos` | `float (4,4)` | **`T_world_camera`** (camera→world). Camera frame is OpenCV: x right, y down, z forward. Applied as `trans_pose @ [x,y,z,1]` ([`pointcloud.py:199`](../map/pointcloud.py)) |
+| `img_path` | `str` | Stored on the `Keyframe` as a label only — never opened by `Map` |
+| `frame_idx` | `int` | **Globally unique and stable.** It is the `Map.keyframes` key *and* the element stored in `Object3D.observers`; reusing an id corrupts edges |
+| `detections` | `dict` | See 1.2 |
+
+On the Habitat path `cam_pos` is `pose_habitat_to_tsdf(cam_pose)`
+([`nav_runner.py:165`](../habitat/nav_runner.py)), whose docstring spells out
+the chain `Thb -> Twb -> Twc`. The world frame is therefore **z-up**
+(Habitat's y-up rotated), not Habitat's native frame.
+
+### 1.2 The `detections` dict
+
+| Key | Type | Contract |
+|---|---|---|
+| `xyxy_np` | `float (N,4)` | Pixel coords in the `image_rgb` frame |
+| `confidences` | `float (N,)` | See the sort-order constraint in 1.5 |
+| `detection_class_ids` | `int (N,)` | **Must be valid indices into `Map.obj_classes.get_classes_arr()`** — the node label is `classes[class_id]` ([`map.py:788`](../map/map.py)) |
+| `detection_class_labels` | `List[str]`, len `N` | Drives the keyframe gate and the filters |
+| `masks_np` | `bool (N,H,W)` or `None` | If `None`, `Map` runs SAM on the boxes itself. If provided, must match `depth`'s `H,W` |
+
+`Map` does **not** run the detector — that is the caller's job
+([`nav_runner.py:91`](../habitat/nav_runner.py) `_extract_detections`). The
+caller must also keep the detector's class list in sync via
+`set_classes(get_classes_arr())`, or `class_id` indexing drifts — most easily
+after the VLM appends new classes mid-task through `add_target_class`.
+
+### 1.3 Per task — before anything can be marked a target
+
+```python
+scene_map.update_task(task_string)   # -> CLIP text feature, drives Keyframe.task_score
+scene_map.add_target_class(...)      # target/relevant class sets from the VLM
+# or, when the VLM returns nothing usable:
+scene_map.set_target_object_with_clip()
+```
+
+Skip these and the graph still builds geometrically, but
+`TargetManager.target_class_set` stays empty, so `find_target` returns
+nothing, every `task_score` is `0.0`, and the keyframe gate loses its
+"a target class appeared" trigger.
+
+### 1.4 Loaded by `Map.__init__` itself
+
+- **SAM** via ultralytics, `cfg.sam_model_name` (`mobile_sam.pt`) — always
+  loaded, even if you always supply `masks_np`
+- **open_clip ViT-B-32 / `laion2b_s34b_b79k`** — downloaded on first use
+- **`data/scannet200_classes.txt`** — path hardcoded at
+  [`map_elements.py:382`](../map/map_elements.py) when
+  `class_set: scannet200`, overriding the `classes_file_path` argument
+- CUDA is not required but is the default; `Map` passes `self.device` down
+
+Config keys `Map` reads: `sam_model_name`, `class_set`, `bg_classes`,
+`skip_bg`, `prompt_h`, `prompt_w`,
+`object_detection_confidence_threshold`, `object_detection_min_area_ratio`,
+`mask_area_threshold`, `mask_area_ratio`, `mask_iou_threshold`,
+`min_points_threshold`, `spatial_sim_type`, `obj_pcd_max_points`,
+`downsample_voxel_size`, `dbscan_remove_noise`, `dbscan_eps`,
+`dbscan_min_points`, `phys_bias`, `sim_threshold`, `use_clip_mapping`,
+`use_ilp_keyframe_pruning`, `scene_graph.obj_include_dist`.
+(`yolo_model_name` appears only in a commented-out block at
+[`map.py:87`](../map/map.py) — `Map` does not need it.)
+
+### 1.5 Undocumented constraint: detections must arrive confidence-sorted
+
+[`filter_detections`](../map/map_utils.py) (`map_utils.py:183`) sorts the
+detections by descending confidence into `detections_combined`, collects
+`keep_idx_list` as indices **into that sorted list**, then applies those
+indices to the **original, unsorted** arrays:
+
+```python
+detections_combined = sorted(zip(confidences, xyxy, class_ids, class_labels),
+                             key=lambda x: x[0], reverse=True)
+for idx, current_det in enumerate(detections_combined):
+    ...
+    keep_idx_list.append(idx)
+    keep_lables.append(curr_label)
+...
+return xyxy[keep_idx_list], confidences[keep_idx_list], class_ids[keep_idx_list], keep_lables, keep_masks
+```
+
+`keep_lables` is in sorted order; boxes, confidences, class ids and masks are
+indexed in original order. These agree **only if the input already arrives
+sorted by descending confidence** — true for ultralytics, whose NMS returns
+confidence-descending results, so the live pipeline is unaffected.
+
+If you feed your own detector, **sort by descending confidence before
+calling**, or boxes and labels are silently mismatched. Treat this as a
+latent bug rather than an intended contract.
+
+Related: with `use_clip_mapping: False`, `image_feats` stays a zero array
+([`map.py:669`](../map/map.py)), so the `visual_sim` half of the association
+score is meaningless and matching degenerates to point-cloud overlap alone.
+
+---
+
+## 2. Core graph classes
 
 ```mermaid
 classDiagram
@@ -190,15 +316,12 @@ id-set pairing**, maintained by hand in two places:
 | anchor → objects | `Keyframe.objects_3d : Set[int]` | [`map.py:871`](../map/map.py) (construction) |
 | object → anchors | `Object3D.observers : Set[int]` | [`map.py:798`](../map/map.py) (insert) / [`map_elements.py:172`](../map/map_elements.py) (`merge`) |
 
-Both must be kept in sync. `delete_keyframe` ([`map.py:420`](../map/map.py))
-is the only place that removes edges, and it updates both sides: it walks the keyframe's
-`objects_3d` and discards the frame id from each object's `observers` (`map.py:424-426`).
-Corrected 2026-10-05 (T6.1, read at `ffc1517`): the earlier wording here, "unwinds an edge from
-the anchor side", was read as one-sided, and it is not.
+Both must be kept in sync; `delete_keyframe` ([`map.py:420`](../map/map.py))
+is the only place that unwinds an edge from the anchor side.
 
 ---
 
-## 2. Inter-process message classes (`map/communication.py`)
+## 3. Inter-process message classes (`map/communication.py`)
 
 These are *not* part of the graph — they are the serialization boundary
 between the three processes launched in `object_nav_hm3d.py`. `*State`
@@ -323,7 +446,7 @@ all keyframe data stay process-local.
 
 ---
 
-## 3. `Frame` vs `Keyframe`
+## 4. `Frame` vs `Keyframe`
 
 Same origin (one camera observation + its 2D detections), different
 subsystems, different processes. They never cross the pipe.
@@ -354,7 +477,7 @@ Consequences of the asymmetry:
 
 ---
 
-## 4. Node admission and merge rules
+## 5. Node admission and merge rules
 
 ```mermaid
 flowchart TD
@@ -396,7 +519,9 @@ with `phys_bias: 0.5` and acceptance threshold `sim_threshold: 0.6`
 features.
 
 **Object3D.merge** ([`map_elements.py:139`](../map/map_elements.py)) fuses
-point clouds (then re-runs DBSCAN and refits the bbox), takes a
+point clouds (voxel-downsampled and refit to a new bbox; DBSCAN is skipped
+because `merge_obj_matches` passes `run_dbscan=False`, and it runs later in
+`periodic_cleanup_objects`), takes a
 **detection-count-weighted mean** of `clip_ft`, `max` of `task_score`,
 **appends** to `class_labels` / `confidence` (so the label is a running
 majority vote via `get_class_label()`), and unions `observers`.
@@ -410,7 +535,7 @@ otherwise a greedy subset-check fallback.
 
 ---
 
-## 5. Module map
+## 6. Module map
 
 | File | Lines | Role |
 |---|---|---|
@@ -486,9 +611,3 @@ classDiagram
   observation can reuse `keyframe_2d_to_3d`. Not a second construction site.
 - There is no serialization. `Map.save_to_disk` is called at
   `utils/build_map_rgbd.py:267` but commented out and never defined.
-
-## Changelog
-
-| Date | Who | Change |
-|---|---|---|
-| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §"The graph edges are implicit": `delete_keyframe` updates both sides of the edge, checked against source in T6.1. Changelog added. |

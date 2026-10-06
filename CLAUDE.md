@@ -54,9 +54,9 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
 
 ## Safety — this code moves a real robot arm
 
-- Never launch `grasp_state_machine`, `launchers/start_grasp_pipeline.py`, `launchers/grasp_orchestrator.py`
-  or root `main.py` (the two launchers were `ros2_robot_ws/src/main.py` and `orchestrator.py` until
-  2026-09-21). The state machine homes the arm within seconds, unprompted. The home pose itself
+- Never launch `grasp_state_machine`, `launchers/start_camera_arm_sam3_grasp.py`, `launchers/grasp_orchestrator.py`
+  or root `main.py` (the two launchers were `ros2_robot_ws/src/main.py` and `orchestrator.py` until 2026-09-21, and the first was
+  `start_grasp_pipeline.py` until 2026-10-06). The state machine homes the arm within seconds, unprompted. The home pose itself
   was validated on the real arm by direct command in T1.7 (2026-09-23), but the state machine has
   never run on the real arm. **One exception (Dion, 2026-09-11):** `bench/state_machine_sim.sh` may
   launch the state machine against the *simulated* arm, behind its guards (mock hardware, private

@@ -96,7 +96,7 @@ def owned(msg: str) -> bool:
     return is_owned(path) or path.startswith(BLOCKING_VENDOR)
 
 
-# Roots that end up on PYTHONPATH at runtime (main.py and launchers/start_grasp_pipeline.py
+# Roots that end up on PYTHONPATH at runtime (main.py and launchers/start_camera_arm_sam3_grasp.py
 # put aria/aria_app/ there explicitly; scripts dirs are added by ament install rules).
 IMPORT_ROOTS = ["aria/aria_app", "."]
 

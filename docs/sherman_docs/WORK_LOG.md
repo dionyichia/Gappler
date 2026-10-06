@@ -140,6 +140,28 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Verified (Mac, no lab access): replacement-mount CAD inputs recorded (hole origin, platform edge −13.05/+29.50 mm, y = 0 centered, 3 mm middle plate vs 5 mm top platform — all design-intent, unverified as-built); D455 package facts read from Intel URDF (origin = bottom screw, color y −0.059, baseline 95 mm, fixed optical flip, driver overwrites fine extrinsics live).
 - Outcome: chain derived with one UNKNOWN (platform↔base placement); frame-collision flag to Dion/T5.5; October taping list referenced under T5.4-after-T5.3-fit. No PR; T5.4 stays OPEN.
 
+## [2026-09-24] T5.2 | v2 plate revision DONE
+
+- Evidence: [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md) (v2 section + changelog)
+- Verified: same mount, revised plate stack (3 mm middle, 5 mm top platform current); requirement recorded (Dion via Sherman: camera higher to see higher for navigation); positions carry over from verified v1 geometry. Task-tree T5.2 → DONE (v2).
+- Outcome: v2 design closed remotely (no lab access). Physical fit + view verification remain T5.3 (Oct 5+); geometry measurement remains T5.4.
+- Next: PR `t5.2-mount-v2` to `dev` (docs-only: CI + merge word, no box needed).
+
+## [2026-09-26] T3.3 | Mapping launch arm TF DONE
+
+- Evidence: `nav/robot_slam/launch/slam_mapping.launch.py:117-122` (`robot_base_to_arm`), mirroring `nav/robot_slam/launch/slam_localization.launch.py:107-112`; task-tree T3.3 → DONE.
+- Verified: Mac `./bench/run.sh quick` PASS (L0/L1/L2; L3-L6 skipped off-box). Box (isolated domain, publisher stopped after): py_compile OK, exactly 1 `robot_base_to_arm` definition, exact args `0.18 0 0.48 3.14159 0 0 robot_base_link base_link`; live `tf2_echo` → Translation `[0.180, 0.000, 0.480]`, quaternion `[0, 0, 1, 0]`, yaw 180°. Branch rebased onto `dev` via merge (clean), pushed @ `f1f1a47` + close-out.
+- Outcome: mapping launch now joins the arm tree during mapping runs. Residuals: 0.18/0.48 values duplicated across both SLAM launches (plus `bench/nodes/test_nav_nodes.py` fixture) until T5.4 single-sources them; full mapping-launch TF tree untested (no base bring-up remote).
+- Next: PR `t3.3-mapping-tf` to `dev`; Zongzhe review; merge on Sherman's word (robot-adjacent: CI + box evidence + word).
+
+## [2026-10-06] T5.3 | Revised D455 mount fit PASS
+
+- Evidence: [`T5.3_D455_FIT.md`](T5.3_D455_FIT.md).
+- Verified: serial 146222253541 selected explicitly; RGB and depth browser endpoints delivered JPEG frames, and Sherman confirmed live views. Rigidity, fasteners, cable route, arm clearance and navigation-view suitability are Sherman-reported PASS, not independently certified by automation.
+- Outcome: task-tree T5.3 marked DONE. No runtime TF or robot motion commands added. Geometry integration remains T5.4 and camera–LiDAR calibration remains T5.5; photo archival, angular uncertainty and detailed clearance-method evidence remain residuals.
+- Branch checks: `git diff --check` and Mac `./bench/run.sh quick` PASS; L3–L6 skipped. These checks validate repository consistency, not physical fit.
+- Next: branch verification and review; merge requires CI, box evidence and Sherman's explicit merge word. Task-tree artifact republish is owed (no publishing tool available in this session).
+
 ## Record Template
 
 ```markdown
