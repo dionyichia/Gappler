@@ -1191,6 +1191,13 @@ keeps merges manageable for everyone else.
 
 Left for the nav owner, part of `PROJECT_PLAN` T3.5. Checked 2026-09-21 `[code]`.
 
+**Launch preparation 2026-10-07, not deployed:** `[code/observed]` On the stacked
+`t3.5-launch-prep` branch, both SLAM entry points no longer flush Ethernet addresses;
+all three owned navigation entry points include the T3.4 PointCloud2 LiDAR wrapper.
+Source-backed ROS construction and regression checks passed without executing actions.
+The installed box overlay remains unchanged. Map/localization choice below is still open.
+Evidence and limits: [`sherman_docs/T3.5_LAUNCH_PREP.md`](sherman_docs/T3.5_LAUNCH_PREP.md).
+
 - **There are two ways to drive, with two kinds of saved map.**
 
   | Launch file | Localises with | Map it reads | Written by |
@@ -1377,6 +1384,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-10-07 | OpenCode + Sherman | Recorded stacked T3.5 network-preserving/PointCloud2 launch preparation and source-only verification; installed overlay and map/localization choices unchanged. |
 | 2026-09-14 | Claude (Opus 5) + Dion | §3.3 promoted to 🔴 and re-checked against the branch: exactly 15 files exist on `realman_manip` and not on `main`, ten of them pre-reorg duplicates. Added a fifth file to take, `anygrasp_node.sh`, which records that the verified session ran `checkpoint_tracking.tar` while `main` launches `checkpoint_detection.tar`. It is now `PROJECT_PLAN` T0.0, the first task in the plan. §3.2 marked done: the nav workspace built 10/10 on 2026-09-14, with two corrections — 10 packages not 8, and colcon does build `Livox-SDk2/` without a manifest. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added the pointer under §2.7 to the new `TESTBENCH_PLAN.md` handoff, and a root `CLAUDE.md` so a fresh session loads context automatically. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §2.6b pointing at the new `CODE_AUDIT.md` — a line-by-line read of all owned code. Headline finding: the grasp path cannot work, for three interlocking reasons. |

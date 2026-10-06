@@ -220,6 +220,14 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Whole quick-bench disposition on box: FAIL, exit 1. L0/L1 passed; L2 lacked three model-weight files in the separate test checkout. No guard bypass, asset duplication, full build or whole-stack PASS claimed.
 - Handoff: no hardware driver launched or motion commanded. Original lab checkout/untracked work preserved; user-started communications-only node remains untouched. Power/charging/custody unconfirmed. T3.4 PROGRESS; attended driving/physical stopping remain open, no completion PR or merge. Hosted task-tree Artifact republish owed.
 
+## [2026-10-07] T3.5 | Navigation launch preparation, not deployed
+
+- Evidence: [`T3.5_LAUNCH_PREP.md`](T3.5_LAUNCH_PREP.md), [box/source results](../bench-runs/2026-10-07-sherman-t3.5-launch-prep.txt).
+- Changed on `t3.5-launch-prep`, stacked on T3.4 `3c4038c`: removed Ethernet mutation from both SLAM launches; all three owned navigation entry points use the owned PointCloud2 LiDAR wrapper. No vendor/config/map/scan/frame changes.
+- Verified: five original subcase failures reproduced before fixes; updated stdlib tests, Mac quick bench and focused box static/contracts passed. All three real ROS descriptions/includes constructed with temporary source-backed shares, returned LiDAR action and wrapper parameters verified; no actions executed. Review's omitted-return coverage gap corrected and mutation-tested.
+- Residuals: installed box overlay unchanged; no build/live LiDAR/scan/navigation acceptance or whole box suite claimed. Prior separate-checkout weight preflight gaps unchanged. Map route and save/load alignment still open; T3.4 physical stop/driving acceptance still open.
+- Handoff: original checkout/untracked logs, Ethernet addresses and user-started communications node preserved. T3.5 PROGRESS; no PR/merge. Hosted task-tree Artifact republish owed.
+
 ## Record Template
 
 ```markdown

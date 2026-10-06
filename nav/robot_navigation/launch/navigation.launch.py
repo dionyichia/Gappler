@@ -41,9 +41,9 @@ def generate_launch_description():
     livox_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
-                FindPackageShare('livox_ros_driver2'),
+                FindPackageShare('robot_slam'),
                 'launch',
-                'msg_MID360_launch.py'
+                'lidar_only.launch.py'
             ])
         ])
     )

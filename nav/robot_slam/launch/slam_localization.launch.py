@@ -3,7 +3,7 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, IncludeLaunchDescription, TimerAction
+from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, PathJoinSubstitution
 from launch_ros.actions import Node
@@ -21,15 +21,7 @@ MAP_DIR = str(path("map_dir"))
 
 
 def generate_launch_description():
-    network_setup = ExecuteProcess(
-        cmd=[
-            "sudo",
-            "bash",
-            "-c",
-            "ip addr flush dev enp2s0 && ip addr add 192.168.1.5/24 dev enp2s0",
-        ],
-        output="screen",
-    )
+    # Network addresses are an operator prerequisite, not a launch side effect.
 
     # Robot state publisher (publishes URDF to /robot_description)
     urdf_file_path = PathJoinSubstitution(
@@ -76,9 +68,9 @@ def generate_launch_description():
             [
                 PathJoinSubstitution(
                     [
-                        FindPackageShare("livox_ros_driver2"),
-                        "launch_ROS2",
-                        "msg_MID360_launch.py",
+                        FindPackageShare("robot_slam"),
+                        "launch",
+                        "lidar_only.launch.py",
                     ]
                 )
             ]
@@ -224,7 +216,6 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            network_setup,
             robot_state_publisher,
             joint_state_publisher,
             echo_launch,

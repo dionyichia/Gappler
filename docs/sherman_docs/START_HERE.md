@@ -40,6 +40,7 @@ evidence into the shared documents.
 | [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md) | T1.4 physical visit and no-motion power-on verdict; cell and motion checks remain downstream | Before the attended T1.6 session |
 | [`T3.4_BASE_BRINGUP.md`](T3.4_BASE_BRINGUP.md) | Partial base bring-up: live LiDAR, chassis feedback, isolated limiter evidence and outstanding driving/stop checks | Before resuming T3.4 or planning T3.5 |
 | [`T3.4_REMOTE_CHECKS.md`](T3.4_REMOTE_CHECKS.md) | Maintained isolated keyboard/smoother tests, LiDAR-only launch and gated attended handoff | Re-running remote T3.4 checks |
+| [`T3.5_LAUNCH_PREP.md`](T3.5_LAUNCH_PREP.md) | Network-preserving SLAM launch preparation and shared PointCloud2 includes; source-only verification | Before T3.5 mapping/localization setup |
 | [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md) | Reported D455 mount design and remaining fabrication evidence | Before fabricating the camera mount |
 
 The shared, unvalidated T1.5 procedure is in [`../ARM_BRINGUP.md`](../ARM_BRINGUP.md). This
@@ -84,3 +85,4 @@ From [`../START_HERE.md`](../START_HERE.md) and the root `CLAUDE.md`:
 | 2026-09-23 | OpenCode + Sherman | Updated the T1.4 pointer after its visit verdict was merged into dev (PR #22). |
 | 2026-10-06 | OpenCode + Sherman | Indexed T3.4 partial bring-up evidence; keyboard driving and physical stopping remain unproven. |
 | 2026-10-06 | OpenCode + Sherman | Indexed maintained T3.4 remote controls checks and attended acceptance outline. |
+| 2026-10-07 | OpenCode + Sherman | Indexed T3.5 launch preparation and its undeployed/source-only verification limits. |

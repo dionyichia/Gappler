@@ -104,11 +104,18 @@ after a successful run. L0 also runs stdlib guard and LiDAR launch-wiring tests.
 `python3 bench/test_t34_launch.py --runtime` constructs the real ROS LiDAR launch without
 executing its actions; source an existing nav overlay for that check. No LiDAR is opened.
 
+`python3 bench/test_navigation_launches.py` checks all three owned navigation entry points
+for network mutation and returned owned LiDAR includes (L0). With `--runtime`, it constructs
+real ROS launch descriptions using temporary source-backed package shares for the candidate
+and the existing overlay for external packages. It resolves includes and checks PointCloud2
+settings without executing actions. This is not installed-overlay or live-hardware proof.
+
 ### Changelog
 
 | Date | Who | Change |
 |---|---|---|
 | 2026-10-06 | OpenCode + Sherman | Added maintained T3.4 isolated controls and LiDAR launch checks; physical acceptance remains separate. |
+| 2026-10-07 | OpenCode + Sherman | Added navigation entry-point wiring and source-backed real launch construction checks. |
 
 ---
 

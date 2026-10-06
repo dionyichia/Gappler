@@ -20,15 +20,7 @@ MAP_DIR = str(path("map_dir"))
 
 
 def generate_launch_description():
-    network_setup = ExecuteProcess(
-        cmd=[
-            "sudo",
-            "bash",
-            "-c",
-            "ip addr flush dev enp2s0 && ip addr add 192.168.1.5/24 dev enp2s0",
-        ],
-        output="screen",
-    )
+    # Network addresses are an operator prerequisite, not a launch side effect.
 
     # Auto-saves the map every 30 s during mapping so progress is not lost
     map_autosave = ExecuteProcess(
@@ -81,9 +73,9 @@ def generate_launch_description():
             [
                 PathJoinSubstitution(
                     [
-                        FindPackageShare("livox_ros_driver2"),
-                        "launch_ROS2",
-                        "msg_MID360_launch.py",
+                        FindPackageShare("robot_slam"),
+                        "launch",
+                        "lidar_only.launch.py",
                     ]
                 )
             ]
@@ -204,7 +196,6 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            network_setup,
             map_autosave,
             robot_state_publisher,
             joint_state_publisher,

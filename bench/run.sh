@@ -76,6 +76,8 @@ s=$(step "L0  T3.4 keyboard burst" python3 bench/test_t34_keyboard.py)
 row L0 "T3.4 keyboard burst" "$s" ""
 s=$(step "L0  T3.4 LiDAR-only wiring" python3 bench/test_t34_launch.py)
 row L0 "T3.4 LiDAR-only wiring" "$s" ""
+s=$(step "L0  Navigation launch wiring" python3 bench/test_navigation_launches.py)
+row L0 "Navigation launch wiring" "$s" ""
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
 s=$(step "L0  D455 model" python3 bench/test_geometry.py --camera-model)

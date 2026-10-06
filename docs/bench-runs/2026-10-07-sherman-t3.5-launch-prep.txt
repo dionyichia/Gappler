@@ -1,0 +1,46 @@
+T3.5 launch preparation, 2026-10-07
+Candidate: t3.5-launch-prep stacked on 3c4038c (T3.4).
+No hardware node/process actions executed; installed overlay unchanged.
+
+TDD:
+python3 bench/test_navigation_launches.py
+Before fix: FAILED, five subcase failures: two network-flushing launches and
+three vendor LiDAR includes. After fix: Ran 2 tests, OK, exit 0 (Mac and box).
+Injected omission of livox_launch from returned mapping actions: caught.
+Review identified that omission gap; both AST and runtime checks now verify
+the returned IncludeLaunchDescription action, not merely its construction.
+
+Box real ROS construction (final reviewed check), exit 0:
+PASS construction and resolved includes: nav/robot_slam/launch/slam_mapping.launch.py
+PASS construction and resolved includes: nav/robot_slam/launch/slam_localization.launch.py
+PASS construction and resolved includes: nav/robot_navigation/launch/navigation.launch.py
+PASS owned LiDAR parameters/config; source-backed shares, no actions executed
+
+The construction check uses temporary source-backed ament shares for
+robot_slam/robot_navigation. External packages use the existing installed nav
+overlay. No LaunchService or action execute() call. This does not prove a
+fresh install, recursive vendor launch execution, live LiDAR or navigation.
+
+Mac ./bench/run.sh quick: exit 0; executed checks PASS, runtime geometry/model
+and L3-L6 SKIPPED. Two unchanged vendor dependency warnings.
+Box focused static/contract checks: exit 0:
+findings: 0 in code we own, 2 in vendor code
+PASS: all 12 checks clean for code we own.
+test_contracts: PASS
+PASS: no contract regressions. (0 warnings, 123 informational)
+No full box suite/build/preflight rerun claimed. Previous separate-checkout
+missing model weights remain a full-stack preflight gap, not corrected here.
+
+SHA256 of tested source (matching Mac and box):
+e9d3d633dfa76db2423e29b7520c9dccf2daba4d66dc8ba77d919d780a9ce6a3  nav/robot_slam/launch/slam_mapping.launch.py
+a9c0e509cd42b0a76abfa8d99d4be8c45194f04b1f73d493c6f426b4ca7e9c16  nav/robot_slam/launch/slam_localization.launch.py
+3a3238fbfb62bbc9750d99fcda1b16606e76dda1935cef4db57ec2a0956044d7  nav/robot_navigation/launch/navigation.launch.py
+1c7a9f3b773eb9053a817bc0607e3c956aed0a6c6e93fb87f431875e6b0425e2  bench/test_navigation_launches.py
+e0848a63f7519ce8dbaf99861374b8d50cfa7157b16869e14620808f9e938c2a  bench/run.sh
+
+Handoff: original checkout remains t3.3-mapping-tf with its untracked logs.
+Ethernet still has 192.168.1.100, .10, .5; no changes made to interface state.
+User-started xnode_comm remains running. No vehicle, LiDAR, SLAM/Nav2 or
+teleop process observed in post-check process inspection.
+Physical custody/power/battery/stop readiness not verified remotely.
+T3.4 and T3.5 remain PROGRESS; map route, build/deployment and attended tests open.
