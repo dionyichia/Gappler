@@ -181,7 +181,7 @@ All of these were decided by Dion. Each names where the detail lives.
   **Consequence settled 2026-09-23:** while it is `true` a grasp uses the SAM3 centroid and never
   calls AnyGrasp, so `T1.11` and `T1.12` no longer wait on `T1.8` or `T1.10`. Flipping the flag is
   `T1.17`, after the first grasp works. The launcher still starts `anygrasp_detection_node`
-  (`launchers/start_grasp_pipeline.py:122`) although nothing reads its output, so bring-up runs
+  (`launchers/start_camera_arm_sam3_grasp.py:122`) although nothing reads its output, so bring-up runs
   should skip it.
 - **B-2. Use the `realman_manip` home pose values**, the ones the safety document describes.
   ⚠️ **Do not trust either set.** Recalibrate and validate on the simulated arm before any powered

@@ -1,7 +1,7 @@
 """
 Starts the robot grasping pipeline. launchers/grasp_orchestrator.py runs it when the
 start-grasp message arrives. By hand, after `source global_env.sh`:
-    python3 launchers/start_grasp_pipeline.py
+    python3 launchers/start_camera_arm_sam3_grasp.py
 
 Launches in order:
   1. ROS2 bringup (rm_driver, robot_state_publisher, move_group, rm_control)

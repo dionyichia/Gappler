@@ -267,7 +267,7 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
   <code>t1.13-camera-serial</code> on 6 Oct 2026, which is <code>dev</code> plus the T1.7, T1.13
   and T1.16 changes. On plain <code>dev</code> a few launcher lines differ.</p>
   <ol class="route">
-    <li><span><a href="#s1">The launcher starts everything</a><span class="f">launchers/start_grasp_pipeline.py</span></span></li>
+    <li><span><a href="#s1">The launcher starts everything</a><span class="f">launchers/start_camera_arm_sam3_grasp.py</span></span></li>
     <li><span><a href="#s2">Arm bring-up: driver, model, MoveIt</a><span class="f">arm/arm_bringup/launch/arm_bringup.launch.py</span></span></li>
     <li><span><a href="#s3">Where the camera and gripper sit on the arm</a><span class="f">rm_65_w_gripper.urdf.xacro</span></span></li>
     <li><span><a href="#s4">SAM 3 finds the object</a><span class="f">grasp/segmentation/sam3_ros_node.py</span></span></li>
@@ -289,7 +289,7 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
     <div class="badge">1</div>
     <div class="body">
       <h3>The launcher starts everything</h3>
-      <div class="open"><span class="lbl">Open</span><code>launchers/start_grasp_pipeline.py</code><span>lines 85 to 159</span></div>
+      <div class="open"><span class="lbl">Open</span><code>launchers/start_camera_arm_sam3_grasp.py</code><span>lines 85 to 159</span></div>
       <p>This is a plain Python script. It does nothing clever. It starts the other programs one
       after another as separate processes, and stops them all on Ctrl+C (<code>shutdown()</code>,
       line 63).</p>
