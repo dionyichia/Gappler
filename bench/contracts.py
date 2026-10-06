@@ -177,6 +177,12 @@ class PyExtractor(ast.NodeVisitor):
             return lit
         if isinstance(node, ast.Name):
             return self.consts.get(node.id)
+        if isinstance(node, ast.Subscript):
+            # `TOPICS["object_centroid_2d"]`, `config("grasp")["topics"]["x"]`: the last key
+            # names a config entry (gappler_common.config, NEXT_STEPS 2.15).
+            sl = node.slice.value if type(node.slice).__name__ == "Index" else node.slice  # 3.8
+            key = literal_str(sl)
+            return self.from_config(key) if key else None
         if isinstance(node, ast.Attribute):
             dotted = attr_path(node)
             if dotted:
@@ -295,6 +301,9 @@ def attr_path(node: ast.AST) -> str | None:
 CPP_PUB = re.compile(r'create_publisher\s*<\s*([\w:]+)\s*>\s*\(\s*"([^"]+)"')
 CPP_SUB = re.compile(r'create_subscription\s*<\s*([\w:]+)\s*>\s*\(\s*"([^"]+)"')
 CPP_MF_SUB = re.compile(r'message_filters::Subscriber\s*<\s*([\w:]+)\s*>[^;]*?"([^"]+)"')
+# A topic read from config: `create_publisher<T>(topic("key"), ...)` (grasp_state_machine.cpp)
+CPP_PUB_CFG = re.compile(r'create_publisher\s*<\s*([\w:]+)\s*>\s*\(\s*topic\(\s*"([^"]+)"\s*\)')
+CPP_SUB_CFG = re.compile(r'create_subscription\s*<\s*([\w:]+)\s*>\s*\(\s*topic\(\s*"([^"]+)"\s*\)')
 CPP_FRAME = re.compile(r'frame_id\s*=\s*"([^"]+)"')
 CPP_TF = re.compile(r'(?:lookupTransform|canTransform)\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"')
 CPP_TF_TARGET = re.compile(r'\.transform\s*\([^,]+,\s*"([^"]+)"')
@@ -307,16 +316,24 @@ def cpp_type(t: str) -> str:
     return "/".join(parts) if len(parts) > 1 else t
 
 
-def extract_cpp(path: Path, src: str, out: dict) -> None:
+def extract_cpp(path: Path, src: str, out: dict, config: dict | None = None) -> None:
     loc = rel(path)
     lines = src.splitlines()
+    config = config or {}
 
     def line_of(pos: int) -> int:
         return src.count("\n", 0, pos) + 1
 
-    for rx, direction in ((CPP_PUB, "publishers"), (CPP_SUB, "subscribers"), (CPP_MF_SUB, "subscribers")):
+    def from_config(key: str) -> str:
+        vals = config.get(key, set())
+        return next(iter(vals)) if len(vals) == 1 else ""   # ambiguous or missing: skip
+
+    for rx, direction, resolve in ((CPP_PUB, "publishers", None), (CPP_SUB, "subscribers", None),
+                                   (CPP_MF_SUB, "subscribers", None),
+                                   (CPP_PUB_CFG, "publishers", from_config),
+                                   (CPP_SUB_CFG, "subscribers", from_config)):
         for m in rx.finditer(src):
-            topic = m.group(2)
+            topic = resolve(m.group(2)) if resolve else m.group(2)
             if not topic.startswith("/"):
                 continue
             e = out["topics"][topic]
@@ -590,7 +607,7 @@ def extract_all() -> dict:
 
     for p in walk(".cpp", ".hpp", ".h", ".cc"):
         src = p.read_text(errors="replace")
-        extract_cpp(p, src, out)
+        extract_cpp(p, src, out, cfg)
         extract_paths(p, src, out)
 
     for p in walk(".urdf", ".xacro"):

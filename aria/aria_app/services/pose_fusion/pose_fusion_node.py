@@ -56,6 +56,10 @@ from scipy.spatial.transform import Rotation
 from std_msgs.msg import Empty, Header
 from tf2_ros import TransformBroadcaster
 from visualization_msgs.msg import Marker
+from gappler_common import config
+
+# shared/global_config.yaml + aria/aria_config.yaml
+TOPICS = config("aria")["topics"]
 
 logger = logging.getLogger(__name__)
 
@@ -140,22 +144,22 @@ class PoseFusionNode(Node):
         # )
         self.create_subscription(
             PoseStamped,
-            "/aria/aruco_pose",
+            TOPICS["aruco_pose"],
             self._on_aruco_pose,
             VIDEO_QOS,
         )
         self.create_subscription(
             PoseStamped,
-            "/robot_pose",
+            TOPICS["robot_pose"],
             self._on_robot_pose,
             10,
         )
-        self._pub = self.create_publisher(PoseStamped, "/aria/fused_pose", 10)
+        self._pub = self.create_publisher(PoseStamped, TOPICS["fused_pose"], 10)
         self._pose_initialized_pub = self.create_publisher(
-            Empty, "/aria/pose_initialized", 10
+            Empty, TOPICS["pose_initialized"], 10
         )
         self._glasses_marker_pub = self.create_publisher(
-            Marker, "/aria/glasses_marker", 10
+            Marker, TOPICS["glasses_marker"], 10
         )
         self._tf_broadcaster = TransformBroadcaster(self)
 

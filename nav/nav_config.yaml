@@ -1,0 +1,45 @@
+# Nav config. Values only the nav subsystem reads (NEXT_STEPS 2.15).
+# Values another subsystem also reads (the glasses pose and voice prompt, the handovers with grasp,
+# /robot_pose, mount geometry, the map folder) live in shared/global_config.yaml.
+# Nav2 and SLAM Toolbox keep their own parameter files (robot_navigation/config,
+# robot_slam/config): /scan, /odom and /livox/lidar_2d are set there. Each value is written once.
+#
+# How it is read: gappler_common.config("nav", "<node name>"), which adds global + "/**" below
+# + that node's section. Edit a value and restart the node. No rebuild.
+#
+# Format: a ROS parameter file. "/**" holds values two or more nav nodes read. Each other
+# top-level key is one node, by its ROS node name.
+/**:
+  ros__parameters:
+    # Topics only nav publishes and reads. publisher -> subscribers.
+    topics:
+      # object_approach_node -> goal_reached_publisher (which forwards it to Nav2)
+      goal_pose: "/goal_pose"
+      # goal_reached_publisher -> object_approach_node
+      goal_reached: "/goal_reached"
+      # goto_glasses -> nobody yet (launchers/grasp_orchestrator.py has it commented out)
+      return_to_user_goal_reached: "/return_to_user/goal_reached"
+      # object_approach_node -> RViz
+      object_marker: "/object_marker"
+      # object_approach_node -> nobody yet
+      object_map_pose: "/object_map_pose"
+      # a person, by hand (ros2 topic pub) -> goto_glasses
+      goto_glasses_trigger: "/goto_glasses/trigger"
+      goto_glasses_cancel: "/goto_glasses/cancel"
+      # aria_image_relay -> RViz
+      aria_rgb_camera_view: "/aria/rgb_camera/view"
+      # Livox driver -> qos_relay
+      livox_lidar: "/livox/lidar"
+      # qos_relay -> pointcloud_to_laserscan (set in the SLAM launch files)
+      cloud_relay: "/cloud_relay"
+
+# nav/object_approach/object_approach_node.py
+object_approach_node:
+  ros__parameters:
+    approach_distance_m: 0.6   # stop when the D455 depth origin is this far from the object
+
+# nav/goto_glasses/goto_glasses.py
+goto_glasses:
+  ros__parameters:
+    side_offset_m: 0.6         # outbound: stop this far to the left of the user
+    return_clearance_m: 0.5    # return: horizontal distance from the D455 depth origin to the user

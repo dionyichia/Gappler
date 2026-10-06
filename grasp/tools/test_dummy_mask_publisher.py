@@ -1,8 +1,8 @@
 """Checks the stand-in's depth reading, which decides how far the arm reaches (T1.16).
 
-ROS is stubbed, so this runs on any machine with numpy and needs no robot:
+ROS is stubbed, so this runs on any machine with numpy and PyYAML and needs no robot:
     python3 grasp/tools/test_dummy_mask_publisher.py
-    uv run --no-project --with numpy python grasp/tools/test_dummy_mask_publisher.py
+    uv run --no-project --with numpy --with pyyaml python grasp/tools/test_dummy_mask_publisher.py
 """
 import sys
 import types
@@ -18,6 +18,7 @@ sys.modules["sensor_msgs.msg"].Image = object
 sys.modules["geometry_msgs.msg"].PointStamped = object
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "shared"))  # gappler_common
 from dummy_mask_publisher import DEPTH_SCALE, median_depth_m  # noqa: E402
 
 

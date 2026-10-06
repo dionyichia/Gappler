@@ -21,7 +21,7 @@ Manual testing:
 """
 
 import math
-from gappler_common import camera_reference_frame
+from gappler_common import camera_reference_frame, config
 from nav_geometry import camera_goal_xy
 
 import rclpy
@@ -34,8 +34,11 @@ from scipy.spatial.transform import Rotation
 from std_msgs.msg import Bool, Empty, String
 from tf2_ros import Buffer, TransformException, TransformListener
 
-SIDE_OFFSET_M = 0.6  # metres to the left of the user (outbound leg)
-RETURN_CLEARANCE = 0.5  # metres, horizontal D455 depth-origin to user
+# shared/global_config.yaml and nav/nav_config.yaml (goto_glasses)
+CFG = config("nav", "goto_glasses")
+TOPICS = CFG["topics"]
+SIDE_OFFSET_M = CFG["side_offset_m"]  # metres to the left of the user (outbound leg)
+RETURN_CLEARANCE = CFG["return_clearance_m"]  # metres, horizontal D455 depth-origin to user
 CAMERA_FRAME = camera_reference_frame()
 
 
@@ -51,28 +54,28 @@ class GotoGlasses(Node):
         self._goal_handle = None  # active Nav2 goal handle for cancellation
 
         self.create_subscription(
-            PoseStamped, "/aria/fused_pose", self._on_glasses_pose, 10
+            PoseStamped, TOPICS["fused_pose"], self._on_glasses_pose, 10
         )
         # Outbound: manual trigger for testing
         self.create_subscription(
-            Empty, "/goto_glasses/trigger", self._on_manual_trigger, 10
+            Empty, TOPICS["goto_glasses_trigger"], self._on_manual_trigger, 10
         )
         # Emergency cancel: kills any active navigation goal
         self.create_subscription(
-            Empty, "/goto_glasses/cancel", self._on_cancel_trigger, 10
+            Empty, TOPICS["goto_glasses_cancel"], self._on_cancel_trigger, 10
         )
         # Outbound: auto-trigger from verbal command
         self.create_subscription(
-            String, "/aria/audio/prompt", self._on_audio_prompt, 10
+            String, TOPICS["audio_transcription_prompt"], self._on_audio_prompt, 10
         )
         # Return: triggered by manipulation team when grasp is complete
         self.create_subscription(
-            Bool, "/manipulator/return_to_user", self._on_manipulation_done, 10
+            Bool, TOPICS["manipulator_return_to_user"], self._on_manipulation_done, 10
         )
 
         self._nav_client = ActionClient(self, NavigateToPose, "navigate_to_pose")
         self._return_result_pub = self.create_publisher(
-            String, "/return_to_user/goal_reached", 10
+            String, TOPICS["return_to_user_goal_reached"], 10
         )
 
         self.get_logger().info(

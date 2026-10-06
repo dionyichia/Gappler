@@ -19,14 +19,18 @@ from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
+from gappler_common import config
+
+# shared/global_config.yaml and nav/nav_config.yaml
+TOPICS = config("nav")["topics"]
 
 
 class GoalReachedPublisher(Node):
     def __init__(self) -> None:
         super().__init__("goal_reached_publisher")
-        self._publisher = self.create_publisher(String, "/goal_reached", 10)
+        self._publisher = self.create_publisher(String, TOPICS["goal_reached"], 10)
         self._action_client = ActionClient(self, NavigateToPose, "navigate_to_pose")
-        self.create_subscription(PoseStamped, "/goal_pose", self._on_goal_pose, 10)
+        self.create_subscription(PoseStamped, TOPICS["goal_pose"], self._on_goal_pose, 10)
         self.get_logger().info("GoalReachedPublisher ready.")
 
     def _on_goal_pose(self, msg: PoseStamped) -> None:

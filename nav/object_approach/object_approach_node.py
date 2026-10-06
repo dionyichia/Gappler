@@ -50,10 +50,13 @@ from tf2_geometry_msgs import do_transform_pose_stamped
 from tf2_ros import Buffer, TransformException, TransformListener
 from visualization_msgs.msg import Marker
 
+# shared/global_config.yaml and nav/nav_config.yaml (object_approach_node)
+CFG = config("nav", "object_approach_node")
+TOPICS = CFG["topics"]
 CAMERA_FRAME = camera_reference_frame()
-ARM_MOUNT_HEIGHT = float(config()["geometry"]["arm_mount"]["xyz_m"][2])
+ARM_MOUNT_HEIGHT = float(CFG["geometry"]["arm_mount"]["xyz_m"][2])
 # Target clearance: camera must be within this distance of the object
-APPROACH_DISTANCE = 0.6  # metres
+APPROACH_DISTANCE = CFG["approach_distance_m"]  # metres
 
 
 class ObjectApproachNode(Node):
@@ -73,30 +76,30 @@ class ObjectApproachNode(Node):
         # frame  : base_link               (confirmed — pipeline transforms to base_link before publishing)
         # QoS    : depth=10 RELIABLE       (confirmed — matches pipeline publisher)
         self.create_subscription(
-            PoseStamped, "/manipulation/goal_pose", self._on_object_pose, 10
+            PoseStamped, TOPICS["manipulation_goal_pose"], self._on_object_pose, 10
         )
         self.create_subscription(
-            String, "/goal_reached", self._on_goal_reached, 10
+            String, TOPICS["goal_reached"], self._on_goal_reached, 10
         )
         self.create_subscription(
-            String, "/aria/audio/prompt", self._on_audio_prompt, 10
+            String, TOPICS["audio_transcription_prompt"], self._on_audio_prompt, 10
         )
         self.create_subscription(
-            Empty, "/manipulation/done", self._on_manipulation_done, 10
+            Empty, TOPICS["manipulation_done"], self._on_manipulation_done, 10
         )
         self.create_subscription(
-            Bool, "/manipulator/release", self._on_release, 10
+            Bool, TOPICS["manipulator_release"], self._on_release, 10
         )
 
-        self._goal_pub = self.create_publisher(PoseStamped, "/goal_pose", 10)
-        self._marker_pub = self.create_publisher(Marker, "/object_marker", 10)
+        self._goal_pub = self.create_publisher(PoseStamped, TOPICS["goal_pose"], 10)
+        self._marker_pub = self.create_publisher(Marker, TOPICS["object_marker"], 10)
         self._map_pose_pub = self.create_publisher(
-            PointStamped, "/object_map_pose", 10
+            PointStamped, TOPICS["object_map_pose"], 10
         )
         # Signal to manipulation team: receiving this means "robot is in position,
         # start grasping".
         self._manipulation_start_pub = self.create_publisher(
-            Bool, "/manipulation/start", 10
+            Bool, TOPICS["manipulation_start"], 10
         )
 
         # Timer: republishes marker at robot position while tracking after grasp

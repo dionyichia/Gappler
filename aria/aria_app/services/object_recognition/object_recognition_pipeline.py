@@ -19,6 +19,7 @@ from sensor_msgs.msg import CameraInfo, CompressedImage, Image
 from std_msgs.msg import String, UInt8MultiArray
 
 from config import VIDEO_QOS, AudioStreamingPipelineConfig, ModelPaths, ROS2Topics
+from gappler_common import config as gappler_config
 from services.feature_matching import FeatureMatcher
 from services.object_recognition import SAM3Model
 from services.ros import ImageHelper, ROSPublisher
@@ -26,14 +27,15 @@ from services.visualizer.renderers.object_mask_visualizer import ObjectMaskVisua
 
 logger = logging.getLogger(__name__)
 
-DEPTH_SCALE = 0.001  # metres per depth unit
+# Wrist camera values from shared/global_config.yaml
+DEPTH_SCALE = gappler_config()["wrist_camera"]["depth_scale_m"]  # metres per depth unit
 
-TOPIC_RGB = "/camera/camera/color/image_raw"
-TOPIC_DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
-TOPIC_CAMERA_INFO = "/camera/camera/color/camera_info"
-TOPIC_MASK = "/camera/sam/mask"
-TOPIC_CENTROID_2D = "/object_centroid_2d"
-TOPIC_CENTROID_VIZ = "/object_centroid"
+TOPIC_RGB = ROS2Topics.WRIST_CAMERA_COLOR.value
+TOPIC_DEPTH = ROS2Topics.WRIST_CAMERA_ALIGNED_DEPTH.value
+TOPIC_CAMERA_INFO = ROS2Topics.WRIST_CAMERA_INFO.value
+TOPIC_MASK = ROS2Topics.WRIST_CAMERA_OBJECT_MASK.value
+TOPIC_CENTROID_2D = ROS2Topics.OBJECT_CENTROID_2D.value
+TOPIC_CENTROID_VIZ = ROS2Topics.OBJECT_CENTROID_VIZ.value
 
 
 class CameraFeed:
@@ -202,7 +204,7 @@ class ObjectRecognitionPipeline:
             self._tf_buffer, self._object_recognition_node
         )
         self._goal_pose_pub = self._object_recognition_node.create_publisher(
-            PoseStamped, "/manipulation/goal_pose", 10
+            PoseStamped, ROS2Topics.MANIPULATION_GOAL_POSE.value, 10
         )
 
     # ---------------------------------------------------------------------------

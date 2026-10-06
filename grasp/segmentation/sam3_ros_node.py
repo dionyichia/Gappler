@@ -20,25 +20,28 @@ from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo, Image
 
 from config import ModelPaths
+from gappler_common import config
 from services.object_recognition.sam3_model import SAM3Model
 from services.visualizer.renderers.object_mask_visualizer import ObjectMaskVisualizer
 
 # ---------------------------------------------------------------------------
-# Configuration
+# Configuration: shared/global_config.yaml and grasp/grasp_config.yaml (sam3_ros_node)
 # ---------------------------------------------------------------------------
-TOPIC_RGB = "/camera/camera/color/image_raw"
-TOPIC_DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
-TOPIC_MASK = "/camera/sam/mask"
-TOPIC_CENTROID_VIZ = "/object_centroid"
-TOPIC_CENTROID_2D = "/object_centroid_2d"
-TOPIC_CAMERA_INFO = "/camera/camera/color/camera_info"
+CFG = config("grasp", "sam3_ros_node")
+TOPICS = CFG["topics"]
+TOPIC_RGB = TOPICS["wrist_camera_color"]
+TOPIC_DEPTH = TOPICS["wrist_camera_aligned_depth"]
+TOPIC_MASK = TOPICS["wrist_camera_object_mask"]
+TOPIC_CENTROID_VIZ = TOPICS["object_centroid_viz"]
+TOPIC_CENTROID_2D = TOPICS["object_centroid_2d"]
+TOPIC_CAMERA_INFO = TOPICS["wrist_camera_info"]
 
-DEPTH_SCALE = 0.001  # metres per depth unit
+DEPTH_SCALE = CFG["wrist_camera"]["depth_scale_m"]  # metres per depth unit
 
 # One definition of this path lives in src/config/models.py. Do not add a second.
 SAM3_CHECKPOINT = str(ModelPaths.SAM3_PATH)
-TEXT_PROMPT = "box"
-CONFIDENCE = 0.5
+TEXT_PROMPT = CFG["text_prompt"]
+CONFIDENCE = CFG["confidence"]
 
 
 class Sam3RosNode(Node):

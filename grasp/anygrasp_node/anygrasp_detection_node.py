@@ -19,6 +19,7 @@ from grasp_interfaces.msg import GraspCandidate, GraspCandidateArray
 from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import String
+from gappler_common import config
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -37,16 +38,19 @@ cfgs.top_down_grasp = False
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-TOPIC_RGB = "/camera/camera/color/image_raw"
-TOPIC_DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
-TOPIC_MASK = "/camera/sam/mask"
-TOPIC_CAMERA_INFO = "/camera/camera/color/camera_info"
+# shared/global_config.yaml and grasp/grasp_config.yaml
+CFG = config("grasp", "anygrasp_detection_node")
+TOPICS = CFG["topics"]
+TOPIC_RGB = TOPICS["wrist_camera_color"]
+TOPIC_DEPTH = TOPICS["wrist_camera_aligned_depth"]
+TOPIC_MASK = TOPICS["wrist_camera_object_mask"]
+TOPIC_CAMERA_INFO = TOPICS["wrist_camera_info"]
 
-DEPTH_SCALE = 0.001  # metres per depth unit
-NUM_CANDIDATES = 5
+DEPTH_SCALE = CFG["wrist_camera"]["depth_scale_m"]  # metres per depth unit
+NUM_CANDIDATES = CFG["num_grasp_candidates"]
 
 # Wide lims — SAM mask handles spatial filtering
-LIMS = [-1.0, 1.0, -1.0, 1.0, 0.0, 1.5]
+LIMS = CFG["workspace_limits_m"]
 
 
 class AnyGraspDetectionNode(Node):
@@ -63,7 +67,7 @@ class AnyGraspDetectionNode(Node):
         # Pipeline state gate
         self.pipeline_state = "IDLE"
         self.state_sub = self.create_subscription(
-            String, "/pipeline_state", self.state_callback, 10
+            String, TOPICS["pipeline_state"], self.state_callback, 10
         )
 
         # AnyGrasp detector (stateless)
@@ -79,7 +83,7 @@ class AnyGraspDetectionNode(Node):
 
         # Publisher
         self.grasp_pub = self.create_publisher(
-            GraspCandidateArray, "/grasp_candidates", 10
+            GraspCandidateArray, TOPICS["grasp_candidates"], 10
         )
 
         # Synchronized RGB + depth

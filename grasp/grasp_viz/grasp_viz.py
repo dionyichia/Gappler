@@ -22,13 +22,18 @@ from std_msgs.msg import String
 from tf2_geometry_msgs import do_transform_pose
 from tf2_ros import Buffer, TransformListener
 from visualization_msgs.msg import Marker, MarkerArray
+from gappler_common import config
 
-# Gripper geometry constants (metres)
-PALM_LENGTH = 0.04  # cylinder along approach axis
-PALM_RADIUS = 0.006
-FINGER_LENGTH = 0.04  # finger bar length along approach axis
-FINGER_RADIUS = 0.005
-FINGER_OFFSET = 0.01  # finger offset along approach axis from palm centre
+# shared/global_config.yaml and grasp/grasp_config.yaml (grasp_visualizer)
+CFG = config("grasp", "grasp_visualizer")
+TOPICS = CFG["topics"]
+
+# Gripper geometry (metres)
+PALM_LENGTH = CFG["palm_length_m"]  # cylinder along approach axis
+PALM_RADIUS = CFG["palm_radius_m"]
+FINGER_LENGTH = CFG["finger_length_m"]  # finger bar length along approach axis
+FINGER_RADIUS = CFG["finger_radius_m"]
+FINGER_OFFSET = CFG["finger_offset_m"]  # finger offset along approach axis from palm centre
 
 
 class GraspVisualizer(Node):
@@ -41,27 +46,27 @@ class GraspVisualizer(Node):
 
         # Grasp candidates
         self.sub = self.create_subscription(
-            GraspCandidateArray, "/grasp_candidates", self.grasp_callback, 10
+            GraspCandidateArray, TOPICS["grasp_candidates"], self.grasp_callback, 10
         )
-        self.pub = self.create_publisher(MarkerArray, "/grasp_candidate_markers", 10)
+        self.pub = self.create_publisher(MarkerArray, TOPICS["grasp_candidate_markers"], 10)
 
         # SAM mask — republish as rgb8 for RViz Image display
         self.mask_sub = self.create_subscription(
-            Image, "/camera/sam/mask", self.mask_callback, 10
+            Image, TOPICS["wrist_camera_object_mask"], self.mask_callback, 10
         )
-        self.mask_pub = self.create_publisher(Image, "/debug/sam_mask", 10)
+        self.mask_pub = self.create_publisher(Image, TOPICS["debug_sam_mask"], 10)
 
         # Centroid sphere marker
         self.centroid_sub = self.create_subscription(
-            PointStamped, "/object_centroid", self.centroid_callback, 10
+            PointStamped, TOPICS["object_centroid_viz"], self.centroid_callback, 10
         )
-        self.centroid_pub = self.create_publisher(Marker, "/debug/centroid_marker", 10)
+        self.centroid_pub = self.create_publisher(Marker, TOPICS["debug_centroid_marker"], 10)
 
         # Pipeline state text marker
         self.state_sub = self.create_subscription(
-            String, "/pipeline_state", self.state_callback, 10
+            String, TOPICS["pipeline_state"], self.state_callback, 10
         )
-        self.state_marker_pub = self.create_publisher(Marker, "/debug/state_marker", 10)
+        self.state_marker_pub = self.create_publisher(Marker, TOPICS["debug_state_marker"], 10)
         self.current_state = "IDLE"
 
         self.get_logger().info("Grasp visualizer ready")
