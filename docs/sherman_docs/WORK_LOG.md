@@ -276,6 +276,15 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: T1-T6 terminals, single keyboard-to-driver path with `ros2` ownership checks, per-maneuver record sheet, halt-on-gate-failure rules and shutdown/custody checklist recorded. Explicit limits: arm driver off, no Nav2 goals, 1.0 s software bound is not a physical criterion, no kill/network experiments on moving hardware. Procedure unvalidated; driver-feed wiring, hardware-stop procedure and stopping criteria still owed at the attended session. T3.5 PROGRESS.
 - Next: attended-session review with the lab operator; fill in wiring/stop-procedure gaps; no PR/merge until validated.
 
+## [2026-10-07] T3.4 | Attended LiDAR recheck, battery hold
+
+- Evidence: [`T3.4_BASE_BRINGUP.md`](T3.4_BASE_BRINGUP.md#2026-10-07-attended-follow-up-lidar-passed-battery-hold), [selected excerpts](../bench-runs/2026-10-07-sherman-t3.4-attended-hold.txt).
+- Verified: lab `dev` at `3dde592`; network addresses/USB adapter present; owned source LiDAR initialized, one PointCloud2 publisher, 9.999-10.002 Hz. Unsupported hidden-node flag failed first, then corrected Humble `--all` observation succeeded. Candidate source hashes matched; no installed-overlay change.
+- Outcome: Sherman reported chassis display **19.3 V**; no fresh ROS battery/alarm reading. Session halted before base driver, keyboard, smoother or activation; T3.4 stays PROGRESS. No movement/stopping acceptance or mapping.
+- Handoff: user-started LiDAR still running at last inspection; physical power-off, charging and custody not confirmed. No user process terminated by automation.
+- Next: verify manufacturer charger/nameplate compatibility, charge with supervision, establish battery and physical-stop readiness, then resume stationary feedback and attended driving/stop gates. Hosted task-tree Artifact republish owed.
+- Close-out verification: Mac quick bench passed executed levels with explicit ROS/PyYAML skips; evidence links/anchors, task-tree syntax/status assertion and diff checks passed. Read-only documentation review found no blockers. Documentation-only change on existing stacked `t3.5-launch-prep`; no completion PR or merge.
+
 ## Record Template
 
 ```markdown

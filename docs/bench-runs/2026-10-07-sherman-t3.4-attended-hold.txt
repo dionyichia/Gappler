@@ -1,0 +1,92 @@
+T3.4 attended follow-up, 2026-10-07: LiDAR verified; battery hold, NOT DONE
+Selected verbatim excerpts and observer notes, not a full terminal transcript.
+Documentation branch: t3.5-launch-prep (stacked on t3.4-bringup-evidence),
+pre-documentation HEAD 7b01820. Lab checkout dev at 3dde592.
+No checkout switch, build or install; existing untracked logs preserved.
+
+T1 user-run preflight excerpts:
+## dev...origin/dev
+?? docs/dion_docs/t1.7_logs/
+3dde592 (HEAD -> dev, origin/dev) Merge pull request #46 from
+dionyichia/t0.16-quickstart-terminals
+/dev/nvme0n1p9  325G  292G   16G  95% /home
+    inet 192.168.1.100/24 brd 192.168.1.255 scope global noprefixroute enp2s0
+    inet 192.168.1.10/24 brd 192.168.1.255 scope global secondary noprefixroute enp2s0
+    inet 192.168.1.5/24 brd 192.168.1.255 scope global secondary noprefixroute enp2s0
+/dev/CAN2COM_HUB -> ttyUSB0
+ros2: error: unrecognized arguments: --include-hidden-nodes
+
+Correction verified read-only against installed Humble:
+  -a, --all             Display all nodes even hidden ones
+ros2 node list --no-daemon --all ->
+/_ros2cli_95129
+/_ros2cli_daemon_91_5568abc5646d45c2999662a74d1ffb58
+node-list exit: 0
+No robot nodes discovered; CLI helpers present. No matching hardware-driver/bench
+processes and no USB/video holder reported during observer preflight. Discovery
+is a snapshot, not continuous exclusion or proof that hardware is safe.
+
+Read-only source/launch checks before staging:
+PASS: real LiDAR-only launch construction and config path; no actions executed
+Ran 5 tests in 0.010s
+OK
+The installed base-only launch was inspected, not executed: returned actions are
+xnode_comm and a 15-second-delayed xnode_vehicle. No Nav2/network-reset action.
+
+SHA256, equal on candidate checkout and branch source:
+ca3a9c8f4ed00db39a829617362b338fd47b2b58cb6a7bfa482b399e02fd339c  nav/simple_teleop/simple_teleop/teleop_node.py
+e5ec2d8d681416a698fb741315805f084e8e9d1638441210ac548a4c076d8b99  nav/robot_slam/launch/lidar_only.launch.py
+Keyboard source only staged, NOT launched.
+
+T2 launch executed by Sherman, domain 91, ROS_LOCALHOST_ONLY=1:
+ros2 launch ~/rcp-Gappler/log/t35-launch-prep/nav/robot_slam/launch/lidar_only.launch.py
+[INFO] [launch]: All log files can be found below /home/rcp2026/.ros/log/2026-10-07-18-53-37-800269-iot22-Computer-95233
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [livox_lidar_publisher]: Livox Ros Driver2 Version: 1.2.4
+[INFO] [livox_lidar_publisher]: Init lds lidar success!
+successfully set lidar attitude, ip: 192.168.1.3
+[INFO] [livox_lidar_publisher]: livox/lidar publish use PointCloud2 format
+(Driver prefixes/timestamps omitted in these selected log lines.)
+
+Observer: ros2 topic info /livox/lidar -v
+Type: sensor_msgs/msg/PointCloud2
+Publisher count: 1
+Node name: livox_lidar_publisher
+Node namespace: /
+QoS profile: Reliability RELIABLE, Durability VOLATILE, History (Depth) UNKNOWN
+Subscription count: 0
+
+Observer: timeout --signal=INT 12s ros2 topic hz /livox/lidar
+WARNING: topic [/livox/lidar] does not appear to be published yet
+average rate: 10.002
+ min: 0.099s max: 0.101s std dev: 0.00035s window: 12
+average rate: 10.000
+ min: 0.099s max: 0.101s std dev: 0.00031s window: 33
+average rate: 9.999
+ min: 0.099s max: 0.101s std dev: 0.00035s window: 76
+average rate: 10.000
+ min: 0.099s max: 0.101s std dev: 0.00035s window: 107
+All printed average rates: 9.999-10.002 Hz. Transient discovery warning followed
+by live samples. No physical point-cloud/TF geometry or obstacle-safety proof.
+
+Battery: Sherman reported "19.3V" on chassis display. No vehicle driver running,
+therefore no fresh ROS voltage, low-battery flag, charge state or cutoff evidence.
+Earlier session: 20.5 V + low flag. No capacity percentage/fault diagnosis inferred.
+Decision: halt before base-driver/keyboard startup; verify compatible charger,
+supervised charging and battery readiness before any driving.
+
+Handoff inspection: LiDAR launch PID 95233 and driver PID 95234 still running.
+Other prepared driver/smoother/keyboard/activation/recording panes remained Bash.
+No automated wheel commands, arm driver, Nav2, mapping or localization started.
+User was asked to switch chassis off and stop LiDAR with Ctrl+C; physical power,
+LiDAR departure, charging and custody not confirmed. No user process terminated.
+T3.4 remains PROGRESS. Driving, physical stop, odometry direction and shutdown
+acceptance still owed; installed candidate deployment not claimed.
+
+Documentation close-out verification (feature checkout, no hardware/build):
+./bench/run.sh quick -> exit 0, PASS (every level that ran passed).
+L0 geometry runtime/D455 model and ROS-dependent levels explicitly SKIPPED;
+map-saver suite had one PyYAML-dependent skip; vendor static findings retained.
+Evidence links/heading anchors, task-tree JavaScript syntax, git diff --check:
+PASS. T3.4 task-array assertion: unique entry stays PROGRESS and includes 19.3 V.
+Read-only documentation review: no blockers/corrections; no hardware acceptance.
