@@ -15,6 +15,7 @@ DOMAIN="${BENCH_DOMAIN:-77}"
 [ -f "$REPO/install/setup.bash" ] || { echo "SKIP: no $REPO/install -- run ./build.sh first"; exit 3; }
 export ROS_DOMAIN_ID="$DOMAIN" ROS_LOCALHOST_ONLY=1
 set +u; source /opt/ros/humble/setup.bash; source "$REPO/install/setup.bash"; set -u
+export PYTHONPATH="$REPO/shared${PYTHONPATH:+:$PYTHONPATH}"   # estop.py reads arm_config.yaml
 cd "$REPO"; mkdir -p log
 export BENCH_ESTOP_LOG="log/bench_estop_$(date +%F_%H%M).txt"
 

@@ -25,15 +25,24 @@ from rclpy.signals import SignalHandlerOptions
 from rm_ros_interfaces.msg import Stop
 from std_msgs.msg import Empty
 
+try:
+    from gappler_common import config
+except ImportError:
+    sys.exit("estop: cannot read config. Run `source arm/arm_env.sh` first, then start estop again.")
+
+# arm/arm_config.yaml. Read at start-up, so a broken config stops this script before it is
+# relied on, not during a stop.
+CFG = config("arm", "estop")
+TOPICS = CFG["topics"]
 CTRL_C = "\x03"
-ACK_WAIT = Duration(seconds=1.0)  # how long to wait for subscribers to confirm the last stop
+ACK_WAIT = Duration(seconds=CFG["ack_wait_s"])  # how long to wait for subscribers to confirm the last stop
 
 
 class EStop(Node):
     def __init__(self):
         super().__init__("estop")
-        self.estop_pub = self.create_publisher(Stop, "/rm_driver/emergency_stop_cmd", 1)
-        self.move_stop_pub = self.create_publisher(Empty, "/rm_driver/move_stop_cmd", 1)
+        self.estop_pub = self.create_publisher(Stop, TOPICS["rm_driver_emergency_stop_cmd"], 1)
+        self.move_stop_pub = self.create_publisher(Empty, TOPICS["rm_driver_move_stop_cmd"], 1)
         self.get_logger().info(
             "E-stop ready.  E=emergency  R=resume  S=soft stop  Q=quit  Ctrl+C=emergency and quit"
         )

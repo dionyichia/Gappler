@@ -20,6 +20,16 @@ python3 bench/contracts.py snapshot   # re-baseline after a deliberate change
 
 Python 3.8+, stdlib only. Nothing to install.
 
+Shared-geometry wiring checks are stdlib-only. The separate runtime geometry
+checks use the existing PyYAML dependency of `gappler_common`; without it they
+report SKIPPED (and `--no-skips` fails). Run individually with
+`python3 bench/test_geometry.py --wiring` or `--runtime`. Mounts in
+`shared/global_config.yaml` use JSON flow mappings so the stdlib contract scanner
+can inspect the same source without importing ROS or executing launch code.
+`python3 bench/test_geometry.py --camera-model` expands the installed Intel D455
+model and checks mount offsets/no nominal sensor joints; it needs ROS/xacro and
+PyYAML, otherwise reports SKIPPED. It opens no camera and launches no hardware.
+
 ### Levels (renamed 2026-09-19)
 
 `run.sh` runs these in order. A level that this machine cannot run is reported as SKIPPED, never
@@ -65,7 +75,7 @@ refused, 3 skipped — never a pass.
 | `sim_moveit.sh` | MoveIt plans and executes to both home poses and zero on a `mock_components` arm | installed config must be mock hardware |
 | `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s` sent back to back, the Ctrl+C key and SIGINT (5 trials) all deliver? Every case is required since the 2026-09-21 fix | — |
 | `state_machine_sim.sh` | `grasp_state_machine` runs a full grasp cycle on the simulated arm; the test plays camera, detector and gripper | mock hardware; preflight's `arm-ping`/`arm-port` must not pass (Dion's exception in `CLAUDE.md`) |
-| `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 11 cases, 5 expected-fail (F1 ×2, F2, E1, F4). The F1 and F4 fixes landed 2026-10-05 (T3.8), so those three should now report XPASS. Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
+| `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 14 cases, 5 expected-fail (F1 ×2, F2, E1, F4). The F1 and F4 fixes landed 2026-10-05 (T3.8), so those three should now report XPASS. Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
 | `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `grasp/anygrasp_venv/.venv`, built by `./grasp/anygrasp_venv/build_anygrasp_venv.sh` | GPU only, no ROS |
 | `anygrasp_replay.sh` | a recorded wrist-camera bag (`WRIST_CAMERA_BAG`, default `assets/recordings/wrist_camera`, made by `grasp/tools/record_wrist_camera.sh`) through `sam3_ros_node` and `anygrasp_detection_node`, with `/pipeline_state` played as EXECUTING then IDLE. 2 controls (a mask, candidates) and the A1 gate case, expected-fail. SKIPPED with no recording | channel must be empty **including hidden topics**. No camera, no state machine |
 
@@ -136,7 +146,7 @@ system's interface — which is worth having in review on its own.
 
 `preflight.py` runs everything up to **but not including** commanding the arm. That line is
 enforced in the code, not just in a comment: the script never publishes to any `/rm_driver/*_cmd`
-topic and never launches `grasp_state_machine` or `launchers/start_grasp_pipeline.py`, because both home
+topic and never launches `grasp_state_machine` or `launchers/start_camera_arm_sam3_grasp.py`, because both home
 the arm within seconds of start, unprompted (`ORIENTATION.md` §8.1).
 
 Everything short of that is checked, in two runs. The default run (L2) covers the machine: GPU

@@ -134,6 +134,12 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: MAIN survives off-center and shortened geometries. Remaining residuals: T1.1 supersession owed (Dion), live validation T1.7, D3 transcription, table frame.
 - Next: PR `t1.3-variant-matrix` to `dev` on Sherman's word (CI + merge word; box already verified).
 
+## [2026-09-24] T5.4 | D455 TF determination opened (CAD + package sources)
+
+- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md)
+- Verified (Mac, no lab access): replacement-mount CAD inputs recorded (hole origin, platform edge −13.05/+29.50 mm, y = 0 centered, 3 mm middle plate vs 5 mm top platform — all design-intent, unverified as-built); D455 package facts read from Intel URDF (origin = bottom screw, color y −0.059, baseline 95 mm, fixed optical flip, driver overwrites fine extrinsics live).
+- Outcome: chain derived with one UNKNOWN (platform↔base placement); frame-collision flag to Dion/T5.5; October taping list referenced under T5.4-after-T5.3-fit. No PR; T5.4 stays OPEN.
+
 ## [2026-09-24] T5.2 | v2 plate revision DONE
 
 - Evidence: [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md) (v2 section + changelog)
@@ -147,6 +153,56 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Verified: Mac `./bench/run.sh quick` PASS (L0/L1/L2; L3-L6 skipped off-box). Box (isolated domain, publisher stopped after): py_compile OK, exactly 1 `robot_base_to_arm` definition, exact args `0.18 0 0.48 3.14159 0 0 robot_base_link base_link`; live `tf2_echo` → Translation `[0.180, 0.000, 0.480]`, quaternion `[0, 0, 1, 0]`, yaw 180°. Branch rebased onto `dev` via merge (clean), pushed @ `f1f1a47` + close-out.
 - Outcome: mapping launch now joins the arm tree during mapping runs. Residuals: 0.18/0.48 values duplicated across both SLAM launches (plus `bench/nodes/test_nav_nodes.py` fixture) until T5.4 single-sources them; full mapping-launch TF tree untested (no base bring-up remote).
 - Next: PR `t3.3-mapping-tf` to `dev`; Zongzhe review; merge on Sherman's word (robot-adjacent: CI + box evidence + word).
+
+## [2026-10-06] T5.3 | Revised D455 mount fit PASS
+
+- Evidence: [`T5.3_D455_FIT.md`](T5.3_D455_FIT.md).
+- Verified: serial 146222253541 selected explicitly; RGB and depth browser endpoints delivered JPEG frames, and Sherman confirmed live views. Rigidity, fasteners, cable route, arm clearance and navigation-view suitability are Sherman-reported PASS, not independently certified by automation.
+- Outcome: task-tree T5.3 marked DONE. No runtime TF or robot motion commands added. Geometry integration remains T5.4 and camera–LiDAR calibration remains T5.5; photo archival, angular uncertainty and detailed clearance-method evidence remain residuals.
+- Branch checks: `git diff --check` and Mac `./bench/run.sh quick` PASS; L3–L6 skipped. These checks validate repository consistency, not physical fit.
+- Next: branch verification and review; merge requires CI, box evidence and Sherman's explicit merge word. Task-tree artifact republish is owed (no publishing tool available in this session).
+
+## [2026-10-06] T5.4 | As-fitted screw geometry recorded
+
+- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md); T5.3 merged PR #38.
+- Verified: Sherman reported platform/screw measurements, 65 mm axle height and axle alignment with the chassis midpoint. Derived provisional bottom-screw xyz `(0.208, 0, 0.528) m`; zero rpy visually estimated, uncertainty unknown. Serial corrected to 146222253541. Mac quick bench and `git diff --check` PASS (L3–L6 skipped).
+- Outcome: measured placement recorded; T5.4 remains OPEN. No live TF changed. Preserved both work-log histories when merging latest `origin/dev` into the existing pushed T5.4 branch.
+- Next: distinguish arm, LiDAR, camera and return-clearance offsets before single-source integration; inspect installed camera package/frame chain, then focused tests and isolated box verification. Do not replace every 0.18 with the camera screw x=0.208.
+
+## [2026-10-06] T5.4 | Shared fixed geometry, behavior preserved
+
+- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md), `shared/global_config.yaml`, `bench/test_geometry.py`.
+- Verified: Mac quick checks PASS with geometry runtime explicitly SKIPPED (PyYAML absent); box six geometry tests PASS; mock-nav six controls PASS/four existing XFAIL; isolated TF lookups matched arm/LiDAR/provisional screw config and publishers were stopped. Contract scanner extended/tested without baseline reset.
+- Outcome: both SLAM launches read shared mount definitions; approach/return legacy references remain separately 0.18 and marker height reads arm geometry. No stopping behavior changed. D455 screw stored, not deployed as a camera/optical transform. Review findings addressed: malformed-config errors and accurate runtime skip reporting.
+- Next: T5.4 remains PROGRESS pending D455 package/frame chain and Dion's navigation-reference decisions. No PR or merge yet. Task-tree artifact republish remains owed.
+
+## [2026-10-06] T5.4 | D455 sensor-frame chain verified
+
+- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md), `nav/robot_slam/launch/base_camera.launch.py`, `nav/robot_slam/urdf/base_d455.urdf.xacro`.
+- Verified: installed Intel macro gives screw-to-link `(0.01115, 0.0475, 0.0145) m` (corrects earlier x=0.0158); driver serial 146222253541; RGB/depth frame headers resolve to robot_base_link. Exactly two static publishers with disjoint mount/body versus sensor children. Eight box geometry/model tests PASS; Mac quick PASS with runtime/model checks explicitly SKIPPED. Read-only code review found no important issues.
+- Outcome: opt-in camera-only source launch integrated and verified in private domain 176, no arm/base driver or stopping-behavior change. Our camera-only browser preview remains running. Installed-package deployment/full-system operation/calibration not proven; no build performed.
+- Decision reported by Sherman: 180 mm refers to camera, not robot front. Which camera/frame and whether both navigation legs use it remain to be confirmed; fitted D455 screw/depth x are 208/219.15 mm. T5.4 stays PROGRESS. Task-tree artifact republish owed.
+
+## [2026-10-06] T5.4 | Both navigation legs reference D455 depth origin
+
+- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md), `shared/nav_geometry.py`, `bench/test_camera_navigation.py`, mock-nav log `bench_nav_nodes_2026-10-06_1642.txt` on the box.
+- Decision: Sherman explicitly selected the new base D455 for both approach and return. Distances are planar: 0.6/0.5 m, using actual TF sensor origin rather than old 180 mm or screw position. Separate arm/LiDAR geometry unchanged.
+- Verified: four new camera-reference mock cases failed old code; after implementation full mock-nav nine controls PASS/four existing XFAIL. Pure geometry/arrival-gate tests PASS; arrival map-TF loss regression failed before its guard fix. Box eight geometry/model tests and initial three pure geometry tests PASS. Missing camera TF produces no goal/start and return can retry when TF appears.
+- Outcome: legacy reference scalars removed. Camera launch must run on navigation's domain; private preview does not provide production TF. Full L0–L5 lab testing requested and pending, with real-arm-unreachable simulation guard intact; no real motion automated. Task remains PROGRESS until verification is reconciled.
+
+## [2026-10-06] T5.4 | Evidence reconciliation before close-out
+
+- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md), candidate `12d784c`, isolated box `log/t54-full-suite.txt` and arm build log.
+- Verified: current box L0–L2 checks passed, including eight geometry/model tests and four camera-navigation tests. Arm/grasp build finished all 24 packages with exit 0 in 5 min 10 s. Mac quick bench passed executed checks; ROS-dependent checks skipped explicitly. Additional 10,000-case planar check passed (maximum error about 5e-15 m).
+- Clarified: initial CAD/no-runtime statements are historical; mount orientation remains visually estimated. Latest-available/cached TF is not fresh localisation or live camera health. Arrival still trusts nav success; calibration and physical stopping accuracy remain unproven. Original measurement-plan checks not evidenced are now labelled residuals.
+- Outcome: documentation prerequisite work progressed while the box suite runs. Navigation build and final-code mock navigation still pending at this entry. Existing environments/weights reused; fresh-machine reproducibility not claimed. T5.4 stays PROGRESS, no PR yet, merge approval withdrawn until results are reviewed and Sherman approves again.
+
+## [2026-10-06] T5.4 | Final box evidence and geometry/software close-out
+
+- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md), [`full box output`](../bench-runs/2026-10-06-sherman-t5.4-full.txt), candidate code `12d784c` (subsequent commits documentation-only).
+- Verified: L0–L2 PASS; both builds PASS (24 arm/grasp, 18 nav); final-code mock navigation nine controls PASS/four known XFAIL. MoveIt, e-stop and AnyGrasp environment PASS; recorded-image replay controls PASS/known A1 XFAIL.
+- Whole-suite disposition: FAIL, exit 1. State-machine simulation safely refused before launch with arm reachable; L5 failed because Aria USB absent, with six private-domain graph checks skipped. No guards bypassed and no real motion commanded. Unchanged vendor-driver compiler warnings recorded, not dismissed as proof of hardware safety.
+- Outcome: T5.4 marked DONE for geometry/software integration in task-tree, not calibration or real driving acceptance. Visual mount angles/measurement uncertainty, cached-TF health limitations, known defects and physical stopping accuracy remain explicit residuals. PR/CI next; no active merge approval. Hosted task-tree Artifact republish owed.
 
 ## Record Template
 

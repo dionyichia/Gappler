@@ -699,7 +699,7 @@ svg.scn{display:block;width:100%;height:auto;min-width:560px}
           <tbody>
             <tr><td><code>main.py</code> (top folder)</td><td>The coordinator plus the glasses app</td></tr>
             <tr><td><code>aria/aria_app/main.py</code></td><td>The <strong>glasses</strong> side (part A)</td></tr>
-            <tr><td><code>launchers/start_grasp_pipeline.py</code> (was <code>ros2_robot_ws/src/main.py</code>)</td><td>The <strong>robot</strong> side —
+            <tr><td><code>launchers/start_camera_arm_sam3_grasp.py</code> (was <code>ros2_robot_ws/src/main.py</code>)</td><td>The <strong>robot</strong> side —
               camera, arm planning, segmentation, grasp planner, state machine.
               <span class="flag">⚠ This one moves the arm. See Section 5.</span></td></tr>
             <tr><td><code>launchers/grasp_orchestrator.py</code> (was <code>orchestrator.py</code>)</td>
@@ -784,7 +784,7 @@ svg.scn{display:block;width:100%;height:auto;min-width:560px}
               <span class="topic">/object_centroid_2d</span></td>
               <td>A real 3D point vs pixels-plus-distance</td></tr>
             <tr><td>7</td><td>three × <code>main.py</code> + <code>orchestrator.py</code></td>
-              <td>Four entry points. Worse: <code>launchers/start_grasp_pipeline.py</code> (was <code>ros2_robot_ws/src/main.py</code>) describes
+              <td>Four entry points. Worse: <code>launchers/start_camera_arm_sam3_grasp.py</code> (was <code>ros2_robot_ws/src/main.py</code>) describes
               <em>itself</em> as "Main orchestrator" — which is the other file's name</td></tr>
             <tr><td>8</td><td><code>rm_65_config</code> / <code>rm_65_w_gripper_config</code></td>
               <td>Arm without / with the gripper. Ours all use the gripper version, but the
@@ -851,7 +851,7 @@ svg.scn{display:block;width:100%;height:auto;min-width:560px}
         <span class="tag t-rep">reported</span></p>
         <p><strong>Rules:</strong> clear the space around the arm first; run the emergency-stop
         script <span class="cite">estop.py</span> in its own terminal before anything else; and
-        never start <code>grasp_state_machine</code> or <code>launchers/start_grasp_pipeline.py</code>
+        never start <code>grasp_state_machine</code> or <code>launchers/start_camera_arm_sam3_grasp.py</code>
         unless somebody is physically standing next to the robot.</p>
       </div>
 
@@ -1457,7 +1457,7 @@ sensors_calib_json_str = self.config_queue.get()
               the object and closes the gripper. AnyGrasp's suggestions are received and ignored in
               this mode. Worth knowing before anyone spends a day debugging AnyGrasp's output.</td></tr>
             <tr><td><strong>Startup timing is handled by guessing</strong>
-              <span class="cite">launchers/start_grasp_pipeline.py</span> <span class="tag t-code">code</span></td>
+              <span class="cite">launchers/start_camera_arm_sam3_grasp.py</span> <span class="tag t-code">code</span></td>
               <td>Components are started with fixed waits — 2 s, 3 s, 5 s — because the state
               machine needs the motion planner to be ready. On a slower machine the guess is wrong
               and you get confusing failures.</td></tr>
@@ -1796,7 +1796,7 @@ sensors_calib_json_str = self.config_queue.get()
       <div class="hd"><span class="n">11</span><h4>The grasp programs start</h4><span class="sc sc-code">In code, never run</span></div>
       <p class="act">The start message wakes up the grasp side of the robot.</p>
       <dl class="facts">
-        <dt>Programs</dt><dd><code>launchers/grasp_orchestrator.py</code> hears <span class="topic">/manipulation/start</span> and runs <code>launchers/start_grasp_pipeline.py</code>. That starts the wrist camera, the SAM 3 stand-in, AnyGrasp, a grasp viewer and the grasp controller.</dd>
+        <dt>Programs</dt><dd><code>launchers/grasp_orchestrator.py</code> hears <span class="topic">/manipulation/start</span> and runs <code>launchers/start_camera_arm_sam3_grasp.py</code>. That starts the wrist camera, the SAM 3 stand-in, AnyGrasp, a grasp viewer and the grasp controller.</dd>
         <dt>Today</dt><dd>It also starts the arm software a second time (audit I1).</dd>
       </dl></div></li>
     <li class="st sim"><div class="stc">

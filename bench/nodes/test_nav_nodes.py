@@ -6,7 +6,7 @@ and MockNav2 below -- standing in for Nav2's navigate_to_pose -- only records go
 Each case starts its node(s) fresh from nav/<package>/
 (the files each package's CMakeLists installs), so the nav build is not needed.
 
-  control  approach, far object         /goal_pose 0.78 m from the object, facing it
+  control  approach, far object         camera 0.6 m from object, compensating lateral TF offset
   control  approach, near object        /manipulation/start, no /goal_pose
   control  approach, nav succeeds       bridge -> "success" -> /manipulation/start
   xfail    approach after nav failure   a second object is still acted on        F1
@@ -51,7 +51,8 @@ NAV = REPO / "nav"   # one package per node since 2026-09-22: nav/<package>/<scr
 LOG = REPO / os.environ.get("BENCH_NAV_LOG", "log/bench_nav_nodes.txt")
 # robot_base_link -> base_link (the arm), as slam_localization.launch.py:102 publishes it
 ARM_MOUNT = (0.18, 0.0, 0.48, math.pi)
-CAMERA_X = 0.18       # object_approach_node.py:53
+CAMERA_X, CAMERA_Y = 0.31, -0.06  # deliberately differ from fitted camera: proves TF consumption
+CAMERA_FRAME = "base_d455_depth_optical_frame"
 APPROACH = 0.6        # object_approach_node.py:55
 SIDE_OFFSET = 0.6     # goto_glasses.py:33
 # modules each script imports beyond rclpy + the message packages checked above
@@ -213,10 +214,13 @@ class Case:
 
 
 # ---- the cases: each returns (ok, detail) or raises SetupError ----------------------
-def approach_rig(c):
+def approach_rig(c, camera=True):
     r = c.rig
-    r.static.sendTransform([tf("map", "robot_base_link", 0.0, 0.0, 0.0, 0.0),
-                            tf("robot_base_link", "base_link", *ARM_MOUNT)])
+    transforms = [tf("map", "robot_base_link", 0.0, 0.0, 0.0, 0.0),
+                  tf("robot_base_link", "base_link", *ARM_MOUNT)]
+    if camera:
+        transforms.append(tf("robot_base_link", CAMERA_FRAME, CAMERA_X, CAMERA_Y, 0.5425, 0.0))
+    r.static.sendTransform(transforms)
     r.pub("/manipulation/goal_pose", PoseStamped)
     for t, typ in (("/goal_pose", PoseStamped), ("/manipulation/start", Bool),
                    ("/object_map_pose", PointStamped), ("/goal_reached", String)):
@@ -231,9 +235,9 @@ def send_object(c, mx, my, mz=0.5):
 
 
 def expected_goal(ox, oy):
-    d = math.hypot(ox - CAMERA_X, oy)
-    k = (APPROACH + CAMERA_X) / d
-    return ox + (CAMERA_X - ox) * k, oy + (0.0 - oy) * k
+    yaw = math.atan2(oy - CAMERA_Y, ox - CAMERA_X)
+    return (ox - math.cos(yaw) * (APPROACH + CAMERA_X) + math.sin(yaw) * CAMERA_Y,
+            oy - math.sin(yaw) * (APPROACH + CAMERA_X) - math.cos(yaw) * CAMERA_Y)
 
 
 def case_approach_far(c):
@@ -253,12 +257,27 @@ def case_approach_far(c):
         return False, f"{len(goals)} /goal_pose, {len(starts)} /manipulation/start (want 1, 0)"
     g = goals[0]
     gx, gy = expected_goal(ox, oy)
-    dist = math.hypot(ox - g.pose.position.x, oy - g.pose.position.y)
-    facing = ang(yaw_of(g.pose.orientation), math.atan2(oy - g.pose.position.y, ox - g.pose.position.x))
-    ok = (g.header.frame_id == "map" and abs(dist - (APPROACH + CAMERA_X)) < 0.02
+    yaw = yaw_of(g.pose.orientation)
+    cx = g.pose.position.x + math.cos(yaw) * CAMERA_X - math.sin(yaw) * CAMERA_Y
+    cy = g.pose.position.y + math.sin(yaw) * CAMERA_X + math.cos(yaw) * CAMERA_Y
+    dist = math.hypot(ox - cx, oy - cy)
+    facing = ang(yaw, math.atan2(oy - cy, ox - cx))
+    ok = (g.header.frame_id == "map" and abs(dist - APPROACH) < 0.02
           and math.hypot(gx - g.pose.position.x, gy - g.pose.position.y) < 0.02 and facing < 0.05)
-    return ok, (f"goal {xy(g.pose.position)} in '{g.header.frame_id}', {dist:.3f} m from the object, "
-                f"facing error {math.degrees(facing):.1f} deg (want ({gx:.2f}, {gy:.2f}), 0.78 m)")
+    return ok, (f"goal {xy(g.pose.position)} in '{g.header.frame_id}', camera {dist:.3f} m from object, "
+                f"facing error {math.degrees(facing):.1f} deg (want ({gx:.2f}, {gy:.2f}), camera 0.6 m)")
+
+
+def case_approach_missing_camera(c):
+    approach_rig(c, camera=False)
+    t0 = send_object(c, 0.60, 0.10)
+    c.rig.pub('/goal_reached', String)
+    spin(3.0)
+    c.rig.send('/goal_reached', String(data='success'))
+    spin(0.5)
+    goals = c.rig.since('/goal_pose', t0)
+    starts = c.rig.since('/manipulation/start', t0)
+    return not goals and not starts, f'missing camera TF: {len(goals)} goals, {len(starts)} starts (want 0/0)'
 
 
 def case_approach_near(c):
@@ -325,8 +344,10 @@ def case_bridge_server_down(c):
     return ok, f"no Nav2 on the channel; /goal_reached in 8 s: {got or 'nothing'}"
 
 
-def glasses_rig(c):
+def glasses_rig(c, camera=True):
     r = c.rig
+    if camera:
+        r.static.sendTransform([tf('robot_base_link', CAMERA_FRAME, CAMERA_X, CAMERA_Y, 0.5425, 0)])
     for t, typ in (("/aria/fused_pose", PoseStamped), ("/goto_glasses/trigger", Empty),
                    ("/manipulator/return_to_user", Bool)):
         r.pub(t, typ)
@@ -361,6 +382,38 @@ def case_return_retry(c):
     res = [m.data for m in c.rig.since("/return_to_user/goal_reached", 0)]
     return bool(nav2.goals), (f"return 1 with Nav2 down; return 2 with Nav2 back -> "
                               f"{len(nav2.goals)} goal(s); /return_to_user/goal_reached {res or 'silent'}")
+
+
+def case_return_camera(c):
+    nav = c.nav2('succeed')
+    glasses_rig(c)
+    ux, uy, user_yaw = 1.0, 2.0, 0.7
+    outbound(c, nav, pose('map', ux, uy, yaw=user_yaw))
+    c.rig.send('/manipulator/return_to_user', Bool(data=True))
+    if not spin(6.0, lambda: len(nav.goals) == 2):
+        return False, 'return goal missing'
+    goal = nav.goals[-1][1]
+    yaw = yaw_of(goal.pose.orientation)
+    cx = goal.pose.position.x + math.cos(yaw) * CAMERA_X - math.sin(yaw) * CAMERA_Y
+    cy = goal.pose.position.y + math.sin(yaw) * CAMERA_X + math.cos(yaw) * CAMERA_Y
+    distance = math.hypot(ux - cx, uy - cy)
+    ok = abs(distance - 0.5) < 0.01 and ang(yaw, math.atan2(uy-cy, ux-cx)) < 0.01
+    return ok, f'return camera clearance {distance:.3f} m (want 0.5 m), including lateral TF offset'
+
+
+def case_return_missing_camera(c):
+    nav = c.nav2('succeed')
+    glasses_rig(c, camera=False)
+    outbound(c, nav, pose('map', 1, 1))
+    c.rig.send('/manipulator/return_to_user', Bool(data=True))
+    spin(3.0)
+    if len(nav.goals) != 1:
+        return False, f'missing camera TF: {len(nav.goals)-1} return goals (want 0)'
+    c.rig.static.sendTransform([tf('robot_base_link', CAMERA_FRAME, CAMERA_X, CAMERA_Y, 0.5425, 0)])
+    spin(1.0)
+    c.rig.send('/manipulator/return_to_user', Bool(data=True))
+    recovered = spin(6.0, lambda: len(nav.goals) == 2)
+    return recovered, f'no return without camera TF; retry after TF appears: {len(nav.goals)-1} goal (want 1)'
 
 
 def case_fused_pose_frame(c):
@@ -462,11 +515,14 @@ def case_clean_ctrl_c(c):
 CASES = [  # name, kind, audit id, scripts it starts, function
     ("approach, far object", "control", "", ["object_approach_node.py"], case_approach_far),
     ("approach, near object", "control", "", ["object_approach_node.py"], case_approach_near),
+    ("approach, missing camera", "control", "", ["object_approach_node.py"], case_approach_missing_camera),
     ("approach, nav succeeds", "control", "", ["object_approach_node.py", "goal_reached_publisher.py"], case_approach_nav_succeeds),
     ("approach after nav failure", "xfail", "F1", ["object_approach_node.py", "goal_reached_publisher.py"], case_approach_after_failure),
     ("goal bridge, nav aborts", "control", "", ["goal_reached_publisher.py"], case_bridge_aborts),
     ("goal bridge, server down", "xfail", "F1", ["goal_reached_publisher.py"], case_bridge_server_down),
     ("return retry", "xfail", "F2", ["goto_glasses.py"], case_return_retry),
+    ("return camera clearance", "control", "", ["goto_glasses.py"], case_return_camera),
+    ("return missing camera", "control", "", ["goto_glasses.py"], case_return_missing_camera),
     ("fused pose frame", "xfail", "E1", ["goto_glasses.py"], case_fused_pose_frame),
     ("QoS relay", "control", "J4", ["qos_relay.py"], case_qos_relay),
     ("robot pose", "control", "", ["pose_publisher.py"], case_robot_pose),

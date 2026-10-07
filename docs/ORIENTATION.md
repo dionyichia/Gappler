@@ -208,7 +208,7 @@ Top-level, with an honest note on whether you will ever need to touch each one.
 |---|---|---|
 | `aria/aria_app/` (was `src/`) | **Subsystem A.** All Aria glasses code: streaming, eye tracking, ASR, LLM, SAM3, feature matching, pose fusion, OpenCV visualiser. | **Yes, a lot.** |
 | `arm/` | **Subsystem C, the arm.** `estop/`, `rm_ros_interfaces/`, and RealMan's code in `vendor/`. Built together with `grasp/` by `./build.sh`. Replaced the `ros2_robot_ws/` workspace 2026-09-21. | `estop/` and `rm_ros_interfaces/` only. |
-| `launchers/` | `start_grasp_pipeline.py` (camera, arm bring-up, SAM3, AnyGrasp, state machine) and `grasp_orchestrator.py` (waits for the start-grasp message, then runs the pipeline). Were `ros2_robot_ws/src/main.py` and `orchestrator.py`. **Never launch either** (CLAUDE.md). | Yes. |
+| `launchers/` | `start_camera_arm_sam3_grasp.py` (camera, arm bring-up, SAM3, AnyGrasp, state machine) and `grasp_orchestrator.py` (waits for the start-grasp message, then runs the pipeline). Were `ros2_robot_ws/src/main.py` and `orchestrator.py`. **Never launch either** (CLAUDE.md). | Yes. |
 | `grasp/` (was `ros2_robot_ws/src/rm_mtc/`) | **Ours.** One folder per node: `grasp_state_machine/` (with the MoveIt Task Constructor planner), `anygrasp_node/`, `segmentation/`, `grasp_viz/`, plus `grasp_interfaces/` (our messages) and `tools/`. | **Yes.** This is the heart of the arm logic. |
 | `arm/vendor/`: `rm_driver`, `rm_control`, `rm_description`, `rm_moveit2_config`, `rm_gazebo`, `rm_example`, `rm_arm_examples`, `rm_doc`, `rm_install` | RealMan's shipped vendor packages — driver, URDF model, MoveIt config, sim, docs, install scripts. | **No.** Read `rm_description`'s URDF when you need to know where the camera is mounted. |
 | `arm/rm_ros_interfaces/` | 79 custom message definitions. Includes ours: `GraspCandidate.msg`, `GraspCandidateArray.msg`. | Only if you add a message. |
@@ -217,8 +217,8 @@ Top-level, with an honest note on whether you will ever need to touch each one.
 | `aria/vendor/open_vins/` | **Unused, candidate for deletion** (`COLCON_IGNORE` note inside). Vendored visual-inertial odometry (upstream, ~3.4 M lines). Estimates the *glasses'* pose from their stereo cams + IMU. | **No.** Treat as a black box; we only consume its output topic. |
 | `grasp/vendor/anygrasp_sdk/`, `grasp/vendor/MinkowskiEngine/` | **Subsystem B** source: AnyGrasp SDK + MinkowskiEngine. Build-time only — the runtime `.so` files live in `grasp/anygrasp_node/`. | **No.** Build once per machine, then forget. |
 | `grasp/vendor/moveit_task_constructor/` | **MoveIt Task Constructor** (vendored, not a submodule). A dependency of `rm_mtc`. Was the separate `deps_ws/` workspace until 2026-09-21. | **No.** `bench/build.sh` builds it with the arm. |
-| `shared/global_config.yaml` | **Settings more than one subsystem reads** (renamed from `shared/config.yaml` 2026-09-21, `NEXT_STEPS` §2.15). Today: the Aria-side topic names, 16 of the 54 topics our code declares (§8.17), the video QoS, and machine paths outside the repo (`openvins_ws`, `map_dir`). A ROS parameter file. Read by `aria/aria_app/config/ros2.py`, which builds a `ROS2Topics` enum from it at import time. | **Yes**, when adding an Aria-side topic or a machine path. |
-| `shared/gappler_common.py` | **The one file that knows where the repo is.** `ROOT`, `config()` (reads `global_config.yaml`) and `path(name)` (a machine path, overridable with `GAPPLER_<NAME>`). `global_env.sh` (or a subsystem's own `<subsystem>_env.sh`) puts `shared/` on `PYTHONPATH`, so source it first. Added 2026-09-21. | Rarely. Import it instead of working out paths from `__file__`. |
+| `shared/global_config.yaml` | **Settings two or more subsystems read**, plus this robot's hardware (camera serials, mount geometry) and this machine's paths (`NEXT_STEPS` §2.15). Every entry says who publishes and who reads it. Values only one subsystem reads are in `<subsystem>/<subsystem>_config.yaml` (`aria/`, `arm/`, `grasp/`, `nav/`, since 2026-10-06, T0.14). A ROS parameter file. | **Yes**, when adding a channel between subsystems, a camera or a machine path. |
+| `shared/gappler_common.py` | **The one file that knows where the repo is.** `ROOT`, `config(subsystem, node)` (global, plus that subsystem's file and the node's section) and `path(name)` (a machine path, overridable with `GAPPLER_<NAME>`). `global_env.sh` (or a subsystem's own `<subsystem>_env.sh`) puts `shared/` on `PYTHONPATH`, so source it first. Added 2026-09-21. | Rarely. Import it instead of working out paths from `__file__`. |
 | `main.py` (root) | Top-level launcher: spawns `launchers/grasp_orchestrator.py` + the Aria app. | Yes. Paths come from `shared/gappler_common.py`. |
 | `assets/` | A test image, and in `assets/vendor/gripper/` the vendor PDFs (arm + gripper manuals, in Chinese) and gripper serial-debug tools. | No. Manuals are worth a skim. |
 | `README.md` (root) | **STALE — ignore it entirely.** It describes a different upstream project (`joshopp/aria_pkg`): ZeroMQ, YOLO `best.pt`, `start_interaction.py`. None of that exists in this code. | Delete it eventually. |
@@ -229,7 +229,7 @@ Top-level, with an honest note on whether you will ever need to touch each one.
 ```
 aria/aria_app/
 ├── main.py                    ← ENTRY POINT for everything Aria-side
-├── config/                    ← dataclasses of constants; ros2.py reads shared/global_config.yaml
+├── config/                    ← settings classes, read from aria/aria_config.yaml and shared/global_config.yaml
 ├── schemas/                   ← plain data containers (ApplicationConfig, GazeEstimate)
 ├── utils/                     ← logging, iptables, keypress, terminal helpers
 ├── models/                    ← checkpoints. sam3.pt (3.4 GB) is gitignored; eyetracking weights are committed
@@ -343,7 +343,7 @@ Follow this with the files open. Times are rough.
 
 | # | File | Why |
 |---|---|---|
-| 1 | `shared/global_config.yaml` | 35 lines. Every Aria-side topic name in one place. Read this first — it *is* the interface for that side. The other 38 owned topics are declared in the nodes themselves (§8.17). |
+| 1 | `shared/global_config.yaml` | Every channel between subsystems, with who publishes and who reads it. Read this first: it *is* the interface between subsystems. Each subsystem's own channels are in `<subsystem>/<subsystem>_config.yaml` (§8.17). |
 | 2 | `src/config/ros2.py` | Shows how that YAML becomes the `ROS2Topics` enum used everywhere. |
 | 3 | `docs/ORIENTATION.md` §5 | The full topic table below. Skim, don't memorise. |
 | 4 | `src/main.py` | The Aria entry point. Focus on `ProcessPipelineBuilder` (lines 30–113): each `add_*` method starts one subsystem. **Note which are commented out at 107–112.** |
@@ -1073,6 +1073,11 @@ gazed object by geometry.
 
 ### 8.17 `[code]` Most channel names are not in the shared config
 
+> **Resolved 2026-10-06 (T0.14).** Every owned channel name is now in a config file, see
+> [`CODE_AUDIT.md`](CODE_AUDIT.md) K1. The C++ state machine reads its topics as ROS parameters, and
+> the bench resolves the enum, config lookups and the C++ `topic("key")` calls. Kept below as the
+> 2026-09-13 record.
+
 `shared/global_config.yaml` is the interface for the Aria side and nowhere else. Measured 2026-09-13 with
 `bench/contracts.py extract`, scope "code we own":
 
@@ -1269,4 +1274,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-22 | Claude (Opus 5) + Dion | `env.sh` is now `global_env.sh`, which sources `aria/aria_env.sh`, `arm/arm_env.sh`, `grasp/grasp_env.sh` and `nav/nav_env.sh` (reorg step 7). |
 | 2026-09-23 | Claude Opus 5.5 + Dion | §8.1 and the §B4 bullet: HOME validated on the real arm in T1.7, extends slightly outside the base. |
 | 2026-09-26 | OpenCode + Sherman | §5: T3.3 DONE — both SLAM launches publish `robot_base_to_arm` (mapping `:117-122`, localization `:107-112`). Full mapping-launch tree untested; values duplicated until T5.4. |
-
+| 2026-10-06 | Claude (Opus 5.5) + Dion | T0.14: §2 rows for `global_config.yaml` and `gappler_common.py`, the aria `config/` line and reading-order row 1 now describe the two config levels. §8.17 marked resolved. |

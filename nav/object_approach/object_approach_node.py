@@ -13,7 +13,7 @@ On each received pose:
   1. Transforms the object position from the source frame → map frame via TF.
   2. Publishes a Marker to /object_marker so the object appears in RViz.
   3. Checks the distance from the camera (front of robot) to the object.
-     Camera/LiDAR is 0.18 m forward of base_link. Arm base is 0.48 m above base_link.
+     Distance is horizontal from the base-mounted D455 depth origin, resolved by TF.
   4. If distance > 0.6 m, computes an approach goal that places the camera
      within 0.6 m of the object (robot facing the object) and publishes it
      to /goal_pose for Nav2.
@@ -37,6 +37,8 @@ Manual testing (bypass SAM3):
     '{header: {frame_id: "base_link"}, pose: {position: {x: 0.5, y: 0.0, z: 0.5}, orientation: {w: 1.0}}}'
 """
 import math
+from gappler_common import camera_reference_frame, config
+from nav_geometry import camera_goal_xy
 
 import rclpy
 from geometry_msgs.msg import PointStamped, PoseStamped
@@ -46,14 +48,16 @@ from rclpy.time import Time
 from scipy.spatial.transform import Rotation
 from std_msgs.msg import Bool, Empty, String
 from tf2_geometry_msgs import do_transform_pose_stamped
-from tf2_ros import Buffer, TransformListener
+from tf2_ros import Buffer, TransformException, TransformListener
 from visualization_msgs.msg import Marker
 
-# Forward offset of the camera/LiDAR from robot_base_link — used only for
-# computing the Nav2 approach goal (how far in front of the robot to stop).
-CAMERA_X_OFFSET = 0.18  # metres
+# shared/global_config.yaml and nav/nav_config.yaml (object_approach_node)
+CFG = config("nav", "object_approach_node")
+TOPICS = CFG["topics"]
+CAMERA_FRAME = camera_reference_frame()
+ARM_MOUNT_HEIGHT = float(CFG["geometry"]["arm_mount"]["xyz_m"][2])
 # Target clearance: camera must be within this distance of the object
-APPROACH_DISTANCE = 0.6  # metres
+APPROACH_DISTANCE = CFG["approach_distance_m"]  # metres
 
 
 class ObjectApproachNode(Node):
@@ -73,30 +77,30 @@ class ObjectApproachNode(Node):
         # frame  : base_link               (confirmed — pipeline transforms to base_link before publishing)
         # QoS    : depth=10 RELIABLE       (confirmed — matches pipeline publisher)
         self.create_subscription(
-            PoseStamped, "/manipulation/goal_pose", self._on_object_pose, 10
+            PoseStamped, TOPICS["manipulation_goal_pose"], self._on_object_pose, 10
         )
         self.create_subscription(
-            String, "/goal_reached", self._on_goal_reached, 10
+            String, TOPICS["goal_reached"], self._on_goal_reached, 10
         )
         self.create_subscription(
-            String, "/aria/audio/prompt", self._on_audio_prompt, 10
+            String, TOPICS["audio_transcription_prompt"], self._on_audio_prompt, 10
         )
         self.create_subscription(
-            Empty, "/manipulation/done", self._on_manipulation_done, 10
+            Empty, TOPICS["manipulation_done"], self._on_manipulation_done, 10
         )
         self.create_subscription(
-            Bool, "/manipulator/release", self._on_release, 10
+            Bool, TOPICS["manipulator_release"], self._on_release, 10
         )
 
-        self._goal_pub = self.create_publisher(PoseStamped, "/goal_pose", 10)
-        self._marker_pub = self.create_publisher(Marker, "/object_marker", 10)
+        self._goal_pub = self.create_publisher(PoseStamped, TOPICS["goal_pose"], 10)
+        self._marker_pub = self.create_publisher(Marker, TOPICS["object_marker"], 10)
         self._map_pose_pub = self.create_publisher(
-            PointStamped, "/object_map_pose", 10
+            PointStamped, TOPICS["object_map_pose"], 10
         )
         # Signal to manipulation team: receiving this means "robot is in position,
         # start grasping".
         self._manipulation_start_pub = self.create_publisher(
-            Bool, "/manipulation/start", 10
+            Bool, TOPICS["manipulation_start"], 10
         )
 
         # Timer: republishes marker at robot position while tracking after grasp
@@ -141,7 +145,7 @@ class ObjectApproachNode(Node):
             return
         x = t.transform.translation.x
         y = t.transform.translation.y
-        z = t.transform.translation.z + 0.48  # arm height above base
+        z = t.transform.translation.z + ARM_MOUNT_HEIGHT
         self._publish_marker(x, y, z)
 
     def _on_goal_reached(self, msg: String) -> None:
@@ -156,6 +160,12 @@ class ObjectApproachNode(Node):
             return
         # If we already know where the object is, we're now in position — signal the arm
         if self._last_object_map is not None:
+            try:
+                self._tf_buffer.lookup_transform("robot_base_link", CAMERA_FRAME, Time())
+                self._tf_buffer.lookup_transform("map", CAMERA_FRAME, Time())
+            except TransformException as e:
+                self.get_logger().warn(f"Camera TF unavailable; refusing manipulation start: {e}")
+                return
             self.get_logger().info(
                 "Approach complete. Publishing /manipulation/start."
             )
@@ -183,7 +193,6 @@ class ObjectApproachNode(Node):
         object_in_map = PointStamped()
         object_in_map.header = pose_in_map.header
         object_in_map.point = pose_in_map.pose.position
-        self._last_object_map = object_in_map
         ox, oy = pose_in_map.pose.position.x, pose_in_map.pose.position.y
 
         # ── Step 2: publish map-frame coords + RViz marker ────────────────────
@@ -191,27 +200,22 @@ class ObjectApproachNode(Node):
         self._publish_marker(ox, oy, pose_in_map.pose.position.z)
         self.get_logger().info(f"Object in map frame: x={ox:.3f} y={oy:.3f}")
 
-        # ── Step 3: get robot position in map frame ───────────────────────────
+        # Camera's current map position and fixed offset use the same TF chain.
         try:
-            robot_transform = self._tf_buffer.lookup_transform(
-                "map", "robot_base_link", Time()
+            camera_in_map = self._tf_buffer.lookup_transform(
+                "map", CAMERA_FRAME, Time()
             )
-        except Exception as e:
-            self.get_logger().warn(f"TF lookup failed (robot_base_link → map): {e}")
+            camera_in_base = self._tf_buffer.lookup_transform(
+                "robot_base_link", CAMERA_FRAME, Time()
+            )
+        except TransformException as e:
+            self._last_object_map = None
+            self.get_logger().warn(f"Camera TF unavailable ({CAMERA_FRAME}); refusing approach: {e}")
             return
 
-        rx = robot_transform.transform.translation.x
-        ry = robot_transform.transform.translation.y
-        robot_yaw = Rotation.from_quat([
-            robot_transform.transform.rotation.x,
-            robot_transform.transform.rotation.y,
-            robot_transform.transform.rotation.z,
-            robot_transform.transform.rotation.w,
-        ]).as_euler("xyz")[2]
-
-        # Camera is CAMERA_X_OFFSET metres ahead of base_link along the robot yaw
-        cam_x = rx + math.cos(robot_yaw) * CAMERA_X_OFFSET
-        cam_y = ry + math.sin(robot_yaw) * CAMERA_X_OFFSET
+        cam_x = camera_in_map.transform.translation.x
+        cam_y = camera_in_map.transform.translation.y
+        self._last_object_map = object_in_map
         distance = math.hypot(ox - cam_x, oy - cam_y)
         self.get_logger().info(f"Camera-to-object distance: {distance:.3f} m")
 
@@ -224,14 +228,16 @@ class ObjectApproachNode(Node):
             self._manipulation_start_pub.publish(Bool(data=True))
             return
 
-        # Goal: put the camera APPROACH_DISTANCE in front of the object.
-        # Approach from the robot's current side so it doesn't overshoot.
-        angle_to_robot = math.atan2(cam_y - oy, cam_x - ox)
-        goal_x = ox + math.cos(angle_to_robot) * (APPROACH_DISTANCE + CAMERA_X_OFFSET)
-        goal_y = oy + math.sin(angle_to_robot) * (APPROACH_DISTANCE + CAMERA_X_OFFSET)
-
-        # Robot faces toward the object
-        facing_angle = math.atan2(oy - goal_y, ox - goal_x)
+        # Approach from the current camera side. Compensate both forward and
+        # lateral sensor offsets so the CAMERA, not base centre, has clearance.
+        facing_angle = math.atan2(oy - cam_y, ox - cam_x)
+        offset = camera_in_base.transform.translation
+        try:
+            goal_x, goal_y = camera_goal_xy(ox, oy, facing_angle, offset.x, offset.y, APPROACH_DISTANCE)
+        except ValueError as e:
+            self._last_object_map = None
+            self.get_logger().warn(f"Invalid camera goal geometry; refusing approach: {e}")
+            return
         q = Rotation.from_euler("z", facing_angle).as_quat()
 
         goal = PoseStamped()

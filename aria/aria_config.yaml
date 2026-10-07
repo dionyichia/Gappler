@@ -1,0 +1,88 @@
+# Aria (glasses) config. Values only the aria subsystem reads (NEXT_STEPS 2.15).
+# Values another subsystem also reads live in shared/global_config.yaml. Each value is written once.
+#
+# How it is read: the Aria app is not started by ROS. aria/aria_app/config/*.py load this file
+# through gappler_common.config("aria", ...) and keep their class names, so callers do not change.
+# Values that are facts of the Aria SDK or a model (stream IDs, sample rates), computed values
+# (paths from the repo root, CUDA or CPU) and the visualizer's colours stay in those Python files.
+#
+# Format: a ROS parameter file. "/**" holds values several parts of aria read. Each other
+# top-level key is one part's section.
+/**:
+  ros__parameters:
+    # Topics only aria publishes and reads. publisher -> subscribers.
+    topics:
+      # image_streaming_pipeline -> visualizer
+      rgb_camera_raw: "/aria/rgb_camera/raw"
+      # pose_streaming_pipeline -> OpenVINS (parked). Its topic list is in
+      #   aria_device/calibration/kalibr_imucam_chain.yaml and must match
+      slam_left_raw: "/aria/slam_left/raw"
+      slam_right_raw: "/aria/slam_right/raw"
+      # image_streaming_pipeline -> visualizer
+      eye_tracking_raw: "/aria/eye_tracking/raw"
+      # image_streaming_pipeline -> object_recognition_pipeline, visualizer
+      eye_tracking_gaze_estimate: "/aria/eye_tracking/gaze_estimate"
+      # object_recognition_pipeline -> visualizer
+      rgb_camera_with_object_masks: "/aria/rgb_camera/object_masks"
+      # object_recognition_pipeline -> visualizer (masks drawn on the wrist camera image)
+      ros_camera_with_object_masks: "/realman/rgb_camera/object_masks"
+      # object_recognition_pipeline -> visualizer
+      combined_visualization: "/combined/object_masks"
+      # feature_matching, object_recognition_pipeline -> visualizer
+      feature_match_results: "/aria/rgb_camera/feature_match"
+      # pose_streaming_pipeline -> OpenVINS (parked). Must match calibration/kalibr_imu_chain.yaml
+      imu: "/aria/imu"
+      # image_streaming_pipeline -> pose_fusion_node (parked)
+      aruco_pose: "/aria/aruco_pose"
+      # nobody today. Planned: OpenVINS -> pose_fusion_node (both parked, the code is commented out)
+      vio_pose: "/aria/vio_pose"
+      # nobody yet
+      is_stationary: "/aria/is_stationary"
+      # pose_fusion_node -> RViz
+      glasses_marker: "/aria/glasses_marker"
+      # pose_fusion_node -> nobody yet
+      pose_initialized: "/aria/pose_initialized"
+
+    # QoS for the image streams. read by: feature_matching, object_recognition_pipeline,
+    # visualizer, ros_publisher, realsense_helper (all through config.VIDEO_QOS)
+    qos:
+      video:
+        reliability: "BEST_EFFORT"
+        history: "KEEP_LAST"
+        depth: 10
+
+# read by: aria/aria_app/config/base.py (Settings)
+app:
+  ros__parameters:
+    realsense_init_delay_s: 3   # seconds to wait for the RealSense node to start
+
+# read by: aria/aria_app/config/aria.py (AriaConfig)
+aria_device:
+  ros__parameters:
+    streaming_profile_name: "profile18"   # profile18 is for USB
+    use_ephemeral_certs: true
+    # Size and focal length of the undistorted RGB image the app publishes.
+    undistorted_image_size_px: 1408
+    undistorted_focal_length_px: 609
+    # Glasses IP for Wi-Fi streaming. Empty means USB.
+    device_ip_address: ""
+
+# read by: aria/aria_app/config/audio_streaming_pipeline_config.py
+audio_streaming_pipeline:
+  ros__parameters:
+    transcription_model: "small.en"           # Whisper model
+    llm_model: "Qwen/Qwen2.5-0.5B-Instruct"   # turns the transcript into an object name
+    iteration_interval_s: 1
+    max_buffer_s: 10
+    stop_keyword: "end"
+
+# read by: aria/aria_app/config/playback_controller_config.py
+playback_controller:
+  ros__parameters:
+    playback_speed: 1.0
+
+# read by: aria/aria_app/config/eye_tracking.py
+eye_tracking:
+  ros__parameters:
+    # Gaze has no depth, so the gaze ray is cut at this distance (NEXT_STEPS 2.13, T2.3)
+    default_depth_m: 1.5

@@ -1000,28 +1000,58 @@ bench/  docs/  main.py
 `arm/` holds almost none of our code (only `estop`). That is accurate, not a problem: the arm
 subsystem is mostly RealMan's.
 
-#### Config: three levels, each value written once
+#### Config: two levels, each value written once
+
+> **Revised 2026-10-06 (Dion): two levels, not three.** Per-node files dropped. The seven steps
+> below only moved files. The config files were built afterwards in **T0.14** (2026-10-06, branch
+> `t0.14-subsystem-config`): all four subsystem files exist, and every channel name our code uses
+> is in a config file.
 
 | Level | File | Holds |
 |---|---|---|
-| global | `shared/global_config.yaml` | values two or more subsystems read: shared topic names, frame names, machine paths |
-| subsystem | `<subsystem>/<subsystem>_config.yaml` | values two or more nodes in that subsystem read |
-| node | `<subsystem>/<node>/config.yaml` | values only that node reads |
+| global | `shared/global_config.yaml` | values two or more subsystems read, plus this robot's hardware (camera serials, mount geometry) and this machine's paths, so moving robot or machine means editing one file |
+| subsystem | `<subsystem>/<subsystem>_config.yaml` | everything else in that subsystem, with one section per node |
 
-- **A value lives at the lowest level that covers all its readers.** When it gains a reader in
-  another subsystem, move it up and delete it below.
-- **References only point down.** Global has no list of subsystem files, and a subsystem file never
-  copies a global value. So editing a subsystem file never touches global.
-- **ROS nodes get their values as ROS parameters.** The launch file loads global, then subsystem,
-  then node, and later files win. One file can hold several nodes, keyed by node name, with `/**:`
-  for values every node in the file shares. Nodes still declare each parameter with a default, so
-  launch can remap (§2.10 point 2).
-- **The Aria app is not launched by ROS.** It reads the same files through `gappler_common`.
+Every entry carries a comment saying who uses it. For a topic: publisher, then subscribers.
+
+- **A value starts in its subsystem's file.** When a second subsystem starts reading it, move it up
+  to global and delete it below. Each value lives in exactly one file.
+- **Global does not list or include the subsystem files.** A subsystem file never copies a global
+  value. This is what lets one subsystem start on its own.
+- **Starting one subsystem** loads two files: global, then its own. Nothing from other subsystems.
+- **Starting the whole system** loads global plus all four subsystem files. There is no generated or
+  aggregated config file.
+- **Per-node values go in a section of the subsystem file**, keyed by node name, with `/**:` for
+  values every node in that subsystem reads. This is standard ROS parameter-file syntax, so no
+  separate file per node is needed. Example:
+
+  ```yaml
+  # nav/nav_config.yaml
+  /**:                      # every nav node reads these
+    ros__parameters:
+      base_frame: "mobile_base_link"
+  goto_glasses:             # only goto_glasses reads these
+    ros__parameters:
+      standoff_m: 0.6
+  ```
+- **How code reads it.** Python, ROS nodes included, calls `gappler_common.config("nav",
+  "goto_glasses")`: global, then the subsystem's `/**`, then that node's section. It works the same
+  under `ros2 run`, the launchers and tests. The Aria app's settings classes in
+  `aria/aria_app/config/` read it this way too and keep their names. The C++ state machine cannot
+  import Python, so `grasp_state_machine.launch.py` loads global, then `grasp_config.yaml`, as ROS
+  parameters. It has no fallback values: a missing one stops it at start-up.
+- **Topic names can still be changed at launch** with ordinary ROS remapping
+  (`--ros-args -r /old:=/new`), which works on any topic whatever the code reads it from.
+- **Config is read from the repo, not from `install/`**, so editing a YAML file needs no rebuild.
 - **Vendor parameter files keep their own format and place** (`nav2_params.yaml`, the SLAM Toolbox
   files). Our levels are for our nodes.
-- **A bench check fails when one key is defined in two files**, so duplicates cannot creep back.
-  L0 is stdlib only, so it reads keys line by line rather than with a YAML parser. `[open]` whether
-  that is enough, decide when writing it.
+- **What stays in code:** facts of an SDK or model (Aria stream IDs, Whisper's sample rate),
+  computed values (paths from the repo root, CUDA or CPU), the Aria visualizer's colours, and frame
+  names (a separate naming pass, §2.4).
+- **One key in two files is refused** by `gappler_common.config()` when it merges them. A separate
+  bench check for it is deferred (Dion, 2026-10-06), until a duplicate gets past the loader.
+- **The bench still sees every channel.** `bench/contracts.py` resolves `TOPICS["key"]` and the C++
+  `topic("key")` through the config files (`bench/test_contracts.py`).
 
 #### Paths: no file finds the repo by itself
 
@@ -1060,7 +1090,8 @@ Run `./bench/run.sh` before and after every step.
    to 3 (two vendor, one the OpenVINS default in `global_config.yaml`). `[unverified]` at runtime:
    compiled and import-checked, not yet started on the box. **Scope narrowed:** `src/config/*.py`
    (the Aria settings classes) folds into `aria_config.yaml` in step 4, when `aria/` exists, and so
-   does sorting the aria-only topics out of `global_config.yaml`.
+   does sorting the aria-only topics out of `global_config.yaml`. **Not done in step 4**, which only
+   moved files. Now T0.14 (2026-10-06).
 3. ✅ **Done 2026-09-21 (on the branch).** **Vendor moves**, as pure moves (§2.11 steps 1 and 2).
    Commit `2cd2297` is 2,145 renames and nothing else. The next commit fixed the references:
    `bench/build.sh` base paths (and `--symlink-install`), bench exclusions, the AnyGrasp env
@@ -1095,7 +1126,7 @@ Run `./bench/run.sh` before and after every step.
    | `rm_ros_interfaces/msg/GraspCandidate*.msg` | `grasp/grasp_interfaces/msg/` (package `grasp_interfaces`) |
    | `ros2_robot_ws/src/rm_ros_interfaces/` | `arm/rm_ros_interfaces/`, then `arm/vendor/rm_ros_interfaces/` in step 5 |
    | `ros2_robot_ws/src/estop.py` | `arm/estop/estop.py` |
-   | `ros2_robot_ws/src/main.py` | `launchers/start_grasp_pipeline.py` |
+   | `ros2_robot_ws/src/main.py` | `launchers/start_camera_arm_sam3_grasp.py` |
    | `ros2_robot_ws/src/orchestrator.py` | `launchers/grasp_orchestrator.py` |
    | `Navigation_Module/src/<pkg>/` (`robot_slam`, `robot_navigation`, `simple_teleop`, `echo_plus_driver`) | `nav/<pkg>/` |
    | `robot_slam/scripts/<script>.py` | `nav/<package>/<script>.py`: `object_approach`, `goto_glasses`, `goal_reached` (`goal_reached_publisher.py`), `pose_publisher`, `qos_relay`, `aria_image_relay`. `ros2 run robot_slam X.py` becomes `ros2 run <package> X.py` |
@@ -1143,7 +1174,7 @@ keeps merges manageable for everyone else.
 
 #### Open, decide in the PR that needs it
 
-- ✅ **Where the three launchers go. Settled in step 4 (2026-09-21).** `launchers/start_grasp_pipeline.py`
+- ✅ **Where the three launchers go. Settled in step 4 (2026-09-21).** `launchers/start_camera_arm_sam3_grasp.py`
   and `launchers/grasp_orchestrator.py`, root `main.py` stays. Which launcher owns arm bring-up is
   `CODE_AUDIT` I1, part of T1.2.
 - **One build or two. Two today, one question left for Zongzhe** (updated 2026-09-22). `./build.sh`
@@ -1397,3 +1428,5 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-22 | Claude (Opus 5) + Dion | Republished `next-steps-map.html` (T0.11, T2.1, T3.5, reorg row), `wiring-map.html` (new paths, folder and entry-point tables) and `testbench-map.html` (`./build.sh`). The republish owed since 2026-09-21 is done. |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 "Open": launchers marked settled (step 4), "one build or two" rewritten to today's two builds, with Zongzhe's MTC underlay question recorded as open and deferred. New "For Zongzhe" block (bridge nodes moved, stale `BUILD_WORKSPACES.md`, T0.3 items resolved, T0.5 unblocked). "For Sherman" gained the map folder setting and the nav build and env commands. `wiring-map.html`: the last four old launcher paths renamed, and "what is ours" now states the `vendor/` rule. Both HTML pages republished. |
 | 2026-09-22 | Claude (Opus 5) + Dion | Header now points at `task-tree.html` (renamed from `next-steps-map.html`) as the one task list. §2.12 marked done (T0.10, T0.11). |
+| 2026-10-06 | Claude (Opus 5.5) + Dion | §2.15 config: three levels cut to two (global plus one file per subsystem, per-node sections inside it, no per-node files, no aggregated global). Recorded that no subsystem config file was ever created, the work is new task T0.14. Duplicate-key bench check deferred. Step 2 note on `aria_config.yaml` corrected. |
+| 2026-10-06 | Claude (Opus 5.5) + Dion | §2.15 config: built in T0.14. All four subsystem files exist, all 34 channel names that were hardcoded moved into config, each entry says who uses it. Global also holds the robot's hardware and the machine's paths. How Python and C++ read it, what stays in code, duplicate keys refused by the loader. |

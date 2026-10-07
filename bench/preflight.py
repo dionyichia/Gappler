@@ -14,7 +14,7 @@ because with no arm there is nothing for L6 to test.
 Runs everything that can be checked WITHOUT commanding the arm. The boundary is
 absolute and is enforced in code (see SAFETY below): this script never publishes
 to a /rm_driver/*_cmd topic and never launches grasp_state_machine or
-launchers/start_grasp_pipeline.py, because both home the arm within seconds of start
+launchers/start_camera_arm_sam3_grasp.py, because both home the arm within seconds of start
 (ORIENTATION.md 8.1). Everything up to that line is fair game -- network,
 drivers, TF tree, topic rates, model weights, licences, GPU.
 
@@ -406,9 +406,9 @@ def g_assets() -> list[Check]:
         cs.append(c.bad(f"missing: {p.relative_to(REPO)}", "copy it from the lab machine"))
 
     # The two AnyGrasp nodes want DIFFERENT checkpoints. The hardware-verified
-    # run used the tracking one; launchers/start_grasp_pipeline.py launches the
+    # run used the tracking one; launchers/start_camera_arm_sam3_grasp.py launches the
     # detection one. Both are checked so the discrepancy is visible.
-    for fn, who in (("checkpoint_detection.tar", "anygrasp_detection_node.py (what start_grasp_pipeline.py launches)"),
+    for fn, who in (("checkpoint_detection.tar", "anygrasp_detection_node.py (what start_camera_arm_sam3_grasp.py launches)"),
                     ("checkpoint_tracking.tar", "anygrasp_node.py (what the 2026-08-25 session verified)")):
         c = Check("assets", f"anygrasp-{fn.split('_')[1].split('.')[0]}", f"needed by {who}")
         p = perception / "log" / fn

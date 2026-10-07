@@ -16,14 +16,17 @@ import sys
 import time
 
 import rclpy
-from gappler_common import ROOT
+from gappler_common import ROOT, config
 from rclpy.node import Node
 from rm_ros_interfaces.msg import Gripperset
 from std_msgs.msg import Bool, String
 
 # Started when the start-grasp message arrives: the camera, arm and grasp nodes.
 PIPELINE_DIR = str(ROOT / "launchers")
-PIPELINE_PATH = f"{PIPELINE_DIR}/start_grasp_pipeline.py"
+PIPELINE_PATH = f"{PIPELINE_DIR}/start_camera_arm_sam3_grasp.py"
+
+# shared/global_config.yaml
+TOPICS = config()["topics"]
 
 processes: list[tuple[str, subprocess.Popen]] = []
 
@@ -49,12 +52,12 @@ class Orchestrator(Node):
 
         # Open-gripper publisher
         self._gripper_pub = self.create_publisher(
-            Gripperset, "/rm_driver/set_gripper_position_cmd", 10
+            Gripperset, TOPICS["rm_driver_set_gripper_position_cmd"], 10
         )
 
         # Subscriptions
         self._start_sub = self.create_subscription(
-            Bool, "/manipulation/start", self._on_start, 10
+            Bool, TOPICS["manipulation_start"], self._on_start, 10
         )
         # self._goal_sub = self.create_subscription(
         #     String, "/return_to_user/goal_reached", self._on_goal_reached, 10
@@ -63,7 +66,7 @@ class Orchestrator(Node):
         #     Bool, "/manipulator/return_to_user", self._on_return_to_user, 10
         # )
         self._audio_sub = self.create_subscription(
-            Bool, "/manipulator/release", self._on_audio, 10
+            Bool, TOPICS["manipulator_release"], self._on_audio, 10
         )
 
         self.get_logger().info("Orchestrator ready")
