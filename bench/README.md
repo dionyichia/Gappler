@@ -78,6 +78,7 @@ refused, 3 skipped — never a pass.
 | `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 10 cases, 4 expected-fail (F1 ×2, F2, E1). Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
 | `velocity_smoother.sh` | T3.4: installed Nav2 smoother plus the owned keyboard node under scripted pseudo-terminals; direction/caps, silence, explicit stop, quit, Ctrl+C, SIGINT, teleop crash and terminal restoration. No base driver | fixed domain 127, localhost only; nodes and hidden topics empty; discovery errors/timeouts refuse |
 | `cloud_scan.sh` | T3.5: synthetic PointCloud2, owned QoS relay and installed laser-scan converter; geometry, nearest beam, height/range bounds, invalid/empty input, metadata and relay payload/QoS for all three launch profiles | fixed domain 127 and localhost only, same fail-closed guard as T3.4; no sensors, drivers or navigation controllers |
+| `slam_persistence.sh` | T3.5: installed synthetic scan/TF mapping, graph/image saving, fresh-process reload and localization against biased odometry; missing-load reply and corrupt-load abort recorded, not safe rejection | domain 127/localhost, same guard; private topics/TF, no hardware or Nav2 controller |
 | `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `grasp/anygrasp_venv/.venv`, built by `./grasp/anygrasp_venv/build_anygrasp_venv.sh` | GPU only, no ROS |
 | `anygrasp_replay.sh` | a recorded wrist-camera bag (`WRIST_CAMERA_BAG`, default `assets/recordings/wrist_camera`, made by `grasp/tools/record_wrist_camera.sh`) through `sam3_ros_node` and `anygrasp_detection_node`, with `/pipeline_state` played as EXECUTING then IDLE. 2 controls (a mask, candidates) and the A1 gate case, expected-fail. SKIPPED with no recording | channel must be empty **including hidden topics**. No camera, no state machine |
 
@@ -117,6 +118,12 @@ missing-map refusal before hardware actions are constructed; fake files used for
 successful construction do not prove deserialization. See
 [`T3.5_MAP_PREP.md`](../docs/sherman_docs/T3.5_MAP_PREP.md).
 
+`python3 bench/test_slam_fixture.py` checks synthetic room geometry (L0).
+`bash bench/slam_persistence.sh` exercises installed SLAM persistence (L4), not
+the full candidate launches. An exit-0 valid round trip still reports a known
+corrupt-file localizer abort; it does not establish safe hardware readiness.
+Details: [`T3.5_SLAM_PERSISTENCE.md`](../docs/sherman_docs/T3.5_SLAM_PERSISTENCE.md).
+
 Run `python3 bench/test_cloud_scan.py` for stdlib fixture/oracle checks (L0) and
 `bash bench/cloud_scan.sh` for the isolated ROS conversion bench (L4). The latter reads actual
 converter parameters from launch source and uses the relay for the SLAM profiles and the
@@ -133,6 +140,7 @@ Run serially with the keyboard bench because both reserve domain 127. Details:
 | 2026-10-07 | OpenCode + Sherman | Added navigation entry-point wiring and source-backed real launch construction checks. |
 | 2026-10-07 | OpenCode + Sherman | Added maintained synthetic cloud-to-scan L0/L4 checks for the current SLAM and AMCL profiles. |
 | 2026-10-07 | OpenCode + Sherman | Added map-file prerequisites and missing-map refusal before hardware action construction; no graph-load proof. |
+| 2026-10-07 | OpenCode + Sherman | Added synthetic installed SLAM persistence L0/L4 checks, keeping corrupt-load abort and physical-proof limits explicit. |
 
 ---
 

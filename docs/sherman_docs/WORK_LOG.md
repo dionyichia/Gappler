@@ -243,6 +243,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Map audit and Sherman-selected SLAM baseline documented; teammate coordination pending.
 - No installed changes/actions/hardware. Graph serialization, corrupt-map refusal before hardware, initial pose and actual restart/reload remain outstanding. T3.5 PROGRESS.
 
+## [2026-10-07] T3.5 | Installed synthetic SLAM persistence
+
+- Real installed mapper saved graph/data and YAML/image; fresh localizer recovered exact map raster and three known poses with biased odometry. No sensor/driver/controller or hardware commands.
+- Missing deserialize replies expose no usable map; malformed graph aborts localizer with std::length_error. Preserved failure evidence, then restarted for valid case. No vendor fix/safe rejection claimed.
+- Direct argv image saver handles spaces, avoiding upstream service's unquoted shell; candidate saving procedure remains unchanged. Old-node departure gate addresses observed restart discovery race.
+- Evidence/limits: [`T3.5_SLAM_PERSISTENCE.md`](T3.5_SLAM_PERSISTENCE.md). T3.5 PROGRESS; saving/readiness integration, initialization runbook, deployment and physical acceptance remain open.
+
 ## Record Template
 
 ```markdown

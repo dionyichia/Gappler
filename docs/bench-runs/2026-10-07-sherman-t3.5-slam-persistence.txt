@@ -1,0 +1,47 @@
+T3.5 installed synthetic SLAM persistence, 2026-10-07
+Candidate: 8f1381a plus maintained persistence bench (no production launch changes).
+Installed package: ros-humble-slam-toolbox 2.6.10-1jammy.20251228.130030
+Domain127/localhost only; private /t35_slam scan/map/pose/TF; no hardware/control topics.
+Final commands: python3 bench/test_slam_fixture.py; bash bench/slam_persistence.sh.
+
+Five pure tests passed on box and Mac (geometry and interrupted-startup cleanup).
+guards ok: domain 127 empty, localhost only
+guards ok: domain 127 empty, localhost only
+PASS mapping and real graph serialization
+PASS image save with YAML/image reference; path contains spaces
+PASS missing load: service replies but no usable map; no success claim
+OBSERVED LIMITATION: corrupt graph aborts installed localizer (std::length_error); NOT safe rejection
+PASS fresh localization loaded map: 160x120
+PASS localization: error 0.000m/0.001rad; biased odometry
+PASS localization: error 0.001m/0.001rad; biased odometry
+PASS localization: error 0.001m/0.001rad; biased odometry
+guards ok: domain 127 empty, localhost only
+PASS valid synthetic SLAM persistence; corrupt-file abort observed; physical localization NOT proven
+Exit0 means VALID roundtrip verified, not all failure handling safe.
+
+Mapper shut down before localizer. Loaded map metadata and every occupancy cell
+equal original. Three current scan-stamped poses compare to known synthetic truth.
+Odometry bias (+0.4m,-0.3m,+0.1rad); initial estimate near actualpose; acceptance
+0.15m/0.10rad. Ideal room/exact scans/no sensor offset: not lab accuracy or global recovery.
+Direct argv map_saver_cli handles spaces; upstream SaveMap service is NOT validated.
+YAML/reference/resolution/nonempty image checked, NOT image-pixel fidelity.
+Synthetic graph/images removed by TemporaryDirectory; historical assets untouched.
+
+Observed interim failures retained as findings:
+- Malformed graph caused deserialize timeout and std::length_error/basic_string
+  abort in installed localizer. No vendor fix or safe-rejection claim.
+- Subsequent immediate restart request timed out without reaching new callback.
+  Wait-for-departure graph condition added; final restart completed.
+- Review found startup child not owned during readiness wait; await_startup now
+  stops/rethrows on all exceptions, including KeyboardInterrupt. Pure test actually
+  terminates an owned separate-session Python child. Followup review confirmed fix.
+
+Mac quick bench exit0, all available levels PASS; quick omissions/skips retained.
+No full-suite box run, build/install/deploy, Nav2 controller, real drivers/sensors,
+physical TF/stopping/navigation. T3.4/T3.5 PROGRESS. No PR or merge.
+
+Matching Mac/box SHA256:
+8f5a4ac433d5c64ab6f907a44631318839dde559712a3dc5158cfec2c9975302 bench/slam_persistence.sh
+eb6993c4c6181ab557d52adc764ef16280197281aba9d94ba9b9e6d0b1b99c24 bench/nodes/test_slam_persistence.py
+9bdd0c61b09166687dd68cffbca3764113fe58e983f56d5e7fd93c42540ac44b bench/test_slam_fixture.py
+198d1490ced011c0fdeba93d0fe6a39cd4363634c305f7ea5110705f153993ef bench/run.sh
