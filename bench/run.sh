@@ -74,7 +74,9 @@ s=$(step "L0  Camera navigation geometry" python3 bench/test_camera_navigation.p
 row L0 "Camera navigation geometry" "$s" ""
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
-s=$(step "L0  D455 model" python3 bench/test_geometry.py --camera-model)
+# xacro and realsense2_description come from ROS, which CI does not source. Source it here when present.
+s=$(step "L0  D455 model" bash -c 'set +u; [ -f /opt/ros/humble/setup.bash ] && source /opt/ros/humble/setup.bash
+                                   exec python3 bench/test_geometry.py --camera-model')
 row L0 "D455 model" "$s" "requires installed ROS/xacro camera description"
 
 # The extractor self-test first: a broken extractor would make every check below pass.
