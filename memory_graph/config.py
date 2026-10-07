@@ -54,6 +54,14 @@ class MemoryGraphConfig:
     # Not upstream: upstream pads a fixed 20 px, which does not scale with
     # resolution. 0.1 is a starting guess, tuned in T6.4.
     crop_pad_ratio: float = 0.1
+    # The encoder, read by clip_encoder.py. Upstream's model (map/map.py:96),
+    # D-MG7. Vectors from different models cannot be mixed in one graph.
+    clip_model: str = "ViT-B-32"
+    clip_pretrained: str = "laion2b_s34b_b79k"
+    # "auto" is the GPU if there is one, else the CPU. Or "cuda", "cpu".
+    clip_device: str = "auto"
+    # Crops encoded per model call, so a busy photo cannot fill the GPU.
+    clip_batch_size: int = 64
 
     # ---- S7 back-projection -----------------------------------------------
     # A mask with fewer valid depth pixels than this gives no object.
@@ -96,6 +104,8 @@ class MemoryGraphConfig:
             raise ValueError(f"association_mode must be 'greedy' or 'one_to_one', got {self.association_mode!r}")
         if not 0.0 <= self.phys_bias <= 1.0:
             raise ValueError("phys_bias must be in [0, 1]")
+        if self.clip_batch_size < 1:
+            raise ValueError("clip_batch_size must be at least 1")
         for name in ("voxel_size_m", "dbscan_eps_m", "match_radius_m", "gate_translation_m"):
             if getattr(self, name) <= 0:
                 raise ValueError(f"{name} must be positive")

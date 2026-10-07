@@ -61,10 +61,12 @@ step() {
 s=$(step "L0  Static checks" python3 bench/static.py)
 row L0 "Static checks" "$s" ""
 
-# The memory graph's stdlib-only tests (T6.3a). Its stage tests need numpy and
-# scipy, so they are not run here yet: python3 -m unittest discover -s memory_graph/tests -t .
+# The memory graph's stdlib-only tests (T6.3a), which run anywhere.
 s=$(step "L0  Unit tests: memory graph" python3 -m unittest memory_graph.tests.test_anchor_object_graph)
 row L0 "Unit tests: memory graph" "$s" ""
+# All of its tests, with the real image-feature model (T6.3f). Needs .venv and the weights.
+s=$(step "L0  Unit tests: memory graph stages" ./bench/memory_graph_tests.sh)
+row L0 "Memory graph stages" "$s" "$([ "$s" = SKIPPED ] && echo "needs .venv, the open_clip weights and the test photos")"
 
 s=$(step "L0  Geometry wiring" python3 bench/test_geometry.py --wiring)
 row L0 "Geometry wiring" "$s" ""
