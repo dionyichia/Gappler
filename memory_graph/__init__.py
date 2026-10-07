@@ -10,6 +10,7 @@ docs/hico-nav/hico-nav-github-docs/cmg_construction_pipeline.md:
     anchor_gate.py         S3  is this photo worth keeping
     masks.py               S4 erosion, S5 mask cleanup
     image_feature.py       S6  crop, encode, normalise (the encoder is plugged in)
+    clip_encoder.py        S6  the real encoder, open_clip ViT-B-32, images and text (needs torch)
     geometry.py            S7 back-projection, S8 cloud cleanup and 3D box, S9 range
     association.py         S10 overlap score and the match decision
     anchor_object_graph.py the graph: anchors, objects, the edges between them
