@@ -42,6 +42,7 @@ from nav_geometry import camera_goal_xy
 
 import rclpy
 from geometry_msgs.msg import PointStamped, PoseStamped
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.time import Time
 from scipy.spatial.transform import Rotation
@@ -149,9 +150,14 @@ class ObjectApproachNode(Node):
 
     def _on_goal_reached(self, msg: String) -> None:
         """After approach nav completes, fire /manipulation/start if we have the object."""
-        if msg.data.strip().lower() != "success":
-            return
         self._approach_done = False
+        if msg.data.strip().lower() != "success":
+            # Release the guard on failure too, or every later object is ignored
+            # until a restart (CODE_AUDIT F1). The next object pose starts a new approach.
+            self.get_logger().warn(
+                f"Approach navigation ended with '{msg.data}'. Ready for the next object."
+            )
+            return
         # If we already know where the object is, we're now in position — signal the arm
         if self._last_object_map is not None:
             try:
@@ -314,11 +320,13 @@ def main() -> None:
     node = ObjectApproachNode()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # Ctrl+C: exit quietly (CODE_AUDIT F4)
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        # rclpy's own Ctrl+C handler has usually shut ROS down already, and a
+        # second rclpy.shutdown() raises RCLError. try_shutdown does not.
+        rclpy.try_shutdown()
 
 
 if __name__ == "__main__":

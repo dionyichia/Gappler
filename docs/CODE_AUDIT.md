@@ -507,6 +507,13 @@ The same wedge follows a plain `"failed"` outcome, which the bridge *does* publi
 confirms it) — `:148` returns early for anything but `"success"`. That variant was not exercised
 separately. `[inferred from the same two lines]`
 
+**Fix on branch `t3.8-nav-node-fixes`, 2026-10-05 (T3.8), not yet run on the box.** The bridge now
+answers every goal exactly once: `"failed"` when Nav2 is unavailable, when it rejects the goal, or
+when sending or reading the result raises (`nav/goal_reached/goal_reached_publisher.py`).
+`object_approach_node` releases `_approach_done` on any outcome, not only `"success"`, so the next
+object pose starts a new approach (`nav/object_approach/object_approach_node.py`, `_on_goal_reached`).
+Retag to fixed once `bench/nav_nodes.sh` reports XPASS for both F1 cases.
+
 ### F2. 🟠 A failed return leg can never be retried `[observed]`
 
 `goto_glasses.py:222-225` — if Nav2 is unavailable, it sets `self._navigating = False` but leaves
@@ -544,6 +551,14 @@ Noisy but harmless while the robot is parked. The concern is mid-leg: `goto_glas
 `_cancel_navigation()` (`:231-244`) that **nothing calls on shutdown**, so Ctrl+C during a
 navigation leg would leave the Nav2 goal live and the base driving with its commander gone.
 `[inferred]` — nothing drove in this run, and this bench cannot test it.
+
+**Fix on branch `t3.8-nav-node-fixes`, 2026-10-05 (T3.8), not yet run on the box.** All five
+`main()`s now catch `KeyboardInterrupt` and `ExternalShutdownException`, destroy the node, and call
+`rclpy.try_shutdown()`, which does not raise when rclpy's handler already shut down. A new
+`bench/nav_nodes.sh` case, "clean Ctrl+C", checks each node exits 0 with no traceback. Retag to fixed
+once it reports XPASS. **Not fixed:** `goto_glasses` still does not cancel a live Nav2 goal on
+shutdown. That needs rclpy's own SIGINT handler turned off, as `estop.py` does (B2), and is a
+behaviour decision left to the owner.
 
 ---
 
@@ -917,4 +932,5 @@ publishers racing on the same three topics.
 | 2026-09-22 | Claude (Opus 5) + Dion | **A1 now `[observed]`** on real wrist-camera frames by the new L4 replay (T0.12). |
 | 2026-09-23 | Claude Opus 5.5 + Dion | B4: real-arm result from T1.7 added. Open question 2 answer superseded by T1.3 and T1.7. |
 | 2026-09-26 | OpenCode + Sherman | E4: T3.3 DONE — `slam_mapping.launch.py` now carries `robot_base_to_arm`. Shared 0.18 still duplicated; single-sourcing stays with T5.4. |
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | F1 and F4: fixes written on branch `t3.8-nav-node-fixes` (T3.8), awaiting a `bench/nav_nodes.sh` run on the box before retagging. New bench case for F4. F3 and the cancel-on-shutdown concern under F4 are untouched. |
 | 2026-10-06 | Claude (Opus 5.5) + Dion | K1 resolved by T0.14: every owned channel name is in a config file. Note added at the top of K1, record kept. |

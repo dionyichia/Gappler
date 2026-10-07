@@ -7,6 +7,11 @@ Bridges /goal_pose (PoseStamped) to the Nav2 NavigateToPose action server.
 Subscribes to /goal_pose, forwards it as a Nav2 action goal, then publishes
 the outcome to /goal_reached ("success" or "failed").
 
+Every goal gets exactly one answer. "failed" also covers the cases where the
+goal never got going: Nav2 not available, the goal rejected, or an error while
+sending it. object_approach_node waits for this answer before it acts on the
+next object, so staying silent would leave it waiting forever (CODE_AUDIT F1).
+
 Topics
 ------
   Subscribed : /goal_pose    (geometry_msgs/PoseStamped)
@@ -17,6 +22,7 @@ import rclpy
 from geometry_msgs.msg import PoseStamped
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import String
 from gappler_common import config
@@ -38,22 +44,35 @@ class GoalReachedPublisher(Node):
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = msg
         if not self._action_client.wait_for_server(timeout_sec=5.0):
-            self.get_logger().error("Nav2 action server not available — dropping goal.")
+            self.get_logger().error("Nav2 action server not available — goal failed.")
+            self._publish_outcome("failed")
             return
         future = self._action_client.send_goal_async(goal_msg)
         future.add_done_callback(self._on_goal_accepted)
 
     def _on_goal_accepted(self, future) -> None:
-        goal_handle = future.result()
+        try:
+            goal_handle = future.result()
+        except Exception as e:  # a failed send must still answer (CODE_AUDIT F1)
+            self.get_logger().error(f"Sending the goal to Nav2 failed: {e}")
+            self._publish_outcome("failed")
+            return
         if not goal_handle.accepted:
             self.get_logger().warn("Goal rejected by Nav2.")
+            self._publish_outcome("failed")
             return
         self.get_logger().info("Goal accepted — navigating.")
         goal_handle.get_result_async().add_done_callback(self._on_nav_result)
 
     def _on_nav_result(self, future) -> None:
-        status = future.result().status
-        outcome = "success" if status == 4 else "failed"
+        try:
+            status = future.result().status
+        except Exception as e:
+            self.get_logger().error(f"Reading the Nav2 result failed: {e}")
+            status = None
+        self._publish_outcome("success" if status == 4 else "failed")
+
+    def _publish_outcome(self, outcome: str) -> None:
         msg = String()
         msg.data = outcome
         self._publisher.publish(msg)
@@ -62,7 +81,14 @@ class GoalReachedPublisher(Node):
 
 def main() -> None:
     rclpy.init()
-    rclpy.spin(GoalReachedPublisher())
+    node = GoalReachedPublisher()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # Ctrl+C: exit quietly (CODE_AUDIT F4)
+    finally:
+        node.destroy_node()
+        rclpy.try_shutdown()
 
 
 if __name__ == "__main__":

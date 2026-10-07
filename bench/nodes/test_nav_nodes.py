@@ -16,6 +16,7 @@ Each case starts its node(s) fresh from nav/<package>/
   xfail    fused pose frame             goal = the fused pose moved into map     E1
   control  QoS relay                    /cloud_relay is BEST_EFFORT, >= 90 % kept  (J4)
   control  robot pose                   /robot_pose ~10 Hz, in map, at the TF pose
+  xfail    clean Ctrl+C                 all five nodes exit 0 with no traceback  F4
 
 Controls must pass. An xfail that passes is XPASS: the finding did not reproduce,
 retag it. A case whose own setup fails is a FAIL. A case whose node can't import its
@@ -175,14 +176,15 @@ class Case:
     def __init__(self, name, log):
         self.rig, self.log, self.procs, self.navs = Rig(name), log, [], []
 
-    def start(self, script, ready_topic, kind="sub", sec=25.0):
+    def start(self, script, ready_topic, kind="sub", sec=25.0, out=None):
         """Start a node; wait until it shows up on ready_topic (its subscription or
-        publisher), then give TF and discovery a moment to settle."""
+        publisher), then give TF and discovery a moment to settle. out: a file for the
+        node's own output instead of the shared log."""
         count = self.rig.count_subscribers if kind == "sub" else self.rig.count_publishers
         base = count(ready_topic)
         self.log.write(f"\n===== {script} =====\n")
         self.log.flush()
-        p = subprocess.Popen([sys.executable, str(next(NAV.glob(f"*/{script}")))], stdout=self.log,
+        p = subprocess.Popen([sys.executable, str(next(NAV.glob(f"*/{script}")))], stdout=out or self.log,
                              stderr=subprocess.STDOUT, start_new_session=True)
         self.procs.append(p)
         if not spin(sec, lambda: count(ready_topic) > base or p.poll() is not None) or p.poll() is not None:
@@ -481,6 +483,35 @@ def case_robot_pose(c):
     return ok, f"{hz:.1f} Hz, '{m.header.frame_id}', at {xy(m.pose.position)} yaw {yaw_of(m.pose.orientation):.2f} (want ({x}, {y}) yaw {yaw})"
 
 
+# each node, and the topic that shows it is up (as the cases above start them)
+READY = [("object_approach_node.py", "/manipulation/goal_pose", "sub"),
+         ("goal_reached_publisher.py", "/goal_pose", "sub"),
+         ("goto_glasses.py", "/goto_glasses/trigger", "sub"),
+         ("qos_relay.py", "/livox/lidar", "sub"),
+         ("pose_publisher.py", "/robot_pose", "pub")]
+
+
+def case_clean_ctrl_c(c):
+    """Ctrl+C (SIGINT, as Case.close sends it) must end each node with exit code 0 and
+    no traceback. Before the F4 fix all five printed one, in three shapes."""
+    bad = []
+    for script, topic, kind in READY:
+        out = LOG.parent / f"bench_nav_ctrl_c_{script}.txt"
+        with open(out, "w") as f:
+            p = c.start(script, topic, kind=kind, out=f)
+            os.killpg(p.pid, signal.SIGINT)
+            try:
+                code = p.wait(5)
+            except subprocess.TimeoutExpired:
+                os.killpg(p.pid, signal.SIGKILL)
+                code = f"hung, killed ({p.wait(5)})"
+        text = out.read_text(errors="replace")
+        c.log.write(f"\n===== {script} after SIGINT, exit {code} =====\n{text}")
+        if code != 0 or "Traceback" in text:
+            bad.append(f"{script} exit {code}{', traceback' if 'Traceback' in text else ''}")
+    return not bad, "; ".join(bad) or "all five exited 0 with no traceback"
+
+
 CASES = [  # name, kind, audit id, scripts it starts, function
     ("approach, far object", "control", "", ["object_approach_node.py"], case_approach_far),
     ("approach, near object", "control", "", ["object_approach_node.py"], case_approach_near),
@@ -495,6 +526,7 @@ CASES = [  # name, kind, audit id, scripts it starts, function
     ("fused pose frame", "xfail", "E1", ["goto_glasses.py"], case_fused_pose_frame),
     ("QoS relay", "control", "J4", ["qos_relay.py"], case_qos_relay),
     ("robot pose", "control", "", ["pose_publisher.py"], case_robot_pose),
+    ("clean Ctrl+C", "xfail", "F4", [s for s, _, _ in READY], case_clean_ctrl_c),
 ]
 
 

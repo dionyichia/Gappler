@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped
 from tf2_ros import Buffer, TransformListener
@@ -32,7 +33,14 @@ class PosePublisher(Node):
 
 def main():
     rclpy.init()
-    rclpy.spin(PosePublisher())
+    node = PosePublisher()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # Ctrl+C: exit quietly (CODE_AUDIT F4)
+    finally:
+        node.destroy_node()
+        rclpy.try_shutdown()
 
 if __name__ == '__main__':
     main()
