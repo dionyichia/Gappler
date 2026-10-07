@@ -23,13 +23,18 @@ cycle fails on the first try, we will not know which part failed. So each step a
 |---|---|---|---|---|
 | 1 | T1.22 | The gripper opens and closes on command | none | at the robot |
 | 2 | T1.23 | The simple-execute cycle runs on the simulated arm | none | lab box, arm off |
-| 3 | T1.24 | The state machine moves the real arm safely, one attempt | none | at the robot |
+| 3a | T1.24 | The state machine homes the real arm on start, nothing more | none | at the robot |
+| 3b | T1.24 | SAM 3 on the wrist camera finds the box: mask, centroid, real depth | the stale-centroid check | at the robot, arm off |
+| 3c | T1.24 | The state machine approaches the box with live SAM 3 centroids, one attempt | none | at the robot |
 | 4 | T1.11 | The real arm grasps a box | none | at the robot |
-| 5 | T1.12 | It grasps with a live SAM 3 mask | needs T1.25 (trigger gate) | at the robot |
+| 5 | T1.12 | It grasps again and again with SAM 3 left running | needs T1.25 (trigger gate) | at the robot |
 | 6 | T1.14, T2.6 | Release, done, back to IDLE, a second grasp | yes | desk, then robot |
 | 7 | T1.17 | The AnyGrasp path | yes (T1.8, T1.10) | mixed |
 
-Steps 1 to 4 need no change to the state machine. Its one-shot `return;` at
+Step 3 was split on 2026-10-07 (see "Why step 3 is split" below). The stand-in is out: its depth
+is the median of the whole image, so it does not tell us where the box is. SAM 3 takes the median
+over the box's own mask, so its depth is the box's depth (`grasp/segmentation/sam3_ros_node.py:153-158`)
+`[code]`. Steps 3c and 4 need one change to the state machine, the stale-centroid check, written with 3b. Its one-shot `return;` at
 `grasp/grasp_state_machine/src/grasp_state_machine.cpp:735` actually helps there: after one cycle
 the worker loop exits, so the arm cannot start a second cycle by accident `[code]`.
 
@@ -277,34 +282,120 @@ approach the box, stop near it, close, return. One attempt. We judge the motion,
 **Needs your explicit go-ahead.** `CLAUDE.md` forbids launching `grasp_state_machine` on the real
 arm. Two people, a hand on the power button the whole time.
 
-**Do not use the launcher.** `launchers/start_camera_arm_sam3_grasp.py` starts SAM 3 rather than
-the stand-in, and starts the state machine 5 s after everything else, on its own
-(`:109-121`, `:154-159`) `[code]`. Start each part by hand instead, so the state machine starts
-last and only when you choose. In every terminal, the T1.6 environment (domain 91, localhost only).
+**Do not use the launcher.** `launchers/start_camera_arm_sam3_grasp.py` starts the state machine
+5 s after everything else, on its own (`:109-121`, `:154-159`) `[code]`. Start each part by hand,
+so the state machine starts last and only when you choose. In every pane, the T1.6 environment
+(domain 91, localhost only). `./quickstart_terminals.sh` on the box sets that up.
 
-| Terminal | Command | Wait for |
+### Why step 3 is split
+
+The first try on 2026-10-07 stopped before anything moved, for two reasons. The stand-in reports
+the median depth of the whole image, so the arm would approach the table, not the box. And a full
+approach is too many new things at once. So step 3 is now three steps, each adding one thing:
+
+1. **3a:** the state machine homes the real arm on start, then waits. No camera.
+2. **3b:** SAM 3 finds the box. No arm.
+3. **3c:** both together: the approach.
+
+### With 3b: the stale-centroid check (code, desk)
+
+**The problem.** During SELECTING the state machine reads the last centroid it received and never
+asks how old it is. The age check is there but commented out
+(`grasp/grasp_state_machine/src/grasp_state_machine.cpp:646-652`) `[code]`. If SAM 3 loses the box,
+it stops publishing, and the arm keeps stepping toward the old point, up to 50 steps of 4 cm.
+
+This is needed for 3c, not 3a (3a never leaves IDLE). It lands with 3b, on the branch after 3a
+merges, and is tested on the simulated arm before 3c.
+
+**The fix.** Turn the check back on, with the age limit in `grasp/grasp_config.yaml` instead of
+hard-coded. A centroid older than the limit ends SELECTING and the node goes back to IDLE. Test on
+the simulated arm (`./bench/state_machine_sim.sh`) before the robot. Its fake detector stamps every
+centroid with the current time at 10 Hz (`bench/nodes/test_state_machine_sim.py:85`), so it should
+still pass `[inferred]`.
+
+The limit starts at 1.0 s, the value in the commented code. 3b measures how fast SAM 3 actually
+publishes. If it is slower than about 2 per second, raise the limit before 3c.
+
+### Step 3a: the state machine homes the real arm
+
+**Proves:** the state machine reaches the real arm through MoveIt and homes it. HOME itself was
+already proven by direct command in T1.7.
+
+**How.** The state machine homes on its own 2 s after it starts, then publishes `IDLE` and waits
+for a centroid (`:606-609`, `:628-634`) `[code]`. So start it with no camera and no SAM 3: nothing
+publishes a centroid, and it stops at HOME. No hand-sent message, no code change needed for 3a.
+
+| Pane | Command | Wait for |
 |---|---|---|
-| 1 | `python3 ~/rcp-Gappler/arm/estop/estop.py` | `E-stop ready` |
-| 2 | `ros2 launch arm_bringup arm_bringup.launch.py` (driver, robot model, control, MoveIt) | the `UDP_Configuration` line, then MoveIt's "You can start planning now!" |
-| 3 | the wrist camera, by serial, the way the launcher does it (`launchers/start_camera_arm_sam3_grasp.py:87-99`) | colour and depth publishing |
-| 4 | `python3 grasp/tools/dummy_mask_publisher.py` | centroids on `/object_centroid_2d` |
-| 5 | `ros2 topic echo /pipeline_state` | |
-| 6 | `ros2 launch grasp_state_machine grasp_state_machine.launch.py` | **the arm moves 2 s after this** |
+| `./quickstart_terminals.sh arm` | stop, driver and MoveIt, `/joint_states` rate, one empty pane | `E-stop ready`, then MoveIt's "You can start planning now!" |
+| a new pane, T1.6 environment | `ros2 topic echo /pipeline_state` | |
+| empty pane, after `source grasp/grasp_env.sh` | `ros2 launch grasp_state_machine grasp_state_machine.launch.py` | **the arm moves to HOME 2 s after this** |
 
-Box on the table, in view, alone. The stand-in claims every pixel is the object, so the arm reaches
-for the middle of whatever the camera sees.
+Start the arm away from HOME (as in T1.7) so the move is visible.
 
-**Before the state machine starts, check two things moved here from T1.13 and T1.16:** the
-camera driver in terminal 3 reports serial `243222074878` (the wrist D435i, not the base D455), and
-`ros2 topic echo /object_centroid_2d` shows centroids near the image centre with a depth that
-matches the box distance.
+**Pass:** a slow move to HOME, then `IDLE` on `/pipeline_state`, then no further motion for a
+minute. Stop the state machine with Ctrl-C: the arm stays put.
 
-**Pass:** home, then a series of small steps toward the box, a stop at about 0.18 m from the
-camera, gripper open, one last step, gripper close, return to HOME, `IDLE` then `SELECTING` then
-`EXECUTING` on `/pipeline_state`, and `/manipulator/return_to_user` gets `true`.
+**Stop (power button) if:** the arm moves anywhere but HOME, moves fast, or moves again after
+`IDLE`.
 
-**Stop (power button) if:** the arm heads for the table rather than the box, keeps stepping past
-the box, or any motion is fast.
+### Result, 2026-10-07: 3a PASS
+
+Dion at the robot, session from `./quickstart_terminals.sh arm` on the box (`dev` at `3dde592`),
+domain 91, localhost only. The state machine homed the arm 2 s after start, published `IDLE`,
+and nothing moved after that `[reported]`. From the log: safety walls added, plan 3.2 s, execute
+4.0 s, `State → IDLE`. No errors in the state machine. MoveIt's warnings were the usual ones (no
+octomap sensor, default acceleration limits). Log:
+[`../bench-runs/2026-10-07-labbox-t1.24-3a-home.txt`](../bench-runs/2026-10-07-labbox-t1.24-3a-home.txt).
+
+### Step 3b: SAM 3 finds the box (arm off)
+
+**Proves:** SAM 3 on the wrist camera puts a mask on the box, and its centroid depth matches a tape
+measure. Nothing on the arm runs, so nothing can move.
+
+**First:** `nvidia-smi` and `fuser /dev/video*`. SAM 3 needs the GPU, and someone else may be on
+it. Nobody has confirmed that SAM 3 runs on this box yet `[unverified]`.
+
+| Pane | Command | Wait for |
+|---|---|---|
+| 1, `arm/arm_env.sh` | `ros2 launch realsense2_camera rs_launch.py "serial_no:='_243222074878'" align_depth.enable:=true rgb_camera.color_profile:=640x480x15 depth_module.depth_profile:=640x480x15` | serial `243222074878` in the log, then frames: `ros2 topic hz` on the colour topic |
+| 2, `grasp/grasp_env.sh`, from `aria/aria_app/services/object_recognition` | `PYTHONPATH=~/rcp-Gappler/aria/aria_app:$PYTHONPATH uv run --project ~/rcp-Gappler python ~/rcp-Gappler/grasp/segmentation/sam3_ros_node.py` (as the launcher does, `:109-121`) | `SAM3 node ready` |
+| 3 | `ros2 topic hz /object_centroid_2d` | the rate |
+| 4 | `ros2 topic echo /object_centroid_2d` | x, y near the box in the image, z in metres |
+| 5 | `rqt_image_view /camera/sam/mask` | the mask |
+
+The quickstart `grasp` layout starts the camera at the driver defaults with the point cloud on.
+That sent no frames on 2026-10-07, so start the camera by hand here.
+
+**Record:**
+- the centroid rate (it sets the age limit for 3c)
+- z against a tape measure, camera glass to box face, at 0.6, 0.4 and 0.25 m
+- slide the box toward the camera and note the distance where z stops coming and SAM 3 logs `No
+  valid depth in mask region`. If that is above 0.18 m, the approach can never reach its stop
+  depth: raise `execute_depth_thresh_m` or rethink before 3c.
+- with the box out of view: does SAM 3 still find a "box" somewhere?
+
+**Pass:** the mask covers the box, z is within about 2 cm of the tape, the rate is steady.
+
+### Step 3c: the approach with live SAM 3
+
+**Proves:** the full step 3: home, approach the box, stop at 0.18 m, open, last 10 cm step, close,
+return to HOME, `true` on `/manipulator/return_to_user`. One attempt.
+
+3a's arm panes, plus 3b's camera and SAM 3 panes. `ros2 topic echo /pipeline_state`. The state
+machine last. SAM 3 is publishing already, so **the arm homes and then approaches as soon as the
+state machine is up**. The one-shot `return;` (`:735`) stops it after one cycle, so the trigger gate
+(T1.25) is not needed for this one attempt `[inferred]`.
+
+Box on the table, in view, alone.
+
+**Pass:** home, small steps toward the box, a stop at about 0.18 m, gripper open, one more step,
+gripper close, back to HOME, `IDLE` then `SELECTING` then `EXECUTING` on `/pipeline_state`, and
+`/manipulator/return_to_user` gets `true`.
+
+**Stop (power button) if:** the arm heads for the table, keeps stepping past the box, or moves
+fast. If SAM 3 loses the box, the stale check should end the approach. Do not count on it the first
+time.
 
 **After:** the gripper stays closed. Open it with the step 1 command.
 
@@ -341,8 +432,8 @@ and where it went wrong if not.
 
 ## Steps 5 to 7
 
-- **Step 5 (T1.12):** SAM 3 instead of the stand-in. Needs T1.25 first, or SAM 3 starts a cycle
-  the moment the state machine is ready.
+- **Step 5 (T1.12):** SAM 3 left running across attempts. SAM 3 itself is proven in 3b and 3c.
+  Needs T1.25 first, or SAM 3 starts a new cycle as soon as the one-shot `return;` is removed.
 - **Step 6 (T1.14, T2.6):** release, done, back to IDLE, a second grasp in the same launch.
 - **Step 7 (T1.17):** the AnyGrasp path.
 
@@ -357,6 +448,8 @@ From reading the code. None of these is confirmed on the real arm.
   no object in view, the stand-in's centroid is the table, so the arm would step toward the table
   for up to 50 steps (2 m). MoveIt's safety walls (`addSafetyWalls()`, `:608`) are the only guard
   `[inferred]`. Never run step 3 or 4 without the box in view.
+- **A lost object is not noticed** until the stale-centroid check is in (see "With 3b"). Even
+  then, the check only runs between steps, and each step takes a few seconds at 10% speed.
 - **A failed final step ends the node.** `:725` returns from the worker loop (the check is at `:722`), just like `:735`.
   The gripper is open at that point, so it is safe, but nothing else will happen until a restart.
 - **"Object grasped successfully" means nothing.** It is logged unconditionally (`:728`). Judge
@@ -380,3 +473,5 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-06 | Claude Opus 5.5 + Dion | Step 1 result: gripper air test PASS (Sherman at the robot), box test owed. Added where the force limit lives and tomorrow's box test plan. T1.22 marked PROGRESS. |
 | 2026-10-07 | Claude Opus 5.5 + Dion | Step 2 result: PASS on the full bench on dev (Actions run 37596048445). T1.23 marked done. |
 | 2026-10-07 | Claude Opus 5.5 + Dion | T1.22 box test PASS, task done. Step 3 not run. Added where we stopped and what was found while setting up. |
+| 2026-10-07 | Claude Opus 5.5 + Dion | Step 3 split into 3a (the state machine homes on start, no camera), 3b (SAM 3 finds the box, arm off) and 3c (the approach with live SAM 3). The stand-in is dropped. Added the stale-centroid check as a code change, landing with 3b. |
+| 2026-10-07 | Claude Opus 5.5 + Dion | 3a PASS: the state machine homed the real arm on start, went IDLE, no further motion. |
