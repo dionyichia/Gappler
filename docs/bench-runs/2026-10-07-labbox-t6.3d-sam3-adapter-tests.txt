@@ -1,0 +1,64 @@
+T6.3d -- SAM 3 adapter tests on the lab box   lab box, scratch copy in /tmp, 2026-10-07 19:04
+===========================================================================================
+First run of the SAM 3 adapter tests (memory_graph/tests/test_sam3_adapter.py), and a rerun
+of every other memory graph test with the new code present. Run by Zongzhe's session over
+ssh, with Zongzhe's go-ahead.
+
+  RESULT: PASS. 14 tests in test_sam3_adapter.py, 14 passed, 0 failed, 0 skipped.
+  All memory graph tests: 72 ran, 71 passed, 0 failed, 1 SKIPPED (the whole encoder file).
+
+  Covers: SAM 3 shaped results (bool masks (N, 1, H, W), pixel boxes, scores) turned into
+  Detections, one call per vocabulary phrase, then S2 filtering, S4 erosion and S5 cleanup.
+  The T6.3d done-when passes from that input: the table mask has a hole where the cup is and
+  no pixel belongs to two masks. One test uses real torch tensors in bfloat16.
+
+  NOT covered: the real SAM 3. Every result here comes from a stand-in (FakeSam3 in the test
+  file). The model was not loaded and the GPU was not used. T6.3d stays open for that run.
+  NOT covered: memory_graph/tests/test_clip_encoder.py, SKIPPED. open_clip is not installed in
+  the shared .venv.
+  Not a full bench run: only the memory graph tests. CPU only, no ROS, no hardware.
+
+How it was run [observed]
+  Code: the working tree of branch t6.3d-sam3-mask-adapter (cut from dev at 3dde592), copied
+        from the Mac to /tmp/zongzhe-t6.3d on the lab box before it was committed, and deleted
+        after the run. ~/rcp-Gappler stayed on dev at 3dde592 and was not modified.
+  Python: the shared ~/rcp-Gappler/.venv, read only. PYTHONDONTWRITEBYTECODE=1, so no cache
+        files were written. Nothing was installed.
+  Checked first that no bench or CI run was active (pgrep Runner.Worker, bench/run.sh).
+  To repeat, in a checkout of the branch:
+        ~/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_sam3_adapter
+
+Full output [observed]
+-------------------------------------------------------------------------------------------
+host: iot22-Computer   date: 2026-10-07 19:04 CST
+python: /home/rcp2026/rcp-Gappler/.venv/bin/python 3.10.12 numpy 2.2.6 scipy 1.15.3 torch 2.10.0+cu128
+
+######## python -m unittest -v memory_graph.tests.test_sam3_adapter ########
+test_empty_vocabulary (memory_graph.tests.test_sam3_adapter.DetectTest) ... ok
+test_nothing_found_for_any_phrase (memory_graph.tests.test_sam3_adapter.DetectTest) ... ok
+test_one_call_per_phrase_in_vocabulary_order (memory_graph.tests.test_sam3_adapter.DetectTest) ... ok
+test_a_mask_of_the_wrong_size_is_an_error (memory_graph.tests.test_sam3_adapter.ResultShapeTest) ... ok
+test_masks_without_the_extra_axis_also_work (memory_graph.tests.test_sam3_adapter.ResultShapeTest) ... ok
+test_nothing_found (memory_graph.tests.test_sam3_adapter.ResultShapeTest) ... ok
+test_one_prompt_becomes_detections (memory_graph.tests.test_sam3_adapter.ResultShapeTest) ... ok
+test_torch_tensors_as_sam3_returns_them (memory_graph.tests.test_sam3_adapter.ResultShapeTest)
+The wrapper runs in bfloat16, which numpy cannot hold. ... ok
+test_a_weak_target_is_kept_and_a_weak_non_target_is_dropped (memory_graph.tests.test_sam3_adapter.SegmentPhotoTest) ... ok
+test_background_classes_are_dropped (memory_graph.tests.test_sam3_adapter.SegmentPhotoTest) ... ok
+test_nothing_found (memory_graph.tests.test_sam3_adapter.SegmentPhotoTest) ... ok
+test_one_object_found_under_two_phrases_is_kept_once (memory_graph.tests.test_sam3_adapter.SegmentPhotoTest) ... ok
+test_sorted_by_confidence_across_phrases (memory_graph.tests.test_sam3_adapter.SegmentPhotoTest) ... ok
+test_the_cup_is_cut_out_of_the_table (memory_graph.tests.test_sam3_adapter.SegmentPhotoTest)
+The T6.3d done-when, starting from SAM 3's output: the table mask has ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.054s
+
+OK
+
+######## every test in memory_graph/tests (unittest discover) ########
+----------------------------------------------------------------------
+Ran 72 tests in 0.641s
+
+OK (skipped=1)
+SKIP: memory_graph.tests.test_clip_encoder (unittest.loader.ModuleSkipped) needs open_clip and torch: No module named 'open_clip'

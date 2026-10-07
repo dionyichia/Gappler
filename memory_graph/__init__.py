@@ -8,6 +8,7 @@ docs/hico-nav/hico-nav-github-docs/cmg_construction_pipeline.md:
     config.py              every tuning constant, one place
     detection_filter.py    S2  drop detections that should never become objects
     anchor_gate.py         S3  is this photo worth keeping
+    sam3_adapter.py        S1 and S4 from SAM 3: detections with masks, then S2 and S5
     masks.py               S4 erosion, S5 mask cleanup
     image_feature.py       S6  crop, encode, normalise (the encoder is plugged in)
     clip_encoder.py        S6  the real encoder, open_clip ViT-B-32, images and text (needs torch)
