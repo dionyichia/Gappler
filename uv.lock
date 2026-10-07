@@ -719,6 +719,25 @@ wheels = [
 ]
 
 [[package]]
+name = "open-clip-torch"
+version = "3.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ftfy" },
+    { name = "huggingface-hub" },
+    { name = "regex" },
+    { name = "safetensors" },
+    { name = "timm" },
+    { name = "torch" },
+    { name = "torchvision" },
+    { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4a/1f/2bc9795047fa2c1ad2567ef78ce6dfc9a7b763fa534acee09a94da2a5b8f/open_clip_torch-3.3.0.tar.gz", hash = "sha256:904b1a9f909df8281bb3de60ab95491cd2994a509177ea4f9d6292a84fe24d6d", size = 1503380, upload-time = "2026-02-27T00:32:46.74Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/37/b5/41c315ccd94ca332ead3e832e83eee343ab245005c3e43d9d3e75eae34eb/open_clip_torch-3.3.0-py3-none-any.whl", hash = "sha256:c549ad5ed6bfc119cc11105033c0a2b9d7a2a4afeb40a58a09aab3da1a0043ce", size = 1547268, upload-time = "2026-02-27T00:32:44.902Z" },
+]
+
+[[package]]
 name = "opencv-python"
 version = "4.13.0.92"
 source = { registry = "https://pypi.org/simple" }
@@ -989,9 +1008,11 @@ dependencies = [
     { name = "faster-whisper" },
     { name = "lightglue" },
     { name = "numpy" },
+    { name = "open-clip-torch" },
     { name = "opencv-python" },
     { name = "projectaria-client-sdk" },
     { name = "projectaria-eyetracking" },
+    { name = "rerun-sdk" },
     { name = "sam3" },
     { name = "scipy" },
     { name = "setuptools" },
@@ -1003,9 +1024,11 @@ requires-dist = [
     { name = "faster-whisper", specifier = ">=1.2.1" },
     { name = "lightglue", git = "https://github.com/Axemortal/rcp-LightGlue.git?branch=main" },
     { name = "numpy", specifier = ">=2.2.6" },
+    { name = "open-clip-torch", specifier = ">=3.0.0" },
     { name = "opencv-python", specifier = ">=4.13.0.92" },
     { name = "projectaria-client-sdk", specifier = "==1.1.0" },
     { name = "projectaria-eyetracking", git = "https://github.com/Axemortal/rcp-projectaria_eyetracking.git?branch=main" },
+    { name = "rerun-sdk", specifier = "==0.30.0" },
     { name = "sam3", git = "https://github.com/Axemortal/rcp-sam3.git?branch=main" },
     { name = "scipy", specifier = ">=1.15.3" },
     { name = "setuptools", specifier = "<81" },
@@ -1014,7 +1037,7 @@ requires-dist = [
 
 [[package]]
 name = "rerun-sdk"
-version = "0.30.0a4"
+version = "0.30.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1024,10 +1047,10 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/de/33/6e32b2729d9da979e07aa6fca24fcf0539402a958b47ea719a0b26948044/rerun_sdk-0.30.0a4-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:8e52debedab0581f1573162ccd10ba5cc3ce61495b249a1afd9bd4c54b8658ad", size = 113562103, upload-time = "2026-02-17T12:00:06.506Z" },
-    { url = "https://files.pythonhosted.org/packages/66/fd/21747f7c338036bbc79baf1709bd64e429717b858071264dffc91cba7246/rerun_sdk-0.30.0a4-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:32b15afe867c9f00bcdca8ab758248b3ce72faa1a4b7dd3c1bebf2057a1a2689", size = 121562390, upload-time = "2026-02-17T12:00:13.129Z" },
-    { url = "https://files.pythonhosted.org/packages/c5/a3/8b31db61cd02ea1059aab7f63e4d11472d501d56c5d558a5093c719c8ee9/rerun_sdk-0.30.0a4-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:d5ff4e505f94da020bd953465dd454030174ba398ffe235c564dd0d06b6c741c", size = 126549605, upload-time = "2026-02-17T12:00:18.941Z" },
-    { url = "https://files.pythonhosted.org/packages/00/dc/b0dcca1b6ae7231b53808ac40f28e36c4452ba094b938a03be5302155d26/rerun_sdk-0.30.0a4-cp310-abi3-win_amd64.whl", hash = "sha256:4262e4a69936af1b1a0cfb7cdda401c6769bd7228a987880d8c9a3a2506d2572", size = 109407324, upload-time = "2026-02-17T12:00:25.042Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/2b/694f35dfdf3f1c2e11efe56abb6205e89ff2fa73062ed67218cbad35cf87/rerun_sdk-0.30.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:5b99d8e14e4ea8227604bc6c57a57aaaada1b29a5c55c576f18bf184dc91946d", size = 114179517, upload-time = "2026-02-25T15:36:02.018Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/d9/ec6b0de4ab2452d278fe44e4fe82ad620862276b400f598b7d983000e205/rerun_sdk-0.30.0-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:842624dee1358558a146801f98e6729dc744b7776b07ce922923ccbec812fba7", size = 122199031, upload-time = "2026-02-25T15:36:07.703Z" },
+    { url = "https://files.pythonhosted.org/packages/77/b7/d533b8a77665fbf8aea1109fc488c89e74f0b6381baa1d7d5f99131f1dbe/rerun_sdk-0.30.0-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:3e1b4ffb6dc3b5aea3b8e4b1dadecb6e76c868802315b83461d0f8dfc4ebf79d", size = 127160433, upload-time = "2026-02-25T15:36:14.044Z" },
+    { url = "https://files.pythonhosted.org/packages/f0/a3/6d76d5631656786335e713959ecb222446d122015c45b23cb49f8b19755c/rerun_sdk-0.30.0-cp310-abi3-win_amd64.whl", hash = "sha256:3ae07ab7b5d8856573086176b089ce8bb08923cd77bc8b020db52a87975fd8a0", size = 109960499, upload-time = "2026-02-25T15:36:20.183Z" },
 ]
 
 [[package]]

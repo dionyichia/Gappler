@@ -1,12 +1,15 @@
 """S6: one appearance vector per detection (part of T6.3f).
 
 Crop each box with padding, encode the crops, L2-normalise. The encoder is passed
-in. Upstream uses open_clip ViT-B-32 (laion2b_s34b_b79k), which needs torch and a
-model download, so it is not wired in yet. Any object with an `encode` method
-that maps a list of RGB crops to an (N, D) array works.
+in. The real one is OpenClipEncoder in clip_encoder.py: open_clip ViT-B-32
+(laion2b_s34b_b79k), as upstream, D-MG7 in docs/MEMORY_GRAPH_DESIGN.md. It is
+kept in its own file so this one works without torch. Any object with an
+`encode` method that maps a list of RGB crops to an (N, D) array works, so the
+model can be changed later.
 
-T6.3f is done only once a real encoder passes its test: two crops of the same
-chair score above 0.8, a chair against a sink clearly lower.
+T6.3f is done only once the real encoder passes its test on real photos: two
+crops of the same chair score above 0.8, a chair against a sink clearly lower.
+The test is in tests/test_clip_encoder.py and skips until the photos exist.
 """
 
 from __future__ import annotations

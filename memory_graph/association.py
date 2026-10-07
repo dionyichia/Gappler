@@ -10,8 +10,9 @@ Decision half (T6.4b): combine overlap with appearance,
 weights appearance alone tops out at 0.5, below the 0.6 threshold, so a match
 always needs some 3D overlap (D-MG2).
 
-Whether two candidates from one photo may land on the same object is open.
-cfg.association_mode picks "greedy" (upstream, map_utils.py:377) or "one_to_one".
+Two candidates from one photo may land on the same object: decided 2026-10-07,
+greedy as upstream (D-MG8). cfg.association_mode picks "greedy" (upstream,
+map_utils.py:377) or "one_to_one", which is kept so the choice can be changed.
 """
 
 from __future__ import annotations

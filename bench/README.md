@@ -38,7 +38,7 @@ L5-L6 may always skip.
 
 | Level | Name | What it checks | Runs on | Was |
 |---|---|---|---|---|
-| L0 | Static checks | code parses, imports and launch file names resolve (`static.py`). Also the memory graph's stdlib unit tests (`memory_graph/tests/test_anchor_object_graph.py`, since 2026-10-05) | any machine | Tier 0-1 |
+| L0 | Static checks | code parses, imports and launch file names resolve (`static.py`). Also the memory graph's stdlib unit tests (`memory_graph/tests/test_anchor_object_graph.py`, since 2026-10-05). With `.venv`, all memory graph tests including the real open_clip model (`memory_graph_tests.sh`, since 2026-10-07) | any machine | Tier 0-1 |
 | L1 | Contracts | no topic, frame or parameter name moved since the snapshot (`contracts.py`) | any machine | Tier 0-1 |
 | L2 | Lab box check | preflight: can this machine run L3-L4? Does not look at the robot (`preflight.py`) | any machine | preflight |
 | L3 | Build | colcon build of the arm and nav code (`build.sh` at the repo root) | ROS 2 Humble | Tier 2 |
@@ -76,6 +76,7 @@ refused, 3 skipped — never a pass.
 | `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s` sent back to back, the Ctrl+C key and SIGINT (5 trials) all deliver? Every case is required since the 2026-09-21 fix | — |
 | `state_machine_sim.sh` | `grasp_state_machine` runs a full grasp cycle on the simulated arm; the test plays camera, detector and gripper | mock hardware; preflight's `arm-ping`/`arm-port` must not pass (Dion's exception in `CLAUDE.md`) |
 | `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 16 cases, 7 expected-fail (F1 ×3, F5, F2, E1, F4). The F1, F4 and F5 fixes landed 2026-10-05 and 2026-10-07 (T3.8), so those five should now report XPASS. Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
+| `memory_graph_tests.sh [PYTHON]` | every test in `memory_graph/tests`, including `test_clip_encoder.py`, which loads open_clip ViT-B-32 and checks it for upstream's four uses of CLIP: object features, matching, task relevance from text, and scoring a whole photo. Default env: `.venv`. Needs no ROS. One skipped test makes the step SKIPPED. Two are skipped as of 2026-10-07, so the step cannot pass yet: the chair-against-sink test (no photos in `memory_graph/tests/fixtures/`) and the feature merge (T6.4c, not built). Weights: `.venv/bin/python -m memory_graph.clip_encoder` | nothing to isolate: no ROS, no network |
 | `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `grasp/anygrasp_venv/.venv`, built by `./grasp/anygrasp_venv/build_anygrasp_venv.sh` | GPU only, no ROS |
 | `anygrasp_replay.sh` | a recorded wrist-camera bag (`WRIST_CAMERA_BAG`, default `assets/recordings/wrist_camera`, made by `grasp/tools/record_wrist_camera.sh`) through `sam3_ros_node` and `anygrasp_detection_node`, with `/pipeline_state` played as EXECUTING then IDLE. 2 controls (a mask, candidates) and the A1 gate case, expected-fail. SKIPPED with no recording | channel must be empty **including hidden topics**. No camera, no state machine |
 

@@ -8,9 +8,14 @@ dependencies = [
     "faster-whisper>=1.2.1",
     "lightglue",
     "numpy>=2.2.6",
+    "open-clip-torch>=3.0.0",  # memory graph image feature (D-MG7)
     "opencv-python>=4.13.0.92",
     "projectaria-client-sdk==1.1.0",
     "projectaria-eyetracking",
+    # Only projectaria-tools uses rerun, and it asks for no version. The lock held the
+    # pre-release 0.30.0a4, which PyPI has since removed, so any re-lock jumped to the
+    # newest release. Pinned to the final 0.30.0, the closest version that still exists.
+    "rerun-sdk==0.30.0",
     "sam3",
     "scipy>=1.15.3",
     "setuptools<81",  # aria CLI imports pkg_resources, removed in setuptools 81+
