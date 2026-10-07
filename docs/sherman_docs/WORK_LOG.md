@@ -257,6 +257,12 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Review found stale-raster and interrupted-cleanup gaps; addressed and rerun, including repeated-signal regression. All five tests run on box; Mac PyYAML-dependent validation explicitly skipped.
 - Evidence: [`T3.5_MAP_SAVING.md`](T3.5_MAP_SAVING.md). No build/install/deploy, automatic graph saves or historical overwrite. Corrupt-localizer abort/readiness, initialization and minimal control runbook remain open. T3.5 PROGRESS.
 
+## [2026-10-07] T3.5 | Explicit localization start pose
+
+- Added `require_initial_pose` (finite `GAPPLER_MAP_START_POSE=x,y,theta`); localization launch now refuses silent-origin startup and passes `map_start_pose` before any hardware actions.
+- Verified: 6 map tests + construction refusals (map + pose) pass on Mac and box; synthetic `/initialpose` reseeding 0.000 m with biased odometry. Evidence: [`T3.5_MAP_PREP.md`](T3.5_MAP_PREP.md), [init-pose results](../bench-runs/2026-10-07-sherman-t3.5-init-pose.txt).
+- Review: PASS no blockers. Readiness gates, minimal manual-control runbook, install evidence and physical acceptance remain open. T3.5 PROGRESS.
+
 ## Record Template
 
 ```markdown

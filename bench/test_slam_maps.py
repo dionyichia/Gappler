@@ -8,10 +8,16 @@ from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "shared"))
-from slam_maps import require_serialized_map
+from slam_maps import require_initial_pose, require_serialized_map
 
 
 class SlamMapTests(unittest.TestCase):
+    def test_initial_pose_requires_explicit_finite_xyz(self):
+        self.assertEqual(require_initial_pose("0.9,0.5,0.25"), [0.9, 0.5, 0.25])
+        for bad in ("", "0.9,0.5", "0.9,0.5,0.25,1", "a,b,c", "1,2,nan", "1,2,inf", None):
+            with self.subTest(value=bad):
+                with self.assertRaisesRegex(ValueError, "initial pose"):
+                    require_initial_pose(bad if bad is None else str(bad))
     def test_requires_both_nonempty_regular_files(self):
         with tempfile.TemporaryDirectory(prefix="map with spaces ") as directory:
             prefix = Path(directory) / "completed_map"
@@ -38,6 +44,17 @@ class SlamMapTests(unittest.TestCase):
             with patch.object(Path, "open", side_effect=PermissionError("denied")):
                 with self.assertRaisesRegex(ValueError, "unreadable"):
                     require_serialized_map(prefix)
+
+    def test_localization_requires_explicit_start_pose(self):
+        tree = ast.parse((REPO / "nav/robot_slam/launch/slam_localization.launch.py").read_text())
+        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and
+                        node.name == "generate_launch_description")
+        calls = [node.func.id for node in ast.walk(function)
+                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)]
+        self.assertIn("require_initial_pose", calls, "localization must require explicit start pose, not silent origin")
+        start_pose = [node for node in ast.walk(function) if isinstance(node, ast.Dict) and
+                      any(isinstance(key, ast.Constant) and key.value == "map_start_pose" for key in node.keys)]
+        self.assertEqual(len(start_pose), 1, "map_start_pose override missing")
 
     def test_localization_checks_before_constructing_actions(self):
         tree = ast.parse((REPO / "nav/robot_slam/launch/slam_localization.launch.py").read_text())

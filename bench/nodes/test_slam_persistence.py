@@ -336,6 +336,30 @@ def main() -> None:
                 assert distance <= 0.15 and heading <= 0.10, f"localization error {distance:.3f}m/{heading:.3f}rad"
                 assert latest.header.frame_id == "t35_map"
                 print(f"PASS localization: error {distance:.3f}m/{heading:.3f}rad; biased odometry", flush=True)
+            # Parameter load path above proves deserialize; now prove /initialpose
+            # re-localization without restarting the localizer.
+            initialpose_pub = node.create_publisher(PoseWithCovarianceStamped, "/t35_slam/initialpose", 10)
+            reseeded = (0.2, 0.3, -0.15)
+            seed = PoseWithCovarianceStamped()
+            seed.header.frame_id = "t35_map"
+            seed.pose.pose.position.x, seed.pose.pose.position.y = reseeded[0], reseeded[1]
+            seed.pose.pose.orientation.z = math.sin(reseeded[2] / 2)
+            seed.pose.pose.orientation.w = math.cos(reseeded[2] / 2)
+            poses.clear()
+            for _ in range(5):
+                seed.header.stamp = node.get_clock().now().to_msg()
+                initialpose_pub.publish(seed)
+                spin_for(0.1)
+            sent = feed(reseeded, bias=(0.4, -0.3, 0.1), repeats=12)
+            matching = [pose for pose in poses if (pose.header.stamp.sec, pose.header.stamp.nanosec) in sent]
+            assert matching, "no pose after /initialpose reseeding"
+            latest = matching[-1]
+            position, rotation = latest.pose.pose.position, latest.pose.pose.orientation
+            actual = (position.x, position.y, 2 * math.atan2(rotation.z, rotation.w))
+            distance, heading = pose_error(actual, reseeded)
+            assert distance <= 0.15 and heading <= 0.10, f"/initialpose error {distance:.3f}m/{heading:.3f}rad"
+            node.destroy_publisher(initialpose_pub)
+            print(f"PASS /initialpose reseeding: error {distance:.3f}m/{heading:.3f}rad", flush=True)
             refused_root = folder / "must not save localization"
             with (REPO / "log/t35-owned-saver-refusal.log").open("w") as output:
                 refused = subprocess.Popen([

@@ -70,10 +70,12 @@ def runtime_check() -> None:
         for suffix in (".posegraph", ".data"):
             (maps / ("completed_map" + suffix)).write_bytes(b"construction fixture only")
         environment["GAPPLER_MAP_DIR"] = str(maps)
+        environment["GAPPLER_MAP_START_POSE"] = "0.9,0.5,0.25"
         try:
             with patch.dict(os.environ, environment):
                 context = LaunchContext()
-                with patch.dict(os.environ, {"GAPPLER_MAP_DIR": str(prefix / "missing maps")}), \
+                with patch.dict(os.environ, {"GAPPLER_MAP_DIR": str(prefix / "missing maps"),
+                                             "GAPPLER_MAP_START_POSE": "0.9,0.5,0.25"}), \
                         patch("launch_ros.actions.Node") as hardware_node, \
                         patch("launch.actions.IncludeLaunchDescription") as hardware_include:
                     module = runpy.run_path(str(REPO / LAUNCHES[1]))
@@ -86,6 +88,19 @@ def runtime_check() -> None:
                     hardware_node.assert_not_called()
                     hardware_include.assert_not_called()
                 print("PASS missing-map refusal before node/include construction; no actions executed")
+                with patch.dict(os.environ, {"GAPPLER_MAP_START_POSE": ""}), \
+                        patch("launch_ros.actions.Node") as hardware_node, \
+                        patch("launch.actions.IncludeLaunchDescription") as hardware_include:
+                    module = runpy.run_path(str(REPO / LAUNCHES[1]))
+                    try:
+                        module["generate_launch_description"]()
+                    except ValueError as error:
+                        assert "initial pose" in str(error)
+                    else:
+                        raise AssertionError("missing start pose did not refuse startup")
+                    hardware_node.assert_not_called()
+                    hardware_include.assert_not_called()
+                print("PASS missing-pose refusal before node/include construction; no actions executed")
                 for relative in LAUNCHES:
                     locations = []
                     sources = {}
