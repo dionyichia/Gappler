@@ -174,8 +174,8 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
   <div class="facts">
     <span class="chip c-ok">home pose checked on the real arm</span>
     <span class="chip c-ok">full grasp runs on the simulated arm</span>
+    <span class="chip c-ok">gripper opens and closes on the real arm</span>
     <span class="chip c-bad">never grasped on the real arm</span>
-    <span class="chip c-dec">2 decisions open</span>
   </div>
 </header>
 
@@ -255,7 +255,7 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
     <path class="d-arrowx" d="M540 152 V300 H700 V270" marker-end="url(#hx)"/>
     <text class="d-labx" x="550" y="318">/manipulation/done: nobody sends it (T1.14)</text>
     <path class="d-arrowx" d="M880 330 V270" marker-end="url(#hx)"/>
-    <text class="d-labx" x="760" y="346">/manipulator/release: nobody sends it (T1.15)</text>
+    <text class="d-labx" x="760" y="346">/manipulator/release: nobody sends it yet (T2.6)</text>
   </svg>
   </div>
   <p class="caption">Topic names and who owns each one: <code>docs/CHANNEL_CONTRACT.md</code>.</p>
@@ -263,21 +263,20 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
 
 <section id="route">
   <h2>The route</h2>
-  <p class="sub">Twelve stops, in the order things happen. Line numbers are from branch
-  <code>t1.13-camera-serial</code> on 6 Oct 2026, which is <code>dev</code> plus the T1.7, T1.13
-  and T1.16 changes. On plain <code>dev</code> a few launcher lines differ.</p>
+  <p class="sub">Twelve stops, in the order things happen. Line numbers are from <code>dev</code> on 6 Oct 2026, after T0.14
+  moved the tuning values and topic names into config files.</p>
   <ol class="route">
     <li><span><a href="#s1">The launcher starts everything</a><span class="f">launchers/start_camera_arm_sam3_grasp.py</span></span></li>
     <li><span><a href="#s2">Arm bring-up: driver, model, MoveIt</a><span class="f">arm/arm_bringup/launch/arm_bringup.launch.py</span></span></li>
     <li><span><a href="#s3">Where the camera and gripper sit on the arm</a><span class="f">rm_65_w_gripper.urdf.xacro</span></span></li>
     <li><span><a href="#s4">SAM 3 finds the object</a><span class="f">grasp/segmentation/sam3_ros_node.py</span></span></li>
-    <li><span><a href="#s5">The state machine wires itself up</a><span class="f">grasp_state_machine.cpp:104-210</span></span></li>
-    <li><span><a href="#s6">The tuning numbers</a><span class="f">grasp_state_machine.cpp:32-47</span></span></li>
-    <li><span><a href="#s7">Start-up: walls, then home</a><span class="f">grasp_state_machine.cpp:590-596</span></span></li>
-    <li><span><a href="#s8">IDLE: wait for the object</a><span class="f">grasp_state_machine.cpp:608-623</span></span></li>
-    <li><span><a href="#s9">SELECTING: creep toward it</a><span class="f">grasp_state_machine.cpp:627-660, 367-421</span></span></li>
+    <li><span><a href="#s5">The state machine wires itself up</a><span class="f">grasp_state_machine.cpp:92-224</span></span></li>
+    <li><span><a href="#s6">The tuning numbers</a><span class="f">grasp/grasp_config.yaml:54-71</span></span></li>
+    <li><span><a href="#s7">Start-up: walls, then home</a><span class="f">grasp_state_machine.cpp:604-610</span></span></li>
+    <li><span><a href="#s8">IDLE: wait for the object</a><span class="f">grasp_state_machine.cpp:622-638</span></span></li>
+    <li><span><a href="#s9">SELECTING: creep toward it</a><span class="f">grasp_state_machine.cpp:641-675, 381-435</span></span></li>
     <li><span><a href="#s10">One straight-line move</a><span class="f">mtc_planner.cpp:106-133</span></span></li>
-    <li><span><a href="#s11">EXECUTING: last move and close</a><span class="f">grasp_state_machine.cpp:664-721</span></span></li>
+    <li><span><a href="#s11">EXECUTING: last move and close</a><span class="f">grasp_state_machine.cpp:678-735</span></span></li>
     <li><span><a href="#s12">After the grasp, and what is missing</a><span class="f">object_approach_node.py, grasp_orchestrator.py</span></span></li>
   </ol>
 </section>
@@ -309,7 +308,8 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
         second wait so the others are up. Stop 5.</p></li>
       </ul>
       <div class="note warn"><p><strong>Never run this script on the real arm.</strong> The state
-      machine moves the arm to home a few seconds after it starts, without asking. The docstring
+      machine moves the arm to home a few seconds after it starts, without asking. For the first
+      real-arm runs, start each part by hand instead (T1.24, <code>docs/dion_docs/GRASP_BRINGUP_STEPS.md</code> step 3). The docstring
       at the top (lines 6 to 14) is out of date: it still says a stand-in mask publisher starts at
       step 2. The code starts SAM 3.</p></div>
     </div>
@@ -357,35 +357,37 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
     <div class="badge">4</div>
     <div class="body">
       <h3>SAM 3 finds the object</h3>
-      <div class="open"><span class="lbl">Open</span><code>grasp/segmentation/sam3_ros_node.py</code><span>whole file, 197 lines</span></div>
-      <p>For every camera frame, SAM 3 looks for the word in <code>TEXT_PROMPT</code> and says
+      <div class="open"><span class="lbl">Open</span><code>grasp/segmentation/sam3_ros_node.py</code><span>whole file, 200 lines</span></div>
+      <p>For every camera frame, SAM 3 looks for the prompt word and says
       which pixels belong to it. The output the arm uses is one point: the object's centre.</p>
       <ul class="lines">
-        <li><span class="at">:29-34</span><p>Topic names. Reads colour and depth, writes the mask
-        and the centroid.</p></li>
-        <li><span class="at">:40</span><p><code>TEXT_PROMPT = "box"</code>. Fixed. Voice does not
-        change it yet.</p></li>
-        <li><span class="at">:103</span><p><code>rgb_depth_callback</code> runs once per frame
+        <li><span class="at">:28-37</span><p>Topic names, read from the config files. Reads colour
+        and depth, writes the mask and the centroid.</p></li>
+        <li><span class="at">:43</span><p>The prompt word, <code>text_prompt: "box"</code> in
+        <code>grasp/grasp_config.yaml:34</code>. Fixed. Voice does not change it yet.</p></li>
+        <li><span class="at">:106</span><p><code>rgb_depth_callback</code> runs once per frame
         pair. Everything below happens inside it.</p></li>
-        <li><span class="at">:114-122</span><p>Run the model, keep the best-scoring mask and its
+        <li><span class="at">:117-127</span><p>Run the model, keep the best-scoring mask and its
         centre pixel.</p></li>
-        <li><span class="at">:136</span><p>Publish the mask on <code>/camera/sam/mask</code>. Only
+        <li><span class="at">:139</span><p>Publish the mask on <code>/camera/sam/mask</code>. Only
         AnyGrasp would read it.</p></li>
-        <li><span class="at">:147-155</span><p>Depth: take every depth reading inside the mask,
+        <li><span class="at">:150-158</span><p>Depth: take every depth reading inside the mask,
         drop the zeros (pixels with no reading), use the median. Depth images store millimetres,
-        so multiply by 0.001 for metres.</p></li>
-        <li><span class="at">:158-164</span><p>Publish the centroid on
+        so multiply by 0.001 for metres (<code>depth_scale_m</code>,
+        <code>shared/global_config.yaml:84</code>).</p></li>
+        <li><span class="at">:161-167</span><p>Publish the centroid on
         <code>/object_centroid_2d</code>. <strong>This is the message the state machine
         uses.</strong></p></li>
       </ul>
-      <pre><span class="ln">161</span>  pt.point.x = float(cx_px)  <span class="cm"># pixel column</span>
-<span class="ln">162</span>  pt.point.y = float(cy_px)  <span class="cm"># pixel row</span>
-<span class="ln">163</span>  pt.point.z = z             <span class="cm"># depth in metres</span></pre>
+      <pre><span class="ln">164</span>  pt.point.x = float(cx_px)  <span class="cm"># pixel column</span>
+<span class="ln">165</span>  pt.point.y = float(cy_px)  <span class="cm"># pixel row</span>
+<span class="ln">166</span>  pt.point.z = z             <span class="cm"># depth in metres</span></pre>
       <div class="note"><p><strong>Odd but true:</strong> x and y are pixels, z is metres, all in
       one message. Every reader of this topic has to know that.</p></div>
       <p><strong>The stand-in.</strong> <code>grasp/tools/dummy_mask_publisher.py</code> does the
       same job without the model, for testing (T1.16). It claims every pixel is the object, so it
-      publishes the image centre (line 80) and the median depth of the whole frame (line 69). Put
+      publishes the image centre (line 80) and the median depth of the whole frame (line 72).
+      Merged into <code>dev</code> on 6 Oct. Put
       one object in front of the camera on a clear table when you use it.</p>
     </div>
   </article>
@@ -394,24 +396,28 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
     <div class="badge">5</div>
     <div class="body">
       <h3>The state machine wires itself up</h3>
-      <div class="open"><span class="lbl">Open</span><code>grasp/grasp_state_machine/src/grasp_state_machine.cpp</code><span>lines 104 to 210</span></div>
+      <div class="open"><span class="lbl">Open</span><code>grasp/grasp_state_machine/src/grasp_state_machine.cpp</code><span>lines 92 to 224</span></div>
       <p>From here on, line numbers without a file name are in this file.</p>
       <ul class="lines">
-        <li><span class="at">:107-113</span><p><code>create()</code> builds the node, then starts
+        <li><span class="at">:92-97</span><p><code>create()</code> builds the node, then starts
         <code>workerLoop()</code> on its own thread. <strong>So two things run at once:</strong> ROS
         delivers messages to the callbacks on one thread, and the worker loop moves the arm on
         another. They share data through variables guarded by locks (mutexes).</p></li>
+        <li><span class="at">:123-136</span><p>Reads the tuning values (stop 6) from ROS parameters.
+        <code>param()</code> at 166 has no fallback: if a value is missing, the node stops at
+        start-up rather than move the arm on a guess. That is why it must be started with
+        <code>grasp_state_machine.launch.py</code>, which loads the config files.</p></li>
         <li><span class="at">:138-148</span><p>Reads: camera calibration, AnyGrasp's grip poses,
         and the centroid.</p></li>
         <li><span class="at">:150-159</span><p>Writes: two gripper commands (open, close), its
         current state on <code>/pipeline_state</code>, and <code>/manipulator/return_to_user</code>
         after a grasp.</p></li>
-        <li><span class="at">:167-179</span><p>Camera calibration arrives once. It gives
+        <li><span class="at">:181-193</span><p>Camera calibration arrives once. It gives
         <code>fx</code>, <code>fy</code> (focal length in pixels) and <code>cx</code>,
         <code>cy</code> (the image centre). Needed to turn pixels into metres in stop 9.</p></li>
-        <li><span class="at">:192-198</span><p><code>centroidCallback</code>: store the newest
+        <li><span class="at">:206-212</span><p><code>centroidCallback</code>: store the newest
         centroid, set <code>has_centroid_</code>, wake the worker. Only the newest one is kept.</p></li>
-        <li><span class="at">:203-210</span><p><code>publishState</code>: remember the state and
+        <li><span class="at">:217-224</span><p><code>publishState</code>: remember the state and
         announce it.</p></li>
       </ul>
     </div>
@@ -421,21 +427,26 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
     <div class="badge">6</div>
     <div class="body">
       <h3>The tuning numbers</h3>
-      <div class="open"><span class="lbl">Open</span><span>lines 32 to 47</span></div>
-      <p>Every distance in the behaviour comes from here. The ones the simple path uses:</p>
+      <div class="open"><span class="lbl">Open</span><code>grasp/grasp_config.yaml</code><span>lines 54 to 71</span></div>
+      <p>Every distance in the behaviour comes from here. Until T0.14 (6 Oct) these were constants
+      at the top of the C++ file. Now they are a config file, so changing one needs no rebuild. The
+      C++ keeps the old upper-case names for the variables they load into. The ones the simple
+      path uses:</p>
       <div class="tbl"><table>
-        <thead><tr><th>Constant</th><th>Value</th><th>Meaning</th></tr></thead>
+        <thead><tr><th>Key</th><th>Value</th><th>Meaning</th></tr></thead>
         <tbody>
-          <tr><td><code>APPROACH_STEP_M</code></td><td class="num">0.04 m</td><td>Each SELECTING step moves the gripper 4 cm</td></tr>
-          <tr><td><code>APPROACH_STEP_FINAL</code></td><td class="num">0.10 m</td><td>The last move before closing is 10 cm</td></tr>
-          <tr><td><code>MAX_APPROACH_STEPS</code></td><td class="num">50</td><td>Give up approaching after 50 steps</td></tr>
-          <tr><td><code>EXECUTE_DEPTH_THRESH_M</code></td><td class="num">0.18 m</td><td>Closer than this, stop creeping and grasp</td></tr>
-          <tr><td><code>CENTROID_TARGET_OFFSET_X</code></td><td class="num">55 px</td><td>Aim to put the object 55 pixels right of the image centre, not at it. Most likely because the camera sits beside the gripper <span class="mono">[inferred]</span></td></tr>
-          <tr><td><code>USE_SIMPLE_EXECUTE</code></td><td class="num">true</td><td>Which way to finish. True skips AnyGrasp. Kept true for bring-up (CHANNEL_CONTRACT B-1)</td></tr>
+          <tr><td><code>approach_step_m</code></td><td class="num">0.04 m</td><td>Each SELECTING step moves the gripper 4 cm</td></tr>
+          <tr><td><code>approach_step_final_m</code></td><td class="num">0.10 m</td><td>The last move before closing is 10 cm</td></tr>
+          <tr><td><code>max_approach_steps</code></td><td class="num">50</td><td>Give up approaching after 50 steps</td></tr>
+          <tr><td><code>execute_depth_thresh_m</code></td><td class="num">0.18 m</td><td>Closer than this, stop creeping and grasp</td></tr>
+          <tr><td><code>centroid_target_offset_x_px</code></td><td class="num">55 px</td><td>Aim to put the object 55 pixels right of the image centre, not at it. Most likely because the camera sits beside the gripper <span class="mono">[inferred]</span></td></tr>
+          <tr><td><code>use_simple_execute</code></td><td class="num">true</td><td>Which way to finish. True skips AnyGrasp. Kept true for bring-up (CHANNEL_CONTRACT B-1)</td></tr>
         </tbody>
       </table></div>
       <p style="margin-top:12px">The others (angles, stability window, slerp) belong to the AnyGrasp
-      path and do nothing today.</p>
+      path and do nothing today. The gripper's own numbers (open position, close speed and force)
+      are not in this file yet. They are still written into <code>openGripper()</code> and
+      <code>closeGripper()</code> in the C++ (stop 11).</p>
     </div>
   </article>
 
@@ -443,18 +454,18 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
     <div class="badge">7</div>
     <div class="body">
       <h3>Start-up: walls, then home</h3>
-      <div class="open"><span class="lbl">Open</span><span>lines 590 to 596, then 288 to 351</span></div>
-      <p>The worker loop starts here. Read <code>workerLoop()</code> (590 to 742) as the spine of the
+      <div class="open"><span class="lbl">Open</span><span>lines 604 to 610, then 302 to 365</span></div>
+      <p>The worker loop starts here. Read <code>workerLoop()</code> (604 to 756) as the spine of the
       program. Everything else is a helper it calls.</p>
-      <pre><span class="ln">593</span>  sleep 2 s
-<span class="ln">594</span>  addSafetyWalls();
-<span class="ln">595</span>  homeWithRetry();
-<span class="ln">596</span>  publishState(State::IDLE);</pre>
+      <pre><span class="ln">607</span>  sleep 2 s
+<span class="ln">608</span>  addSafetyWalls();
+<span class="ln">609</span>  homeWithRetry();
+<span class="ln">610</span>  publishState(State::IDLE);</pre>
       <ul class="lines">
-        <li><span class="at">:288-340</span><p><strong>Safety walls.</strong> Adds four invisible
+        <li><span class="at">:302-354</span><p><strong>Safety walls.</strong> Adds four invisible
         boxes to MoveIt's world: walls at the sides and front, and a table. MoveIt then refuses any
         path through them. They exist only in the planner. Nothing physical stops the arm.</p></li>
-        <li><span class="at">:342-351</span><p><strong>Home, retried forever</strong> until it
+        <li><span class="at">:356-365</span><p><strong>Home, retried forever</strong> until it
         succeeds or the node shuts down. It calls <code>moveToHome()</code> in
         <code>mtc_planner.cpp:71</code>, which asks MoveIt to reach six joint angles at 10% speed.</p></li>
       </ul>
@@ -469,7 +480,7 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
     <div class="badge">8</div>
     <div class="body">
       <h3>IDLE: wait for the object</h3>
-      <div class="open"><span class="lbl">Open</span><span>lines 608 to 623</span></div>
+      <div class="open"><span class="lbl">Open</span><span>lines 622 to 638</span></div>
       <div class="states" aria-label="States in order">
         <span class="st">IDLE</span><span class="arr">→</span>
         <span class="st">SELECTING</span><span class="arr">→</span>
@@ -480,7 +491,9 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
       (stop 5) wakes it with a new centroid. Then it goes home again, so every attempt starts from
       the same pose.</p>
       <p>In practice SAM 3 publishes a centroid on almost every frame, so IDLE lasts a fraction of a
-      second once an object is in view.</p>
+      second once an object is in view. That is also why one launch cannot simply loop: the next
+      frame would start a new approach. T1.25 adds a gate, so a centroid only counts after an
+      explicit "new target" request.</p>
     </div>
   </article>
 
@@ -488,27 +501,27 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
     <div class="badge">9</div>
     <div class="body">
       <h3>SELECTING: creep toward it</h3>
-      <div class="open"><span class="lbl">Open</span><span>lines 627 to 660, then <code>selectingStep()</code> at 367 to 421</span></div>
-      <p>The loop at 630 runs up to 50 times. Each pass checks the depth first:</p>
+      <div class="open"><span class="lbl">Open</span><span>lines 641 to 675, then <code>selectingStep()</code> at 381 to 435</span></div>
+      <p>The loop at 644 runs up to 50 times. Each pass checks the depth first:</p>
       <ul class="lines">
-        <li><span class="at">:643-649</span><p>Object closer than 18 cm? Leave the loop and go to
+        <li><span class="at">:657-663</span><p>Object closer than 18 cm? Leave the loop and go to
         EXECUTING.</p></li>
-        <li><span class="at">:650-654</span><p>Otherwise take one step. If the step fails, give up
-        and go back to IDLE (659).</p></li>
+        <li><span class="at">:664-668</span><p>Otherwise take one step. If the step fails, give up
+        and go back to IDLE (673).</p></li>
       </ul>
       <p><strong>One step, in <code>selectingStep()</code>:</strong></p>
       <ul class="lines">
-        <li><span class="at">:372-383</span><p>Ask where the gripper is now, and express it in the
+        <li><span class="at">:386-397</span><p>Ask where the gripper is now, and express it in the
         camera's frame.</p></li>
-        <li><span class="at">:388-389</span><p>How far is the object from where we want it in the
+        <li><span class="at">:402-403</span><p>How far is the object from where we want it in the
         image, in pixels?</p></li>
-        <li><span class="at">:392-393</span><p>Turn pixels into metres sideways. A pixel covers
+        <li><span class="at">:406-407</span><p>Turn pixels into metres sideways. A pixel covers
         more ground the further away the object is, so multiply by depth and divide by focal
         length.</p></li>
-        <li><span class="at">:394-401</span><p>Add 4 cm forward (camera z). Then scale the whole
+        <li><span class="at">:408-415</span><p>Add 4 cm forward (camera z). Then scale the whole
         move so its total length is exactly 4 cm.</p></li>
-        <li><span class="at">:407</span><p>Convert that goal into the arm base's frame.</p></li>
-        <li><span class="at">:415</span><p>Ask for a straight-line move there. Stop 10.</p></li>
+        <li><span class="at">:421</span><p>Convert that goal into the arm base's frame.</p></li>
+        <li><span class="at">:429</span><p>Ask for a straight-line move there. Stop 10.</p></li>
       </ul>
       <div class="example">
         <p><strong>Worked example.</strong> Using the calibration the bench test uses (<code>test_state_machine_sim.py:44</code>): fx 607,
@@ -552,28 +565,30 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
     <div class="badge">11</div>
     <div class="body">
       <h3>EXECUTING: last move and close</h3>
-      <div class="open"><span class="lbl">Open</span><span>lines 664 to 721</span></div>
+      <div class="open"><span class="lbl">Open</span><span>lines 678 to 735</span></div>
       <ul class="lines">
-        <li><span class="at">:664-669</span><p>Announce EXECUTING. Copy the latest centroid so it
-        cannot change mid-move. Open the gripper (<code>openGripper()</code> at 215: position 1000
+        <li><span class="at">:678-683</span><p>Announce EXECUTING. Copy the latest centroid so it
+        cannot change mid-move. Open the gripper (<code>openGripper()</code> at 229: position 1000
         is fully open, then wait 1.5 s).</p></li>
-        <li><span class="at">:671</span><p>The switch. <code>USE_SIMPLE_EXECUTE</code> is true, so
+        <li><span class="at">:685</span><p>The switch. <code>use_simple_execute</code> is true, so
         we take this branch.</p></li>
-        <li><span class="at">:674-695</span><p>Same maths as a SELECTING step, but 10 cm instead of
+        <li><span class="at">:688-709</span><p>Same maths as a SELECTING step, but 10 cm instead of
         4.</p></li>
-        <li><span class="at">:704</span><p>Overwrite the goal's height with the current height.
+        <li><span class="at">:718</span><p>Overwrite the goal's height with the current height.
         The gripper moves level and never dips toward the table.</p></li>
-        <li><span class="at">:708-712</span><p>Make the move. <strong>If it fails, the worker loop
+        <li><span class="at">:722-726</span><p>Make the move. <strong>If it fails, the worker loop
         ends</strong> (<code>return</code>). The node stays running but does nothing more.</p></li>
-        <li><span class="at">:713</span><p>Close the gripper (<code>closeGripper()</code> at 225:
-        speed 200, force 150, then wait 1.5 s).</p></li>
-        <li><span class="at">:715</span><p>Go to the return pose. Since 5 Oct that is the home pose.</p></li>
-        <li><span class="at">:718-720</span><p>Announce <code>/manipulator/return_to_user</code>.</p></li>
-        <li><span class="at">:721</span><p><strong><code>return</code> again.</strong> The loop
-        ends after one grasp, holding the object. Lines 738 to 740, which would go home and start
-        over, are never reached on this path.</p></li>
+        <li><span class="at">:727</span><p>Close the gripper (<code>closeGripper()</code> at 239:
+        speed 200, force 150, then wait 1.5 s). The close stops when the grip force passes the
+        <code>force</code> value, out of 1000 (about 1.5 kg). Both gripper commands were checked on
+        the real arm on 6 Oct, closing on air (T1.22). Closing on a box is next.</p></li>
+        <li><span class="at">:729</span><p>Go to the return pose. Since 5 Oct that is the home pose.</p></li>
+        <li><span class="at">:732-734</span><p>Announce <code>/manipulator/return_to_user</code>.</p></li>
+        <li><span class="at">:735</span><p><strong><code>return</code> again.</strong> The loop
+        ends after one grasp, holding the object. Lines 752 to 754, which would go home and start
+        over, are never reached on this path. T1.14 replaces this (see Decisions).</p></li>
       </ul>
-      <div class="note"><p><strong>The other branch</strong> (723 to 732) is the AnyGrasp path. It
+      <div class="note"><p><strong>The other branch</strong> (737 to 746) is the AnyGrasp path. It
       waits for grip poses, picks one, waits until it holds still for 5 frames, then moves the
       gripper to exactly that pose and angle. It has never run. It is blocked by three bugs (T1.8)
       and switched on in T1.17. Skip it for now.</p></div>
@@ -584,19 +599,21 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
     <div class="badge">12</div>
     <div class="body">
       <h3>After the grasp, and what is missing</h3>
-      <div class="open"><span class="lbl">Open</span><code>nav/object_approach/object_approach_node.py</code><span>:84-87, :116-130</span><code>launchers/grasp_orchestrator.py</code><span>:66, :108-117</span></div>
+      <div class="open"><span class="lbl">Open</span><code>nav/object_approach/object_approach_node.py</code><span>:88-91, :123-135</span><code>launchers/grasp_orchestrator.py</code><span>:69, :111-120</span></div>
       <p>The arm now holds the object at home. Two messages are supposed to come next. Neither is
       sent by anything:</p>
       <div class="tbl"><table>
         <thead><tr><th>Message</th><th>Who waits for it</th><th>Who should send it</th></tr></thead>
         <tbody>
-          <tr><td><code>/manipulation/done</code></td><td>Navigation (<code>object_approach_node.py:84</code>), to know the grasp is over</td><td>The state machine, at the end of each cycle. <strong>T1.14</strong></td></tr>
-          <tr><td><code>/manipulator/release</code></td><td>Navigation (<code>:87</code>) deletes its marker. The orchestrator (<code>:66</code>) opens the gripper</td><td>The glasses, when you say "release". <strong>T1.15</strong></td></tr>
+          <tr><td><code>/manipulation/done</code></td><td>Navigation (<code>object_approach_node.py:88</code>), to know the grasp is over</td><td>The state machine, after it opens the gripper on release. <strong>T1.14</strong></td></tr>
+          <tr><td><code>/manipulator/release</code></td><td>Navigation (<code>:91</code>) deletes its marker. The orchestrator (<code>:69</code>) opens the gripper</td><td>The glasses, when you say "release". <strong>T2.6</strong></td></tr>
         </tbody>
       </table></div>
       <p style="margin-top:12px">So today, after a grasp, the gripper stays closed until someone
       sends the release message by hand. And the only program that would open the gripper on
-      release is the orchestrator, which we never run on the real arm.</p>
+      release is the orchestrator, which we never run on the real arm. Decided 6 Oct: the state
+      machine takes over that job (T1.14), and the glasses learn to send "release" and "new
+      target" as two separate messages (T2.6).</p>
     </div>
   </article>
 </section>
@@ -608,11 +625,12 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
   <div class="tbl"><table>
     <thead><tr><th>Where</th><th>What goes wrong</th><th>Task</th></tr></thead>
     <tbody>
-      <tr><td class="num">:711, :721</td><td>The worker loop ends after one grasp, or after one failed final move. Restart everything to try again</td><td>T1.14 (open question)</td></tr>
-      <tr><td class="num">:680, :700</td><td>Two frame conversions have no error handling. If TF is missing a link, the node crashes. The same calls in <code>selectingStep()</code> are guarded</td><td>T1.9</td></tr>
-      <tr><td class="num">:613-617, :640</td><td>One wake-up signal shared by two different locks, and the depth read without its lock. In C++ this is undefined behaviour, not just untidy</td><td>T1.9</td></tr>
-      <tr><td class="num">:634-639</td><td>The age check on the centroid is commented out. The arm acts on the last centroid even if it is old</td><td>T2.4</td></tr>
-      <tr><td class="num">:183, :41</td><td>The AnyGrasp path: the producer and the consumer only work in opposite states, and the switch hides it</td><td>T1.8</td></tr>
+      <tr><td class="num">:206-212</td><td>Any centroid starts a cycle. SAM 3 publishes one on every frame, so a loop back to IDLE would start a new approach at once</td><td>T1.25</td></tr>
+      <tr><td class="num">:725, :735</td><td>The worker loop ends after one grasp, or after one failed final move. Restart everything to try again</td><td>T1.14</td></tr>
+      <tr><td class="num">:694, :714</td><td>Two frame conversions have no error handling. If TF is missing a link, the node crashes. The same calls in <code>selectingStep()</code> are guarded</td><td>T1.9</td></tr>
+      <tr><td class="num">:627-634, :654</td><td>One wake-up signal shared by two different locks, and the depth read without its lock. In C++ this is undefined behaviour, not just untidy</td><td>T1.9</td></tr>
+      <tr><td class="num">:648-653</td><td>The age check on the centroid is commented out. The arm acts on the last centroid even if it is old</td><td>T1.25</td></tr>
+      <tr><td class="num">:197, <code>grasp_config.yaml:66</code></td><td>The AnyGrasp path: the producer and the consumer only work in opposite states, and the switch hides it</td><td>T1.8</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -621,17 +639,21 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
   <h2>Decisions</h2>
   <div class="decisions">
     <article class="dec">
-      <div class="hd"><h3>Should one launch do more than one grasp?</h3><span class="chip c-dec">open</span></div>
-      <p>Removing the <code>return</code> at line 721 lets the loop fall through to 738: go home,
-      announce IDLE, wait for the next object. Since return and home are now the same pose, that
-      costs nothing. Without it, T1.12's five attempts need five restarts. Fits in T1.14.</p>
+      <div class="hd"><h3>One launch does more than one grasp</h3><span class="chip c-ok">decided</span></div>
+      <p>Decided 6 Oct. After the return, the state machine waits for release, opens the gripper,
+      publishes <code>/manipulation/done</code> and goes back to IDLE. That replaces the
+      <code>return</code> at line 735 (T1.14). It needs the trigger gate first (T1.25), or the next
+      camera frame would start a new approach while the gripper still holds the object. The first
+      real grasps keep the one-shot <code>return</code>, so the arm cannot run twice by accident.</p>
     </article>
     <article class="dec">
-      <div class="hd"><h3>Who opens the gripper on "release"?</h3><span class="chip c-dec">open</span></div>
-      <p>Today only the orchestrator does, and it shuts itself down right after. Leaning: the state
-      machine listens for <code>/manipulator/release</code> and calls its own
+      <div class="hd"><h3>The state machine opens the gripper on "release"</h3><span class="chip c-ok">decided</span></div>
+      <p>Decided 6 Oct. Today only the orchestrator does, and it shuts itself down right after. The
+      state machine listens for <code>/manipulator/release</code> and calls its own
       <code>openGripper()</code>. It already owns both gripper commands, and it knows when a grasp
-      has finished, so it can ignore a release that comes too early. Part of T1.15.</p>
+      has finished, so it can ignore a release that comes too early (T1.14). The glasses never send
+      words to the state machine. They send "release" and "new target" as separate messages
+      (T2.6, was T1.15).</p>
     </article>
     <article class="dec">
       <div class="hd"><h3>Simple path first, AnyGrasp later</h3><span class="chip c-ok">decided</span></div>
@@ -650,11 +672,12 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
   <h2>Where things stand</h2>
   <ul class="status">
     <li><span class="chip c-ok">done</span><p>Arm powered and talking to the box (T1.6). Home pose chosen (T1.3) and reached on the real arm (T1.7).</p></li>
+    <li><span class="chip c-ok">works</span><p>The gripper opens and closes on command, on the real arm, closing on air (T1.22, 6 Oct).</p></li>
     <li><span class="chip c-ok">works</span><p>The whole simple grasp on the simulated arm: <code>./bench/state_machine_sim.sh</code> on the box.</p></li>
     <li><span class="chip c-ok">works</span><p>SAM 3 finds the box on real recorded wrist-camera frames (T0.12).</p></li>
-    <li><span class="chip c-dec">written</span><p>Camera by serial (T1.13) and the stand-in sending a centroid (T1.16). On a branch, not merged. Each needs one check at the box.</p></li>
-    <li><span class="chip c-bad">missing</span><p>The done and release messages (T1.14, T1.15).</p></li>
-    <li><span class="chip c-idle">next</span><p>T1.11: first real grasp with the stand-in. Then T1.12: five grasps with SAM 3.</p></li>
+    <li><span class="chip c-ok">merged</span><p>Camera by serial (T1.13) and the stand-in sending a centroid (T1.16). Their last box checks are part of T1.24.</p></li>
+    <li><span class="chip c-bad">missing</span><p>The done and release messages (T1.14, T2.6).</p></li>
+    <li><span class="chip c-idle">next</span><p>One step at a time (<code>docs/dion_docs/GRASP_BRINGUP_STEPS.md</code>): gripper on a box (T1.22), the cycle on the simulated arm (T1.23), one motion check on the real arm (T1.24), the first real grasp (T1.11), then five with SAM 3 (T1.12).</p></li>
   </ul>
 </section>
 
@@ -665,8 +688,9 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
   state in turn. The test that drives it is <code>bench/nodes/test_state_machine_sim.py</code>.
   Reading that test is a good second pass: it lists what the program should do, in order, as
   checks.</p>
-  <p>To see a constant matter, change the 4 cm step at line 32 on a scratch branch, rebuild with
-  <code>./build.sh</code>, rerun, and watch the simulated arm take bigger steps.</p>
+  <p>To see a tuning value matter, change <code>approach_step_m</code> in
+  <code>grasp/grasp_config.yaml</code> on a scratch branch, rerun, and watch the simulated arm take
+  bigger steps. No rebuild needed: the launch file reads the config from the repo.</p>
 </section>
 
 <section id="words">
@@ -689,8 +713,9 @@ dl.gloss dd{margin:0;color:var(--ink-2)}
 </section>
 
 <p class="foot">Source: <code>docs/dion_docs/grasp-pipeline-explainer.html</code>. Read from the code
-on branch <code>t1.13-camera-serial</code>, 6 Oct 2026 <span class="mono">[code]</span>. The 55-pixel
+on <code>dev</code> after T0.14, 6 Oct 2026 <span class="mono">[code]</span>. The 55-pixel
 reason is a guess <span class="mono">[inferred]</span>. Rewritten on 6 Oct as a walkthrough to read
-next to the code, replacing the 22 Sep overview. Defects in full: <code>docs/CODE_AUDIT.md</code>.
+next to the code, replacing the 22 Sep overview. Brought up to date the same day after T0.14
+moved the config, T1.13 and T1.16 merged and the two grasp decisions were settled. Defects in full: <code>docs/CODE_AUDIT.md</code>.
 Channel owners: <code>docs/CHANNEL_CONTRACT.md</code>. Tasks: <code>docs/task-tree.html</code>.</p>
 </div>

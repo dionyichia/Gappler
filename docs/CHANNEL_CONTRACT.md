@@ -78,7 +78,7 @@ These cross a subsystem boundary. They are the contract.
 | H7 | `/pipeline_state` | `String`: `IDLE`, `SELECTING`, `EXECUTING` | Bot, `grasp_state_machine.cpp:156` | Grasp, `anygrasp_detection_node.py:65`, `anygrasp_node.py:55`, `grasp_viz.py:61` | Dion | works. The gate that reads it is inverted, see G-4 in §6 |
 | H8 | `/camera/camera/color/image_raw`, `/camera/camera/aligned_depth_to_color/image_raw`, `/camera/camera/color/camera_info` | `Image`, `Image`, `CameraInfo`. `BEST_EFFORT` | Wrist RealSense driver | Grasp, 5 nodes. Bot, `grasp_state_machine.cpp:138` | Dion | the wrist D435i is faulty. Replacement decided, T-3 in §6 |
 | H9 | `/manipulation/done` | `Empty` | **nobody** | Nav, `object_approach_node.py:83` | Dion | broken. The approach node stays latched without it (F1, observed) |
-| H10 | `/manipulator/release` | `Bool` | **nobody** | Nav, `object_approach_node.py:86`. Bot, `orchestrator.py:65` | Dion | broken. Aria will publish it in `T1.15`, see A-1 in §6 |
+| H10 | `/manipulator/release` | `Bool` | **nobody** | Nav, `object_approach_node.py:86`. Bot, `orchestrator.py:65` | Dion | broken. Aria will publish it in `T2.6` (was `T1.15`), see A-1 in §6 |
 | H11 | `/aria/eye_tracking/gaze_estimate` | `Point` | Aria, `image_streaming_pipeline.py:153` | Grasp, the recognition pipeline | Dion | switched off. M2 and M8 need it, `T2.2` |
 | H12 | `/aria/rgb_camera/undistorted` | `CompressedImage`, `BEST_EFFORT` | Aria, `image_streaming_pipeline.py:85` | Nav, `aria_image_relay.py:27`, which decompresses to `/aria/rgb_camera/view` for viewing | Dion | switched off. The relay is kept, see A-4 in §6 |
 
@@ -139,7 +139,7 @@ All of these were decided by Dion. Each names where the detail lives.
 - **A-1. Aria publishes `/manipulator/release`** when the spoken word is "release". With the return
   leg out of scope, the order is: the grasp finishes, the state machine publishes
   `/manipulation/done`, then release is accepted. Closes `CODE_AUDIT` open question 4.
-  **Owned by `T1.15` since 2026-09-23.** Before that no task built it, so H10 stayed broken with
+  **Owned by `T2.6` (was `T1.15`) since 2026-09-23.** Before that no task built it, so H10 stayed broken with
   subscribers only.
 - **A-2. The return leg is out of scope.** H13 to H16 have no owner. Pose fusion is parked rather
   than dropped, because a later gaze-in-3D method would want the glasses transform. This settles
@@ -337,3 +337,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-09-26 | OpenCode + Sherman | T3.3 DONE: `slam_mapping.launch.py:117-122` publishes `robot_base_to_arm`, same arguments as localization. M1 and the TF edge table updated; full mapping-launch tree still untested, values duplicated until T5.4. |
 | 2026-09-23 | Claude Opus 5 + Dion | New X12: camera serial numbers, one key per camera (`wrist_camera.serial`, `mobile_base_camera.serial`), after T1.13 found that no shared config held the wrist serial. |
 | 2026-09-23 | Claude Opus 5 + Dion | B-1's ordering consequence settled: `T1.11` and `T1.12` no longer wait on `T1.8` or `T1.10`, and flipping the flag became `T1.17`. The two channels with subscribers but no publisher got owners: B-5 `/manipulation/done` is `T1.14` (moved out of `T1.9`), A-1 and H10 `/manipulator/release` is `T1.15`. |
+| 2026-10-06 | Claude Opus 5.5 + Dion | `T1.15` renamed `T2.6` and moved to M2: publishing `/manipulator/release` is glasses-side work, and M1 grasps with release sent by hand. H10 and A-1 updated. |
