@@ -87,7 +87,8 @@ class MemoryGraphConfig:
     # "greedy": upstream. Each candidate takes its best object, so two
     #           candidates from one photo can merge into the same object.
     # "one_to_one": each object takes at most one candidate per photo.
-    # Open decision, settled with data in T6.4 (D-MG2 and the T6.4b note).
+    # Decided 2026-10-07: greedy (D-MG8 in docs/MEMORY_GRAPH_DESIGN.md). T6.4 may
+    # compare the two on the recorded drive.
     association_mode: str = "greedy"
 
     def __post_init__(self) -> None:
