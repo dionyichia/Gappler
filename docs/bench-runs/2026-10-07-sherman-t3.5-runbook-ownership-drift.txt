@@ -1,0 +1,26 @@
+T3.5 runbook + ownership pin + install drift check, 2026-10-07
+Candidate: 20cf9aa plus three parallel pieces on t3.5-launch-prep.
+No launch actions executed; no hardware/control topics published.
+
+Box (candidate snapshot checkout):
+python3 bench/test_command_ownership.py -> Ran 5 tests, OK
+python3 bench/check_installed.py --self-test -> Ran 4 tests, OK
+python3 bench/check_installed.py --install-root ~/rcp-Gappler/install_nav ->
+  4 match, 3 drift, 1 missing, 1 skipped; exit 1 (EXPECTED: overlay predates candidate)
+  DRIFT: slam_mapping.launch.py, slam_localization.launch.py, navigation.launch.py
+  MISSING: lidar_only.launch.py (new owned wrapper, never installed)
+  MATCH: slam_toolbox.yaml, slam_toolbox_localization.yaml, both nav2_params.yaml
+  SKIP: shared/slam_maps.py (no installed counterpart by design)
+
+Mac: ./bench/run.sh quick -> PASS (every level that ran passed),
+  incl. new L0 row "T3.4 command ownership" PASS.
+Read-only review of combined diff: PASS, no blockers; citations spot-checked.
+
+Runbook docs/sherman_docs/T3.5_MANUAL_CONTROL.md is an UNVALIDATED gated outline,
+not permission to move hardware. Two findings recorded, not fixed: committed
+velocity_smoother config block is wider than tested bounds AND consumed by no
+launch (T4 sets live params explicitly); xnode_power publishes /cmd_vel (second
+source unless absent). Driver-feed topic wiring, hardware-stop procedure and
+physical criteria remain owed to the attended session.
+
+T3.4/T3.5 remain PROGRESS. No build/install, PR or merge.

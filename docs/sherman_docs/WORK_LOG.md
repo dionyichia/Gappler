@@ -269,6 +269,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Verified: 8 map tests + all three refusal checks (map/pose/manifest) pass on Mac and box with zero Node/Include calls on refusal. Evidence: [manifest results](../bench-runs/2026-10-07-sherman-t3.5-snapshot-manifest.txt).
 - Review: PASS no blockers. Manual-control runbook, install evidence and physical acceptance remain open. T3.5 PROGRESS.
 
+## [2026-10-07] T3.5 | Minimal manual-control runbook (unvalidated)
+
+- Evidence: [`T3.5_MANUAL_CONTROL.md`](T3.5_MANUAL_CONTROL.md)
+- Verified: docs only; no hardware, SSH/ROS, build or install performed. Sources re-read for citations: teleop defaults/behavior (`teleop_node.py:35-42,62-88,106-134`), tested smoother bounds (T3.4 doc), driver `/cmd_vel` subscription and `xnode_power` second publisher (vendor `ros2_interface.cpp:177` / `:154`), tested input/output wiring (`bench/nodes/test_velocity_smoother.py:85`), wider committed `nav2_params.yaml:190-203` defaults flagged as a T4 verify-and-override gate.
+- Outcome: T1-T6 terminals, single keyboard-to-driver path with `ros2` ownership checks, per-maneuver record sheet, halt-on-gate-failure rules and shutdown/custody checklist recorded. Explicit limits: arm driver off, no Nav2 goals, 1.0 s software bound is not a physical criterion, no kill/network experiments on moving hardware. Procedure unvalidated; driver-feed wiring, hardware-stop procedure and stopping criteria still owed at the attended session. T3.5 PROGRESS.
+- Next: attended-session review with the lab operator; fill in wiring/stop-procedure gaps; no PR/merge until validated.
+
 ## Record Template
 
 ```markdown

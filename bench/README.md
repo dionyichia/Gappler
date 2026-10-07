@@ -103,6 +103,9 @@ not established. SIGKILL cannot restore a terminal or publish a final zero.
 Logs go to `log/t34-smoother.log` and `log/t34-teleop-*.log`. Capture the runner's output for
 measured timings. Its cleanup signals only owned process groups and verifies domain emptiness
 after a successful run. L0 also runs stdlib guard and LiDAR launch-wiring tests.
+`python3 bench/test_command_ownership.py` pins the teleop defaults and smoother
+arguments to the same caps and timeouts, the `keyboard_input → output` remap chain
+under `/t34_probe`, and single-publisher ownership of each link.
 `python3 bench/test_t34_launch.py --runtime` constructs the real ROS LiDAR launch without
 executing its actions; source an existing nav overlay for that check. No LiDAR is opened.
 
@@ -128,7 +131,14 @@ Details: [`T3.5_SLAM_PERSISTENCE.md`](../docs/sherman_docs/T3.5_SLAM_PERSISTENCE
 SLAM bench additionally tests its actual saving/reload, stale-raster refresh without
 prior subscribers, interruption after pause and localization-mode refusal. See
 [`T3.5_MAP_SAVING.md`](../docs/sherman_docs/T3.5_MAP_SAVING.md). The local PyYAML
-validation skip is explicit; box tests exercise it. No installed-overlay proof.
+validation skip is explicit; box tests exercise it.
+
+`python3 bench/check_installed.py --install-root ~/rcp-Gappler/install_nav`
+compares candidate source against the installed overlay, read-only (SHA256 table,
+exit 1 on drift/missing). Drift is the expected result until a reviewed candidate
+is deployed; it proves the checker works, not that anything is broken. Use it
+before any lab session to confirm what the installed launches actually contain.
+No installed-overlay proof — it reports the gap.
 
 Run `python3 bench/test_cloud_scan.py` for stdlib fixture/oracle checks (L0) and
 `bash bench/cloud_scan.sh` for the isolated ROS conversion bench (L4). The latter reads actual
@@ -148,6 +158,8 @@ Run serially with the keyboard bench because both reserve domain 127. Details:
 | 2026-10-07 | OpenCode + Sherman | Added map-file prerequisites and missing-map refusal before hardware action construction; no graph-load proof. |
 | 2026-10-07 | OpenCode + Sherman | Added synthetic installed SLAM persistence L0/L4 checks, keeping corrupt-load abort and physical-proof limits explicit. |
 | 2026-10-07 | OpenCode + Sherman | Added owned snapshot tests, stale-raster/pause restoration and repeated-signal cleanup controls. |
+| 2026-10-07 | OpenCode + Sherman | Added command-ownership L0 pin and read-only installed-overlay drift check; drift is the expected result until deployment. |
+| 2026-10-07 | OpenCode + Sherman | Added T3.4 command-ownership check: teleop defaults, smoother arguments, remap chain and single-publisher gates share one L0 test. |
 
 ---
 
