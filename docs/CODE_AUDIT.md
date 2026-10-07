@@ -514,6 +514,23 @@ when sending or reading the result raises (`nav/goal_reached/goal_reached_publis
 object pose starts a new approach (`nav/object_approach/object_approach_node.py`, `_on_goal_reached`).
 Retag to fixed once `bench/nav_nodes.sh` reports XPASS for both F1 cases.
 
+**Follow-up on branch `t3.8-bridge-timeout-backoff-release`, 2026-10-07 (T3.8), not yet run on the
+box.** A review of the fix above found two gaps. `[code]`
+
+- **A fourth silent path.** A goal Nav2 accepted and then never reported on (Nav2 crashed, or the
+  result never came) still published nothing, because only the result callback answered an accepted
+  goal. The bridge now checks its open goals once a second. A goal fails when Nav2 has been gone
+  from the network for three checks in a row, or when no result came within `result_timeout_s`
+  (`nav/nav_config.yaml`, 180 s). On the timeout it cancels the goal first, so the base is not still
+  driving when the approach node is told `"failed"`. A result that arrives after that is dropped, so
+  each goal still gets one answer. New bench case "goal bridge, Nav2 goes away". The timeout branch
+  has no bench case: the value comes from config and 180 s is too long for the bench.
+- **The fix opened a retry loop.** The perception pipeline publishes the object pose on every
+  detection (`object_recognition_pipeline.py:481`). With the guard released on failure, a goal Nav2
+  keeps refusing was sent again on every frame. `object_approach_node` now ignores object poses for
+  `retry_backoff_s` (3 s) after a failed approach. There is still no limit on the number of retries.
+  The "approach after nav failure" case now also checks that a pose inside the back-off sends no goal.
+
 ### F2. 🟠 A failed return leg can never be retried `[observed]`
 
 `goto_glasses.py:222-225` — if Nav2 is unavailable, it sets `self._navigating = False` but leaves
@@ -530,6 +547,27 @@ returning to user."* With Nav2 back up, the second return reached it **0** times
 `/return_to_user/goal_reached` stayed silent throughout. `[observed]`
 
 ### F3. 🟠 `goto_glasses.py:247` — `future.result()` unguarded, same class as F1.
+
+### F5. 🔴 A finished approach blocks every later object `[code]`
+
+Added 2026-10-07 from a review of the F1 fix. F1 is the failure path. The same guard also sticks
+on the two paths that work. `[code]`, not yet run.
+
+| Where `_approach_done` is set | What clears it |
+|---|---|
+| `object_approach_node.py:227`, object already in range: `/manipulation/start`, no nav goal | nothing. No goal was sent, so no `/goal_reached` ever comes |
+| `:173`, after a `"success"`: `/manipulation/start` is published and the guard set again | nothing, until some later `/goal_reached` |
+
+So after one grasp cycle, in range or approached, `_on_object_pose` drops every later object pose
+until the node is restarted. `_on_release` cleared `_last_object_map` and the marker at the end of
+the cycle but not the guard.
+
+**Fix on branch `t3.8-bridge-timeout-backoff-release`, 2026-10-07 (T3.8), not yet run on the box.**
+`_on_release` now clears the guard too: `/manipulator/release` with `true` ends the cycle. New
+bench case "approach after release". **Still open:** nothing publishes `/manipulator/release` yet
+(T1.15), so on the real system the node stays blocked after its first cycle until that lands. A
+new voice prompt was considered as a second way to clear the guard and left out: it could send the
+base a new goal while the arm is mid-grasp. That is a decision for the owners of the handover (T3.7).
 
 ### F4. 🟠 All five nav nodes exit with a traceback on Ctrl+C `[observed]`
 
@@ -933,4 +971,5 @@ publishers racing on the same three topics.
 | 2026-09-23 | Claude Opus 5.5 + Dion | B4: real-arm result from T1.7 added. Open question 2 answer superseded by T1.3 and T1.7. |
 | 2026-09-26 | OpenCode + Sherman | E4: T3.3 DONE — `slam_mapping.launch.py` now carries `robot_base_to_arm`. Shared 0.18 still duplicated; single-sourcing stays with T5.4. |
 | 2026-10-05 | Claude (Opus 5.5) + Zongzhe | F1 and F4: fixes written on branch `t3.8-nav-node-fixes` (T3.8), awaiting a `bench/nav_nodes.sh` run on the box before retagging. New bench case for F4. F3 and the cancel-on-shutdown concern under F4 are untouched. |
+| 2026-10-07 | Claude (Opus 5.5) + Zongzhe | F1 follow-up on branch `t3.8-bridge-timeout-backoff-release` (T3.8): a fourth silent path (accepted goal, no result) and the retry loop the first fix opened, both fixed in code, not yet run. **New finding F5**: the approach guard also sticks after a finished cycle. Cleared on `/manipulator/release` now, which nothing publishes until T1.15. Three bench cases added or changed. |
 | 2026-10-06 | Claude (Opus 5.5) + Dion | K1 resolved by T0.14: every owned channel name is in a config file. Note added at the top of K1, record kept. |

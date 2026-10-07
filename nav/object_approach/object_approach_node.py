@@ -24,7 +24,8 @@ Topics
 ------
   Subscribed:
     /manipulation/goal_pose (geometry_msgs/PoseStamped)  — 3D object centroid in base_link frame
-    /goal_reached         (std_msgs/String)            — resets guard on new cycle
+    /goal_reached         (std_msgs/String)            — approach outcome from the goal bridge
+    /manipulator/release  (std_msgs/Bool)              — cycle over, act on the next object
 
   Published:
     /goal_pose            (geometry_msgs/PoseStamped)  — approach nav goal for Nav2
@@ -37,6 +38,7 @@ Manual testing (bypass SAM3):
     '{header: {frame_id: "base_link"}, pose: {position: {x: 0.5, y: 0.0, z: 0.5}, orientation: {w: 1.0}}}'
 """
 import math
+import time
 from gappler_common import camera_reference_frame, config
 from nav_geometry import camera_goal_xy
 
@@ -58,6 +60,8 @@ CAMERA_FRAME = camera_reference_frame()
 ARM_MOUNT_HEIGHT = float(CFG["geometry"]["arm_mount"]["xyz_m"][2])
 # Target clearance: camera must be within this distance of the object
 APPROACH_DISTANCE = CFG["approach_distance_m"]  # metres
+# After a failed approach, ignore object poses for this long before trying again
+RETRY_BACKOFF = float(CFG["retry_backoff_s"])  # seconds
 
 
 class ObjectApproachNode(Node):
@@ -69,6 +73,7 @@ class ObjectApproachNode(Node):
 
         self._last_object_map: PointStamped | None = None
         self._approach_done: bool = False  # guard: navigate once per detection
+        self._retry_after: float = 0.0  # time.monotonic() before which object poses are ignored
         self._object_name: str = "object"  # updated from /aria/audio/prompt
         self._tracking_robot: bool = False  # True after grasp, marker follows robot
 
@@ -133,6 +138,10 @@ class ObjectApproachNode(Node):
         self.get_logger().info("Release triggered. Removing object marker.")
         self._tracking_robot = False
         self._last_object_map = None
+        # The cycle is over: act on the next object. /goal_reached alone cannot do this.
+        # None comes after an in-range start, and a successful approach sets the guard
+        # again (CODE_AUDIT F5).
+        self._approach_done = False
         self._delete_marker()
 
     def _tracking_timer(self) -> None:
@@ -153,9 +162,13 @@ class ObjectApproachNode(Node):
         self._approach_done = False
         if msg.data.strip().lower() != "success":
             # Release the guard on failure too, or every later object is ignored
-            # until a restart (CODE_AUDIT F1). The next object pose starts a new approach.
+            # until a restart (CODE_AUDIT F1). Wait RETRY_BACKOFF first: object poses
+            # arrive on every detection, so without it a goal Nav2 keeps refusing
+            # would be sent again on every camera frame.
+            self._retry_after = time.monotonic() + RETRY_BACKOFF
             self.get_logger().warn(
-                f"Approach navigation ended with '{msg.data}'. Ready for the next object."
+                f"Approach navigation ended with '{msg.data}'. "
+                f"Ready for the next object in {RETRY_BACKOFF:.0f} s."
             )
             return
         # If we already know where the object is, we're now in position — signal the arm
@@ -173,7 +186,7 @@ class ObjectApproachNode(Node):
             self._approach_done = True  # prevent re-triggering until next object
 
     def _on_object_pose(self, msg: PoseStamped) -> None:
-        if self._approach_done:
+        if self._approach_done or time.monotonic() < self._retry_after:
             return
 
         # ── Step 1: transform object from arm base_link → map frame ──────────

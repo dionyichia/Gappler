@@ -37,6 +37,12 @@
 object_approach_node:
   ros__parameters:
     approach_distance_m: 0.6   # stop when the D455 depth origin is this far from the object
+    retry_backoff_s: 3.0       # after a failed approach, ignore object poses for this long
+
+# nav/goal_reached/goal_reached_publisher.py
+goal_reached_publisher:
+  ros__parameters:
+    result_timeout_s: 180.0    # an accepted goal with no result after this long is cancelled and "failed"
 
 # nav/goto_glasses/goto_glasses.py
 goto_glasses:
