@@ -13,7 +13,7 @@ class below, named Use1 to Use4:
 Uses 3 and 4 are tested at the encoder only: that text and images land in one
 space and rank the way those uses need. The functions that compute the scores
 inside the graph are not built yet (T6.7a, T6.7b, T6.7d). The averaging in use 2
-is T6.4c, also not built, so its test is skipped.
+is ObjectStore in object_store.py (T6.4c).
 
 These tests load the model, so they need open_clip, torch and the weights.
 Without any of them the whole file is reported as skipped. Nothing is downloaded
@@ -30,6 +30,7 @@ import numpy as np
 from memory_graph.config import MemoryGraphConfig
 from memory_graph.association import appearance_matrix, combined_scores
 from memory_graph.image_feature import image_features, l2_normalise
+from memory_graph.object_store import ObjectStore
 from memory_graph.stage_types import Candidate, OrientedBox
 
 try:
@@ -154,9 +155,17 @@ class Use2AssociationTest(EncoderCase):
         np.testing.assert_allclose(scores, (1 + CFG.phys_bias) * overlap + (1 - CFG.phys_bias) * appearance)
         self.assertGreater(scores[0, 0], scores[0, 1])     # equal overlap, appearance decides
 
-    @unittest.skip("the merge is not built yet: T6.4c (features averaged by sighting count, then re-normalised)")
     def test_merged_feature_is_the_sighting_weighted_average(self):
-        pass
+        # Two sightings of the red thing and one of the blue, fused into one entry.
+        red_a, red_b, blue = self.unit_images([solid(RED, 60, 60), solid(RED, 90, 50), solid(BLUE, 60, 60)])
+        store = ObjectStore(CFG)
+        store.apply([self.candidate(red_a)], [None], anchor=1)
+        store.apply([self.candidate(red_b)], [0], anchor=2)
+        store.apply([self.candidate(blue)], [0], anchor=3)
+        merged = store.get(0).clip
+        np.testing.assert_allclose(merged, l2_normalise(red_a + red_b + blue), atol=1e-6)
+        self.assertAlmostEqual(float(np.linalg.norm(merged)), 1.0, places=6)
+        self.assertGreater(float(merged @ red_a), float(merged @ blue))    # red was seen twice
 
 
 class Use3TaskRelevanceTest(EncoderCase):

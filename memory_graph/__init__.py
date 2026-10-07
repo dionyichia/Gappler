@@ -9,11 +9,13 @@ docs/hico-nav/hico-nav-github-docs/cmg_construction_pipeline.md:
     replay_loader.py       S0  a recording becomes posed observations
     detection_filter.py    S2  drop detections that should never become objects
     anchor_gate.py         S3  is this photo worth keeping
+    sam3_adapter.py        S1 and S4 from SAM 3: detections with masks, then S2 and S5
     masks.py               S4 erosion, S5 mask cleanup
     image_feature.py       S6  crop, encode, normalise (the encoder is plugged in)
     clip_encoder.py        S6  the real encoder, open_clip ViT-B-32, images and text (needs torch)
     geometry.py            S7 back-projection, S8 cloud cleanup and 3D box, S9 range
     association.py         S10 overlap score and the match decision
+    object_store.py        S11 insert or merge: the object entries, fused over sightings
     anchor_object_graph.py the graph: anchors, objects, the edges between them
 
 Only anchor_object_graph.py is stdlib-only. The stage modules need numpy and
