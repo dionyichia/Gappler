@@ -67,8 +67,17 @@ def runtime_check() -> None:
         # Construction fixtures only: nonempty bytes are NOT valid serialized maps.
         maps = prefix / "maps with spaces"
         maps.mkdir()
-        for suffix in (".posegraph", ".data"):
-            (maps / ("completed_map" + suffix)).write_bytes(b"construction fixture only")
+        fixture_files = {"completed_map.posegraph": b"construction fixture only",
+                         "completed_map.data": b"construction fixture only",
+                         "current_map.yaml": b"image: current_map.pgm\n",
+                         "current_map.pgm": b"P5 construction fixture\n"}
+        import hashlib as _hashlib
+        import json as _json
+        for name, content in fixture_files.items():
+            (maps / name).write_bytes(content)
+        (maps / "manifest.json").write_text(_json.dumps(
+            {"frame": "map", "width": 160, "height": 120, "resolution": 0.05,
+             "sha256": {name: _hashlib.sha256(content).hexdigest() for name, content in fixture_files.items()}}))
         environment["GAPPLER_MAP_DIR"] = str(maps)
         environment["GAPPLER_MAP_START_POSE"] = "0.9,0.5,0.25"
         try:
@@ -101,6 +110,23 @@ def runtime_check() -> None:
                     hardware_node.assert_not_called()
                     hardware_include.assert_not_called()
                 print("PASS missing-pose refusal before node/include construction; no actions executed")
+                no_manifest = prefix / "graphs without manifest"
+                no_manifest.mkdir()
+                for suffix in (".posegraph", ".data"):
+                    (no_manifest / ("completed_map" + suffix)).write_bytes(b"construction fixture only")
+                with patch.dict(os.environ, {"GAPPLER_MAP_DIR": str(no_manifest)}), \
+                        patch("launch_ros.actions.Node") as hardware_node, \
+                        patch("launch.actions.IncludeLaunchDescription") as hardware_include:
+                    module = runpy.run_path(str(REPO / LAUNCHES[1]))
+                    try:
+                        module["generate_launch_description"]()
+                    except ValueError as error:
+                        assert "manifest" in str(error), f"wrong gate refused: {error}"
+                    else:
+                        raise AssertionError("missing snapshot manifest did not refuse startup")
+                    hardware_node.assert_not_called()
+                    hardware_include.assert_not_called()
+                print("PASS missing-manifest refusal before node/include construction; no actions executed")
                 for relative in LAUNCHES:
                     locations = []
                     sources = {}

@@ -1,0 +1,23 @@
+T3.5 snapshot manifest gate, 2026-10-07
+Candidate: 553b6db plus source-only manifest gate on t3.5-launch-prep.
+No launch actions executed; no hardware/control topics published.
+
+Box (candidate snapshot checkout, sourced nav_env.sh for --runtime):
+python3 bench/test_slam_maps.py -> 8 tests OK
+python3 bench/test_navigation_launches.py --runtime ->
+PASS missing-map refusal before node/include construction; no actions executed
+PASS missing-pose refusal before node/include construction; no actions executed
+PASS missing-manifest refusal before node/include construction; no actions executed
+PASS construction and resolved includes (all three launches)
+PASS owned LiDAR parameters/config; source-backed shares, no actions executed
+
+Mac: test_slam_maps 8 OK; test_navigation_launches 2 OK.
+Red observed before implementation: require_snapshot_manifest import error;
+green after helper + launch wiring + full-snapshot fixture.
+Read-only review: PASS, no blockers.
+
+The manifest gate verifies saver-produced snapshot integrity (checksums +
+geometry sanity). It does not prove map quality, attended initial-pose
+accuracy, or safe corrupt-file handling (installed localizer still aborts).
+
+T3.4/T3.5 remain PROGRESS. No build/install, PR or merge.

@@ -263,6 +263,12 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Verified: 6 map tests + construction refusals (map + pose) pass on Mac and box; synthetic `/initialpose` reseeding 0.000 m with biased odometry. Evidence: [`T3.5_MAP_PREP.md`](T3.5_MAP_PREP.md), [init-pose results](../bench-runs/2026-10-07-sherman-t3.5-init-pose.txt).
 - Review: PASS no blockers. Readiness gates, minimal manual-control runbook, install evidence and physical acceptance remain open. T3.5 PROGRESS.
 
+## [2026-10-07] T3.5 | Snapshot manifest gate
+
+- Added `require_snapshot_manifest` (manifest JSON, frame/geometry sanity, SHA256 over all four snapshot files); localization launch verifies it third, before any hardware actions.
+- Verified: 8 map tests + all three refusal checks (map/pose/manifest) pass on Mac and box with zero Node/Include calls on refusal. Evidence: [manifest results](../bench-runs/2026-10-07-sherman-t3.5-snapshot-manifest.txt).
+- Review: PASS no blockers. Manual-control runbook, install evidence and physical acceptance remain open. T3.5 PROGRESS.
+
 ## Record Template
 
 ```markdown

@@ -11,7 +11,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 from gappler_common import path, static_transform_args
-from slam_maps import require_initial_pose, require_serialized_map
+from slam_maps import require_initial_pose, require_serialized_map, require_snapshot_manifest
 
 
 # Where saved maps live: `map_dir` in shared/global_config.yaml, overridden by
@@ -24,6 +24,7 @@ MAP_DIR = str(path("map_dir"))
 def generate_launch_description():
     map_prefix = require_serialized_map(os.path.join(MAP_DIR, "completed_map"))
     start_pose = require_initial_pose()
+    require_snapshot_manifest(MAP_DIR)
     # Network addresses are an operator prerequisite, not a launch side effect.
 
     # Robot state publisher (publishes URDF to /robot_description)
