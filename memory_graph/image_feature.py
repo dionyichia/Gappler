@@ -8,8 +8,9 @@ kept in its own file so this one works without torch. Any object with an
 model can be changed later.
 
 T6.3f is done only once the real encoder passes its test on real photos: two
-crops of the same chair score above 0.8, a chair against a sink clearly lower.
-The test is in tests/test_clip_encoder.py and skips until the photos exist.
+crops of the same chair score above 0.8, a chair against a different object
+clearly lower. The test is in tests/test_clip_encoder.py, on the lab photos in
+tests/fixtures/.
 """
 
 from __future__ import annotations

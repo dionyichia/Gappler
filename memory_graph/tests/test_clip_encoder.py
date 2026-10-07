@@ -46,7 +46,8 @@ if not weights_present(CFG.clip_model, CFG.clip_pretrained):  # pragma: no cover
         f"no {CFG.clip_model} weights in {cache_dir()}: run python -m memory_graph.clip_encoder")
 
 FIXTURES = Path(__file__).parent / "fixtures"
-PHOTOS = ("chair_view_a.jpg", "chair_view_b.jpg", "sink.jpg")
+CHAIR_VIEWS = ("chair_view_a.jpg", "chair_view_b.jpg")
+OTHER_OBJECTS = ("sofa.jpg", "shelf.jpg", "bench.jpg")
 
 
 def textured(seed, h, w):
@@ -111,18 +112,21 @@ class Use1ObjectFeatureTest(EncoderCase):
         self.assertEqual(f.shape, (2, 512))
         np.testing.assert_allclose(np.linalg.norm(f, axis=1), 1.0)
 
-    def test_same_chair_scores_above_a_chair_against_a_sink(self):
-        """The T6.3f done-when."""
-        missing = [n for n in PHOTOS if not (FIXTURES / n).exists()]
+    def test_same_chair_scores_above_a_chair_against_other_objects(self):
+        """The T6.3f done-when, on photos from the lab. The different objects
+        are a sofa, a shelf and a bench (changed from a sink on 2026-10-07)."""
+        names = CHAIR_VIEWS + OTHER_OBJECTS
+        missing = [n for n in names if not (FIXTURES / n).exists()]
         if missing:
             self.skipTest(f"no test photos {missing} in {FIXTURES.name}/ (see its README)")
         from PIL import Image
 
-        chair_a, chair_b, sink = (np.asarray(Image.open(FIXTURES / n).convert("RGB")) for n in PHOTOS)
-        f = self.unit_images([chair_a, chair_b, sink])
-        same, different = float(f[0] @ f[1]), max(float(f[0] @ f[2]), float(f[1] @ f[2]))
+        f = self.unit_images([np.asarray(Image.open(FIXTURES / n).convert("RGB")) for n in names])
+        same = float(f[0] @ f[1])
         self.assertGreater(same, 0.8, f"same chair scored {same:.3f}")
-        self.assertLess(different, same - 0.1, f"chair against sink {different:.3f}, same chair {same:.3f}")
+        for i, name in enumerate(OTHER_OBJECTS, start=2):
+            different = max(float(f[0] @ f[i]), float(f[1] @ f[i]))
+            self.assertLess(different, same - 0.1, f"chair against {name} {different:.3f}, same chair {same:.3f}")
 
 
 class Use2AssociationTest(EncoderCase):
