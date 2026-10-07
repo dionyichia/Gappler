@@ -44,6 +44,7 @@ evidence into the shared documents.
 | [`T3.5_CLOUD_SCAN.md`](T3.5_CLOUD_SCAN.md) | Synthetic point-cloud geometry/filtering and scan checks for all current launch profiles | Re-running remote T3.5 scan-pipeline checks |
 | [`T3.5_MAP_PREP.md`](T3.5_MAP_PREP.md) | Map audit, SLAM baseline direction and source-only missing-graph startup gate | Before save/reload preparation |
 | [`T3.5_SLAM_PERSISTENCE.md`](T3.5_SLAM_PERSISTENCE.md) | Installed synthetic graph/image saving and restart localization; corrupt-load abort documented | Before implementing the saving/readiness procedure |
+| [`T3.5_MAP_SAVING.md`](T3.5_MAP_SAVING.md) | Explicit non-overwriting graph/image snapshot tool and operator handoff | Saving current-session maps after attended mapping |
 | [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md) | Reported D455 mount design and remaining fabrication evidence | Before fabricating the camera mount |
 
 The shared, unvalidated T1.5 procedure is in [`../ARM_BRINGUP.md`](../ARM_BRINGUP.md). This
@@ -92,3 +93,4 @@ From [`../START_HERE.md`](../START_HERE.md) and the root `CLAUDE.md`:
 | 2026-10-07 | OpenCode + Sherman | Indexed the maintained synthetic point-cloud to laser-scan bench. |
 | 2026-10-07 | OpenCode + Sherman | Indexed map audit and source-only missing-graph startup gate. |
 | 2026-10-07 | OpenCode + Sherman | Indexed synthetic SLAM persistence and its unresolved corrupt-file/readiness limits. |
+| 2026-10-07 | OpenCode + Sherman | Indexed explicit map snapshots and tested pause/interruption handling. |

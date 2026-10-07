@@ -250,6 +250,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Direct argv image saver handles spaces, avoiding upstream service's unquoted shell; candidate saving procedure remains unchanged. Old-node departure gate addresses observed restart discovery race.
 - Evidence/limits: [`T3.5_SLAM_PERSISTENCE.md`](T3.5_SLAM_PERSISTENCE.md). T3.5 PROGRESS; saving/readiness integration, initialization runbook, deployment and physical acceptance remain open.
 
+## [2026-10-07] T3.5 | Explicit snapshot saving
+
+- Added owned saver for new graph/image snapshots with manifest/checksums, mapping/topic checks, refreshed-raster subscription, measurement pause/restore and explicit stationary acknowledgment. This never stops wheels.
+- Synthetic box test invokes actual saver, advances graph with no map subscribers, verifies fresh map timestamp, reloads exact owned raster and checks fresh poses after normal/SIGINT/SIGTERM completion. Localization saving is refused before writes.
+- Review found stale-raster and interrupted-cleanup gaps; addressed and rerun, including repeated-signal regression. All five tests run on box; Mac PyYAML-dependent validation explicitly skipped.
+- Evidence: [`T3.5_MAP_SAVING.md`](T3.5_MAP_SAVING.md). No build/install/deploy, automatic graph saves or historical overwrite. Corrupt-localizer abort/readiness, initialization and minimal control runbook remain open. T3.5 PROGRESS.
+
 ## Record Template
 
 ```markdown

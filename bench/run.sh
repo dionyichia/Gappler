@@ -84,6 +84,8 @@ s=$(step "L0  SLAM map prerequisites" python3 bench/test_slam_maps.py)
 row L0 "SLAM map prerequisites" "$s" ""
 s=$(step "L0  Synthetic SLAM fixture" python3 bench/test_slam_fixture.py)
 row L0 "Synthetic SLAM fixture" "$s" ""
+s=$(step "L0  Map snapshot saver" python3 bench/test_map_saver.py)
+row L0 "Map snapshot saver" "$s" ""
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
 s=$(step "L0  D455 model" python3 bench/test_geometry.py --camera-model)

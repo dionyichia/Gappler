@@ -1,0 +1,53 @@
+T3.5 explicit owned map snapshots, 2026-10-07
+Candidate: d51c6f0 plus source-only owned saver/maintained tests.
+No full launch/build/install/deploy/hardware. Installed SLAM Toolbox 2.6.10.
+
+Final box commands: python3 bench/test_map_saver.py; bash bench/slam_persistence.sh.
+Ran 5 tests; OK (no skip on box).
+guards ok: domain 127 empty, localhost only
+guards ok: domain 127 empty, localhost only
+PASS owned saver: new graph/image snapshot, manifest, spaces, mapper resumed
+PASS owned saver sigint: interrupted after pause, mapper restored and fresh scans processed
+PASS owned saver sigterm: interrupted after pause, mapper restored and fresh scans processed
+PASS mapping and real graph serialization
+PASS image save with YAML/image reference; path contains spaces
+PASS missing load: service replies but no usable map; no success claim
+OBSERVED LIMITATION: corrupt graph aborts installed localizer (std::length_error); NOT safe rejection
+PASS fresh localization loaded map: 160x120
+PASS localization: error 0.000m/0.001rad; biased odometry
+PASS localization: error 0.001m/0.001rad; biased odometry
+PASS localization: error 0.001m/0.001rad; biased odometry
+PASS owned saver refuses localization mode before creating snapshot
+guards ok: domain 127 empty, localhost only
+PASS valid synthetic SLAM persistence; corrupt-file abort observed; physical localization NOT proven
+Exit0 proves valid roundtrip, NOT safe corrupt-file rejection.
+
+Mapper internal image saver disabled. Probe map subscriber removed; graph advanced
+with zero map subscribers. Owned saver establishes its own subscription; manifest
+map_stamp belongs to those newly supplied scans, rather than stale cached raster.
+Owned graph reload gives exact source map metadata/raster equality. Resume checks
+require poses matching newly supplied scan timestamps, not merely list growth.
+SIGINT/SIGTERM sent after parameter read confirms measurements paused; each leaves
+pause false, no success marker, and mapper processes matching fresh scans.
+Pure repeated-signal cleanup test raises actual SIGINT/SIGTERM during teardown
+of an owned separate-session harmless Python child; cleanup completes.
+
+Mac: python3 bench/test_map_saver.py -> 4 pass, 1 explicit PyYAML skip.
+Mac ./bench/run.sh quick -> exit0; available checks PASS; omissions/skips retained.
+Source packaging dependencies/install rule changed; installed executable not built.
+Review blockers (stale raster, context shutdown before pause restore, delayed-pose
+false pass, repeat signal during child cleanup) addressed; followups confirmed fixes.
+
+New snapshot dirs only; no overwrite option. Manifest moves last but directory
+publication is not atomic; failure can leave incomplete staging/destination.
+Single operator only: pause toggle is not a concurrency lock. Stationary flag is
+an operator acknowledgment, not proof of physical stopping. SIGKILL and vanished
+mapper cannot guarantee cleanup. Existing image autosave/fulllaunches unchanged.
+Snapshot tests are synthetic; historical assets untouched and original overlay unchanged.
+Initialization/readiness/control runbook and T3.4/T3.5 physical acceptance remain open.
+
+Matching tested Mac/box SHA256:
+ecfd213d353e28c5f51205baff4e41944866c2c854ab4d63538c762450c6bce5 nav/robot_slam/scripts/save_slam_map.py
+e5b316a3439e917677e90b3e3c3af3890894af4395f4ec0476a09aec68f05653 bench/test_map_saver.py
+c51229d3b9dbca42b5ef405d6a4c0050cf40488cb8276a0cb630cd5e10e9079b bench/nodes/test_slam_persistence.py
+0253350da89926e24571b0cf13b63ad6f950ddb1afa6c1e0ffbfd4cfd4e1966f bench/run.sh

@@ -1,5 +1,7 @@
 """Installed SLAM mapping/save/restart/localization with synthetic scans only."""
 import math
+import json
+import signal
 import os
 from pathlib import Path
 import subprocess
@@ -68,6 +70,7 @@ def main() -> None:
         from geometry_msgs.msg import TransformStamped, PoseWithCovarianceStamped
         from nav_msgs.srv import GetMap
         from nav_msgs.msg import OccupancyGrid
+        from rcl_interfaces.srv import GetParameters
         from rclpy.qos import QoSProfile, DurabilityPolicy
         from sensor_msgs.msg import LaserScan
         from slam_toolbox.srv import SerializePoseGraph, DeserializePoseGraph
@@ -93,8 +96,8 @@ def main() -> None:
     # updateMap skips rasterization without subscribers. Do not depend on a
     # previous saver/subscriber remaining visible across process restart.
     maps = []
-    node.create_subscription(OccupancyGrid, "/t35_slam/map", maps.append,
-                             QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+    map_subscription = node.create_subscription(OccupancyGrid, "/t35_slam/map", maps.append,
+                                                QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
     process = None
 
     def spin_for(seconds):
@@ -165,7 +168,7 @@ def main() -> None:
                 params = yaml.safe_load((REPO / "nav/robot_slam/config/slam_toolbox.yaml").read_text())["slam_toolbox"]["ros__parameters"]
                 params.update(mode=mode, odom_frame="t35_odom", map_frame="t35_map", base_frame="t35_base",
                               scan_topic="/t35_slam/scan", map_name="/t35_slam/map", map_update_interval=0.2,
-                              use_sim_time=False, map_file_name="", use_map_saver=True)
+                              use_sim_time=False, map_file_name="", use_map_saver=False)
                 file = folder / (mode + ".yaml")
                 file.write_text(yaml.safe_dump({"/**": {"ros__parameters": params}}))
                 with (REPO / "log" / ("t35-slam-" + mode + ".log")).open("w") as output:
@@ -186,6 +189,72 @@ def main() -> None:
             spin_for(0.5)
             original = call("dynamic_map", GetMap, GetMap.Request()).map
             assert original.info.width > 0 and original.info.height > 0
+            node.destroy_subscription(map_subscription)
+            deadline = time.monotonic() + 10
+            while node.count_subscribers("/t35_slam/map") and time.monotonic() < deadline:
+                spin_for(0.1)
+            assert node.count_subscribers("/t35_slam/map") == 0
+            # Advance graph while nobody subscribes: cached raster is now stale.
+            fresh_stamps = feed((0.2, -0.5, 0.0), repeats=10)
+            # Exercise the actual owned saver, not a duplicated service sequence.
+            snapshot_root = folder / "owned snapshots with spaces"
+            saver_log = REPO / "log/t35-owned-map-saver.log"
+            with saver_log.open("w") as output:
+                owned_saver = subprocess.Popen([
+                    sys.executable, str(REPO / "nav/robot_slam/scripts/save_slam_map.py"),
+                    "--output-root", str(snapshot_root), "--namespace", "/t35_slam",
+                    "--map-topic", "/t35_slam/map", "--stationary",
+                ], stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+                try:
+                    deadline = time.monotonic() + 50
+                    while owned_saver.poll() is None and time.monotonic() < deadline:
+                        spin_for(0.1)
+                    assert owned_saver.poll() == 0, "owned saver failed; inspect log/t35-owned-map-saver.log"
+                finally:
+                    stop_process(owned_saver)
+            snapshots = list(snapshot_root.glob("session-*"))
+            assert len(snapshots) == 1
+            owned_snapshot = snapshots[0]
+            assert "SAVED_SNAPSHOT=" + str(owned_snapshot) in saver_log.read_text()
+            assert (owned_snapshot / "manifest.json").is_file()
+            manifest = json.loads((owned_snapshot / "manifest.json").read_text())
+            assert tuple(manifest["map_stamp"]) in fresh_stamps, "saver captured stale cached raster"
+            original = call("dynamic_map", GetMap, GetMap.Request()).map
+            # Restore a probe subscription for the independent persistence checks.
+            node.create_subscription(OccupancyGrid, "/t35_slam/map", maps.append,
+                                     QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+            # Verify the saver restored mapping rather than silently leaving it paused.
+            sent = feed((0.3, 0.0, 0.0), repeats=10)
+            assert any((pose.header.stamp.sec, pose.header.stamp.nanosec) in sent for pose in poses), "owned saver left mapper unable to process fresh scans"
+            print("PASS owned saver: new graph/image snapshot, manifest, spaces, mapper resumed", flush=True)
+            pause_request = GetParameters.Request()
+            pause_request.names = ["paused_new_measurements"]
+            for label, interruption in (("sigint", signal.SIGINT), ("sigterm", signal.SIGTERM)):
+                interrupted_root = folder / ("interrupted-" + label)
+                with (REPO / "log" / ("t35-owned-saver-" + label + ".log")).open("w") as output:
+                    interrupted_saver = subprocess.Popen([
+                        sys.executable, str(REPO / "nav/robot_slam/scripts/save_slam_map.py"),
+                        "--output-root", str(interrupted_root), "--namespace", "/t35_slam",
+                        "--map-topic", "/t35_slam/map", "--stationary",
+                    ], stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+                    try:
+                        deadline = time.monotonic() + 10
+                        while time.monotonic() < deadline:
+                            assert interrupted_saver.poll() is None, "saver exited before interruption"
+                            if call("get_parameters", GetParameters, pause_request).values[0].bool_value:
+                                break
+                            spin_for(0.02)
+                        else:
+                            raise RuntimeError("never observed saver pause for interruption test")
+                        os.killpg(interrupted_saver.pid, interruption)
+                        assert interrupted_saver.wait(timeout=30) != 0
+                    finally:
+                        stop_process(interrupted_saver)
+                assert not call("get_parameters", GetParameters, pause_request).values[0].bool_value
+                assert "SAVED_SNAPSHOT=" not in (REPO / "log" / ("t35-owned-saver-" + label + ".log")).read_text()
+                sent = feed((0.5 if label == "sigint" else 0.7, 0.0, 0.0), repeats=10)
+                assert any((pose.header.stamp.sec, pose.header.stamp.nanosec) in sent for pose in poses)
+                print(f"PASS owned saver {label}: interrupted after pause, mapper restored and fresh scans processed", flush=True)
             request = SerializePoseGraph.Request()
             request.filename = str(graph)
             response = call("serialize_map", SerializePoseGraph, request)
@@ -245,7 +314,7 @@ def main() -> None:
                 assert not poses and process.poll() is None
                 print(f"PASS {label} load: service replies but no usable map; no success claim", flush=True)
             request = DeserializePoseGraph.Request()
-            request.filename = str(graph)
+            request.filename = str(owned_snapshot / "completed_map")
             request.match_type = request.LOCALIZE_AT_POSE
             request.initial_pose.x, request.initial_pose.y, request.initial_pose.theta = 0.9, 0.5, 0.25
             call("deserialize_map", DeserializePoseGraph, request)
@@ -267,6 +336,20 @@ def main() -> None:
                 assert distance <= 0.15 and heading <= 0.10, f"localization error {distance:.3f}m/{heading:.3f}rad"
                 assert latest.header.frame_id == "t35_map"
                 print(f"PASS localization: error {distance:.3f}m/{heading:.3f}rad; biased odometry", flush=True)
+            refused_root = folder / "must not save localization"
+            with (REPO / "log/t35-owned-saver-refusal.log").open("w") as output:
+                refused = subprocess.Popen([
+                    sys.executable, str(REPO / "nav/robot_slam/scripts/save_slam_map.py"),
+                    "--output-root", str(refused_root), "--namespace", "/t35_slam",
+                    "--map-topic", "/t35_slam/map", "--stationary",
+                ], stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+                try:
+                    assert refused.wait(timeout=20) != 0, "saver accepted localization mode"
+                finally:
+                    stop_process(refused)
+            assert not refused_root.exists()
+            assert "must be in mapping mode" in (REPO / "log/t35-owned-saver-refusal.log").read_text()
+            print("PASS owned saver refuses localization mode before creating snapshot", flush=True)
             stop_process(process)
             process = None
     finally:

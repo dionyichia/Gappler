@@ -124,6 +124,12 @@ the full candidate launches. An exit-0 valid round trip still reports a known
 corrupt-file localizer abort; it does not establish safe hardware readiness.
 Details: [`T3.5_SLAM_PERSISTENCE.md`](../docs/sherman_docs/T3.5_SLAM_PERSISTENCE.md).
 
+`python3 bench/test_map_saver.py` checks the explicit snapshot tool. The synthetic
+SLAM bench additionally tests its actual saving/reload, stale-raster refresh without
+prior subscribers, interruption after pause and localization-mode refusal. See
+[`T3.5_MAP_SAVING.md`](../docs/sherman_docs/T3.5_MAP_SAVING.md). The local PyYAML
+validation skip is explicit; box tests exercise it. No installed-overlay proof.
+
 Run `python3 bench/test_cloud_scan.py` for stdlib fixture/oracle checks (L0) and
 `bash bench/cloud_scan.sh` for the isolated ROS conversion bench (L4). The latter reads actual
 converter parameters from launch source and uses the relay for the SLAM profiles and the
@@ -141,6 +147,7 @@ Run serially with the keyboard bench because both reserve domain 127. Details:
 | 2026-10-07 | OpenCode + Sherman | Added maintained synthetic cloud-to-scan L0/L4 checks for the current SLAM and AMCL profiles. |
 | 2026-10-07 | OpenCode + Sherman | Added map-file prerequisites and missing-map refusal before hardware action construction; no graph-load proof. |
 | 2026-10-07 | OpenCode + Sherman | Added synthetic installed SLAM persistence L0/L4 checks, keeping corrupt-load abort and physical-proof limits explicit. |
+| 2026-10-07 | OpenCode + Sherman | Added owned snapshot tests, stale-raster/pause restoration and repeated-signal cleanup controls. |
 
 ---
 
