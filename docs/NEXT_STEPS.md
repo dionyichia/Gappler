@@ -1204,6 +1204,14 @@ height/range filtering, invalid/empty data, message preservation and distinct fr
 No sensors/controllers launched; no physical TF, live LiDAR or mapping acceptance proved.
 Evidence: [`sherman_docs/T3.5_CLOUD_SCAN.md`](sherman_docs/T3.5_CLOUD_SCAN.md).
 
+**Map preparation, same branch/date:** Sherman selected SLAM Toolbox as the baseline;
+teammate coordination is still outstanding. Read-only audit found the configured map
+directory absent and historical image/graph pairs present. Candidate localization now
+refuses absent/empty/unreadable graph files before constructing hardware actions.
+Box construction checks passed without executing actions. Mapping still saves images
+only; graph serialization, compatibility, initialization and restart localization remain
+unproven. See [`sherman_docs/T3.5_MAP_PREP.md`](sherman_docs/T3.5_MAP_PREP.md).
+
 - **There are two ways to drive, with two kinds of saved map.**
 
   | Launch file | Localises with | Map it reads | Written by |
@@ -1392,6 +1400,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 |---|---|---|
 | 2026-10-07 | OpenCode + Sherman | Recorded stacked T3.5 network-preserving/PointCloud2 launch preparation and source-only verification; installed overlay and map/localization choices unchanged. |
 | 2026-10-07 | OpenCode + Sherman | Recorded maintained synthetic cloud-to-scan checks, 12-case box PASS and explicit QoS/physical-proof limits. |
+| 2026-10-07 | OpenCode + Sherman | Recorded map audit, Sherman-selected SLAM baseline (coordination pending) and source-only map-file gate; graph save/reload remains outstanding. |
 | 2026-09-14 | Claude (Opus 5) + Dion | §3.3 promoted to 🔴 and re-checked against the branch: exactly 15 files exist on `realman_manip` and not on `main`, ten of them pre-reorg duplicates. Added a fifth file to take, `anygrasp_node.sh`, which records that the verified session ran `checkpoint_tracking.tar` while `main` launches `checkpoint_detection.tar`. It is now `PROJECT_PLAN` T0.0, the first task in the plan. §3.2 marked done: the nav workspace built 10/10 on 2026-09-14, with two corrections — 10 packages not 8, and colcon does build `Livox-SDk2/` without a manifest. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added the pointer under §2.7 to the new `TESTBENCH_PLAN.md` handoff, and a root `CLAUDE.md` so a fresh session loads context automatically. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §2.6b pointing at the new `CODE_AUDIT.md` — a line-by-line read of all owned code. Headline finding: the grasp path cannot work, for three interlocking reasons. |

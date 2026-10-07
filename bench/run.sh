@@ -80,6 +80,8 @@ s=$(step "L0  Navigation launch wiring" python3 bench/test_navigation_launches.p
 row L0 "Navigation launch wiring" "$s" ""
 s=$(step "L0  Synthetic cloud fixtures" python3 bench/test_cloud_scan.py)
 row L0 "Synthetic cloud fixtures" "$s" ""
+s=$(step "L0  SLAM map prerequisites" python3 bench/test_slam_maps.py)
+row L0 "SLAM map prerequisites" "$s" ""
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
 s=$(step "L0  D455 model" python3 bench/test_geometry.py --camera-model)

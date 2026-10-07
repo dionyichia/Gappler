@@ -11,6 +11,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 from gappler_common import path, static_transform_args
+from slam_maps import require_serialized_map
 
 
 # Where saved maps live: `map_dir` in shared/global_config.yaml, overridden by
@@ -21,6 +22,7 @@ MAP_DIR = str(path("map_dir"))
 
 
 def generate_launch_description():
+    map_prefix = require_serialized_map(os.path.join(MAP_DIR, "completed_map"))
     # Network addresses are an operator prerequisite, not a launch side effect.
 
     # Robot state publisher (publishes URDF to /robot_description)
@@ -135,11 +137,11 @@ def generate_launch_description():
         executable="localization_slam_toolbox_node",
         name="slam_toolbox",
         output="screen",
-        # The params file carries a default; this override is what actually
-        # decides, because a ROS params file cannot read an environment variable.
+        # File availability is checked before any hardware actions are constructed.
+        # This does not establish graph compatibility or successful localization.
         parameters=[
             slam_params_file,
-            {"map_file_name": os.path.join(MAP_DIR, "completed_map")},
+            {"map_file_name": map_prefix},
         ],
         remappings=[("scan", "/scan")],
         arguments=["--ros-args", "--log-level", "WARN"],

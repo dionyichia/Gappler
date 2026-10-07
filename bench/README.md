@@ -111,6 +111,12 @@ real ROS launch descriptions using temporary source-backed package shares for th
 and the existing overlay for external packages. It resolves includes and checks PointCloud2
 settings without executing actions. This is not installed-overlay or live-hardware proof.
 
+Run `python3 bench/test_slam_maps.py` for localization map-file prerequisites (L0).
+The ROS constructor check in `test_navigation_launches.py --runtime` also verifies
+missing-map refusal before hardware actions are constructed; fake files used for
+successful construction do not prove deserialization. See
+[`T3.5_MAP_PREP.md`](../docs/sherman_docs/T3.5_MAP_PREP.md).
+
 Run `python3 bench/test_cloud_scan.py` for stdlib fixture/oracle checks (L0) and
 `bash bench/cloud_scan.sh` for the isolated ROS conversion bench (L4). The latter reads actual
 converter parameters from launch source and uses the relay for the SLAM profiles and the
@@ -126,6 +132,7 @@ Run serially with the keyboard bench because both reserve domain 127. Details:
 | 2026-10-06 | OpenCode + Sherman | Added maintained T3.4 isolated controls and LiDAR launch checks; physical acceptance remains separate. |
 | 2026-10-07 | OpenCode + Sherman | Added navigation entry-point wiring and source-backed real launch construction checks. |
 | 2026-10-07 | OpenCode + Sherman | Added maintained synthetic cloud-to-scan L0/L4 checks for the current SLAM and AMCL profiles. |
+| 2026-10-07 | OpenCode + Sherman | Added map-file prerequisites and missing-map refusal before hardware action construction; no graph-load proof. |
 
 ---
 

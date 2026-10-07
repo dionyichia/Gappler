@@ -236,6 +236,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Review: timeout cleanup grace, source routing/returned actions, full QoS contract, duplicate-frame rejection and full metadata checks strengthened. Follow-up found no remaining blockers. Interim unavailable depth/history assertion failure recorded, not hidden or fixed by altering production QoS.
 - Residuals: no full box suite/build/load test, live LiDAR/physical TF, obstacle safety or map/localization acceptance. Existing preflight weight gaps unchanged. Original lab checkout/overlay and user-started communications node preserved. T3.5 PROGRESS; no PR or merge.
 
+## [2026-10-07] T3.5 | Map availability before localization actions
+
+- Added source-only readable/nonempty serialized-file gate before hardware action construction.
+- Four focused tests and real ROS construction/refusal checks passed on the box; available Mac quick checks passed. Evidence: [`T3.5_MAP_PREP.md`](T3.5_MAP_PREP.md) and [raw results](../bench-runs/2026-10-07-sherman-t3.5-map-prerequisites.txt).
+- Map audit and Sherman-selected SLAM baseline documented; teammate coordination pending.
+- No installed changes/actions/hardware. Graph serialization, corrupt-map refusal before hardware, initial pose and actual restart/reload remain outstanding. T3.5 PROGRESS.
+
 ## Record Template
 
 ```markdown
