@@ -6,6 +6,7 @@ docs/hico-nav/hico-nav-github-docs/cmg_construction_pipeline.md:
 
     stage_types.py         the data passed between stages (S0-S9)
     config.py              every tuning constant, one place
+    replay_loader.py       S0  a recording becomes posed observations
     detection_filter.py    S2  drop detections that should never become objects
     anchor_gate.py         S3  is this photo worth keeping
     sam3_adapter.py        S1 and S4 from SAM 3: detections with masks, then S2 and S5

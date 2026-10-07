@@ -1,0 +1,4 @@
+# color images, two frames of rgbd_dataset_freiburg1_xyz, re-encoded as JPEG
+# timestamp filename
+1305031102.175304 rgb/1305031102.175304.jpg
+1305031106.311238 rgb/1305031106.311238.jpg
