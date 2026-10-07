@@ -1,0 +1,131 @@
+M6 -- memory graph stage tests on the lab box   lab box, worktree ~/rcp-t6.3f, 2026-10-07 18:25
+===========================================================================================
+First run on the lab box of the memory graph tests that need numpy and scipy. Until now the
+bench ran only test_anchor_object_graph.py there (bench/run.sh L0), and the rest had run only
+on a Mac. Run by Zongzhe's session over ssh, with Zongzhe's go-ahead.
+
+  RESULT: PASS. 57 tests in 5 files, 57 passed, 0 failed, 0 skipped.
+
+  Covers T6.3a (graph, types, config), T6.3c (S2 detection filtering), T6.3d (erosion and S5 mask
+  cleanup), T6.3e (back-projection, cloud cleanup, 3D box), T6.4a and T6.4b (association) and
+  T6.5a (anchor gate). These seven were flagged the same day as not yet tested on the lab box.
+
+  NOT covered: T6.3f's real encoder (memory_graph/tests/test_clip_encoder.py). open_clip is not
+  installed in the shared .venv, and installing it was deferred. T6.3f stays flagged.
+  Not a full bench run: only these five test files. CPU only, no GPU, no ROS, no hardware.
+
+How it was run [observed]
+  Code: a separate git worktree, ~/rcp-t6.3f, detached at 52deee1 (branch t6.3f-clip-encoder).
+        ~/rcp-Gappler stayed on dev at 9ac011b and was not modified.
+  Python: the shared ~/rcp-Gappler/.venv, read only. PYTHONDONTWRITEBYTECODE=1, so no cache
+        files were written into the .venv or the worktree. Nothing was installed.
+  Checked first that no bench or CI run was active (pgrep Runner.Worker, bench/run.sh).
+  To repeat: cd ~/rcp-t6.3f && ~/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.<file>
+  Once open_clip is in the .venv, ./bench/memory_graph_tests.sh runs all of these plus the encoder.
+
+Full output [observed]
+-------------------------------------------------------------------------------------------
+host: iot22-Computer   date: 2026-10-07 18:25 CST
+worktree: ~/rcp-t6.3f at 52deee1 T6.3f: add lab photos for the done-when and flag the task for lab box testing
+python: /home/rcp2026/rcp-Gappler/.venv/bin/python   3.10.12 numpy 2.2.6 scipy 1.15.3
+cpu: 13th Gen Intel(R) Core(TM) i5-13400F
+
+######## /home/rcp2026/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_anchor_object_graph ########
+test_clamp_keeps_every_requirement_satisfiable (memory_graph.tests.test_anchor_object_graph.CoverageAndPruning) ... ok
+test_cost_steers_which_anchors_survive (memory_graph.tests.test_anchor_object_graph.CoverageAndPruning) ... ok
+test_kappa_one_is_set_cover (memory_graph.tests.test_anchor_object_graph.CoverageAndPruning) ... ok
+test_kappa_three_keeps_viewpoint_redundancy (memory_graph.tests.test_anchor_object_graph.CoverageAndPruning) ... ok
+test_prune_applies_and_leaves_graph_consistent (memory_graph.tests.test_anchor_object_graph.CoverageAndPruning) ... ok
+test_prune_meets_every_requirement (memory_graph.tests.test_anchor_object_graph.CoverageAndPruning) ... ok
+test_best_anchor_of_unknown_object_is_none (memory_graph.tests.test_anchor_object_graph.EdgeAttributes) ... ok
+test_best_anchor_uses_view_quality (memory_graph.tests.test_anchor_object_graph.EdgeAttributes) ... ok
+test_anchor_eviction_is_atomic (memory_graph.tests.test_anchor_object_graph.GraphStaysConsistent) ... ok
+test_merge_fuses_colliding_edge_payloads (memory_graph.tests.test_anchor_object_graph.GraphStaysConsistent) ... ok
+test_object_merge_rewrites_both_directions (memory_graph.tests.test_anchor_object_graph.GraphStaysConsistent) ... ok
+test_randomised_operations_never_break_the_invariant (memory_graph.tests.test_anchor_object_graph.GraphStaysConsistent) ... ok
+test_removing_the_last_anchor_removes_the_object_entry (memory_graph.tests.test_anchor_object_graph.GraphStaysConsistent) ... ok
+test_anchor_eviction_leaves_dangling_observer_ids (memory_graph.tests.test_anchor_object_graph.TwoSetFailureModes) ... ok
+test_inflated_degree_can_make_the_ilp_infeasible (memory_graph.tests.test_anchor_object_graph.TwoSetFailureModes)
+r_j = min(kappa, degree) is computed from the stale set. ... ok
+test_object_merge_leaves_anchors_pointing_at_the_absorbed_id (memory_graph.tests.test_anchor_object_graph.TwoSetFailureModes) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.101s
+
+OK
+
+######## /home/rcp2026/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_config_and_filters ########
+test_last_pose_moves_only_on_commit (memory_graph.tests.test_config_and_filters.AnchorGateTest) ... ok
+test_move_turn_or_target_accepts_again (memory_graph.tests.test_config_and_filters.AnchorGateTest) ... ok
+test_no_detections_rejected_even_first (memory_graph.tests.test_config_and_filters.AnchorGateTest) ... ok
+test_rotation_angle (memory_graph.tests.test_config_and_filters.AnchorGateTest) ... ok
+test_stationary_camera_accepted_once (memory_graph.tests.test_config_and_filters.AnchorGateTest) ... ok
+test_defaults_are_upstream_values (memory_graph.tests.test_config_and_filters.ConfigTest) ... ok
+test_override_and_typo (memory_graph.tests.test_config_and_filters.ConfigTest) ... ok
+test_rejects_bad_values (memory_graph.tests.test_config_and_filters.ConfigTest) ... ok
+test_background_and_tiny_boxes_dropped (memory_graph.tests.test_config_and_filters.DetectionFilterTest) ... ok
+test_empty_input (memory_graph.tests.test_config_and_filters.DetectionFilterTest) ... ok
+test_sorted_and_input_order_does_not_matter (memory_graph.tests.test_config_and_filters.DetectionFilterTest) ... ok
+test_target_kept_at_low_confidence_non_target_dropped (memory_graph.tests.test_config_and_filters.DetectionFilterTest) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.329s
+
+OK
+
+######## /home/rcp2026/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_masks_and_features ########
+test_image_border_is_removed (memory_graph.tests.test_masks_and_features.ErosionTest) ... ok
+test_square_shrinks_by_one_pixel (memory_graph.tests.test_masks_and_features.ErosionTest) ... ok
+test_features_are_unit_length_and_same_object_scores_high (memory_graph.tests.test_masks_and_features.ImageFeatureTest) ... ok
+test_padding_clamped_to_image (memory_graph.tests.test_masks_and_features.ImageFeatureTest) ... ok
+test_padding_is_relative_to_the_box (memory_graph.tests.test_masks_and_features.ImageFeatureTest) ... ok
+test_wrong_encoder_output_rejected (memory_graph.tests.test_masks_and_features.ImageFeatureTest) ... ok
+test_zero_vector_stays_zero (memory_graph.tests.test_masks_and_features.ImageFeatureTest) ... ok
+test_clean_masks_reports_input_indices (memory_graph.tests.test_masks_and_features.MaskCleanupTest) ... ok
+test_cup_cut_out_of_table (memory_graph.tests.test_masks_and_features.MaskCleanupTest) ... ok
+test_side_by_side_objects_untouched (memory_graph.tests.test_masks_and_features.MaskCleanupTest) ... ok
+test_tiny_and_duplicate_masks_dropped (memory_graph.tests.test_masks_and_features.MaskCleanupTest) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.270s
+
+OK
+
+######## /home/rcp2026/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_geometry ########
+test_centroid_lands_on_the_known_position (memory_graph.tests.test_geometry.BackProjectionTest)
+Done-when for T6.3e: a mask on a known object gives a centroid within a ... ok
+test_invalid_depth_and_small_masks (memory_graph.tests.test_geometry.BackProjectionTest) ... ok
+test_point_cap (memory_graph.tests.test_geometry.BackProjectionTest) ... ok
+test_same_wall_from_two_poses_lands_in_the_same_place (memory_graph.tests.test_geometry.BackProjectionTest)
+S0's check, on synthetic data: a wall at world x = 3 seen from two ... ok
+test_range_filter_keeps_arrays_aligned (memory_graph.tests.test_geometry.CandidatesTest)
+Done-when for T6.3e: an object at 7 m is dropped, one at 5 m is kept, ... ok
+test_requires_masks (memory_graph.tests.test_geometry.CandidatesTest) ... ok
+test_box_of_rotated_block (memory_graph.tests.test_geometry.CloudCleanupTest) ... ok
+test_outliers_one_metre_away_are_removed_and_box_shrinks (memory_graph.tests.test_geometry.CloudCleanupTest) ... ok
+test_voxel_downsample_averages (memory_graph.tests.test_geometry.CloudCleanupTest) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.823s
+
+OK
+
+######## /home/rcp2026/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_association ########
+test_separated_touching_and_rotated (memory_graph.tests.test_association.BoxIntersectionTest) ... ok
+test_appearance_alone_cannot_merge_with_upstream_weights (memory_graph.tests.test_association.MatchTest) ... ok
+test_appearance_matrix_handles_missing_features (memory_graph.tests.test_association.MatchTest) ... ok
+test_greedy_lets_two_candidates_share_an_object (memory_graph.tests.test_association.MatchTest) ... ok
+test_one_to_one_gives_each_object_at_most_one (memory_graph.tests.test_association.MatchTest) ... ok
+test_same_chair_from_views_30_degrees_apart_matches (memory_graph.tests.test_association.MatchTest)
+Done-when for S10: the same object from two poses 30 degrees apart matches. ... ok
+test_two_identical_chairs_side_by_side_do_not_merge (memory_graph.tests.test_association.MatchTest)
+Done-when for S10: identical appearance, no 3D overlap, no match. ... ok
+test_no_objects_or_no_candidates (memory_graph.tests.test_association.OverlapTest) ... ok
+test_same_points_full_overlap_far_points_none (memory_graph.tests.test_association.OverlapTest) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.392s
+
+OK
+
+worktree changes after the run: 0

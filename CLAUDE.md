@@ -130,6 +130,7 @@ python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract
 ./bench/state_machine_sim.sh           # L4: grasp state machine on the simulated arm
 ./bench/nav_nodes.sh                   # L4: the five nav nodes vs a mock Nav2 (nothing drives)
 ./bench/anygrasp_env.sh [PYTHON]       # can this env run AnyGrasp (imports + SDK demo)
+./bench/memory_graph_tests.sh [PYTHON] # all memory graph tests, with the real open_clip model (needs .venv, no ROS)
 ```
 
 Levels L0-L6 are defined in `bench/README.md` (renamed from Tiers 0-4 on 2026-09-19, L5 robot
