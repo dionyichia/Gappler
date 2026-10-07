@@ -1,0 +1,4 @@
+# depth maps, two frames of rgbd_dataset_freiburg1_xyz, files unchanged
+# timestamp filename
+1305031102.160407 depth/1305031102.160407.png
+1305031106.298174 depth/1305031106.298174.png

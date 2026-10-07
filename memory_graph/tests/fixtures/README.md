@@ -20,3 +20,28 @@ The done-when first named a sink as the different object. No sink photo was
 available, so on 2026-10-07 Zongzhe changed it to the other objects in these photos.
 
 If a file is missing, the test reports SKIPPED, not passed.
+
+# Two recorded frames for the replay loader (T6.3b)
+
+`test_replay_loader.py` uses `tum_fr1_xyz/` for the T6.3b done-when: back-projecting
+the depth image from two poses puts the same surfaces in the same place.
+
+| File | What it is |
+|---|---|
+| `tum_fr1_xyz/depth/*.png` | two depth images, 640 x 480, 16-bit, 5000 units per metre. Copied unchanged |
+| `tum_fr1_xyz/rgb/*.jpg` | the two colour images. Re-encoded from PNG to JPEG (quality 85) to keep the repo small |
+| `tum_fr1_xyz/rgb.txt`, `depth.txt` | the lines of the original lists for these two frames, with `.jpg` names in `rgb.txt` |
+| `tum_fr1_xyz/groundtruth.txt` | the two pose rows nearest in time to the two colour images |
+
+Source: frames 0 and 124 of `rgbd_dataset_freiburg1_xyz` from the TUM RGB-D benchmark,
+a handheld Kinect moved over a desk, with poses from a motion-capture system. The camera
+moved 0.40 m and turned 9 degrees between the two frames.
+
+- Download (448 MB): https://cvg.cit.tum.de/rgbd/dataset/freiburg1/rgbd_dataset_freiburg1_xyz.tgz
+- Licence: Creative Commons Attribution 4.0 (CC BY 4.0).
+- Credit: J. Sturm, N. Engelhard, F. Endres, W. Burgard, D. Cremers, "A Benchmark for the
+  Evaluation of RGB-D SLAM Systems", IROS 2012.
+
+The full recording is not in the repo. To run the loader on all of it, unpack the
+download anywhere (`assets/recordings/` is gitignored) and pass the folder to
+`TumSequence` in `memory_graph/replay_loader.py`.
