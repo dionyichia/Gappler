@@ -73,6 +73,11 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
   **Never stop a process you did not start.** `pkill -u rcp2026 -f <pattern>` also hits other people's
   work (on 2026-09-22 it stopped someone's camera driver mid-test). Start your processes with `setsid`
   and stop them only by their own process group: `kill -INT -<pgid>`.
+- **Never close a tmux session without asking first** (Dion, 2026-10-07). Before any
+  `tmux kill-session` or `kill-server` on the box, stop, tell the user which session and what runs in
+  it, and wait for a yes, even for a session you think you made. Always target the exact name,
+  `-t "=name"`: a plain `-t name` matches by prefix. On 2026-10-07 test cleanup ran
+  `tmux kill-session -t grasp`, which closed someone's attached `grasp_t1_24` session.
 - **Fixes go on branches for review** (Dion, 2026-09-19, replacing the 2026-09-11 "no fixes yet"
   rule). The project is in implementation. Each fix lands through a PR into `dev`
   (the default branch), where CI runs the bench. `dev` is promoted to `main` by PR.
@@ -95,6 +100,14 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
   `iot22`'s nav workspace) are old code / reference: never modify them or their `install/` overlays.
   Don't touch `/home/iot22`; never set `PYTHONNOUSERSITE=1`; never `pip install --user`.
 - MoveIt with `mock_components` (simulated arm) is allowed; anything with `rm_driver` is not.
+- **Start robot sessions with `./quickstart_terminals.sh <layout>`** (Dion, 2026-10-07, T0.16), not
+  by hand-typed terminals. Layouts: `gripper`, `arm`, `grasp`, `nav`, `aria`, `full`. It opens a tmux
+  session named after the layout, one pane per process, each pane set up with its subsystem's env
+  file on domain 91, localhost only. Drivers, the stop, cameras and monitors start on their own.
+  Anything that moves the arm or base is typed but not sent. It refuses to start if what it would
+  start, or a bench run, is already up. `--print` lists the panes, `--dry` types every command and
+  starts nothing. `full` leaves nav out until T3.9. When giving someone commands for a robot
+  session, point at the script and only spell out what it does not cover.
 - **The GitHub Actions runner** lives in `~/actions-runner` (tmux session `gh-runner`, stops on reboot).
   Its checkout `~/actions-runner/_work/Gappler/Gappler` belongs to CI: don't work in it. Only one bench
   run at a time on the box, so check `pgrep -af "Runner.Worker|bench/run.sh"` before starting one.
