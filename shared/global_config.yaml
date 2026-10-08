@@ -20,7 +20,7 @@
   ros__parameters:
     topics:
       # ---- Wrist camera (D435i on the arm). Published by the RealSense driver, started by
-      # ---- launchers/start_camera_arm_sam3_grasp.py and aria/aria_app/main.py.
+      # ---- launchers/start_camera_arm_grasp.py and aria/aria_app/main.py.
       # driver -> grasp: grasp_segmentation_client, anygrasp_node, anygrasp_detection_node.
       #   aria: object_recognition_pipeline
       wrist_camera_color: "/camera/camera/color/image_raw"
@@ -87,7 +87,7 @@
     # ---- Read through gappler_common.camera_serial(). Override per machine with
     # ---- WRIST_CAMERA_SERIAL and MOBILE_BASE_CAMERA_SERIAL.
     wrist_camera:
-      # read by: launchers/start_camera_arm_sam3_grasp.py, aria/aria_app/main.py,
+      # read by: launchers/start_camera_arm_grasp.py, aria/aria_app/main.py,
       #          grasp/tools/record_wrist_camera.sh
       serial: "243222074878"   # D435i on the arm's wrist, Link6. Confirmed at the robot, T1.4
       # Metres per depth unit in the aligned depth image (the driver publishes millimetres).

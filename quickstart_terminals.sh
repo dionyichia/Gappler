@@ -87,7 +87,7 @@ lay_full() {
 }
 
 # What each layout must not find already running.
-ARM_BUSY='rm_driver|arm_bringup|grasp_state_machine|start_camera_arm_sam3_grasp|grasp_orchestrator'
+ARM_BUSY='rm_driver|arm_bringup|grasp_state_machine|start_camera_arm_grasp|grasp_orchestrator'
 CAMERA_BUSY='realsense2_camera|rs_launch'
 NAV_BUSY='livox|slam_toolbox|slam_localization|slam_mapping|nav2|xpkg|echo_plus|simple_teleop|goto_glasses'
 ARIA_BUSY='aria_app/main.py'

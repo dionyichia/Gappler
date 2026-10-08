@@ -20,6 +20,10 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 ## ▶ Start here — next session (updated 2026-09-22)
 
+**Dion's current work (2026-10-08) is the grasp bring-up, not the bench.** Cold start at
+[`dion_docs/GRASP_BRINGUP_STEPS.md`](dion_docs/GRASP_BRINGUP_STEPS.md), "Start here". Next is
+T1.24 step 3b. The rest of this section is the bench and CI state as of 2026-09-22.
+
 ### T0.11 is done (2026-09-22). The CI setup, for whoever maintains it
 
 **Next bench and CI work:** none open. T0.12 (AnyGrasp replay) is done, 2026-09-22: `./bench/anygrasp_replay.sh`
@@ -524,7 +528,7 @@ review. The rules below were written before the 2026-09-21 layout move; current 
 the driver-only boundary are in the runbook.
 
 1. **Never launch** `grasp_state_machine` (directly or via `grasp_state_machine.launch.py`),
-   `launchers/start_camera_arm_sam3_grasp.py`, `launchers/grasp_orchestrator.py`, or root `main.py`. The state
+   `launchers/start_camera_arm_grasp.py`, `launchers/grasp_orchestrator.py`, or root `main.py`. The state
    machine homes the arm within seconds, unprompted (ORIENTATION §8.1) — and to the home pose. That pose
    was reached on the real arm by direct command in T1.7 (2026-09-23), but the state machine has never
    homed the real arm, and it homes without asking (CODE_AUDIT §B4). T1.2 removed the orchestrator's duplicate
@@ -830,3 +834,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-22 | Claude (Opus 5) + Dion | Recorded the runner copy's two new links, `.venv` and the wrist-camera recording, both needed by `anygrasp_replay`. First `full` run on `dev` after T0.12 (run 35690851133): `anygrasp_replay` SKIPPED for want of `.venv` (now linked), and `state_machine_sim` refused because the real arm was on the network while someone worked at the robot. That refusal is the guard working, not a fault. |
 | 2026-09-23 | OpenCode + Sherman | §3 links the unvalidated shared ARM_BRINGUP.md and corrects moved launch paths and the T1.2 single-launch result. |
 | 2026-09-23 | Claude Opus 5.5 + Dion | Rule 1: the home pose is validated on the real arm (T1.7), the unprompted-homing warning stays. |
+| 2026-10-08 | Claude Opus 5.5 + Dion | "Start here" points at GRASP_BRINGUP_STEPS.md for Dion's current work (T1.24 step 3b). |
