@@ -108,7 +108,7 @@ therefore have **no owner** until that changes. They are not deleted, they are p
 | P1 | Base camera stream, `/base_camera/...` | D455 driver on the base | Nav, the memory graph. Dion, calibration | Dion | Dion brings it up first for the calibration in `T5.5`. Sherman owns the mount and the hardware |
 | P2 | Graph query: sentence in, object position out | Nav, the memory graph, `T6.8` | Dion's C++ node, `T7.1`, which then writes H2 | Zongzhe | A ROS service, see N-3 in §6 |
 | P3 | Gaze image feature into the graph query | Aria, `T8.1` | Nav, the graph query, `T8.2` | Dion | Can ride inside P2's request |
-| P4 | Segmentation trigger | Phase logic | Grasp, the one segmentation service | Dion | Dion owns the service and the trigger, see G-5 in §6 |
+| P4 | Segmentation trigger | Phase logic | the segmentation service, `shared_services/` (G-1, G-2) | Dion | Dion owns the service and the trigger, see G-5 in §6 |
 
 ---
 
@@ -154,11 +154,25 @@ All of these were decided by Dion. Each names where the detail lives.
 - **G-1. Retire `sam3_ros_node.py`.** The pipeline already subscribes to both cameras and publishes
   the same channels, so retiring the node loses nothing and saves a second 3.21 GB copy of SAM 3.
   Detail and the VRAM argument in `NEXT_STEPS` §2.2 and §2.14.
+  **Revised 2026-10-08 (Dion, `T2.1`).** The node is still retired, but the pipeline does not
+  replace it. A new segmentation service does: a ROS 2 request/reply service,
+  `/segmentation/segment`, that owns the only SAM 3 and returns every detection for one frame and
+  one prompt. It holds no state between calls and knows nothing about the arm, the glasses or the
+  base. Thin clients in each subsystem do the rest. The grasp client
+  (`grasp/grasp_segmentation_client/`) becomes the only publisher of `/camera/sam/mask`,
+  `/object_centroid_2d` and `/object_centroid`, so H5 keeps its consumers and loses its second
+  publisher. Its `/manipulation/goal_pose` output is off for now. `object_recognition_pipeline.py`
+  is left as it is until the aria side is reworked. Design in `NEXT_STEPS` §2.2.
 - **G-2. Folder layout: four top-level folders, one folder per node inside each.** `aria`, `grasp`,
   `arm`, `nav`, and within each, a folder per node holding its code, launch file, config and tests.
   The segmentation service goes in `grasp`, since that is where its model and its consumers are. A
   caller in another subsystem reaches it over ROS. This is also the layout `T0.11` needs, so CI can
   run one test suite per subsystem.
+  **Revised 2026-10-08 (Dion, `T2.1`).** The segmentation service moved out of `grasp` into a fifth
+  top-level folder, `shared_services/`, owned by Dion, because grasp, aria and nav all call it.
+  `shared_services/segmentation/segmentation_interfaces/` holds its messages. Each subsystem keeps
+  its own client, named after the subsystem (`grasp_segmentation_client`,
+  `aria_segmentation_client`, later a nav one).
 - **G-3. Which AnyGrasp program is authoritative stays open** until the box check of
   `anygrasp_node.sh` in `T0.0`. The two differ in method, tracker against detector, not only in
   checkpoint.
@@ -338,3 +352,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-09-23 | Claude Opus 5 + Dion | New X12: camera serial numbers, one key per camera (`wrist_camera.serial`, `mobile_base_camera.serial`), after T1.13 found that no shared config held the wrist serial. |
 | 2026-09-23 | Claude Opus 5 + Dion | B-1's ordering consequence settled: `T1.11` and `T1.12` no longer wait on `T1.8` or `T1.10`, and flipping the flag became `T1.17`. The two channels with subscribers but no publisher got owners: B-5 `/manipulation/done` is `T1.14` (moved out of `T1.9`), A-1 and H10 `/manipulator/release` is `T1.15`. |
 | 2026-10-06 | Claude Opus 5.5 + Dion | `T1.15` renamed `T2.6` and moved to M2: publishing `/manipulator/release` is glasses-side work, and M1 grasps with release sent by hand. H10 and A-1 updated. |
+| 2026-10-08 | Claude Opus 5.5 + Dion | G-1 and G-2 revised for `T2.1`: the segmentation service is a stateless request/reply service in a new top-level `shared_services/`, with one client per subsystem. The grasp client becomes the only publisher of the H5 mask channels. P4 points at the new folder. |

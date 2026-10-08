@@ -1,0 +1,22 @@
+T2.1 step 1: segmentation_interfaces builds and loads on the lab box
+Date: 2026-10-08   Machine: lab box (iot22-Computer), ~/rcp-Gappler   Branch: t2.1-sam3-service @ e5d3324
+Run by: Claude Opus 5.5 for Dion. No camera, arm or GPU used.
+
+RESULT: PASS
+
+1. ./build.sh (fresh shell, only /opt/ros/humble)
+   Build [arm]: arm grasp shared_services -> build/ install/
+   Summary: 25 packages finished [5.41s]
+   PASS: every package built.
+   install/segmentation_interfaces/lib holds the C, C++ and Python type support libraries.
+
+2. source shared_services/shared_services_env.sh
+   ros2 interface show segmentation_interfaces/srv/Segment   exit 0, 149 lines
+   request fields through min_score, the --- separator, reply fields success .. inference_ms.
+
+3. .venv python (/home/rcp2026/rcp-Gappler/.venv/bin/python)
+   from segmentation_interfaces.srv import Segment
+   from segmentation_interfaces.msg import Detection, Target
+   -> venv import ok: segmentation_interfaces.srv._segment box 0
+
+Not checked here: the nav build (shared_services is not in ./build.sh nav yet, by decision).
