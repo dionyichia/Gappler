@@ -1,0 +1,151 @@
+#!/usr/bin/env python3
+"""The grasp client of the segmentation service (T2.1).
+
+Feeds wrist camera frames to /segmentation/segment, picks one detection, and publishes the
+three channels the arm already reads, with the same meaning as before:
+
+  /camera/sam/mask      Image mono8, the chosen mask                  -> AnyGrasp, grasp_viz
+  /object_centroid_2d   PointStamped: x pixel column, y pixel row,    -> grasp state machine
+                        z median depth in metres
+  /object_centroid      PointStamped, the 3D point in the camera      -> grasp_viz
+                        optical frame
+
+It is the only publisher of these three. Every message carries the camera frame's header, so a
+reader can tell how old it is.
+
+What to look for comes from /grasp/target (the aria client). To test without the glasses,
+grasp_config.yaml sets a default prompt, used only while nothing publishes on /grasp/target.
+
+Frames are sent one request at a time. While a request is out, newer frames replace the waiting
+one, so the next request is always the newest frame.
+
+/manipulation/goal_pose is not published (decided 2026-10-08, off for now). Nav integration
+adds it.
+
+    source grasp/grasp_env.sh
+    python grasp/grasp_segmentation_client/grasp_segmentation_client.py
+"""
+
+import math
+
+import rclpy
+from geometry_msgs.msg import PointStamped
+from message_filters import ApproximateTimeSynchronizer, Subscriber
+from rclpy.node import Node
+from segmentation_interfaces.msg import Target
+from segmentation_interfaces.srv import Segment
+from sensor_msgs.msg import CameraInfo, Image
+
+from gappler_common import config
+
+CFG = config("grasp", "grasp_segmentation_client")
+TOPICS = CFG["topics"]
+SERVICE_NAME = CFG["services"]["segmentation_segment"]
+
+
+def pick_detection(detections):
+    """The detection to grasp: highest score, and on a tie the larger mask. None if empty."""
+    return max(detections, key=lambda d: (d.score, d.area_px), default=None)
+
+
+class GraspSegmentationClient(Node):
+    def __init__(self, default_prompt=None):
+        super().__init__("grasp_segmentation_client")
+        prompt = CFG["default_prompt"] if default_prompt is None else default_prompt
+        self.prompt = prompt.strip().lower()
+        self.default_in_use = bool(self.prompt)   # dropped for good once the glasses speak
+        self.camera_info = None
+        self.waiting = None          # newest (rgb, depth) not yet sent
+        self.in_flight = False
+
+        self.create_subscription(CameraInfo, TOPICS["wrist_camera_info"], self.on_camera_info, 1)
+        self.create_subscription(Target, TOPICS["grasp_target"], self.on_target, 10)
+        self.sync = ApproximateTimeSynchronizer(
+            [Subscriber(self, Image, TOPICS["wrist_camera_color"]),
+             Subscriber(self, Image, TOPICS["wrist_camera_aligned_depth"])],
+            queue_size=10, slop=0.05)
+        self.sync.registerCallback(self.on_frames)
+
+        self.service = self.create_client(Segment, SERVICE_NAME)
+        self.mask_pub = self.create_publisher(Image, TOPICS["wrist_camera_object_mask"], 10)
+        self.centroid_pub = self.create_publisher(PointStamped, TOPICS["object_centroid_2d"], 10)
+        self.centroid_viz_pub = self.create_publisher(
+            PointStamped, TOPICS["object_centroid_viz"], 10)
+
+        source = f"default prompt {self.prompt!r} (testing only)" if self.default_in_use \
+            else TOPICS["grasp_target"]
+        self.get_logger().info(f"Grasp segmentation client ready, looking for: {source}")
+
+    # ---- inputs ----
+    def on_camera_info(self, msg: CameraInfo):
+        if self.camera_info is None:
+            self.camera_info = msg
+
+    def on_target(self, msg: Target):
+        self.default_in_use = False
+        self.prompt = msg.prompt.strip().lower()
+        self.get_logger().info(f"Target: {self.prompt!r}" if self.prompt else "Target cleared")
+
+    def on_frames(self, rgb: Image, depth: Image):
+        self.waiting = (rgb, depth)
+        self.send_if_ready()
+
+    # ---- one request at a time ----
+    def send_if_ready(self):
+        if self.default_in_use and self.count_publishers(TOPICS["grasp_target"]) > 0:
+            self.default_in_use = False
+            self.prompt = ""
+            self.get_logger().info("Glasses client found: default prompt dropped")
+        if self.in_flight or self.waiting is None or self.camera_info is None or not self.prompt:
+            return
+        if not self.service.service_is_ready():
+            return   # keep the frame, a newer one replaces it
+        rgb, depth = self.waiting
+        self.waiting = None
+        request = Segment.Request(image=rgb, depth=depth, camera_info=self.camera_info,
+                                  prompt=self.prompt)
+        self.in_flight = True
+        future = self.service.call_async(request)
+        future.add_done_callback(lambda f, prompt=self.prompt: self.on_reply(f, prompt))
+
+    def on_reply(self, future, prompt: str):
+        self.in_flight = False
+        response = future.result()
+        if prompt == self.prompt:     # a reply for an old prompt is dropped
+            self.publish(response)
+        self.send_if_ready()
+
+    # ---- outputs ----
+    def publish(self, response: Segment.Response):
+        if response is None or not response.success:
+            reason = response.message if response is not None else "no reply"
+            self.get_logger().warn(f"Segment failed: {reason}")
+            return
+        det = pick_detection(response.detections)
+        if det is None:
+            return
+        det.mask.header = response.header
+        self.mask_pub.publish(det.mask)
+        if math.isnan(det.depth_m):
+            return   # no valid depth under the mask: the arm gets no centroid
+        centroid = PointStamped(header=response.header)
+        centroid.point.x, centroid.point.y, centroid.point.z = det.u, det.v, det.depth_m
+        self.centroid_pub.publish(centroid)
+        if det.has_point:
+            self.centroid_viz_pub.publish(PointStamped(header=response.header, point=det.point))
+
+
+def main():
+    rclpy.init()
+    node = GraspSegmentationClient()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.try_shutdown()
+
+
+if __name__ == "__main__":
+    main()

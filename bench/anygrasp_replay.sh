@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # L4 -- replay recorded wrist-camera frames through SAM 3 and AnyGrasp (PROJECT_PLAN T0.12).
-# Plays a bag made by grasp/tools/record_wrist_camera.sh, runs sam3_ros_node and
-# anygrasp_detection_node on it, and plays the state machine's part by publishing
+# Plays a bag made by grasp/tools/record_wrist_camera.sh, runs the segmentation service, the grasp
+# segmentation client (T2.1) and anygrasp_detection_node on it, and plays the state machine's part by publishing
 # /pipeline_state. No camera, no arm, no state machine: nothing can move.
 #
-#   ./bench/anygrasp_replay.sh      needs ./build.sh (grasp_interfaces), .venv (SAM 3),
+#   ./bench/anygrasp_replay.sh      needs ./build.sh (grasp_interfaces, segmentation_interfaces), .venv (SAM 3),
 #                                   grasp/anygrasp_venv/.venv, the weights, and a recording
 #
 # Env: WRIST_CAMERA_BAG (default assets/recordings/wrist_camera), BENCH_DOMAIN (default 77).

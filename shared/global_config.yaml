@@ -39,6 +39,9 @@
       object_centroid_2d: "/object_centroid_2d"
       # grasp: sam3_ros_node. aria: object_recognition_pipeline -> grasp: grasp_viz
       object_centroid_viz: "/object_centroid"
+      # aria: aria_segmentation_client -> grasp: grasp_segmentation_client. What to look for
+      #   (segmentation_interfaces/msg/Target). An empty prompt stops segmentation.
+      grasp_target: "/grasp/target"
 
       # ---- From the glasses (aria)
       # aria: image_streaming_pipeline -> aria: feature_matching, object_recognition_pipeline,
