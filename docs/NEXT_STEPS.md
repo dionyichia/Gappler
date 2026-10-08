@@ -205,12 +205,18 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
     is off for now. A `default_prompt` in config lets it run without the glasses, for testing only.
     It steps aside when a publisher exists on `/grasp/target` and is dropped on the first message.
   - `aria/aria_app/services/aria_segmentation_client/`: turns voice (and, after `T2.2`, gaze) into
-    a `Target` on `/grasp/target`. Not built until the aria side is reworked.
+    a `Target` on `/grasp/target`. Built 2026-10-08 with the word only.
   - A nav client, and whether the memory graph calls the service instead of loading its own SAM 3
     (`memory_graph/sam3_adapter.py`), is for Dion and Zongzhe later.
 - **Where it lives.** A fifth top-level folder, `shared_services/` (`CHANNEL_CONTRACT` G-2), since
   grasp, aria and nav all call it. Interfaces in `shared_services/segmentation/segmentation_interfaces/`,
   built by `./build.sh` into `install/`. Not yet in the nav build: add it when a nav client exists.
+- **Started once, on its own.** Launchers start only their client. The service refuses to start if
+  another one already answers on the ROS channel, before loading SAM 3, so SAM 3 never loads twice.
+  `quickstart_terminals.sh grasp` and `full` start the service and the grasp client (`nomask` skips them).
+- **Built 2026-10-08, all six steps** (`T2.1`). Results in `docs/bench-runs/2026-10-08-labbox-t2.1-*`.
+  On the recorded box video it gives 117 masks in 60 s against the old node's 119 in 61 s, and
+  AnyGrasp runs unchanged on them. `sam3_ros_node.py` is parked in `grasp/tools/` (`T2.7`).
 - **Left alone for now.** `object_recognition_pipeline.py` keeps its own SAM 3 and its publishing
   line stays commented out. `dummy_mask_publisher.py` is kept (§2.3). `T2.4` (trigger, age limit,
   freeing the GPU) is paused.
@@ -1465,3 +1471,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-06 | Claude (Opus 5.5) + Dion | §2.15 config: three levels cut to two (global plus one file per subsystem, per-node sections inside it, no per-node files, no aggregated global). Recorded that no subsystem config file was ever created, the work is new task T0.14. Duplicate-key bench check deferred. Step 2 note on `aria_config.yaml` corrected. |
 | 2026-10-06 | Claude (Opus 5.5) + Dion | §2.15 config: built in T0.14. All four subsystem files exist, all 34 channel names that were hardcoded moved into config, each entry says who uses it. Global also holds the robot's hardware and the machine's paths. How Python and C++ read it, what stays in code, duplicate keys refused by the loader. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: revised design for `T2.1`. A stateless request/reply segmentation service in `shared_services/`, with one client per subsystem, replaces "the pipeline becomes the service". Gaze pixel-space mismatch recorded for `T2.2`. |
+| 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: `T2.1` built (all six steps), start-once rule and its guard, results recorded. |
