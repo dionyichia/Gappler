@@ -16,7 +16,7 @@ import rclpy
 from segmentation_interfaces.srv import Segment
 from sensor_msgs.msg import CameraInfo, Image
 
-from segmentation_service import SegmentationService
+from segmentation_service import SegmentationService, another_server_running
 
 H, W = 48, 64
 K = [60.0, 0.0, 32.0, 0.0, 60.0, 24.0, 0.0, 0.0, 1.0]
@@ -185,6 +185,19 @@ class ServiceTest(unittest.TestCase):
                          [0.95, 0.85])
         res = self.call(node, request(min_score=0.9, max_detections=3))
         self.assertEqual([round(d.score, 2) for d in res.detections], [0.95])
+
+    # ---- the start-up guard: never two services, never two SAM 3 ----
+    def test_guard_sees_a_running_service(self):
+        self.make(FakeSam3())
+        probe = rclpy.create_node("probe_running")
+        self.addCleanup(probe.destroy_node)
+        self.assertTrue(another_server_running(probe, timeout_sec=5.0))
+
+    def test_guard_quiet_when_none_runs(self):
+        probe = rclpy.create_node("probe_none")
+        self.addCleanup(probe.destroy_node)
+        # a name no test serves: the real one may still be cached from tests that just ran
+        self.assertFalse(another_server_running(probe, timeout_sec=1.0, name="/segmentation/unused"))
 
     def test_nothing_found_is_success_with_no_detections(self):
         res = self.call(self.make(FakeSam3()), request())

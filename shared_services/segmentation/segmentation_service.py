@@ -9,11 +9,15 @@ the arm, the glasses or the base: picking one detection is the caller's job.
     source shared_services/shared_services_env.sh
     python shared_services/segmentation/segmentation_service.py
 
+It refuses to start if another segmentation service already answers on the same ROS channel, so
+SAM 3 is never loaded twice. Start it once, on its own: launchers start only their client.
+
 Requests are answered one at a time, in order (one thread), so the GPU runs one SAM 3 call at
 a time. The maths is in segmentation_logic.py. Settings: shared_services_config.yaml, and the
 service name in shared/global_config.yaml `services:`.
 """
 
+import sys
 import time
 
 import numpy as np
@@ -106,6 +110,15 @@ def load_sam3(min_score: float):
     return SAM3Model(checkpoint_path=str(ModelPaths.SAM3_PATH), confidence_threshold=min_score)
 
 
+def another_server_running(node: Node, timeout_sec: float = 3.0, name: str = SERVICE_NAME) -> bool:
+    """True if something already answers on the service name. Waits up to timeout_sec for discovery."""
+    probe = node.create_client(Segment, name)
+    try:
+        return probe.wait_for_service(timeout_sec=timeout_sec)
+    finally:
+        node.destroy_client(probe)
+
+
 class SegmentationService(Node):
     def __init__(self, model=None, min_score=None, max_detections=None):
         super().__init__("segmentation_service")
@@ -144,6 +157,15 @@ class SegmentationService(Node):
 
 def main():
     rclpy.init()
+    # One service, one SAM 3: refuse before loading the model if another copy already answers.
+    probe = rclpy.create_node("segmentation_service_guard")
+    running = another_server_running(probe)
+    probe.destroy_node()
+    if running:
+        print(f"Not starting: a segmentation service already answers on {SERVICE_NAME} "
+              "on this ROS channel. Its callers use that one.", file=sys.stderr)
+        rclpy.try_shutdown()
+        sys.exit(1)
     node = SegmentationService()
     try:
         rclpy.spin(node)

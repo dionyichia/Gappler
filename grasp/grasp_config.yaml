@@ -28,7 +28,7 @@
     # read by: anygrasp_node, anygrasp_detection_node
     num_grasp_candidates: 5
 
-# grasp/segmentation/sam3_ros_node.py
+# grasp/tools/sam3_ros_node.py. Parked 2026-10-08, consider deleting (T2.7). Section kept so it still runs.
 sam3_ros_node:
   ros__parameters:
     text_prompt: "box"   # fixed object word until voice is wired in (T1.12)

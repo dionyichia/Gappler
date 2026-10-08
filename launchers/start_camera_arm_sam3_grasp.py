@@ -5,13 +5,12 @@ start-grasp message arrives. By hand, after `source global_env.sh`:
 
 Launches in order:
   1. ROS2 bringup (rm_driver, robot_state_publisher, move_group, rm_control)
-  2. [TEMPORARY] Dummy mask publisher — replace with SAM node when ready
+  2. Grasp segmentation client (T2.1). It asks the segmentation service, which is NOT started
+     here: start it once, on its own (shared_services/segmentation/segmentation_service.py), since
+     grasp, aria and nav all use it. The client waits for it.
   3. AnyGrasp node — commented out for bring-up, see the note at its call site (T1.17)
   4. Grasp visualizer
   5. Grasp state machine
-
-Note: When the full perception pipeline is ready, items 2 and 3 will be
-removed from here and launched separately as part of that pipeline.
 """
 
 import os
@@ -36,9 +35,9 @@ ANYGRASP_CHECKPOINT = "log/checkpoint_detection.tar"  # relative to ANYGRASP_DIR
 ANYGRASP_NODE_PATH = os.path.join(
     ANYGRASP_DIR, "anygrasp_detection_node.py"
 )
-SAM3_PROJECT_ROOT = REPO_ROOT
-SAM3_NODE_PATH = os.path.join(GRASP, "segmentation", "sam3_ros_node.py")
-SAM3_WORK_DIR = os.path.join(REPO_ROOT, "aria/aria_app/services/object_recognition")
+SEGMENTATION_CLIENT_PATH = os.path.join(
+    GRASP, "grasp_segmentation_client", "grasp_segmentation_client.py"
+)
 GRASP_VIZ_NODE_PATH = os.path.join(GRASP, "grasp_viz", "grasp_viz.py")
 RVIZ_CONFIG_PATH = os.path.join(GRASP, "grasp_viz", "rviz_config.rviz")
 
@@ -106,18 +105,11 @@ if __name__ == "__main__":
         delay=0.0,
     )
 
-    # 2. Local SAM3 Node publisher
+    # 2. Grasp segmentation client. The segmentation service runs on its own (see the top).
     launch(
-        ["uv", "run", "--project", SAM3_PROJECT_ROOT, "python", SAM3_NODE_PATH],
-        label="sam3_ros_node",
+        [sys.executable, SEGMENTATION_CLIENT_PATH],
+        label="grasp_segmentation_client",
         delay=0.0,
-        cwd=SAM3_WORK_DIR,
-        env={
-            **os.environ,
-            "PYTHONPATH": os.path.join(REPO_ROOT, "aria/aria_app")
-            + os.pathsep
-            + os.environ.get("PYTHONPATH", ""),
-        },
     )
 
     # 3. AnyGrasp node — OFF for bring-up (T1.17), commented out 2026-09-23.

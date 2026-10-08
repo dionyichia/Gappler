@@ -7,6 +7,7 @@ from the bag, starts segmentation_service.py, and calls it three times:
   image only          success, a box found, no depth, no 3D point
   image + depth + K   success, a box found, depth in range, a 3D point
   empty prompt        refused with a reason
+  second service      a second copy refuses to start, before loading SAM 3
 
 The numbers printed (inference time, score, area, depth) are the baseline for later changes.
 Exit 0 = no FAIL, 1 = a FAIL. No camera, no arm: nothing can move.
@@ -121,6 +122,18 @@ def main():
         res = call(request("", with_depth=False))
         ok = not res.success and "prompt" in res.message
         results.append(("PASS " if ok else "FAIL ", "empty prompt", f"refused: {res.message!r}"))
+
+        start = time.time()
+        second = subprocess.run(
+            [sys.executable, str(REPO / "shared_services/segmentation/segmentation_service.py")],
+            capture_output=True, text=True, timeout=LOAD_SEC)
+        took = time.time() - start
+        ok = (second.returncode == 1 and "Not starting" in second.stderr
+              and "Loading SAM 3" not in second.stdout + second.stderr)
+        results.append(("PASS " if ok else "FAIL ", "second service",
+                        f"exit {second.returncode} after {took:.1f} s, SAM 3 not loaded"
+                        if ok else f"exit {second.returncode} after {took:.1f} s: "
+                        f"{(second.stderr or second.stdout)[-300:]!r}"))
     except RuntimeError as e:
         results.append(("FAIL ", "setup", str(e)))
     finally:
