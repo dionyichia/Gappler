@@ -1,0 +1,26 @@
+T2.1 step 3: the segmentation service with the real SAM 3 on the recorded box video
+Date: 2026-10-08   Machine: lab box (iot22-Computer), ~/rcp-Gappler   Branch: t2.1-sam3-service
+(working tree = commit b2ea4df plus the step 3 files, committed right after this run)
+Run by: Claude Opus 5.5 for Dion. GPU free before the run (only the remote desktop, 120 MiB).
+No camera, no arm. ROS channel 77, localhost only.
+
+RESULT: PASS
+
+1. Unit tests, shared_services_env.sh + .venv:
+   python -m unittest discover -s shared_services/segmentation -p "test_*.py"
+   Ran 34 tests ... OK   (20 logic, 14 node with a fake SAM 3 on channel 78)
+
+2. ./bench/segmentation_service.sh
+   guards ok: channel 77 empty (hidden topics included), localhost only
+   frame: 640x480 rgb8, depth 16UC1
+     [PASS ] image only           1 found, best score 0.734, area 13474 px, 498 ms
+     [PASS ] image + depth + K    best at pixel (499, 278), depth 0.363 m, point (0.100, 0.017, 0.363) m in camera_color_optical_frame, 257 ms
+     [PASS ] empty prompt         refused: 'ValueError: empty prompt: say what to look for'
+   RESULT: PASS
+   service output: log/bench_segmentation_service_2026-10-08_2010.txt
+
+Notes
+- The recording's colour is rgb8, so the service refusing bgr8 costs nothing for the RealSense cameras.
+- The first call includes SAM 3 warm-up (498 ms). The second, with depth, took 257 ms.
+- Model threshold: SAM 3 is built with min_score from shared_services_config.yaml (0.5). A request
+  can raise min_score but not lower it below that.

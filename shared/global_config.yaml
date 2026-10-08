@@ -70,6 +70,12 @@
       # grasp: grasp_state_machine -> arm: rm_driver
       rm_driver_set_gripper_pick_on_cmd: "/rm_driver/set_gripper_pick_on_cmd"
 
+    # ---- ROS request/reply services that more than one subsystem calls. Server -> callers.
+    services:
+      # shared_services: segmentation_service -> grasp: grasp_segmentation_client.
+      #   aria: aria_segmentation_client
+      segmentation_segment: "/segmentation/segment"
+
     # ---- Cameras. Two RealSense cameras are plugged into the box, so every launch names the one
     # ---- it wants by serial (T1.13). Without a serial the driver opens whichever it finds first.
     # ---- Read through gappler_common.camera_serial(). Override per machine with
