@@ -57,7 +57,7 @@
       manipulation_start: "/manipulation/start"
       # nobody yet (grasp, T1.14) -> nav: object_approach_node
       manipulation_done: "/manipulation/done"
-      # nobody yet (T1.15) -> nav: object_approach_node, launchers/grasp_orchestrator.py
+      # nobody yet (T2.6) -> nav: object_approach_node, launchers/grasp_orchestrator.py
       manipulator_release: "/manipulator/release"
       # grasp: grasp_state_machine -> nav: goto_glasses
       manipulator_return_to_user: "/manipulator/return_to_user"

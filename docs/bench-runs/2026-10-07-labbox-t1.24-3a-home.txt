@@ -1,0 +1,37 @@
+T1.24 step 3a: grasp_state_machine homes the real arm on start, then IDLE
+2026-10-07, lab box ~/rcp-Gappler on dev 3dde592, domain 91 localhost only, session ./quickstart_terminals.sh arm
+Result: PASS. Homed at 10%, IDLE on /pipeline_state, no further motion (observed by Dion at the robot).
+
+=== grasp_state_machine (pane 3)
+[INFO] [launch]: All log files can be found below /home/rcp2026/.ros/log/2026-10-07-19-13-23-150044-iot22-Computer-98515
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [grasp_state_machine-1]: process started with pid [98517]
+[grasp_state_machine-1] [INFO] [1791371605.449692285] [grasp_state_machine]: Grasp state machine constructed
+[grasp_state_machine-1] [INFO] [1791371605.768411310] [moveit_rdf_loader.rdf_loader]: Loaded robot model in 0.245817 seconds
+[grasp_state_machine-1] [INFO] [1791371605.768510141] [moveit_robot_model.robot_model]: Loading robot model 'rm_65_with_gripper'...
+[grasp_state_machine-1] [INFO] [1791371605.768532373] [moveit_robot_model.robot_model]: No root/virtual joint specified in SRDF. Assuming fixed joint
+[grasp_state_machine-1] [WARN] [1791371606.258743998] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[grasp_state_machine-1] [INFO] [1791371606.329871966] [move_group_interface]: Ready to take commands for planning group rm_group.
+[grasp_state_machine-1] [INFO] [1791371611.375586166] [grasp_state_machine]: Safety walls added
+[grasp_state_machine-1] [INFO] [1791371611.404105167] [move_group_interface]: MoveGroup action client/server ready
+[grasp_state_machine-1] [INFO] [1791371611.405757416] [move_group_interface]: Planning request accepted
+[grasp_state_machine-1] [INFO] [1791371615.260557386] [move_group_interface]: Planning request complete!
+[grasp_state_machine-1] [INFO] [1791371615.261252405] [move_group_interface]: time taken to generate plan: 3.24352 seconds
+[grasp_state_machine-1] [INFO] [1791371615.262622197] [move_group_interface]: Execute request accepted
+[grasp_state_machine-1] [INFO] [1791371619.289551508] [move_group_interface]: Execute request success!
+[grasp_state_machine-1] [INFO] [1791371619.290526850] [grasp_state_machine]: State → IDLE
+
+=== /pipeline_state (pane 4)
+data: IDLE
+---
+
+=== arm_bringup warnings and errors (pane 1)
+[robot_state_publisher-2] [WARN] [1791371354.181884664] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[move_group-4] [WARN] [1791371354.274311646] [kdl_parser]: The root link base_link has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[move_group-4] [WARN] [1791371354.477280127] [moveit.ros.occupancy_map_monitor.middleware_handle]: Resolution not specified for Octomap. Assuming resolution = 0.1 instead
+[move_group-4] [ERROR] [1791371354.477291737] [moveit.ros.occupancy_map_monitor.middleware_handle]: No 3D sensor plugin(s) defined for octomap updates
+[move_group-4] [INFO] [1791371354.567156254] [moveit_ros.fix_start_state_bounds]: Param 'ompl.start_state_max_bounds_error' was set to 0.100000
+[move_group-4] [INFO] [1791371354.571729951] [moveit_ros.fix_start_state_bounds]: Param 'chomp.start_state_max_bounds_error' was set to 0.100000
+[move_group-4] You can start planning now!
+[rm_driver-1] [INFO] [1791371356.531312487] [rm_driver]: UDP_Configuration is cycle:5ms,port:8089,force_coordinate:0,ip:192.168.1.10,hand:0,rm_plus_base:0,rm_plus_state:0,speed:1
+[move_group-4] [WARN] [1791371614.711693517] [moveit_trajectory_processing.time_optimal_trajectory_generation]: Joint acceleration limits are not defined. Using the default 1 rad/s^2. You can define acceleration limits in the URDF or joint_limits.yaml.
