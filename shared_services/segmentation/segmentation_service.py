@@ -22,6 +22,7 @@ import time
 
 import numpy as np
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import Point
 from rclpy.node import Node
 from segmentation_interfaces.msg import Detection as DetectionMsg
@@ -169,7 +170,7 @@ def main():
     node = SegmentationService()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):   # Ctrl-C
         pass
     finally:
         node.destroy_node()

@@ -75,6 +75,7 @@ lay_nav() {
 lay_aria() {
   win aria
   pane auto aria "python $R/aria/aria_app/main.py"
+  pane auto aria "python $R/aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py"
 }
 
 lay_full() {

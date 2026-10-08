@@ -29,6 +29,7 @@ adds it.
 import math
 
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from geometry_msgs.msg import PointStamped
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.node import Node
@@ -140,7 +141,7 @@ def main():
     node = GraspSegmentationClient()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):   # Ctrl-C
         pass
     finally:
         node.destroy_node()
