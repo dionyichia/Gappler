@@ -67,9 +67,10 @@ row L0 "Unit tests: memory graph" "$s" ""
 # All of its tests, with the real image-feature model (T6.3f). Needs .venv and the weights.
 s=$(step "L0  Unit tests: memory graph stages" ./bench/memory_graph_tests.sh)
 row L0 "Memory graph stages" "$s" "$([ "$s" = SKIPPED ] && echo "needs .venv, the open_clip weights and the test photos")"
-# The segmentation service's maths (T2.1). Needs numpy, so it runs with .venv.
+# The segmentation service's maths (T2.1). Needs numpy, so it runs with .venv. The node tests
+# (test_segmentation_service.py) need ROS, so they are not part of L0.
 s=$(step "L0  Unit tests: segmentation logic" bash -c '[ -x .venv/bin/python ] || { echo "SKIP: no .venv -- run uv sync"; exit 3; }
-  .venv/bin/python -m unittest discover -s shared_services/segmentation -p "test_*.py"')
+  .venv/bin/python -m unittest discover -s shared_services/segmentation -p "test_segmentation_logic.py"')
 row L0 "Segmentation logic" "$s" "$([ "$s" = SKIPPED ] && echo "needs .venv")"
 
 s=$(step "L0  Geometry wiring" python3 bench/test_geometry.py --wiring)
