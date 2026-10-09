@@ -397,13 +397,13 @@ def g_assets() -> list[Check]:
     perception = REPO / "grasp/anygrasp_node"
 
     c = Check("assets", "sam3-weights", "3.4 GB checkpoint, gitignored")
-    p = REPO / "aria/aria_app/models/sam3/sam3.pt"
+    p = Path(os.environ.get("GAPPLER_SAM3_WEIGHTS") or REPO / "assets/models/sam3/sam3.pt")
     if p.exists():
         cs.append(c.ok(f"{p.stat().st_size/1024**3:.2f} GB"))
     elif not lab:
         cs.append(c.skip(NOT_LAB))
     else:
-        cs.append(c.bad(f"missing: {p.relative_to(REPO)}", "copy it from the lab machine"))
+        cs.append(c.bad(f"missing: {p}", "copy it from the lab machine (docs/ASSETS.md)"))
 
     # The two AnyGrasp nodes want DIFFERENT checkpoints. The hardware-verified
     # run used the tracking one; launchers/start_camera_arm_grasp.py launches the

@@ -126,3 +126,7 @@
       # read by: nav: slam_mapping.launch.py (writes current_map), slam_localization.launch.py
       #          (reads completed_map)
       map_dir: "~/maps"
+      # read by: shared_services/segmentation/segmentation_service.py, aria/aria_app/config/models.py.
+      #          Default also in bench/preflight.py, segmentation_service.sh, anygrasp_replay.sh.
+      #          The 3.4 GB SAM 3 weights, gitignored (docs/ASSETS.md)
+      sam3_weights: "assets/models/sam3/sam3.pt"

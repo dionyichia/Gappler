@@ -22,7 +22,7 @@ skip() { echo "SKIP: $*"; exit 3; }
 [ -x "$REPO/.venv/bin/python" ] || skip "no .venv -- run uv sync"
 [ -x "$REPO/grasp/anygrasp_venv/.venv/bin/python" ] || skip "no grasp/anygrasp_venv/.venv -- run ./grasp/anygrasp_venv/build_anygrasp_venv.sh"
 [ -f "$REPO/grasp/anygrasp_node/log/checkpoint_detection.tar" ] || skip "AnyGrasp checkpoint missing (docs/ASSETS.md)"
-[ -f "$REPO/aria/aria_app/models/sam3/sam3.pt" ] || skip "SAM 3 weights missing (docs/ASSETS.md)"
+[ -f "${GAPPLER_SAM3_WEIGHTS:-$REPO/assets/models/sam3/sam3.pt}" ] || skip "SAM 3 weights missing (docs/ASSETS.md)"
 export ROS_DOMAIN_ID="$DOMAIN" ROS_LOCALHOST_ONLY=1 PYTHONUNBUFFERED=1
 # the grasp subsystem's own env: ROS, install/, shared/ (gappler_common) and .venv
 set +u; source "$REPO/grasp/grasp_env.sh" || { echo "FAIL: grasp/grasp_env.sh did not load"; exit 1; }; set -u

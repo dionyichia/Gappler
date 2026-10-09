@@ -540,7 +540,7 @@
       "arm/vendor/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "0865468-dirty",
+  "git": "5a315c6-dirty",
   "launch_includes": [
     {
       "from": "arm/arm_bringup/launch/arm_bringup.launch.py",
@@ -2188,6 +2188,9 @@
     ],
     "rotational_acc_lim": [
       "nav/robot_slam/config/nav2_params.yaml:173"
+    ],
+    "sam3_weights": [
+      "shared/global_config.yaml:132"
     ],
     "scale_velocities": [
       "nav/robot_slam/config/nav2_params.yaml:194"

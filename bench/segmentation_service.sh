@@ -19,7 +19,7 @@ skip() { echo "SKIP: $*"; exit 3; }
 [ -f "$REPO/install/setup.bash" ] || skip "no $REPO/install -- run ./build.sh first"
 [ -f "$WRIST_CAMERA_BAG/metadata.yaml" ] || skip "no recording at $WRIST_CAMERA_BAG -- run grasp/tools/record_wrist_camera.sh"
 [ -x "$REPO/.venv/bin/python" ] || skip "no .venv -- run uv sync"
-[ -f "$REPO/aria/aria_app/models/sam3/sam3.pt" ] || skip "SAM 3 weights missing (docs/ASSETS.md)"
+[ -f "${GAPPLER_SAM3_WEIGHTS:-$REPO/assets/models/sam3/sam3.pt}" ] || skip "SAM 3 weights missing (docs/ASSETS.md)"
 export ROS_DOMAIN_ID="$DOMAIN" ROS_LOCALHOST_ONLY=1 PYTHONUNBUFFERED=1
 set +u; source "$REPO/shared_services/shared_services_env.sh" || { echo "FAIL: shared_services_env.sh did not load"; exit 1; }; set -u
 cd "$REPO"; mkdir -p log

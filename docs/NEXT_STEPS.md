@@ -515,6 +515,9 @@ rosbag (W6/W8).
 
 ### 2.8 🟡 One folder for model weights — `assets/models/`
 
+> **SAM 3 done 2026-10-09 (T2.1):** `assets/models/sam3/sam3.pt`, path in `shared/global_config.yaml`
+> `paths: sam3_weights`. The AnyGrasp checkpoints are still under `grasp/anygrasp_node/log/`.
+
 Dion, 2026-09-11. Model files are scattered: `src/models/sam3/sam3.pt`, and the AnyGrasp checkpoints
 under `ros2_robot_ws/src/rm_mtc/src/perception/log/` — ignored only because of a catch-all `log`
 rule. Move them to `assets/models/{sam3,anygrasp}/`, gitignore that folder explicitly, keep the
@@ -1472,3 +1475,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-06 | Claude (Opus 5.5) + Dion | §2.15 config: built in T0.14. All four subsystem files exist, all 34 channel names that were hardcoded moved into config, each entry says who uses it. Global also holds the robot's hardware and the machine's paths. How Python and C++ read it, what stays in code, duplicate keys refused by the loader. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: revised design for `T2.1`. A stateless request/reply segmentation service in `shared_services/`, with one client per subsystem, replaces "the pipeline becomes the service". Gaze pixel-space mismatch recorded for `T2.2`. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: `T2.1` built (all six steps), start-once rule and its guard, results recorded. |
+| 2026-10-09 | Claude Opus 5.5 + Dion | §2.8: SAM 3 weights moved to `assets/models/` (T2.1). The segmentation service builds SAM 3 itself, so `shared_services/` no longer imports aria. |

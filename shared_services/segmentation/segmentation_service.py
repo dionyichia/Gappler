@@ -29,7 +29,7 @@ from segmentation_interfaces.msg import Detection as DetectionMsg
 from segmentation_interfaces.srv import Segment
 from sensor_msgs.msg import Image, RegionOfInterest
 
-from gappler_common import config
+from gappler_common import config, path
 from segmentation_logic import Detection, depth_in_metres, detections_from_sam3
 
 CFG = config("shared_services", "segmentation_service")
@@ -101,14 +101,34 @@ def detection_to_msg(det: Detection, header) -> DetectionMsg:
     return msg
 
 
-def load_sam3(min_score: float):
-    """The real model. Imported here so tests with a stand-in need neither torch nor SAM 3."""
-    from config import ModelPaths  # aria/aria_app, on PYTHONPATH via shared_services_env.sh
-    from services.object_recognition.sam3_model import SAM3Model
+class Sam3:
+    """SAM 3 for still images, built here so the service does not depend on any subsystem.
+    Same settings as aria's wrapper (aria/aria_app/services/object_recognition/sam3_model.py),
+    which goes once aria calls this service. Imported inside, so tests with a stand-in need
+    neither torch nor SAM 3."""
 
-    # SAM 3 drops results below its own threshold, so a request can raise min_score above this
-    # but not lower it.
-    return SAM3Model(checkpoint_path=str(ModelPaths.SAM3_PATH), confidence_threshold=min_score)
+    def __init__(self, weights: str, min_score: float):
+        import os
+
+        import sam3
+        import torch
+        from sam3 import build_sam3_image_model
+        from sam3.model.sam3_image_processor import Sam3Processor
+
+        if torch.cuda.is_available():
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+            torch.autocast("cuda", dtype=torch.bfloat16).__enter__()   # stays on, as in the wrapper
+        bpe = os.path.join(os.path.dirname(sam3.__file__), "assets/bpe_simple_vocab_16e6.txt.gz")
+        model = build_sam3_image_model(bpe_path=bpe, load_from_HF=False, checkpoint_path=weights)
+        # SAM 3 drops results below its own threshold, so a request can raise min_score above this
+        # but not lower it.
+        self.processor = Sam3Processor(model, confidence_threshold=min_score)
+
+    def process_text_prompt(self, image: np.ndarray, prompt: str) -> dict:
+        state = self.processor.set_image(image)
+        self.processor.reset_all_prompts(state)
+        return self.processor.set_text_prompt(state=state, prompt=prompt)
 
 
 def another_server_running(node: Node, timeout_sec: float = 3.0, name: str = SERVICE_NAME) -> bool:
@@ -127,7 +147,7 @@ class SegmentationService(Node):
         self.max_detections = CFG["max_detections"] if max_detections is None else max_detections
         if model is None:
             self.get_logger().info("Loading SAM 3...")
-            model = load_sam3(self.min_score)
+            model = Sam3(str(path("sam3_weights")), self.min_score)
         self.model = model
         self.create_service(Segment, SERVICE_NAME, self.segment)
         self.get_logger().info(f"Segmentation service ready on {SERVICE_NAME}")

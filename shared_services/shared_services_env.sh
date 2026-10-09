@@ -12,6 +12,3 @@ if [ ! -f "$GAPPLER_REPO/install/local_setup.bash" ]; then
 fi
 source "$GAPPLER_REPO/install/local_setup.bash"
 source "$GAPPLER_REPO/shared/base_envs/uv_venv.sh" || return 1
-# The SAM 3 wrapper still lives in aria (aria/aria_app/services/object_recognition/sam3_model.py).
-# Drop this line if it moves into shared_services/segmentation/.
-case ":$PYTHONPATH:" in *":$GAPPLER_REPO/aria/aria_app:"*) ;; *) export PYTHONPATH="$GAPPLER_REPO/aria/aria_app:$PYTHONPATH" ;; esac
