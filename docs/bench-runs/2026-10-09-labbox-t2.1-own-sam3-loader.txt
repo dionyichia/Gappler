@@ -31,3 +31,11 @@ runner's copy links both paths to ~/rcp-Gappler/assets/models/sam3/sam3.pt.
 3. Node tests, shared_services_env.sh:
    python -m unittest discover -s shared_services/segmentation -p "test_segmentation_service.py"
    Ran 16 tests ... OK
+
+4. Same commit (f5cb9b9) on the Jetson Orin, ./bench/segmentation_service.sh. Before this change the
+   service could not start there (aria's config imports the glasses SDK, no ARM build).
+     [PASS ] image only           1 found, best score 0.738, area 13479 px, 2242 ms
+     [PASS ] image + depth + K    best at pixel (499, 278), depth 0.363 m, point (0.100, 0.017, 0.363) m in camera_color_optical_frame, 1101 ms
+     [PASS ] empty prompt         refused: 'ValueError: empty prompt: say what to look for'
+     [PASS ] second service       exit 1 after 0.9 s, SAM 3 not loaded
+   RESULT: PASS. About 4x slower than the box, same detection.
