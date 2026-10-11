@@ -99,6 +99,13 @@ class MemoryGraphConfig:
     # compare the two on the recorded drive.
     association_mode: str = "greedy"
 
+    # ---- S12 anchor storage -----------------------------------------------
+    # The size a photo is stored at, upstream's prompt_h and prompt_w. 448x448
+    # squashes a 16:9 D455 image. The intrinsics are rescaled to match, so the
+    # geometry stays right. 0 keeps the camera's own size on that side.
+    anchor_height: int = 448
+    anchor_width: int = 448
+
     def __post_init__(self) -> None:
         if self.association_mode not in ("greedy", "one_to_one"):
             raise ValueError(f"association_mode must be 'greedy' or 'one_to_one', got {self.association_mode!r}")
@@ -106,6 +113,8 @@ class MemoryGraphConfig:
             raise ValueError("phys_bias must be in [0, 1]")
         if self.clip_batch_size < 1:
             raise ValueError("clip_batch_size must be at least 1")
+        if self.anchor_height < 0 or self.anchor_width < 0:
+            raise ValueError("anchor_height and anchor_width must be 0 or more")
         for name in ("voxel_size_m", "dbscan_eps_m", "match_radius_m", "gate_translation_m"):
             if getattr(self, name) <= 0:
                 raise ValueError(f"{name} must be positive")
