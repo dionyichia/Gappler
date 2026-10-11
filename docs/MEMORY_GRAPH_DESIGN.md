@@ -311,7 +311,7 @@ edges only. Object and anchor data (points, boxes, labels, images, the next obje
 own store (T6.4c, T6.4d). An object that loses every anchor drops out of `objects()`, while the
 reference never deletes objects, so T6.4c must not treat `objects()` as the list of all objects.
 Pruning cannot cause this, since coverage keeps every object at least one anchor. Built that way on 2026-10-07 `[code]`: `ObjectStore` in `memory_graph/object_store.py` keeps its own entries, and a test removes an entry's last anchor to check the entry stays. The task index
-with re-indexing on label change, the blacklist and the task score belong to T6.7a and T6.8a. On
+with re-indexing on label change, the blacklist and the task score belong to T6.7a and T6.8a. The task score and the index were built on 2026-10-11 `[code]` (T6.7a): `TaskContext` in `memory_graph/task.py`, and `ObjectStore` keeps `task_score` on each entry and answers `target_ids` and `related_ids` from its label index. The blacklist is still T6.8a. On
 3,000 random graphs per kappa, `prune` met every coverage requirement, and with kappa = 1 never kept
 an anchor whose objects are a subset of another kept anchor's, which is the reference's S13 test.
 
@@ -349,3 +349,4 @@ prototype into the source tree (D-MG4), **T6.4c** and **T6.4d** write through `m
 | 2026-10-07 | Claude (Opus 5.5) + Zongzhe | §8 D-MG7: precision decision reversed to follow upstream, float16 on a GPU. The float32 note rested on an unchecked claim that upstream used float32. Upstream uses `torch.amp.autocast("cuda")` (`map/map_utils.py:77`, `:85`). Also recorded: the encoder gained `encode_text`, and its tests are grouped by upstream's four uses of CLIP. |
 | 2026-10-07 | Claude (Opus 5.5) + Zongzhe | §8: D-MG9 settled. Object points are stored in world coordinates, as upstream, decided without waiting for T5.7. The row records the reasons, the two results that would reopen it, and how to switch to anchor-relative storage. The cited nav files were read on the Mac and on the lab box (`~/rcp-Gappler` at `3dde592`). T6.4c is no longer blocked. |
 | 2026-10-07 | Claude (Opus 5.5) + Zongzhe | T6.4c built: `memory_graph/object_store.py` holds the object entries next to the graph and applies S10's matches (S11). §7 notes that the store keeps entries the graph has dropped. No design change. |
+| 2026-10-11 | Claude (Opus 5.5) + Zongzhe | T6.7a built: `memory_graph/task.py` and the task score in `object_store.py`. §7 notes it. Tested on a Mac CPU only, a lab box run is still owed. No design change. |
