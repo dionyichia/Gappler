@@ -197,7 +197,9 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
   the camera's optical frame (frame id copied from the request). The service keeps nothing between
   calls apart from the loaded model, and stays up the whole time.
 - **The service knows nothing about the arm, the glasses or the base.** No camera topics, no gaze,
-  no stop word, no transforms. It does not pick one detection.
+  no stop word, no transforms. It does not pick one detection. Its code imports nothing from a
+  subsystem either: since 2026-10-09 it builds SAM 3 itself instead of through aria's wrapper, which
+  pulled in the glasses SDK. Weights path: `shared/global_config.yaml` `paths: sam3_weights`.
 - **Clients hold the workflow logic, one per subsystem.**
   - `grasp/grasp_segmentation_client/`: feeds wrist frames to the service, picks one detection,
     and is the only publisher of `/camera/sam/mask`, `/object_centroid_2d` and `/object_centroid`.
@@ -1475,4 +1477,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-06 | Claude (Opus 5.5) + Dion | §2.15 config: built in T0.14. All four subsystem files exist, all 34 channel names that were hardcoded moved into config, each entry says who uses it. Global also holds the robot's hardware and the machine's paths. How Python and C++ read it, what stays in code, duplicate keys refused by the loader. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: revised design for `T2.1`. A stateless request/reply segmentation service in `shared_services/`, with one client per subsystem, replaces "the pipeline becomes the service". Gaze pixel-space mismatch recorded for `T2.2`. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: `T2.1` built (all six steps), start-once rule and its guard, results recorded. |
-| 2026-10-09 | Claude Opus 5.5 + Dion | §2.8: SAM 3 weights moved to `assets/models/` (T2.1). The segmentation service builds SAM 3 itself, so `shared_services/` no longer imports aria. |
+| 2026-10-09 | Claude Opus 5.5 + Dion | §2.2: the service imports nothing from a subsystem. §2.8: SAM 3 weights moved to `assets/models/` (T2.1). The segmentation service builds SAM 3 itself, so `shared_services/` no longer imports aria. |
