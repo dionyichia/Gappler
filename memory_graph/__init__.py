@@ -17,6 +17,7 @@ docs/hico-nav/hico-nav-github-docs/cmg_construction_pipeline.md:
     association.py         S10 overlap score and the match decision
     object_store.py        S11 insert or merge: the object entries, fused over sightings
     anchor_store.py        S12 the stored photos: image, depth, intrinsics, pose, object boxes
+    task.py                the task: its text feature, target and related classes, the score
     anchor_object_graph.py the graph: anchors, objects, the edges between them
 
 Only anchor_object_graph.py is stdlib-only. The stage modules need numpy and
