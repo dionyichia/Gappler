@@ -24,6 +24,8 @@ Differences from upstream, on purpose:
   - The per-label index is rebuilt when an entry's majority label changes.
     Upstream adds the new label and never removes the old one.
   - No DBSCAN here, as upstream (run_dbscan=False). That is S13 (T6.4f).
+  - Each entry has a task score, cos(entry feature, task feature), set again
+    whenever the feature or the task changes (T6.7a). Upstream leaves it at 0.
 """
 
 from __future__ import annotations
@@ -39,6 +41,7 @@ from memory_graph.association import associate
 from memory_graph.config import MemoryGraphConfig
 from memory_graph.geometry import fit_box, voxel_downsample
 from memory_graph.stage_types import Candidate, OrientedBox
+from memory_graph.task import TaskContext
 
 
 @dataclass
@@ -59,6 +62,9 @@ class ObjectEntry:
     # Sum of the unit feature of every sighting that had one, and how many did.
     clip_sum: Optional[np.ndarray] = None
     clip_count: int = 0
+    # cos(clip, task feature). 0 with no task or no feature. Kept current by
+    # ObjectStore, do not set it by hand.
+    task_score: float = 0.0
 
     @property
     def sightings(self) -> int:
@@ -88,8 +94,14 @@ def _unit(vector: np.ndarray) -> np.ndarray:
 class ObjectStore:
     """Every object entry, the anchor-object graph, and an index by label."""
 
-    def __init__(self, cfg: MemoryGraphConfig, graph: Optional[AnchorObjectGraph] = None) -> None:
+    def __init__(
+        self,
+        cfg: MemoryGraphConfig,
+        graph: Optional[AnchorObjectGraph] = None,
+        task: Optional[TaskContext] = None,
+    ) -> None:
         self.cfg = cfg
+        self._task = task
         self.graph = graph if graph is not None else AnchorObjectGraph()
         self._objects: Dict[ObjectId, ObjectEntry] = {}
         self._by_label: Dict[str, Set[ObjectId]] = defaultdict(set)
@@ -117,7 +129,32 @@ class ObjectStore:
         """Entries whose majority label is `label`."""
         return frozenset(self._by_label.get(label, ()))
 
+    @property
+    def task(self) -> Optional[TaskContext]:
+        return self._task
+
+    def target_ids(self) -> FrozenSet[ObjectId]:
+        """Entries whose majority label is a target class of the task. Read from
+        the label index, so an entry leaves when its majority label changes."""
+        return self._ids_with_any(self._task.targets if self._task else ())
+
+    def related_ids(self) -> FrozenSet[ObjectId]:
+        """Entries whose majority label is a related class of the task."""
+        return self._ids_with_any(self._task.related if self._task else ())
+
+    def ranked_by_task(self, ids: Optional[Sequence[ObjectId]] = None) -> List[ObjectId]:
+        """`ids`, or every entry, with the highest task score first. Equal
+        scores keep id order."""
+        ids = self.ids() if ids is None else sorted(ids)
+        return sorted(ids, key=lambda obj: -self._objects[obj].task_score)
+
     # ---------------------------------------------------------------- mutate
+
+    def set_task(self, task: Optional[TaskContext]) -> None:
+        """Start a new task, or clear it with None. Every entry is scored again."""
+        self._task = task
+        for entry in self._objects.values():
+            self._rescore(entry)
 
     def integrate(self, candidates: Sequence[Candidate], anchor: AnchorId) -> List[ObjectId]:
         """S10 then S11 for one photo. Returns the entry each candidate went to,
@@ -168,6 +205,7 @@ class ObjectStore:
         self._unindex(absorbed, gone.label)
         del self._objects[absorbed]
         self._reindex(keep, old_label)
+        self._rescore(keep)
 
     # ------------------------------------------------------------ invariants
 
@@ -183,6 +221,8 @@ class ObjectStore:
                 problems.append(f"object {obj} has unequal per-sighting lists")
             if obj not in self._by_label.get(entry.label, ()):
                 problems.append(f"object {obj} missing from the label index under {entry.label!r}")
+            if abs(entry.task_score - self._score_of(entry)) > 1e-9:
+                problems.append(f"object {obj} has a stale task score")
         for label, ids in self._by_label.items():
             for obj in ids:
                 if obj not in self._objects or self._objects[obj].label != label:
@@ -219,6 +259,19 @@ class ObjectStore:
             entry.clip_count += 1
         self.graph.observe(anchor, entry.id, Sighting(mask_pixels=cand.mask_pixels, confidence=float(cand.conf)))
         self._reindex(entry, old_label)
+        self._rescore(entry)
+
+    def _score_of(self, entry: ObjectEntry) -> float:
+        return self._task.score(entry.clip) if self._task is not None else 0.0
+
+    def _rescore(self, entry: ObjectEntry) -> None:
+        entry.task_score = self._score_of(entry)
+
+    def _ids_with_any(self, labels) -> FrozenSet[ObjectId]:
+        out: Set[ObjectId] = set()
+        for label in labels:
+            out |= self._by_label.get(label, set())
+        return frozenset(out)
 
     def _unindex(self, obj: ObjectId, label: str) -> None:
         self._by_label[label].discard(obj)
