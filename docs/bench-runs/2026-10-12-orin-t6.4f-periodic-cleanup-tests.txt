@@ -1,0 +1,85 @@
+T6.4f -- periodic clean-up tests on the Orin   Jetson Orin NX, scratch copy in /tmp, 2026-10-12 21:47
+=====================================================================================================
+First run off the Mac of the S13 clean-up tests (memory_graph/tests/test_cleanup.py), and a
+rerun of every other memory graph test with the new code present. Run by Zongzhe's session
+over ssh, with Zongzhe's go-ahead. An Orin run stands in for a lab box run, as Zongzhe
+accepted on 2026-10-11.
+
+  RESULT: PASS for T6.4f. 27 tests in test_cleanup.py, 27 passed, 0 failed, 0 skipped.
+  All memory graph tests: 216 ran, 215 passed, 0 failed, 1 SKIPPED (the whole encoder file).
+
+  Covers the T6.4f done-when, on a made-up room of six objects photographed from 11 stops:
+    - every object keeps at least min(kappa, photos that saw it) anchors, for kappa 1, 2, 3, 4, 9
+    - the anchor count does not grow on a second, third or fourth pass. After each pass and
+      clean-up it is 2 for kappa 1, 5 for kappa 2 and 8 for kappa 3, out of 11 photos per pass.
+      Without the clean-up two passes leave 22. (The counts are from the same code on the Mac.)
+  Also covered: denoising removes stray points and refits the box, and of two photos that
+  cover the same objects the better view is kept.
+
+  NOT covered: memory_graph/tests/test_clip_encoder.py, SKIPPED. open_clip is not installed in
+  the Orin's .venv. Nothing in T6.4f uses the encoder.
+  NOT settled: kappa itself (D-MG1). The default is upstream's 1. The room here is made up, so
+  it says nothing about which kappa suits the lab. That needs the recorded drive (T6.2).
+  Not a full bench run: only the memory graph tests. CPU only, no GPU, no ROS, no hardware.
+  Not run on the lab box.
+
+How it was run [observed]
+  Machine: Jetson Orin NX (aarch64), Ubuntu 22.04.5, L4T R36.4.3, tailscale name nvidia-desktop.
+  Code: branch t6.4f-periodic-cleanup at 453b49d (cut from dev at bfbcd56), its memory_graph/
+        folder copied from the Mac with git archive to /tmp/zongzhe-t6.4f on the Orin, and
+        deleted after the run. ~/rcp-Gappler there was on someone's t2.1-sam3-service branch
+        and was not modified.
+  Python: ~/rcp-Gappler/.venv on the Orin, read only. PYTHONDONTWRITEBYTECODE=1, so no cache
+        files were written. Nothing was installed.
+  Checked first that nobody else was logged in and no ROS, camera, bench or test process was running.
+  To repeat, in a checkout of the branch:
+        ~/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_cleanup
+
+Full output [observed]
+-----------------------------------------------------------------------------------------------------
+== the task tests
+test_a_revisit_still_matches_the_same_objects (memory_graph.tests.test_cleanup.AfterCleanupTest) ... ok
+test_each_entry_remembers_every_anchor_it_came_from (memory_graph.tests.test_cleanup.AfterCleanupTest)
+The D-MG9 hook: `anchor_ids` is a history, so it keeps the ids of ... ok
+test_every_target_still_has_a_stored_photo_and_a_box_on_it (memory_graph.tests.test_cleanup.AfterCleanupTest) ... ok
+test_a_clean_object_is_left_alone (memory_graph.tests.test_cleanup.DenoiseTest) ... ok
+test_dbscan_off_only_downsamples (memory_graph.tests.test_cleanup.DenoiseTest) ... ok
+test_denoise_drops_them_and_refits_the_box (memory_graph.tests.test_cleanup.DenoiseTest) ... ok
+test_denoise_objects_reports_what_changed (memory_graph.tests.test_cleanup.DenoiseTest) ... ok
+test_merging_alone_keeps_the_stray_points (memory_graph.tests.test_cleanup.DenoiseTest) ... ok
+test_sightings_and_edges_are_untouched (memory_graph.tests.test_cleanup.DenoiseTest) ... ok
+test_too_few_points_left_reverts (memory_graph.tests.test_cleanup.DenoiseTest)
+Upstream's guard (pointcloud.py:787), with the limit set high enough ... ok
+test_a_second_pass_does_not_grow_the_anchor_count (memory_graph.tests.test_cleanup.DoneWhenTest) ... ok
+test_every_object_keeps_enough_anchors (memory_graph.tests.test_cleanup.DoneWhenTest) ... ok
+test_more_kappa_keeps_more_photos (memory_graph.tests.test_cleanup.DoneWhenTest) ... ok
+test_no_kept_photo_is_covered_by_another (memory_graph.tests.test_cleanup.DoneWhenTest)
+Upstream's check for kappa 1: no kept photo's objects are a subset ... ok
+test_pruning_removes_photos (memory_graph.tests.test_cleanup.DoneWhenTest)
+Not just "keeps enough": with kappa 1, two photos of three objects ... ok
+test_the_room_is_six_objects (memory_graph.tests.test_cleanup.DoneWhenTest) ... ok
+test_without_the_clean_up_it_does_grow (memory_graph.tests.test_cleanup.DoneWhenTest)
+What the second-pass check is there to catch. ... ok
+test_equal_views_keep_the_older_photo (memory_graph.tests.test_cleanup.PruneChoiceTest) ... ok
+test_more_objects_beats_a_better_view (memory_graph.tests.test_cleanup.PruneChoiceTest)
+A sharp photo of two objects does not replace a poor photo of three. ... ok
+test_stores_must_share_a_graph (memory_graph.tests.test_cleanup.PruneChoiceTest) ... ok
+test_the_better_view_is_kept (memory_graph.tests.test_cleanup.PruneChoiceTest) ... ok
+test_view_cost_stays_in_its_narrow_range (memory_graph.tests.test_cleanup.PruneChoiceTest) ... ok
+test_a_manual_run_restarts_the_count (memory_graph.tests.test_cleanup.ScheduleTest) ... ok
+test_an_empty_graph_is_fine (memory_graph.tests.test_cleanup.ScheduleTest) ... ok
+test_bad_values_are_errors (memory_graph.tests.test_cleanup.ScheduleTest) ... ok
+test_runs_every_n_stored_photos (memory_graph.tests.test_cleanup.ScheduleTest) ... ok
+test_the_default_is_upstreams_ten_and_one (memory_graph.tests.test_cleanup.ScheduleTest) ... ok
+
+----------------------------------------------------------------------
+Ran 27 tests in 21.893s
+
+OK
+== every memory graph test
+..............................................................................s................................................................[ WARN:0@31.621] global loadsave.cpp:278 findDecoder imread_('/tmp/tmp_1yp_0n7/depth/1.png'): can't open/read file: check file path/integrity
+.........................................................................
+----------------------------------------------------------------------
+Ran 216 tests in 41.235s
+
+OK (skipped=1)
