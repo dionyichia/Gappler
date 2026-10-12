@@ -39,7 +39,7 @@ import numpy as np
 from memory_graph.anchor_object_graph import AnchorId, AnchorObjectGraph, ObjectId, Sighting
 from memory_graph.association import associate
 from memory_graph.config import MemoryGraphConfig
-from memory_graph.geometry import fit_box, voxel_downsample
+from memory_graph.geometry import clean_cloud, fit_box, voxel_downsample
 from memory_graph.stage_types import Candidate, OrientedBox
 from memory_graph.task import TaskContext
 
@@ -206,6 +206,21 @@ class ObjectStore:
         del self._objects[absorbed]
         self._reindex(keep, old_label)
         self._rescore(keep)
+
+    def denoise(self, obj: ObjectId) -> int:
+        """S13, for one entry: voxel-downsample its cloud, keep the largest
+        cluster and refit the box (pointcloud.py:787). Merging does not do
+        this, so stray points build up between calls. Returns how many points
+        were removed. If fewer than cfg.denoise_min_points would be left, the
+        entry is not changed and 0 is returned."""
+        entry = self._objects[obj]
+        points, colors = clean_cloud(entry.points, entry.colors, self.cfg)
+        if len(points) < self.cfg.denoise_min_points or len(points) == len(entry.points):
+            return 0
+        removed = len(entry.points) - len(points)
+        entry.points, entry.colors = points, colors
+        entry.box = fit_box(points)
+        return removed
 
     # ------------------------------------------------------------ invariants
 

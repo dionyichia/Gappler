@@ -106,6 +106,18 @@ class MemoryGraphConfig:
     anchor_height: int = 448
     anchor_width: int = 448
 
+    # ---- S13 periodic clean-up --------------------------------------------
+    # Run the clean-up after this many stored photos. Upstream hardcodes 10
+    # (map.py:899).
+    cleanup_every_photos: int = 10
+    # kappa: how many photos to keep per object when pruning, if it has that
+    # many. Upstream's 1 keeps a single view of each object. D-MG1 in
+    # docs/MEMORY_GRAPH_DESIGN.md.
+    prune_kappa: int = 1
+    # An object's cloud is left as it was if denoising would leave fewer points
+    # than this (pointcloud.py:787).
+    denoise_min_points: int = 4
+
     def __post_init__(self) -> None:
         if self.association_mode not in ("greedy", "one_to_one"):
             raise ValueError(f"association_mode must be 'greedy' or 'one_to_one', got {self.association_mode!r}")
@@ -113,6 +125,8 @@ class MemoryGraphConfig:
             raise ValueError("phys_bias must be in [0, 1]")
         if self.clip_batch_size < 1:
             raise ValueError("clip_batch_size must be at least 1")
+        if self.cleanup_every_photos < 1 or self.prune_kappa < 1:
+            raise ValueError("cleanup_every_photos and prune_kappa must be at least 1")
         if self.anchor_height < 0 or self.anchor_width < 0:
             raise ValueError("anchor_height and anchor_width must be 0 or more")
         for name in ("voxel_size_m", "dbscan_eps_m", "match_radius_m", "gate_translation_m"):
