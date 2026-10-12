@@ -1,0 +1,83 @@
+T6.8a -- find targets tests on the Orin   Jetson Orin NX, scratch copy in /tmp, 2026-10-12 21:22
+================================================================================================
+First run off the Mac of the find targets tests (memory_graph/tests/test_target_finder.py),
+and a rerun of every other memory graph test with the new code present. Run by Zongzhe's
+session over ssh, with Zongzhe's go-ahead. An Orin run stands in for a lab box run, as
+Zongzhe accepted for T6.4d and T6.7a on 2026-10-11.
+
+  RESULT: PASS for T6.8a. 27 tests in test_target_finder.py, 27 passed, 0 failed, 0 skipped.
+  All memory graph tests: 189 ran, 188 passed, 0 failed, 1 SKIPPED (the whole encoder file).
+
+  T6.8a had no done-when. Covered: find returns targets, then related objects, each by task
+  score, each with its best stored photo and its box on that photo. A loop that goes to the
+  first hit, rejects it and asks again visits each of three objects once and then gets an
+  empty list. A rejection survives new sightings, new class sets and a merge, and clears on
+  a new instruction.
+  This is also the first run on the Orin of T6.4d and T6.7a together, after both merged.
+
+  NOT covered: memory_graph/tests/test_clip_encoder.py, SKIPPED. open_clip is not installed in
+  the Orin's .venv. Nothing in T6.8a uses the encoder: the tests use made-up feature vectors.
+  No real photo or recording has been through the finder: that is T6.8.
+  Not a full bench run: only the memory graph tests. CPU only, no GPU, no ROS, no hardware.
+  Not run on the lab box.
+
+How it was run [observed]
+  Machine: Jetson Orin NX (aarch64), Ubuntu 22.04.5, L4T R36.4.3, tailscale name nvidia-desktop.
+  Code: branch t6.8a-find-targets at abd5ff1 (cut from dev at f82ee73), its memory_graph/
+        folder copied from the Mac with git archive to /tmp/zongzhe-t6.8a on the Orin, and
+        deleted after the run. ~/rcp-Gappler there was on someone's t2.1-sam3-service branch
+        and was not modified.
+  Python: ~/rcp-Gappler/.venv on the Orin, read only. Python 3.10.12, numpy 2.2.6, scipy 1.15.3.
+        PYTHONDONTWRITEBYTECODE=1, so no cache files were written. Nothing was installed.
+  Checked first that nobody else was logged in and no ROS, camera, bench or test process was running.
+  To repeat, in a checkout of the branch:
+        ~/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_target_finder
+
+Full output [observed]
+------------------------------------------------------------------------------------------------
+== the task tests
+test_a_photo_without_a_record_is_not_offered (memory_graph.tests.test_target_finder.BestViewTest)
+Pruned from the graph's side only: the record is still there but the ... ok
+test_an_object_with_no_photo_left_is_still_a_hit (memory_graph.tests.test_target_finder.BestViewTest) ... ok
+test_equal_views_go_to_the_newest_photo (memory_graph.tests.test_target_finder.BestViewTest) ... ok
+test_the_best_view_is_the_most_confident_photo (memory_graph.tests.test_target_finder.BestViewTest) ... ok
+test_the_box_is_where_the_object_is_on_that_photo (memory_graph.tests.test_target_finder.BestViewTest)
+The object's centre, projected into the best photo, is inside the box ... ok
+test_the_next_best_photo_takes_over_when_one_is_removed (memory_graph.tests.test_target_finder.BestViewTest) ... ok
+test_a_class_is_judged_by_the_majority_label (memory_graph.tests.test_target_finder.FindTest)
+Four more photos call the odd chair a sofa, against three that called ... ok
+test_a_hit_is_a_copy (memory_graph.tests.test_target_finder.FindTest) ... ok
+test_a_hit_says_where_the_object_is (memory_graph.tests.test_target_finder.FindTest) ... ok
+test_a_related_object_never_outranks_a_target (memory_graph.tests.test_target_finder.FindTest)
+The table is related only. Give the task the table's feature and it ... ok
+test_an_object_of_no_task_class_is_not_a_hit (memory_graph.tests.test_target_finder.FindTest) ... ok
+test_no_task_finds_nothing (memory_graph.tests.test_target_finder.FindTest) ... ok
+test_targets_first_then_related_each_by_score (memory_graph.tests.test_target_finder.FindTest) ... ok
+test_targets_only (memory_graph.tests.test_target_finder.FindTest) ... ok
+test_the_room_is_three_objects (memory_graph.tests.test_target_finder.FindTest) ... ok
+test_a_merge_of_two_good_objects_rejects_nothing (memory_graph.tests.test_target_finder.RejectTest) ... ok
+test_a_new_instruction_starts_clean (memory_graph.tests.test_target_finder.RejectTest) ... ok
+test_a_rejected_object_is_not_offered_again (memory_graph.tests.test_target_finder.RejectTest) ... ok
+test_a_rejected_survivor_stays_rejected (memory_graph.tests.test_target_finder.RejectTest) ... ok
+test_a_rejection_follows_the_object_into_a_merge (memory_graph.tests.test_target_finder.RejectTest)
+The rejected chair turns out to be part of the other chair's entry. ... ok
+test_clear_rejected (memory_graph.tests.test_target_finder.RejectTest) ... ok
+test_it_stays_rejected_when_seen_again (memory_graph.tests.test_target_finder.RejectTest) ... ok
+test_it_stays_rejected_when_the_classes_change (memory_graph.tests.test_target_finder.RejectTest) ... ok
+test_rejecting_an_unknown_object_is_an_error (memory_graph.tests.test_target_finder.RejectTest) ... ok
+test_the_robot_runs_out_of_candidates_instead_of_looping (memory_graph.tests.test_target_finder.RejectTest)
+Go to the first hit, reject it, ask again. Three objects, so the list ... ok
+test_an_empty_graph_finds_nothing (memory_graph.tests.test_target_finder.SetupTest) ... ok
+test_the_two_stores_must_share_a_graph (memory_graph.tests.test_target_finder.SetupTest) ... ok
+
+----------------------------------------------------------------------
+Ran 27 tests in 11.772s
+
+OK
+== every memory graph test
+...................................................s................................................................[ WARN:0@9.883] global loadsave.cpp:278 findDecoder imread_('/tmp/tmp6b6en19w/depth/1.png'): can't open/read file: check file path/integrity
+.........................................................................
+----------------------------------------------------------------------
+Ran 189 tests in 19.456s
+
+OK (skipped=1)
