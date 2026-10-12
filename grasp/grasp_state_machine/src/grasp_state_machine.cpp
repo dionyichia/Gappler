@@ -124,6 +124,7 @@ private:
     APPROACH_STEP_FINAL = param("approach_step_final_m").as_double();
     MAX_APPROACH_STEPS = static_cast<int>(param("max_approach_steps").as_int());
     EXECUTE_DEPTH_THRESH_M = param("execute_depth_thresh_m").as_double();
+    CENTROID_MAX_AGE_S = param("centroid_max_age_s").as_double();
     FINAL_EXEC_THRESH_M = param("final_exec_thresh_m").as_double();
     CENTROID_TARGET_OFFSET_X = param("centroid_target_offset_x_px").as_double();
     CENTROID_TARGET_OFFSET_Y = param("centroid_target_offset_y_px").as_double();
@@ -644,14 +645,19 @@ private:
       for (int steps = 0; steps < MAX_APPROACH_STEPS; ++steps)
       {
         double object_depth;
+        double age_s;
         {
-          // auto age = this->now() - latest_centroid_.header.stamp;
-          // if (age > rclcpp::Duration::from_seconds(1.0))
-          // {
-          //   RCLCPP_WARN(this->get_logger(), "SELECTING: centroid lost — returning to IDLE");
-          //   break;
-          // }
+          std::lock_guard<std::mutex> lock(centroid_mutex_);
+          age_s = (this->now() - rclcpp::Time(latest_centroid_.header.stamp)).seconds();
           object_depth = latest_centroid_.point.z;
+        }
+        // The stamp is the camera frame's, so the age includes segmentation time
+        if (age_s > CENTROID_MAX_AGE_S)
+        {
+          RCLCPP_WARN(this->get_logger(),
+                      "SELECTING: centroid %.2fs old (limit %.2fs), object lost — returning to IDLE",
+                      age_s, CENTROID_MAX_AGE_S);
+          break;
         }
 
         if (object_depth < EXECUTE_DEPTH_THRESH_M)
@@ -670,6 +676,7 @@ private:
 
       if (!transition_to_executing)
       {
+        publishState(State::IDLE);
         continue;
       }
       // ==================================================================
@@ -809,6 +816,7 @@ private:
   double APPROACH_STEP_FINAL;
   int MAX_APPROACH_STEPS;
   double EXECUTE_DEPTH_THRESH_M;
+  double CENTROID_MAX_AGE_S;
   double FINAL_EXEC_THRESH_M;
   double CENTROID_TARGET_OFFSET_X;
   double CENTROID_TARGET_OFFSET_Y;

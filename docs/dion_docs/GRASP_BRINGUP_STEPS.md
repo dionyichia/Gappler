@@ -352,8 +352,14 @@ the simulated arm (`./bench/state_machine_sim.sh`) before the robot. Its fake de
 centroid with the current time at 10 Hz (`bench/nodes/test_state_machine_sim.py:85`), so it should
 still pass `[inferred]`.
 
-The limit starts at 1.0 s, the value in the commented code. 3b measures how fast SAM 3 actually
-publishes. If it is slower than about 2 per second, raise the limit before 3c.
+~~The limit starts at 1.0 s, the value in the commented code.~~ **Set to 2.0 s (2026-10-12, Dion),
+written on branch `t1.24-t2.8-centroid-age-and-voice-replay`.** The age counts from when the camera
+took the frame, so it includes segmentation. Measured in 3b: a centroid every 0.54 s and 0.3 to
+0.5 s of SAM 3 time, so the newest centroid is about 1.05 s old just before the next arrives, and
+1.6 s after one dropped frame. 1.0 s would end good approaches. The check now also takes the lock
+before reading the centroid, and publishes `IDLE` when an approach ends. `./bench/state_machine_sim.sh`
+has a new case: the fake detector goes quiet mid-approach, the node must log "object lost" and
+publish `IDLE`, then the object comes back and the cycle carries on.
 
 ### Step 3a: the state machine homes the real arm
 
@@ -418,6 +424,41 @@ That sent no frames on 2026-10-07, so start the camera by hand here.
 - with the box out of view: does SAM 3 still find a "box" somewhere?
 
 **Pass:** the mask covers the box, z is within about 2 cm of the tape, the rate is steady.
+
+### Result, 2026-10-12: 3b partial, run over SSH, box and tape checks owed
+
+Run from the Mac over SSH while Dion reviewed code, `t2.1-sam3-service` on the box (code as at
+`de87183`), domain 91, localhost only. Camera, service and client started by hand as in the table.
+The wrist camera pointed at the ceiling, no box in view.
+
+- **Live camera into SAM 3 works.** Serial `243222074878` found, depth at 10 Hz. The service
+  loaded SAM 3 in 10 s and answered every call.
+- **No box in view, no box found.** The client ran with the default prompt `box` and SAM 3
+  returned nothing, so nothing was published on `/camera/sam/mask` or `/object_centroid_2d`.
+  No false box.
+- **Speed: one SAM 3 call on one 640x480 frame takes 0.27 to 0.53 s**, so about 2 to 3.7
+  frames per second, with nothing else on the GPU. 0.27 s at first, then it slowed as the CPU
+  throttled (below). 2 per second is the bar for the 1.0 s age limit in 3c, so this is borderline
+  `[inferred]`.
+- **The client's centroid rate: 1.85 per second**, 0.53 to 0.56 s apart, steady, with the aria
+  client sending the word `light` (T2.8 typed-word check, PASS). Just under the 2 per second bar,
+  with the CPU throttled. The age limit is set to 2.0 s with this in mind (see the stale-centroid
+  check above).
+- **Depth on a real object.** Prompt `light` found the ceiling light panel (score 0.84), depth
+  1.255 m. Dion checked the mask by eye: it fits the panel. Depth not checked against a tape.
+  Picture: [`t1.24_3b/2026-10-12-ceiling-light-mask.png`](t1.24_3b/2026-10-12-ceiling-light-mask.png).
+- **GPU (RTX 4060 Ti, 16 GB).** The service holds 5.8 GB. During back-to-back calls: 61% busy on
+  average, 80 W of 165 W, 55 C, not throttled. So the GPU has room for AnyGrasp alongside.
+- **CPU (i5-13400F, 16 threads).** The service uses about 1.2 threads on average, 2.1 at peak.
+  The camera driver about 0.13. The whole box is only 12% busy.
+- **The CPU is overheating.** 89 C at 12% load. The kernel forces it idle a quarter of the time
+  and the cores average 0.8 GHz. That is the likely cause of the slowdown from 0.27 to 0.5 s.
+  Likely a fan or cooler problem `[inferred]`, not checked at the box. Worth a look before 3c.
+
+Full record: [`../bench-runs/2026-10-12-labbox-t1.24-3b-live-sam3.txt`](../bench-runs/2026-10-12-labbox-t1.24-3b-live-sam3.txt).
+
+Still owed, needs someone at the robot: box in view, the centroid rate on the box, z against
+the tape at 0.6, 0.4 and 0.25 m, and the distance where z stops.
 
 ### Step 3c: the approach with live SAM 3
 
@@ -501,3 +542,6 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-07 | Claude Opus 5.5 + Dion | 3a PASS: the state machine homed the real arm on start, went IDLE, no further motion. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | "Start here" added for the next session (3b). Old "Where we stopped" removed, its findings already folded into 3a to 3c. Collision boxes moved to "Things to watch". SAM 3 has run on the box on a bag (T0.12). |
 | 2026-10-08 | Claude Opus 5.5 + Dion | T2.1 landed: 3b and 3c use the segmentation service and the grasp client instead of `sam3_ros_node.py`, the trigger notes and the depth cite follow. Box access note updated (100.98.10.50 worked). |
+| 2026-10-12 | Claude Opus 5.5 + Dion | Step 3b partial result, run over SSH: SAM 3 works on the live wrist camera, no false box, 0.27 to 0.53 s per frame, GPU and CPU load, CPU overheating found. Box and tape checks still owed. Record in bench-runs/2026-10-12-labbox-t1.24-3b-live-sam3.txt. |
+| 2026-10-12 | Claude Opus 5.5 + Dion | 3b: centroid rate measured through the aria client (1.85 per second). |
+| 2026-10-12 | Claude Opus 5.5 + Dion | Stale-centroid check written, limit 2.0 s, with the reasoning from the 3b timing. |

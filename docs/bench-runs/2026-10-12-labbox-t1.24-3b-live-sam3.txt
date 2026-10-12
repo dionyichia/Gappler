@@ -1,0 +1,116 @@
+T1.24 step 3b, partial: SAM 3 service on the live wrist camera, arm off
+2026-10-12, lab box (rcp2026@100.98.10.50), ~/rcp-Gappler on t2.1-sam3-service (code as at de87183)
+Run over SSH by Claude Opus 5.5 while Dion reviewed code. Domain 91, ROS_LOCALHOST_ONLY=1.
+Nothing on the arm ran. Wrist camera pointed at the ceiling, no box in view.
+Raw logs on the box: ~/t124_3b_logs/ (camera.log, service.log, client.log, gpu_load.csv,
+cpu_load.txt, vmstat_load.txt, probe.py).
+
+Before start
+  nvidia-smi: 520 MiB used, 0 %, only gnome-remote-desktop. fuser /dev/video*: nothing.
+  No rs_launch, ros2 launch, bench or runner job running. Domain 91 empty.
+
+Processes (each started with setsid, stopped only by its own process group)
+  camera   pgid 214398  ros2 launch realsense2_camera rs_launch.py serial_no:=_243222074878
+                        align_depth.enable:=true color and depth 640x480x15
+  service  pgid 214767  shared_services/segmentation/segmentation_service.py
+  client   pgid 214893  grasp/grasp_segmentation_client/grasp_segmentation_client.py (stopped
+                        after the first checks so the timing probe had the GPU to itself)
+
+Results
+  Camera       serial 243222074878 found, "RealSense Node Is Up". Aligned depth 10.4 Hz.
+  Service      SAM 3 loaded in 9.5 s, "ready on /segmentation/segment".
+  Client       "looking for: default prompt 'box' (testing only)". No box in view, SAM 3 found
+               none, so nothing on /camera/sam/mask or /object_centroid_2d. No false box.
+  Real object  probe.py, prompt "light": the ceiling light panel, score 0.79 to 0.84,
+               67510 px, centre (443, 355), depth 1.255 m, point (0.23, 0.22, 1.26) m.
+               Mask checked by eye by Dion: fits the panel. Depth not checked against a tape.
+               Picture: docs/dion_docs/t1.24_3b/2026-10-12-ceiling-light-mask.png
+
+Timing, one SAM 3 call on one live 640x480 frame (probe.py, 5 calls per prompt)
+  client also calling        round trip 750-1030 ms
+  alone, first run           270 ms (inference 257 ms), about 3.7 frames per second
+  alone, sustained, later    300-530 ms (inference 295-524 ms), about 2 to 3 frames per second
+  The slowdown matches CPU throttling, below.
+
+GPU, RTX 4060 Ti 16 GB, 165 W limit
+  service holds 5824 MiB, box total 6349 MiB with the service loaded
+  during back-to-back calls (78 samples, 250 ms apart): utilisation mean 61 %, max 100 %,
+  power mean 80 W, max 107 W, temperature max 55 C, no GPU throttle reason
+  idle with the service loaded: 0 %, 0.6 W
+
+CPU, i5-13400F, 16 threads, 31 GB RAM
+  during back-to-back calls: service mean 122 % (1.2 threads), max 212 %. Camera driver
+  mean 13 %, max 22 %. Whole box 12 % busy (vmstat). Service resident memory 1.9 GB.
+  RAM 4 GB used, 26 GB available.
+  x86_pkg_temp 89 C with the box 12 % busy. intel_powerclamp at 25 of 100 (the kernel
+  forces the CPU idle a quarter of the time), cores averaging 799 MHz. The CPU is
+  overheating at light load [inferred: fan or cooler problem, not checked at the box].
+
+Not done, needs someone at the robot
+  box in view, centroid rate from the client, z against a tape at 0.6, 0.4 and 0.25 m,
+  the distance where z stops.
+
+Typed word to mask, aria client to grasp client (T2.8 first check), same session
+  Both clients restarted on domain 91 (grasp pgid 216584, aria pgid 216586). Before: only
+  /camera/camera and /segmentation_service on the domain, no state machine, rm_driver or MoveIt.
+  Grasp client: "default prompt 'box'", then "Glasses client found: default prompt dropped"
+  as soon as the aria client started.
+  ros2 topic pub /aria/audio/prompt "light" (3 times, 1 Hz):
+    aria client   "Target: 'light'", /grasp/target prompt "light"
+    grasp client  "Target: 'light'"
+    centroids     /object_centroid_2d at 1.85 per second, 0.53 to 0.56 s apart, steady.
+                  x 442.7, y 355.0, z 1.252 m (the ceiling light).
+  /aria/audio/prompt "end" (the stop word): both clients "Target cleared", centroids stop.
+  PASS. This is the client's own centroid rate owed above, on the light, not the box.
+  1.85 per second is just under the 2 per second bar for the 1.0 s age limit in 3c, with
+  the CPU throttled.
+
+T2.8: recorded voice through the real voice pipeline, same session
+  aria/tools/replay_audio_file_to_prompt.py feeds a WAV to the unchanged audio_worker (Whisper
+  small.en, then Qwen2.5-0.5B, then /aria/audio/prompt), the last 10 s once a second, as the
+  glasses observer does. Models load in about 60 s. Both clients, SAM 3 and the camera running.
+  First run failed twice, both fixed: the worker must be started with spawn (as aria_app/main.py
+  does), and the load wait must wait for the queued chunk to appear before it waits for it to go.
+  Dion's files (assets/recordings/voice_commands/, afconvert writes the extensible WAV header,
+  so the tool reads with scipy, not the wave module) joined with 12 s gaps:
+    /aria/audio/prompt, in order: pick, book, light x9, night, end, release x10, and, end x9
+    /grasp/target: pick, book, light, night, (cleared), release, and, (cleared)
+  The Mac's say voice gave the same pattern: light x7, please, release it, release x9, end x2.
+  Findings:
+    1. Junk targets at both ends of every phrase. Each second Whisper hears part of a phrase in
+       the sliding window and the LLM still names an object (pick, book, night, please, and).
+       The grasp client switches to each one. Today any centroid starts a grasp cycle (T1.25),
+       so a junk word that SAM 3 finds could start the arm. Needs a rule before voice drives the
+       arm, for example act on a word only after it repeats.
+    2. "release" becomes the object word release (T2.6 finding confirmed on real audio).
+    3. "end" clears the target, as designed. Once the partial window gave "end" too.
+
+Stale-centroid check (T1.24, before 3c), same session
+  Branch t1.24-t2.8-centroid-age-and-voice-replay, applied on the box as an uncommitted patch on a
+  branch of the same name. centroid_max_age_s 2.0 in grasp/grasp_config.yaml, check in SELECTING
+  under the centroid lock, IDLE published when an approach ends.
+  ./build.sh: 25 packages, PASS.
+  ./bench/state_machine_sim.sh, domain 77, arm unreachable, new case "centroids stop":
+    first run FAIL on the new case only: IDLE reached the topic before "object lost" reached
+    the log file, and the check read the log once. Fixed the check to wait for both.
+    second run PASS. pipeline_state IDLE -> SELECTING -> IDLE -> SELECTING -> EXECUTING.
+    Log line: "SELECTING: centroid 2.61s old (limit 2.00s), object lost — returning to IDLE".
+    The full cycle after it still passes, C7 still XFAIL as before.
+  ./bench/run.sh quick on the Mac: PASS. Four L0 steps SKIPPED there (no .venv, PyYAML or ROS):
+    memory graph stages, segmentation logic, geometry runtime, D455 model.
+
+T2.10: the voice pipeline acts on finished sentences (CHANNEL_CONTRACT A-5), same session
+  audio_worker: Silero voice detector (faster-whisper 1.2.1, 52 ms on 10 s of audio) on the
+  newest audio every 0.25 s, a sentence is transcribed once 0.7 s of quiet follows it, its word
+  published once, nothing published when the LLM finds no object. Buffer 10 s -> 15 s.
+  finished_sentence(): test first, failed on import as expected, then 7 tests OK.
+  aria/tools tests: 3 OK.
+  Replay, Dion's recordings, 12 s gaps:  /aria/audio/prompt  light, release, end
+                                         /grasp/target       light, release, (cleared)
+    before the change the same file gave 31 messages: pick, book, light x9, night, end,
+    release x10, and, end x9.
+  Replay, Mac say voice:                 light, release, end  (before: light x7, please,
+    release it, release x9, end x2).
+  Wait after the last word: about 1.1 s, 0.7 s of silence plus faster-whisper's default 0.4 s
+  speech padding [code, VadOptions defaults], plus up to one 0.25 s tick. Not timed end to end.
+  Still open: release arrives as an object word (T2.6).

@@ -66,6 +66,10 @@ grasp_state_machine:
     approach_step_final_m: 0.10      # step in the final simple execute
     max_approach_steps: 50
     execute_depth_thresh_m: 0.18     # stop approaching when the object is this close
+    # End the approach if the newest centroid is older than this. Age counts from the camera
+    # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
+    # frame (measured 2026-10-12, T1.24 3b)
+    centroid_max_age_s: 2.0
     final_exec_thresh_m: 0.25
     centroid_target_offset_x_px: 55.0   # where the object should sit in the image, from centre
     centroid_target_offset_y_px: 0.0
