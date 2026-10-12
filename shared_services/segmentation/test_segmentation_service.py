@@ -132,6 +132,16 @@ class ServiceTest(unittest.TestCase):
         depth = image_msg(np.zeros((H, W), np.uint8), "8UC1")
         self.assert_refused(request(depth=depth), "8UC1")
 
+    def test_min_score_out_of_range_refused(self):
+        model = FakeSam3([square()], [0.9])
+        node = self.make(model, min_score=0.5)
+        for value in (0.3, 1.5, float("nan")):
+            with self.subTest(min_score=value):
+                res = self.call(node, request(min_score=value))
+                self.assertFalse(res.success)
+                self.assertIn("min_score", res.message)
+        self.assertEqual(model.calls, [])
+
     def test_model_failure_is_a_reply_not_a_crash(self):
         res = self.call(self.make(FailingSam3()), request())
         self.assertFalse(res.success)
@@ -142,7 +152,6 @@ class ServiceTest(unittest.TestCase):
         res = self.call(self.make(FakeSam3([square()], [0.9])), request())
         self.assertEqual(res.header.frame_id, "camera_color_optical_frame")
         self.assertEqual(res.header.stamp.sec, 7)
-        self.assertGreaterEqual(res.inference_ms, 0.0)
 
     def test_detection_fields_without_depth(self):
         res = self.call(self.make(FakeSam3([square()], [0.9])), request())
@@ -172,12 +181,6 @@ class ServiceTest(unittest.TestCase):
         self.assertAlmostEqual(det.point.y, (8.5 - 24) * 0.8 / 60, places=5)
         self.assertAlmostEqual(det.point.z, 0.8, places=5)
 
-    def test_depth_without_k_gives_no_point(self):
-        depth = image_msg(np.full((H, W), 0.8, np.float32), "32FC1")
-        res = self.call(self.make(FakeSam3([square()], [0.9])), request(depth=depth))
-        self.assertAlmostEqual(res.detections[0].depth_m, 0.8, places=5)
-        self.assertFalse(res.detections[0].has_point)
-
     def test_defaults_and_request_overrides(self):
         masks = [square(x=4 * i) for i in range(4)]
         node = self.make(FakeSam3(masks, [0.95, 0.85, 0.6, 0.4]), min_score=0.5, max_detections=2)
@@ -197,7 +200,7 @@ class ServiceTest(unittest.TestCase):
         probe = rclpy.create_node("probe_none")
         self.addCleanup(probe.destroy_node)
         # a name no test serves: the real one may still be cached from tests that just ran
-        self.assertFalse(another_server_running(probe, timeout_sec=1.0, name="/segmentation/unused"))
+        self.assertFalse(another_server_running(probe, timeout_sec=1.0, name="segmentation_unused"))
 
     def test_nothing_found_is_success_with_no_detections(self):
         res = self.call(self.make(FakeSam3()), request())

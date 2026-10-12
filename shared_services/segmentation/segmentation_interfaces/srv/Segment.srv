@@ -2,12 +2,13 @@
 # between calls apart from the loaded model.
 
 # ---- Request ----
-sensor_msgs/Image      image          # rgb8 or bgr8. header.frame_id = the camera's optical frame
+sensor_msgs/Image      image          # rgb8 only. header.frame_id = the camera's optical frame
 string                 prompt         # object words, e.g. "box". Empty = error
-sensor_msgs/Image      depth          # OPTIONAL. Aligned to image, same size. 16UC1 (mm) or 32FC1 (m).
+sensor_msgs/Image      depth          # OPTIONAL. Aligned to image, same size. 16UC1 or mono16 (mm), 32FC1 (m).
                                       #   width 0 = no depth
 sensor_msgs/CameraInfo camera_info    # OPTIONAL. Needed for the 3D point. All-zero K = none
-float32                min_score      # 0 = service default (config, today 0.5)
+float32                min_score      # 0 = service default (config, today 0.5). Otherwise from the
+                                      #   default to 1. Lower is refused: SAM 3 already dropped those
 uint8                  max_detections # 0 = service default (config)
 ---
 # ---- Response ----

@@ -177,6 +177,18 @@ class ClientTest(unittest.TestCase):
         node.on_frames(*frame(2))
         self.assertEqual(node.service.requests[0].image.header.stamp.sec, 2)
 
+    def test_no_reply_is_given_up_after_the_timeout(self):
+        node = self.make()
+        node.on_frames(*frame(1))
+        node.on_frames(*frame(2))
+        self.assertEqual(len(node.service.requests), 1)    # still waiting on the first
+        node.sent_at -= node.timeout_s + 1                  # the service died mid-call
+        node.on_frames(*frame(3))
+        self.assertEqual([r.image.header.stamp.sec for r in node.service.requests], [1, 3])
+        node.service.futures[0].finish(reply(detection(0.9, 100)))   # a late reply is ignored
+        self.assertEqual(node.mask_pub.sent, [])
+        self.assertEqual(len(node.service.requests), 2)
+
     # ---- what is published ----
     def test_publishes_mask_centroid_and_point_of_the_best(self):
         node = self.make()

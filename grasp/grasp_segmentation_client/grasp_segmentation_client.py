@@ -17,7 +17,8 @@ What to look for comes from /grasp/target (the aria client). To test without the
 grasp_config.yaml sets a default prompt, used only while nothing publishes on /grasp/target.
 
 Frames are sent one request at a time. While a request is out, newer frames replace the waiting
-one, so the next request is always the newest frame.
+one, so the next request is always the newest frame. A request with no reply after
+segment_timeout_s (the service died mid-call) is given up, so the client never stalls.
 
 /manipulation/goal_pose is not published (decided 2026-10-08, off for now). Nav integration
 adds it.
@@ -27,6 +28,7 @@ adds it.
 """
 
 import math
+import time
 
 import rclpy
 from rclpy.executors import ExternalShutdownException
@@ -57,7 +59,9 @@ class GraspSegmentationClient(Node):
         self.default_in_use = bool(self.prompt)   # dropped for good once the glasses speak
         self.camera_info = None
         self.waiting = None          # newest (rgb, depth) not yet sent
-        self.in_flight = False
+        self.future = None           # the request out now, None when none is
+        self.sent_at = 0.0           # time.monotonic() when it was sent
+        self.timeout_s = CFG["segment_timeout_s"]
 
         self.create_subscription(CameraInfo, TOPICS["wrist_camera_info"], self.on_camera_info, 1)
         self.create_subscription(Target, TOPICS["grasp_target"], self.on_target, 10)
@@ -97,7 +101,13 @@ class GraspSegmentationClient(Node):
             self.default_in_use = False
             self.prompt = ""
             self.get_logger().info("Glasses client found: default prompt dropped")
-        if self.in_flight or self.waiting is None or self.camera_info is None or not self.prompt:
+        # rclpy futures never time out: if the service dies mid-call, this one is never completed.
+        if self.future is not None and time.monotonic() - self.sent_at > self.timeout_s:
+            self.get_logger().warn(f"No reply from {SERVICE_NAME} in {self.timeout_s:g} s, "
+                                   "giving up on that request")
+            self.future = None
+        if self.future is not None or self.waiting is None or self.camera_info is None \
+                or not self.prompt:
             return
         if not self.service.service_is_ready():
             return   # keep the frame, a newer one replaces it
@@ -105,12 +115,14 @@ class GraspSegmentationClient(Node):
         self.waiting = None
         request = Segment.Request(image=rgb, depth=depth, camera_info=self.camera_info,
                                   prompt=self.prompt)
-        self.in_flight = True
-        future = self.service.call_async(request)
-        future.add_done_callback(lambda f, prompt=self.prompt: self.on_reply(f, prompt))
+        self.sent_at = time.monotonic()
+        self.future = self.service.call_async(request)
+        self.future.add_done_callback(lambda f, prompt=self.prompt: self.on_reply(f, prompt))
 
     def on_reply(self, future, prompt: str):
-        self.in_flight = False
+        if future is not self.future:
+            return   # a late reply to a request already given up on
+        self.future = None
         response = future.result()
         if prompt == self.prompt:     # a reply for an old prompt is dropped
             self.publish(response)

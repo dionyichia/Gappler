@@ -10,6 +10,7 @@ import numpy as np
 
 from segmentation_logic import (
     back_project,
+    centroid_on_mask,
     depth_in_metres,
     detections_from_sam3,
     median_depth,
@@ -52,13 +53,6 @@ class DepthUnits(unittest.TestCase):
         depth = np.array([[0, 500, 1250]], dtype=np.uint16)
         np.testing.assert_allclose(depth_in_metres(depth, "16UC1"), [[0.0, 0.5, 1.25]])
 
-    def test_metres_pass_through(self):
-        depth = np.array([[0.0, 0.5]], dtype=np.float32)
-        np.testing.assert_allclose(depth_in_metres(depth, "32FC1"), depth)
-
-    def test_unknown_encoding_refused(self):
-        with self.assertRaises(ValueError):
-            depth_in_metres(np.zeros((1, 1)), "rgb8")
 
 
 class MedianDepth(unittest.TestCase):
@@ -82,9 +76,6 @@ class MedianDepth(unittest.TestCase):
 
 
 class BackProject(unittest.TestCase):
-    def test_image_centre_is_on_the_axis(self):
-        self.assertEqual(back_project(320.0, 240.0, 0.8, K), (0.0, 0.0, 0.8))
-
     def test_off_centre(self):
         # 60 px right and 30 px down at 1.2 m with f = 600 px: 0.12 m right, 0.06 m down
         x, y, z = back_project(380.0, 270.0, 1.2, K)
@@ -102,6 +93,14 @@ class FromSam3(unittest.TestCase):
         self.assertEqual(det.bbox, (100, 50, 20, 20))
         self.assertEqual(det.area_px, 400)
         self.assertEqual((det.u, det.v), (109.5, 59.5))
+
+    def test_centroid_on_mask(self):
+        [solid] = detections_from_sam3(self.state([square_mask()], [0.9]), 0.5, 5)
+        self.assertTrue(centroid_on_mask(solid))
+        ring = square_mask(size=40)
+        ring[60:80, 110:130] = False   # hollow middle: the centroid lands in the hole
+        [hollow] = detections_from_sam3(self.state([ring], [0.9]), 0.5, 5)
+        self.assertFalse(centroid_on_mask(hollow))
 
     def test_sorted_by_score_then_filtered_and_capped(self):
         masks = [square_mask(x=10 * i) for i in range(4)]

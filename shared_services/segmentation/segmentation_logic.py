@@ -19,9 +19,11 @@ from typing import Any, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 
-# Metres per depth unit, by ROS image encoding. 16UC1 is millimetres and 32FC1 is metres,
-# the ROS convention (REP 118), which the RealSense driver follows.
-DEPTH_SCALE_BY_ENCODING = {"16UC1": 0.001, "mono16": 0.001, "32FC1": 1.0}
+# Depth encodings the service accepts: (numpy type of one pixel, metres per unit). 16UC1 and
+# mono16 are millimetres and 32FC1 is metres, the ROS convention (REP 118), which the RealSense
+# driver follows. Add an encoding here and the service accepts it.
+DEPTH_ENCODINGS = {"16UC1": (np.uint16, 0.001), "mono16": (np.uint16, 0.001),
+                   "32FC1": (np.float32, 1.0)}
 
 
 @dataclass
@@ -54,19 +56,20 @@ def as_numpy(value: Any) -> np.ndarray:
 
 
 def depth_in_metres(depth: np.ndarray, encoding: str) -> np.ndarray:
-    """A depth image in metres, as float32. 0 and NaN still mean "no reading"."""
-    if encoding not in DEPTH_SCALE_BY_ENCODING:
-        raise ValueError(
-            f"depth encoding {encoding!r} not supported, expected one of "
-            f"{sorted(DEPTH_SCALE_BY_ENCODING)}"
-        )
-    return depth.astype(np.float32) * DEPTH_SCALE_BY_ENCODING[encoding]
+    """A depth image in metres, as float32. 0 and NaN still mean "no reading".
+
+    The encoding must be in DEPTH_ENCODINGS: the service's read_request refuses any other.
+    """
+    return depth.astype(np.float32) * DEPTH_ENCODINGS[encoding][1]
 
 
 def median_depth(depth_m: np.ndarray, mask: np.ndarray) -> float:
     """Median of the valid readings under the mask, in metres. NaN if there are none.
 
-    A RealSense pixel with no reading is 0, so 0 is skipped along with NaN.
+    A RealSense pixel with no reading is 0, so 0 is skipped along with NaN. The median, not the
+    mean, because the worst readings sit at the mask's edges: pixels that slipped onto the table
+    behind, and "flying pixels" whose depth lands between object and background. They are a
+    minority, so the median ignores them where the mean would be pulled toward them.
     """
     if depth_m.shape != mask.shape:
         raise ValueError(f"depth is {depth_m.shape}, mask is {mask.shape}")
@@ -81,6 +84,9 @@ def back_project(u: float, v: float, z: float, k: Sequence[float]) -> Tuple[floa
     k is CameraInfo.k, the 3x3 intrinsics matrix flattened row by row. Pinhole model:
     x right, y down, z out of the lens.
     """
+    # ponytail: lens distortion (CameraInfo.d) is ignored and K is used as the driver reports it.
+    # The error is likely a few mm near the image edges [inferred]. If grasps near the edges miss,
+    # recalibrate the intrinsics and undistort (u, v) first, e.g. with cv2.undistortPoints.
     fx, cx, fy, cy = k[0], k[2], k[4], k[5]
     return ((u - cx) * z / fx, (v - cy) * z / fy, z)
 
@@ -90,13 +96,28 @@ def has_intrinsics(k: Optional[Sequence[float]]) -> bool:
     return k is not None and k[0] != 0 and k[4] != 0
 
 
+def centroid_on_mask(det: Detection) -> bool:
+    """True if the centroid pixel lies on the mask.
+
+    False for a ring or L-shaped object, whose centroid can fall in a hole or a corner. The depth
+    is still the object's (the median under the mask), so the 3D point then floats in empty space
+    at the object's distance. AnyGrasp uses the mask and is not affected. Anything that aims at
+    the centroid, like the grasp state machine via /object_centroid_2d, is.
+    """
+    return bool(det.mask[int(round(det.v)), int(round(det.u))])
+
+
 def describe_mask(
     mask: np.ndarray,
     score: float,
     depth_m: Optional[np.ndarray] = None,
     k: Optional[Sequence[float]] = None,
 ) -> Optional[Detection]:
-    """One mask -> a Detection. None for an empty mask, which has no centroid."""
+    """One mask -> a Detection. None for an empty mask, which has no centroid.
+
+    The point is the centroid pixel at the median depth under the mask, not the object's own
+    centre. centroid_on_mask says when the two differ.
+    """
     ys, xs = np.nonzero(mask)
     if xs.size == 0:
         return None

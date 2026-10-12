@@ -4,6 +4,10 @@
 Turns what you say into what the arm looks for: a word on /aria/audio/prompt becomes a Target
 on /grasp/target, which the grasp segmentation client reads. The stop word clears it.
 
+Every word is sent, even a repeat, and /grasp/target is not latched. So if the grasp client
+restarts, it looks for nothing until you say the word again: a restart never resumes an old
+command on its own (Dion, 2026-10-13).
+
 This first version sends the word only. After T2.2 (glasses image back on) it will also segment
 the glasses image with the service, pick the object you look at, and send its crop as the
 Target's reference. Gaze is in the raw glasses camera's pixels, so it must be rotated and
@@ -27,7 +31,6 @@ STOP_KEYWORD = AudioStreamingPipelineConfig.STOP_KEYWORD
 class AriaSegmentationClient(Node):
     def __init__(self):
         super().__init__("aria_segmentation_client")
-        self.prompt = ""
         self.create_subscription(
             String, ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value, self.on_prompt, 10)
         self.target_pub = self.create_publisher(Target, ROS2Topics.GRASP_TARGET.value, 10)
@@ -40,9 +43,6 @@ class AriaSegmentationClient(Node):
         if not words:
             return
         new = "" if words == STOP_KEYWORD else words
-        if new == self.prompt:
-            return
-        self.prompt = new
         target = Target(prompt=new)
         target.header.stamp = self.get_clock().now().to_msg()
         self.target_pub.publish(target)

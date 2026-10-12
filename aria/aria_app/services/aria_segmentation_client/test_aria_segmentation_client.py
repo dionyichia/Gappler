@@ -53,15 +53,16 @@ class AriaClientTest(unittest.TestCase):
         self.say("box")
         self.assertEqual(self.say(STOP_KEYWORD.upper()), ["box", ""])
 
-    def test_the_same_word_again_is_not_resent(self):
+    def test_the_same_word_again_is_resent(self):
+        # a restarted grasp client gets the word back only when you say it again
         self.say("box")
-        self.assertEqual(self.say("Box"), ["box"])
+        self.assertEqual(self.say("Box"), ["box", "box"])
 
     def test_silence_is_ignored(self):
         self.assertEqual(self.say("   "), [])
 
-    def test_stop_with_nothing_set_sends_nothing(self):
-        self.assertEqual(self.say(STOP_KEYWORD), [])
+    def test_stop_is_always_sent(self):
+        self.assertEqual(self.say(STOP_KEYWORD), [""])
 
 
 if __name__ == "__main__":
