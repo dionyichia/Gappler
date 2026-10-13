@@ -19,13 +19,15 @@ box with live SAM 3, closed on it, lifted it and brought it back to HOME** (four
 [`../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt`](../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt)).
 The 3b too-close depth fix (PR #62) is merged and passed at the box first.
 
-**Not merged yet:** the state machine ran from `~/rcp-Gappler-t1.25` (branch
-`t1.25-grasp-request-gate`): the T1.25 gate plus two 3c fixes, a 0.5 s settle wait before each
-approach step (`step_settle_s`) and the virtual table at the measured 0.12 m (`table_top_z_m`).
-`~/rcp-Gappler` has none of these. Run step 4 the same way until that branch merges.
+**Merged into `dev` (`dec78c0`):** the T1.25 gate (#65) and the two 3c fixes (#67), a 0.5 s settle
+wait before each approach step (`step_settle_s`) and the virtual table at the measured 0.12 m
+(`table_top_z_m`). `~/rcp-Gappler` is rebuilt on it, so the normal `./quickstart_terminals.sh
+grasp` layout runs the gated state machine.
 
-**Next, at the robot: step 4 (T1.11), more grasps.** Same setup as 3c, one request per attempt,
-restart the state machine between attempts. Put the box in line with the gripper: attempt 3
+**Next, at the robot: step 4 (T1.11), more grasps.** Same setup as 3c, from `~/rcp-Gappler`.
+Power the arm on about a minute before the driver pane, and start the state machine only after the
+driver prints "RM_65_driver is running" (attempt 0 of 3c, guard owed in T1.26). One request per
+attempt, restart the state machine between attempts. Put the box in line with the gripper: attempt 3
 missed because it was not. Release by hand with `-w 1` (see 3c result). Before an unattended run,
 T1.26 (arm motion guards found in 3c).
 
@@ -92,7 +94,7 @@ All MoveIt motions run at 10% velocity and acceleration
 
 ## The trigger, before and after T1.25
 
-**Since T1.25 (2026-10-13, branch `t1.25-grasp-request-gate`):** a centroid starts nothing on its
+**Since T1.25 (merged 2026-10-13, #65):** a centroid starts nothing on its
 own. The state machine waits in IDLE for `/manipulator/grasp_request`, then for a centroid. Send
 the request by hand: `ros2 topic pub --once /manipulator/grasp_request std_msgs/msg/Empty`. It is
 typed, not sent, in the last pane of `./quickstart_terminals.sh grasp`. "Before T1.25" below is
@@ -517,30 +519,17 @@ return to HOME, `true` on `/manipulator/return_to_user`. One attempt.
 3a's arm panes, plus 3b's camera, service and client panes. `ros2 topic echo /pipeline_state`. The state
 machine last. The one-shot `return;` stops it after one cycle either way.
 
-**With the gate (recommended while T1.25 is unmerged).** Keep the 3b session from `~/rcp-Gappler`
-running. Do **not** press Enter in its state machine pane: that build has no gate. Instead:
+Run it from `./quickstart_terminals.sh grasp` in `~/rcp-Gappler` (gate merged 2026-10-13, #65). On
+2026-10-13 the gate was still unmerged, so the state machine ran from a separate build,
+`~/rcp-Gappler-t1.25`, since deleted.
 
-1. In the grasp session, open a new window (`Ctrl-b c`) and start the state machine from the
-   T1.25 build:
-   ```bash
-   export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1
-   source ~/rcp-Gappler-t1.25/arm/arm_env.sh
-   ros2 pkg prefix grasp_state_machine   # expect /home/rcp2026/rcp-Gappler-t1.25/install/...
-   ros2 launch grasp_state_machine grasp_state_machine.launch.py
-   ```
+1. Start the state machine pane only after the driver pane prints "RM_65_driver is running".
 2. Wait for the home move and `IDLE` on `/pipeline_state`. The arm stays still. The state machine
    logs `Centroid ignored: no grasp request open` every 5 s while the client publishes.
 3. Box in view, the client logging centroids, hand on the power button. Send the request from the
-   last pane (or any shell on domain 91):
-   `ros2 topic pub --once /manipulator/grasp_request std_msgs/msg/Empty`
+   last pane: `ros2 topic pub --once /manipulator/grasp_request std_msgs/msg/Empty`
 4. Expect `Grasp request: accepting centroids for 10.0s`, then `SELECTING` within about a second.
    If no centroid comes in 10 s, it logs `Grasp request lapsed` and stays in IDLE. Send it again.
-
-**Without the gate** (`~/rcp-Gappler`, before T1.25 merges): the arm approaches as soon as the
-state machine is up and a centroid arrives. Box in view before you press Enter.
-
-Once T1.25 is merged and `~/rcp-Gappler` is rebuilt, use the panes as `./quickstart_terminals.sh
-grasp` lays them out: state machine pane, then the request pane.
 
 Box on the table, in view, alone.
 
@@ -640,3 +629,4 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-13 | Claude Opus 5.5 + Dion | T1.25 built: the trigger section says what changed, the gate design is marked as built with the timeout, the busy refusal, the C1 shutdown fix and why a request cannot race the worker. 3c and step 5 send a request. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | Start here: PRs #57 to #60 merged, T1.25 built but unmerged. Step 3c: how to run with the gate from `~/rcp-Gappler-t1.25` (binary checked to contain it), and without it. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | 3c PASS, the first grasp on the real arm. Start here rewritten for step 4. 3c result table, release with `-w 1`. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | After #65 and #67 merged: Start here and step 3c run from `~/rcp-Gappler` and the quickstart grasp layout. The separate `~/rcp-Gappler-t1.25` build is deleted. Start the state machine after the driver is up. |

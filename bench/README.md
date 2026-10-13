@@ -123,7 +123,7 @@ moved file would show red and the real signal would drown.
 So `contracts.py` compares **contracts**, and treats file locations as
 informational:
 
-- moving `sam3_ros_node.py` to a new package → `info: moved`
+- moving `dummy_mask_publisher.py` to a new package → `info: moved`
 - changing the topic it publishes → `REGRESSION`
 
 ## What counts as a regression
