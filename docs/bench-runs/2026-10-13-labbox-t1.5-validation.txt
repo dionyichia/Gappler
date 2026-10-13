@@ -1,0 +1,56 @@
+# T1.5 validation session — lab box, 2026-10-13 ~14:50–14:57 +08:00
+
+Date/people/roles: 2026-10-13. Sherman (computer operator), Dion (physical stop
+at the arm's rear power button/plug — there is no e-stop button, box or pendant).
+Both present throughout the powered test.
+
+As-found: controller ON with no driver or ROS session (process check empty).
+Checkout `dev` at `49d80f7` (2026-10-13 13:11); arm overlay rebuilt 13:07 the same
+day; `arm/vendor/rm_driver` and `arm/arm_env.sh` unchanged since the September
+install. ROS domain 91 verified empty before start (92–96 also probed empty).
+Custody at close-out handoff: Sherman → Dion (controller powered); Sherman
+pressed the power button for final power-off just before 15:09.
+install. ROS domain 91 verified empty before start (92–96 also probed empty).
+Raw pane transcripts kept on the box at `/tmp/t15_final_pane{0,1,2,3}.txt`.
+
+T-ESTOP: `python3 ~/rcp-Gappler/arm/estop/estop.py` reported `E-stop ready`,
+held open and attended the whole session.
+
+T-NET run 1: `sudo tcpdump -n -i enp2s0 'udp and src host 192.168.1.18 and dst
+host 192.168.1.10 and dst port 8089'` → 5156 packets captured
+(visible tail 14:51:26–14:51:36; scrollback truncated the head).
+
+T-DRIVER (driver only, never the grasp launcher): `RM_65_driver is running`,
+`product_version = RM65-BI`, `controller version : 3`, `UDP_Configuration is
+cycle:5ms,port:8089,...,ip:192.168.1.10`.
+
+T-NET run 2 (the T1.5 measurement): 23,043 packets captured, 23,060 received by
+filter, 0 dropped by kernel, window ~14:55:07–14:57:03 (~199 Hz wire rate,
+matches the 5 ms cycle).
+
+T-INSPECT during run 2:
+- `ros2 topic echo /joint_states --once` stamp sec 1791874553 (≈14:55:51, inside
+  the capture window): joint1–6 finite, near-zero posture —
+  [0.0025128, 0.0007155, 0.0004712, -0.0000698, -0.0003664, 0.0000872].
+  `velocity` and `effort` published as empty arrays (position only, known since T1.6).
+- `ros2 topic hz -w 10 /joint_states`: opens at 199.96/200.52/200.00 on a steady
+  5 ms interval, then degrades over a minute-long watch to 140–171 with
+  millisecond jitter. Wire rate stays ~199 steady throughout, so the wobble is
+  ROS-side delivery, not the arm. Recorded, not thresholded; T4.3 candidate.
+- `ros2 topic info -v /rm_driver/emergency_stop_cmd`: Publisher count 1
+  (`estop`), Subscription count 1 (`rm_driver`), type `rm_ros_interfaces/msg/Stop`.
+
+Network: `ping -I 192.168.1.10 -c 3 192.168.1.18` 0% loss, avg 0.43 ms;
+`nc -zv -w 3 192.168.1.18 8080` succeeded.
+
+Motion: none commanded (driver-only launch, no state machine, no launcher);
+none observed at the robot (Sherman + Dion).
+
+Shutdown: driver Ctrl+C confirmed exited (no `rm_driver` processes), estop
+closed, controller powered off by Sherman just before 15:09; ping to .18 DOWN
+verified 15:08:59 +08:00.
+
+Verdict: PASS per `docs/ARM_BRINGUP.md` verdict line — correct handshake,
+independently observed arm packets continuing at `.10:8089` during plausible
+six-joint ROS feedback, no motion commanded or observed. The cached-readings
+gap that kept T1.5 open is closed: 23k wire packets span the ROS observation.
