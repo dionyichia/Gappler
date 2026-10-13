@@ -82,9 +82,8 @@ Both held files are now on `main`, so T0.0 is closed.
 
 1. ✅ **The Aria calibration file parses** `[observed]`. All five cameras load, the RGB one as
    Fisheye624, 2880x2880.
-2. **Still owed: are these the same glasses?** Skipped 2026-09-21, the glasses were not plugged in.
-   With them on USB, read the serial from the `aria` CLI and compare it with `1WM10350101291`, the
-   serial in the file. If it differs, the file is for another pair and only good as a parsing fixture.
+2. ✅ **Same glasses** `[observed]` 2026-10-13. `adb devices` on the box shows `1WM10350101291`, the
+   serial in the file. A second pair, `1WM093701N1197`, is also in the lab and has no calibration file.
    Note the `aria` CLI is not on `rcp2026`'s PATH. Source `global_env.sh` (was `env.sh`, renamed 2026-09-22) or `aria/aria_env.sh` first so the project `.venv` is active.
 3. ✅ **`env.sh` works in `~/rcp-Gappler`** `[observed]`. 5 `moveit_task_constructor` packages,
    12 `rm_` packages, the `.venv` python. It must be sourced from the repo root (`source
@@ -835,3 +834,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-23 | OpenCode + Sherman | §3 links the unvalidated shared ARM_BRINGUP.md and corrects moved launch paths and the T1.2 single-launch result. |
 | 2026-09-23 | Claude Opus 5.5 + Dion | Rule 1: the home pose is validated on the real arm (T1.7), the unprompted-homing warning stays. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | "Start here" points at GRASP_BRINGUP_STEPS.md for Dion's current work (T1.24 step 3b). |
+| 2026-10-13 | Claude (Opus 5.5) + Dion | Box check 2 done: glasses `1WM10350101291` match the calibration file. Aria streaming to the box found blocked by the box's network addresses, fix tracked as T2.12. |

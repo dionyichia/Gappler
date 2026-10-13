@@ -1336,7 +1336,7 @@ on the lab clone before booking time for this.
 | `RCP_NEW_USER_STARTUP_GUIDE.md` | ✅ **Taken** into `docs/archive/`, unchanged except a header marking it historical | Paths and IPs are stale, but `bench/` and four docs cite it by section. Citations repointed to the new path |
 | `docs/SETUP.md` | ✅ **Skipped** | Reviewed 2026-09-19. Everything in it is already covered by `CODE_AUDIT`, `ORIENTATION`, `TESTBENCH_PLAN` and this file. It stays readable on the branch |
 
-**T0.0 is closed (2026-09-21).** All five files are decided and `realman_manip` is no longer treated as live. One box check is still owed: the calibration file's serial `1WM10350101291` has not been compared with the glasses, because they were not plugged in. Evidence: [`bench-runs/2026-09-21-labbox-t0.0-box-checks.txt`](bench-runs/2026-09-21-labbox-t0.0-box-checks.txt).
+**T0.0 is closed (2026-09-21).** All five files are decided and `realman_manip` is no longer treated as live. The last box check passed on 2026-10-13: the glasses `1WM10350101291` match the calibration file's serial `[observed]`. The lab also has a second pair, `1WM093701N1197`, with no calibration file in the repo. Evidence: [`bench-runs/2026-09-21-labbox-t0.0-box-checks.txt`](bench-runs/2026-09-21-labbox-t0.0-box-checks.txt).
 
 **The two AnyGrasp nodes are two methods, not two cameras** `[code]`. Both subscribe to the same
 RealSense topics (`/camera/camera/color/image_raw`, `.../aligned_depth_to_color/image_raw`,
@@ -1424,6 +1424,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-10-13 | Claude (Opus 5.5) + Dion | T0.0's last box check passed: glasses `1WM10350101291` match the calibration file. Second pair `1WM093701N1197` noted. Aria stream to the box blocked, cause found, fix is T2.12 (dion_docs/aria_stream_box/ARIA_STREAM_ON_THE_BOX.md). |
 | 2026-10-07 | OpenCode + Sherman | Recorded T3.4 attended LiDAR PointCloud2 at 9.999-10.002 Hz and Sherman-reported 19.3 V battery hold before driver/teleop startup. T3.4 PROGRESS; charger compatibility, driving/stopping and shutdown sign-off remain open. See sherman_docs/T3.4_BASE_BRINGUP.md. |
 | 2026-09-14 | Claude (Opus 5) + Dion | §3.3 promoted to 🔴 and re-checked against the branch: exactly 15 files exist on `realman_manip` and not on `main`, ten of them pre-reorg duplicates. Added a fifth file to take, `anygrasp_node.sh`, which records that the verified session ran `checkpoint_tracking.tar` while `main` launches `checkpoint_detection.tar`. It is now `PROJECT_PLAN` T0.0, the first task in the plan. §3.2 marked done: the nav workspace built 10/10 on 2026-09-14, with two corrections — 10 packages not 8, and colcon does build `Livox-SDk2/` without a manifest. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added the pointer under §2.7 to the new `TESTBENCH_PLAN.md` handoff, and a root `CLAUDE.md` so a fresh session loads context automatically. |
