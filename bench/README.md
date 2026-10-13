@@ -75,6 +75,7 @@ refused, 3 skipped — never a pass.
 | `sim_moveit.sh` | MoveIt plans and executes to both home poses and zero on a `mock_components` arm | installed config must be mock hardware |
 | `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s` sent back to back, the Ctrl+C key and SIGINT (5 trials) all deliver? Every case is required since the 2026-09-21 fix | — |
 | `state_machine_sim.sh` | `grasp_state_machine` runs a full grasp cycle on the simulated arm; the test plays camera, detector and gripper | mock hardware; preflight's `arm-ping`/`arm-port` must not pass (Dion's exception in `CLAUDE.md`) |
+| `velocity_smoother.sh` | T3.4: installed Nav2 smoother plus the owned keyboard node under scripted pseudo-terminals; direction/caps, silence, explicit stop, quit, Ctrl+C, SIGINT, teleop crash and terminal restoration. No base driver | fixed domain 127, localhost only; nodes and hidden topics empty; discovery errors/timeouts refuse |
 | `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 16 cases, 7 expected-fail (F1 ×3, F5, F2, E1, F4). The F1, F4 and F5 fixes landed 2026-10-05 and 2026-10-07 (T3.8), so those five should now report XPASS. Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
 | `memory_graph_tests.sh [PYTHON]` | every test in `memory_graph/tests`, including `test_clip_encoder.py`, which loads open_clip ViT-B-32 and checks it for upstream's four uses of CLIP: object features, matching, task relevance from text, and scoring a whole photo. Default env: `.venv`. Needs no ROS. One skipped test makes the step SKIPPED. None is skipped by design since 2026-10-07, when the feature merge test was written (T6.4c). The step still reports SKIPPED where open_clip or the weights are missing. Weights: `.venv/bin/python -m memory_graph.clip_encoder` | nothing to isolate: no ROS, no network |
 | `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `grasp/anygrasp_venv/.venv`, built by `./grasp/anygrasp_venv/build_anygrasp_venv.sh` | GPU only, no ROS |
@@ -83,6 +84,37 @@ refused, 3 skipped — never a pass.
 
 Tests that encode a CODE_AUDIT finding assert the *intended* behaviour and report **XFAIL** while the
 bug is there, **XPASS** once it isn't — then retag the finding.
+
+### T3.4 remote software check
+
+L0 also checks command ownership (`test_command_ownership.py`) and preserves both
+T3.4 and existing dev suites (`test_t34_bench_coverage.py`). Ownership assertions
+come from source commit `7b01820`; T3.5 scan/persistence changes are not included.
+
+Run `bash bench/velocity_smoother.sh` individually on an idle ROS box; it needs the installed
+`nav2_velocity_smoother`, not a new workspace build. It uses only `/t34_probe/keyboard_input`
+and `/t34_probe/output`, fixed domain 127 and a recording subscriber. `BENCH_DOMAIN` values
+other than 127 are refused. Do not join that domain while the check is running.
+The generic domain-77 description above does not apply to this script.
+
+Caps are 0.05 m/s and 0.15 rad/s, smoothing at 20 Hz. Keyboard silence times out after 0.25 s;
+the smoother's independent stale-input timeout is 0.25 s. Checks allow at most 0.65 s for
+the smoother alone and 1.0 s for keyboard-to-output silence, including ramp-down and scheduling.
+These are software output bounds, **not braking times**. A surviving smoother can handle teleop
+loss; losing the smoother, controller firmware timeout, network loss and physical stopping are
+not established. SIGKILL cannot restore a terminal or publish a final zero.
+
+Logs go to `log/t34-smoother.log` and `log/t34-teleop-*.log`. Capture the runner's output for
+measured timings. Its cleanup signals only owned process groups and verifies domain emptiness
+after a successful run. L0 also runs stdlib guard and LiDAR launch-wiring tests.
+`python3 bench/test_t34_launch.py --runtime` constructs the real ROS LiDAR launch without
+executing its actions; source an existing nav overlay for that check. No LiDAR is opened.
+
+### Changelog
+
+| Date | Who | Change |
+|---|---|---|
+| 2026-10-06 | OpenCode + Sherman | Added maintained T3.4 isolated controls and LiDAR launch checks; physical acceptance remains separate. |
 
 ---
 

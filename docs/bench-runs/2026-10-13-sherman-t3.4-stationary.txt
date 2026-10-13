@@ -1,0 +1,137 @@
+T3.4 attended base/LiDAR and keyboard bring-up, 2026-10-13. DONE for task scope.
+Selected inspection results, not a validated hardware operating procedure.
+Sherman executed hardware startup; OpenCode inspected feedback and ran only
+isolated software tests. No real wheel-velocity command issued by OpenCode.
+
+Source/installation provenance:
+- Feature checkpoint: 0a442ac8e55d1f948ffc1d7603762fe1de5f816f.
+- Original lab checkout at inspection: dev e19d58a, preserving untracked logs.
+- Source candidate: log/t35-dev-sync-990aa111, index tree
+  990aa11145bbd47a7dcd50e21a10c14f37046733. Eleven selected keyboard/navigation/
+  config/bench files matched the feature checkpoint by SHA256.
+- This is NOT proof that every installed binary was built from that checkpoint.
+- Installed comparison: 4 configs MATCH, 3 launches DRIFT, LiDAR-only wrapper
+  MISSING, helper SKIP. Installed keyboard resolves to old original-checkout
+  source without key_timeout; not used for today's software keyboard tests.
+- Native smoother: ros-humble-nav2-velocity-smoother
+  1.1.20-1jammy.20251228.102027 (same package version previously tested).
+- No original-overlay build/install or network-configuration change.
+
+Readiness/custody:
+- Sherman reported charging display 11%, 24.6 V before bring-up. Not an SSH
+  measurement or later charge percentage. Charger compatibility not newly proven.
+- Physical stop/posture were treated as operator assumptions, not independently
+  measured acceptance. Operator acknowledged handover, charger disconnection
+  and stop readiness before manually executing the staged hardware commands.
+- Earlier active arm/grasp session prevented advancing; at 16:31 listed arm/
+  grasp processes were absent, node discovery showed CLI helpers only and
+  /cmd_vel was absent. No teammate process was stopped by OpenCode.
+
+Communications:
+- CAN2COM_HUB -> ttyUSB0 present, initially unopened; no base drivers running.
+- Operator-started xnode_comm: COM open success, /dev/CAN2COM_HUB,
+  communication init finish. TCP channels disabled; serial Xstd enabled.
+- Read-only sample: 12 fresh chassis heartbeats in 6 s, class 1/type 3/number 1,
+  function 0xB0, data[0]=0. No /cmd_vel publishers. Heartbeat alone is not battery
+  or stop readiness; voltage/safety frames not yet observed in that sample.
+
+Vehicle driver (operator started, no RViz/teleop/Nav2/power docking node):
+- CAN mode locked; mode OK(CAN mode); Vehicle enable; ECHO_PLUS;
+  Vehicle init finish; differential model, track_width=0.272 m;
+  Odom init finish; VEHICLE READY TO GO.
+- The driver auto-enabled the chassis. That log is NOT permission to drive or
+  evidence of physical braking. ini_path was the existing vehicle ID list;
+  mode_can_lock=true, pub_tf=true, calc_speed=false, all rate scales 1.0.
+- 16:39 read-only 8 s sample: 416 JSON status messages, 400 odometry messages.
+  battery_vol=25.20000076; err_bat_low=false; err_bat_down=false;
+  err_motor=0; err_driver=0; err_power=0; err_driver_offline=0;
+  work_mode=2; err_ctrl_lost=true; err_stop=false; brake_state=false.
+- Odometry 50.002 Hz, odom -> robot_base_link. All six reported twist components
+  stayed zero; reported planar position change 0.0 m. This is feedback, not
+  independent proof of physical immobility or stopping.
+- /cmd_vel: 0 publishers, 1 vehicle subscriber before/after observation.
+- Sherman reports no remote-control handset. Vendor README defines
+  err_ctrl_lost as remote controller lost; no fault-clear request was sent.
+  Absence of a handset does not prove lost-CAN/watchdog stopping behavior.
+
+LiDAR (operator started the tested source wrapper, overlay unchanged):
+- Livox driver 1.2.4, MID-360 initialized, PointCloud2 format.
+- One /livox/lidar publisher: /livox_lidar_publisher; frame livox_frame.
+- Initial mixed best-effort observation: 75 clouds, 9.371 Hz; latest cloud
+  21120 points, point_step=26, row_step=data_bytes=549120; lengths consistent.
+- Cloud-only recheck matching RELIABLE publisher QoS: 121 clouds, receive
+  10.0014 Hz, header-stamp 10.0 Hz; stamp gaps min/median/max
+  0.0893/0.0994/0.1074 s; 0 gaps >0.15 s. First sample not hidden or called 10 Hz.
+- Later status voltage=25.10000038, both battery flags false, reported speed
+  components zero. /cmd_vel publishers remained zero. Geometry/TF alignment,
+  cloud-to-scan/live SLAM and maps were not tested.
+
+Private software bench (hardware remains domain 91; tests domain 127/local):
+- All five runtime-bench/keyboard sources matched audited feature source.
+- Shared-box preflight clear; hidden-node refusal PASS.
+- First run: all 12 smoother cap/sign/stop cases PASS (timeout zero
+  0.466-0.490 s, explicit zero 0.221-0.246 s), but keyboard idle-publication
+  assertion FAILED. Overall exit 1, not a bench PASS. Final domain guard clear.
+- Diagnostic: publisher found at 1.847 s; first raw message at 1.944 s;
+  original fixed 1.5-2.6 s window had 7 messages (requires >=9), while steady
+  idle was 9.994 Hz. All diagnostic commands zero, Q exit 0, terminal restored,
+  domain 127 empty afterward. Log: t34-keyboard-startup-165501.log in candidate.
+- Harness-only fix: wait up to 5 s for first raw message, fail on child exit/
+  silence, then keep the SAME 1.1 s idle measurement and speed/stop criteria.
+  Keyboard implementation and remapping unchanged. New focused tests: 4 RED
+  before fix, total 5 GREEN after; ownership 5 PASS, local quick available
+  checks PASS with explicit environment/subtest skips. Read-only review PASS.
+- Corrected source tree: 4886d9087e494645ee59fd1b9031607fc84d9590.
+  Fresh box candidate matched exactly. Focused keyboard 5/5 and ownership 5/5
+  passed there. Corrected complete private bench exit 0; final domain 127 empty.
+  All 12 smoother cases passed; keyboard W/S/A/D, X, Q, Ctrl+C, SIGINT, crash
+  with surviving smoother, and invalid parameters passed. Observed keyboard
+  silence-to-zero 0.476-0.600 s, X 0.253-0.304 s, exit/crash 0.242-0.383 s.
+  Runtime transcript: log/t34-startup-4886d908/log/t34-readiness-fixed-runtime.txt.
+
+Attended keyboard driving (Sherman at the machine):
+- Operator manually started/activated the bounded smoother and tested-source
+  keyboard. OpenCode staged commands but did not execute hardware-facing starts
+  or generate wheel commands. Physical-stop readiness acknowledged by Sherman.
+- Verified live smoother ACTIVE, OPEN_LOOP, 20 Hz, max/min velocity +/-0.05 m/s
+  and +/-0.15 rad/s, accel [0.1,0,0.3], decel [-0.2,0,-0.6], timeout 0.25 s.
+- Exact ownership: /t34_keyboard/simple_teleop publishes /t34_keyboard/cmd_vel;
+  /t34_manual/velocity_smoother alone consumes raw and publishes /cmd_vel;
+  /xnode_vehicle alone consumes final. No arm/Nav2/second command owner found.
+- Before motion: 20 raw zeros, 40 final zeros, 100 zero-speed odometry messages
+  in two seconds. Battery 25.0 V, both battery flags clear.
+- Sherman confirmed W forward, S backward, A left, D right, and X brought the
+  base to a complete physical stop. This is operator-witnessed evidence, not
+  an independently measured stopping distance/time or direction calibration.
+- Recorder: log/t34-attended-keyboard-20261013-171600.jsonl, five minutes;
+  2079 raw, 4162 final, 15000 odometry and 15000 status messages.
+  Interim inspection found all four requested axes/signs, final command extrema
+  +/-0.05 m/s and +/-0.15 rad/s, with later zeros. Reported odometry extrema were
+  -0.07194/+0.07109 m/s and -0.22978/+0.18382 rad/s; command limits are NOT
+  verified physical-speed limits. Odometry accuracy remains uncalibrated.
+- Keyboard Q exit observed in terminal; raw publisher and keyboard node gone.
+  Fresh post-exit odometry/status reported zero speed. Smoother had a publisher
+  endpoint but no fresh output in that sample; do not call silence a fresh zero.
+- Sherman identifies the chassis power button as the independent stop and
+  reports immediate stopping. No timed power-button stop exercise or certified
+  emergency-stop capability claimed. Later reports chassis powered off.
+- 17:28 shutdown mismatch: keyboard/smoother gone, but comms, vehicle and LiDAR
+  still running in the earlier stationary window, with no command publishers.
+  Sherman then authorized OpenCode to stop only this session's remaining jobs.
+  On cleanup inspection all three tracked driver PIDs had already exited;
+  no driver signal was sent. At 17:31 final process/graph verification PASS:
+  no session driver/control/LiDAR processes or nodes; zero publishers on /cmd_vel,
+  /t34_keyboard/cmd_vel, /odom and /livox/lidar. All nine session panes at Bash;
+  only unrelated ROS CLI daemon remains. No tmux closed or teammate jobs stopped.
+  Chassis physical power-off is Sherman's report, not independent SSH evidence.
+
+Installed binary/config SHA256, read-only at 16:52:
+xpkg_comm/xnode_comm: 988e99237359968748fdebdff5cdf59d047255f64173b6a2c7a164d46e677b28
+xpkg_vehicle/xnode_vehicle: 48b388997b2f0b458a9b4ee3d0d90e5f08c2950098aca7269ff3889c54d35e14
+xpkg_vehicle/ini/device_id_list.ini: 2ab22d664c860dbcec5b4cffe7050d1844f2a48f7100e7c4c402544df86b513d
+livox_ros_driver2/config/MID360_config.json: 7180180bff2ebec9689800f7d4f38ae1d8498fffb139614566279ce835df94ce
+
+Not proven: measured physical stopping distance/time, emergency-stop rating,
+odometry accuracy, watchdog/network-loss behavior, charging safety/health/capacity,
+independently verified transport posture and charger custody,
+mapping/localization. Power-off and physical directions/stopping are operator reports.

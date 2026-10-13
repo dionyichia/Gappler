@@ -204,6 +204,22 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Whole-suite disposition: FAIL, exit 1. State-machine simulation safely refused before launch with arm reachable; L5 failed because Aria USB absent, with six private-domain graph checks skipped. No guards bypassed and no real motion commanded. Unchanged vendor-driver compiler warnings recorded, not dismissed as proof of hardware safety.
 - Outcome: T5.4 marked DONE for geometry/software integration in task-tree, not calibration or real driving acceptance. Visual mount angles/measurement uncertainty, cached-TF health limitations, known defects and physical stopping accuracy remain explicit residuals. PR/CI next; no active merge approval. Hosted task-tree Artifact republish owed.
 
+## [2026-10-06] T3.4 | LiDAR and base feedback, driving still open
+
+- Evidence: [`T3.4_BASE_BRINGUP.md`](T3.4_BASE_BRINGUP.md), [session excerpts](../bench-runs/2026-10-06-sherman-t3.4-excerpts.txt).
+- Verified: Sherman-run Livox PointCloud2 stream approximately 10 Hz; ECHO_PLUS driver initialized and odometry approximately 50 Hz. Incoming chassis frames decoded CAN mode and low battery (latest 20.5 V). Isolated Nav2 limiter on private test topics bounded forward/reverse outputs and returned to zero in 0.500 s after input stopped.
+- Outcome: T3.4 PROGRESS, not DONE. No runtime code/config change, keyboard-driving acceptance, physical stop proof, odometry accuracy measurement or fresh-build provenance claimed. Gripper and personal desktop work excluded from this task record.
+- Handoff: 21:01 read-only process check still showed communications-only xnode_comm, no vehicle/teleop/LiDAR/arm drivers. Chassis power, charging and custody not independently confirmed; no user process stopped by OpenCode.
+- Next: charge and verify hardware stop/transport setup, maintain the isolated control-path check, fix Livox-format/network-startup gaps with tests, then attended driving and stopping evidence. Hosted task-tree Artifact republish owed.
+
+## [2026-10-06] T3.4 | Maintained remote control preparation
+
+- Evidence: [`T3.4_REMOTE_CHECKS.md`](T3.4_REMOTE_CHECKS.md), [reviewed box results](../bench-runs/2026-10-06-sherman-t3.4-remote.txt), matching Mac/box SHA256 for six control/launch sources.
+- Changed: fail-closed fixed-domain guard, maintained keyboard/smoother bench, nonblocking teleop with 0.25 s inactivity timeout and burst-input correction, LiDAR-only PointCloud2 launch, focused static CMake executable resolution. Vendor files and full SLAM launches unchanged.
+- Verified: Mac quick bench PASS with declared skips; box private-domain suite PASS including hidden-node refusal, roughly 10 Hz keyboard publication, raw exit zeros, terminal restoration and surviving-smoother response to teleop crash. Pipeline silence zero observed in 0.457-0.603 s. Real LiDAR launch constructed without executing any action. Read-only review follow-up found no remaining important defects.
+- Whole quick-bench disposition on box: FAIL, exit 1. L0/L1 passed; L2 lacked three model-weight files in the separate test checkout. No guard bypass, asset duplication, full build or whole-stack PASS claimed.
+- Handoff: no hardware driver launched or motion commanded. Original lab checkout/untracked work preserved; user-started communications-only node remains untouched. Power/charging/custody unconfirmed. T3.4 PROGRESS; attended driving/physical stopping remain open, no completion PR or merge. Hosted task-tree Artifact republish owed.
+
 ## [2026-10-13] T1.5 | Runbook validated, DONE
 
 - Evidence: [`../bench-runs/2026-10-13-labbox-t1.5-validation.txt`](../bench-runs/2026-10-13-labbox-t1.5-validation.txt); runbook [`../ARM_BRINGUP.md`](../ARM_BRINGUP.md) (banner validated, observed rate note, changelog).
@@ -211,6 +227,33 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: the cached-readings gap is closed; T1.5 DONE in task-tree with residuals. Supersedes stale branch `t1.5-runbook-followup` (never PR'd, 96 behind).
 - Residuals: ROS-hz late-watch wobble 140–171 (ROS-side, T4.3 candidate); velocity/effort empty (known). Hosted task-tree Artifact republish owed.
 - Next: PR `t1.5-closeout` to `dev`; CI green + merge word.
+
+## [2026-10-07] T3.4 | Attended LiDAR recheck, battery hold
+
+- Evidence: [`T3.4_BASE_BRINGUP.md`](T3.4_BASE_BRINGUP.md#2026-10-07-attended-follow-up-lidar-passed-battery-hold), [selected excerpts](../bench-runs/2026-10-07-sherman-t3.4-attended-hold.txt).
+- Verified: lab `dev` at `3dde592`; network addresses/USB adapter present; owned source LiDAR initialized, one PointCloud2 publisher, 9.999-10.002 Hz. Unsupported hidden-node flag failed first, then corrected Humble `--all` observation succeeded. Candidate source hashes matched; no installed-overlay change.
+- Outcome: Sherman reported chassis display **19.3 V**; no fresh ROS battery/alarm reading. Session halted before base driver, keyboard, smoother or activation; T3.4 stays PROGRESS. No movement/stopping acceptance or mapping.
+- Handoff: user-started LiDAR still running at last inspection; physical power-off, charging and custody not confirmed. No user process terminated by automation.
+- Next: verify manufacturer charger/nameplate compatibility, charge with supervision, establish battery and physical-stop readiness, then resume stationary feedback and attended driving/stop gates. Hosted task-tree Artifact republish owed.
+- Close-out verification: Mac quick bench passed executed levels with explicit ROS/PyYAML skips; evidence links/anchors, task-tree syntax/status assertion and diff checks passed. Read-only documentation review found no blockers. Documentation-only change on existing stacked `t3.5-launch-prep`; no completion PR or merge.
+
+## [2026-10-13] T3.4 | Stationary feedback and software-startup diagnosis
+
+- Evidence: [stationary results](../bench-runs/2026-10-13-sherman-t3.4-stationary.txt).
+- Sherman started hardware communications, vehicle driver and candidate LiDAR source after readiness acknowledgment; OpenCode only inspected feedback and ran private software tests. Original overlays and other users' processes untouched.
+- Observed: fresh ROS 25.1-25.2 V, both battery flags clear; odometry 50.002 Hz and zero reported motion; reliable PointCloud2 recheck 10.0014 Hz, one publisher. No real velocity publishers. Missing handset explains the documented remote-controller-lost flag, not lost-CAN stopping behavior.
+- First complete private keyboard/smoother bench FAILED at idle publication, despite 12 smoother cases passing. Diagnostic reproduced late startup: first message 1.944 s, seven messages in the original fixed window, steady 9.994 Hz. All test processes cleaned up, domain 127 clear.
+- Harness-only readiness fix: four focused tests RED then GREEN (five keyboard tests total), ownership tests and local quick available checks PASS, review PASS. Exact-tree box candidate verified; complete private keyboard/smoother rerun PASS, final domain empty. No keyboard behavior, remapping or stop-limit relaxation.
+- Attended driving: live ACTIVE smoother parameters and exactly-one keyboard -> smoother -> driver ownership verified. Sherman confirms W/S/A/D physical directions and complete X-stop, then Q exit and chassis power-off. Power button reported to stop immediately; no timed stop or emergency-stop rating claimed. Five-minute read-only recorder saved 2079 raw/4162 final commands and 15000 each odometry/status messages.
+- Shutdown: initial inspection contradicted the all-processes-stopped report (earlier stationary-window drivers remained). Sherman authorized cleanup; by inspection all tracked driver PIDs were already gone, so no driver signal sent. Final 17:31 process/graph check PASS: session nodes gone, zero publishers on both command topics, odometry and LiDAR; all session panes at Bash, tmux retained. Physical power-off reported by Sherman.
+- Outcome: T3.4 keyboard-driving/LiDAR scope DONE in task tree; hosted Artifact republish owed. Source provenance/installed drift and unmeasured braking/watchdog/calibration/charging gaps explicit; no mapping/deployment/full-suite acceptance implied. Charger custody not independently established.
+
+## [2026-10-13] T3.4 | Isolated PR branch and fresh critical-source verification
+
+- Evidence: [PR checks](../bench-runs/2026-10-13-sherman-t3.4-pr-checks.txt).
+- Existing T3.4 branch merged current dev without rewriting history; cherry-picked T3.4 evidence/readiness and only the cited stable ownership test. Unfinished T3.5 implementation excluded; all dev task data and shared-service suites preserved.
+- Available local quick checks PASS with explicit skips; runner coverage RED then GREEN, 18 focused tests/review PASS. Six critical sources matched the box candidate exactly; fresh complete private keyboard/smoother check PASS, final private domain empty. LiDAR constructor failed without nav overlay, then passed with the documented environment; no launch actions executed.
+- Sherman authorized PR into dev and merge commit only after review/CI/box gates pass. PR/CI pending at this entry; no merge or main change claimed. Hosted Artifact republish owed.
 
 ## Record Template
 

@@ -1424,6 +1424,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-10-07 | OpenCode + Sherman | Recorded T3.4 attended LiDAR PointCloud2 at 9.999-10.002 Hz and Sherman-reported 19.3 V battery hold before driver/teleop startup. T3.4 PROGRESS; charger compatibility, driving/stopping and shutdown sign-off remain open. See sherman_docs/T3.4_BASE_BRINGUP.md. |
 | 2026-09-14 | Claude (Opus 5) + Dion | §3.3 promoted to 🔴 and re-checked against the branch: exactly 15 files exist on `realman_manip` and not on `main`, ten of them pre-reorg duplicates. Added a fifth file to take, `anygrasp_node.sh`, which records that the verified session ran `checkpoint_tracking.tar` while `main` launches `checkpoint_detection.tar`. It is now `PROJECT_PLAN` T0.0, the first task in the plan. §3.2 marked done: the nav workspace built 10/10 on 2026-09-14, with two corrections — 10 packages not 8, and colcon does build `Livox-SDk2/` without a manifest. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added the pointer under §2.7 to the new `TESTBENCH_PLAN.md` handoff, and a root `CLAUDE.md` so a fresh session loads context automatically. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §2.6b pointing at the new `CODE_AUDIT.md` — a line-by-line read of all owned code. Headline finding: the grasp path cannot work, for three interlocking reasons. |
