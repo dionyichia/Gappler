@@ -79,8 +79,8 @@ These cross a subsystem boundary. They are the contract.
 | H6 | `/grasp_candidates` | `GraspCandidateArray` | Grasp, `anygrasp_detection_node.py:81` **and** `anygrasp_node.py:71` | Bot, `grasp_state_machine.cpp:142` | Dion | works. Two publishers. Nothing reaches the arm today, `CODE_AUDIT` A1 to A3 |
 | H7 | `/pipeline_state` | `String`: `IDLE`, `SELECTING`, `EXECUTING` | Bot, `grasp_state_machine.cpp:156` | Grasp, `anygrasp_detection_node.py:65`, `anygrasp_node.py:55`, `grasp_viz.py:61` | Dion | works. The gate that reads it is inverted, see G-4 in §6 |
 | H8 | `/camera/camera/color/image_raw`, `/camera/camera/aligned_depth_to_color/image_raw`, `/camera/camera/color/camera_info` | `Image`, `Image`, `CameraInfo`. `BEST_EFFORT` | Wrist RealSense driver | Grasp, 5 nodes. Bot, `grasp_state_machine.cpp:138` | Dion | the wrist D435i is faulty. Replacement decided, T-3 in §6 |
-| H9 | `/manipulation/done` | `Empty` | **nobody** | Nav, `object_approach_node.py:83` | Dion | broken. The approach node stays latched without it (F1, observed) |
-| H10 | `/manipulator/release` | `Bool` | Aria, `audio_streaming_pipeline.py` (`T2.6`, 2026-10-13) | Nav, `object_approach_node.py:86`. Bot, `orchestrator.py:65` | Dion | live, ungated (see A-1 in §6). The state machine does not read it until `T1.14` |
+| H9 | `/manipulation/done` | `Empty` | Bot, `grasp_state_machine.cpp` `holdUntilRelease()`, at the return pose, before release (`T1.14`, branch `t1.14-multi-grasp-loop`) | Nav, `object_approach_node.py:93` | Dion | built 2026-10-13 `[code]`, sim run owed. Closes F1 once merged |
+| H10 | `/manipulator/release` | `Bool` | Aria, `audio_streaming_pipeline.py` (`T2.6`, 2026-10-13) | Nav, `object_approach_node.py:86`. Bot, `orchestrator.py:65` | Dion | live, ungated (see A-1 in §6). The state machine acts on `true` from the gripper closing until it opens, and ignores it otherwise (`T1.14`, branch `t1.14-multi-grasp-loop`) |
 | H10a | `/manipulator/grasp_request` | `Empty` | Aria, `aria_segmentation_client.py`, on every object word, a repeat too, never on the stop word (`T2.6`, 2026-10-13). By hand still works: `ros2 topic pub --once` | Bot, `grasp_state_machine.cpp:156` | Dion | new 2026-10-13 (`T1.25`). Opens the trigger gate: centroids count only from a request until EXECUTING takes its snapshot. A request lapses after `grasp_request_timeout_s` (10 s) with no centroid, and is refused outside IDLE. Simulated arm PASS, `bench-runs/2026-10-13-labbox-t1.25-grasp-request-gate.txt` |
 | H11 | `/aria/eye_tracking/gaze_estimate` | `Point` | Aria, `image_streaming_pipeline.py:153` | Grasp, the recognition pipeline | Dion | switched off. M2 and M8 need it, `T2.2` |
 | H12 | `/aria/rgb_camera/undistorted` | `CompressedImage`, `BEST_EFFORT` | Aria, `image_streaming_pipeline.py:85` | Nav, `aria_image_relay.py:27`, which decompresses to `/aria/rgb_camera/view` for viewing | Dion | switched off. The relay is kept, see A-4 in §6 |
@@ -231,7 +231,8 @@ All of these were decided by Dion. Each names where the detail lives.
   The larger design is `NEXT_STEPS` §2.14.
 - **B-5. The state machine publishes `/manipulation/done`** at the end of each cycle. Closes H9 and
   the F1 latch. **Owned by `T1.14` since 2026-09-23**, moved out of `T1.9` so it is not gated by the
-  AnyGrasp work.
+  AnyGrasp work. **Built 2026-10-13 `[code]`:** the order is grasp, return pose, `/manipulator/return_to_user`,
+  `/manipulation/done`, then hold until release, open, home, IDLE (Dion). No timeout on the hold.
 - **B-6. Today's names are frozen, target names recorded.** One rename pass later. §7.
 
 ### Nav
@@ -378,3 +379,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-10-13 | Claude Opus 5.5 + Dion | H10a `/manipulator/grasp_request` added (`T1.25`), the trigger gate. Orphan by design until `T2.6`, re-baselined with `contracts.py snapshot`. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | `T2.6`: H10 live, the voice pipeline publishes `/manipulator/release`. A-1 notes the ungated choice and why release is not sent as a word. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | `T2.6`: H10a has its publisher, the aria segmentation client, one request per object word. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | `T1.14`: H9 has its publisher and H10 a state machine subscriber (B-5 order settled: done before release). Re-baselined with `contracts.py snapshot`. |

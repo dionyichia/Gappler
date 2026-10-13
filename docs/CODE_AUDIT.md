@@ -372,6 +372,12 @@ exactly **one** object per launch, despite the `while (true)` structure.
 never re-homes. The candidate-queue growth itself was not measured (with `USE_SIMPLE_EXECUTE` on, nothing
 publishes candidates in the test).
 
+**Fixed 2026-10-13 on branch `t1.14-multi-grasp-loop` (`T1.14`) `[code]`, simulated-arm run owed.** After a
+grasp the worker holds the object at the return pose until `/manipulator/release`, opens the gripper, re-homes
+and goes back to IDLE (`holdUntilRelease()`). Both execute paths share this ending. EXECUTING empties
+`candidate_queue_` on entry, so a candidate from an earlier cycle is never used. The sim check that reproduced
+C7 is now a control check, plus a second request in the same launch.
+
 ---
 
 ## D. Dead edges in the contract graph
@@ -999,3 +1005,4 @@ publishers racing on the same three topics.
 | 2026-10-13 | Claude Opus 5.5 + Dion | C1 resolved in `T1.25`: not undefined behaviour with one waiting thread, the shutdown lost wake-up fixed. Note added, record kept. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | Execute result discarded in `moveToHome` (line 699): observed on the real arm in `T1.24` 3c, fix is `T1.26`. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | G3, G5 and J11 resolved by T2.7: `sam3_ros_node.py` deleted. Notes added, records kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | C7 fixed on branch `t1.14-multi-grasp-loop` (`T1.14`): hold until release, then home and IDLE. Sim run owed. |

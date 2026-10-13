@@ -7,8 +7,10 @@ private, no rm_driver exists and the real arm is unreachable. This test plays ev
               RealSense driver publishes these on the robot)
   detector    /object_centroid_2d: an object straight ahead, far, lost for a while, far, then near
   operator    /manipulator/grasp_request: centroids only count after one (T1.25)
+              /manipulator/release: lets go of the held object (T1.14)
   gripper     records /rm_driver/set_gripper_{position,pick_on}_cmd -- nothing acts on them
-and watches /pipeline_state, /joint_states, /manipulator/return_to_user and the launch log.
+and watches /pipeline_state, /joint_states, /manipulator/return_to_user, /manipulation/done and
+the launch log.
 
 Checks follow the code's own intent (grasp_state_machine.cpp workerLoop). Ones that encode an
 audit finding are expected-fail. A failure stops the run and names itself; later checks are
@@ -44,9 +46,9 @@ HOME_REALMAN = [-0.0175, -0.1745, 0.7854, -3.0718, -1.6930, -1.6057]
 RETURN = HOME_MAIN  # mtc_planner.hpp RETURN_JOINTS is HOME_JOINTS since 2026-10-05 (T1.7)
 FX, FY, CX, CY, W, H = 607.18, 606.92, 331.95, 250.13, 640, 480
 OFFSET_X = 55.0        # CENTROID_TARGET_OFFSET_X: a centroid here means "no lateral error"
-FAR, NEAR = 0.30, 0.15  # m; the code switches to EXECUTING below EXECUTE_DEPTH_THRESH_M = 0.18
+FAR, NEAR = 0.30, 0.15  # m; the code switches to EXECUTING below execute_depth_thresh_m, 0.21 since T1.11
 CY_OFF = float(os.environ.get("SM_CY", "0"))    # lateral px added to the fake centroid
-FAR = float(os.environ.get("SM_FAR", "0.30"))   # start depth (m); keep above 0.18
+FAR = float(os.environ.get("SM_FAR", "0.30"))   # start depth (m); keep above 0.21
 OPT = "camera_color_optical_frame"
 TOL = 0.02  # rad
 
@@ -54,7 +56,7 @@ TOL = 0.02  # rad
 class Actors(Node):
     def __init__(self):
         super().__init__("bench_sm_actors")
-        self.states, self.grip, self.returned, self.js = [], [], [], {}
+        self.states, self.grip, self.returned, self.done, self.js = [], [], [], [], {}
         now = time.time
         self.create_subscription(String, "/pipeline_state", lambda m: self.states.append((now(), m.data)), 10)
         self.create_subscription(JointState, "/joint_states", lambda m: self.js.update(zip(m.name, m.position)), 10)
@@ -63,9 +65,11 @@ class Actors(Node):
         self.create_subscription(Gripperpick, "/rm_driver/set_gripper_pick_on_cmd",
                                  lambda m: self.grip.append((now(), "pick_on", f"speed={m.speed} force={m.force}")), 10)
         self.create_subscription(Bool, "/manipulator/return_to_user", lambda m: self.returned.append((now(), m.data)), 10)
+        self.create_subscription(Empty, "/manipulation/done", lambda m: self.done.append(now()), 10)
         self.cam_pub = self.create_publisher(CameraInfo, "/camera/camera/color/camera_info", 1)
         self.cen_pub = self.create_publisher(PointStamped, "/object_centroid_2d", 10)
         self.req_pub = self.create_publisher(Empty, "/manipulator/grasp_request", 10)
+        self.rel_pub = self.create_publisher(Bool, "/manipulator/release", 10)
         self.depth = None
         self.create_timer(0.2, self._camera)
         self.create_timer(0.1, self._centroid)
@@ -90,6 +94,9 @@ class Actors(Node):
 
     def request(self):
         self.req_pub.publish(Empty())
+
+    def release(self):
+        self.rel_pub.publish(Bool(data=True))
 
     def spin_until(self, pred, sec):
         end = time.time() + sec
@@ -199,6 +206,12 @@ def main():
                    f"'Centroid ignored' {'logged' if ignored else 'not logged'}")
         if n.seen("SELECTING", t_gate):
             return
+        n.release()
+        rel_ignored = n.spin_until(lambda: log_has(r"Release ignored: not holding an object"), 5)
+        check("a release with nothing held is ignored", rel_ignored,
+              "'Release ignored' logged" if rel_ignored else "no 'Release ignored' line in 5 s")
+        if not rel_ignored:
+            return
 
         # ---- SELECTING: request, object far, straight ahead -------------------
         t1 = time.time()
@@ -284,12 +297,48 @@ def main():
         if not ret:
             return
 
-        # ---- after the cycle: the loop's intent is home + IDLE, ready for the next object
+        done = n.spin_until(lambda: len(n.done) > 0, 5)
+        check("announces /manipulation/done at the return pose", done,
+              "published" if done else "no /manipulation/done in 5 s")
+        if not done:
+            return
+
+        # ---- hold: no release, so the gripper stays shut and new requests are refused (T1.14)
+        t_hold = time.time()
+        busy_before = log_count(r"Grasp request ignored: busy")
+        n.request()
+        n.spin_until(lambda: False, 5)
+        opened_early = any(k == "set_position" and t >= t_hold for t, k, _ in n.grip)
+        busy_hold = log_count(r"Grasp request ignored: busy") > busy_before
+        idle_early = n.seen("IDLE", t_hold)
+        check("holds with no release: gripper shut, requests refused", not opened_early and busy_hold and not idle_early,
+              f"5 s: gripper {'opened' if opened_early else 'shut'}, request "
+              f"{'refused' if busy_hold else 'not refused'}, IDLE {'seen' if idle_early else 'not seen'}")
+        if opened_early or idle_early:
+            return
+
+        # ---- release: open, home, IDLE, ready for the next object (was CODE_AUDIT C7)
         t3 = time.time()
+        n.release()
+        let_go = n.spin_until(lambda: any(k == "set_position" and t >= t3 for t, k, _ in n.grip), 15)
+        check("release opens the gripper", let_go,
+              "set_gripper_position_cmd sent" if let_go else "no gripper open in 15 s")
+        if not let_go:
+            return
         back = n.spin_until(lambda: n.seen("IDLE", t3), 60)
-        check("after a grasp: re-homes and returns to IDLE for the next object", back,
-              "IDLE seen" if back else "stays EXECUTING: workerLoop returns after success (CODE_AUDIT C7)",
-              kind="xfail")
+        ok, dev = n.near(HOME_MAIN)
+        check("after the release: re-homes and returns to IDLE", back and ok,
+              f"IDLE {'seen' if back else 'not seen'}; joints {dev:.4f} rad from main's home")
+        if not back:
+            return
+
+        # ---- second grasp in the same launch: a new request starts a new approach
+        t4 = time.time()
+        n.depth = FAR
+        n.request()
+        again = n.spin_until(lambda: n.seen("SELECTING", t4), 120)
+        check("second request in the same launch -> SELECTING", again,
+              "seen" if again else "no SELECTING within 120 s")
 
     try:
         run()
