@@ -1,10 +1,12 @@
-# ARM Bring-Up: Driver Handshake and Joint Feedback (Draft)
+# ARM Bring-Up: Driver Handshake and Joint Feedback
 
-> **UNVALIDATED.** This shared runbook is a draft for T1.6's first powered arm session. Sherman
-> and Dion must review it together **before** its attended trial at the robot. It is not yet an
-> independently verified operating procedure. T1.5 and T1.6 remain open in
-> [`task-tree.html`](task-tree.html); incorporate the T1.6 observations before treating it as
-> validated or marking T1.5 done.
+> **VALIDATED 2026-10-13.** T1.6's attended driver-only session passed its seven
+> recorded checks on 2026-09-23 ([evidence](dion_docs/T1.6_FIRST_POWERED_SESSION.md)),
+> and the required independent UDP packet capture overlapping ROS feedback was
+> observed on 2026-10-13 ([evidence](bench-runs/2026-10-13-labbox-t1.5-validation.txt)):
+> 23,043 wire packets spanning the joint-feedback observation. T1.6 and T1.5 are
+> DONE in [`task-tree.html`](task-tree.html). This is the shared operating
+> procedure for driver-only bring-up.
 
 ## Goal and boundary
 
@@ -199,6 +201,10 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    silent topic as failure (`bench/preflight.py:790-799`). A fresh ROS timestamp alone is **not**
    proof of fresh arm data; stationary joint positions may legitimately stay constant. There is
    no verified minimum rate: record the observed rate and packet count, not an invented threshold.
+   `[observed]` 2026-10-13: ROS feedback opens at ~200 Hz on a steady 5 ms interval and degrades
+   to 140–171 with millisecond jitter over a minute-long watch, while the wire rate holds ~199
+   steady, so the wobble is ROS-side delivery, not the arm
+   (`bench-runs/2026-10-13-labbox-t1.5-validation.txt`).
    Compare readings with the as-found posture; investigate non-finite, out-of-model or obviously
    implausible readings without calling this a home-pose calibration (T1.3/T1.7). If ROS messages
    are absent, or the packet stream does not persist, the session is **not READY**. Check `.10`,
@@ -264,3 +270,4 @@ T1.5 done or treating it as an independently validated shared runbook.
 | 2026-09-23 | OpenCode + Sherman | Moved the shared draft to docs/; required independent UDP receipt, clarified stop-terminal roles and first-power shutdown. Still unvalidated. |
 | 2026-09-23 | OpenCode + Sherman | After merging current dev, replaced the stale open-T1.4 blocker with its accepted no-motion verdict, documented rear overhang and D3 residual, and a day-of-condition check. No hardware run. |
 | 2026-09-23 | OpenCode + Sherman | Added a checkout/overlay provenance gate after a read-only lab-box check found an older branch with local changes; do not change that checkout during first-power verification. |
+| 2026-10-13 | OpenCode + Sherman | Validated: the required independent UDP capture overlapping ROS feedback was observed (23,043 wire packets spanning the joint observation); T1.5 DONE. Title/banner updated, observed rate note added. |
