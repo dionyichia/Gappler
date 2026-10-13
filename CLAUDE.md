@@ -128,6 +128,7 @@ python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract
 ./bench/sim_moveit.sh                  # L4: MoveIt on a simulated arm
 ./bench/estop_delivery.sh              # L4: does estop.py's stop message leave
 ./bench/state_machine_sim.sh           # L4: grasp state machine on the simulated arm
+./bench/state_machine_sim.sh candidates # L4: same, the AnyGrasp path (use_simple_execute false)
 ./bench/nav_nodes.sh                   # L4: the five nav nodes vs a mock Nav2 (nothing drives)
 ./bench/anygrasp_env.sh [PYTHON]       # can this env run AnyGrasp (imports + SDK demo)
 ./bench/memory_graph_tests.sh [PYTHON] # all memory graph tests, with the real open_clip model (needs .venv, no ROS)

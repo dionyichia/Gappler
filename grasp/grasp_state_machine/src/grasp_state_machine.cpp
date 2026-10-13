@@ -1,3 +1,4 @@
+#include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -908,8 +909,8 @@ private:
   double fx_ = 0.0, fy_ = 0.0, image_cx_ = 0.0, image_cy_ = 0.0;
   bool intrinsics_received_ = false;
 
-  // State
-  State state_;
+  // State. Atomic: the worker writes it and graspCallback reads it on the spin thread (CODE_AUDIT C4)
+  std::atomic<State> state_;
 
   // Motion planner
   std::shared_ptr<MtcPlanner> mtc_planner_;

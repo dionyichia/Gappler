@@ -37,6 +37,9 @@ recorded wrist-camera bag, AnyGrasp published 154 candidate sets while `/pipelin
 and 0 while it was EXECUTING. The code is now at `grasp/anygrasp_node/anygrasp_detection_node.py:182`.
 Fixed by T1.8.
 
+**Fixed 2026-10-13 on branch `t1.8-t1.10-anygrasp-gate-and-pane` (`T1.8`) `[code]`, replay run owed.** The condition is now
+`!= "EXECUTING"`. The replay bench's gate case is a control check now, not an expected fail.
+
 ```python
 def synced_callback(self, rgb_msg: Image, depth_msg: Image):
     if not self.intrinsics_received:
@@ -339,6 +342,8 @@ before the wait (`grasp_state_machine.cpp:628-632`). Same behaviour. Checked on 
 
 Declared `State state_;` (`:756`). Written by the worker thread in `publishState()` (`:206`), read
 by `graspCallback()` (`:171`) on the executor thread. Torn or stale reads are possible.
+
+**Fixed 2026-10-13 on branch `t1.8-t1.10-anygrasp-gate-and-pane` (`T1.9`) `[code]`:** `std::atomic<State> state_`.
 
 ### C5. `shutdown_` is a plain `bool`
 
@@ -1006,3 +1011,4 @@ publishers racing on the same three topics.
 | 2026-10-13 | Claude Opus 5.5 + Dion | Execute result discarded in `moveToHome` (line 699): observed on the real arm in `T1.24` 3c, fix is `T1.26`. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | G3, G5 and J11 resolved by T2.7: `sam3_ros_node.py` deleted. Notes added, records kept. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | C7 fixed on branch `t1.14-multi-grasp-loop` (`T1.14`): hold until release, then home and IDLE. Sim run owed. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | A1 and C4 fixed on branch `t1.8-t1.10-anygrasp-gate-and-pane` (`T1.8`, `T1.9`). Replay and sim runs owed. |

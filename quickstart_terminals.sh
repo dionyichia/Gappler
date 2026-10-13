@@ -2,12 +2,14 @@
 # Opens a tmux session for a robot session on the lab box: one pane per process, every pane set up
 # the T1.6 way (its subsystem's env file, ROS domain 91, localhost only).
 #
-#   ./quickstart_terminals.sh gripper|arm|grasp|nav|aria|full [--dry] [--print]
+#   ./quickstart_terminals.sh gripper|arm|grasp|nav|aria|full [--dry] [--print] [--anygrasp]
 #
 # Drivers, the e-stop, cameras and monitors start on their own. Anything that moves the arm or the
 # base is typed into its pane but not sent: press Enter there yourself.
 #   --dry    type every command, start nothing (to look before you run)
 #   --print  list the panes and exit, no tmux
+#   --anygrasp  grasp and full: also start the AnyGrasp detector (step 7, T1.17). Off by default:
+#               it takes the GPU, and nothing reads it while use_simple_execute is true
 # Refuses to start (except --dry) if what it would start, or a bench run, is already up on the box.
 # The session is named after the layout. Detach: Ctrl-b d. Run again to reattach.
 # Close: tmux kill-session -t <layout>.
@@ -16,9 +18,9 @@ set -u
 R="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROS="export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1"
 LAYOUT="${1:-}"
-DRY=0 PRINT=0
+DRY=0 PRINT=0 ANYGRASP=0
 for a in "${@:2}"; do
-  case "$a" in --dry) DRY=1 ;; --print) PRINT=1 ;; *) echo "unknown option: $a" >&2; exit 2 ;; esac
+  case "$a" in --dry) DRY=1 ;; --print) PRINT=1 ;; --anygrasp) ANYGRASP=1 ;; *) echo "unknown option: $a" >&2; exit 2 ;; esac
 done
 
 WINDOWS=() PANES=() ENV_OVERRIDE=""
@@ -63,6 +65,8 @@ lay_grasp() {
     pane auto shared_services "python $R/shared_services/segmentation/segmentation_service.py"
     pane auto grasp "python $R/grasp/grasp_segmentation_client/grasp_segmentation_client.py"
   fi
+  # Its own venv (T1.10). Run from its folder: the checkpoint path is relative
+  ((ANYGRASP)) && pane auto grasp "cd $R/grasp/anygrasp_node && $R/grasp/anygrasp_venv/.venv/bin/python anygrasp_detection_node.py --checkpoint_path log/checkpoint_detection.tar"
   pane auto arm "ros2 topic echo /pipeline_state"
   pane typed grasp "ros2 launch grasp_state_machine grasp_state_machine.launch.py"
   # One attempt per request (T1.25). Send once IDLE shows and the client is publishing a centroid
@@ -92,7 +96,7 @@ lay_full() {
 
 # What each layout must not find already running.
 ARM_BUSY='rm_driver|arm_bringup|grasp_state_machine|start_camera_arm_grasp|grasp_orchestrator'
-CAMERA_BUSY='realsense2_camera|rs_launch'
+CAMERA_BUSY='realsense2_camera|rs_launch|anygrasp_detection_node'
 NAV_BUSY='livox|slam_toolbox|slam_localization|slam_mapping|nav2|xpkg|echo_plus|simple_teleop|goto_glasses'
 ARIA_BUSY='aria_app/main.py'
 case "$LAYOUT" in

@@ -183,7 +183,9 @@ class AnyGraspDetectionNode(Node):
     def synced_callback(self, rgb_msg: Image, depth_msg: Image):
         if not self.intrinsics_received:
             return
-        if self.pipeline_state != "IDLE":
+        # Only EXECUTING reads candidates (grasp_state_machine.cpp graspCallback). Was "IDLE",
+        # so none ever reached the arm (CODE_AUDIT A1, fixed in T1.8)
+        if self.pipeline_state != "EXECUTING":
             return
         if self.latest_mask is None:
             self.get_logger().warn("No SAM mask received yet, skipping frame")

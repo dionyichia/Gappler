@@ -611,7 +611,12 @@ C7 XFAIL).
   One request per attempt (T1.25). Without it, SAM 3 would start a new cycle as soon as the
   one-shot `return;` is removed.
 - **Step 6 (T1.14, T2.6):** release, done, back to IDLE, a second grasp in the same launch.
-- **Step 7 (T1.17):** the AnyGrasp path.
+  Code on branch `t1.14-multi-grasp-loop` (PR #75), sim run owed.
+- **Step 7 (T1.17):** the AnyGrasp path. Desk prep on branch `t1.8-t1.10-anygrasp-gate-and-pane`
+  (stacked on PR #75): the gate fix (T1.8), the detector chosen and started from its venv
+  (T1.10), `state_` atomic (C4). On the box first, both with no `rm_driver` running:
+  `./bench/anygrasp_replay.sh`, then `./bench/state_machine_sim.sh candidates`. At the robot:
+  `./quickstart_terminals.sh grasp --anygrasp`, with `use_simple_execute: false`.
 
 ---
 

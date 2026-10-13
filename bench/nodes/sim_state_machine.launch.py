@@ -28,6 +28,8 @@ def generate_launch_description():
                            mappings={"initial_positions_file": os.path.join(cfg, "initial_positions.yaml")})
         .to_moveit_configs()
     )
+    # "candidates" mode (state_machine_sim.sh candidates): the AnyGrasp path, sim only (T1.17)
+    path = [{"use_simple_execute": False}] if os.environ.get("BENCH_SM_PATH") == "candidates" else []
     state_machine = Node(package="grasp_state_machine", executable="grasp_state_machine", output="screen",
-                         parameters=[moveit_config.to_dict(), *CONFIG_FILES])
+                         parameters=[moveit_config.to_dict(), *CONFIG_FILES, *path])
     return LaunchDescription([*generate_demo_launch(moveit_config).entities, state_machine])
