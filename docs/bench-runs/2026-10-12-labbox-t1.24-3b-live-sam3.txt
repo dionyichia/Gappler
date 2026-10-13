@@ -114,3 +114,12 @@ T2.10: the voice pipeline acts on finished sentences (CHANNEL_CONTRACT A-5), sam
   Wait after the last word: about 1.1 s, 0.7 s of silence plus faster-whisper's default 0.4 s
   speech padding [code, VadOptions defaults], plus up to one 0.25 s tick. Not timed end to end.
   Still open: release arrives as an object word (T2.6).
+
+PR #57 rerun, 2026-10-13, after merging dev (T2.1 review fixes, PRs #55 and #56)
+  Box ~/rcp-Gappler on t1.24-t2.8-centroid-age-and-voice-replay at 81cfcc3, the old
+  uncommitted copies dropped first (checked identical to the PR except two comments).
+  ./build.sh: 25 packages PASS.
+  ./bench/state_machine_sim.sh: PASS, lost-centroid case PASS, C7 XFAIL as before.
+  Unit tests: sentence detection 7 OK, replay tool 3 OK, aria client 5 OK.
+  Replay of Dion's recordings with the aria client up (domain 91, empty before):
+    /aria/audio/prompt: light, release, end. Aria client: Target light, Target release, cleared.

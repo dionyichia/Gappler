@@ -269,7 +269,8 @@ table"* returns `STOP_KEYWORD` (`:113`) and the object name is lost. One line, b
 (`ITERATION_INTERVAL_SECONDS = 1`, `:4`; `audio_streaming_pipeline.py:173-187`), and an unchanged
 transcription is still published (J1, `audio_streaming_pipeline.py:128`). So a single spoken word is
 re-transcribed and re-published roughly **ten times** — a false positive is ~10 stop messages, and a
-genuine *"Stop."* is ~10 consecutive misses.
+genuine *"Stop."* is ~10 consecutive misses. **The repetition is fixed by `T2.10` (2026-10-12, PR #57):**
+each finished sentence is transcribed and published once. The keyword match itself is unchanged.
 
 **Not a duplicate of the neighbouring entries, and they should be read together:** J2 is the *model*
 path (the few-shot block ending in an empty completion), B7 is the *fallback* meant to back it up,
@@ -315,6 +316,10 @@ SELECTING → EXECUTING, i.e. whether the arm closes on the object.
 
 `ORIENTATION.md` §8.8 records the missing staleness guard. It does not record that removing it also
 removed the lock.
+
+**Fixed 2026-10-12 (`T1.24`, PR #57):** the read takes `centroid_mutex_` again and the staleness
+guard is back, limit `centroid_max_age_s` (2.0 s) in `grasp/grasp_config.yaml`
+(`grasp_state_machine.cpp:646-662`). Checked on the simulated arm, not yet on the real one.
 
 ### C3. `has_centroid_ = false` written without the mutex
 
@@ -740,7 +745,8 @@ noticed roughly never. `ros2_robot_ws/src/main.py:165` polls every 2 s.
   transcription is unchanged (the `if transcription == previous_transcription` branch falls through
   to `publish`). `goto_glasses._on_audio_prompt` calls `_trigger_navigation()` on every message, and
   its `_navigating` guard clears on arrival — so a repeated transcription re-sends the robot to the
-  user. There is no edge-triggering anywhere on this topic.
+  user. There is no edge-triggering anywhere on this topic. **Fixed by `T2.10` (2026-10-12, PR #57):**
+  one message per finished sentence, nothing when the LLM finds no object.
 - **J2** `prompt_extractor.py` — the few-shot block ends with `"What time is it?" -> ` (an example
   with an *empty* completion) immediately before the user's turn. The model may continue that
   example rather than answer. Worth an eval before trusting the "end" kill word.
@@ -973,3 +979,4 @@ publishers racing on the same three topics.
 | 2026-10-05 | Claude (Opus 5.5) + Zongzhe | F1 and F4: fixes written on branch `t3.8-nav-node-fixes` (T3.8), awaiting a `bench/nav_nodes.sh` run on the box before retagging. New bench case for F4. F3 and the cancel-on-shutdown concern under F4 are untouched. |
 | 2026-10-07 | Claude (Opus 5.5) + Zongzhe | F1 follow-up on branch `t3.8-bridge-timeout-backoff-release` (T3.8): a fourth silent path (accepted goal, no result) and the retry loop the first fix opened, both fixed in code, not yet run. **New finding F5**: the approach guard also sticks after a finished cycle. Cleared on `/manipulator/release` now, which nothing publishes until T1.15. Three bench cases added or changed. |
 | 2026-10-06 | Claude (Opus 5.5) + Dion | K1 resolved by T0.14: every owned channel name is in a config file. Note added at the top of K1, record kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | C2 fixed and J1 fixed by PR #57 (`T1.24`, `T2.10`). Notes added, records kept. |
