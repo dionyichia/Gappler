@@ -19,11 +19,9 @@ sent. This file does not repeat them.
 approach and a grasp, back to HOME with the box in the jaws
 ([`../bench-runs/2026-10-13-labbox-t1.11-step4-voice-grasp.txt`](../bench-runs/2026-10-13-labbox-t1.11-step4-voice-grasp.txt)).
 
-**Not merged yet: the step 4 config change.** `grasp/grasp_config.yaml` stops the approach at
-0.21 m with 2 cm steps and a 12 cm final step (was 0.18, 4 cm, 10 cm), because the wrist camera
-gives no depth closer than about 0.182 m. It is uncommitted in `~/rcp-Gappler` and on Dion's Mac,
-for branch `t1.11-stop-before-depth-blind`. Without it every approach stops short. Check
-`git diff grasp/grasp_config.yaml` in `~/rcp-Gappler` before a session.
+**The step 4 config change is merged (PR #71, `dev` at `93e49bc`).** `grasp/grasp_config.yaml`
+stops the approach at 0.21 m with 2 cm steps and a 12 cm final step (was 0.18, 4 cm, 10 cm),
+because the wrist camera gives no depth closer than about 0.182 m. `~/rcp-Gappler` is pulled to it.
 
 **Next, at the robot: step 5 (T1.12), five attempts with the success rate.** Same setup as step 4:
 1. `./quickstart_terminals.sh grasp` in `~/rcp-Gappler`. Power the arm on about a minute before,
@@ -52,9 +50,10 @@ for branch `t1.11-stop-before-depth-blind`. Without it every approach stops shor
   someone, not by tmux id: on 2026-10-13 that mix-up sent two typed requests instead of voice.
 
 **Before touching the box:**
-- Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.98.10.50`. `100.87.133.60` has been
-  offline since mid-September.
-- `git log -1` in `~/rcp-Gappler`: `dev` at `0bf552e` or later.
+- Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60`, active again since
+  2026-10-13 evening. The second node, `100.98.10.50`, went offline then with an expired key.
+  `tailscale status` shows which one is active.
+- `git log -1` in `~/rcp-Gappler`: `dev` at `93e49bc` or later.
 - **Never run anything from a scratch clone whose env files can build.** On 2026-10-13 a test in a `/tmp` clone sourced `grasp/grasp_env.sh` in six panes. Each found no AnyGrasp venv and started compiling it, the load hit 54 and the box had to be restarted ([`../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt`](../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt)). Run from `~/rcp-Gappler`.
 - After a restart, the CI runner needs starting again (tmux `gh-runner`).
 - Check who else is on it: `ps -eo pid,user,etime,args | grep -iE "realsense|rs_launch|ros2 launch|bench/run.sh|Runner.Worker"`,
@@ -669,3 +668,4 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-13 | Claude Opus 5.5 + Dion | After #65 and #67 merged: Start here and step 3c run from `~/rcp-Gappler` and the quickstart grasp layout. The separate `~/rcp-Gappler-t1.25` build is deleted. Start the state machine after the driver is up. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | After T2.6 (#64) and T2.7 (#63): Start here says voice sends the grasp request, step 4 starts each attempt with the `pick_up_box_command.wav` replay, the signals table names the publishers. Box restart incident and the runner restart noted. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | Step 4 (T1.11) PASS, attempt 4 started by voice. Result table, the depth blind zone and the config change (uncommitted, branch t1.11-stop-before-depth-blind), the 3 cm front-face bias. Start here rewritten for step 5: release with `-t 3 -r 2`, the `/pipeline_state` type, pane names by position. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | Start here: the step 4 config is merged (#71), the box is reached at `100.87.133.60` again. |
