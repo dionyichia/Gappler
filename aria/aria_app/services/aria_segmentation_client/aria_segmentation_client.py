@@ -3,6 +3,8 @@
 
 Turns what you say into what the arm looks for: a word on /aria/audio/prompt becomes a Target
 on /grasp/target, which the grasp segmentation client reads. The stop word clears it.
+Each word also sends /manipulator/grasp_request, which opens the state machine's trigger gate
+(T1.25), so every time you ask is one grasp (T2.6). The stop word sends none.
 
 Every word is sent, even a repeat, and /grasp/target is not latched. So if the grasp client
 restarts, it looks for nothing until you say the word again: a restart never resumes an old
@@ -21,7 +23,7 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from segmentation_interfaces.msg import Target
-from std_msgs.msg import String
+from std_msgs.msg import Empty, String
 
 from config import AudioStreamingPipelineConfig, ROS2Topics
 
@@ -34,6 +36,8 @@ class AriaSegmentationClient(Node):
         self.create_subscription(
             String, ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value, self.on_prompt, 10)
         self.target_pub = self.create_publisher(Target, ROS2Topics.GRASP_TARGET.value, 10)
+        self.request_pub = self.create_publisher(
+            Empty, ROS2Topics.MANIPULATOR_GRASP_REQUEST.value, 10)
         self.get_logger().info(
             f"Aria segmentation client ready: {ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value} "
             f"-> {ROS2Topics.GRASP_TARGET.value}")
@@ -46,7 +50,9 @@ class AriaSegmentationClient(Node):
         target = Target(prompt=new)
         target.header.stamp = self.get_clock().now().to_msg()
         self.target_pub.publish(target)
-        self.get_logger().info(f"Target: {new!r}" if new else "Target cleared")
+        if new:
+            self.request_pub.publish(Empty())
+        self.get_logger().info(f"Target: {new!r}, grasp requested" if new else "Target cleared")
 
 
 def main():
