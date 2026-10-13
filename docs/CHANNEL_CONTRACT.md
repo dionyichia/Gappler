@@ -80,7 +80,7 @@ These cross a subsystem boundary. They are the contract.
 | H7 | `/pipeline_state` | `String`: `IDLE`, `SELECTING`, `EXECUTING` | Bot, `grasp_state_machine.cpp:156` | Grasp, `anygrasp_detection_node.py:65`, `anygrasp_node.py:55`, `grasp_viz.py:61` | Dion | works. The gate that reads it is inverted, see G-4 in §6 |
 | H8 | `/camera/camera/color/image_raw`, `/camera/camera/aligned_depth_to_color/image_raw`, `/camera/camera/color/camera_info` | `Image`, `Image`, `CameraInfo`. `BEST_EFFORT` | Wrist RealSense driver | Grasp, 5 nodes. Bot, `grasp_state_machine.cpp:138` | Dion | the wrist D435i is faulty. Replacement decided, T-3 in §6 |
 | H9 | `/manipulation/done` | `Empty` | **nobody** | Nav, `object_approach_node.py:83` | Dion | broken. The approach node stays latched without it (F1, observed) |
-| H10 | `/manipulator/release` | `Bool` | **nobody** | Nav, `object_approach_node.py:86`. Bot, `orchestrator.py:65` | Dion | broken. Aria will publish it in `T2.6` (was `T1.15`), see A-1 in §6 |
+| H10 | `/manipulator/release` | `Bool` | Aria, `audio_streaming_pipeline.py` (`T2.6`, 2026-10-13) | Nav, `object_approach_node.py:86`. Bot, `orchestrator.py:65` | Dion | live, ungated (see A-1 in §6). The state machine does not read it until `T1.14` |
 | H11 | `/aria/eye_tracking/gaze_estimate` | `Point` | Aria, `image_streaming_pipeline.py:153` | Grasp, the recognition pipeline | Dion | switched off. M2 and M8 need it, `T2.2` |
 | H12 | `/aria/rgb_camera/undistorted` | `CompressedImage`, `BEST_EFFORT` | Aria, `image_streaming_pipeline.py:85` | Nav, `aria_image_relay.py:27`, which decompresses to `/aria/rgb_camera/view` for viewing | Dion | switched off. The relay is kept, see A-4 in §6 |
 
@@ -143,6 +143,12 @@ All of these were decided by Dion. Each names where the detail lives.
   `/manipulation/done`, then release is accepted. Closes `CODE_AUDIT` open question 4.
   **Owned by `T2.6` (was `T1.15`) since 2026-09-23.** Before that no task built it, so H10 stayed broken with
   subscribers only.
+  **Built 2026-10-13 (`T2.6`) `[code]`.** The voice pipeline publishes `true` when a finished sentence
+  has "release" or "let go" as whole words (`release_phrases` in `aria_config.yaml`), and the stop
+  word wins over it. The word never goes out on `/aria/audio/prompt`, because `goto_glasses.py`
+  drives to the user on any word there. **Not gated on `/manipulation/done`** (Dion, 2026-10-13):
+  nothing publishes done until `T1.14`, and there the state machine acts on release only while it
+  holds an object.
 - **A-2. The return leg is out of scope.** H13 to H16 have no owner. Pose fusion is parked rather
   than dropped, because a later gaze-in-3D method would want the glasses transform. This settles
   `CODE_AUDIT` open question 6: `/aria/fused_pose`'s frame is not fixed now.
@@ -368,3 +374,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-10-08 | Claude Opus 5.5 + Dion | G-1 and G-2 revised for `T2.1`: the segmentation service is a stateless request/reply service in a new top-level `shared_services/`, with one client per subsystem. The grasp client becomes the only publisher of the H5 mask channels. P4 points at the new folder. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | `T2.1` built: H5 has one live publisher, the grasp segmentation client. New H5a `/grasp/target` (aria to grasp) and H5b, the `/segmentation/segment` service. |
 | 2026-10-12 | Claude Opus 5.5 + Dion | A-5 added: the voice pipeline acts on finished sentences (`T2.10`), accepting about 0.7 s more latency. H1 note updated. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | `T2.6`: H10 live, the voice pipeline publishes `/manipulator/release`. A-1 notes the ungated choice and why release is not sent as a word. |

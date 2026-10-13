@@ -85,6 +85,9 @@ audio_streaming_pipeline:
     # plus up to one tick. CHANNEL_CONTRACT A-5 accepts this wait to avoid half-heard words.
     end_of_speech_silence_s: 0.7
     stop_keyword: "end"
+    # A sentence with one of these, as whole words, publishes true on /manipulator/release instead
+    # of a word on /aria/audio/prompt, where goto_glasses would drive to you on it (T2.6).
+    release_phrases: ["release", "let go"]
 
 # read by: aria/aria_app/config/playback_controller_config.py
 playback_controller:

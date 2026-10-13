@@ -9,6 +9,7 @@ import logging
 import math
 import multiprocessing
 import queue
+import re
 import time
 from multiprocessing import Queue
 from multiprocessing.synchronize import Event
@@ -20,7 +21,7 @@ from faster_whisper.transcribe import Segment
 from faster_whisper.vad import VadOptions, get_speech_timestamps
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from scipy.signal import resample
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 
 from config import AriaConfig, AudioStreamingPipelineConfig, ROS2Topics, Settings
 from services.aria_device import AriaStreamClient, AudioObserver
@@ -58,6 +59,13 @@ def finished_sentence(speech, window_s, silence_s, handled_until):
     return new[0][0], new[-1][1]
 
 
+def is_release(transcription: str) -> bool:
+    """True if the sentence has a release phrase as whole words, so "released" and "let's go" do
+    not count (T2.6, CHANNEL_CONTRACT A-1)."""
+    words = " " + " ".join(re.findall(r"[a-z']+", transcription.lower())) + " "
+    return any(f" {phrase} " in words for phrase in AudioStreamingPipelineConfig.RELEASE_PHRASES)
+
+
 def audio_worker(
     raw_audio_queue: Queue,
     quit_event: Event,
@@ -66,6 +74,16 @@ def audio_worker(
         "Aria_audio_prompt_publisher",
         String,
         ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value,
+        QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10,
+        ),
+    )
+    release_publisher = ROSPublisher(
+        "Aria_release_publisher",
+        Bool,
+        ROS2Topics.MANIPULATOR_RELEASE.value,
         QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,
             history=HistoryPolicy.KEEP_LAST,
@@ -125,13 +143,18 @@ def audio_worker(
     def _process_segments(segments: list[Segment]) -> None:
         """
         Join the sentence's segment texts, extract the object via the LLM, and publish it once.
-        Nothing is published when the LLM finds no object (T2.10).
+        Nothing is published when the LLM finds no object (T2.10). The stop word wins over
+        release, and release goes to /manipulator/release, never out as a word (T2.6).
         """
         if not segments:
             return
 
         transcription = "\n".join(seg.text for seg in segments)
         prompt = llm_extractor.extract_object(transcription)
+        if prompt != AudioStreamingPipelineConfig.STOP_KEYWORD and is_release(transcription):
+            logger.info(f"Transcription: {transcription!r} -> release")
+            release_publisher.publish(Bool(data=True))
+            return
         logger.info(f"Transcription: {transcription!r} -> {prompt!r}")
         if not prompt:
             return
