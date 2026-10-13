@@ -294,6 +294,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Review: read-only merge-resolution/evidence review PASS. Push this verified source checkpoint for visibility, not as whole-suite or deployment acceptance; runtime verification remains held.
 - Next: coordinate idle-box window, then serial isolated runtime benches before requesting deployment. T3.4/T3.5/T3.9 remain PROGRESS; no build/deployment, completion PR or dev/main merge. Hosted task-tree Artifact republish owed.
 
+## [2026-10-13] T3.5 | Follow-up dev advance
+
+- Evidence: [dev-sync results, follow-up section](../bench-runs/2026-10-13-sherman-t3.5-dev-sync.txt).
+- After pushing checkpoint `3bac347`, the ancestry check found newer `dev` at `4cbb56e`; incorporated it with a second merge, without conflicts or history rewriting.
+- Imported the newer task statuses, Orin backup notes/script and grasp-layout camera settings. Navigation/shared/bench implementation unchanged in this delta. No backup setup script or robot launcher executed.
+- Verified locally: quick checks exit 0 with explicit environment/subtest skips, imported shell syntax and task-tree syntax/status checks. Earlier box evidence remains pinned to its recorded tree, not the new whole-source revision. Runtime custody hold and installed drift remain unresolved; no deployment or hardware acceptance.
+
 ## Record Template
 
 ```markdown

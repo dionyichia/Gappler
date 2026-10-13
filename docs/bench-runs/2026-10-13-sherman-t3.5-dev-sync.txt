@@ -62,3 +62,22 @@ source checkpoint for visibility, NOT completed runtime/deployment acceptance.
 No installed-overlay change, build, hardware launch, completion PR or merge
 into dev/main. T3.4/T3.5/T3.9 stay PROGRESS. Physical battery/charging readiness
 remains blocked by last reported 19.3 V; no fresh hardware measurement today.
+
+Follow-up dev advance, same day:
+After checkpoint 3bac347 was pushed, the ancestry check found that origin/dev
+had advanced to 4cbb56e3429e5088c28f10db2aacb679b4fbb443. A second shared-safe
+merge incorporates that revision without conflicts. Imported delta: six files,
+task status/history and Orin backup documentation/script, plus the grasp-layout
+wrist-camera profile set to 640x480x15 with point-cloud generation no longer
+explicitly enabled. No change to nav/, shared/, bench/, launchers/, grasp/, arm/
+or aria/ in this second merge. Backup setup script was NOT executed.
+
+Mac quick rerun: exit 0, available checks PASS, same environment skips and
+map-saver subtest skip; disk warning now 11 GB free. Both imported shell files
+pass bash -n. Task-tree inline JavaScript/status preservation checked separately.
+The earlier box tree/constructor evidence applies ONLY to tree 990aa111 above,
+not this newer whole-source revision. Box runtime remains held; no deployment,
+camera run or new box verification is claimed for the second merge.
+Read-only follow-up merge review: PASS. Navigation --print lists panes and
+exits without tmux or launching nodes. Suite coverage: 2 tests PASS; task-tree
+syntax check preserves imported DONE statuses and T3.4/T3.5/T3.9 PROGRESS.
