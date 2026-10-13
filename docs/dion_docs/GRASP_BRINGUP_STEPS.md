@@ -34,9 +34,9 @@ is merged.
 - The box CPU was overheating on 2026-10-12: 89 C at 12% load, clamped to 0.8 GHz. It slows
   SAM 3 from 0.27 to about 0.5 s a frame. Worth checking the fan before 3c.
 
-**Known gap:** `./quickstart_terminals.sh grasp` starts the wrist camera at the driver defaults,
-1280x720, which sent no frames on 2026-10-07. Start the camera by hand at `640x480x15` for 3b.
-T2.11 benchmarks SAM 3 at 1280x720 before deciding.
+**Wrist camera:** `./quickstart_terminals.sh grasp` now starts it at `640x480x15` with no point
+cloud (T2.11, 2026-10-13), so no need to start it by hand for 3b. The driver default, 1280x720,
+sends frames again but makes SAM 3 about 40 % slower a call.
 
 ---
 
@@ -536,3 +536,4 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-12 | Claude Opus 5.5 + Dion | 3b: centroid rate measured through the aria client (1.85 per second). |
 | 2026-10-12 | Claude Opus 5.5 + Dion | Stale-centroid check written, limit 2.0 s, with the reasoning from the 3b timing. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | "Start here" rewritten for the 3b robot session after PR #57. Stale-centroid check marked done, and the T1.25 note says it uses the camera stamp, not the arrival time. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | Known gap: T2.11 result added (default 1280x720 sends frames now, SAM 3 about 40 % slower than 640x480). Grasp layout pinned to 640x480x15. |
