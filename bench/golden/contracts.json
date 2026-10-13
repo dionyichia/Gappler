@@ -55,7 +55,7 @@
     },
     "STOP_KEYWORD": {
       "AudioStreamingPipelineConfig.STOP_KEYWORD": [
-        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:24"
+        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:28"
       ],
       "_cfg[\"stop_keyword\"]": [
         "aria/aria_app/config/audio_streaming_pipeline_config.py:12"
@@ -66,7 +66,7 @@
         "arm/estop/estop.py:36",
         "grasp/anygrasp_node/anygrasp_detection_node.py:43",
         "grasp/anygrasp_node/anygrasp_node.py:36",
-        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:43",
+        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:45",
         "grasp/grasp_viz/grasp_viz.py:29",
         "grasp/tools/sam3_ros_node.py:37",
         "nav/goal_reached/goal_reached_publisher.py:36",
@@ -540,7 +540,7 @@
       "arm/vendor/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "5a315c6-dirty",
+  "git": "410d6e6-dirty",
   "launch_includes": [
     {
       "from": "arm/arm_bringup/launch/arm_bringup.launch.py",
@@ -1399,10 +1399,10 @@
       "nav/nav_config.yaml:39"
     ],
     "approach_step_final_m": [
-      "grasp/grasp_config.yaml:66"
+      "grasp/grasp_config.yaml:69"
     ],
     "approach_step_m": [
-      "grasp/grasp_config.yaml:65"
+      "grasp/grasp_config.yaml:68"
     ],
     "approach_velocity_scaling_dist": [
       "nav/robot_slam/config/nav2_params.yaml:53"
@@ -1462,10 +1462,10 @@
       "nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:126"
     ],
     "centroid_target_offset_x_px": [
-      "grasp/grasp_config.yaml:70"
+      "grasp/grasp_config.yaml:73"
     ],
     "centroid_target_offset_y_px": [
-      "grasp/grasp_config.yaml:71"
+      "grasp/grasp_config.yaml:74"
     ],
     "ceres_dogleg_type": [
       "nav/robot_slam/config/slam_toolbox.yaml:7",
@@ -1598,7 +1598,7 @@
       "nav/robot_slam/config/nav2_params.yaml:87"
     ],
     "execute_depth_thresh_m": [
-      "grasp/grasp_config.yaml:68"
+      "grasp/grasp_config.yaml:71"
     ],
     "expected_planner_frequency": [
       "nav/robot_slam/config/nav2_params.yaml:133"
@@ -1616,16 +1616,16 @@
       "nav/robot_slam/config/nav2_params.yaml:195"
     ],
     "final_exec_thresh_m": [
-      "grasp/grasp_config.yaml:69"
+      "grasp/grasp_config.yaml:72"
     ],
     "finger_length_m": [
-      "grasp/grasp_config.yaml:57"
+      "grasp/grasp_config.yaml:60"
     ],
     "finger_offset_m": [
-      "grasp/grasp_config.yaml:59"
+      "grasp/grasp_config.yaml:62"
     ],
     "finger_radius_m": [
-      "grasp/grasp_config.yaml:58"
+      "grasp/grasp_config.yaml:61"
     ],
     "follow": [
       "arm/vendor/rm_control/src/rm_control.cpp:261"
@@ -1832,7 +1832,7 @@
       "nav/robot_slam/config/nav2_params.yaml:64"
     ],
     "max_approach_steps": [
-      "grasp/grasp_config.yaml:67"
+      "grasp/grasp_config.yaml:70"
     ],
     "max_buffer_s": [
       "aria/aria_config.yaml:76"
@@ -1858,7 +1858,7 @@
       "nav/robot_slam/config/nav2_params.yaml:97"
     ],
     "max_orient_step_deg": [
-      "grasp/grasp_config.yaml:73"
+      "grasp/grasp_config.yaml:76"
     ],
     "max_robot_pose_search_dist": [
       "nav/robot_slam/config/nav2_params.yaml:65"
@@ -1876,7 +1876,7 @@
       "nav/robot_slam/config/nav2_params.yaml:196"
     ],
     "min_approach_angle_deg": [
-      "grasp/grasp_config.yaml:72"
+      "grasp/grasp_config.yaml:75"
     ],
     "min_approach_linear_velocity": [
       "nav/robot_slam/config/nav2_params.yaml:52"
@@ -1991,10 +1991,10 @@
       "nav/vendor/livox_ros_driver2/src/livox_ros_driver2.cpp:135"
     ],
     "palm_length_m": [
-      "grasp/grasp_config.yaml:55"
+      "grasp/grasp_config.yaml:58"
     ],
     "palm_radius_m": [
-      "grasp/grasp_config.yaml:56"
+      "grasp/grasp_config.yaml:59"
     ],
     "pipeline_state": [
       "grasp/grasp_config.yaml:21"
@@ -2200,6 +2200,9 @@
       "nav/robot_slam/config/slam_toolbox.yaml:13",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:12"
     ],
+    "segment_timeout_s": [
+      "grasp/grasp_config.yaml:46"
+    ],
     "segmentation_segment": [
       "shared/global_config.yaml:83"
     ],
@@ -2236,13 +2239,13 @@
       "nav/robot_slam/config/slam_toolbox_localization.yaml:3"
     ],
     "stability_n_frames": [
-      "grasp/grasp_config.yaml:77"
+      "grasp/grasp_config.yaml:80"
     ],
     "stability_rot_deg": [
-      "grasp/grasp_config.yaml:79"
+      "grasp/grasp_config.yaml:82"
     ],
     "stability_trans_mm": [
-      "grasp/grasp_config.yaml:78"
+      "grasp/grasp_config.yaml:81"
     ],
     "stack_size_to_use": [
       "nav/robot_slam/config/slam_toolbox.yaml:26",
@@ -2436,10 +2439,10 @@
       "nav/robot_slam/config/nav2_params.yaml:74"
     ],
     "use_simple_execute": [
-      "grasp/grasp_config.yaml:74"
+      "grasp/grasp_config.yaml:77"
     ],
     "use_slerp_execute": [
-      "grasp/grasp_config.yaml:75"
+      "grasp/grasp_config.yaml:78"
     ],
     "use_velocity_scaled_lookahead_dist": [
       "nav/robot_slam/config/nav2_params.yaml:51"
@@ -2464,7 +2467,7 @@
       "nav/robot_slam/config/nav2_params.yaml:76"
     ],
     "workspace_limits_m": [
-      "grasp/grasp_config.yaml:50"
+      "grasp/grasp_config.yaml:53"
     ],
     "wrist_camera_aligned_depth": [
       "shared/global_config.yaml:30"
@@ -2591,7 +2594,7 @@
         "aria/aria_app/services/aria_device/stream/audio_streaming_pipeline.py:49"
       ],
       "subscribers": [
-        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:31",
+        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:34",
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:150",
         "nav/goto_glasses/goto_glasses.py:69",
         "nav/object_approach/object_approach_node.py:90"
@@ -2846,19 +2849,6 @@
         "aria/aria_config.yaml:38"
       ]
     },
-    "/camera/camera/aligned_depth_to_color/camera_info": {
-      "n_publishers": 0,
-      "n_subscribers": 0,
-      "owned": true,
-      "publishers": [],
-      "subscribers": [],
-      "types": [
-        "?"
-      ],
-      "yaml_refs": [
-        "assets/recordings/wrist_camera/metadata.yaml:11"
-      ]
-    },
     "/camera/camera/aligned_depth_to_color/image_raw": {
       "n_publishers": 0,
       "n_subscribers": 6,
@@ -2868,7 +2858,7 @@
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:143",
         "grasp/anygrasp_node/anygrasp_detection_node.py:91",
         "grasp/anygrasp_node/anygrasp_node.py:86",
-        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:66",
+        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:70",
         "grasp/tools/dummy_mask_publisher.py:48",
         "grasp/tools/sam3_ros_node.py:82"
       ],
@@ -2876,7 +2866,6 @@
         "sensor_msgs/Image"
       ],
       "yaml_refs": [
-        "assets/recordings/wrist_camera/metadata.yaml:17",
         "shared/global_config.yaml:30"
       ]
     },
@@ -2889,7 +2878,7 @@
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:124",
         "grasp/anygrasp_node/anygrasp_detection_node.py:63",
         "grasp/anygrasp_node/anygrasp_node.py:53",
-        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:62",
+        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:66",
         "grasp/grasp_state_machine/src/grasp_state_machine.cpp:138",
         "grasp/tools/sam3_ros_node.py:61"
       ],
@@ -2897,7 +2886,6 @@
         "sensor_msgs/CameraInfo"
       ],
       "yaml_refs": [
-        "assets/recordings/wrist_camera/metadata.yaml:23",
         "shared/global_config.yaml:34"
       ]
     },
@@ -2910,14 +2898,13 @@
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:142",
         "grasp/anygrasp_node/anygrasp_detection_node.py:90",
         "grasp/anygrasp_node/anygrasp_node.py:85",
-        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:65",
+        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:69",
         "grasp/tools/sam3_ros_node.py:81"
       ],
       "types": [
         "sensor_msgs/Image"
       ],
       "yaml_refs": [
-        "assets/recordings/wrist_camera/metadata.yaml:29",
         "shared/global_config.yaml:26"
       ]
     },
@@ -2927,7 +2914,7 @@
       "owned": true,
       "publishers": [
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:191",
-        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:71",
+        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:75",
         "grasp/tools/dummy_mask_publisher.py:45",
         "grasp/tools/sam3_ros_node.py:74"
       ],
@@ -3117,10 +3104,10 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:33"
+        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:36"
       ],
       "subscribers": [
-        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:63"
+        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:67"
       ],
       "types": [
         "segmentation_interfaces/Target"
@@ -3281,7 +3268,7 @@
       "owned": true,
       "publishers": [
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:197",
-        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:73",
+        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:77",
         "grasp/tools/sam3_ros_node.py:76"
       ],
       "subscribers": [
@@ -3300,7 +3287,7 @@
       "owned": true,
       "publishers": [
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:194",
-        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:72",
+        "grasp/grasp_segmentation_client/grasp_segmentation_client.py:76",
         "grasp/tools/dummy_mask_publisher.py:46",
         "grasp/tools/sam3_ros_node.py:75"
       ],
