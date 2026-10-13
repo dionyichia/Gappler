@@ -38,7 +38,7 @@ evidence into the shared documents.
 | [`T1.2_SAFETY_FIXES.md`](T1.2_SAFETY_FIXES.md) | B1 launcher wording + I1 double-launch deletion evidence | When reviewing M1 pre-power safety |
 | [`T1.3_HOME_POSE.md`](T1.3_HOME_POSE.md) | Final T1.3 sim verdicts; original row retained; replacement pose still owed | When reviewing the arm home pose |
 | [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md) | T1.4 physical visit and no-motion power-on verdict; cell and motion checks remain downstream | Before the attended T1.6 session |
-| [`T3.4_BASE_BRINGUP.md`](T3.4_BASE_BRINGUP.md) | Partial base bring-up: live LiDAR, chassis feedback, isolated limiter evidence and outstanding driving/stop checks | Before resuming T3.4 or planning T3.5 |
+| [`T3.4_BASE_BRINGUP.md`](T3.4_BASE_BRINGUP.md) | T3.4 DONE for attended keyboard/LiDAR scope, verified process shutdown and explicit unmeasured safety/calibration residuals | Before planning T3.5 or reviewing base evidence |
 | [`T3.4_REMOTE_CHECKS.md`](T3.4_REMOTE_CHECKS.md) | Maintained isolated keyboard/smoother tests, LiDAR-only launch and gated attended handoff | Re-running remote T3.4 checks |
 | [`T3.5_LAUNCH_PREP.md`](T3.5_LAUNCH_PREP.md) | Network-preserving SLAM launch preparation and shared PointCloud2 includes; source-only verification | Before T3.5 mapping/localization setup |
 | [`T3.5_CLOUD_SCAN.md`](T3.5_CLOUD_SCAN.md) | Synthetic point-cloud geometry/filtering and scan checks for all current launch profiles | Re-running remote T3.5 scan-pipeline checks |
@@ -96,3 +96,4 @@ From [`../START_HERE.md`](../START_HERE.md) and the root `CLAUDE.md`:
 | 2026-10-07 | OpenCode + Sherman | Indexed synthetic SLAM persistence and its unresolved corrupt-file/readiness limits. |
 | 2026-10-07 | OpenCode + Sherman | Indexed explicit map snapshots and tested pause/interruption handling. |
 | 2026-10-07 | OpenCode + Sherman | Indexed minimal manual-control runbook (unvalidated procedure, no hardware run). |
+| 2026-10-13 | OpenCode + Sherman | Updated T3.4 index after attended driving/LiDAR and verified shutdown close-out; measured braking/watchdog/calibration remain unproven. |

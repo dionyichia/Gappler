@@ -70,6 +70,18 @@ class MedianDepth(unittest.TestCase):
         depth = np.array([[0.0, np.nan]], dtype=np.float32)
         self.assertTrue(math.isnan(median_depth(depth, np.ones((1, 2), dtype=bool))))
 
+    def test_too_few_readings_is_nan(self):
+        # T1.24 3b: a box too close has no readings, the 2 left of 10 are the background
+        depth = np.array([[0.0] * 8 + [1.26, 1.26]], dtype=np.float32)
+        mask = np.ones_like(depth, dtype=bool)
+        self.assertAlmostEqual(median_depth(depth, mask), 1.26, places=6)
+        self.assertTrue(math.isnan(median_depth(depth, mask, 0.5)))
+
+    def test_enough_readings_kept(self):
+        depth = np.array([[0.0] * 5 + [0.2] * 5], dtype=np.float32)
+        mask = np.ones_like(depth, dtype=bool)
+        self.assertAlmostEqual(median_depth(depth, mask, 0.5), 0.2, places=6)
+
     def test_shape_mismatch_refused(self):
         with self.assertRaises(ValueError):
             median_depth(np.zeros((2, 2)), np.ones((3, 3), dtype=bool))

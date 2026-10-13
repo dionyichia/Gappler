@@ -1,4 +1,5 @@
-"""Checks how the voice pipeline picks the finished sentence to transcribe (T2.10).
+"""Checks how the voice pipeline picks the finished sentence to transcribe (T2.10), and when a
+sentence means release (T2.6).
 
 Pure logic, no audio, but the module imports the glasses SDK, Whisper and ROS, so it runs on the
 lab box:
@@ -10,7 +11,7 @@ Times are seconds from the start of the audio window.
 import math
 import unittest
 
-from services.aria_device.stream.audio_streaming_pipeline import finished_sentence
+from services.aria_device.stream.audio_streaming_pipeline import finished_sentence, is_release
 
 WINDOW, SILENCE, NOTHING_HANDLED = 15.0, 0.7, -math.inf
 
@@ -44,6 +45,28 @@ class FinishedSentenceTest(unittest.TestCase):
         # "pick up the light" handled (ended at 6.0), then "release" finished
         self.assertEqual(finished_sentence([(3.0, 6.0), (11.0, 12.5)], WINDOW, SILENCE, 6.0),
                          (11.0, 12.5))
+
+
+class IsReleaseTest(unittest.TestCase):
+    # Whisper's text, with its capitals and punctuation
+    def test_release_alone(self):
+        self.assertTrue(is_release(" Release."))
+
+    def test_release_in_a_sentence(self):
+        self.assertTrue(is_release("Release the box, please."))
+
+    def test_let_go(self):
+        self.assertTrue(is_release("Let go of it!"))
+
+    def test_an_object_command_is_not_release(self):
+        self.assertFalse(is_release("Pick up the light."))
+
+    def test_only_whole_words(self):
+        self.assertFalse(is_release("I released it."))
+        self.assertFalse(is_release("Let's go."))
+
+    def test_silence_is_not_release(self):
+        self.assertFalse(is_release(""))
 
 
 if __name__ == "__main__":

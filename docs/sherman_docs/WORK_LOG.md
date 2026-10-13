@@ -275,6 +275,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Verified: docs only; no hardware, SSH/ROS, build or install performed. Sources re-read for citations: teleop defaults/behavior (`teleop_node.py:35-42,62-88,106-134`), tested smoother bounds (T3.4 doc), driver `/cmd_vel` subscription and `xnode_power` second publisher (vendor `ros2_interface.cpp:177` / `:154`), tested input/output wiring (`bench/nodes/test_velocity_smoother.py:85`), wider committed `nav2_params.yaml:190-203` defaults flagged as a T4 verify-and-override gate.
 - Outcome: T1-T6 terminals, single keyboard-to-driver path with `ros2` ownership checks, per-maneuver record sheet, halt-on-gate-failure rules and shutdown/custody checklist recorded. Explicit limits: arm driver off, no Nav2 goals, 1.0 s software bound is not a physical criterion, no kill/network experiments on moving hardware. Procedure unvalidated; driver-feed wiring, hardware-stop procedure and stopping criteria still owed at the attended session. T3.5 PROGRESS.
 - Next: attended-session review with the lab operator; fill in wiring/stop-procedure gaps; no PR/merge until validated.
+## [2026-10-13] T1.5 | Runbook validated, DONE
+
+- Evidence: [`../bench-runs/2026-10-13-labbox-t1.5-validation.txt`](../bench-runs/2026-10-13-labbox-t1.5-validation.txt); runbook [`../ARM_BRINGUP.md`](../ARM_BRINGUP.md) (banner validated, observed rate note, changelog).
+- Verified: attended session, Sherman operating, Dion at the rear power button. Box `dev` `49d80f7`, overlay rebuilt same day, domain 91 empty. Handshake RM65-BI/controller-3/UDP-5ms-8089; 23,043 wire packets ~14:55:07–14:57:03 (0 drops) spanning echo stamp `1791874553` (joint1–6 finite); `hz` opens ~200 steady; stop path 1 pub + 1 sub; ping 0% loss, 8080 open; no motion commanded or observed. Shutdown: driver exited, estop closed, controller off by Sherman, ping DOWN 15:08:59.
+- Outcome: the cached-readings gap is closed; T1.5 DONE in task-tree with residuals. Supersedes stale branch `t1.5-runbook-followup` (never PR'd, 96 behind).
+- Residuals: ROS-hz late-watch wobble 140–171 (ROS-side, T4.3 candidate); velocity/effort empty (known). Hosted task-tree Artifact republish owed.
+- Next: PR `t1.5-closeout` to `dev`; CI green + merge word.
 
 ## [2026-10-07] T3.4 | Attended LiDAR recheck, battery hold
 
@@ -325,6 +332,22 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Verified: 29 focused tests, construction-only launches, 12 synthetic cloud/scan cases (10/10 scans each) and installed SLAM save/restart/reload passed. Explicit saver pause restoration after normal/SIGINT/SIGTERM completion and localization-mode refusal passed. Exact raster reload and three synthetic pose errors 0.000–0.001 m / 0.001 rad; `/initialpose` reseeding passed. Final domain 127 empty, no matching driver/test processes.
 - Limits: corrupt graph still aborts the localizer; installed comparison exit 1 (3 drift/1 missing), unchanged before/after. No build, deployment, hardware, historical graph load, full suite or parameter-startup localization proof. G2–G4 remain proposals. T3.5/T3.9 remain PROGRESS.
 - Handoff: another session briefly began a dev merge in this checkout during testing; its conflicts were left untouched. After Sherman's merge confirmation, inspection found T3.4 PR #69 merged into dev but T3.5 still at the tested `9c098dc`, with no merge in progress. Commit this pinned evidence before a shared-safe dev update; verify the resulting source separately before requesting deployment.
+## [2026-10-13] T3.4 | Isolated PR branch and fresh critical-source verification
+
+- Evidence: [PR checks](../bench-runs/2026-10-13-sherman-t3.4-pr-checks.txt).
+- Existing T3.4 branch merged current dev without rewriting history; cherry-picked T3.4 evidence/readiness and only the cited stable ownership test. Unfinished T3.5 implementation excluded; all dev task data and shared-service suites preserved.
+- Available local quick checks PASS with explicit skips; runner coverage RED then GREEN, 18 focused tests/review PASS. Six critical sources matched the box candidate exactly; fresh complete private keyboard/smoother check PASS, final private domain empty. LiDAR constructor failed without nav overlay, then passed with the documented environment; no launch actions executed.
+- Sherman authorized PR into dev and merge commit only after review/CI/box gates pass. PR/CI pending at this entry; no merge or main change claimed. Hosted Artifact republish owed.
+
+## [2026-10-13] T3.5 | Resolved T3.4 dev merge and parallel readiness audits
+
+- Evidence: [resolved-source verification](../bench-runs/2026-10-13-sherman-t3.5-resolved-dev.txt), exact frozen tree `06b89328ff29385df6b98183b72c64fea5e5c625`; feature `aa21483` plus merged T3.4 dev `fdd6061`. Both prior histories and both bench suites retained; 119 task records preserved. Navigation source unchanged from tested `9c098dc`.
+- Parallelized read-only launch audit, readiness design and merge/documentation review; one exclusive box verifier ran serially. Lead remained sole Git/source/docs writer. No competing domain-127 jobs, hardware or builds.
+- Verified: 47 focused tests, construction-only checks, 12 scan cases and synthetic save/reload passed. Final private graph empty. Original checkout at externally advanced dev `0bf552e`, its existing untracked logs, overlay and network remained unchanged during the resumed run. Evidence hashes verified after transfer.
+- Close-out: final available Mac quick checks exit 0 with explicit environment/one-saver-subtest skips; no owned static findings, two vendor findings and two imported contract endpoint warnings. Both coverage checks and read-only evidence/documentation review passed. L3–L6/full-suite acceptance not claimed.
+- Audits: native components with explicit candidate YAML avoid new launch infrastructure. Full SLAM launches/quickstart nav include hardware/Nav2/goal actions and are excluded from manual mapping. Updated existing checklist with fresh scan/TF and sole-map-owner gates, reload-only same-byte staging proposal and independent physical-reference sheet. Source construction does not prove parameter startup; the post-seed pose observation does not prove reseed causality.
+- Limits: installed comparison still exit 1 (4 match/3 drift/1 missing/1 skip); corrupt graph still aborts. Automatic startup/reseed-control tests, staging/dry-load G2–G4 implementation, team sign-off, attended readiness and live acceptance remain open. These documentation corrections do not implement gates. T3.5/T3.9 stay PROGRESS; no completion PR or deployment.
+- Next: bank/push this reviewed checkpoint, then catch up the later `0bf552e` docs-only dev advance before further source work. Implement focused startup/reseed controls and reviewed component-only provenance/gates before requesting attended live work. Hosted task-tree Artifact republish remains owed.
 
 ## Record Template
 

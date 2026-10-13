@@ -14,21 +14,27 @@ sent. This file does not repeat them.
 
 ## Start here, 2026-10-13 (cold start)
 
-**Where we are.** Steps 1, 2 and 3a pass (the state machine homes the real arm and stays idle).
-Step 3b is half done: on 2026-10-12, over SSH with the arm off, SAM 3 ran on the live wrist camera
-and the timing was measured. The stale-centroid check is written and passes on the simulated arm.
-Both are in PR #57 (`t1.24-t2.8-centroid-age-and-voice-replay`), with the voice work (T2.8, T2.10).
-Review guide: [`T1.24_T2.10_REVIEW_GUIDE.md`](T1.24_T2.10_REVIEW_GUIDE.md).
+**Where we are.** Steps 1, 2 and 3 pass. **3c passed on 2026-10-13: the real arm approached the
+box with live SAM 3, closed on it, lifted it and brought it back to HOME** (fourth attempt,
+[`../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt`](../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt)).
+The 3b too-close depth fix (PR #62) is merged and passed at the box first.
 
-**Next, at the robot: finish 3b**, arm off, no state machine. Box under the wrist camera. Record z
-against a tape measure at 0.6, 0.4 and 0.25 m, the centroid rate on the box, and the distance
-where z stops coming. Commands in "Step 3b" below. **Then 3c**, only after 3b passes and PR #57
-is merged.
+**Merged into `dev` (`dec78c0`):** the T1.25 gate (#65) and the two 3c fixes (#67), a 0.5 s settle
+wait before each approach step (`step_settle_s`) and the virtual table at the measured 0.12 m
+(`table_top_z_m`). `~/rcp-Gappler` is rebuilt on it, so the normal `./quickstart_terminals.sh
+grasp` layout runs the gated state machine.
+
+**Next, at the robot: step 4 (T1.11), more grasps.** Same setup as 3c, from `~/rcp-Gappler`.
+Power the arm on about a minute before the driver pane, and start the state machine only after the
+driver prints "RM_65_driver is running" (attempt 0 of 3c, guard owed in T1.26). One request per
+attempt, restart the state machine between attempts. Put the box in line with the gripper: attempt 3
+missed because it was not. Release by hand with `-w 1` (see 3c result). Before an unattended run,
+T1.26 (arm motion guards found in 3c).
 
 **Before touching the box:**
 - Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.98.10.50`. `100.87.133.60` has been
   offline since mid-September.
-- `git log -1` in `~/rcp-Gappler`: expect `dev` with PR #57 merged. Rebuild with `./build.sh`.
+- `git log -1` in `~/rcp-Gappler`: expect `dev` at `e19d58a` (PR #62) or later.
 - Check who else is on it: `ps -eo pid,user,etime,args | grep -iE "realsense|rs_launch|ros2 launch|bench/run.sh|Runner.Worker"`,
   `nvidia-smi`, `fuser /dev/video*`, `tmux ls`.
 - The box CPU was overheating on 2026-10-12: 89 C at 12% load, clamped to 0.8 GHz. It slows
@@ -53,7 +59,7 @@ cycle fails on the first try, we will not know which part failed. So each step a
 | 3b | T1.24 | SAM 3 on the wrist camera finds the box: mask, centroid, real depth | the stale-centroid check | at the robot, arm off |
 | 3c | T1.24 | The state machine approaches the box with live SAM 3 centroids, one attempt | none | at the robot |
 | 4 | T1.11 | The real arm grasps a box | none | at the robot |
-| 5 | T1.12 | It grasps again and again with SAM 3 left running | needs T1.25 (trigger gate) | at the robot |
+| 5 | T1.12 | It grasps again and again with SAM 3 left running | T1.25 (trigger gate), built 2026-10-13 | at the robot |
 | 6 | T1.14, T2.6 | Release, done, back to IDLE, a second grasp | yes | desk, then robot |
 | 7 | T1.17 | The AnyGrasp path | yes (T1.8, T1.10) | mixed |
 
@@ -86,9 +92,15 @@ All MoveIt motions run at 10% velocity and acceleration
 
 ---
 
-## The trigger, today and after T1.25
+## The trigger, before and after T1.25
 
-### Today
+**Since T1.25 (merged 2026-10-13, #65):** a centroid starts nothing on its
+own. The state machine waits in IDLE for `/manipulator/grasp_request`, then for a centroid. Send
+the request by hand: `ros2 topic pub --once /manipulator/grasp_request std_msgs/msg/Empty`. It is
+typed, not sent, in the last pane of `./quickstart_terminals.sh grasp`. "Before T1.25" below is
+kept for the reasoning.
+
+### Before T1.25
 
 - **Segmentation never stops publishing.** While it has a prompt, the grasp client
   (`grasp/grasp_segmentation_client/grasp_segmentation_client.py`) sends every newest wrist frame to
@@ -96,8 +108,8 @@ All MoveIt motions run at 10% velocity and acceleration
   no glasses its prompt is the test-only `default_prompt: "box"` in `grasp/grasp_config.yaml` `[code]`.
 - **The stand-in never stops either.** `grasp/tools/dummy_mask_publisher.py` publishes an
   image-centre centroid on every depth frame `[code]`.
-- **Any centroid starts a cycle.** `centroidCallback` sets `has_centroid_` on every message
-  (`grasp_state_machine.cpp:206-212`) and IDLE waits only for that flag `[code]`.
+- **Any centroid started a cycle.** `centroidCallback` set `has_centroid_` on every message
+  and IDLE waited only for that flag `[code]`.
 
 So with the one-shot `return;` removed, the next camera frame would start a new approach, while the
 gripper still holds the first object `[inferred]`.
@@ -119,12 +131,17 @@ should get two separate signals and trust them:
 
 | Signal | Topic | Type | Meaning |
 |---|---|---|---|
-| new target | `/manipulator/grasp_request` | `std_msgs/Empty` | new, proposed in T1.25 |
+| new target | `/manipulator/grasp_request` | `std_msgs/Empty` | new in T1.25, `CHANNEL_CONTRACT` H10a. Nobody publishes it yet |
 | release | `/manipulator/release` | `std_msgs/Bool` | exists in the contract (A-1), nobody publishes it yet |
 
 Until the glasses side publishes them, we send both by hand with `ros2 topic pub --once`.
 
-### The gate (T1.25, option A), as I would build it
+### The gate (T1.25, option A), as built
+
+Built 2026-10-13 as planned below, with three additions Dion approved: the request lapses after
+`grasp_request_timeout_s` (10 s, `grasp/grasp_config.yaml`) if no centroid comes, a request outside
+IDLE is refused with a "busy" log line and not queued, and C1 is closed (see "C1" below). Passes on
+the simulated arm: [`../bench-runs/2026-10-13-labbox-t1.25-grasp-request-gate.txt`](../bench-runs/2026-10-13-labbox-t1.25-grasp-request-gate.txt).
 
 The centroid stream is needed during the approach, because SELECTING re-reads the latest centroid
 on every step to steer (`:644-655`). So the gate is not "off". It is "only listen while
@@ -155,9 +172,23 @@ Option B (T2.4) is the same idea on the SAM 3 side: start segmenting on `grasp_r
 `/manipulation/done`. It saves GPU time and keeps old centroids off the wire. A alone protects
 the arm. B alone does not, because the arm would then depend on another node behaving.
 
-**Overlap with T1.9.** One condition variable is shared by two mutexes. (The unlocked
-`has_centroid_` write in IDLE was fixed in the PR #57 review, `CODE_AUDIT` C3.) T1.25 touches exactly this code, so fix those two things in the
-same change rather than building on them.
+**Overlap with T1.9, and C1.** One condition variable is waited on with two mutexes (`CODE_AUDIT`
+C1). That is allowed while only one thread ever waits on it, and only the worker thread does, so
+T1.25 keeps it and says so at the IDLE wait. The real defect was shutdown: the destructor set
+`shutdown_` under `queue_mutex_` only, so the IDLE wait (on `centroid_mutex_`) could miss the
+wake-up and never return. The destructor now takes both locks. Left for T1.9: `state_` and
+`shutdown_` are still plain values (C4, C5, `homeWithRetry` reads `shutdown_` unlocked), and C6
+means the destructor never runs anyway.
+
+**Why a request cannot race the worker.** The gate flag, the "waiting in IDLE" flag, the deadline
+and the centroid all sit under `centroid_mutex_`. The worker leaves IDLE in the same locked block
+that saw the centroid. A request is either taken before that, or refused as busy after it. The
+deadline is read only inside that IDLE loop, so it cannot fire during SELECTING or EXECUTING.
+
+**Why 10 s.** With the service up and the object in view, SAM 3 gives a centroid in about 1 s
+(0.27 to 0.53 s a frame, 0.5 s warm-up). 10 s covers a slow, overheating box. A request sent while
+the service is still loading (9.5 s for SAM 3 alone, about 60 s with the glasses client) lapses,
+and nothing moves: send it again. If T2.4 ever loads SAM 3 on the request, raise the limit then.
 
 **Bench impact.** A new channel moves the contract, so run `python3 bench/contracts.py snapshot`
 and add a row to `CHANNEL_CONTRACT.md`. `bench/nodes/test_state_machine_sim.py` must send a
@@ -402,8 +433,8 @@ it. The service and the grasp client have run on this box on the recorded wrist-
 | 4 | `ros2 topic echo /object_centroid_2d` | x, y near the box in the image, z in metres |
 | 5 | `rqt_image_view /camera/sam/mask` | the mask |
 
-The quickstart `grasp` layout starts the camera at the driver defaults with the point cloud on.
-That sent no frames on 2026-10-07, so start the camera by hand here.
+The quickstart `grasp` layout starts this camera command itself since T2.11, but it also starts
+`arm_bringup`. With the arm off, either is fine. The 2026-10-13 run started these panes by hand.
 
 **Record:**
 - the centroid rate (it sets the age limit for 3c)
@@ -450,15 +481,55 @@ Full record: [`../bench-runs/2026-10-12-labbox-t1.24-3b-live-sam3.txt`](../bench
 Still owed, needs someone at the robot: box in view, the centroid rate on the box, z against
 the tape at 0.6, 0.4 and 0.25 m, and the distance where z stops.
 
+### Result, 2026-10-13: 3b PASS, one finding for 3c
+
+Dion at the robot, arm off, Claude over SSH. Session started by hand (camera, service, client,
+monitors), not with the quickstart `grasp` layout, which also starts `arm_bringup`.
+
+| Check | Result |
+|---|---|
+| z at 0.25 m | 0.244 to 0.267. Pass |
+| z at 0.4 m | 0.373 to 0.414. Pass |
+| z at 0.6 m | first try unsteady (0.45 to 0.61), second try 0.591 to 0.608. Pass |
+| Rate, box in view | 0.27 to 0.52 s apart, about 2 to 3.5 per second |
+| Box out of view | no centroids, no false box. Pass |
+| Closest valid z | 0.157 m, below the 0.18 m stop. Pass |
+
+**Finding: too close reads far.** Closer than about 0.157 m the client did not go quiet. It sent
+z of about 1.26 m for 17 frames. The box is inside the camera's minimum range, so most pixels
+under the mask have no reading, and the median of the few left is the background `[inferred]`.
+The approach steps 4 cm and stops below 0.18 m, so from 0.19 m one step lands near 0.15 m, reads
+1.26 m, and keeps going `[inferred]`.
+
+**Fix (branch `t1.24-min-valid-depth`):** `median_depth` gives no depth unless at least half the
+mask has a reading (`min_valid_depth_fraction: 0.5` in `shared_services_config.yaml`). No depth
+means the client publishes no centroid, and the stale-centroid check ends the approach after
+2.0 s. Not yet checked at the box: 0.5 may also drop valid readings just above 0.18 m. If z stops
+before 0.18 m, lower the fraction.
+
+SAM 3 took 53 s to load (10 s on 10-12) and the CPU was at 90 C again.
+
+Record: [`../bench-runs/2026-10-13-labbox-t1.24-3b-box-and-tape.txt`](../bench-runs/2026-10-13-labbox-t1.24-3b-box-and-tape.txt).
+
 ### Step 3c: the approach with live SAM 3
 
 **Proves:** the full step 3: home, approach the box, stop at 0.18 m, open, last 10 cm step, close,
 return to HOME, `true` on `/manipulator/return_to_user`. One attempt.
 
 3a's arm panes, plus 3b's camera, service and client panes. `ros2 topic echo /pipeline_state`. The state
-machine last. The client is publishing already, so **the arm homes and then approaches as soon as the
-state machine is up**. The one-shot `return;` (`:735`) stops it after one cycle, so the trigger gate
-(T1.25) is not needed for this one attempt `[inferred]`.
+machine last. The one-shot `return;` stops it after one cycle either way.
+
+Run it from `./quickstart_terminals.sh grasp` in `~/rcp-Gappler` (gate merged 2026-10-13, #65). On
+2026-10-13 the gate was still unmerged, so the state machine ran from a separate build,
+`~/rcp-Gappler-t1.25`, since deleted.
+
+1. Start the state machine pane only after the driver pane prints "RM_65_driver is running".
+2. Wait for the home move and `IDLE` on `/pipeline_state`. The arm stays still. The state machine
+   logs `Centroid ignored: no grasp request open` every 5 s while the client publishes.
+3. Box in view, the client logging centroids, hand on the power button. Send the request from the
+   last pane: `ros2 topic pub --once /manipulator/grasp_request std_msgs/msg/Empty`
+4. Expect `Grasp request: accepting centroids for 10.0s`, then `SELECTING` within about a second.
+   If no centroid comes in 10 s, it logs `Grasp request lapsed` and stays in IDLE. Send it again.
 
 Box on the table, in view, alone.
 
@@ -470,7 +541,23 @@ gripper close, back to HOME, `IDLE` then `SELECTING` then `EXECUTING` on `/pipel
 fast. If SAM 3 loses the box, the stale check should end the approach. Do not count on it the first
 time.
 
-**After:** the gripper stays closed. Open it with the step 1 command.
+**After:** the gripper stays closed. Open it with the step 1 command, with `-w 1` so it waits for
+the driver: `ros2 topic pub --once -w 1 /rm_driver/set_gripper_position_cmd rm_ros_interfaces/msg/Gripperset "{position: 1000, block: false, timeout: 0}"`.
+Without `-w 1` the first try on 2026-10-13 was lost.
+
+### Result, 2026-10-13: PASS on the fourth attempt
+
+Full record: [`../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt`](../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt).
+
+| Attempt | What happened | Fix |
+|---|---|---|
+| 0 | State machine started before the driver connected (about 80 s after power-on). Home aborted, IDLE anyway, arm straight up | Restart once the driver says "RM_65_driver is running". Guard in T1.26 |
+| 1 | Second approach step rejected: "start point deviates from current robot state more than 0.01" | `step_settle_s: 0.5` wait before each step. `allowed_start_tolerance` 0.02 set at run time |
+| 2 | 11 steps, z 0.389 to 0.187 m, then "Cartesian path only 33%": the virtual table top was 0.195 m, the real one 0.12 m | `table_top_z_m: 0.12` |
+| 3 | Full cycle, the jaws closed beside the box: not in line with the gripper | Place the box in line |
+| 4 | Full cycle: approached, closed on the box, lifted it, back to HOME | PASS |
+
+The gate held on the real arm: "Centroid ignored" every 5 s, no motion until a request.
 
 ---
 
@@ -485,7 +572,8 @@ and where it went wrong if not.
 ## Steps 5 to 7
 
 - **Step 5 (T1.12):** SAM 3 left running across attempts. SAM 3 itself is proven in 3b and 3c.
-  Needs T1.25 first, or SAM 3 starts a new cycle as soon as the one-shot `return;` is removed.
+  One request per attempt (T1.25). Without it, SAM 3 would start a new cycle as soon as the
+  one-shot `return;` is removed.
 - **Step 6 (T1.14, T2.6):** release, done, back to IDLE, a second grasp in the same launch.
 - **Step 7 (T1.17):** the AnyGrasp path.
 
@@ -537,3 +625,8 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-12 | Claude Opus 5.5 + Dion | Stale-centroid check written, limit 2.0 s, with the reasoning from the 3b timing. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | "Start here" rewritten for the 3b robot session after PR #57. Stale-centroid check marked done, and the T1.25 note says it uses the camera stamp, not the arrival time. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | Known gap: T2.11 result added (default 1280x720 sends frames now, SAM 3 about 40 % slower than 640x480). Grasp layout pinned to 640x480x15. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | 3b PASS with the box and tape. Found a box too close reads 1.26 m, fix on `t1.24-min-valid-depth`. "Start here" points at checking the fix, then 3c. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | T1.25 built: the trigger section says what changed, the gate design is marked as built with the timeout, the busy refusal, the C1 shutdown fix and why a request cannot race the worker. 3c and step 5 send a request. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | Start here: PRs #57 to #60 merged, T1.25 built but unmerged. Step 3c: how to run with the gate from `~/rcp-Gappler-t1.25` (binary checked to contain it), and without it. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | 3c PASS, the first grasp on the real arm. Start here rewritten for step 4. 3c result table, release with `-w 1`. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | After #65 and #67 merged: Start here and step 3c run from `~/rcp-Gappler` and the quickstart grasp layout. The separate `~/rcp-Gappler-t1.25` build is deleted. Start the state machine after the driver is up. |

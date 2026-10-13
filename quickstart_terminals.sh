@@ -65,6 +65,8 @@ lay_grasp() {
   fi
   pane auto arm "ros2 topic echo /pipeline_state"
   pane typed grasp "ros2 launch grasp_state_machine grasp_state_machine.launch.py"
+  # One attempt per request (T1.25). Send once IDLE shows and the client is publishing a centroid
+  pane typed grasp "ros2 topic pub --once /manipulator/grasp_request std_msgs/msg/Empty"
 }
 
 lay_nav() {

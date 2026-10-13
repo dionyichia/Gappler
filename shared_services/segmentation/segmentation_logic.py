@@ -63,19 +63,27 @@ def depth_in_metres(depth: np.ndarray, encoding: str) -> np.ndarray:
     return depth.astype(np.float32) * DEPTH_ENCODINGS[encoding][1]
 
 
-def median_depth(depth_m: np.ndarray, mask: np.ndarray) -> float:
-    """Median of the valid readings under the mask, in metres. NaN if there are none.
+def median_depth(depth_m: np.ndarray, mask: np.ndarray, min_valid_fraction: float = 0.0) -> float:
+    """Median of the valid readings under the mask, in metres. NaN if fewer than
+    min_valid_fraction of the mask's pixels have a reading, or none do.
 
     A RealSense pixel with no reading is 0, so 0 is skipped along with NaN. The median, not the
     mean, because the worst readings sit at the mask's edges: pixels that slipped onto the table
     behind, and "flying pixels" whose depth lands between object and background. They are a
     minority, so the median ignores them where the mean would be pulled toward them.
+
+    The median only works while they are a minority. An object closer than the camera's minimum
+    range has no readings of its own, so the few left are background: the wrist camera reported
+    a box at 0.15 m as 1.26 m (T1.24 3b, 2026-10-13). min_valid_fraction gives NaN instead.
     """
     if depth_m.shape != mask.shape:
         raise ValueError(f"depth is {depth_m.shape}, mask is {mask.shape}")
     values = depth_m[mask]
+    total = values.size
     values = values[np.isfinite(values) & (values > 0)]
-    return float(np.median(values)) if values.size else math.nan
+    if values.size == 0 or values.size < min_valid_fraction * total:
+        return math.nan
+    return float(np.median(values))
 
 
 def back_project(u: float, v: float, z: float, k: Sequence[float]) -> Tuple[float, float, float]:
@@ -112,6 +120,7 @@ def describe_mask(
     score: float,
     depth_m: Optional[np.ndarray] = None,
     k: Optional[Sequence[float]] = None,
+    min_valid_fraction: float = 0.0,
 ) -> Optional[Detection]:
     """One mask -> a Detection. None for an empty mask, which has no centroid.
 
@@ -131,7 +140,7 @@ def describe_mask(
         v=float(ys.mean()),
     )
     if depth_m is not None:
-        det.depth_m = median_depth(depth_m, mask)
+        det.depth_m = median_depth(depth_m, mask, min_valid_fraction)
         if has_intrinsics(k) and not math.isnan(det.depth_m):
             det.point = back_project(det.u, det.v, det.depth_m, k)
     return det
@@ -143,13 +152,14 @@ def detections_from_sam3(
     max_detections: int,
     depth_m: Optional[np.ndarray] = None,
     k: Optional[Sequence[float]] = None,
+    min_valid_fraction: float = 0.0,
 ) -> List[Detection]:
     """SAM 3's result for one image -> Detections, best score first.
 
     state is what SAM3Model.process_text_prompt returns: "masks" (N, 1, H, W) or (N, H, W),
     "scores" (N,). Scores below min_score and empty masks are dropped, and at most
     max_detections are kept. Depth and the 3D point are filled in only when depth_m is given
-    (and K, for the point).
+    (and K, for the point), and only where at least min_valid_fraction of the mask has depth.
     """
     if state.get("masks") is None:
         return []
@@ -164,7 +174,7 @@ def detections_from_sam3(
     for i in np.argsort(-scores, kind="stable"):
         if scores[i] < min_score:
             break
-        det = describe_mask(masks[i], scores[i], depth_m, k)
+        det = describe_mask(masks[i], scores[i], depth_m, k, min_valid_fraction)
         if det is not None:
             found.append(det)
             if len(found) == max_detections:

@@ -97,6 +97,8 @@ s=$(step "L0  Synthetic SLAM fixture" python3 bench/test_slam_fixture.py)
 row L0 "Synthetic SLAM fixture" "$s" ""
 s=$(step "L0  Map snapshot saver" python3 bench/test_map_saver.py)
 row L0 "Map snapshot saver" "$s" ""
+s=$(step "L0  T3.4 bench coverage" python3 bench/test_t34_bench_coverage.py)
+row L0 "T3.4 bench coverage" "$s" ""
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
 # xacro and realsense2_description come from ROS, which CI does not source. Source it here when present.

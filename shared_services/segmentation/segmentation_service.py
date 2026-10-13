@@ -183,6 +183,7 @@ class SegmentationService(Node):
                 request.max_detections or self.max_detections,
                 depth_m,
                 k,
+                CFG["min_valid_depth_fraction"],
             )
         except Exception as e:  # a bad request or a model failure is an answer, never a crash
             response.success = False

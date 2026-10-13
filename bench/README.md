@@ -89,6 +89,11 @@ bug is there, **XPASS** once it isn't — then retag the finding.
 
 ### T3.4 remote software check
 
+L0 also checks command ownership (`test_command_ownership.py`) and preserves both
+T3.4 and existing dev suites (`test_t34_bench_coverage.py`). Ownership assertions
+come from source commit `7b01820`; that T3.4 ownership-check scope excludes
+T3.5 scan/persistence. The combined runner includes those T3.5 suites separately.
+
 Run `bash bench/velocity_smoother.sh` individually on an idle ROS box; it needs the installed
 `nav2_velocity_smoother`, not a new workspace build. It uses only `/t34_probe/keyboard_input`
 and `/t34_probe/output`, fixed domain 127 and a recording subscriber. `BENCH_DOMAIN` values
@@ -205,7 +210,7 @@ moved file would show red and the real signal would drown.
 So `contracts.py` compares **contracts**, and treats file locations as
 informational:
 
-- moving `sam3_ros_node.py` to a new package → `info: moved`
+- moving `dummy_mask_publisher.py` to a new package → `info: moved`
 - changing the topic it publishes → `REGRESSION`
 
 ## What counts as a regression

@@ -1,0 +1,52 @@
+T1.24 step 3b, finished: SAM 3 finds the box on the live wrist camera, depth against a tape
+2026-10-13, lab box (rcp2026@100.98.10.50), ~/rcp-Gappler on dev 4cbb56e (no rebuild: only docs
+changed since bd2d02d). Domain 91, ROS_LOCALHOST_ONLY=1. Arm powered off, no rm_driver, no state
+machine. Dion at the robot with the box and a tape measure. Claude Opus 5.5 ran the session over
+SSH in tmux session t1_24_3b. Pane logs: /tmp/t1_24_3b_2026-10-13/ on the box.
+
+Before start
+  nvidia-smi: only gnome-remote-desktop (120 MiB). fuser /dev/video*: nothing. No ROS running.
+  tmux: gh-runner, 1, t15-bringup (none using hardware).
+
+Panes (started by hand, not ./quickstart_terminals.sh grasp, which also starts arm_bringup)
+  0 camera   rs_launch.py serial_no:=_243222074878 align_depth, color and depth 640x480x15
+  1 service  shared_services/segmentation/segmentation_service.py
+  2 client   grasp/grasp_segmentation_client/grasp_segmentation_client.py, prompt 'box'
+  3 ros2 topic hz /object_centroid_2d
+  4 ros2 topic echo /object_centroid_2d geometry_msgs/msg/PointStamped --field point
+  Stopped with Ctrl-C in each pane. Camera and GPU free afterwards.
+
+Start-up
+  SAM 3 loaded in 53 s (9.5 s on 2026-10-12). CPU at 90 C, load average 3.8.
+
+Depth against the tape (camera glass to box face), z from /object_centroid_2d
+  0.25 m   0.244 to 0.267 over about 30 frames                          PASS
+  0.4 m    0.373 to 0.414, most within 2 cm                             PASS
+  0.6 m    first try 0.449, 0.490, 0.605 (3 frames, unsteady)
+           second try 0.591 to 0.608 over 11 frames                     PASS
+
+Rate with the box in view
+  centroids 0.27 to 0.52 s apart, about 2 to 3.5 per second. Longer gaps (3 to 125 s) were the
+  box out of view or being moved.
+
+Box out of view
+  no centroids, no false box                                            PASS
+
+Box slid in from 0.25 m toward the lens and back out
+  z falls smoothly to 0.157 m (0.25, 0.22, 0.207, 0.198, 0.192, 0.179, 0.175, 0.171, 0.157)
+  then jumps to 1.22 to 1.28 m for 17 frames while the box is closest, then back to 0.156 and up
+  to 0.26 on the way out.
+  Valid depth reaches 0.157 m, below execute_depth_thresh_m 0.18           PASS
+  Finding: closer than about 0.157 m the client does not go quiet, it reports about 1.26 m.
+  Cause [inferred]: the box is inside the camera's minimum range, so most pixels under its mask
+  have no reading, and median_depth (segmentation_logic.py:66) took the median of the few that
+  remained, which were background (the ceiling read 1.255 m on 2026-10-12).
+  Risk for 3c [inferred]: the approach steps 0.04 m and stops below 0.18 m. From z 0.19 one step
+  lands near 0.15, z then reads 1.26 and the arm keeps stepping into the box.
+  Fix: branch t1.24-min-valid-depth. median_depth gives NaN unless at least
+  min_valid_depth_fraction (0.5, shared_services_config.yaml) of the mask has a reading. The
+  client then publishes no centroid, and the stale-centroid check ends the approach after 2.0 s.
+  To check at the box before 3c: z still arrives below 0.18 m with the fix, and stops instead of
+  jumping to 1.26 m when the box is closer.
+
+Result: 3b PASS. 3c waits on the fix being checked at the box.
