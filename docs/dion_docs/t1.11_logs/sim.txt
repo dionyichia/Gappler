@@ -1,0 +1,2 @@
+guards ok: mock_components, no rm_driver, arm unreachable (arm-ping=FAIL arm-port=FAIL), channel 95 empty, localhost only
+move_group ready (simulated arm); state machine launched

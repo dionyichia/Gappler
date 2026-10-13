@@ -1,0 +1,9 @@
+source arm/arm_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1 DISPLAY=:1 && ros2 run rqt_image_view rqt_image_view /camera/camera/color/image_raw
+rcp2026@iot22-Computer:~/rcp-Gappler$ source arm/arm_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1 DISPLAY=:1 && ros2 run rqt_image_view rqt_image_view /camera/camera/color/image_raw
+QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-rcp2026'
+
+
+
+
+
+
