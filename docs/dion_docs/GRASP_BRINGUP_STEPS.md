@@ -14,16 +14,13 @@ sent. This file does not repeat them.
 
 ## Start here, 2026-10-13 (cold start)
 
-**Where we are.** Steps 1, 2 and 3a pass (the state machine homes the real arm and stays idle).
-Step 3b is half done: on 2026-10-12, over SSH with the arm off, SAM 3 ran on the live wrist camera
-and the timing was measured. The stale-centroid check is written and passes on the simulated arm.
-Both are in PR #57 (`t1.24-t2.8-centroid-age-and-voice-replay`), with the voice work (T2.8, T2.10).
-Review guide: [`T1.24_T2.10_REVIEW_GUIDE.md`](T1.24_T2.10_REVIEW_GUIDE.md).
+**Where we are.** Steps 1, 2, 3a and 3b pass. 3b finished on 2026-10-13 with the box and a
+tape: depth is within 2 cm at 0.25, 0.4 and 0.6 m, and valid down to 0.157 m. It also found that
+a box closer than about 0.157 m reads 1.26 m instead of nothing, which could walk the arm into the
+box in 3c. Fix on branch `t1.24-min-valid-depth` (see "Result, 2026-10-13" under step 3b).
 
-**Next, at the robot: finish 3b**, arm off, no state machine. Box under the wrist camera. Record z
-against a tape measure at 0.6, 0.4 and 0.25 m, the centroid rate on the box, and the distance
-where z stops coming. Commands in "Step 3b" below. **Then 3c**, only after 3b passes and PR #57
-is merged.
+**Next, at the robot:** check the fix, arm off, same setup as 3b. Slide the box in to the lens:
+z should still arrive below 0.18 m, then stop instead of jumping to 1.26 m. **Then 3c.**
 
 **Before touching the box:**
 - Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.98.10.50`. `100.87.133.60` has been
@@ -402,8 +399,8 @@ it. The service and the grasp client have run on this box on the recorded wrist-
 | 4 | `ros2 topic echo /object_centroid_2d` | x, y near the box in the image, z in metres |
 | 5 | `rqt_image_view /camera/sam/mask` | the mask |
 
-The quickstart `grasp` layout starts the camera at the driver defaults with the point cloud on.
-That sent no frames on 2026-10-07, so start the camera by hand here.
+The quickstart `grasp` layout starts this camera command itself since T2.11, but it also starts
+`arm_bringup`. With the arm off, either is fine. The 2026-10-13 run started these panes by hand.
 
 **Record:**
 - the centroid rate (it sets the age limit for 3c)
@@ -449,6 +446,36 @@ Full record: [`../bench-runs/2026-10-12-labbox-t1.24-3b-live-sam3.txt`](../bench
 
 Still owed, needs someone at the robot: box in view, the centroid rate on the box, z against
 the tape at 0.6, 0.4 and 0.25 m, and the distance where z stops.
+
+### Result, 2026-10-13: 3b PASS, one finding for 3c
+
+Dion at the robot, arm off, Claude over SSH. Session started by hand (camera, service, client,
+monitors), not with the quickstart `grasp` layout, which also starts `arm_bringup`.
+
+| Check | Result |
+|---|---|
+| z at 0.25 m | 0.244 to 0.267. Pass |
+| z at 0.4 m | 0.373 to 0.414. Pass |
+| z at 0.6 m | first try unsteady (0.45 to 0.61), second try 0.591 to 0.608. Pass |
+| Rate, box in view | 0.27 to 0.52 s apart, about 2 to 3.5 per second |
+| Box out of view | no centroids, no false box. Pass |
+| Closest valid z | 0.157 m, below the 0.18 m stop. Pass |
+
+**Finding: too close reads far.** Closer than about 0.157 m the client did not go quiet. It sent
+z of about 1.26 m for 17 frames. The box is inside the camera's minimum range, so most pixels
+under the mask have no reading, and the median of the few left is the background `[inferred]`.
+The approach steps 4 cm and stops below 0.18 m, so from 0.19 m one step lands near 0.15 m, reads
+1.26 m, and keeps going `[inferred]`.
+
+**Fix (branch `t1.24-min-valid-depth`):** `median_depth` gives no depth unless at least half the
+mask has a reading (`min_valid_depth_fraction: 0.5` in `shared_services_config.yaml`). No depth
+means the client publishes no centroid, and the stale-centroid check ends the approach after
+2.0 s. Not yet checked at the box: 0.5 may also drop valid readings just above 0.18 m. If z stops
+before 0.18 m, lower the fraction.
+
+SAM 3 took 53 s to load (10 s on 10-12) and the CPU was at 90 C again.
+
+Record: [`../bench-runs/2026-10-13-labbox-t1.24-3b-box-and-tape.txt`](../bench-runs/2026-10-13-labbox-t1.24-3b-box-and-tape.txt).
 
 ### Step 3c: the approach with live SAM 3
 
@@ -537,3 +564,4 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-12 | Claude Opus 5.5 + Dion | Stale-centroid check written, limit 2.0 s, with the reasoning from the 3b timing. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | "Start here" rewritten for the 3b robot session after PR #57. Stale-centroid check marked done, and the T1.25 note says it uses the camera stamp, not the arrival time. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | Known gap: T2.11 result added (default 1280x720 sends frames now, SAM 3 about 40 % slower than 640x480). Grasp layout pinned to 640x480x15. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | 3b PASS with the box and tape. Found a box too close reads 1.26 m, fix on `t1.24-min-valid-depth`. "Start here" points at checking the fix, then 3c. |
