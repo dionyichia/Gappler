@@ -1,0 +1,35 @@
+T2.1 review fixes on the lab box
+Date: 2026-10-13   Machine: lab box (iot22-Computer), ~/rcp-Gappler   Branch: t2.1-sam3-service
+Run by: Claude Opus 5.5 for Dion. Box free before the run (another session had stopped; its
+uncommitted work was stashed, then restored and rebuilt after). GPU: remote desktop only, 120 MiB.
+No camera, no arm.
+
+RESULT: PASS at 79b3889, after one regression found and reverted.
+
+1. Commit 7d74fc4 (review fixes). ./build.sh: 25 packages, PASS.
+   Unit tests, global_env.sh, TEST_DOMAIN 78:
+     shared_services/segmentation              Ran 34 tests  OK
+     grasp/grasp_segmentation_client           Ran 17 tests  OK
+     aria/.../aria_segmentation_client         Ran 5 tests   OK
+   ./bench/run.sh (full): L0-L4 PASS, L5 SKIPPED (arm off), L6 SKIPPED.
+     segmentation_service  image only 645 ms, image + depth + K 292 ms, box at 0.363 m,
+                           second service exit 1 after 0.4 s
+     anygrasp_replay       48 masks in 60 s
+
+2. Replay throughput regression, A/B on the replay alone (./bench/anygrasp_replay.sh):
+     de87183 (before the review fixes)   90 masks in 61 s, 113 grasp sets
+     7d74fc4 (autocast per call)         61 masks in 61 s,  74 grasp sets
+     79b3889 (autocast process-wide)    105 masks in 61 s, 142 grasp sets
+   Cause [inferred]: leaving a `with torch.autocast()` block clears autocast's cache of bfloat16
+   weights, so every call re-cast all of SAM 3. Reverted in 79b3889. Detection identical in all
+   three (score 0.734, 13474 px, depth 0.363 m). Run-to-run spread is wide (117 on 2026-10-08).
+
+3. 79b3889 ./bench/segmentation_service.sh: image only 661 ms, image + depth + K 274 ms,
+   empty prompt refused, second service exit 1 after 0.8 s. PASS.
+
+4. Start-once guard during loading (new in 7d74fc4), channel 77, localhost only: first service
+   started, second started 5 s later while the first was still loading SAM 3. Second exited 1
+   after 0.5 s: "Not starting: a segmentation_service node is already on this ROS channel".
+   PASS. Finding: Ctrl-C on the first during loading does not stop it until the load ends, then
+   create_service fails with RCLError (context invalid). It exits, nothing left on the GPU.
+   Cosmetic, not fixed.
