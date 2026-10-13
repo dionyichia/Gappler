@@ -73,6 +73,10 @@ grasp_state_machine:
     # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
     # frame (measured 2026-10-12, T1.24 3b)
     centroid_max_age_s: 2.0
+    # After a /manipulator/grasp_request, the first centroid must arrive within this time or the
+    # request lapses (T1.25). SAM 3 gives the first one in about 1 s when the object is in view
+    # (0.27 to 0.53 s per frame, 0.5 s warm-up, measured 2026-10-08 and 2026-10-12)
+    grasp_request_timeout_s: 10.0
     final_exec_thresh_m: 0.25
     centroid_target_offset_x_px: 55.0   # where the object should sit in the image, from centre
     centroid_target_offset_y_px: 0.0

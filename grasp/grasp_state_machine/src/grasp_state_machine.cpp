@@ -18,6 +18,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/empty.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
@@ -100,7 +101,10 @@ public:
   ~GraspStateMachine()
   {
     {
-      std::lock_guard<std::mutex> lock(queue_mutex_);
+      // Both locks: the worker reads shutdown_ under centroid_mutex_ in IDLE and under
+      // queue_mutex_ in EXECUTING. Setting it under only one could let the notify land between
+      // the other wait's check and its sleep, and the worker would never wake (CODE_AUDIT C1)
+      std::scoped_lock lock(queue_mutex_, centroid_mutex_);
       shutdown_ = true;
     }
     queue_cv_.notify_all();
@@ -125,6 +129,7 @@ private:
     MAX_APPROACH_STEPS = static_cast<int>(param("max_approach_steps").as_int());
     EXECUTE_DEPTH_THRESH_M = param("execute_depth_thresh_m").as_double();
     CENTROID_MAX_AGE_S = param("centroid_max_age_s").as_double();
+    GRASP_REQUEST_TIMEOUT_S = param("grasp_request_timeout_s").as_double();
     FINAL_EXEC_THRESH_M = param("final_exec_thresh_m").as_double();
     CENTROID_TARGET_OFFSET_X = param("centroid_target_offset_x_px").as_double();
     CENTROID_TARGET_OFFSET_Y = param("centroid_target_offset_y_px").as_double();
@@ -147,6 +152,10 @@ private:
     centroid_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
         topic("object_centroid_2d"), 10,
         std::bind(&GraspStateMachine::centroidCallback, this, std::placeholders::_1));
+
+    grasp_request_sub_ = this->create_subscription<std_msgs::msg::Empty>(
+        topic("manipulator_grasp_request"), 10,
+        std::bind(&GraspStateMachine::graspRequestCallback, this, std::placeholders::_1));
 
     gripper_position_pub_ = this->create_publisher<rm_ros_interfaces::msg::Gripperset>(
         topic("rm_driver_set_gripper_position_cmd"), 10);
@@ -204,11 +213,39 @@ private:
     queue_cv_.notify_one();
   }
 
+  // Centroids count only from a grasp request until EXECUTING takes its snapshot (T1.25).
+  // Segmentation publishes on every frame, so without the gate any centroid would start the arm.
   void centroidCallback(const geometry_msgs::msg::PointStamped::SharedPtr msg)
   {
     std::lock_guard<std::mutex> lock(centroid_mutex_);
+    if (!accepting_centroids_)
+    {
+      RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+                           "Centroid ignored: no grasp request open");
+      return;
+    }
     latest_centroid_ = *msg;
     has_centroid_ = true;
+    queue_cv_.notify_one();
+  }
+
+  // Opens the gate, only while the worker waits in IDLE. waiting_in_idle_ changes under the same
+  // lock, so a request is either taken before the worker leaves IDLE or refused after.
+  void graspRequestCallback(const std_msgs::msg::Empty::SharedPtr)
+  {
+    std::lock_guard<std::mutex> lock(centroid_mutex_);
+    if (!waiting_in_idle_)
+    {
+      RCLCPP_WARN(this->get_logger(), "Grasp request ignored: busy, not waiting in IDLE");
+      return;
+    }
+    accepting_centroids_ = true;
+    has_centroid_ = false;
+    request_deadline_ = std::chrono::steady_clock::now() +
+                        std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                            std::chrono::duration<double>(GRASP_REQUEST_TIMEOUT_S));
+    RCLCPP_INFO(this->get_logger(), "Grasp request: accepting centroids for %.1fs",
+                GRASP_REQUEST_TIMEOUT_S);
     queue_cv_.notify_one();
   }
 
@@ -625,13 +662,37 @@ private:
       // =====================================================================
       // IDLE — wait for object detection
       // =====================================================================
+      // Waits for a grasp request, then for a centroid. queue_cv_ is shared with EXECUTING's wait
+      // on queue_mutex_. That is allowed because only this worker thread ever waits on it, so the
+      // two waits never overlap (CODE_AUDIT C1). Each notifier changes its flag under the mutex
+      // of the wait it wakes.
       {
         std::unique_lock<std::mutex> lock(centroid_mutex_);
-        // Ignore centroids that arrived while busy, act on the next one. Reset under the lock,
-        // because centroidCallback sets the flag from the spin thread (race, audit C3)
+        // Close the gate on every entry, so each request gives one attempt. Reset under the lock,
+        // because the callbacks set these from the spin thread (race, audit C3)
+        accepting_centroids_ = false;
         has_centroid_ = false;
-        queue_cv_.wait(lock, [this]
-                       { return has_centroid_ || shutdown_; });
+        waiting_in_idle_ = true;
+        while (!shutdown_ && !(accepting_centroids_ && has_centroid_))
+        {
+          if (!accepting_centroids_)
+          {
+            queue_cv_.wait(lock);
+            continue;
+          }
+          queue_cv_.wait_until(lock, request_deadline_);
+          // Re-read after waking: a second request moves the deadline, a centroid ends the wait
+          if (accepting_centroids_ && !has_centroid_ &&
+              std::chrono::steady_clock::now() >= request_deadline_)
+          {
+            accepting_centroids_ = false;
+            RCLCPP_WARN(this->get_logger(), "Grasp request lapsed: no centroid within %.1fs",
+                        GRASP_REQUEST_TIMEOUT_S);
+          }
+        }
+        // Leaving IDLE in the same locked block that saw the centroid: a request arriving from
+        // here on is refused, and the deadline is never read again this cycle
+        waiting_in_idle_ = false;
         if (shutdown_)
           return;
       }
@@ -688,6 +749,7 @@ private:
       {
         std::lock_guard<std::mutex> lock(centroid_mutex_);
         centroid_snapshot_ = latest_centroid_;
+        accepting_centroids_ = false; // the snapshot is the target from here on (T1.25)
       }
       openGripper();
 
@@ -771,6 +833,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_sub_;
   rclcpp::Subscription<grasp_interfaces::msg::GraspCandidateArray>::SharedPtr grasp_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr centroid_sub_;
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr grasp_request_sub_;
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperset>::SharedPtr gripper_position_pub_;
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperpick>::SharedPtr gripper_pick_on_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pipeline_state_pub_;
@@ -793,6 +856,10 @@ private:
   // Centroid (shared with callbacks)
   geometry_msgs::msg::PointStamped latest_centroid_;
   bool has_centroid_ = false;
+  // The trigger gate (T1.25), also under centroid_mutex_
+  bool accepting_centroids_ = false;
+  bool waiting_in_idle_ = false;
+  std::chrono::steady_clock::time_point request_deadline_;
   std::mutex centroid_mutex_;
   geometry_msgs::msg::PointStamped centroid_snapshot_;
 
@@ -819,6 +886,7 @@ private:
   int MAX_APPROACH_STEPS;
   double EXECUTE_DEPTH_THRESH_M;
   double CENTROID_MAX_AGE_S;
+  double GRASP_REQUEST_TIMEOUT_S;
   double FINAL_EXEC_THRESH_M;
   double CENTROID_TARGET_OFFSET_X;
   double CENTROID_TARGET_OFFSET_Y;
