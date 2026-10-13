@@ -41,6 +41,9 @@ grasp_segmentation_client:
     # Used at start when nothing publishes on /grasp/target. Dropped as soon as something does,
     # or on the first Target message, so a spoken word always wins. "" = wait for a Target.
     default_prompt: "box"
+    # Give up on a request with no reply after this long, so a service that dies mid-call does not
+    # stall the client for good. A normal call takes about 0.25 s.
+    segment_timeout_s: 5.0
 
 # grasp/anygrasp_node/anygrasp_detection_node.py
 anygrasp_detection_node:

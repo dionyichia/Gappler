@@ -213,8 +213,10 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
 - **Where it lives.** A fifth top-level folder, `shared_services/` (`CHANNEL_CONTRACT` G-2), since
   grasp, aria and nav all call it. Interfaces in `shared_services/segmentation/segmentation_interfaces/`,
   built by `./build.sh` into `install/`. Not yet in the nav build: add it when a nav client exists.
-- **Started once, on its own.** Launchers start only their client. The service refuses to start if
-  another one already answers on the ROS channel, before loading SAM 3, so SAM 3 never loads twice.
+- **Started once, on its own.** Launchers start only their client. The service refuses to start, before
+  loading SAM 3, if another one is already on the ROS channel, loading or serving. The guard looks
+  for the node name, which appears before SAM 3 loads, so SAM 3 never loads twice (fixed 2026-10-13:
+  it looked for the service, which appears only after loading, and missed a start during the load).
   `quickstart_terminals.sh grasp` and `full` start the service and the grasp client (`nomask` skips them).
 - **Built 2026-10-08, all six steps** (`T2.1`). Results in `docs/bench-runs/2026-10-08-labbox-t2.1-*`.
   On the recorded box video it gives 117 masks in 60 s against the old node's 119 in 61 s, and
@@ -1478,3 +1480,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: revised design for `T2.1`. A stateless request/reply segmentation service in `shared_services/`, with one client per subsystem, replaces "the pipeline becomes the service". Gaze pixel-space mismatch recorded for `T2.2`. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: `T2.1` built (all six steps), start-once rule and its guard, results recorded. |
 | 2026-10-09 | Claude Opus 5.5 + Dion | §2.2: the service imports nothing from a subsystem. §2.8: SAM 3 weights moved to `assets/models/` (T2.1). The segmentation service builds SAM 3 itself, so `shared_services/` no longer imports aria. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | §2.2: start-once guard now looks for the node name, which appears before SAM 3 loads. It looked for the service, which appears only after, so a second start during the ~20 s load was not refused (found in the T2.1 review). |

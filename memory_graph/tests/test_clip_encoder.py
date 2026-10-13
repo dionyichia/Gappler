@@ -10,10 +10,12 @@ class below, named Use1 to Use4:
      text, and choosing target classes from the text      map/map.py:193
   4. scoring a frontier's photo against the task text      habitat/policy.py:178
 
-Uses 3 and 4 are tested at the encoder only: that text and images land in one
-space and rank the way those uses need. The functions that compute the scores
-inside the graph are not built yet (T6.7a, T6.7b, T6.7d). The averaging in use 2
-is ObjectStore in object_store.py (T6.4c).
+Use 3's scores inside the graph are TaskContext in task.py and the task score
+ObjectStore keeps on each entry (T6.7a), tested here with the real model. The
+rest of use 3 and use 4 are tested at the encoder only: that text and images
+land in one space and rank the way those uses need. Their functions are not
+built yet (T6.7b, T6.7d). The averaging in use 2 is ObjectStore in
+object_store.py (T6.4c).
 
 These tests load the model, so they need open_clip, torch and the weights.
 Without any of them the whole file is reported as skipped. Nothing is downloaded
@@ -32,6 +34,7 @@ from memory_graph.association import appearance_matrix, combined_scores
 from memory_graph.image_feature import image_features, l2_normalise
 from memory_graph.object_store import ObjectStore
 from memory_graph.stage_types import Candidate, OrientedBox
+from memory_graph.task import TaskContext
 
 try:
     import open_clip  # noqa: F401
@@ -200,6 +203,25 @@ class Use3TaskRelevanceTest(EncoderCase):
         two_red = self.unit_images([solid(RED, 60, 60), solid(RED, 90, 50)])
         two_other = self.unit_images([solid(BLUE, 60, 60), solid(GREEN, 40, 80)])
         self.assertGreater(float(np.sum(two_red @ task)), float(np.sum(two_other @ task)) + 0.1)
+
+    def test_objects_in_the_store_are_scored_and_ranked_by_the_task(self):
+        """T6.7a with the real model: the entry that matches the instruction
+        gets the highest task score, and a new instruction reorders them."""
+        colours = self.unit_images([solid(BLUE, 60, 60), solid(RED, 90, 50), solid(GREEN, 40, 80)])
+        store = ObjectStore(CFG, task=TaskContext.from_text("a red object", self.encoder))
+        cands = []
+        for i, clip in enumerate(colours):
+            points = np.random.default_rng(i).uniform(0.0, 0.2, (50, 3)) + [2.0 * i, 0.0, 0.0]
+            cands.append(Candidate(points=points, colors=np.full_like(points, 0.5),
+                                   box=OrientedBox(points.mean(axis=0), np.eye(3), np.full(3, 0.2)),
+                                   label="object", conf=0.9, clip=clip))
+        store.apply(cands, [None, None, None], anchor=1)
+        self.assertEqual(store.ranked_by_task()[0], 1)
+        self.assertGreater(store.get(1).task_score, max(store.get(0).task_score, store.get(2).task_score) + 0.02)
+        self.assertAlmostEqual(store.task.photo_score(colours), sum(store.get(i).task_score for i in range(3)), places=6)
+        store.set_task(TaskContext.from_text("a blue object", self.encoder))
+        self.assertEqual(store.ranked_by_task()[0], 0)
+        self.assertEqual(store.check_invariants(), [])
 
     def test_each_colour_matches_its_own_description(self):
         images = self.unit_images([solid(RED, 60, 60), solid(BLUE, 90, 50), solid(GREEN, 40, 80)])

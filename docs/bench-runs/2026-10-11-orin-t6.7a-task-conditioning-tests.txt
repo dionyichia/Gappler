@@ -1,0 +1,73 @@
+T6.7a -- task conditioning tests on the Orin   Jetson Orin NX, scratch copy in /tmp, 2026-10-11 18:16
+=====================================================================================================
+First run off the Mac of the task conditioning tests (memory_graph/tests/test_task.py), and a rerun
+of every other memory graph test with the new code present. Run by Zongzhe's session over ssh,
+with Zongzhe's go-ahead. Zongzhe accepted this Orin run in place of a lab box run (2026-10-11).
+
+  RESULT: PASS for T6.7a. 23 tests in test_task.py, 23 passed, 0 failed, 0 skipped.
+  All memory graph tests: 136 ran, 135 passed, 0 failed, 1 SKIPPED (the whole encoder file).
+
+  T6.7a had no done-when. Covered: an entry's task score equals cos(entry feature, task
+  feature) after an insert, a merge, a merge of two entries and a change of task. target_ids
+  and related_ids follow a change of majority label. All with a stand-in encoder.
+
+  NOT covered: memory_graph/tests/test_clip_encoder.py, SKIPPED. open_clip is not installed in
+  the Orin's .venv. That file holds T6.7a's one test with the real model (an entry from a red
+  crop ranks first for the text "a red object"). It passed on a Mac CPU on 2026-10-11, 18 tests
+  in that file, and has not run on the Orin or the lab box.
+  Not a full bench run: only the memory graph tests. CPU only, no GPU, no ROS, no hardware.
+  Not run on the lab box.
+
+How it was run [observed]
+  Machine: Jetson Orin NX (aarch64), Ubuntu 22.04.5, L4T R36.4.3, tailscale name nvidia-desktop.
+  Code: branch t6.7a-task-conditioning at 7bf79fa (cut from dev at a508ed8), its memory_graph/
+        folder copied from the Mac with git archive to /tmp/zongzhe-t6.7a on the Orin, and
+        deleted after the run. ~/rcp-Gappler there was on someone's t2.1-sam3-service branch
+        and was not modified.
+  Python: ~/rcp-Gappler/.venv on the Orin, read only. Python 3.10.12, numpy 2.2.6, scipy 1.15.3.
+        PYTHONDONTWRITEBYTECODE=1, so no cache files were written. Nothing was installed.
+  Checked first that nobody else was logged in and no ROS, camera, bench or test process was running.
+  To repeat, in a checkout of the branch:
+        ~/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_task
+
+Full output [observed]
+-----------------------------------------------------------------------------------------------------
+test_an_absorbed_entry_leaves (memory_graph.tests.test_task.ClassLookupTest) ... ok
+test_an_entry_leaves_when_its_majority_label_changes (memory_graph.tests.test_task.ClassLookupTest)
+Upstream's stale index: it adds an object under its new label and ... ok
+test_new_class_sets_change_the_lookup_at_once (memory_graph.tests.test_task.ClassLookupTest) ... ok
+test_no_task_gives_nothing (memory_graph.tests.test_task.ClassLookupTest) ... ok
+test_targets_and_related_by_label (memory_graph.tests.test_task.ClassLookupTest) ... ok
+test_a_new_task_rescores_every_entry (memory_graph.tests.test_task.ObjectScoreTest) ... ok
+test_a_stale_score_is_reported (memory_graph.tests.test_task.ObjectScoreTest) ... ok
+test_follows_the_feature_on_merge (memory_graph.tests.test_task.ObjectScoreTest) ... ok
+test_follows_the_feature_when_two_entries_are_merged (memory_graph.tests.test_task.ObjectScoreTest) ... ok
+test_no_task_or_no_feature_is_zero (memory_graph.tests.test_task.ObjectScoreTest) ... ok
+test_ranked_by_task (memory_graph.tests.test_task.ObjectScoreTest) ... ok
+test_set_on_insert (memory_graph.tests.test_task.ObjectScoreTest) ... ok
+test_through_association_too (memory_graph.tests.test_task.ObjectScoreTest)
+integrate (S10 then S11), not only apply. ... ok
+test_a_feature_from_another_encoder_is_an_error (memory_graph.tests.test_task.TaskContextTest) ... ok
+test_a_task_needs_a_usable_feature (memory_graph.tests.test_task.TaskContextTest) ... ok
+test_class_sets (memory_graph.tests.test_task.TaskContextTest) ... ok
+test_new_classes_do_not_embed_the_instruction_again (memory_graph.tests.test_task.TaskContextTest) ... ok
+test_no_feature_scores_zero (memory_graph.tests.test_task.TaskContextTest) ... ok
+test_photo_score_is_the_sum_over_its_objects (memory_graph.tests.test_task.TaskContextTest)
+Upstream's task_score for a photo (map_elements.py:322). ... ok
+test_score_ignores_the_length_of_the_feature (memory_graph.tests.test_task.TaskContextTest) ... ok
+test_score_is_the_cosine (memory_graph.tests.test_task.TaskContextTest) ... ok
+test_the_classes_feed_the_anchor_gate (memory_graph.tests.test_task.TaskContextTest)
+S3 keeps a photo that shows a target or a related class even when the ... ok
+test_the_instruction_is_embedded_and_normalised (memory_graph.tests.test_task.TaskContextTest) ... ok
+
+----------------------------------------------------------------------
+Ran 23 tests in 0.165s
+
+OK
+== every memory graph test
+.........................s................................................................[ WARN:0@3.163] global loadsave.cpp:278 findDecoder imread_('/tmp/tmp9zlnt62v/depth/1.png'): can't open/read file: check file path/integrity
+..............................................
+----------------------------------------------------------------------
+Ran 136 tests in 1.004s
+
+OK (skipped=1)
