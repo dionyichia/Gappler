@@ -11,3 +11,4 @@ class AudioStreamingPipelineConfig:
     MAX_BUFFER_SECONDS = _cfg["max_buffer_s"]
     END_OF_SPEECH_SILENCE_SECONDS: float = _cfg["end_of_speech_silence_s"]
     STOP_KEYWORD = _cfg["stop_keyword"]
+    RELEASE_PHRASES: list = _cfg["release_phrases"]

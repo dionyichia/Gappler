@@ -1,4 +1,4 @@
-"""Checks the aria segmentation client: voice in, Target out. Real ROS messages, no glasses.
+"""Checks the aria segmentation client: voice in, Target and grasp request out. Real ROS messages, no glasses.
 
 Needs ROS 2 Humble and the built segmentation_interfaces, so it runs on the lab box:
     source aria/aria_env.sh && source install/local_setup.bash
@@ -38,6 +38,7 @@ class AriaClientTest(unittest.TestCase):
         self.node = AriaSegmentationClient()
         self.addCleanup(self.node.destroy_node)
         self.node.target_pub = Recorder()
+        self.node.request_pub = Recorder()
 
     def say(self, words):
         self.node.on_prompt(String(data=words))
@@ -63,6 +64,25 @@ class AriaClientTest(unittest.TestCase):
 
     def test_stop_is_always_sent(self):
         self.assertEqual(self.say(STOP_KEYWORD), [""])
+
+
+    def requests(self):
+        return len(self.node.request_pub.sent)
+
+    def test_a_word_sends_one_grasp_request(self):
+        self.say("box")
+        self.assertEqual(self.requests(), 1)
+
+    def test_the_same_word_again_sends_another_request(self):
+        # each time you ask is a new grasp (T1.25 gate, T2.6)
+        self.say("box")
+        self.say("box")
+        self.assertEqual(self.requests(), 2)
+
+    def test_stop_and_silence_send_no_request(self):
+        self.say(STOP_KEYWORD)
+        self.say("  ")
+        self.assertEqual(self.requests(), 0)
 
 
 if __name__ == "__main__":

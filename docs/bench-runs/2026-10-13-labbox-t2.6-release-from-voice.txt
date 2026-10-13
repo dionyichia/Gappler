@@ -1,0 +1,33 @@
+T2.6: "release" from voice reaches /manipulator/release
+2026-10-13, lab box (rcp2026@100.98.10.50), scratch clone /tmp/t26_gappler of ~/rcp-Gappler dev
+e19d58a plus the t2.6-release-from-voice changes, linked to ~/rcp-Gappler/.venv and install/.
+Domain 93, ROS_LOCALHOST_ONLY=1, checked empty first. GPU free (only gnome-remote-desktop).
+Run by Claude Opus 5.5 over SSH. No glasses, no robot.
+
+Unit tests (aria/aria_app/services/aria_device/stream/test_audio_streaming_pipeline.py)
+  Before the code: ImportError, is_release missing (red, as expected).
+  After: 13 tests OK, 6 of them new (is_release).
+
+Replay (aria/tools/replay_audio_file_to_prompt.py, real Whisper and LLM), Dion's recordings in
+assets/recordings/voice_commands. Both topics echoed for the whole replay.
+
+  recording                  /manipulator/release   /aria/audio/prompt
+  release_command.wav        data: true             nothing                PASS
+  pick_up_light_command.wav  nothing                data: light            PASS
+  end_command.wav            nothing                data: end              PASS
+
+Not tested: live glasses audio, the state machine acting on release (T1.14).
+
+Second run, same day: /manipulator/grasp_request (after T1.25 merged)
+Scratch clone of dev e62e055 plus the branch changes, domain 93, localhost only.
+
+Unit tests (aria_segmentation_client/test_aria_segmentation_client.py)
+  Before the code: 2 of the 3 new tests FAIL (no request sent), as expected.
+  After: 8 tests OK. Voice pipeline tests: 13 OK.
+
+Replay with aria_segmentation_client running, three topics echoed
+  recording                  release   grasp_request   /grasp/target
+  release_command.wav        1         0               nothing          PASS
+  pick_up_light_command.wav  0         1               light            PASS
+  end_command.wav            0         0               "" (cleared)     PASS
+  Client log: "Target: 'light', grasp requested", then "Target cleared".
