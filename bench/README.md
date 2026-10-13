@@ -87,6 +87,10 @@ bug is there, **XPASS** once it isn't — then retag the finding.
 
 ### T3.4 remote software check
 
+L0 also checks command ownership (`test_command_ownership.py`) and preserves both
+T3.4 and existing dev suites (`test_t34_bench_coverage.py`). Ownership assertions
+come from source commit `7b01820`; T3.5 scan/persistence changes are not included.
+
 Run `bash bench/velocity_smoother.sh` individually on an idle ROS box; it needs the installed
 `nav2_velocity_smoother`, not a new workspace build. It uses only `/t34_probe/keyboard_input`
 and `/t34_probe/output`, fixed domain 127 and a recording subscriber. `BENCH_DOMAIN` values

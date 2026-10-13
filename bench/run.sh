@@ -83,6 +83,10 @@ s=$(step "L0  T3.4 keyboard burst" python3 bench/test_t34_keyboard.py)
 row L0 "T3.4 keyboard burst" "$s" ""
 s=$(step "L0  T3.4 LiDAR-only wiring" python3 bench/test_t34_launch.py)
 row L0 "T3.4 LiDAR-only wiring" "$s" ""
+s=$(step "L0  T3.4 command ownership" python3 bench/test_command_ownership.py)
+row L0 "T3.4 command ownership" "$s" ""
+s=$(step "L0  T3.4 bench coverage" python3 bench/test_t34_bench_coverage.py)
+row L0 "T3.4 bench coverage" "$s" ""
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
 # xacro and realsense2_description come from ROS, which CI does not source. Source it here when present.
