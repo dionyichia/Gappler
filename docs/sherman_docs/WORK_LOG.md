@@ -312,6 +312,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Shutdown: initial inspection contradicted the all-processes-stopped report (earlier stationary-window drivers remained). Sherman authorized cleanup; by inspection all tracked driver PIDs were already gone, so no driver signal sent. Final 17:31 process/graph check PASS: session nodes gone, zero publishers on both command topics, odometry and LiDAR; all session panes at Bash, tmux retained. Physical power-off reported by Sherman.
 - Outcome: T3.4 keyboard-driving/LiDAR scope DONE in task tree; hosted Artifact republish owed. Source provenance/installed drift and unmeasured braking/watchdog/calibration/charging gaps explicit; no mapping/deployment/full-suite acceptance implied. Charger custody not independently established.
 
+## [2026-10-13] T3.5 | Phase 1 source-only (parallel to T3.4 merge resolution)
+
+- Evidence: [`T3.5_MANUAL_CONTROL.md`](T3.5_MANUAL_CONTROL.md) (reconciliation table), [`T3.5_MAP_PREP.md`](T3.5_MAP_PREP.md) (route memo + G2–G4 proposal).
+- Verified: working tree clean before/after; local `t3.5-launch-prep` @ `ac1addf` in sync with origin; T3.4 resolution isolated in its own worktree/branch (`t3.4-bringup-evidence`), untouched. No T3.4-owned files modified. Mac `git diff --check` clean; `./bench/run.sh quick` PASS (L0 12 pass / 2 PyYAML-ROS skips, L1-L2 pass, L3-L6 skipped off-box as expected).
+- Outcome: driving-sheet rows 1–4, 6–7 reconciled with T3.4 DONE with reported/observed limits; silence timing, timed stop, braking, watchdog, calibration, charger custody, mapping and localization remain open. SLAM baseline stands, team sign-off owed. G2 dry-load / G3 re-verify / G4 corrupt-graph procedure proposed, not implemented. T3.5 stays PROGRESS; no PR/merge.
+- Next: Phase 2 isolated box benches after T3.4 merge lands + idle-box window coordinated; Phase 3 live mapping only after deployment review.
+
 ## Record Template
 
 ```markdown
