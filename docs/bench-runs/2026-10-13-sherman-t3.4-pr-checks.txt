@@ -1,0 +1,57 @@
+T3.4-only PR preparation, 2026-10-13. No hardware actions executed.
+
+Branch: t3.4-bringup-evidence. Reviewed source checkpoint:
+a0e186062b8acc51319ecf4077cbeb88f6e4f313, based on dev
+e62e055711809432035673b5ce44e2d4bf6658cb via merge, not history rewrite.
+
+Scope isolation:
+- Existing T3.4 branch 3c4038c retained; current dev integrated by merge 62a6169.
+- T3.4 evidence/readiness commits c1ca85c and ac1addf cherry-picked as
+  2665812 and 5e7e6bc. Conflicts retained dev task data and shared-service checks.
+- Only bench/test_command_ownership.py imported from 7b01820, provenance cited
+  in a0e1860. T3.5 map/scan/persistence/network-launch implementation excluded.
+- New runner-coverage test: RED for missing ownership entry, then 2 GREEN.
+  Existing segmentation_service L4 and all dev L0 suites remain in the runner.
+- Read-only full PR review PASS: 18 focused stdlib tests, static/contracts,
+  shell/diff/conflict checks, doc links and all 119 task rows retained; only
+  T3.4 changed. One stale index entry corrected in final documentation commit.
+
+Local available quick checks PASS; explicit .venv/ROS/PyYAML skips, 11.7 GB disk
+warning and two unchanged vendor findings. No production build or full-suite
+box PASS is claimed. Hosted task-tree Artifact republish remains owed.
+
+Fresh box verification of matching PR-critical sources:
+- Existing candidate log/t34-startup-4886d908 used, not a deployed overlay or
+  an assertion that the whole PR tree ran there. All six files below matched
+  the reviewed branch by SHA256 before execution.
+- Shared-box process preflight clear; fixed domain 127/localhost only; hidden
+  node occupancy refusal PASS. No hardware drivers started or wheel commands
+  sent on the real domain.
+- Complete keyboard/smoother bench exit 0. Twelve smoother cases PASS;
+  timeout zeros 0.454-0.495 s, explicit zeros 0.209-0.248 s. Four keyboard exit
+  modes PASS, idle 9.88-10.05 Hz; W/S/A/D silence zeros 0.478-0.600 s;
+  X 0.233-0.307 s, exit/crash 0.221-0.429 s. Invalid speed/turn/timeout refused.
+- Final guard: domain 127 empty. Physical braking NOT tested by this bench.
+- Transcript: log/t34-startup-4886d908/log/t34-pr-a0e1860-runtime.txt.
+- Separate LiDAR constructor initially FAILED: shell sourced only ROS;
+  livox_ros_driver2 was absent from that shell's package index. This was not
+  a full check PASS. After sourcing nav/nav_env.sh, package prefix resolved,
+  real owned LiDAR-only constructor/config-path check PASS and domain guard
+  PASS. No Node actions executed; no installation/configuration changed.
+
+Matched SHA256:
+bench/velocity_smoother.sh: 4c9b6c4c069c24e8cf48f90d815c073a150dc8ebe6660777d8bcfc1af7851ef3
+bench/t34_guard.py: f57403c6047f17fb8655d2df8517daf7607eac3efd0a32a21ec1f4d8db1eb9b8
+bench/nodes/test_velocity_smoother.py: 6daa717ed6c47cfc0e6abcc685144cf31c7c81eec8d3b4b555dbb13edd7de322
+bench/nodes/test_teleop.py: bdd2573072525b9a474bfde45ab00ed082f1a7c1bc135d23aa2d74ef24247275
+nav/simple_teleop/simple_teleop/teleop_node.py: ca3a9c8f4ed00db39a829617362b338fd47b2b58cb6a7bfa482b399e02fd339c
+nav/robot_slam/launch/lidar_only.launch.py: e5ec2d8d681416a698fb741315805f084e8e9d1638441210ac548a4c076d8b99
+
+Attended task evidence and limits:
+docs/bench-runs/2026-10-13-sherman-t3.4-stationary.txt.
+Sherman's physical direction/X-stop/power-off reports and final 17:31 direct
+process/graph cleanup remain distinct from unmeasured braking/watchdog/charging/
+calibration claims. No map, restart localization, full deployment or main change.
+
+PR/CI still pending at recording. Sherman authorized merge-commit into dev only
+after review, CI and relevant box checks pass; never bypass repository gates.

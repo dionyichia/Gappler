@@ -248,6 +248,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Shutdown: initial inspection contradicted the all-processes-stopped report (earlier stationary-window drivers remained). Sherman authorized cleanup; by inspection all tracked driver PIDs were already gone, so no driver signal sent. Final 17:31 process/graph check PASS: session nodes gone, zero publishers on both command topics, odometry and LiDAR; all session panes at Bash, tmux retained. Physical power-off reported by Sherman.
 - Outcome: T3.4 keyboard-driving/LiDAR scope DONE in task tree; hosted Artifact republish owed. Source provenance/installed drift and unmeasured braking/watchdog/calibration/charging gaps explicit; no mapping/deployment/full-suite acceptance implied. Charger custody not independently established.
 
+## [2026-10-13] T3.4 | Isolated PR branch and fresh critical-source verification
+
+- Evidence: [PR checks](../bench-runs/2026-10-13-sherman-t3.4-pr-checks.txt).
+- Existing T3.4 branch merged current dev without rewriting history; cherry-picked T3.4 evidence/readiness and only the cited stable ownership test. Unfinished T3.5 implementation excluded; all dev task data and shared-service suites preserved.
+- Available local quick checks PASS with explicit skips; runner coverage RED then GREEN, 18 focused tests/review PASS. Six critical sources matched the box candidate exactly; fresh complete private keyboard/smoother check PASS, final private domain empty. LiDAR constructor failed without nav overlay, then passed with the documented environment; no launch actions executed.
+- Sherman authorized PR into dev and merge commit only after review/CI/box gates pass. PR/CI pending at this entry; no merge or main change claimed. Hosted Artifact republish owed.
+
 ## Record Template
 
 ```markdown
