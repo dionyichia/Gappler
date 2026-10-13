@@ -77,6 +77,10 @@ class EncoderCase(unittest.TestCase):
         if EncoderCase.encoder is None:
             EncoderCase.encoder = OpenClipEncoder.from_config(CFG)
         cls.crops = [textured(0, 40, 60), textured(1, 200, 90), textured(2, 17, 300)]
+        # On a GPU the encoder runs in float16 (clip_encoder.py autocast), so a different batch
+        # can move an entry by one float16 step: 0.0039 for image vectors (length about 11),
+        # 0.001 for text, measured on the lab box GPU (T0.18). On a CPU, 1e-4 holds.
+        cls.batch_atol = 5e-3 if cls.encoder.device.type == "cuda" else 1e-4
 
     def unit_images(self, images):
         return l2_normalise(self.encoder.encode(images))
@@ -100,11 +104,11 @@ class Use1ObjectFeatureTest(EncoderCase):
     def test_vector_does_not_depend_on_the_batch(self):
         together = self.encoder.encode(self.crops)
         alone = np.concatenate([self.encoder.encode([c]) for c in self.crops])
-        np.testing.assert_allclose(together, alone, atol=1e-4)
+        np.testing.assert_allclose(together, alone, atol=self.batch_atol)
 
     def test_small_batches_give_the_same_vectors(self):
         one_at_a_time = OpenClipEncoder.from_config(MemoryGraphConfig(clip_batch_size=1))
-        np.testing.assert_allclose(one_at_a_time.encode(self.crops), self.encoder.encode(self.crops), atol=1e-4)
+        np.testing.assert_allclose(one_at_a_time.encode(self.crops), self.encoder.encode(self.crops), atol=self.batch_atol)
 
     def test_no_crops(self):
         self.assertEqual(len(self.encoder.encode([])), 0)
@@ -184,7 +188,7 @@ class Use3TaskRelevanceTest(EncoderCase):
     def test_same_text_gives_same_vector(self):
         a = self.encoder.encode_text(["find a chair"])
         b = self.encoder.encode_text(["sink", "find a chair"])
-        np.testing.assert_allclose(a[0], b[1], atol=1e-4)
+        np.testing.assert_allclose(a[0], b[1], atol=self.batch_atol)
 
     def test_no_texts(self):
         self.assertEqual(len(self.encoder.encode_text([])), 0)
