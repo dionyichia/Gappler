@@ -1,0 +1,33 @@
+Attempted: voice to SAM 3 end to end on the recorded box video. NOT RUN. Box restarted.
+2026-10-13, lab box (rcp2026@100.98.10.50). Run by Claude Opus 5.5 over SSH.
+
+Plan: in a throwaway clone (/tmp/t26_gappler, git clone --shared of ~/rcp-Gappler, branch
+t2.6-release-from-voice, .venv, install/ and assets/ linked to ~/rcp-Gappler), domain 93: play the
+wrist camera box bag on a loop with the segmentation service, the grasp client (default prompt
+emptied in the clone only) and the aria client, then replay pick_up_box, end and release, and
+count centroids, target, grasp requests and release.
+
+What happened
+  1. First try: the script's set -u broke ROS's setup.bash. Nothing started.
+  2. Second try: the clone had no assets/models link, SAM 3 weights not found. Service exited.
+  3. Third try: six panes sourced grasp/grasp_env.sh. In the clone grasp/anygrasp_venv/.venv did
+     not exist (gitignored, not linked), so each pane started building it (MinkowskiEngine compile).
+     Load average 54, SSH stopped answering, Dion restarted the box.
+  Also found before the third try: three audio workers left from the earlier T2.6 replays, each
+  holding 1.4 GB of GPU. Cause: `timeout` sent SIGTERM to the replay tool, which skips its cleanup.
+  Stopped by their own process groups. Use `timeout -s INT` with the replay tool.
+
+After the restart (checked)
+  ~/rcp-Gappler/.venv: no package installed or changed. Only termcolor/__pycache__ .pyc files
+  written by imports (dist-info unchanged since 2026-09-11).
+  ~/rcp-Gappler/grasp/anygrasp_venv/.venv: nothing modified in the last 3 h.
+  CI runner up in tmux gh-runner, "Listening for Jobs". /tmp cleared by the restart.
+
+Lessons
+  - Before running from a scratch clone, read what its env files build or install. Link every
+    gitignored folder they look for (grasp/anygrasp_venv, assets/models), or use the lightest env.
+  - Stop only your own process groups. Leave anyone else's to Dion.
+
+Decided after (Dion): no separate end-to-end bench test now. Every link already passed on its
+own. The untested join (voice request plus target, SAM 3, the gate, the arm) is tested at the
+robot in step 4 by starting each attempt with the pick_up_box_command.wav replay.

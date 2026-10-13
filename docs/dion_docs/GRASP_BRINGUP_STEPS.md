@@ -24,17 +24,36 @@ wait before each approach step (`step_settle_s`) and the virtual table at the me
 (`table_top_z_m`). `~/rcp-Gappler` is rebuilt on it, so the normal `./quickstart_terminals.sh
 grasp` layout runs the gated state machine.
 
+**Since then (2026-10-13):** T2.6 merged (#64). Voice now sends the grasp request: the aria client
+sends `/manipulator/grasp_request` and the target with every object word, and "release" sends
+`/manipulator/release`. T2.7 merged (#63): `sam3_ros_node.py` is gone. `dev` is at `a376f9b`.
+Both are code outside the arm's C++, so no rebuild is needed for them, only `git pull`.
+
 **Next, at the robot: step 4 (T1.11), more grasps.** Same setup as 3c, from `~/rcp-Gappler`.
 Power the arm on about a minute before the driver pane, and start the state machine only after the
 driver prints "RM_65_driver is running" (attempt 0 of 3c, guard owed in T1.26). One request per
-attempt, restart the state machine between attempts. Put the box in line with the gripper: attempt 3
+attempt, restart the state machine between attempts. **Start each attempt by voice, not by hand.**
+The quickstart `grasp` layout does not start the aria client (only `aria` and `full` do), so open
+two more panes in the session (Ctrl-b %), each set up with
+`source aria/aria_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1`:
+1. the aria client, left running: `python aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py`
+2. per attempt: `python aria/tools/replay_audio_file_to_prompt.py assets/recordings/voice_commands/pick_up_box_command.wav`.
+   Whisper and the LLM load first (about 10 to 20 s `[inferred]`), then the word goes out about 1 s after the
+   recording ends. Stop it only with Ctrl-C, never `kill` or `timeout`, or its worker stays on the GPU.
+
+The client turns "pick up the box" into the target `box` and one grasp request. This is the one
+join never tested together: voice, then SAM 3, then the gate, then the arm. If it fails, fall back
+to the typed request to tell which side broke. Replay `release_command.wav` to open the gripper,
+but only after T1.14: until then the state machine ignores release, so open by hand. Put the box in line with the gripper: attempt 3
 missed because it was not. Release by hand with `-w 1` (see 3c result). Before an unattended run,
 T1.26 (arm motion guards found in 3c).
 
 **Before touching the box:**
 - Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.98.10.50`. `100.87.133.60` has been
   offline since mid-September.
-- `git log -1` in `~/rcp-Gappler`: expect `dev` at `e19d58a` (PR #62) or later.
+- `git log -1` in `~/rcp-Gappler`: expect `dev` at `a376f9b` (PR #64) or later.
+- **Never run anything from a scratch clone whose env files can build.** On 2026-10-13 a test in a `/tmp` clone sourced `grasp/grasp_env.sh` in six panes. Each found no AnyGrasp venv and started compiling it, the load hit 54 and the box had to be restarted ([`../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt`](../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt)). Run from `~/rcp-Gappler`.
+- After a restart, the CI runner needs starting again (tmux `gh-runner`).
 - Check who else is on it: `ps -eo pid,user,etime,args | grep -iE "realsense|rs_launch|ros2 launch|bench/run.sh|Runner.Worker"`,
   `nvidia-smi`, `fuser /dev/video*`, `tmux ls`.
 - The box CPU was overheating on 2026-10-12: 89 C at 12% load, clamped to 0.8 GHz. It slows
@@ -131,10 +150,10 @@ should get two separate signals and trust them:
 
 | Signal | Topic | Type | Meaning |
 |---|---|---|---|
-| new target | `/manipulator/grasp_request` | `std_msgs/Empty` | new in T1.25, `CHANNEL_CONTRACT` H10a. Nobody publishes it yet |
-| release | `/manipulator/release` | `std_msgs/Bool` | exists in the contract (A-1), nobody publishes it yet |
+| new target | `/manipulator/grasp_request` | `std_msgs/Empty` | new in T1.25, `CHANNEL_CONTRACT` H10a. The aria client sends it with each object word since T2.6 |
+| release | `/manipulator/release` | `std_msgs/Bool` | contract A-1. The voice pipeline sends it on "release" or "let go" since T2.6. The state machine reads it from T1.14 |
 
-Until the glasses side publishes them, we send both by hand with `ros2 topic pub --once`.
+Both still work by hand with `ros2 topic pub --once`, which is the fallback when voice fails.
 
 ### The gate (T1.25, option A), as built
 
@@ -630,3 +649,4 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-13 | Claude Opus 5.5 + Dion | Start here: PRs #57 to #60 merged, T1.25 built but unmerged. Step 3c: how to run with the gate from `~/rcp-Gappler-t1.25` (binary checked to contain it), and without it. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | 3c PASS, the first grasp on the real arm. Start here rewritten for step 4. 3c result table, release with `-w 1`. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | After #65 and #67 merged: Start here and step 3c run from `~/rcp-Gappler` and the quickstart grasp layout. The separate `~/rcp-Gappler-t1.25` build is deleted. Start the state machine after the driver is up. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | After T2.6 (#64) and T2.7 (#63): Start here says voice sends the grasp request, step 4 starts each attempt with the `pick_up_box_command.wav` replay, the signals table names the publishers. Box restart incident and the runner restart noted. |

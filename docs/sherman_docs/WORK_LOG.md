@@ -349,6 +349,11 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Limits: installed comparison still exit 1 (4 match/3 drift/1 missing/1 skip); corrupt graph still aborts. Automatic startup/reseed-control tests, staging/dry-load G2–G4 implementation, team sign-off, attended readiness and live acceptance remain open. These documentation corrections do not implement gates. T3.5/T3.9 stay PROGRESS; no completion PR or deployment.
 - Next: bank/push this reviewed checkpoint, then catch up the later `0bf552e` docs-only dev advance before further source work. Implement focused startup/reseed controls and reviewed component-only provenance/gates before requesting attended live work. Hosted task-tree Artifact republish remains owed.
 
+## [2026-10-13] T3.5 | Later docs-only dev catch-up
+
+- Integrated dev `0bf552e` into the existing T3.5 branch with a merge, not history rewriting. Imported the teammate's voice-trigger documentation, restart evidence and task notes unchanged. No runtime source changed from the separately box-tested checkpoint.
+- Verification: available Mac quick checks passed with explicit environment/subtest skips; no build, deployment or hardware action. T3.5 remains PROGRESS. Next: automatic-startup and matched reseed-control fixture tests.
+
 ## Record Template
 
 ```markdown
