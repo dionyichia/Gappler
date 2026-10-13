@@ -213,8 +213,10 @@ def main():
             return
         t_back = time.time()
         n.depth = FAR
-        if not n.spin_until(lambda: n.seen("SELECTING", t_back), 120):
-            return check("object back -> SELECTING again", False, "no SELECTING within 120 s")
+        back = n.spin_until(lambda: n.seen("SELECTING", t_back), 120)
+        check("object back -> SELECTING again", back, "seen" if back else "no SELECTING within 120 s")
+        if not back:
+            return
 
         # ---- EXECUTING: object now within reach --------------------------------
         t2 = time.time()

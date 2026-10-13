@@ -625,9 +625,11 @@ private:
       // =====================================================================
       // IDLE — wait for object detection
       // =====================================================================
-      has_centroid_ = false;
       {
         std::unique_lock<std::mutex> lock(centroid_mutex_);
+        // Ignore centroids that arrived while busy, act on the next one. Reset under the lock,
+        // because centroidCallback sets the flag from the spin thread (race, audit C2)
+        has_centroid_ = false;
         queue_cv_.wait(lock, [this]
                        { return has_centroid_ || shutdown_; });
         if (shutdown_)
