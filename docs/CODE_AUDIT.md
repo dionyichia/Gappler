@@ -325,6 +325,9 @@ guard is back, limit `centroid_max_age_s` (2.0 s) in `grasp/grasp_config.yaml`
 
 `:604`, one line before the block that locks `centroid_mutex_` to wait on it.
 
+**Fixed 2026-10-13 (`T1.24`, PR #57, review):** the reset now sits inside the locked block, just
+before the wait (`grasp_state_machine.cpp:628-632`). Same behaviour. Checked on the simulated arm.
+
 ### C4. `state_` is not atomic
 
 Declared `State state_;` (`:756`). Written by the worker thread in `publishState()` (`:206`), read
@@ -980,3 +983,4 @@ publishers racing on the same three topics.
 | 2026-10-07 | Claude (Opus 5.5) + Zongzhe | F1 follow-up on branch `t3.8-bridge-timeout-backoff-release` (T3.8): a fourth silent path (accepted goal, no result) and the retry loop the first fix opened, both fixed in code, not yet run. **New finding F5**: the approach guard also sticks after a finished cycle. Cleared on `/manipulator/release` now, which nothing publishes until T1.15. Three bench cases added or changed. |
 | 2026-10-06 | Claude (Opus 5.5) + Dion | K1 resolved by T0.14: every owned channel name is in a config file. Note added at the top of K1, record kept. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | C2 fixed and J1 fixed by PR #57 (`T1.24`, `T2.10`). Notes added, records kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | C3 fixed in the PR #57 review. Note added, record kept. |

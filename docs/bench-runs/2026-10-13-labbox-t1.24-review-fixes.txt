@@ -1,0 +1,27 @@
+T1.24 review fixes on the lab box
+Date: 2026-10-13   Machine: lab box (iot22-Computer), ~/rcp-Gappler   Branch: t1.24-t2.8-centroid-age-and-voice-replay
+Run by: Claude Opus 5.5 for Dion. Box free before the run: no ROS, camera or bench processes,
+GPU used by remote desktop only (120 MiB). No camera, no arm.
+
+RESULT: PASS at b45428e.
+
+Changes under test (PR #57 review):
+  - grasp_state_machine.cpp: has_centroid_ = false moved inside the centroid_mutex_ block (CODE_AUDIT C3)
+  - bench/nodes/test_state_machine_sim.py: pass line for "object back -> SELECTING again"
+
+1. ./build.sh: 25 packages, PASS (17 s).
+
+2. ./bench/state_machine_sim.sh, channel 77: PASS
+     pipeline_state sequence: IDLE -> SELECTING -> IDLE -> SELECTING -> EXECUTING
+     [PASS ] centroids stop -> approach ends, back to IDLE     'object lost' logged, IDLE seen
+     [PASS ] object back -> SELECTING again                     seen
+     [PASS ] object near -> EXECUTING, gripper open and close, return pose
+     [XFAIL] after a grasp: stays EXECUTING (CODE_AUDIT C7, known)
+     launch log: log/bench_state_machine_2026-10-13_1307.txt
+
+3. Unit tests, aria_env.sh, ROS_DOMAIN_ID 77, localhost only:
+     aria/aria_app/services/aria_device/stream   Ran 7 tests  OK
+     aria/tools                                  Ran 3 tests  OK
+
+Not run: the voice replay end to end (needs the recordings copied over, unchanged by the review),
+anything on the real arm.

@@ -155,8 +155,8 @@ Option B (T2.4) is the same idea on the SAM 3 side: start segmenting on `grasp_r
 `/manipulation/done`. It saves GPU time and keeps old centroids off the wire. A alone protects
 the arm. B alone does not, because the arm would then depend on another node behaving.
 
-**Overlap with T1.9.** IDLE writes `has_centroid_` without the lock (`:627`), and one condition
-variable is shared by two mutexes. T1.25 touches exactly this code, so fix those two things in the
+**Overlap with T1.9.** One condition variable is shared by two mutexes. (The unlocked
+`has_centroid_` write in IDLE was fixed in the PR #57 review, `CODE_AUDIT` C3.) T1.25 touches exactly this code, so fix those two things in the
 same change rather than building on them.
 
 **Bench impact.** A new channel moves the contract, so run `python3 bench/contracts.py snapshot`

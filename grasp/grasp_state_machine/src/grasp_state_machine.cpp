@@ -628,7 +628,7 @@ private:
       {
         std::unique_lock<std::mutex> lock(centroid_mutex_);
         // Ignore centroids that arrived while busy, act on the next one. Reset under the lock,
-        // because centroidCallback sets the flag from the spin thread (race, audit C2)
+        // because centroidCallback sets the flag from the spin thread (race, audit C3)
         has_centroid_ = false;
         queue_cv_.wait(lock, [this]
                        { return has_centroid_ || shutdown_; });
