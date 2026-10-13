@@ -237,6 +237,17 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: verify manufacturer charger/nameplate compatibility, charge with supervision, establish battery and physical-stop readiness, then resume stationary feedback and attended driving/stop gates. Hosted task-tree Artifact republish owed.
 - Close-out verification: Mac quick bench passed executed levels with explicit ROS/PyYAML skips; evidence links/anchors, task-tree syntax/status assertion and diff checks passed. Read-only documentation review found no blockers. Documentation-only change on existing stacked `t3.5-launch-prep`; no completion PR or merge.
 
+## [2026-10-13] T3.4 | Stationary feedback and software-startup diagnosis
+
+- Evidence: [stationary results](../bench-runs/2026-10-13-sherman-t3.4-stationary.txt).
+- Sherman started hardware communications, vehicle driver and candidate LiDAR source after readiness acknowledgment; OpenCode only inspected feedback and ran private software tests. Original overlays and other users' processes untouched.
+- Observed: fresh ROS 25.1-25.2 V, both battery flags clear; odometry 50.002 Hz and zero reported motion; reliable PointCloud2 recheck 10.0014 Hz, one publisher. No real velocity publishers. Missing handset explains the documented remote-controller-lost flag, not lost-CAN stopping behavior.
+- First complete private keyboard/smoother bench FAILED at idle publication, despite 12 smoother cases passing. Diagnostic reproduced late startup: first message 1.944 s, seven messages in the original fixed window, steady 9.994 Hz. All test processes cleaned up, domain 127 clear.
+- Harness-only readiness fix: four focused tests RED then GREEN (five keyboard tests total), ownership tests and local quick available checks PASS, review PASS. Exact-tree box candidate verified; complete private keyboard/smoother rerun PASS, final domain empty. No keyboard behavior, remapping or stop-limit relaxation.
+- Attended driving: live ACTIVE smoother parameters and exactly-one keyboard -> smoother -> driver ownership verified. Sherman confirms W/S/A/D physical directions and complete X-stop, then Q exit and chassis power-off. Power button reported to stop immediately; no timed stop or emergency-stop rating claimed. Five-minute read-only recorder saved 2079 raw/4162 final commands and 15000 each odometry/status messages.
+- Shutdown: initial inspection contradicted the all-processes-stopped report (earlier stationary-window drivers remained). Sherman authorized cleanup; by inspection all tracked driver PIDs were already gone, so no driver signal sent. Final 17:31 process/graph check PASS: session nodes gone, zero publishers on both command topics, odometry and LiDAR; all session panes at Bash, tmux retained. Physical power-off reported by Sherman.
+- Outcome: T3.4 keyboard-driving/LiDAR scope DONE in task tree; hosted Artifact republish owed. Source provenance/installed drift and unmeasured braking/watchdog/calibration/charging gaps explicit; no mapping/deployment/full-suite acceptance implied. Charger custody not independently established.
+
 ## Record Template
 
 ```markdown
