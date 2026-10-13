@@ -44,6 +44,38 @@ def pose_error(actual: tuple, expected: tuple) -> tuple:
     return math.hypot(actual[0] - expected[0], actual[1] - expected[1]), abs(math.atan2(math.sin(difference), math.cos(difference)))
 
 
+def compose_pose(parent: tuple, child: tuple) -> tuple:
+    """Compose planar TF poses, rotating child translation into parent axes."""
+    c, s = math.cos(parent[2]), math.sin(parent[2])
+    return (parent[0] + c * child[0] - s * child[1],
+            parent[1] + s * child[0] + c * child[1], parent[2] + child[2])
+
+
+def localization_matches(actual: tuple, transform: tuple, odom: tuple, expected: tuple) -> bool:
+    """Require finite, consistent pose and TF within synthetic fixture limits."""
+    if actual is None or transform is None or not all(math.isfinite(v) for v in (*actual, *transform)):
+        return False
+    composed = compose_pose(transform, odom)
+    return all(distance <= 0.15 and heading <= 0.10 for distance, heading in
+               (pose_error(actual, expected), pose_error(composed, expected), pose_error(composed, actual)))
+
+
+def fixture_parameters(source: dict, mode: str, graph: str = "", seed: tuple = None) -> dict:
+    """Keep package settings while isolating inputs and explicit startup loading."""
+    params = dict(source)
+    params.update(mode=mode, odom_frame="t35_odom", map_frame="t35_map", base_frame="t35_base",
+                  scan_topic="/t35_slam/scan", map_name="/t35_slam/map", map_update_interval=0.2,
+                  use_sim_time=False, map_file_name=graph, use_map_saver=False, map_start_at_dock=False)
+    if seed is not None:
+        params["map_start_pose"] = list(seed)
+    return params
+
+
+def odometry_pose(pose: tuple, bias: tuple, fixed: tuple = None) -> tuple:
+    """Relocate scans without an odometry jump in matched reseed trials."""
+    return fixed if fixed is not None else tuple(value + offset for value, offset in zip(pose, bias))
+
+
 def await_startup(child, ready, spin_for, stop):
     """Own the child until readiness succeeds, including interrupted startup."""
     try:
@@ -75,6 +107,7 @@ def main() -> None:
         from sensor_msgs.msg import LaserScan
         from slam_toolbox.srv import SerializePoseGraph, DeserializePoseGraph
         from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
+        from tf2_msgs.msg import TFMessage
         import yaml
         from test_velocity_smoother import stop_process
     except ImportError as error:
@@ -93,6 +126,9 @@ def main() -> None:
     static = StaticTransformBroadcaster(node)
     poses = []
     node.create_subscription(PoseWithCovarianceStamped, "/t35_slam/pose", poses.append, 10)
+    transforms = []
+    node.create_subscription(TFMessage, "/t35_slam/tf", lambda msg: transforms.extend(
+        tf for tf in msg.transforms if tf.header.frame_id == "t35_map" and tf.child_frame_id == "t35_odom"), 100)
     # updateMap skips rasterization without subscribers. Do not depend on a
     # previous saver/subscriber remaining visible across process restart.
     maps = []
@@ -127,16 +163,17 @@ def main() -> None:
                 return
         raise RuntimeError("stopped SLAM node remains visible; refuse ambiguous restart")
 
-    def feed(pose, bias=(0, 0, 0), repeats=6):
+    def feed(pose, bias=(0, 0, 0), repeats=6, odometry=None):
         sent = set()
+        odom = odometry_pose(pose, bias, odometry)
         for _ in range(repeats):
             stamp = node.get_clock().now().to_msg()
             transform = TransformStamped()
             transform.header.stamp = stamp
             transform.header.frame_id, transform.child_frame_id = "t35_odom", "t35_base"
-            transform.transform.translation.x = float(pose[0] + bias[0])
-            transform.transform.translation.y = float(pose[1] + bias[1])
-            angle = pose[2] + bias[2]
+            transform.transform.translation.x = float(odom[0])
+            transform.transform.translation.y = float(odom[1])
+            angle = odom[2]
             transform.transform.rotation.z, transform.transform.rotation.w = math.sin(angle / 2), math.cos(angle / 2)
             dynamic.sendTransform(transform)
             scan = LaserScan()
@@ -164,14 +201,13 @@ def main() -> None:
             folder = Path(directory)
             graph = folder / "completed_map"
 
-            def start(executable, mode):
-                params = yaml.safe_load((REPO / "nav/robot_slam/config/slam_toolbox.yaml").read_text())["slam_toolbox"]["ros__parameters"]
-                params.update(mode=mode, odom_frame="t35_odom", map_frame="t35_map", base_frame="t35_base",
-                              scan_topic="/t35_slam/scan", map_name="/t35_slam/map", map_update_interval=0.2,
-                              use_sim_time=False, map_file_name="", use_map_saver=False)
+            def start(executable, mode, graph="", seed=None, label=None):
+                config = "slam_toolbox_localization.yaml" if mode == "localization" else "slam_toolbox.yaml"
+                source = yaml.safe_load((REPO / "nav/robot_slam/config" / config).read_text())["slam_toolbox"]["ros__parameters"]
+                params = fixture_parameters(source, mode, graph, seed)
                 file = folder / (mode + ".yaml")
                 file.write_text(yaml.safe_dump({"/**": {"ros__parameters": params}}))
-                with (REPO / "log" / ("t35-slam-" + mode + ".log")).open("w") as output:
+                with (REPO / "log" / ("t35-slam-" + (label or mode) + ".log")).open("w") as output:
                     child = subprocess.Popen(["ros2", "run", "slam_toolbox", executable, *remaps,
                                               "-r", "__ns:=/t35_slam", "--params-file", str(file)],
                                              stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
@@ -283,6 +319,72 @@ def main() -> None:
             stop_process(process)
             process = None
             wait_departed()
+
+            # Two fresh identical automatic-startup trials. Only treatment gets
+            # /initialpose; neither uses the deserialize service.
+            initialpose_pub = node.create_publisher(PoseWithCovarianceStamped, "/t35_slam/initialpose", 10)
+            at_a, at_b = (1.0, 1.0, 0.0), (0.2, -0.5, 0.0)
+
+            def observe(expected, sent, started):
+                current = [p for p in poses if p.header.frame_id == "t35_map" and
+                           (p.header.stamp.sec, p.header.stamp.nanosec) in sent]
+                now = node.get_clock().now().nanoseconds
+                fresh = [t for t in transforms if started <= t.header.stamp.sec * 10**9 + t.header.stamp.nanosec <= now + 600_000_000]
+                assert current and fresh, "inconclusive trial: missing fresh scan-derived pose/map->odom TF"
+                latest, tf = current[-1].pose.pose, fresh[-1].transform
+                pose = (latest.position.x, latest.position.y, 2 * math.atan2(latest.orientation.z, latest.orientation.w))
+                mapped = (tf.translation.x, tf.translation.y, 2 * math.atan2(tf.rotation.z, tf.rotation.w))
+                assert node.get_clock().now().nanoseconds - (fresh[-1].header.stamp.sec * 10**9 + fresh[-1].header.stamp.nanosec) < 10**9, "stale map->odom TF"
+                assert all(math.isfinite(v) for v in (*pose, *mapped)), "nonfinite localization witness"
+                disagreement = pose_error(compose_pose(mapped, at_a), pose)
+                assert disagreement[0] <= 0.15 and disagreement[1] <= 0.10, "pose/TF disagreement"
+                return localization_matches(pose, mapped, at_a, expected), pose_error(pose, expected)
+
+            for treatment in (False, True):
+                label = "startup-reseed" if treatment else "startup-control"
+                poses.clear()
+                maps.clear()
+                transforms.clear()
+                process = start("localization_slam_toolbox_node", "localization",
+                                str(owned_snapshot / "completed_map"), at_a, label)
+                loaded = call("dynamic_map", GetMap, GetMap.Request()).map
+                assert loaded.header.frame_id == "t35_map" and loaded.info == original.info and loaded.data == original.data, "automatic startup failed to load saved raster"
+                started = node.get_clock().now().nanoseconds
+                sent = feed(at_a, repeats=20, odometry=at_a)
+                spin_for(0.3)
+                matched, error = observe(at_a, sent, started)
+                assert matched, f"automatic startup pose/TF mismatch: {error}"
+                print(f"PASS automatic parameter startup {label}: saved raster + fresh pose/TF; no deserialize call", flush=True)
+                deadline = time.monotonic() + 5
+                while initialpose_pub.get_subscription_count() != 1 and time.monotonic() < deadline:
+                    spin_for(0.1)
+                assert initialpose_pub.get_subscription_count() == 1, "initialpose subscriber missing"
+                # Equal pre-input wait in both trials; control publishes nothing.
+                seed = PoseWithCovarianceStamped()
+                seed.header.frame_id = "t35_map"
+                seed.pose.pose.position.x, seed.pose.pose.position.y = at_b[:2]
+                seed.pose.pose.orientation.w = 1.0
+                for _ in range(5):
+                    if treatment:
+                        seed.header.stamp = node.get_clock().now().to_msg()
+                        initialpose_pub.publish(seed)
+                    spin_for(0.1)
+                poses.clear()
+                transforms.clear()
+                started = node.get_clock().now().nanoseconds
+                sent = feed(at_b, repeats=30, odometry=at_a)
+                spin_for(0.3)
+                assert process.poll() is None, "localizer exited during matched trial"
+                matched, error = observe(at_b, sent, started)
+                if not treatment:
+                    assert error[0] > 0.15 or error[1] > 0.10, "inconclusive control: pose recovered without reseed"
+                assert matched == treatment, f"reseed control inconclusive/failed: {label} matched={matched}, error={error}"
+                print(f"PASS matched {label}: B scan with fixed A odometry; error {error[0]:.3f}m/{error[1]:.3f}rad", flush=True)
+                stop_process(process)
+                process = None
+                wait_departed()
+            node.destroy_publisher(initialpose_pub)
+            wait_departed()
             poses.clear()
             process = start("localization_slam_toolbox_node", "localization")
             # A reply alone cannot distinguish a failed load in this API.
@@ -336,8 +438,8 @@ def main() -> None:
                 assert distance <= 0.15 and heading <= 0.10, f"localization error {distance:.3f}m/{heading:.3f}rad"
                 assert latest.header.frame_id == "t35_map"
                 print(f"PASS localization: error {distance:.3f}m/{heading:.3f}rad; biased odometry", flush=True)
-            # Parameter load path above proves deserialize; now prove /initialpose
-            # re-localization without restarting the localizer.
+            # Service reload above is not parameter-startup evidence. This nearby
+            # seed observation alone does not prove causal reseeding efficacy.
             initialpose_pub = node.create_publisher(PoseWithCovarianceStamped, "/t35_slam/initialpose", 10)
             reseeded = (0.2, 0.3, -0.15)
             seed = PoseWithCovarianceStamped()
@@ -359,7 +461,7 @@ def main() -> None:
             distance, heading = pose_error(actual, reseeded)
             assert distance <= 0.15 and heading <= 0.10, f"/initialpose error {distance:.3f}m/{heading:.3f}rad"
             node.destroy_publisher(initialpose_pub)
-            print(f"PASS /initialpose reseeding: error {distance:.3f}m/{heading:.3f}rad", flush=True)
+            print(f"PASS post-/initialpose observation only: error {distance:.3f}m/{heading:.3f}rad", flush=True)
             refused_root = folder / "must not save localization"
             with (REPO / "log/t35-owned-saver-refusal.log").open("w") as output:
                 refused = subprocess.Popen([

@@ -1,0 +1,45 @@
+T3.5 automatic-startup/reseed test preparation, 2026-10-13
+
+Base: 172d10a (docs-only dev catch-up; runtime matches earlier checkpoint).
+Prepared runtime-source tree: 0eb9f3fc6c977329c5c31da88bdeebdc6952f3da
+Later evidence/documentation edits are not part of that frozen tree.
+
+Changes limited to existing isolated persistence bench and its fixture tests:
+- Native localizer uses localization YAML, not mapping YAML.
+- Two fresh automatic map_file_name/map_start_pose trials, no deserialize call.
+- Compare loaded raster before scan input; require fresh scan-derived pose and
+  map->odom TF, composing with supplied odometry under synthetic limits.
+- Matched A=(1,1,0), B=(0.2,-0.5,0) scans hold odometry fixed at A.
+  Control must have fresh finite pose/TF but remain outside B tolerance;
+  treatment alone receives B on /initialpose. Control recovery is inconclusive.
+- Old service-reload/saver/corrupt-fixture observations retained separately;
+  nearby post-seed observation no longer claims causal efficacy.
+- Outer timeout 180 -> 300 seconds for extra serial trials; owned-group cleanup
+  and private-domain guards retained. No production driver or launch changes.
+
+Local RED/GREEN:
+Two new tests failed for missing startup-parameter/independent-odometry helpers;
+then passed. TF composition and witness checks failed for missing helpers;
+then passed. Nine fixture tests now OK (previously five).
+Available Mac quick bench exit 0 with explicit missing .venv/PyYAML/ROS skips
+and one saver-subtest skip. L3-L6 NOT run. Runner coverage/diff checks passed.
+Captured local output: log/t35-startup-local-quick.txt.
+Read-only runtime-design review found no safety blocker; corrected control
+pose-vs-TF criterion, pre-input raster timing and future-TF timestamp bound.
+
+BOX STATUS: BLOCKED BEFORE TESTS. Both approved lab-access routes timed out
+during candidate transfer. No remote extraction, guard, process inspection or
+runtime test ran in this step. No live graph emptiness assertion can be made.
+Archive remains local; no claim it reached the box.
+
+All new automatic-startup/reseed runtime assertions are UNVERIFIED.
+Earlier runtime evidence remains pinned to its earlier source trees. No claim
+that control is experimentally discriminating or that parameter startup works.
+On restored access: fresh shared-box/CI/process checks and native empty-domain
+guard; exact-tree snapshot verification; focused tests then serial persistence,
+cloud and construction regression checks, drift comparison and cleanup evidence.
+Unexpected failure must be investigated, not hidden by relaxed thresholds.
+
+No build/install/deploy, hardware start, real motion, safety-gate completion,
+full-suite acceptance or completion PR. T3.5 remains PROGRESS. Installed drift,
+unsafe corrupt-graph abort, trusted staging design and live acceptance stay open.

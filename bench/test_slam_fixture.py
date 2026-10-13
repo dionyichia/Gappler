@@ -8,10 +8,45 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "nodes"))
+import test_slam_persistence as persistence
 from test_slam_persistence import ray_range, scan_ranges, pose_error, await_startup
 
 
 class SlamFixtureTests(unittest.TestCase):
+    def test_localization_startup_retains_config_and_explicit_seed(self):
+        helper = getattr(persistence, "fixture_parameters", None)
+        self.assertTrue(callable(helper), "missing isolated startup parameter builder")
+        source = {"mode": "localization", "map_start_at_dock": True, "solver_plugin": "solver"}
+        result = helper(source, "localization", "/owned snapshot/completed_map", (0.8, 0.6, 0.2))
+        self.assertEqual(result["map_file_name"], "/owned snapshot/completed_map")
+        self.assertEqual(result["map_start_pose"], [0.8, 0.6, 0.2])
+        self.assertFalse(result["map_start_at_dock"])
+        self.assertEqual(result["solver_plugin"], "solver")
+        self.assertEqual(result["scan_topic"], "/t35_slam/scan")
+        self.assertTrue(source["map_start_at_dock"], "input config mutated")
+
+    def test_scan_relocation_can_hold_odometry_continuous(self):
+        helper = getattr(persistence, "odometry_pose", None)
+        self.assertTrue(callable(helper), "missing independent scan/odometry fixture")
+        self.assertEqual(helper((1, 2, 0.3), (0.4, -0.3, 0.1), (0, 0, 0)), (0, 0, 0))
+        self.assertEqual(helper((1, 2, 0.3), (0.4, -0.3, 0.1)), (1.4, 1.7, 0.4))
+
+    def test_map_odom_composition_rotates_translation(self):
+        helper = getattr(persistence, "compose_pose", None)
+        self.assertTrue(callable(helper), "missing independent TF composition check")
+        result = helper((1, 2, math.pi / 2), (3, 0, -math.pi / 2))
+        for actual, expected in zip(result, (1, 5, 0)):
+            self.assertAlmostEqual(actual, expected)
+
+    def test_localization_witness_needs_pose_and_consistent_tf(self):
+        helper = getattr(persistence, "localization_matches", None)
+        self.assertTrue(callable(helper), "missing pose/TF witness check")
+        expected = (1, 2, 0)
+        self.assertTrue(helper(expected, (0, 0, 0), expected, expected))
+        for pose, transform in ((None, (0, 0, 0)), (expected, None),
+                                (expected, (1, 0, 0)), ((float('nan'), 2, 0), (0, 0, 0))):
+            self.assertFalse(helper(pose, transform, expected, expected))
+
     def test_interrupted_startup_stops_owned_child(self):
         child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True)
 

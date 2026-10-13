@@ -354,6 +354,13 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Integrated dev `0bf552e` into the existing T3.5 branch with a merge, not history rewriting. Imported the teammate's voice-trigger documentation, restart evidence and task notes unchanged. No runtime source changed from the separately box-tested checkpoint.
 - Verification: available Mac quick checks passed with explicit environment/subtest skips; no build, deployment or hardware action. T3.5 remains PROGRESS. Next: automatic-startup and matched reseed-control fixture tests.
 
+## [2026-10-13] T3.5 | Startup/reseed fixtures prepared; box verification blocked
+
+- Evidence: [test preparation](../bench-runs/2026-10-13-sherman-t3.5-startup-prep.txt), frozen runtime-source tree `0eb9f3fc6c977329c5c31da88bdeebdc6952f3da`.
+- Added failing-first parameter/odometry/TF helpers and nine passing local fixture checks. Existing persistence bench now has fresh automatic-startup trials using localization YAML, saved-raster comparison and scan-derived pose/TF; matched control/treatment keeps odometry fixed while relocating scans. No production driver changes. Read-only design review incorporated before transfer attempt.
+- Available Mac quick checks passed with explicit environment/subtest skips. Both lab-access routes failed before transfer; no box job, graph check, hardware action or deployment occurred. Runtime assertions, discriminating negative control and parameter-startup efficacy remain UNVERIFIED. T3.5 stays PROGRESS.
+- Next: restore lab access, verify fresh idle conditions and exact candidate tree, run serial isolated regressions and review evidence before any live-work proposal. Push this preparation for visibility, not as runtime acceptance.
+
 ## Record Template
 
 ```markdown

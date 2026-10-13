@@ -10,4 +10,5 @@ set +u; source /opt/ros/humble/setup.bash; set -u
 cd "$REPO"
 python3 bench/t34_guard.py || exit 1
 mkdir -p log
-timeout --signal=INT --kill-after=30 180 python3 bench/nodes/test_slam_persistence.py
+# Additional serial automatic-startup/reseed trials, each with bounded waits.
+timeout --signal=INT --kill-after=30 300 python3 bench/nodes/test_slam_persistence.py
