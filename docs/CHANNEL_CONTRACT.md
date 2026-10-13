@@ -69,7 +69,7 @@ These cross a subsystem boundary. They are the contract.
 
 | # | Channel | Type and frame | From | To | Owner | State |
 |---|---|---|---|---|---|---|
-| H1 | `/aria/audio/prompt` | `String`, the object word | Aria, `audio_streaming_pipeline.py:49` | Nav, `object_approach_node.py:80` and `goto_glasses.py:59` | Dion | works. Two nav consumers race for Nav2 (E5). Segmentation never listens (L1) |
+| H1 | `/aria/audio/prompt` | `String`, the object word | Aria, `audio_streaming_pipeline.py:49` | Nav, `object_approach_node.py:80` and `goto_glasses.py:59` | Dion | works. Two nav consumers race for Nav2 (E5). Segmentation never listens (L1). Becomes one message per finished sentence (A-5, `T2.10`) |
 | H2 | `/manipulation/goal_pose` | `PoseStamped`, `base_link` | Grasp, `object_recognition_pipeline.py:204` | Nav, `object_approach_node.py:74` | Dion | works. From M7 the graph writes it through `T7.1` |
 | H3 | `/manipulation/start` | `Bool` | Nav, `object_approach_node.py:97` | Bot, `orchestrator.py:56` | Zongzhe | works. Today it launches a process. Becomes an arm and disarm gate, see B-4 in §6 |
 | H4 | `/goal_pose` | `PoseStamped`, `map` | Nav, `object_approach_node.py:90` | Nav2, via `goal_reached_publisher.py:29` | Zongzhe | works. Becomes a handover when the frontier layer writes it (M9) |
@@ -148,6 +148,17 @@ All of these were decided by Dion. Each names where the detail lives.
   `CODE_AUDIT` open question 6: `/aria/fused_pose`'s frame is not fixed now.
 - **A-3. Gaze by geometry** is not planned in. Build the appearance baseline in M2 first, then decide
   on the evidence. `PROJECT_PLAN` D9, `NEXT_STEPS` §2.13.
+- **A-5. The voice pipeline acts on finished sentences, not on a sliding window (Dion,
+  2026-10-12, `T2.10`).** Today it transcribes the last 10 s once a second and publishes whatever
+  object word the LLM names, so half-heard phrases go out as junk words (`pick`, `book`, `night`,
+  found in `T2.8`). Instead it waits until you stop speaking (a short silence, found by the Silero
+  voice detector that ships with faster-whisper), then transcribes that one sentence and publishes
+  its word once. **Trade-off accepted:** the word arrives about 1.1 s after you finish speaking
+  (0.7 s of silence plus the detector's 0.4 s padding, both in `aria/aria_config.yaml` and
+  `audio_streaming_pipeline.py`) instead of while you speak. Getting the right command beats shaving that half second. **Not
+  done:** a hard-coded list of command phrases. This is meant to be a natural conversation helper
+  and the LLM already decides what the object is. H1 changes meaning: one message per finished
+  sentence that names an object, not one per second.
 - **A-4. Keep `aria_image_relay.py` as is.** It is a decompressor for viewing, not a duplicate
   publisher, and it is useful when stubbing the glasses with a recorded video.
 
@@ -356,3 +367,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-10-06 | Claude Opus 5.5 + Dion | `T1.15` renamed `T2.6` and moved to M2: publishing `/manipulator/release` is glasses-side work, and M1 grasps with release sent by hand. H10 and A-1 updated. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | G-1 and G-2 revised for `T2.1`: the segmentation service is a stateless request/reply service in a new top-level `shared_services/`, with one client per subsystem. The grasp client becomes the only publisher of the H5 mask channels. P4 points at the new folder. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | `T2.1` built: H5 has one live publisher, the grasp segmentation client. New H5a `/grasp/target` (aria to grasp) and H5b, the `/segmentation/segment` service. |
+| 2026-10-12 | Claude Opus 5.5 + Dion | A-5 added: the voice pipeline acts on finished sentences (`T2.10`), accepting about 0.7 s more latency. H1 note updated. |
