@@ -10,7 +10,7 @@ cannot drive a grasp. The mask is what the AnyGrasp path uses, once T1.17 turns 
 
 The mask is every pixel, so the centroid is the image centre and the depth is the median of the
 frame, which is what SAM 3 would produce from the same all-True mask
-(sam3_ros_node.py:139-164). Field meanings match it exactly: x is the pixel column, y is the
+(segmentation_logic.py median_depth). Field meanings match the grasp client exactly: x is the pixel column, y is the
 pixel row, z is metres.
 
 WARNING: it claims every pixel is the object, so the arm reaches for the middle of whatever is
@@ -18,7 +18,7 @@ in front of the camera. Put one object in view, on a clear table.
 
     python3 grasp/tools/dummy_mask_publisher.py
 
-Still open in T2.1: whether this file survives the one segmentation service.
+Kept (T2.1, decided 2026-10-08): it tests the arm without loading SAM 3.
 """
 
 import numpy as np
@@ -28,7 +28,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from gappler_common import config
 
-# The real channels, the same ones sam3_ros_node.py publishes when perception is running.
+# The real channels, the same ones the grasp segmentation client publishes. Never run both.
 # From shared/global_config.yaml.
 CFG = config("grasp")
 TOPIC_DEPTH = CFG["topics"]["wrist_camera_aligned_depth"]

@@ -12,6 +12,43 @@ authoritative for status. This file holds the reasoning, the commands and the pa
 [`T1.7_FIRST_COMMANDED_MOTION.md`](T1.7_FIRST_COMMANDED_MOTION.md) for how the first motion was
 sent. This file does not repeat them.
 
+## Start here, 2026-10-08 (cold start)
+
+**Where we are.** Steps 1, 2 and 3a pass. The state machine homes the real arm on start and stays
+idle (3a). The arm was then sent back to its straight-up rest pose by hand. Nothing has approached
+or grasped anything yet. All of this is in PR #48 into `dev`.
+
+**Next: step 3b, then 3c.** One step at a time. Do not start 3c in the same session as 3b unless 3b
+passes cleanly.
+
+1. **Desk, new branch** (from `dev` after PR #48 merges), named for the task, for example
+   `t1.24-sam3-stale-centroid`. Write the stale-centroid check (see "With 3b" below): re-enable
+   the age check at `grasp_state_machine.cpp:646-652` under `centroid_mutex_`, read the limit from
+   `centroid_max_age_s` in `grasp/grasp_config.yaml` (start at 1.0 s), publish `IDLE` on that exit.
+   Run `./bench/state_machine_sim.sh` on the box with the arm powered off.
+2. **At the robot, 3b** (arm off, no state machine): wrist camera at `640x480x15`, then the
+   segmentation service and the grasp client (T2.1, which replaced `sam3_ros_node.py` on
+   2026-10-08), with the test-only default prompt "box". Record the centroid rate, depth against a tape measure, and the distance where
+   depth drops out. Commands in "Step 3b" below.
+3. **At the robot, 3c**, only after 3b passes and the fix is merged.
+
+**Before touching the box:**
+- Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.98.10.50`. On 2026-10-08 that worked
+  while `100.87.133.60` and `ssh labbox` (the Orin's cable link) did not. Try each.
+- `git log -1` in `~/rcp-Gappler`: expect `dev` with PR #48 merged. Rebuild with `./build.sh` if
+  the pull touched C++ (the stale-centroid fix will).
+- Check who else is on it: `ps -eo pid,user,etime,args | grep -iE "realsense|rs_launch|ros2 launch|bench/run.sh|Runner.Worker"`,
+  `nvidia-smi`, `fuser /dev/video*`, `tmux ls`. On 2026-10-07 someone ran LiDAR mapping on domain
+  91, the same channel we use.
+- The `arm` tmux session from 2026-10-07 may still be up. Ask Dion before closing it.
+- Claude Code's permission check blocks an agent from typing commands into the box's panes or
+  reading them. Either Dion runs the command with the `!` prefix, or adds an allow rule for
+  `ssh labbox`.
+
+**Known gap:** `./quickstart_terminals.sh grasp` starts the wrist camera at the driver defaults with
+the point cloud on, which sent no frames on 2026-10-07. Start the camera by hand for 3b. Fix the
+layout once 3b confirms the settings.
+
 ---
 
 ## Why step by step
@@ -33,7 +70,8 @@ cycle fails on the first try, we will not know which part failed. So each step a
 
 Step 3 was split on 2026-10-07 (see "Why step 3 is split" below). The stand-in is out: its depth
 is the median of the whole image, so it does not tell us where the box is. SAM 3 takes the median
-over the box's own mask, so its depth is the box's depth (`grasp/segmentation/sam3_ros_node.py:153-158`)
+over the box's own mask, so its depth is the box's depth (`median_depth` in
+`shared_services/segmentation/segmentation_logic.py`)
 `[code]`. Steps 3c and 4 need one change to the state machine, the stale-centroid check, written with 3b. Its one-shot `return;` at
 `grasp/grasp_state_machine/src/grasp_state_machine.cpp:735` actually helps there: after one cycle
 the worker loop exits, so the arm cannot start a second cycle by accident `[code]`.
@@ -63,9 +101,10 @@ All MoveIt motions run at 10% velocity and acceleration
 
 ### Today
 
-- **SAM 3 never stops publishing.** `grasp/segmentation/sam3_ros_node.py` runs on every camera
-  frame with the fixed prompt prompt word `text_prompt: "box"` (`grasp/grasp_config.yaml:34`, read at `:43`) and publishes a centroid
-  whenever it sees one (`:167`) `[code]`.
+- **Segmentation never stops publishing.** While it has a prompt, the grasp client
+  (`grasp/grasp_segmentation_client/grasp_segmentation_client.py`) sends every newest wrist frame to
+  the segmentation service and publishes a centroid whenever the box is found with valid depth. With
+  no glasses its prompt is the test-only `default_prompt: "box"` in `grasp/grasp_config.yaml` `[code]`.
 - **The stand-in never stops either.** `grasp/tools/dummy_mask_publisher.py` publishes an
   image-centre centroid on every depth frame `[code]`.
 - **Any centroid starts a cycle.** `centroidCallback` sets `has_centroid_` on every message
@@ -146,7 +185,7 @@ Replace the `return;` at `:735` with:
 
 ---
 
-## Prep tonight (no hardware)
+## Prep before the 2026-10-07 session (done, kept for reference)
 
 - [ ] `git pull` in `~/sch_repo/Gappler` (behind `dev` by two merges) and in `~/rcp-Gappler` on
       the box. Rebuild there with `./build.sh` if the pull touched C++.
@@ -282,7 +321,7 @@ approach the box, stop near it, close, return. One attempt. We judge the motion,
 **Needs your explicit go-ahead.** `CLAUDE.md` forbids launching `grasp_state_machine` on the real
 arm. Two people, a hand on the power button the whole time.
 
-**Do not use the launcher.** `launchers/start_camera_arm_sam3_grasp.py` starts the state machine
+**Do not use the launcher.** `launchers/start_camera_arm_grasp.py` starts the state machine
 5 s after everything else, on its own (`:109-121`, `:154-159`) `[code]`. Start each part by hand,
 so the state machine starts last and only when you choose. In every pane, the T1.6 environment
 (domain 91, localhost only). `./quickstart_terminals.sh` on the box sets that up.
@@ -354,12 +393,14 @@ octomap sensor, default acceleration limits). Log:
 measure. Nothing on the arm runs, so nothing can move.
 
 **First:** `nvidia-smi` and `fuser /dev/video*`. SAM 3 needs the GPU, and someone else may be on
-it. Nobody has confirmed that SAM 3 runs on this box yet `[unverified]`.
+it. The service and the grasp client have run on this box on the recorded wrist-camera bag
+(T2.1, `bench/anygrasp_replay.sh`: 117 masks in 60 s, box at 0.36 m), never on the live camera.
 
 | Pane | Command | Wait for |
 |---|---|---|
 | 1, `arm/arm_env.sh` | `ros2 launch realsense2_camera rs_launch.py "serial_no:='_243222074878'" align_depth.enable:=true rgb_camera.color_profile:=640x480x15 depth_module.depth_profile:=640x480x15` | serial `243222074878` in the log, then frames: `ros2 topic hz` on the colour topic |
-| 2, `grasp/grasp_env.sh`, from `aria/aria_app/services/object_recognition` | `PYTHONPATH=~/rcp-Gappler/aria/aria_app:$PYTHONPATH uv run --project ~/rcp-Gappler python ~/rcp-Gappler/grasp/segmentation/sam3_ros_node.py` (as the launcher does, `:109-121`) | `SAM3 node ready` |
+| 2, `shared_services/shared_services_env.sh` | `python ~/rcp-Gappler/shared_services/segmentation/segmentation_service.py` | `Segmentation service ready on /segmentation/segment` (SAM 3 takes a few seconds to load) |
+| 2b, `grasp/grasp_env.sh` | `python ~/rcp-Gappler/grasp/grasp_segmentation_client/grasp_segmentation_client.py` | `looking for: default prompt 'box' (testing only)` |
 | 3 | `ros2 topic hz /object_centroid_2d` | the rate |
 | 4 | `ros2 topic echo /object_centroid_2d` | x, y near the box in the image, z in metres |
 | 5 | `rqt_image_view /camera/sam/mask` | the mask |
@@ -370,8 +411,9 @@ That sent no frames on 2026-10-07, so start the camera by hand here.
 **Record:**
 - the centroid rate (it sets the age limit for 3c)
 - z against a tape measure, camera glass to box face, at 0.6, 0.4 and 0.25 m
-- slide the box toward the camera and note the distance where z stops coming and SAM 3 logs `No
-  valid depth in mask region`. If that is above 0.18 m, the approach can never reach its stop
+- slide the box toward the camera and note the distance where z stops coming: `/camera/sam/mask`
+  keeps arriving but `/object_centroid_2d` stops, because the client publishes no centroid without
+  valid depth under the mask. If that is above 0.18 m, the approach can never reach its stop
   depth: raise `execute_depth_thresh_m` or rethink before 3c.
 - with the box out of view: does SAM 3 still find a "box" somewhere?
 
@@ -382,8 +424,8 @@ That sent no frames on 2026-10-07, so start the camera by hand here.
 **Proves:** the full step 3: home, approach the box, stop at 0.18 m, open, last 10 cm step, close,
 return to HOME, `true` on `/manipulator/return_to_user`. One attempt.
 
-3a's arm panes, plus 3b's camera and SAM 3 panes. `ros2 topic echo /pipeline_state`. The state
-machine last. SAM 3 is publishing already, so **the arm homes and then approaches as soon as the
+3a's arm panes, plus 3b's camera, service and client panes. `ros2 topic echo /pipeline_state`. The state
+machine last. The client is publishing already, so **the arm homes and then approaches as soon as the
 state machine is up**. The one-shot `return;` (`:735`) stops it after one cycle, so the trigger gate
 (T1.25) is not needed for this one attempt `[inferred]`.
 
@@ -398,27 +440,6 @@ fast. If SAM 3 loses the box, the stale check should end the approach. Do not co
 time.
 
 **After:** the gripper stays closed. Open it with the step 1 command.
-
-### Where we stopped, 2026-10-07 (cold start here next time)
-
-Nothing ran on the real arm. Found while setting up:
-
-- **The box checkout was stale.** It was on `t3.3-mapping-tf`, built 2026-09-24. It is now on
-  `dev` at `6294fae` and rebuilt. Check `git log -1` again before the next run.
-- **The wrist camera sent no frames at the driver defaults** (1280x720 colour, 848x480 depth,
-  30 fps). Start it at the settings that worked in T0.12:
-  `rgb_camera.color_profile:=640x480x15 depth_module.depth_profile:=640x480x15`, no point cloud.
-  Not yet confirmed that frames arrive at these settings. The serial check passed: the driver
-  found 243222074878, the wrist D435i.
-- **Object size.** The gripper opens to 70 mm. The box on hand, 60 x 45 x 45 mm, fits.
-- **The stand-in does not see the box** `[code]`. It reports the image centre, at the median depth
-  of the whole image. A small box never fills half the image, so the arm approaches whatever fills
-  most of the view, usually the table. Decide before step 3 whether that is acceptable for a
-  motion-only test, or change the stand-in to take depth from a central patch.
-- **MoveIt plans every motion** `[code]`: HOME and RETURN as joint moves, each approach step as a
-  straight line, all at 10% speed, collision-checked against four hard-coded boxes
-  (`grasp_state_machine.cpp:302-354`). Those boxes come from an earlier setup and were never
-  checked against this robot `[unverified]`.
 
 ---
 
@@ -448,6 +469,9 @@ From reading the code. None of these is confirmed on the real arm.
   no object in view, the stand-in's centroid is the table, so the arm would step toward the table
   for up to 50 steps (2 m). MoveIt's safety walls (`addSafetyWalls()`, `:608`) are the only guard
   `[inferred]`. Never run step 3 or 4 without the box in view.
+- **MoveIt's collision boxes were never checked on this robot.** Every motion is collision-checked
+  against four hard-coded boxes from an earlier setup (`grasp_state_machine.cpp:302-354`)
+  `[unverified]`. Look at them in RViz before 3c.
 - **A lost object is not noticed** until the stale-centroid check is in (see "With 3b"). Even
   then, the check only runs between steps, and each step takes a few seconds at 10% speed.
 - **A failed final step ends the node.** `:725` returns from the worker loop (the check is at `:722`), just like `:735`.
@@ -475,3 +499,5 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-07 | Claude Opus 5.5 + Dion | T1.22 box test PASS, task done. Step 3 not run. Added where we stopped and what was found while setting up. |
 | 2026-10-07 | Claude Opus 5.5 + Dion | Step 3 split into 3a (the state machine homes on start, no camera), 3b (SAM 3 finds the box, arm off) and 3c (the approach with live SAM 3). The stand-in is dropped. Added the stale-centroid check as a code change, landing with 3b. |
 | 2026-10-07 | Claude Opus 5.5 + Dion | 3a PASS: the state machine homed the real arm on start, went IDLE, no further motion. |
+| 2026-10-08 | Claude Opus 5.5 + Dion | "Start here" added for the next session (3b). Old "Where we stopped" removed, its findings already folded into 3a to 3c. Collision boxes moved to "Things to watch". SAM 3 has run on the box on a bag (T0.12). |
+| 2026-10-08 | Claude Opus 5.5 + Dion | T2.1 landed: 3b and 3c use the segmentation service and the grasp client instead of `sam3_ros_node.py`, the trigger notes and the depth cite follow. Box access note updated (100.98.10.50 worked). |

@@ -3,7 +3,7 @@
 # global_env.sh sources the result (through arm/, grasp/ and nav/<subsystem>_env.sh). The bench runs it as L3 (was bench/build.sh until 2026-09-21).
 # Never launches a node, never touches hardware, no sudo.
 #
-#   ./build.sh          arm/ + grasp/, vendor included (24 packages)
+#   ./build.sh          arm/ + grasp/ + shared_services/, vendor included (25 packages)
 #   ./build.sh nav      nav/, vendor included, into build_nav/ install_nav/
 #
 # --symlink-install: install/ links back to the repo instead of copying, so a Python
@@ -25,7 +25,7 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # this file sits at the r
 target="${1:-arm}"
 
 case "$target" in
-  arm) paths=(arm grasp); bdir=build;     idir=install;     extra=() ;;
+  arm) paths=(arm grasp shared_services); bdir=build; idir=install; extra=() ;;
   nav) paths=(nav);       bdir=build_nav; idir=install_nav
        extra=(-DROS_EDITION=ROS2 -DHUMBLE_ROS=humble) ;;
   *)   echo "usage: $0 [arm|nav]"; exit 2 ;;

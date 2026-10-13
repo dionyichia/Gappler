@@ -82,8 +82,20 @@ def rel(path: Path) -> str:
     return str(path.relative_to(REPO))
 
 
+def repo_files():
+    """Files git tracks or would track: ignored local files (recordings, weights, build output)
+    are left out, so a snapshot taken on one machine matches a clean CI checkout. Every file on
+    disk when git is not available."""
+    try:
+        out = subprocess.run(["git", "ls-files", "-co", "--exclude-standard", "-z"], cwd=REPO,
+                             capture_output=True, check=True).stdout.decode()
+        return [REPO / f for f in out.split("\0") if f]
+    except (OSError, subprocess.CalledProcessError):
+        return list(REPO.rglob("*"))
+
+
 def walk(*suffixes: str):
-    for p in sorted(REPO.rglob("*")):
+    for p in sorted(repo_files()):
         r = p.relative_to(REPO)
         # bench/ is the instrument, not the robot: its test nodes subscribe to
         # /joint_states etc. and would otherwise read as contract changes.

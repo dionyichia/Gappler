@@ -45,8 +45,9 @@ lay_arm() {
   pane typed arm ""
 }
 
-# The T1.25 order (GRASP_BRINGUP_STEPS): the state machine last, by hand. "nomask" leaves out the
-# SAM 3 stand-in, for when the Aria app publishes the mask and centroid instead.
+# The T1.25 order (GRASP_BRINGUP_STEPS): the state machine last, by hand. Segmentation (T2.1) is
+# the segmentation service plus the grasp client. The service refuses to start if one already runs
+# on this channel, and the client then uses that one. "nomask" leaves segmentation out.
 lay_grasp() {
   local serial
   serial=$(PYTHONPATH="$R/shared" python3 -c 'from gappler_common import camera_serial; print(camera_serial("wrist_camera"))') \
@@ -56,7 +57,10 @@ lay_grasp() {
   pane auto grasp "ros2 launch arm_bringup arm_bringup.launch.py"
   # The leading _ makes the launch file read the serial as text, as the grasp launcher does.
   pane auto arm "ros2 launch realsense2_camera rs_launch.py \"serial_no:='_$serial'\" align_depth.enable:=true pointcloud.enable:=true"
-  [ "${1:-}" = nomask ] || pane auto grasp "python3 $R/grasp/tools/dummy_mask_publisher.py"
+  if [ "${1:-}" != nomask ]; then
+    pane auto shared_services "python $R/shared_services/segmentation/segmentation_service.py"
+    pane auto grasp "python $R/grasp/grasp_segmentation_client/grasp_segmentation_client.py"
+  fi
   pane auto arm "ros2 topic echo /pipeline_state"
   pane typed grasp "ros2 launch grasp_state_machine grasp_state_machine.launch.py"
 }
@@ -71,18 +75,19 @@ lay_nav() {
 lay_aria() {
   win aria
   pane auto aria "python $R/aria/aria_app/main.py"
+  pane auto aria "python $R/aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py"
 }
 
 lay_full() {
   ENV_OVERRIDE=global
-  lay_grasp nomask
+  lay_grasp
   lay_aria
   echo "full: nav left out. slam_localization.launch.py resets enp2s0 to 192.168.1.5 only,"
   echo "which would most likely cut the arm's 192.168.1.10 link (T3.9). Run nav on its own."
 }
 
 # What each layout must not find already running.
-ARM_BUSY='rm_driver|arm_bringup|grasp_state_machine|start_camera_arm_sam3_grasp|grasp_orchestrator'
+ARM_BUSY='rm_driver|arm_bringup|grasp_state_machine|start_camera_arm_grasp|grasp_orchestrator'
 CAMERA_BUSY='realsense2_camera|rs_launch'
 NAV_BUSY='livox|slam_toolbox|slam_localization|slam_mapping|nav2|xpkg|echo_plus|simple_teleop|goto_glasses'
 ARIA_BUSY='aria_app/main.py'
@@ -108,7 +113,8 @@ if ! tmux has-session -t "=$LAYOUT" 2>/dev/null; then
   found="" cams="" gpu=""
   ((DRY)) || found=$(ps -eo pid,user,etime,args | grep -iE "$BUSY|Runner.Worker|bench/run.sh" | grep -v grep)
   ((DRY)) || case "$LAYOUT" in grasp|full) cams=$(fuser /dev/video* 2>/dev/null) ;; esac
-  ((DRY)) || case "$LAYOUT" in aria|full) gpu=$(nvidia-smi --query-compute-apps=pid,process_name --format=csv,noheader 2>/dev/null) ;; esac
+  ((DRY)) || case "$LAYOUT" in grasp|aria|full) gpu=$(nvidia-smi --query-compute-apps=pid,process_name --format=csv,noheader 2>/dev/null \
+    | grep -v gnome-remote-desktop) ;; esac   # the remote desktop always holds ~120 MiB
   if [ -n "$found$cams$gpu" ]; then
     echo "Not starting. Already in use:"
     [ -n "$found" ] && echo "$found"

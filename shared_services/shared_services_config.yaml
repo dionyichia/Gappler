@@ -1,0 +1,10 @@
+# Shared services config: values only the shared services read, one section per node.
+# Values more than one subsystem reads (like the service names) are in shared/global_config.yaml.
+# Read with gappler_common.config("shared_services", "<node>").
+# Format: a ROS parameter file, like the subsystem config files.
+
+# shared_services/segmentation/segmentation_service.py
+segmentation_service:
+  ros__parameters:
+    min_score: 0.5        # SAM 3 score below this is not a detection, when the request sends 0
+    max_detections: 5     # most detections per reply, when the request sends 0
