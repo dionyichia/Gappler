@@ -7,11 +7,26 @@ import subprocess
 import sys
 import termios
 import time
+from typing import Callable
 
 from geometry_msgs.msg import Twist
 from test_velocity_smoother import stop_process
 
 REPO = Path(__file__).resolve().parents[2]
+
+
+def _wait_for_keyboard_startup(process: subprocess.Popen, raw: list,
+                             spin_for: Callable[[float], None], timeout: float = 5.0) -> None:
+    """Do not count ROS/import startup delay as a steady-publication failure."""
+    deadline = time.monotonic() + timeout
+    while not raw:
+        code = process.poll()
+        if code is not None:
+            raise RuntimeError(f"keyboard exited during startup: {code}")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("keyboard did not publish before startup timeout")
+        spin_for(min(0.05, remaining))
 
 
 def run_pipeline(node, samples, spin_for, check_stop) -> None:
@@ -28,12 +43,13 @@ def run_pipeline(node, samples, spin_for, check_stop) -> None:
             process = None
             try:
                 with (REPO / f"log/t34-teleop-{exit_mode}.log").open("w") as log:
+                    raw.clear()
                     process = subprocess.Popen([
                         sys.executable, str(REPO / "nav/simple_teleop/simple_teleop/teleop_node.py"),
                         "--ros-args", "-r", "__ns:=/t34_probe", "-r", "cmd_vel:=keyboard_input",
                         "-p", "speed:=0.05", "-p", "turn:=0.15", "-p", "key_timeout:=0.25",
                     ], stdin=slave, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
-                    spin_for(1.5)
+                    _wait_for_keyboard_startup(process, raw, spin_for)
                     assert process.poll() is None, "teleop exited during startup"
                     raw.clear()
                     spin_for(1.1)
