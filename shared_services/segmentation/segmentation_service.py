@@ -113,10 +113,16 @@ class Sam3:
         from sam3 import build_sam3_image_model
         from sam3.model.sam3_image_processor import Sam3Processor
 
-        self.cuda = torch.cuda.is_available()
-        if self.cuda:
+        if torch.cuda.is_available():
             torch.backends.cuda.matmul.allow_tf32 = True
             torch.backends.cudnn.allow_tf32 = True
+            # bfloat16 to reduce GPU memory, switched on once and never off. A `with` block per
+            # call was tried (2026-10-13) and cost ~30% throughput: leaving the block clears
+            # autocast's cache of bfloat16 weights, so every call re-casts all of SAM 3.
+            # ponytail: autocast is per thread. It covers the main thread, where rclpy.spin runs
+            # every callback. With a MultiThreadedExecutor, enter it in each worker thread too.
+            # It also applies to anything else this process runs on the GPU.
+            torch.autocast("cuda", dtype=torch.bfloat16).__enter__()
         bpe = os.path.join(os.path.dirname(sam3.__file__), "assets/bpe_simple_vocab_16e6.txt.gz")
         model = build_sam3_image_model(bpe_path=bpe, load_from_HF=False, checkpoint_path=weights)
         # SAM 3 drops results below its own threshold, so a request can raise min_score above this
@@ -124,15 +130,9 @@ class Sam3:
         self.processor = Sam3Processor(model, confidence_threshold=min_score)
 
     def process_text_prompt(self, image: np.ndarray, prompt: str) -> dict:
-        import torch
-
-        # bfloat16 to reduce GPU memory, only around the model call. Autocast is per thread, so
-        # switching it on once at load time (as aria's wrapper does) would miss calls on other
-        # threads and leak into anything else this process runs.
-        with torch.autocast("cuda", dtype=torch.bfloat16, enabled=self.cuda):
-            state = self.processor.set_image(image)   # runs the image encoder
-            self.processor.reset_all_prompts(state)
-            return self.processor.set_text_prompt(state=state, prompt=prompt)   # text + masks
+        state = self.processor.set_image(image)   # runs the image encoder
+        self.processor.reset_all_prompts(state)
+        return self.processor.set_text_prompt(state=state, prompt=prompt)   # text + masks
 
 
 def another_server_running(node: Node, timeout_sec: float = 3.0, name: str = NODE_NAME) -> bool:
