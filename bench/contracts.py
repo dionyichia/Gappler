@@ -17,7 +17,7 @@ when one moves.
 Keyed by contract, not by file
 ------------------------------
 Locations are recorded but are NOT part of the pass/fail comparison, because
-the planned refactor moves nearly every file. Moving `sam3_ros_node.py` into a
+the planned refactor moves nearly every file. Moving `dummy_mask_publisher.py` into a
 new package is fine. Moving the topic it publishes is not.
 
 Usage

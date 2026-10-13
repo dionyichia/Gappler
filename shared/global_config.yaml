@@ -35,12 +35,12 @@
 
       # ---- What to grasp: segmentation output on the wrist camera image
       # grasp: grasp_segmentation_client (the one publisher, T2.1). Stand-ins, never alongside it:
-      #   dummy_mask_publisher, tools/sam3_ros_node -> grasp: anygrasp_node, anygrasp_detection_node, grasp_viz
+      #   dummy_mask_publisher -> grasp: anygrasp_node, anygrasp_detection_node, grasp_viz
       wrist_camera_object_mask: "/camera/sam/mask"
       # grasp: grasp_segmentation_client (the one publisher, T2.1). Stand-ins, never alongside it:
-      #   dummy_mask_publisher, tools/sam3_ros_node -> grasp: grasp_state_machine (any message starts a grasp cycle)
+      #   dummy_mask_publisher -> grasp: grasp_state_machine (any message starts a grasp cycle)
       object_centroid_2d: "/object_centroid_2d"
-      # grasp: grasp_segmentation_client (tools/sam3_ros_node is a stand-in) -> grasp: grasp_viz
+      # grasp: grasp_segmentation_client -> grasp: grasp_viz
       object_centroid_viz: "/object_centroid"
       # aria: aria_segmentation_client -> grasp: grasp_segmentation_client. What to look for
       #   (segmentation_interfaces/msg/Target). An empty prompt stops segmentation.
@@ -91,7 +91,7 @@
       #          grasp/tools/record_wrist_camera.sh
       serial: "243222074878"   # D435i on the arm's wrist, Link6. Confirmed at the robot, T1.4
       # Metres per depth unit in the aligned depth image (the driver publishes millimetres).
-      # read by: grasp: tools/sam3_ros_node, anygrasp_node, anygrasp_detection_node, dummy_mask_publisher.
+      # read by: grasp: anygrasp_node, anygrasp_detection_node, dummy_mask_publisher.
       #          aria: object_recognition_pipeline
       depth_scale_m: 0.001
     mobile_base_camera:

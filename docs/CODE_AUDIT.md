@@ -646,6 +646,8 @@ Any encoding that is not exactly `rgb8` or `mono8` — `bgr8`, `rgba8`, `bgra8` 
 ### G3. 🟡 `sam3_ros_node.py:108-110` parses RGB without checking `encoding` at all, and reshapes
 with `-1` so a 4-channel image is accepted silently. Channel order into SAM 3 is unverified.
 
+> **Resolved 2026-10-13 (T2.7) `[code]`.** `sam3_ros_node.py` is deleted. Its replacement, the segmentation service (T2.1), is a separate review. Record kept.
+
 ### G4. 🟡 Masks carry 0/1, not 0/255
 
 `sam3_ros_node.py:135` and `dummy_mask_publisher.py:41` both publish `mono8` images whose "true"
@@ -660,6 +662,8 @@ trap on the exact topic you would open RViz to inspect.
 
 `grasp_state_machine.cpp` back-projects the centroid pixel using that `z` as if it were the depth of
 that pixel. For a tilted, large, or leaky mask the resulting 3D point is not on the object surface.
+
+> **Resolved 2026-10-13 (T2.7) `[code]`.** `sam3_ros_node.py` is deleted. Its replacement, the segmentation service (T2.1), is a separate review. Record kept.
 Same code, same mismatch, in `object_recognition_pipeline.py:440-446`.
 
 ### G6. 🟡 No minimum-point guard before AnyGrasp
@@ -773,6 +777,7 @@ noticed roughly never. `ros2_robot_ws/src/main.py:165` polls every 2 s.
 - **J11** `sam3_ros_node.py` has **no `/pipeline_state` gate at all** — full SAM 3 inference on every
   synchronised frame pair, forever, unconditionally. This is `NEXT_STEPS.md` §2.1, restated here
   because it is the most expensive thing in the system and the gate already exists next door.
+  Resolved 2026-10-13 (T2.7): the file is deleted.
 - **J12** Three nodes consume `/pipeline_state` three different ways:
   `anygrasp_detection_node.py` gates inverted (A1), `anygrasp_node.py:199` has its gate **commented
   out** so it runs unconditionally, `grasp_viz.py:65` tracks it for display only.
@@ -984,3 +989,4 @@ publishers racing on the same three topics.
 | 2026-10-06 | Claude (Opus 5.5) + Dion | K1 resolved by T0.14: every owned channel name is in a config file. Note added at the top of K1, record kept. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | C2 fixed and J1 fixed by PR #57 (`T1.24`, `T2.10`). Notes added, records kept. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | C3 fixed in the PR #57 review. Note added, record kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | G3, G5 and J11 resolved by T2.7: `sam3_ros_node.py` deleted. Notes added, records kept. |

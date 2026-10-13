@@ -9,7 +9,7 @@ per subsystem with a section per node. config() merges them, global first.
 
     from gappler_common import ROOT, config, path
     config()["topics"]["object_centroid_2d"]           -> "/object_centroid_2d" (global only)
-    config("grasp", "sam3_ros_node")["confidence"]     -> global + grasp + that node's section
+    config("grasp", "grasp_segmentation_client")       -> global + grasp + that node's section
     path("openvins_ws")                                -> the OpenVINS folder, ~ expanded
 """
 
@@ -106,8 +106,8 @@ if __name__ == "__main__":  # self-check: python3 shared/gappler_common.py
     assert config()["topics"]["object_centroid_2d"] == "/object_centroid_2d"
     assert "imu" not in config()["topics"]  # aria-only, so not in global
     assert config("aria")["topics"]["imu"] == "/aria/imu"
-    assert config("grasp", "sam3_ros_node")["confidence"] == 0.5
-    assert "confidence" not in config("grasp")  # node sections only when the node is named
+    assert config("grasp", "grasp_segmentation_client")["default_prompt"] == "box"
+    assert "default_prompt" not in config("grasp")  # node sections only when the node is named
     for sub in ("aria", "arm", "grasp", "nav"):  # every file loads, no key set twice
         config(sub)
     try:

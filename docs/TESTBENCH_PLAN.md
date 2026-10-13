@@ -330,7 +330,7 @@ in the repo builds the env from nothing and AnyGrasp prints `license passed` on 
 >   `243222074878`), records colour, aligned depth and their camera info to a bag, then stops the driver.
 >   The recording is `assets/recordings/wrist_camera/` (217 MB, gitignored, checksum in `ASSETS.md`).
 >   It refuses to start if any RealSense driver is already running, since the box is shared.
-> - `./bench/anygrasp_replay.sh` (L4) plays that bag on a loop through `sam3_ros_node` and
+> - `./bench/anygrasp_replay.sh` (L4) plays that bag on a loop through `sam3_ros_node` (the segmentation service and grasp client since T2.1, the node deleted in T2.7) and
 >   `anygrasp_detection_node`, and publishes `/pipeline_state` as the state machine would: EXECUTING
 >   for 30 s, then IDLE for 30 s. Result: segmentation PASS (119 masks, 4.1 % of the image), detection
 >   PASS (154 candidate sets, 2.5 per second, top score 0.466), **A1 XFAIL**: all 154 sets came in IDLE,
