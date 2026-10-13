@@ -296,6 +296,13 @@ string, given a loaded model.
 undefined behaviour, not merely a race. Symptoms would be lost wakeups and hangs that come and go
 with timing and optimisation level.
 
+**Resolved 2026-10-13 (`T1.25`):** read against the standard, this is not undefined behaviour here.
+The rule only covers waiters that wait at the same time, and only the worker thread ever waits on
+`queue_cv_`, so the two waits never overlap. The comment at the IDLE wait now says so. The real
+defect was a lost wake-up at shutdown: the destructor set `shutdown_` under `queue_mutex_` only,
+so the IDLE wait on `centroid_mutex_` could miss it and never return. The destructor now takes both
+locks. Untested directly, because C6 stops the destructor running at all.
+
 ### C2. The centroid is read without its lock in the loop that decides to close in
 
 `grasp_state_machine.cpp:633-641`
@@ -689,7 +696,7 @@ connects fine, zero feedback"). Instead of a diagnosable hang, you get a segfaul
 | Where | Problem |
 |---|---|
 | `mtc_planner.cpp:66` | `task.execute(...)` result discarded; `moveToPose` returns `true` unconditionally. Currently unreachable (A3), but it is the "real" grasp path. |
-| `mtc_planner.cpp:82, 96` | `move_group_->execute(plan)` result discarded in `moveToHome` / `moveToReturn`. `homeWithRetry` retries on **planning** failure only — an execution failure is reported as success and the state machine proceeds believing the arm is home. |
+| `mtc_planner.cpp:82, 96` | `move_group_->execute(plan)` result discarded in `moveToHome` / `moveToReturn`. `homeWithRetry` retries on **planning** failure only — an execution failure is reported as success and the state machine proceeds believing the arm is home. **Observed on the real arm 2026-10-13** (`T1.24` 3c): started before `rm_driver` had connected, the home move aborted and the state machine published IDLE with the arm straight up. Fix in `T1.26`. |
 
 **Correction to existing docs:** `ORIENTATION.md` §8.2 lists a third self-annotated bug —
 *"706 — LOGICAL ERROR: return value of moveCartesianStep ignored"*. **The comment at `:706` is
@@ -984,3 +991,5 @@ publishers racing on the same three topics.
 | 2026-10-06 | Claude (Opus 5.5) + Dion | K1 resolved by T0.14: every owned channel name is in a config file. Note added at the top of K1, record kept. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | C2 fixed and J1 fixed by PR #57 (`T1.24`, `T2.10`). Notes added, records kept. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | C3 fixed in the PR #57 review. Note added, record kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | C1 resolved in `T1.25`: not undefined behaviour with one waiting thread, the shutdown lost wake-up fixed. Note added, record kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | Execute result discarded in `moveToHome` (line 699): observed on the real arm in `T1.24` 3c, fix is `T1.26`. |

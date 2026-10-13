@@ -6,6 +6,7 @@
 MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr &node)
     : node_(node)
 {
+  step_settle_s_ = node_->get_parameter("step_settle_s").as_double();
   mtc_node_ = std::make_shared<rclcpp::Node>(
       "mtc_planner_node",
       rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true));
@@ -107,6 +108,9 @@ bool MtcPlanner::moveCartesianStep(const geometry_msgs::msg::Pose &goal_pose_bas
 {
   move_group_->setMaxVelocityScalingFactor(0.1);
   move_group_->setMaxAccelerationScalingFactor(0.1);
+  // The real arm is still settling just after the last step reports done, so a step planned from
+  // that moment starts off where the arm really is and MoveIt rejects it (T1.24 3c, 2026-10-13)
+  std::this_thread::sleep_for(std::chrono::duration<double>(step_settle_s_));
   move_group_->setStartStateToCurrentState();
   std::vector<geometry_msgs::msg::Pose> waypoints = {goal_pose_base};
   moveit_msgs::msg::RobotTrajectory trajectory;

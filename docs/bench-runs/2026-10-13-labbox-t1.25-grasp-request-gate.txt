@@ -1,0 +1,55 @@
+T1.25 grasp request gate on the lab box, simulated arm
+Date: 2026-10-13   Machine: lab box (iot22-Computer), ~/rcp-Gappler-t1.25 (own clone)   Branch: t1.25-grasp-request-gate
+Run by: Claude Opus 5.5 for Dion. Box free before the run: no ROS, camera or bench processes,
+GPU used by remote desktop only (520 MiB). No camera, no arm. Channel 95, localhost only.
+
+RESULT: PASS. Uncommitted changes on top of 49d80f7 (dev with PR #57), copied over with rsync.
+
+Changes under test:
+  - grasp_state_machine.cpp: /manipulator/grasp_request (std_msgs/Empty) subscriber. Centroids
+    count only from a request until EXECUTING takes its snapshot. A request lapses after
+    grasp_request_timeout_s (10 s) with no centroid, and is refused outside IDLE. The destructor
+    sets shutdown_ under both mutexes (CODE_AUDIT C1).
+  - bench/nodes/test_state_machine_sim.py: five new checks, and "object back" now sends a request.
+
+1. ./build.sh: 25 packages, PASS (23 min 15 s, a fresh clone). No warnings from grasp_state_machine.cpp.
+
+2. BENCH_DOMAIN=95 ./bench/state_machine_sim.sh: PASS
+     pipeline_state sequence: IDLE -> SELECTING -> IDLE -> SELECTING -> EXECUTING
+     [PASS ] centroids with no request are ignored, stays IDLE   5 s of centroids, no SELECTING
+     [PASS ] request + centroid -> re-homes, then SELECTING       seen
+     [PASS ] a request during the approach is refused as busy     'busy' logged
+     [PASS ] centroids stop -> approach ends, back to IDLE        'object lost' logged, IDLE seen
+     [PASS ] a request with no centroid lapses, stays IDLE        'lapsed' logged, no SELECTING
+     [PASS ] object back + new request -> SELECTING again         seen
+     [PASS ] object near -> EXECUTING                             seen
+     [PASS ] centroids after the EXECUTING snapshot are ignored   'Centroid ignored' after EXECUTING
+     [PASS ] gripper open, final approach, gripper close, return pose, return_to_user
+     [XFAIL] after a grasp: stays EXECUTING (CODE_AUDIT C7, known, T1.14)
+     [INFO ] node exits within 15 s of SIGINT                     exited
+     launch log: log/bench_state_machine_2026-10-13_1348.txt
+
+   The gate in the state machine's own log (epoch seconds, trimmed):
+     512.43  State -> IDLE
+     517.48  Centroid ignored: no grasp request open
+     522.44  Grasp request: accepting centroids for 10.0s
+     524.84  State -> SELECTING
+     524.84  Grasp request ignored: busy, not waiting in IDLE
+     527.81  SELECTING: centroid 2.73s old (limit 2.00s), object lost, returning to IDLE
+     527.82  Grasp request: accepting centroids for 10.0s      (no centroids sent)
+     537.82  Grasp request lapsed: no centroid within 10.0s    (10.0 s later)
+     537.88  Centroid ignored: no grasp request open           (gate closed again)
+     539.83  Grasp request: accepting centroids for 10.0s
+     542.18  State -> SELECTING
+     543.20  State -> EXECUTING
+     543.28  Centroid ignored: no grasp request open           (78 ms after EXECUTING)
+
+3. ./quickstart_terminals.sh grasp --print: the last pane is
+     typed grasp  ros2 topic pub --once /manipulator/grasp_request std_msgs/msg/Empty
+
+On the Mac: ./bench/run.sh quick PASS before and after (L1 after the contracts.py snapshot for
+the new channel, CHANNEL_CONTRACT H10a).
+
+Not run: anything on the real arm, live SAM 3 with the gate.
+Not tested directly: the shutdown wake-up fix. C6 keeps the destructor from running at all, so no
+test can reach it until T1.9.

@@ -1,0 +1,80 @@
+T1.24 step 3c: the approach with live SAM 3 on the real arm, and the first grasp
+2026-10-13, lab box (rcp2026@100.98.10.50). Dion at the robot with a hand on the power button.
+Claude Opus 5.5 set up and read tmux session t1_24_3c over SSH. Domain 91, localhost only.
+Pane logs: /tmp/t1_24_3c_2026-10-13/ on the box.
+
+RESULT: PASS. Attempt 4 approached the box, closed on it, lifted it and brought it back to HOME.
+
+Code
+  Camera, SAM 3 service, grasp client, arm driver and MoveIt: ~/rcp-Gappler on dev e19d58a
+  (PR #62 merged, min_valid_depth_fraction 0.5).
+  State machine: ~/rcp-Gappler-t1.25, branch t1.25-grasp-request-gate, uncommitted. That is the
+  T1.25 gate plus the two fixes below, made during the session. Started by Dion in its own pane.
+  Before the session: the PR #62 depth fix passed at the box, arm off
+  (2026-10-13-labbox-t1.24-depth-fix-check.txt).
+
+Setup
+  Window perception: camera 640x480x15, segmentation service, grasp client (prompt 'box'), z echo,
+  rqt_image_view on the box screen. Window arm: estop.py, arm_bringup, /pipeline_state echo,
+  state machine, the grasp request, later a /rm_driver/set_gripper_position_result echo.
+  Everything that moves the arm was typed, not sent. Dion pressed Enter.
+
+Attempt 0, 15:47. No motion. State machine started before the driver had connected.
+  rm_driver "Connect faile" for about 80 s after start (the arm was still booting, as in T1.6),
+  connected 15:49:06. The state machine's home move was planned, its execution aborted, and it
+  still published IDLE with the arm straight up (all joints 0).
+  Cause [code]: moveToHome ignores the result of execute (mtc_planner.cpp:82, CODE_AUDIT line 699).
+  Now observed on the real arm. Restarted the state machine after the driver was up: home
+  reached (joints 0, 0, 0.785, 0, 1.570, 1.570, within 0.001 rad of HOME), IDLE.
+  The gate held on the real arm: "Centroid ignored: no grasp request open" every 5 s, arm still.
+
+Attempt 1, 15:51:57. One approach step, then IDLE.
+  Request accepted, re-home, SELECTING, first Cartesian step done. The second, 0.1 s later, was
+  rejected by MoveIt: "Invalid Trajectory: start point deviates from current robot state more
+  than 0.01". The arm was still settling [inferred]. Never seen on the simulated arm.
+  Fixes: step_settle_s 0.5 in grasp_config.yaml, a wait before each Cartesian step
+  (mtc_planner.cpp moveCartesianStep). And trajectory_execution.allowed_start_tolerance 0.02 set
+  on the running move_group with ros2 param set (was undeclared, default 0.01). Whether MoveIt
+  applies that at run time is [unverified].
+
+Attempt 2, 16:06:06. Eleven steps, then IDLE.
+  11 approach steps about 1.4 s apart, z from 0.389 to 0.187. Step 12: "Cartesian path only 33%
+  complete". The gripper tip (grasp_frame) was at z 0.215 in base_link. The virtual table in
+  addSafetyWalls had its top at 0.195 (centre 0.18, 3 cm thick), hard-coded. The real table is
+  0.12 m above the arm base, 0.68 m from the floor (Dion, tape). So the step ran into a table 7.5 cm
+  above the real one [inferred].
+  Fix: table_top_z_m 0.12 in grasp_config.yaml, the table box now sits just under it.
+
+Attempt 3, 16:15:07. Full cycle, missed the box.
+  11 steps, "object at 0.177m", EXECUTING, gripper open, final step, gripper close, return to HOME.
+  The jaws closed beside the box. Dion: the box was not in line with the gripper, so the jaws did
+  not meet its sides.
+
+Attempt 4, 16:18:29. Full cycle, grasped. PASS.
+  Request to SELECTING 1.7 s. SELECTING 16.5 s, z 0.177 m, EXECUTING. Gripper open, final step,
+  gripper close at 16:18:53. Box lifted and carried back to HOME in the jaws.
+
+Release, by hand (nothing publishes /manipulator/release yet, T1.14 and T2.6)
+  ros2 topic pub --once /rm_driver/set_gripper_position_cmd ... position 1000 sent by Dion. First
+  try: no effect. It printed no "Waiting for at least 1 matching subscription", so it published
+  before it had matched the driver and the message was lost [inferred]. Second try with -w 1:
+  /rm_driver/set_gripper_position_result data: true, jaws opened, box released.
+
+Findings for later (task tree T1.26)
+  1. moveToHome and moveToReturn ignore the execute result (CODE_AUDIT line 699), observed.
+  2. Nothing stops the state machine starting before rm_driver has connected.
+  3. allowed_start_tolerance is set only at run time. Put it in the MoveIt config if it is needed.
+  4. The typed gripper command in quickstart_terminals.sh gripper has no -w 1.
+
+Arm back to rest, 16:4x, session t1_24_rest
+  rm_driver only, then /rm_driver/movej_cmd one joint at a time from HOME (j6, j5, j3 to 0), speed 5,
+  block false, -w 1, sent by Dion (the T1.7 procedure in reverse). Ended at all joints within
+  0.0001 rad of 0. Arm then powered off.
+
+Simulated arm with both fixes (step_settle_s, table_top_z_m), ~/rcp-Gappler-t1.25, domain 95,
+arm off: BENCH_DOMAIN=95 ./bench/state_machine_sim.sh PASS, 13 PASS, C7 XFAIL as before.
+  launch log: log/bench_state_machine_2026-10-13_1646.txt
+
+After
+  All panes stopped with Ctrl-C, session t1_24_3c closed (Dion's request). Camera, GPU and arm
+  driver free. Other sessions (1, 6, gh-runner, t15-bringup) untouched.
