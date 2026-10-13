@@ -1,0 +1,17 @@
+source aria/aria_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1 && python aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py    
+rcp2026@iot22-Computer:~/rcp-Gappler$ source aria/aria_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1 && python aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py
+[INFO] [1791887767.542025003] [aria_segmentation_client]: Aria segmentation client ready: /aria/audio/prompt -> /grasp/target
+[INFO] [1791891338.464471187] [aria_segmentation_client]: Target: 'box', grasp requested    
+[INFO] [1791893194.225550287] [aria_segmentation_client]: Target: 'box', grasp requested    
+
+
+
+
+
+
+
+
+
+
+
+

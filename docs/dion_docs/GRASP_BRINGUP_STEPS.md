@@ -12,56 +12,58 @@ authoritative for status. This file holds the reasoning, the commands and the pa
 [`T1.7_FIRST_COMMANDED_MOTION.md`](T1.7_FIRST_COMMANDED_MOTION.md) for how the first motion was
 sent. This file does not repeat them.
 
-## Start here, 2026-10-13 (cold start)
+## Start here, 2026-10-13 evening (cold start)
 
-**Where we are.** Steps 1, 2 and 3 pass. **3c passed on 2026-10-13: the real arm approached the
-box with live SAM 3, closed on it, lifted it and brought it back to HOME** (fourth attempt,
-[`../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt`](../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt)).
-The 3b too-close depth fix (PR #62) is merged and passed at the box first.
+**Where we are.** Steps 1 to 4 pass. **Step 4 passed on 2026-10-13: a grasp started by voice.**
+"Pick up the box" from the recording became the target, the grasp request, SAM 3, the gate, the
+approach and a grasp, back to HOME with the box in the jaws
+([`../bench-runs/2026-10-13-labbox-t1.11-step4-voice-grasp.txt`](../bench-runs/2026-10-13-labbox-t1.11-step4-voice-grasp.txt)).
 
-**Merged into `dev` (`dec78c0`):** the T1.25 gate (#65) and the two 3c fixes (#67), a 0.5 s settle
-wait before each approach step (`step_settle_s`) and the virtual table at the measured 0.12 m
-(`table_top_z_m`). `~/rcp-Gappler` is rebuilt on it, so the normal `./quickstart_terminals.sh
-grasp` layout runs the gated state machine.
+**Not merged yet: the step 4 config change.** `grasp/grasp_config.yaml` stops the approach at
+0.21 m with 2 cm steps and a 12 cm final step (was 0.18, 4 cm, 10 cm), because the wrist camera
+gives no depth closer than about 0.182 m. It is uncommitted in `~/rcp-Gappler` and on Dion's Mac,
+for branch `t1.11-stop-before-depth-blind`. Without it every approach stops short. Check
+`git diff grasp/grasp_config.yaml` in `~/rcp-Gappler` before a session.
 
-**Since then (2026-10-13):** T2.6 merged (#64). Voice now sends the grasp request: the aria client
-sends `/manipulator/grasp_request` and the target with every object word, and "release" sends
-`/manipulator/release`. T2.7 merged (#63): `sam3_ros_node.py` is gone. `dev` is at `a376f9b`.
-Both are code outside the arm's C++, so no rebuild is needed for them, only `git pull`.
+**Next, at the robot: step 5 (T1.12), five attempts with the success rate.** Same setup as step 4:
+1. `./quickstart_terminals.sh grasp` in `~/rcp-Gappler`. Power the arm on about a minute before,
+   start the state machine only after the driver has connected.
+2. Two more panes (Ctrl-b %), each set up with
+   `source aria/aria_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1`:
+   the aria client, left running,
+   `python aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py`, and per
+   attempt the replay, `python aria/tools/replay_audio_file_to_prompt.py assets/recordings/voice_commands/pick_up_box_command.wav`.
+   Stop the replay only with Ctrl-C.
+3. Per attempt: restart the state machine (one-shot `return;`), wait for `IDLE`, replay. Record
+   grasped or not.
+4. Release by hand with three messages, not `--once`, which was lost twice on 2026-10-13:
+   `ros2 topic pub -w 1 -t 3 -r 2 /rm_driver/set_gripper_position_cmd rm_ros_interfaces/msg/Gripperset "{position: 1000, block: false, timeout: 0}"`.
 
-**Next, at the robot: step 4 (T1.11), more grasps.** Same setup as 3c, from `~/rcp-Gappler`.
-Power the arm on about a minute before the driver pane, and start the state machine only after the
-driver prints "RM_65_driver is running" (attempt 0 of 3c, guard owed in T1.26). One request per
-attempt, restart the state machine between attempts. **Start each attempt by voice, not by hand.**
-The quickstart `grasp` layout does not start the aria client (only `aria` and `full` do), so open
-two more panes in the session (Ctrl-b %), each set up with
-`source aria/aria_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1`:
-1. the aria client, left running: `python aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py`
-2. per attempt: `python aria/tools/replay_audio_file_to_prompt.py assets/recordings/voice_commands/pick_up_box_command.wav`.
-   Whisper and the LLM load first (about 10 to 20 s `[inferred]`), then the word goes out about 1 s after the
-   recording ends. Stop it only with Ctrl-C, never `kill` or `timeout`, or its worker stays on the GPU.
-
-The client turns "pick up the box" into the target `box` and one grasp request. This is the one
-join never tested together: voice, then SAM 3, then the gate, then the arm. If it fails, fall back
-to the typed request to tell which side broke. Replay `release_command.wav` to open the gripper,
-but only after T1.14: until then the state machine ignores release, so open by hand. Put the box in line with the gripper: attempt 3
-missed because it was not. Release by hand with `-w 1` (see 3c result). Before an unattended run,
-T1.26 (arm motion guards found in 3c).
+**Things to know from step 4:**
+- The grip lands about 3 cm short of the box centre: the camera sees only the front face. Accepted,
+  fixed by AnyGrasp in step 7 (T1.17).
+- The `/pipeline_state` echo pane exits at start. Restart it as
+  `ros2 topic echo /pipeline_state std_msgs/msg/String` (T1.26).
+- The grasp client prints "Glasses client found: default prompt dropped" once the aria client is
+  up. From then on only voice sets the target.
+- The CPU ran at 90 to 93 C, clamped to 800 MHz. The replay takes about a minute to load, not 10 to
+  20 s. Check the fan.
+- The `grasp` layout plus the extra panes is a 4 by 3 grid. Name panes by position when guiding
+  someone, not by tmux id: on 2026-10-13 that mix-up sent two typed requests instead of voice.
 
 **Before touching the box:**
 - Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.98.10.50`. `100.87.133.60` has been
   offline since mid-September.
-- `git log -1` in `~/rcp-Gappler`: expect `dev` at `a376f9b` (PR #64) or later.
+- `git log -1` in `~/rcp-Gappler`: `dev` at `0bf552e` or later.
 - **Never run anything from a scratch clone whose env files can build.** On 2026-10-13 a test in a `/tmp` clone sourced `grasp/grasp_env.sh` in six panes. Each found no AnyGrasp venv and started compiling it, the load hit 54 and the box had to be restarted ([`../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt`](../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt)). Run from `~/rcp-Gappler`.
 - After a restart, the CI runner needs starting again (tmux `gh-runner`).
 - Check who else is on it: `ps -eo pid,user,etime,args | grep -iE "realsense|rs_launch|ros2 launch|bench/run.sh|Runner.Worker"`,
   `nvidia-smi`, `fuser /dev/video*`, `tmux ls`.
-- The box CPU was overheating on 2026-10-12: 89 C at 12% load, clamped to 0.8 GHz. It slows
-  SAM 3 from 0.27 to about 0.5 s a frame. Worth checking the fan before 3c.
+- `./bench/state_machine_sim.sh` refuses while any `rm_driver` runs. Run it before or after the
+  robot session.
 
-**Wrist camera:** `./quickstart_terminals.sh grasp` now starts it at `640x480x15` with no point
-cloud (T2.11, 2026-10-13), so no need to start it by hand for 3b. The driver default, 1280x720,
-sends frames again but makes SAM 3 about 40 % slower a call.
+**Wrist camera:** `./quickstart_terminals.sh grasp` starts it at `640x480x15` with no point cloud
+(T2.11). At this resolution depth stops at about 0.182 m.
 
 ---
 
@@ -584,7 +586,23 @@ The gate held on the real arm: "Centroid ignored" every 5 s, no motion until a r
 
 Same setup as step 3. Now we judge the grasp: is the box in the gripper after the return? Restart
 the state machine between attempts (the one-shot `return;`). Record each attempt: grasped or not,
-and where it went wrong if not.
+and where it went wrong if not. Start each attempt by voice.
+
+### Result, 2026-10-13: PASS, a grasp started by voice
+
+Full record: [`../bench-runs/2026-10-13-labbox-t1.11-step4-voice-grasp.txt`](../bench-runs/2026-10-13-labbox-t1.11-step4-voice-grasp.txt).
+
+| Attempt | Started by | What happened | Fix |
+|---|---|---|---|
+| 1 | voice | Voice to target to request to SELECTING worked. Approach ended short: "centroid 2.78s old, object lost" | below |
+| 2 | typed (pane mix-up) | Same. Depth fell to 0.182 m, then the camera gave none. The stop was 0.18 m | Config: steps 0.04 to 0.02 m, stop 0.18 to 0.21 m, final step 0.10 to 0.12 m |
+| 3 | typed | "object at 0.198m", grasped, back to HOME | |
+| 4 | **voice** | "object at 0.206m", grasped, back to HOME | PASS |
+
+The grip lands about 3 cm short of the box centre, along the approach: the mask and the depth
+are the box's front face, so the simple path cannot know how deep the box is. Accepted. Step 7
+(AnyGrasp, T1.17) uses the point cloud. The simulated arm passes with the new config (13 PASS,
+C7 XFAIL).
 
 ---
 
@@ -650,3 +668,4 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-13 | Claude Opus 5.5 + Dion | 3c PASS, the first grasp on the real arm. Start here rewritten for step 4. 3c result table, release with `-w 1`. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | After #65 and #67 merged: Start here and step 3c run from `~/rcp-Gappler` and the quickstart grasp layout. The separate `~/rcp-Gappler-t1.25` build is deleted. Start the state machine after the driver is up. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | After T2.6 (#64) and T2.7 (#63): Start here says voice sends the grasp request, step 4 starts each attempt with the `pick_up_box_command.wav` replay, the signals table names the publishers. Box restart incident and the runner restart noted. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | Step 4 (T1.11) PASS, attempt 4 started by voice. Result table, the depth blind zone and the config change (uncommitted, branch t1.11-stop-before-depth-blind), the 3 cm front-face bias. Start here rewritten for step 5: release with `-t 3 -r 2`, the `/pipeline_state` type, pane names by position. |

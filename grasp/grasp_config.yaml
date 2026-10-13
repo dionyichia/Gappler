@@ -59,10 +59,19 @@ grasp_visualizer:
 # only with a plan to test on the simulated arm first (./bench/state_machine_sim.sh).
 grasp_state_machine:
   ros__parameters:
-    approach_step_m: 0.04            # step towards the object while approaching
-    approach_step_final_m: 0.10      # step in the final simple execute
-    max_approach_steps: 50
-    execute_depth_thresh_m: 0.18     # stop approaching when the object is this close
+    # The approach steps toward the object, reading its depth from the wrist camera each step,
+    # and stops once the depth is under execute_depth_thresh_m. Then the gripper opens and
+    # the arm makes one blind step of approach_step_final_m and closes.
+    # The wrist camera gives no depth closer than about 0.182 m (640x480, measured 2026-10-13,
+    # T1.11). So the stop must sit above that by at least one step, or the last reading comes
+    # from inside the blind zone, the centroid goes stale and the approach ends short.
+    # Was 0.04 / 0.18 / 0.10: twice in a row the camera went blind at 0.182 m, 2 mm before the stop.
+    approach_step_m: 0.02            # step towards the object while approaching
+    # Final blind step. The stop reading is 0.19 to 0.21 m, so the jaws end 0.07 to 0.09 m from
+    # the camera's view of the object. The 3c grasp (T1.24, 2026-10-13) ended at 0.077 m
+    approach_step_final_m: 0.12
+    max_approach_steps: 50           # 50 x 0.02 m = 1 m of approach, the object starts about 0.46 m away
+    execute_depth_thresh_m: 0.21     # stop approaching when the object is this close
     # End the approach if the newest centroid is older than this. Age counts from the camera
     # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
     # frame (measured 2026-10-12, T1.24 3b)
