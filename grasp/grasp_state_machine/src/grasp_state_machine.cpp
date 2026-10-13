@@ -130,6 +130,7 @@ private:
     EXECUTE_DEPTH_THRESH_M = param("execute_depth_thresh_m").as_double();
     CENTROID_MAX_AGE_S = param("centroid_max_age_s").as_double();
     GRASP_REQUEST_TIMEOUT_S = param("grasp_request_timeout_s").as_double();
+    TABLE_TOP_Z_M = param("table_top_z_m").as_double();
     FINAL_EXEC_THRESH_M = param("final_exec_thresh_m").as_double();
     CENTROID_TARGET_OFFSET_X = param("centroid_target_offset_x_px").as_double();
     CENTROID_TARGET_OFFSET_Y = param("centroid_target_offset_y_px").as_double();
@@ -352,7 +353,7 @@ private:
         {"+x_wall", 0.15 + T / 2, 0.0, 0.5, T, 0.60 + T, 1.0},
         {"+y_wall", 0.0, 0.30 + T / 2, 0.5, 2.0, T, 1.0},
         {"-y_wall", 0.0, -0.30 - T / 2, 0.5, 2.0, T, 1.0},
-        {"table", -0.425, 0.0, 0.18, 0.75, 0.75, T},
+        {"table", -0.425, 0.0, TABLE_TOP_Z_M - T / 2, 0.75, 0.75, T},
     };
 
     std::vector<moveit_msgs::msg::CollisionObject> objs;
@@ -887,6 +888,7 @@ private:
   double EXECUTE_DEPTH_THRESH_M;
   double CENTROID_MAX_AGE_S;
   double GRASP_REQUEST_TIMEOUT_S;
+  double TABLE_TOP_Z_M;
   double FINAL_EXEC_THRESH_M;
   double CENTROID_TARGET_OFFSET_X;
   double CENTROID_TARGET_OFFSET_Y;

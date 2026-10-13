@@ -14,18 +14,25 @@ sent. This file does not repeat them.
 
 ## Start here, 2026-10-13 (cold start)
 
-**Where we are.** Steps 1, 2, 3a and 3b pass. 3b finished on 2026-10-13 with the box and a
-tape: depth is within 2 cm at 0.25, 0.4 and 0.6 m, and valid down to 0.157 m. It also found that
-a box closer than about 0.157 m reads 1.26 m instead of nothing, which could walk the arm into the
-box in 3c. Fix on branch `t1.24-min-valid-depth` (see "Result, 2026-10-13" under step 3b).
+**Where we are.** Steps 1, 2 and 3 pass. **3c passed on 2026-10-13: the real arm approached the
+box with live SAM 3, closed on it, lifted it and brought it back to HOME** (fourth attempt,
+[`../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt`](../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt)).
+The 3b too-close depth fix (PR #62) is merged and passed at the box first.
 
-**Next, at the robot:** check the fix, arm off, same setup as 3b. Slide the box in to the lens:
-z should still arrive below 0.18 m, then stop instead of jumping to 1.26 m. **Then 3c.**
+**Not merged yet:** the state machine ran from `~/rcp-Gappler-t1.25` (branch
+`t1.25-grasp-request-gate`): the T1.25 gate plus two 3c fixes, a 0.5 s settle wait before each
+approach step (`step_settle_s`) and the virtual table at the measured 0.12 m (`table_top_z_m`).
+`~/rcp-Gappler` has none of these. Run step 4 the same way until that branch merges.
+
+**Next, at the robot: step 4 (T1.11), more grasps.** Same setup as 3c, one request per attempt,
+restart the state machine between attempts. Put the box in line with the gripper: attempt 3
+missed because it was not. Release by hand with `-w 1` (see 3c result). Before an unattended run,
+T1.26 (arm motion guards found in 3c).
 
 **Before touching the box:**
 - Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.98.10.50`. `100.87.133.60` has been
   offline since mid-September.
-- `git log -1` in `~/rcp-Gappler`: expect `dev` with PR #57 merged. Rebuild with `./build.sh`.
+- `git log -1` in `~/rcp-Gappler`: expect `dev` at `e19d58a` (PR #62) or later.
 - Check who else is on it: `ps -eo pid,user,etime,args | grep -iE "realsense|rs_launch|ros2 launch|bench/run.sh|Runner.Worker"`,
   `nvidia-smi`, `fuser /dev/video*`, `tmux ls`.
 - The box CPU was overheating on 2026-10-12: 89 C at 12% load, clamped to 0.8 GHz. It slows
@@ -545,7 +552,23 @@ gripper close, back to HOME, `IDLE` then `SELECTING` then `EXECUTING` on `/pipel
 fast. If SAM 3 loses the box, the stale check should end the approach. Do not count on it the first
 time.
 
-**After:** the gripper stays closed. Open it with the step 1 command.
+**After:** the gripper stays closed. Open it with the step 1 command, with `-w 1` so it waits for
+the driver: `ros2 topic pub --once -w 1 /rm_driver/set_gripper_position_cmd rm_ros_interfaces/msg/Gripperset "{position: 1000, block: false, timeout: 0}"`.
+Without `-w 1` the first try on 2026-10-13 was lost.
+
+### Result, 2026-10-13: PASS on the fourth attempt
+
+Full record: [`../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt`](../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt).
+
+| Attempt | What happened | Fix |
+|---|---|---|
+| 0 | State machine started before the driver connected (about 80 s after power-on). Home aborted, IDLE anyway, arm straight up | Restart once the driver says "RM_65_driver is running". Guard in T1.26 |
+| 1 | Second approach step rejected: "start point deviates from current robot state more than 0.01" | `step_settle_s: 0.5` wait before each step. `allowed_start_tolerance` 0.02 set at run time |
+| 2 | 11 steps, z 0.389 to 0.187 m, then "Cartesian path only 33%": the virtual table top was 0.195 m, the real one 0.12 m | `table_top_z_m: 0.12` |
+| 3 | Full cycle, the jaws closed beside the box: not in line with the gripper | Place the box in line |
+| 4 | Full cycle: approached, closed on the box, lifted it, back to HOME | PASS |
+
+The gate held on the real arm: "Centroid ignored" every 5 s, no motion until a request.
 
 ---
 
@@ -616,3 +639,4 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-13 | Claude Opus 5.5 + Dion | 3b PASS with the box and tape. Found a box too close reads 1.26 m, fix on `t1.24-min-valid-depth`. "Start here" points at checking the fix, then 3c. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | T1.25 built: the trigger section says what changed, the gate design is marked as built with the timeout, the busy refusal, the C1 shutdown fix and why a request cannot race the worker. 3c and step 5 send a request. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | Start here: PRs #57 to #60 merged, T1.25 built but unmerged. Step 3c: how to run with the gate from `~/rcp-Gappler-t1.25` (binary checked to contain it), and without it. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | 3c PASS, the first grasp on the real arm. Start here rewritten for step 4. 3c result table, release with `-w 1`. |

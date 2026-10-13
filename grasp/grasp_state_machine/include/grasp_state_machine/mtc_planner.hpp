@@ -39,6 +39,7 @@ private:
   std::shared_ptr<rclcpp::executors::SingleThreadedExecutor> mtc_executor_;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_;
   std::thread mtc_spin_thread_;
+  double step_settle_s_; // step_settle_s in grasp/grasp_config.yaml
 
   const std::string ARM_GROUP = "rm_group";
 

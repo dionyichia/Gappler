@@ -77,6 +77,14 @@ grasp_state_machine:
     # request lapses (T1.25). SAM 3 gives the first one in about 1 s when the object is in view
     # (0.27 to 0.53 s per frame, 0.5 s warm-up, measured 2026-10-08 and 2026-10-12)
     grasp_request_timeout_s: 10.0
+    # Wait before planning each Cartesian step, so the real arm has settled after the last one.
+    # With no wait the second approach step was rejected, "start point deviates from current
+    # robot state more than 0.01" (T1.24 3c, 2026-10-13)
+    step_settle_s: 0.5
+    # Top of the table, in metres above the arm's base_link. The planner's "table" collision box
+    # sits just under it. Measured 2026-10-13 (T1.24 3c): 0.68 m from the floor, 0.12 m above the
+    # arm base. Was hard-coded at 0.195 m, 7.5 cm too high, which stopped the approach short
+    table_top_z_m: 0.12
     final_exec_thresh_m: 0.25
     centroid_target_offset_x_px: 55.0   # where the object should sit in the image, from centre
     centroid_target_offset_y_px: 0.0
