@@ -229,7 +229,11 @@ receives a coherent window.
 Then `audio_worker`: mix 7 channels → mono, resample 48 kHz → 16 kHz, normalise, Whisper, LLM.
 Note the dedup at `audio_streaming_pipeline.py:115-124` — if the transcription is unchanged it
 skips the LLM entirely. It does **not** skip the publish (`:128` runs either way), which combined
-with the 10 s window over a 1 s loop means one spoken word is re-published ~10 times. That is
+with the 10 s window over a 1 s loop means one spoken word is re-published ~10 times.
+**Changed 2026-10-12 (`T2.10`, `CHANNEL_CONTRACT` A-5):** the loop now ticks every 0.25 s over a
+15 s buffer, a voice detector finds where each sentence ends, and the worker transcribes a sentence
+once 0.7 s of quiet follows it and publishes its word once (`finished_sentence()`,
+`audio_streaming_pipeline.py:47`). The re-publishing described here is gone. That is
 CODE_AUDIT J1, and it matters again in §2.3.
 
 ### 2.3 `prompt_extractor.py` — read the system prompt as a spec
@@ -503,3 +507,4 @@ might that `return` at `:721` have been put there deliberately? ⬜ **open**
 | 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |
 | 2026-09-21 | Claude (Opus 5) + Dion | §1.1: the shared config is now `shared/global_config.yaml` (reorg step 2). It also holds machine paths now. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | Audio paragraph: note that `T2.10` replaced the once-a-second loop with one publish per finished sentence. |

@@ -72,8 +72,18 @@ audio_streaming_pipeline:
   ros__parameters:
     transcription_model: "small.en"           # Whisper model
     llm_model: "Qwen/Qwen2.5-0.5B-Instruct"   # turns the transcript into an object name
-    iteration_interval_s: 1
-    max_buffer_s: 10
+    # How often the newest audio goes to the voice detector. Cheap: Whisper and the LLM run
+    # only once a sentence has finished (T2.10). Was 1 s.
+    iteration_interval_s: 0.25
+    # Audio kept, so the longest sentence heard in full. Commands take 2 to 6 s. Can go up to
+    # 30 s (Whisper's own window), but the voice detector reruns over all of it every tick,
+    # about 5 ms per second of audio (lab box, 2026-10-12). Was 10 s.
+    max_buffer_s: 15
+    # Quiet after speech that marks the end of a sentence. Shorter answers faster but may cut a
+    # sentence at a pause. The voice detector also pads speech by 0.4 s (faster-whisper default,
+    # set in audio_streaming_pipeline.py), so the word goes out about 1.1 s after the last word,
+    # plus up to one tick. CHANNEL_CONTRACT A-5 accepts this wait to avoid half-heard words.
+    end_of_speech_silence_s: 0.7
     stop_keyword: "end"
 
 # read by: aria/aria_app/config/playback_controller_config.py

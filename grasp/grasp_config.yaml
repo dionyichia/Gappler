@@ -28,11 +28,22 @@
     # read by: anygrasp_node, anygrasp_detection_node
     num_grasp_candidates: 5
 
-# grasp/segmentation/sam3_ros_node.py
+# grasp/tools/sam3_ros_node.py. Parked 2026-10-08, consider deleting (T2.7). Section kept so it still runs.
 sam3_ros_node:
   ros__parameters:
     text_prompt: "box"   # fixed object word until voice is wired in (T1.12)
     confidence: 0.5      # SAM3 score below this is not a detection
+
+# grasp/grasp_segmentation_client/grasp_segmentation_client.py
+grasp_segmentation_client:
+  ros__parameters:
+    # FOR TESTING THE GRASP CLIENT WITHOUT THE GLASSES ONLY (bench, arm bring-up).
+    # Used at start when nothing publishes on /grasp/target. Dropped as soon as something does,
+    # or on the first Target message, so a spoken word always wins. "" = wait for a Target.
+    default_prompt: "box"
+    # Give up on a request with no reply after this long, so a service that dies mid-call does not
+    # stall the client for good. A normal call takes about 0.25 s.
+    segment_timeout_s: 5.0
 
 # grasp/anygrasp_node/anygrasp_detection_node.py
 anygrasp_detection_node:
@@ -58,6 +69,10 @@ grasp_state_machine:
     approach_step_final_m: 0.10      # step in the final simple execute
     max_approach_steps: 50
     execute_depth_thresh_m: 0.18     # stop approaching when the object is this close
+    # End the approach if the newest centroid is older than this. Age counts from the camera
+    # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
+    # frame (measured 2026-10-12, T1.24 3b)
+    centroid_max_age_s: 2.0
     final_exec_thresh_m: 0.25
     centroid_target_offset_x_px: 55.0   # where the object should sit in the image, from centre
     centroid_target_offset_y_px: 0.0

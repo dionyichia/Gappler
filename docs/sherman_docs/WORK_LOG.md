@@ -285,6 +285,15 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: verify manufacturer charger/nameplate compatibility, charge with supervision, establish battery and physical-stop readiness, then resume stationary feedback and attended driving/stop gates. Hosted task-tree Artifact republish owed.
 - Close-out verification: Mac quick bench passed executed levels with explicit ROS/PyYAML skips; evidence links/anchors, task-tree syntax/status assertion and diff checks passed. Read-only documentation review found no blockers. Documentation-only change on existing stacked `t3.5-launch-prep`; no completion PR or merge.
 
+## [2026-10-13] T3.5 | Merge current dev, runtime verification held
+
+- Evidence: [dev-sync results](../bench-runs/2026-10-13-sherman-t3.5-dev-sync.txt).
+- Combined `dev` at `49d80f7` with existing shared `t3.5-launch-prep`, without rewriting history. Resolved bench lists/README/task-tree changelogs by preserving both sides; added failing-first L0 suite-coverage check. Updated renamed arm-launcher warning; T3.9 records existing source fix, not deployment.
+- Verified: Mac quick available checks PASS with explicit skips/disk warning. Fresh box snapshot tree exactly matched local candidate; static/contracts, focused tests, real launch construction and prerequisite refusals passed. Installed comparison still reports 3 drift/1 missing (exit 1), not installed readiness.
+- Held: runtime guard found another user's real arm driver and refused before any software pipeline. PIDs subsequently exited, but shared-box custody requires coordination before retry. No process killed or hardware commanded; original checkouts and installed overlay untouched.
+- Review: read-only merge-resolution/evidence review PASS. Push this verified source checkpoint for visibility, not as whole-suite or deployment acceptance; runtime verification remains held.
+- Next: coordinate idle-box window, then serial isolated runtime benches before requesting deployment. T3.4/T3.5/T3.9 remain PROGRESS; no build/deployment, completion PR or dev/main merge. Hosted task-tree Artifact republish owed.
+
 ## Record Template
 
 ```markdown

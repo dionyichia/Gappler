@@ -1,0 +1,41 @@
+T2.1 follow-up: the segmentation service builds SAM 3 itself, weights at assets/models/
+Date: 2026-10-09   Machine: lab box (iot22-Computer), ~/rcp-Gappler   Branch: t2.1-sam3-service
+(working tree = commit 29c764c plus the bench/run.sh L0 fix, committed right after this run)
+Run by: Claude Opus 5.5 for Dion. GPU free before the run (only the remote desktop, 120 MiB).
+No camera, no arm. ROS channel 77, localhost only.
+
+RESULT: PASS. Same detection, depth and timing as the 2026-10-08 run through aria's wrapper.
+
+Weights: moved to assets/models/sam3/sam3.pt (3,450,062,241 B). A link stays at the old path
+aria/aria_app/models/sam3/sam3.pt until this branch merges, for dev and other branches. The CI
+runner's copy links both paths to ~/rcp-Gappler/assets/models/sam3/sam3.pt.
+
+1. ./bench/segmentation_service.sh
+   guards ok: channel 77 empty (hidden topics included), localhost only
+   frame: 640x480 rgb8, depth 16UC1
+     [PASS ] image only           1 found, best score 0.734, area 13474 px, 491 ms
+     [PASS ] image + depth + K    best at pixel (499, 278), depth 0.363 m, point (0.100, 0.017, 0.363) m in camera_color_optical_frame, 257 ms
+     [PASS ] empty prompt         refused: 'ValueError: empty prompt: say what to look for'
+     [PASS ] second service       exit 1 after 0.3 s, SAM 3 not loaded
+   RESULT: PASS
+   service output: log/bench_segmentation_service_2026-10-09_1747.txt
+
+2. ./bench/run.sh quick
+   First run: L0 "Segmentation logic" FAIL. Not caused by this change: since step 3 (ca541ee) the
+   L0 step ran every test_*.py in shared_services/segmentation, including the node tests, which
+   import rclpy, and L0 runs without ROS. Only the box reached it (the Mac and GitHub have no
+   .venv, so the step skips). Fixed: L0 runs test_segmentation_logic.py only.
+   After the fix: L0 Segmentation logic PASS. L2: 20 pass, 0 fail, 2 warn, 1 skipped,
+   sam3-weights PASS (3.21 GB, found at the new path). RESULT: PASS
+
+3. Node tests, shared_services_env.sh:
+   python -m unittest discover -s shared_services/segmentation -p "test_segmentation_service.py"
+   Ran 16 tests ... OK
+
+4. Same commit (f5cb9b9) on the Jetson Orin, ./bench/segmentation_service.sh. Before this change the
+   service could not start there (aria's config imports the glasses SDK, no ARM build).
+     [PASS ] image only           1 found, best score 0.738, area 13479 px, 2242 ms
+     [PASS ] image + depth + K    best at pixel (499, 278), depth 0.363 m, point (0.100, 0.017, 0.363) m in camera_color_optical_frame, 1101 ms
+     [PASS ] empty prompt         refused: 'ValueError: empty prompt: say what to look for'
+     [PASS ] second service       exit 1 after 0.9 s, SAM 3 not loaded
+   RESULT: PASS. About 4x slower than the box, same detection.

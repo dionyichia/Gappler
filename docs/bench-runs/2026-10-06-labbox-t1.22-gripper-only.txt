@@ -1,0 +1,30 @@
+T1.22 gripper-only test, 2026-10-06, at the robot (Sherman). Report as sent to Dion, verbatim below.
+Driver alone (rm_65_driver.launch.py), no MoveIt, no state machine. Commands sent by hand with
+ros2 topic pub --once, per docs/dion_docs/GRASP_BRINGUP_STEPS.md step 1.
+
+----------------------------------------------------------------------
+Gripper-only test — 6 Oct 2026
+
+Test Result Jaws Arm
+Open, already open data: true No movement; already open Stationary
+Close on air data: true Closed fully Stationary
+Reopen data: true Reopened Stationary
+
+Opening: position: 1000. Closing: speed: 200, force: 150. Both used block: false, timeout: 0.
+
+Delays not measured; skipped. Cardboard test not performed due to crushing concern. No tool-voltage command sent.
+
+These results demonstrate physical opening/closing on air, not safe force control on an object.
+
+Keep the physical-stop observer present until the driver is shut down and controller custody is settled.
+----------------------------------------------------------------------
+
+----------------------------------------------------------------------
+Box test, 2026-10-07, at the robot (Dion and Sherman). Reported by Dion in chat.
+Driver alone via ./arm_terminals.sh (domain 91, localhost only). Same commands as above.
+
+Close on an empty cardboard box held in the jaws, speed 200, force 150:
+  stopped on contact, the box was not squashed or crushed.
+Open (position 1000) afterwards: the jaws squeezed the box slightly first, then opened fully.
+Not tested: pulling the box out while closed. Not tried: force 50 (not needed).
+Result topic values were not recorded in this report.

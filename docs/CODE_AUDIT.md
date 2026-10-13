@@ -269,7 +269,8 @@ table"* returns `STOP_KEYWORD` (`:113`) and the object name is lost. One line, b
 (`ITERATION_INTERVAL_SECONDS = 1`, `:4`; `audio_streaming_pipeline.py:173-187`), and an unchanged
 transcription is still published (J1, `audio_streaming_pipeline.py:128`). So a single spoken word is
 re-transcribed and re-published roughly **ten times** — a false positive is ~10 stop messages, and a
-genuine *"Stop."* is ~10 consecutive misses.
+genuine *"Stop."* is ~10 consecutive misses. **The repetition is fixed by `T2.10` (2026-10-12, PR #57):**
+each finished sentence is transcribed and published once. The keyword match itself is unchanged.
 
 **Not a duplicate of the neighbouring entries, and they should be read together:** J2 is the *model*
 path (the few-shot block ending in an empty completion), B7 is the *fallback* meant to back it up,
@@ -316,9 +317,16 @@ SELECTING → EXECUTING, i.e. whether the arm closes on the object.
 `ORIENTATION.md` §8.8 records the missing staleness guard. It does not record that removing it also
 removed the lock.
 
+**Fixed 2026-10-12 (`T1.24`, PR #57):** the read takes `centroid_mutex_` again and the staleness
+guard is back, limit `centroid_max_age_s` (2.0 s) in `grasp/grasp_config.yaml`
+(`grasp_state_machine.cpp:646-662`). Checked on the simulated arm, not yet on the real one.
+
 ### C3. `has_centroid_ = false` written without the mutex
 
 `:604`, one line before the block that locks `centroid_mutex_` to wait on it.
+
+**Fixed 2026-10-13 (`T1.24`, PR #57, review):** the reset now sits inside the locked block, just
+before the wait (`grasp_state_machine.cpp:628-632`). Same behaviour. Checked on the simulated arm.
 
 ### C4. `state_` is not atomic
 
@@ -507,6 +515,30 @@ The same wedge follows a plain `"failed"` outcome, which the bridge *does* publi
 confirms it) — `:148` returns early for anything but `"success"`. That variant was not exercised
 separately. `[inferred from the same two lines]`
 
+**Fix on branch `t3.8-nav-node-fixes`, 2026-10-05 (T3.8), not yet run on the box.** The bridge now
+answers every goal exactly once: `"failed"` when Nav2 is unavailable, when it rejects the goal, or
+when sending or reading the result raises (`nav/goal_reached/goal_reached_publisher.py`).
+`object_approach_node` releases `_approach_done` on any outcome, not only `"success"`, so the next
+object pose starts a new approach (`nav/object_approach/object_approach_node.py`, `_on_goal_reached`).
+Retag to fixed once `bench/nav_nodes.sh` reports XPASS for both F1 cases.
+
+**Follow-up on branch `t3.8-bridge-timeout-backoff-release`, 2026-10-07 (T3.8), not yet run on the
+box.** A review of the fix above found two gaps. `[code]`
+
+- **A fourth silent path.** A goal Nav2 accepted and then never reported on (Nav2 crashed, or the
+  result never came) still published nothing, because only the result callback answered an accepted
+  goal. The bridge now checks its open goals once a second. A goal fails when Nav2 has been gone
+  from the network for three checks in a row, or when no result came within `result_timeout_s`
+  (`nav/nav_config.yaml`, 180 s). On the timeout it cancels the goal first, so the base is not still
+  driving when the approach node is told `"failed"`. A result that arrives after that is dropped, so
+  each goal still gets one answer. New bench case "goal bridge, Nav2 goes away". The timeout branch
+  has no bench case: the value comes from config and 180 s is too long for the bench.
+- **The fix opened a retry loop.** The perception pipeline publishes the object pose on every
+  detection (`object_recognition_pipeline.py:481`). With the guard released on failure, a goal Nav2
+  keeps refusing was sent again on every frame. `object_approach_node` now ignores object poses for
+  `retry_backoff_s` (3 s) after a failed approach. There is still no limit on the number of retries.
+  The "approach after nav failure" case now also checks that a pose inside the back-off sends no goal.
+
 ### F2. 🟠 A failed return leg can never be retried `[observed]`
 
 `goto_glasses.py:222-225` — if Nav2 is unavailable, it sets `self._navigating = False` but leaves
@@ -523,6 +555,27 @@ returning to user."* With Nav2 back up, the second return reached it **0** times
 `/return_to_user/goal_reached` stayed silent throughout. `[observed]`
 
 ### F3. 🟠 `goto_glasses.py:247` — `future.result()` unguarded, same class as F1.
+
+### F5. 🔴 A finished approach blocks every later object `[code]`
+
+Added 2026-10-07 from a review of the F1 fix. F1 is the failure path. The same guard also sticks
+on the two paths that work. `[code]`, not yet run.
+
+| Where `_approach_done` is set | What clears it |
+|---|---|
+| `object_approach_node.py:227`, object already in range: `/manipulation/start`, no nav goal | nothing. No goal was sent, so no `/goal_reached` ever comes |
+| `:173`, after a `"success"`: `/manipulation/start` is published and the guard set again | nothing, until some later `/goal_reached` |
+
+So after one grasp cycle, in range or approached, `_on_object_pose` drops every later object pose
+until the node is restarted. `_on_release` cleared `_last_object_map` and the marker at the end of
+the cycle but not the guard.
+
+**Fix on branch `t3.8-bridge-timeout-backoff-release`, 2026-10-07 (T3.8), not yet run on the box.**
+`_on_release` now clears the guard too: `/manipulator/release` with `true` ends the cycle. New
+bench case "approach after release". **Still open:** nothing publishes `/manipulator/release` yet
+(T1.15), so on the real system the node stays blocked after its first cycle until that lands. A
+new voice prompt was considered as a second way to clear the guard and left out: it could send the
+base a new goal while the arm is mid-grasp. That is a decision for the owners of the handover (T3.7).
 
 ### F4. 🟠 All five nav nodes exit with a traceback on Ctrl+C `[observed]`
 
@@ -544,6 +597,14 @@ Noisy but harmless while the robot is parked. The concern is mid-leg: `goto_glas
 `_cancel_navigation()` (`:231-244`) that **nothing calls on shutdown**, so Ctrl+C during a
 navigation leg would leave the Nav2 goal live and the base driving with its commander gone.
 `[inferred]` — nothing drove in this run, and this bench cannot test it.
+
+**Fix on branch `t3.8-nav-node-fixes`, 2026-10-05 (T3.8), not yet run on the box.** All five
+`main()`s now catch `KeyboardInterrupt` and `ExternalShutdownException`, destroy the node, and call
+`rclpy.try_shutdown()`, which does not raise when rclpy's handler already shut down. A new
+`bench/nav_nodes.sh` case, "clean Ctrl+C", checks each node exits 0 with no traceback. Retag to fixed
+once it reports XPASS. **Not fixed:** `goto_glasses` still does not cancel a live Nav2 goal on
+shutdown. That needs rclpy's own SIGINT handler turned off, as `estop.py` does (B2), and is a
+behaviour decision left to the owner.
 
 ---
 
@@ -687,7 +748,8 @@ noticed roughly never. `ros2_robot_ws/src/main.py:165` polls every 2 s.
   transcription is unchanged (the `if transcription == previous_transcription` branch falls through
   to `publish`). `goto_glasses._on_audio_prompt` calls `_trigger_navigation()` on every message, and
   its `_navigating` guard clears on arrival — so a repeated transcription re-sends the robot to the
-  user. There is no edge-triggering anywhere on this topic.
+  user. There is no edge-triggering anywhere on this topic. **Fixed by `T2.10` (2026-10-12, PR #57):**
+  one message per finished sentence, nothing when the LLM finds no object.
 - **J2** `prompt_extractor.py` — the few-shot block ends with `"What time is it?" -> ` (an example
   with an *empty* completion) immediately before the user's turn. The model may continue that
   example rather than answer. Worth an eval before trusting the "end" kill word.
@@ -917,4 +979,8 @@ publishers racing on the same three topics.
 | 2026-09-22 | Claude (Opus 5) + Dion | **A1 now `[observed]`** on real wrist-camera frames by the new L4 replay (T0.12). |
 | 2026-09-23 | Claude Opus 5.5 + Dion | B4: real-arm result from T1.7 added. Open question 2 answer superseded by T1.3 and T1.7. |
 | 2026-09-26 | OpenCode + Sherman | E4: T3.3 DONE — `slam_mapping.launch.py` now carries `robot_base_to_arm`. Shared 0.18 still duplicated; single-sourcing stays with T5.4. |
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | F1 and F4: fixes written on branch `t3.8-nav-node-fixes` (T3.8), awaiting a `bench/nav_nodes.sh` run on the box before retagging. New bench case for F4. F3 and the cancel-on-shutdown concern under F4 are untouched. |
+| 2026-10-07 | Claude (Opus 5.5) + Zongzhe | F1 follow-up on branch `t3.8-bridge-timeout-backoff-release` (T3.8): a fourth silent path (accepted goal, no result) and the retry loop the first fix opened, both fixed in code, not yet run. **New finding F5**: the approach guard also sticks after a finished cycle. Cleared on `/manipulator/release` now, which nothing publishes until T1.15. Three bench cases added or changed. |
 | 2026-10-06 | Claude (Opus 5.5) + Dion | K1 resolved by T0.14: every owned channel name is in a config file. Note added at the top of K1, record kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | C2 fixed and J1 fixed by PR #57 (`T1.24`, `T2.10`). Notes added, records kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | C3 fixed in the PR #57 review. Note added, record kept. |

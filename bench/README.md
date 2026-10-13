@@ -38,7 +38,7 @@ L5-L6 may always skip.
 
 | Level | Name | What it checks | Runs on | Was |
 |---|---|---|---|---|
-| L0 | Static checks | code parses, imports and launch file names resolve (`static.py`). Also the memory graph's stdlib unit tests (`memory_graph/tests/test_anchor_object_graph.py`, since 2026-10-05) | any machine | Tier 0-1 |
+| L0 | Static checks | code parses, imports and launch file names resolve (`static.py`). Also the memory graph's stdlib unit tests (`memory_graph/tests/test_anchor_object_graph.py`, since 2026-10-05). With `.venv`, all memory graph tests including the real open_clip model (`memory_graph_tests.sh`, since 2026-10-07) | any machine | Tier 0-1 |
 | L1 | Contracts | no topic, frame or parameter name moved since the snapshot (`contracts.py`) | any machine | Tier 0-1 |
 | L2 | Lab box check | preflight: can this machine run L3-L4? Does not look at the robot (`preflight.py`) | any machine | preflight |
 | L3 | Build | colcon build of the arm and nav code (`build.sh` at the repo root) | ROS 2 Humble | Tier 2 |
@@ -75,12 +75,14 @@ refused, 3 skipped — never a pass.
 | `sim_moveit.sh` | MoveIt plans and executes to both home poses and zero on a `mock_components` arm | installed config must be mock hardware |
 | `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s` sent back to back, the Ctrl+C key and SIGINT (5 trials) all deliver? Every case is required since the 2026-09-21 fix | — |
 | `state_machine_sim.sh` | `grasp_state_machine` runs a full grasp cycle on the simulated arm; the test plays camera, detector and gripper | mock hardware; preflight's `arm-ping`/`arm-port` must not pass (Dion's exception in `CLAUDE.md`) |
-| `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 10 cases, 4 expected-fail (F1 ×2, F2, E1). Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
+| `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 16 cases, 7 expected-fail (F1 ×3, F5, F2, E1, F4). The F1, F4 and F5 fixes landed 2026-10-05 and 2026-10-07 (T3.8), so those five should now report XPASS. Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
 | `velocity_smoother.sh` | T3.4: installed Nav2 smoother plus the owned keyboard node under scripted pseudo-terminals; direction/caps, silence, explicit stop, quit, Ctrl+C, SIGINT, teleop crash and terminal restoration. No base driver | fixed domain 127, localhost only; nodes and hidden topics empty; discovery errors/timeouts refuse |
 | `cloud_scan.sh` | T3.5: synthetic PointCloud2, owned QoS relay and installed laser-scan converter; geometry, nearest beam, height/range bounds, invalid/empty input, metadata and relay payload/QoS for all three launch profiles | fixed domain 127 and localhost only, same fail-closed guard as T3.4; no sensors, drivers or navigation controllers |
 | `slam_persistence.sh` | T3.5: installed synthetic scan/TF mapping, graph/image saving, fresh-process reload and localization against biased odometry; missing-load reply and corrupt-load abort recorded, not safe rejection | domain 127/localhost, same guard; private topics/TF, no hardware or Nav2 controller |
+| `memory_graph_tests.sh [PYTHON]` | every test in `memory_graph/tests`, including `test_clip_encoder.py`, which loads open_clip ViT-B-32 and checks it for upstream's four uses of CLIP: object features, matching, task relevance from text, and scoring a whole photo. Default env: `.venv`. Needs no ROS. One skipped test makes the step SKIPPED. None is skipped by design since 2026-10-07, when the feature merge test was written (T6.4c). The step still reports SKIPPED where open_clip or the weights are missing. Weights: `.venv/bin/python -m memory_graph.clip_encoder` | nothing to isolate: no ROS, no network |
 | `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `grasp/anygrasp_venv/.venv`, built by `./grasp/anygrasp_venv/build_anygrasp_venv.sh` | GPU only, no ROS |
-| `anygrasp_replay.sh` | a recorded wrist-camera bag (`WRIST_CAMERA_BAG`, default `assets/recordings/wrist_camera`, made by `grasp/tools/record_wrist_camera.sh`) through `sam3_ros_node` and `anygrasp_detection_node`, with `/pipeline_state` played as EXECUTING then IDLE. 2 controls (a mask, candidates) and the A1 gate case, expected-fail. SKIPPED with no recording | channel must be empty **including hidden topics**. No camera, no state machine |
+| `anygrasp_replay.sh` | a recorded wrist-camera bag (`WRIST_CAMERA_BAG`, default `assets/recordings/wrist_camera`, made by `grasp/tools/record_wrist_camera.sh`) through the segmentation service, the grasp segmentation client (T2.1, default prompt "box") and `anygrasp_detection_node`, with `/pipeline_state` played as EXECUTING then IDLE. 2 controls (a mask with a centroid, candidates) and the A1 gate case, expected-fail. SKIPPED with no recording | channel must be empty **including hidden topics**. No camera, no state machine |
+| `segmentation_service.sh` | the segmentation service (`shared_services/segmentation/segmentation_service.py`, T2.1) with the real SAM 3, on one frame of the recorded wrist-camera bag read straight from the file. Three calls: image only, image with depth and camera info, empty prompt. SKIPPED with no recording or no SAM 3 weights | channel must be empty **including hidden topics**. No camera, no arm |
 
 Tests that encode a CODE_AUDIT finding assert the *intended* behaviour and report **XFAIL** while the
 bug is there, **XPASS** once it isn't — then retag the finding.
@@ -106,6 +108,8 @@ after a successful run. L0 also runs stdlib guard and LiDAR launch-wiring tests.
 `python3 bench/test_command_ownership.py` pins the teleop defaults and smoother
 arguments to the same caps and timeouts, the `keyboard_input → output` remap chain
 under `/t34_probe`, and single-publisher ownership of each link.
+`python3 bench/test_bench_coverage.py` keeps navigation and shared-service suites
+in the runner together, including the union of both L4 lists without duplicates (L0).
 `python3 bench/test_t34_launch.py --runtime` constructs the real ROS LiDAR launch without
 executing its actions; source an existing nav overlay for that check. No LiDAR is opened.
 
@@ -160,6 +164,7 @@ Run serially with the keyboard bench because both reserve domain 127. Details:
 | 2026-10-07 | OpenCode + Sherman | Added owned snapshot tests, stale-raster/pause restoration and repeated-signal cleanup controls. |
 | 2026-10-07 | OpenCode + Sherman | Added command-ownership L0 pin and read-only installed-overlay drift check; drift is the expected result until deployment. |
 | 2026-10-07 | OpenCode + Sherman | Added T3.4 command-ownership check: teleop defaults, smoother arguments, remap chain and single-publisher gates share one L0 test. |
+| 2026-10-13 | OpenCode + Sherman | Combined current dev and navigation bench lists without dropping either side; added an L0 suite-coverage regression check. |
 
 ---
 
@@ -225,7 +230,7 @@ system's interface — which is worth having in review on its own.
 
 `preflight.py` runs everything up to **but not including** commanding the arm. That line is
 enforced in the code, not just in a comment: the script never publishes to any `/rm_driver/*_cmd`
-topic and never launches `grasp_state_machine` or `launchers/start_camera_arm_sam3_grasp.py`, because both home
+topic and never launches `grasp_state_machine` or `launchers/start_camera_arm_grasp.py`, because both home
 the arm within seconds of start, unprompted (`ORIENTATION.md` §8.1).
 
 Everything short of that is checked, in two runs. The default run (L2) covers the machine: GPU

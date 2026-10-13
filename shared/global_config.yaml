@@ -20,25 +20,31 @@
   ros__parameters:
     topics:
       # ---- Wrist camera (D435i on the arm). Published by the RealSense driver, started by
-      # ---- launchers/start_camera_arm_sam3_grasp.py and aria/aria_app/main.py.
-      # driver -> grasp: sam3_ros_node, anygrasp_node, anygrasp_detection_node. aria: object_recognition_pipeline
+      # ---- launchers/start_camera_arm_grasp.py and aria/aria_app/main.py.
+      # driver -> grasp: grasp_segmentation_client, anygrasp_node, anygrasp_detection_node.
+      #   aria: object_recognition_pipeline
       wrist_camera_color: "/camera/camera/color/image_raw"
-      # driver -> grasp: sam3_ros_node, anygrasp_node, anygrasp_detection_node, dummy_mask_publisher.
+      # driver -> grasp: grasp_segmentation_client, anygrasp_node, anygrasp_detection_node,
+      #   dummy_mask_publisher.
       #           aria: object_recognition_pipeline
       wrist_camera_aligned_depth: "/camera/camera/aligned_depth_to_color/image_raw"
-      # driver -> grasp: sam3_ros_node, anygrasp_node, anygrasp_detection_node, grasp_state_machine.
+      # driver -> grasp: grasp_segmentation_client, anygrasp_node, anygrasp_detection_node,
+      #   grasp_state_machine.
       #           aria: object_recognition_pipeline
       wrist_camera_info: "/camera/camera/color/camera_info"
 
       # ---- What to grasp: segmentation output on the wrist camera image
-      # grasp: sam3_ros_node, dummy_mask_publisher. aria: object_recognition_pipeline
-      #   -> grasp: anygrasp_node, anygrasp_detection_node, grasp_viz
+      # grasp: grasp_segmentation_client (the one publisher, T2.1). Stand-ins, never alongside it:
+      #   dummy_mask_publisher, tools/sam3_ros_node -> grasp: anygrasp_node, anygrasp_detection_node, grasp_viz
       wrist_camera_object_mask: "/camera/sam/mask"
-      # grasp: sam3_ros_node, dummy_mask_publisher. aria: object_recognition_pipeline
-      #   -> grasp: grasp_state_machine (any message starts a grasp cycle)
+      # grasp: grasp_segmentation_client (the one publisher, T2.1). Stand-ins, never alongside it:
+      #   dummy_mask_publisher, tools/sam3_ros_node -> grasp: grasp_state_machine (any message starts a grasp cycle)
       object_centroid_2d: "/object_centroid_2d"
-      # grasp: sam3_ros_node. aria: object_recognition_pipeline -> grasp: grasp_viz
+      # grasp: grasp_segmentation_client (tools/sam3_ros_node is a stand-in) -> grasp: grasp_viz
       object_centroid_viz: "/object_centroid"
+      # aria: aria_segmentation_client -> grasp: grasp_segmentation_client. What to look for
+      #   (segmentation_interfaces/msg/Target). An empty prompt stops segmentation.
+      grasp_target: "/grasp/target"
 
       # ---- From the glasses (aria)
       # aria: image_streaming_pipeline -> aria: feature_matching, object_recognition_pipeline,
@@ -57,7 +63,7 @@
       manipulation_start: "/manipulation/start"
       # nobody yet (grasp, T1.14) -> nav: object_approach_node
       manipulation_done: "/manipulation/done"
-      # nobody yet (T1.15) -> nav: object_approach_node, launchers/grasp_orchestrator.py
+      # nobody yet (T2.6) -> nav: object_approach_node, launchers/grasp_orchestrator.py
       manipulator_release: "/manipulator/release"
       # grasp: grasp_state_machine -> nav: goto_glasses
       manipulator_return_to_user: "/manipulator/return_to_user"
@@ -70,16 +76,22 @@
       # grasp: grasp_state_machine -> arm: rm_driver
       rm_driver_set_gripper_pick_on_cmd: "/rm_driver/set_gripper_pick_on_cmd"
 
+    # ---- ROS request/reply services that more than one subsystem calls. Server -> callers.
+    services:
+      # shared_services: segmentation_service -> grasp: grasp_segmentation_client.
+      #   aria: aria_segmentation_client
+      segmentation_segment: "/segmentation/segment"
+
     # ---- Cameras. Two RealSense cameras are plugged into the box, so every launch names the one
     # ---- it wants by serial (T1.13). Without a serial the driver opens whichever it finds first.
     # ---- Read through gappler_common.camera_serial(). Override per machine with
     # ---- WRIST_CAMERA_SERIAL and MOBILE_BASE_CAMERA_SERIAL.
     wrist_camera:
-      # read by: launchers/start_camera_arm_sam3_grasp.py, aria/aria_app/main.py,
+      # read by: launchers/start_camera_arm_grasp.py, aria/aria_app/main.py,
       #          grasp/tools/record_wrist_camera.sh
       serial: "243222074878"   # D435i on the arm's wrist, Link6. Confirmed at the robot, T1.4
       # Metres per depth unit in the aligned depth image (the driver publishes millimetres).
-      # read by: grasp: sam3_ros_node, anygrasp_node, anygrasp_detection_node, dummy_mask_publisher.
+      # read by: grasp: tools/sam3_ros_node, anygrasp_node, anygrasp_detection_node, dummy_mask_publisher.
       #          aria: object_recognition_pipeline
       depth_scale_m: 0.001
     mobile_base_camera:
@@ -114,3 +126,7 @@
       # read by: nav: slam_mapping.launch.py (writes current_map), slam_localization.launch.py
       #          (reads completed_map)
       map_dir: "~/maps"
+      # read by: shared_services/segmentation/segmentation_service.py, aria/aria_app/config/models.py.
+      #          Default also in bench/preflight.py, segmentation_service.sh, anygrasp_replay.sh.
+      #          The 3.4 GB SAM 3 weights, gitignored (docs/ASSETS.md)
+      sam3_weights: "assets/models/sam3/sam3.pt"

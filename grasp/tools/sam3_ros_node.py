@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """
+PARKED 2026-10-08 (T2.1), CONSIDER DELETING (task T2.7). Replaced by the segmentation service
+(shared_services/segmentation/segmentation_service.py) and the grasp client
+(grasp/grasp_segmentation_client/). Nothing starts this file any more. It publishes the same
+three channels as the grasp client, so never run both. Kept only until the service has run on
+the real robot. Moved here from grasp/segmentation/.
+
 SAM3 ROS2 mask publisher node.
 Runs inside the project's uv venv, with aria/aria_app/ on PYTHONPATH.
 Working directory: .../aria/aria_app/services/object_recognition/

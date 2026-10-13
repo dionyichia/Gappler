@@ -1,0 +1,78 @@
+T6.4d -- anchor store tests on the Orin   Jetson Orin NX, scratch copy in /tmp, 2026-10-11 18:16
+================================================================================================
+First run off the Mac of the S12 anchor store tests (memory_graph/tests/test_anchor_store.py), and a rerun
+of every other memory graph test with the new code present. Run by Zongzhe's session over ssh,
+with Zongzhe's go-ahead. Zongzhe accepted this Orin run in place of a lab box run (2026-10-11).
+
+  RESULT: PASS for T6.4d. 26 tests in test_anchor_store.py, 26 passed, 0 failed, 0 skipped.
+  All memory graph tests: 139 ran, 138 passed, 0 failed, 1 SKIPPED (the whole encoder file).
+
+  Covers the T6.4d done-when: check_invariants() is empty after every photo, and each object's
+  centre, projected through the stored intrinsics and pose, lands inside its box on the stored
+  image. Five photos of two objects, 10 centres, at three stored sizes. The same check fails
+  with the camera's unscaled intrinsics, so it would catch that mistake.
+
+  NOT covered: memory_graph/tests/test_clip_encoder.py, SKIPPED. open_clip is not installed in
+  the Orin's .venv. Nothing in T6.4d uses the encoder. No real photo has been through the
+  anchor store: that is T6.3.
+  Not a full bench run: only the memory graph tests. CPU only, no GPU, no ROS, no hardware.
+  Not run on the lab box.
+
+How it was run [observed]
+  Machine: Jetson Orin NX (aarch64), Ubuntu 22.04.5, L4T R36.4.3, tailscale name nvidia-desktop.
+  Code: branch t6.4d-anchor-store at eada278 (cut from dev at a508ed8), its memory_graph/
+        folder copied from the Mac with git archive to /tmp/zongzhe-t6.4d on the Orin, and
+        deleted after the run. ~/rcp-Gappler there was on someone's t2.1-sam3-service branch
+        and was not modified.
+  Python: ~/rcp-Gappler/.venv on the Orin, read only. Python 3.10.12, numpy 2.2.6, scipy 1.15.3.
+        PYTHONDONTWRITEBYTECODE=1, so no cache files were written. Nothing was installed.
+  Checked first that nobody else was logged in and no ROS, camera, bench or test process was running.
+  To repeat, in a checkout of the branch:
+        ~/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_anchor_store
+
+Full output [observed]
+------------------------------------------------------------------------------------------------
+test_a_missing_record_is_reported (memory_graph.tests.test_anchor_store.BookkeepingTest) ... ok
+test_a_photo_with_no_objects_is_not_stored (memory_graph.tests.test_anchor_store.BookkeepingTest) ... ok
+test_add_before_integrate_is_an_error (memory_graph.tests.test_anchor_store.BookkeepingTest) ... ok
+test_records_follow_a_prune (memory_graph.tests.test_anchor_store.BookkeepingTest) ... ok
+test_records_follow_an_object_merge (memory_graph.tests.test_anchor_store.BookkeepingTest) ... ok
+test_remove_takes_the_edges_too (memory_graph.tests.test_anchor_store.BookkeepingTest) ... ok
+test_the_same_photo_twice_is_an_error (memory_graph.tests.test_anchor_store.BookkeepingTest) ... ok
+test_two_detections_of_one_object_share_a_box (memory_graph.tests.test_anchor_store.BookkeepingTest)
+Greedy matching (D-MG8) lets two candidates from one photo go to the ... ok
+test_negative_size_is_an_error (memory_graph.tests.test_anchor_store.ConfigTest) ... ok
+test_edges_run_both_ways (memory_graph.tests.test_anchor_store.DoneWhenTest) ... ok
+test_invariants_hold_and_centres_land_in_their_boxes (memory_graph.tests.test_anchor_store.DoneWhenTest) ... ok
+test_same_at_the_camera_size (memory_graph.tests.test_anchor_store.DoneWhenTest) ... ok
+test_same_at_the_default_stored_size (memory_graph.tests.test_anchor_store.DoneWhenTest) ... ok
+test_the_check_catches_unscaled_intrinsics (memory_graph.tests.test_anchor_store.DoneWhenTest)
+The pitfall the done-when is there for: keep the camera's K on a ... ok
+test_behind_the_camera_projects_to_none (memory_graph.tests.test_anchor_store.RecordTest) ... ok
+test_depth_is_never_blended (memory_graph.tests.test_anchor_store.RecordTest)
+Every stored depth is a depth the camera measured. Bilinear resizing ... ok
+test_field_of_view_is_unchanged_by_the_resize (memory_graph.tests.test_anchor_store.RecordTest)
+2 atan(W / (2 fx)). Upstream's 2 atan(W / fx) would give 116 degrees ... ok
+test_invalid_depth_stays_invalid (memory_graph.tests.test_anchor_store.RecordTest) ... ok
+test_raw_detections_are_stored_when_given (memory_graph.tests.test_anchor_store.RecordTest) ... ok
+test_record_keeps_pose_labels_and_a_copy (memory_graph.tests.test_anchor_store.RecordTest) ... ok
+test_sizes_are_height_then_width (memory_graph.tests.test_anchor_store.RecordTest) ... ok
+test_stored_depth_lifts_a_box_back_to_the_object (memory_graph.tests.test_anchor_store.RecordTest)
+What the stored depth and K are kept for: back-project the pixels in ... ok
+test_bilinear_halving_averages_pixel_pairs (memory_graph.tests.test_anchor_store.ResizeTest) ... ok
+test_bilinear_keeps_a_flat_image_flat_and_its_type (memory_graph.tests.test_anchor_store.ResizeTest) ... ok
+test_intrinsics_and_boxes_use_the_same_mapping (memory_graph.tests.test_anchor_store.ResizeTest)
+A point projected with the resized K lands where its original pixel ... ok
+test_nearest_picks_existing_values (memory_graph.tests.test_anchor_store.ResizeTest) ... ok
+
+----------------------------------------------------------------------
+Ran 26 tests in 6.568s
+
+OK
+== every memory graph test
+...................................................s................................................................[ WARN:0@9.854] global loadsave.cpp:278 findDecoder imread_('/tmp/tmpzj5mcs3e/depth/1.png'): can't open/read file: check file path/integrity
+.......................
+----------------------------------------------------------------------
+Ran 139 tests in 7.498s
+
+OK (skipped=1)

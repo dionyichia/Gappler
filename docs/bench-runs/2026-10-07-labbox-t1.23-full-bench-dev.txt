@@ -1,0 +1,603 @@
+Full bench on dev, GitHub Actions run 37596048445 (workflow_dispatch, job 'full'), lab box runner, 2026-10-07.
+Dev at 6294fae (after PRs #41, #42). Real arm off. Covers T1.23 (step 2 of GRASP_BRINGUP_STEPS).
+Overall FAIL only because 'L0 D455 model' SKIPPED and --no-skips counts a skip as a fail. Every L0-L4 test that ran passed.
+
+ Current runner version: '2.337.0'
+Runner name: 'iot22-Computer'
+Runner group name: 'Default'
+Machine name: 'iot22-Computer'
+##[group]GITHUB_TOKEN Permissions
+Contents: read
+Metadata: read
+Packages: read
+##[endgroup]
+Secret source: Actions
+Cache mode: write
+Prepare workflow directory
+Prepare all required actions
+Getting action download info
+Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+Complete job name: full
+ ##[group]Run actions/checkout@v4
+with:
+  clean: false
+  repository: dionyichia/Gappler
+  token: ***
+  ssh-strict: true
+  ssh-user: git
+  persist-credentials: true
+  sparse-checkout-cone-mode: true
+  fetch-depth: 1
+  fetch-tags: false
+  show-progress: true
+  lfs: false
+  submodules: false
+  set-safe-directory: true
+  allow-unsafe-pr-checkout: false
+##[endgroup]
+Syncing repository: dionyichia/Gappler
+##[group]Getting Git version info
+Working directory is '/home/rcp2026/actions-runner/_work/Gappler/Gappler'
+[command]/usr/bin/git version
+git version 2.34.1
+##[endgroup]
+Temporarily overriding HOME='/home/rcp2026/actions-runner/_work/_temp/f4d64074-2767-4778-8e25-c17d77903e3a' before making global git config changes
+Adding repository directory to the temporary git global config as a safe directory
+[command]/usr/bin/git config --global --add safe.directory /home/rcp2026/actions-runner/_work/Gappler/Gappler
+[command]/usr/bin/git config --local --get remote.origin.url
+https://github.com/dionyichia/Gappler
+##[group]Removing previously created refs, to avoid conflicts
+[command]/usr/bin/git rev-parse --symbolic-full-name --verify --quiet HEAD
+refs/heads/t1.7-t1.13-t1.16-grasp-prep
+[command]/usr/bin/git checkout --detach
+HEAD is now at 1f266b1 T1.7, T1.13, T1.16: RETURN is HOME, camera by serial, stand-in sends a centroid
+[command]/usr/bin/git branch --delete --force t1.7-t1.13-t1.16-grasp-prep
+Deleted branch t1.7-t1.13-t1.16-grasp-prep (was 1f266b1).
+##[endgroup]
+[command]/usr/bin/git submodule status
+##[group]Disabling automatic garbage collection
+[command]/usr/bin/git config --local gc.auto 0
+##[endgroup]
+##[group]Setting up auth
+[command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+[command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+[command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+[command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+[command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+[command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+[command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+##[endgroup]
+##[group]Fetching the repository
+[command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +6294fae0e4c25e9b123460cac51fe1b19d1698fb:refs/remotes/origin/dev
+From https://github.com/dionyichia/Gappler
+ + 09d220c...6294fae 6294fae0e4c25e9b123460cac51fe1b19d1698fb -> origin/dev  (forced update)
+##[endgroup]
+##[group]Determining the checkout info
+##[endgroup]
+[command]/usr/bin/git sparse-checkout disable
+[command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+##[group]Checking out the ref
+[command]/usr/bin/git checkout --progress --force -B dev refs/remotes/origin/dev
+Previous HEAD position was 1f266b1 T1.7, T1.13, T1.16: RETURN is HOME, camera by serial, stand-in sends a centroid
+Switched to a new branch 'dev'
+Branch 'dev' set up to track remote branch 'dev' from 'origin'.
+##[endgroup]
+[command]/usr/bin/git log -1 --format=%H
+6294fae0e4c25e9b123460cac51fe1b19d1698fb
+ ##[group]Run ./bench/run.sh --no-skips
+[36;1m./bench/run.sh --no-skips[0m
+shell: /usr/bin/bash -e {0}
+##[endgroup]
+##[group]L0  Static checks
+==============================================================================
+STATIC CHECKS  (12 checks)
+==============================================================================
+
+[PASS] python-syntax  (190 checked)
+       every Python file we own parses
+
+[PASS] undefined-names  (190 checked)
+       no name is used that is never imported or assigned
+
+[PASS] internal-imports  (190 checked)
+       every intra-repo import resolves to a file that exists
+
+[PASS] xml-wellformed  (58 checked)
+       package.xml / urdf / xacro parse as XML
+
+[PASS] launch-packages  (62 checked)
+       every package a launch file names exists in the repo or in ROS Humble
+       note: 35 packages found in repo
+
+[warn] package-xml-deps  (35 checked)
+       declared dependencies exist in repo or in ROS Humble
+       -- plus 2 finding(s) in vendor code (-v to show)
+
+[PASS] launch-executables  (26 checked)
+       every executable a launch file names is installed by its package
+
+[PASS] launch-includes  (27 checked)
+       launch files included by other launch files exist
+
+[PASS] install-targets  (6 checked)
+       scripts named in CMakeLists install(PROGRAMS) exist on disk
+
+[PASS] generated-manifests  (1 checked)
+       vendor packages that generate package.xml ship the ROS 2 template
+
+[PASS] arm-bringup-single-launch  (189 checked)
+       arm_bringup.launch.py is launched from exactly one owned site
+
+[PASS] joint-poses-within-limits  (18 checked)
+       hard-coded joint poses are inside the URDF limits, with margin
+
+==============================================================================
+findings: 0 in code we own, 2 in vendor code
+PASS: all 12 checks clean for code we own.
+##[endgroup]
+##[group]L0  Unit tests: memory graph
+................
+----------------------------------------------------------------------
+Ran 16 tests in 0.059s
+
+OK
+##[endgroup]
+##[group]L0  Geometry wiring
+...
+----------------------------------------------------------------------
+Ran 3 tests in 0.016s
+
+OK
+##[endgroup]
+##[group]L0  Camera navigation geometry
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.017s
+
+OK
+##[endgroup]
+##[group]L0  Geometry runtime
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.038s
+
+OK
+##[endgroup]
+##[group]L0  D455 model
+SKIP: camera model checks require installed PyYAML and ROS/xacro
+##[endgroup]
+##[group]L1  Contracts
+test_contracts: PASS
+
+=== info (122) ===
+  moved           /aria/aruco_pose
+  moved           /aria/audio/prompt
+  moved           /aria/eye_tracking/gaze_estimate
+  moved           /aria/fused_pose
+  moved           /aria/glasses_marker
+  moved           /aria/pose_initialized
+  moved           /aria/rgb_camera/feature_match
+  moved           /aria/rgb_camera/object_masks
+  moved           /aria/rgb_camera/undistorted
+  moved           /aria/rgb_camera/view
+  moved           /camera/camera/aligned_depth_to_color/image_raw
+  moved           /camera/camera/color/camera_info
+  moved           /camera/camera/color/image_raw
+  moved           /camera/sam/mask
+  moved           /cloud_relay
+  moved           /combined/object_masks
+  moved           /debug/centroid_marker
+  moved           /debug/sam_mask
+  moved           /debug/state_marker
+  moved           /goal_pose
+  moved           /goal_reached
+  moved           /goto_glasses/cancel
+  moved           /goto_glasses/trigger
+  moved           /grasp_candidate_markers
+  moved           /grasp_candidates
+  moved           /livox/lidar
+  moved           /manipulation/done
+  moved           /manipulation/goal_pose
+  moved           /manipulation/start
+  moved           /manipulator/release
+  moved           /manipulator/return_to_user
+  moved           /object_centroid
+  moved           /object_centroid_2d
+  moved           /object_map_pose
+  moved           /object_marker
+  moved           /pipeline_state
+  moved           /realman/rgb_camera/object_masks
+  moved           /return_to_user/goal_reached
+  moved           /rm_driver/emergency_stop_cmd
+  moved           /rm_driver/move_stop_cmd
+  moved           /rm_driver/set_gripper_position_cmd
+  moved           /robot_pose
+  frame added   $(arg parent)
+  param added   ack_wait_s
+  param added   approach_distance_m
+  param added   approach_step_final_m
+  param added   approach_step_m
+  param added   aria_rgb_camera_view
+  param added   arm_mount
+  param added   centroid_target_offset_x_px
+  param added   centroid_target_offset_y_px
+  param added   cloud_relay
+  param added   confidence
+  param added   d455_bottom_screw
+  param added   debug_centroid_marker
+  param added   debug_sam_mask
+  param added   debug_state_marker
+  param added   default_depth_m
+  param added   depth_scale_m
+  param added   execute_depth_thresh_m
+  param added   final_exec_thresh_m
+  param added   finger_length_m
+  param added   finger_offset_m
+  param added   finger_radius_m
+  param added   glasses_marker
+  param added   goal_pose
+  param added   goal_reached
+  param added   goto_glasses_cancel
+  param added   goto_glasses_trigger
+  param added   grasp_candidate_markers
+  param added   grasp_candidates
+  param added   iteration_interval_s
+  param added   lidar_mount
+  param added   livox_lidar
+  param added   llm_model
+  param added   manipulation_done
+  param added   manipulation_goal_pose
+  param added   manipulation_start
+  param added   manipulator_release
+  param added   manipulator_return_to_user
+  param added   max_approach_steps
+  param added   max_buffer_s
+  param added   max_orient_step_deg
+  param added   min_approach_angle_deg
+  param added   num_grasp_candidates
+  param added   object_centroid_2d
+  param added   object_centroid_viz
+  param added   object_map_pose
+  param added   object_marker
+  param added   palm_length_m
+  param added   palm_radius_m
+  param added   pipeline_state
+  param added   playback_speed
+  param added   pose_initialized
+  param added   realsense_init_delay_s
+  param added   result_timeout_s
+  param added   retry_backoff_s
+  param added   return_clearance_m
+  param added   return_to_user_goal_reached
+  param added   rm_driver_emergency_stop_cmd
+  param added   rm_driver_move_stop_cmd
+  param added   rm_driver_set_gripper_pick_on_cmd
+  param added   rm_driver_set_gripper_position_cmd
+  param added   robot_pose
+  param added   side_offset_m
+  param added   stability_n_frames
+  param added   stability_rot_deg
+  param added   stability_trans_mm
+  param added   stop_keyword
+  param added   streaming_profile_name
+  param added   text_prompt
+  param added   transcription_model
+  param added   undistorted_focal_length_px
+  param added   undistorted_image_size_px
+  param added   use_ephemeral_certs
+  param added   use_simple_execute
+  param added   use_slerp_execute
+  param added   workspace_limits_m
+  param added   wrist_camera_aligned_depth
+  param added   wrist_camera_color
+  param added   wrist_camera_info
+  param added   wrist_camera_object_mask
+
+baseline c0cda6c-dirty  ->  current 6294fae
+
+PASS: no contract regressions. (0 warnings, 122 informational)
+##[endgroup]
+##[group]L2  Lab box check (preflight)
+==============================================================================
+PREFLIGHT -- can this machine run L3-L4 (the robot is checked by --hardware)
+host: Linux x86_64   repo: /home/rcp2026/actions-runner/_work/Gappler/Gappler
+user: rcp2026   lab machine: True (guessed: Linux + ROS or NVIDIA)
+==============================================================================
+
+### host
+  [PASS] platform               Linux 6.8.0-138-generic x86_64
+  [PASS] ram                    31.2 GB total, 28.1 GB available
+  [warn] disk                   16.7 GB free at /home/rcp2026/actions-runner/_work/Gappler/Gappler
+         -> builds + weights need ~20 GB
+  [PASS] cpu                    16 cores
+
+### home
+  [PASS] running-user           rcp2026 (/home/rcp2026)
+  [PASS] hardcoded-homes        none
+
+### gpu
+  [PASS] nvidia-driver          NVIDIA GeForce RTX 4060 Ti, 575.57.08, 16380 MiB, 396 MiB
+  [PASS] vram                   15.6 GB free of 16.0 GB
+  [PASS] pythonnousersite       not set (correct)
+  [PASS] torch-cuda             torch 2.10.0+cu128, cuda=True
+
+### ros
+  [PASS] humble                 /opt/ros/humble present, ROS_DISTRO=<unsourced>
+  [PASS] colcon                 /usr/bin/colcon
+  [PASS] overlay                repo-root overlay present with MTC (also found: install)
+  [skip] no-double-source       AMENT_PREFIX_PATH unset -- no overlay sourced in this shell
+  [PASS] domain-id              ROS_DOMAIN_ID unset (default 0)
+
+### env
+  [PASS] venv                   .venv -> Python 3.10.12
+  [PASS] anygrasp-env           MinkowskiEngine 0.5.4 in grasp/anygrasp_venv/.venv
+
+### assets
+  [PASS] sam3-weights           3.21 GB
+  [PASS] anygrasp-detection     283 MB
+  [PASS] anygrasp-tracking      23 MB
+  [PASS] anygrasp-licence       4 file(s): Puneet.lic, Puneet.public_key, Puneet.signature, licenseCfg.json (lock can only be verified by running the node)
+  [PASS] anygrasp-so            gsnet.cpython-310-x86_64-linux-gnu.so, lib_cxx.cpython-310-x86_64-linux-gnu.so, tracker.cpython-310-x86_64-linux-gnu.so
+  [warn] slam-map               maps/completed_map not present on this machine
+         -> build one with slam_mapping.launch.py, or fix the path
+
+==============================================================================
+RESULT   20 pass   0 fail   2 warn   1 skipped
+==============================================================================
+
+COULD NOT BE RUN HERE (1) -- these are unverified, not passing:
+
+  AMENT_PREFIX_PATH unset -- no overlay sourced in this shell
+      - ros/no-double-source
+
+NOT TESTABLE BY THIS BENCH AT ALL, BY DESIGN:
+  - arm motion: grasp_state_machine homes the arm within seconds of launch, unprompted (ORIENTATION 8.1). Nothing in this bench launches it.
+  - grasp execution: AnyGrasp -> MoveIt -> arm has never been run end to end; there is no known-good result to compare against (startup guide 7).
+  - gripper: opening or closing the gripper is a physical command; out of scope by design.
+  - Nav2 driving: publishing /goal_pose moves the base. Not exercised.
+  - the full pipeline: voice -> SAM 3 -> gaze -> grasp is severed at object_recognition_pipeline.py:384 (ORIENTATION 6.2), so there is no end-to-end path to test yet.
+
+  This script never publishes to any of: /rm_driver/movej_cmd, /rm_driver/movel_cmd, /rm_driver/movec_cmd, ...
+  Everything past that line needs a human at the robot with the e-stop in hand.
+##[endgroup]
+##[group]L3  Build: arm workspace
+Build [arm]: arm grasp -> build/ install/   (log: log/bench_build_arm_2026-10-07_1647.txt)
+
+Summary: 24 packages finished [2min 20s]
+Elapsed: 2 min 21 s   colcon exit: 0
+PASS: every package built. Overlay: /home/rcp2026/actions-runner/_work/Gappler/Gappler/install/setup.bash
+##[endgroup]
+##[group]L3  Build: nav workspace
+prep: nav/vendor/livox_ros_driver2/package.xml exists; left as is
+prep: Livox-SDK2 library found
+Build [nav]: nav -> build_nav/ install_nav/   (log: log/bench_build_nav_2026-10-07_1650.txt)
+
+Summary: 18 packages finished [6.93s]
+Elapsed: 0 min 8 s   colcon exit: 0
+PASS: every package built. Overlay: /home/rcp2026/actions-runner/_work/Gappler/Gappler/install_nav/setup.bash
+##[endgroup]
+##[group]L4  Simulation: sim_moveit
+guards ok: mock_components, no rm_driver, channel 77 empty, localhost only
+move_group ready (simulated arm)
+  [PLACE] home (main): Link1=(+0.180,+0.000,+0.720) Link2=(+0.180,+0.000,+0.720) Link3=(+0.179,+0.000,+0.976) Link4=(+0.326,-0.001,+1.126) Link5=(+0.326,-0.001,+1.126) Link6=(+0.429,-0.001,+1.025)
+  [PLACE] home (main): grasp=(+0.534,-0.002,+0.921) camera=(+0.489,+0.004,+1.050) view[Link6-normal-proxy]=(+0.711,-0.005,-0.703) max_origin_radius=0.429 m
+  [PASS] home (main)            SUCCESS                  max joint error 0.0047 rad
+  [PLACE] home (realman_manip): Link1=(+0.180,+0.000,+0.720) Link2=(+0.180,+0.000,+0.720) Link3=(+0.136,+0.001,+0.973) Link4=(+0.258,-0.001,+1.144) Link5=(+0.258,-0.001,+1.144) Link6=(+0.365,+0.007,+1.047)
+  [PLACE] home (realman_manip): grasp=(+0.473,+0.016,+0.948) camera=(+0.423,+0.015,+1.075) view[Link6-normal-proxy]=(+0.739,+0.060,-0.671) max_origin_radius=0.365 m
+  [PASS] home (realman_manip)   SUCCESS                  max joint error 0.0047 rad
+  [PLACE] zero: Link1=(+0.180,+0.000,+0.720) Link2=(+0.180,+0.000,+0.720) Link3=(+0.181,-0.000,+0.976) Link4=(+0.182,-0.000,+1.186) Link5=(+0.182,-0.000,+1.186) Link6=(+0.183,-0.000,+1.330)
+  [PLACE] zero: grasp=(+0.185,-0.000,+1.478) camera=(+0.189,+0.060,+1.355) view[Link6-normal-proxy]=(+0.008,-0.000,+1.000) max_origin_radius=0.183 m
+  [PASS] zero                   SUCCESS                  max joint error 0.0046 rad
+PASS: MoveIt plans and executes on the simulated arm
+launch log: log/bench_sim_moveit_2026-10-07_1650.txt
+##[endgroup]
+##[group]L4  Simulation: estop_delivery
+guards ok: no rm_driver, channel 77 empty, localhost only
+
+  [PASS ] key 'e' -> emergency stop                  arrived
+  [PASS ] key 'r' -> resume                          arrived
+  [PASS ] key 's' -> soft stop                       arrived
+  [PASS ] Ctrl+C key -> emergency stop               stop arrived; estop.py exited 0
+  [PASS ] kill -INT -> emergency stop (5 trials)     5/5 delivered  [#1: stop, exit 0; #2: stop, exit 0; #3: stop, exit 0; #4: stop, exit 0; #5: stop, exit 0]
+
+RESULT: PASS (every stop path delivers)
+estop.py output: log/bench_estop_2026-10-07_1651.txt
+##[endgroup]
+##[group]L4  Simulation: state_machine_sim
+guards ok: mock_components, no rm_driver, arm unreachable (arm-ping=FAIL arm-port=FAIL), channel 77 empty, localhost only
+move_group ready (simulated arm); state machine launched
+scenario: CY_OFF=0px FAR=0.30m
+
+  pipeline_state sequence: IDLE -> SELECTING -> EXECUTING
+  gripper commands: set_position position=1000; pick_on speed=200 force=150
+  [PASS ] safety walls accepted by the planning scene                    logged
+  [PASS ] startup: homes, then publishes IDLE                            IDLE seen; joints 0.0001 rad from main's home; 0 'Homing failed' retries
+  [INFO ] home pose actually used                                        main's (joint4 0.0) -- validated on the real arm 2026-09-23 (T1.7)
+  [INFO ] camera optical frame                                           model stops at camera_link; test published camera_link -> camera_color_optical_frame (D435 nominal), as the RealSense driver does on the robot
+  [PASS ] object seen -> re-homes, then SELECTING                        seen
+  [PASS ] SELECTING: an approach step moves the arm                      joints moved
+  [PASS ] object near -> EXECUTING                                       seen
+  [PASS ] gripper told to open                                           position=1000
+  [PASS ] final approach, then gripper told to close                     speed=200 force=150
+  [PASS ] moves to the return pose and announces /manipulator/return_to_user return_to_user published; joints 0.0001 rad from RETURN_JOINTS
+  [XFAIL] after a grasp: re-homes and returns to IDLE for the next object stays EXECUTING: workerLoop returns after success (CODE_AUDIT C7)
+  [INFO ] node exits within 15 s of SIGINT                               exited
+
+RESULT: PASS (XFAIL = known finding reproduced)
+launch log: log/bench_state_machine_2026-10-07_1651.txt
+##[endgroup]
+##[group]L4  Simulation: nav_nodes
+guards ok: channel 77 empty (hidden topics included), localhost only
+  ... approach, far object
+  ... approach, near object
+  ... approach, missing camera
+  ... approach, nav succeeds
+  ... approach after nav failure
+  ... approach after release
+  ... goal bridge, nav aborts
+  ... goal bridge, server down
+  ... goal bridge, Nav2 goes away
+  ... return retry
+  ... return camera clearance
+  ... return missing camera
+  ... fused pose frame
+  ... QoS relay
+  ... robot pose
+  ... clean Ctrl+C
+
+  [PASS ] approach, far object               goal (1.29, 0.30) in 'map', camera 0.600 m from object, facing error 0.0 deg (want (1.29, 0.30), camera 0.6 m)
+  [PASS ] approach, near object              1 /manipulation/start, 0 /goal_pose (want 1, 0)
+  [PASS ] approach, missing camera           missing camera TF: 0 goals, 0 starts (want 0/0)
+  [PASS ] approach, nav succeeds             Nav2 got 1 goal(s), /goal_reached ['success'], 1 /manipulation/start
+  [XPASS] approach after nav failure (F1)    Nav2 rejected goal 1; /goal_reached ['failed']; second object -> 0 /goal_pose inside the back-off (want 0), 1 after it
+  [XPASS] approach after release (F5)        cycle 1 started the arm, then release; second object -> 1 /goal_pose
+  [PASS ] goal bridge, nav aborts            Nav2 got 1 goal(s); /goal_reached ['failed']
+  [XPASS] goal bridge, server down (F1)      no Nav2 on the channel; /goal_reached in 8 s: [(5.0, 'failed')]
+  [XPASS] goal bridge, Nav2 goes away (F1)   goal accepted, /goal_reached silent; Nav2 gone -> ['failed']
+  [XFAIL] return retry (F2)                  return 1 with Nav2 down; return 2 with Nav2 back -> 0 goal(s); /return_to_user/goal_reached silent
+  [PASS ] return camera clearance            return camera clearance 0.500 m (want 0.5 m), including lateral TF offset
+  [PASS ] return missing camera              no return without camera TF; retry after TF appears: 1 goal (want 1)
+  [XFAIL] fused pose frame (E1)              goal (1.00, 0.60) in 'map'; the wearer in map puts it at (2.40, 2.00); read raw it would be (1.00, 0.60)
+  [PASS ] QoS relay (J4)                     /cloud_relay BEST_EFFORT; 50/50 frames of 520 kB at 10 Hz; mean latency 4.5 ms
+  [PASS ] robot pose                         10.3 Hz, 'map', at (2.00, -1.00) yaw 0.50 (want (2.0, -1.0) yaw 0.5)
+  [XPASS] clean Ctrl+C (F4)                  all five exited 0 with no traceback
+
+  XPASS: an expected failure did not reproduce -- retag the finding (CODE_AUDIT / TESTBENCH_PLAN W7).
+
+RESULT: PASS (controls pass; XFAIL = known finding reproduced; SKIPs listed above)
+node output: log/bench_nav_nodes_2026-10-07_1653.txt
+##[endgroup]
+##[group]L4  Simulation: anygrasp_env
+interpreter: /home/rcp2026/actions-runner/_work/Gappler/Gappler/grasp/anygrasp_venv/.venv/bin/python
+scratch:     log/anygrasp_probe
+
+Stage 1 -- imports, each in its own process
+  [PASS] torch            2.10.0+cu128 cuda 12.8 gpu True
+  [PASS] numpy            2.2.6
+  [PASS] MinkowskiEngine  0.5.4
+  [PASS] pointnet2        ok
+  [PASS] open3d           0.19.0
+  [PASS] graspnetAPI      ok
+  [PASS] sklearn          1.7.2
+  [PASS] scipy            1.15.3
+  [PASS] PIL              12.1.1
+  [PASS] lib_cxx          ok
+  [PASS] gsnet            ok
+
+Stage 2 -- SDK detection demo on its example frame
+  licence line: [2026-10-07 16:57:49.755] [info] [FlexivLic] license /home/rcp2026/actions-runner/_work/Gappler/Gappler/log/anygrasp_probe/license/Puneet.li
+  licence line: checking license on /home/rcp2026/actions-runner/_work/Gappler/Gappler/log/anygrasp_probe/gsnet.cpython-310-x86_64-linux-gnu.so
+  licence line: license passed: True, state: FvrLicenseState.PASSED
+  [PASS] demo exit 0: grasp score: 0.4764862060546875
+  full output: log/anygrasp_probe/demo_output.txt
+
+RESULT: PASS -- this interpreter runs AnyGrasp
+##[endgroup]
+##[group]L4  Simulation: anygrasp_replay
+guards ok: channel 77 empty (hidden topics included), localhost only
+
+  [PASS ] segmentation       39 masks in 60 s, mean area 4.2 % of the image
+  [PASS ] grasp detection    78 candidate sets, 1.29/s, top score 0.522
+  [XFAIL] gate (A1)          EXECUTING 0 sets, IDLE 78 sets (want EXECUTING > 0, IDLE 0)
+
+RESULT: PASS (controls pass; XFAIL = known finding reproduced)
+node output: log/bench_anygrasp_replay_2026-10-07_1657.txt
+##[endgroup]
+##[group]L5  Robot check (preflight --hardware)
+==============================================================================
+PREFLIGHT -- L5: is the robot there? No arm motion
+host: Linux x86_64   repo: /home/rcp2026/actions-runner/_work/Gappler/Gappler
+user: rcp2026   lab machine: True (guessed: Linux + ROS or NVIDIA)
+==============================================================================
+
+### net
+  [PASS] arm-nic                enp2s0 up, addresses: 192.168.1.100/24, 192.168.1.10/24, 192.168.1.5/24
+  [PASS] arm-lidar-coexist      both 192.168.1.10 and 192.168.1.5 are configured
+  [FAIL] arm-ping               192.168.1.18 unreachable
+         -> check cable, and that the host has 192.168.1.10/24
+  [FAIL] arm-port               192.168.1.18:8080 unreachable
+         -> arm powered off, or wrong subnet
+  [PASS] lidar-ping             192.168.1.3 responds
+  [PASS] realsense-usb          Bus 002 Device 004: ID 8086:0b5c Intel Corp. Intel(R) RealSense(TM) Depth Camera 455
+  [PASS] realsense-stream       one frame from colour /dev/video10; depth /dev/video0 ok
+  [FAIL] aria-glasses           aria CLI works, but no glasses are connected over USB
+         -> plug in the glasses, then re-run
+
+### graph
+  [skip] nodes                  ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+  [skip] camera-hz-color        ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+  [skip] camera-hz-depth        ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+  [skip] tf-arm-camera          ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+  [skip] tf-base-bridge         ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+  [skip] joint-states           ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+
+==============================================================================
+RESULT   5 pass   3 fail   0 warn   6 skipped
+==============================================================================
+
+COULD NOT BE RUN HERE (6) -- these are unverified, not passing:
+
+  ros2 CLI not on PATH -- source /opt/ros/humble/setup.bash and the repo overlay
+      - graph/nodes
+      - graph/camera-hz-color
+      - graph/camera-hz-depth
+      - graph/tf-arm-camera
+      - graph/tf-base-bridge
+      - graph/joint-states
+
+NOT TESTABLE BY THIS BENCH AT ALL, BY DESIGN:
+  - arm motion: grasp_state_machine homes the arm within seconds of launch, unprompted (ORIENTATION 8.1). Nothing in this bench launches it.
+  - grasp execution: AnyGrasp -> MoveIt -> arm has never been run end to end; there is no known-good result to compare against (startup guide 7).
+  - gripper: opening or closing the gripper is a physical command; out of scope by design.
+  - Nav2 driving: publishing /goal_pose moves the base. Not exercised.
+  - the full pipeline: voice -> SAM 3 -> gaze -> grasp is severed at object_recognition_pipeline.py:384 (ORIENTATION 6.2), so there is no end-to-end path to test yet.
+
+  This script never publishes to any of: /rm_driver/movej_cmd, /rm_driver/movel_cmd, /rm_driver/movec_cmd, ...
+  Everything past that line needs a human at the robot with the e-stop in hand.
+
+SKIPPED: the arm does not answer (fail), so L6 has nothing to test.
+##[endgroup]
+
+======================================================================
+  BENCH SUMMARY
+----------------------------------------------------------------------
+  L0  Static checks              PASS     
+  L0  Unit tests: memory graph   PASS     
+  L0  Geometry wiring            PASS     
+  L0  Camera navigation geometry PASS     
+  L0  Geometry runtime           PASS     requires existing PyYAML
+  L0  D455 model                 SKIPPED  requires installed ROS/xacro camera description
+  L1  Contracts                  PASS     
+  L2  Lab box check              PASS     ROS 2 Humble found, L3-L4 will run
+  L3  Build: arm                 PASS     
+  L3  Build: nav                 PASS     
+  L4  Sim: sim_moveit            PASS     
+  L4  Sim: estop_delivery        PASS     
+  L4  Sim: state_machine_sim     PASS     
+  L4  Sim: nav_nodes             PASS     
+  L4  Sim: anygrasp_env          PASS     
+  L4  Sim: anygrasp_replay       PASS     
+  L5  Robot check                SKIPPED  the arm does not answer. Not needed to merge
+  L6  Hardware                   SKIPPED  L5 did not pass. Not needed to merge
+----------------------------------------------------------------------
+  RESULT: FAIL (a level failed, or L0-L4 skipped under --no-skips. See its output above)
+======================================================================
+A green bench means no contract moved and the code is consistent. It does
+NOT mean the robot works. L6 needs a human with the e-stop.
+##[error]Process completed with exit code 1.
+ Post job cleanup.
+[command]/usr/bin/git version
+git version 2.34.1
+Temporarily overriding HOME='/home/rcp2026/actions-runner/_work/_temp/317fc198-42d9-40fd-9c09-fb530132d0a5' before making global git config changes
+Adding repository directory to the temporary git global config as a safe directory
+[command]/usr/bin/git config --global --add safe.directory /home/rcp2026/actions-runner/_work/Gappler/Gappler
+[command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+[command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+[command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+http.https://github.com/.extraheader
+[command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+[command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+[command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+[command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+ Cleaning up orphan processes
+##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

@@ -1,0 +1,108 @@
+T6.3b -- replay loader tests on the lab box   lab box, scratch copy in /tmp, 2026-10-07 19:22
+===========================================================================================
+First run of the replay loader (memory_graph/replay_loader.py): its tests, then the whole
+public recording it was built on. Run by Zongzhe's session over ssh, with Zongzhe's go-ahead.
+
+  RESULT: PASS. 24 tests in test_replay_loader.py, 24 passed, 0 failed, 0 skipped.
+  All memory graph tests: 82 ran, 81 passed, 0 failed, 1 SKIPPED (the whole encoder file).
+
+  Covers the T6.3b done-when on a public recording, TUM RGB-D freiburg1_xyz (a handheld
+  Kinect over a desk, poses from motion capture). Two frames 0.40 m apart and turned 9
+  degrees: points from one, looked at from the other, sit a median 0.8 cm from the surface
+  measured there, and 95 % are within 5 cm. With each S0 mistake made on purpose the median
+  gap is 20 cm or more:
+      both poses inverted (world-to-camera used as the pose)   19.9 cm
+      one pose inverted                                         50.4 cm
+      the pose ignored                                          46.0 cm
+      depth read at 1000 units per metre, the D455's scale     152.0 cm
+  The same done-when also passes on a recording the test writes itself (a wall at x = 3 m).
+
+  NOT covered: the lab recording. It does not exist yet (T6.2), and there is no reader for it.
+  NOT covered: a camera mount transform on real data. The TUM poses are the camera's own, so
+  the mount is tested with made-up numbers only.
+  NOT covered: memory_graph/tests/test_clip_encoder.py, SKIPPED. open_clip is not installed in
+  the shared .venv.
+  Lens distortion is not corrected. The loader uses the intrinsics the benchmark recommends
+  for its registered depth (525, 525, 319.5, 239.5). The calibrated freiburg1 intrinsics gave
+  about the same agreement on five pairs, so neither is clearly better here.
+  Not a full bench run: only the memory graph tests. CPU only, no GPU, no ROS, no hardware.
+
+The whole recording through the loader [observed]
+  frames: 796 kept of 798 colour images (the rest have no depth image or pose within 0.02 s)
+  read all 796 frames in 90.9 s
+  frame ids run 0 to 795 and increase: True
+  timestamps increase: True
+  image forms seen: {((480, 640, 3), 'uint8', (480, 640), 'float32')}
+  depth readings: 0.54 to 7.03 m, median 0.99 m
+  pixels with no reading: 24.3 % on average
+  camera travel box (m): [0.457 0.697 0.398]
+  
+  766 pairs, frame i against frame i + 30. Camera moved 0.24 m on average, at most 0.49 m
+  median gap per pair, cm: median 1.43, 90th percentile 2.92, worst 7.24
+  share of points within 5 cm, per pair: median 84.3 %, 10th percentile 69.8 %, worst 35.8 %
+  pairs with a median gap under 2 cm: 548 of 766
+  The box was busy during this run: load average 8, and another rcp2026 session had started
+  rm_driver 13 minutes earlier. Reading took about 130 ms per frame under that load, of which
+  100 ms was OpenCV decoding the two image files. So the time is not a fair speed figure.
+  The worst pairs (gap up to 7 cm) were not looked into. Likely causes are edges where one
+  view sees behind an object, and poses up to 0.02 s away from the image while the camera moves.
+
+How it was run [observed]
+  Code: the working tree of branch t6.3b-replay-loader (cut from dev at 3dde592), copied from
+        the Mac to /tmp/zongzhe-t6.3b on the lab box before it was committed.
+  Data: rgbd_dataset_freiburg1_xyz.tgz (448 MB) downloaded from cvg.cit.tum.de to
+        /tmp/zongzhe-tum on the lab box. The two fixture frames were cut from it there.
+        Both /tmp folders were deleted after the run. ~/rcp-Gappler stayed on dev at 3dde592
+        and was not modified. Nothing here touched ROS, the arm, a camera or the GPU.
+  Python: the shared ~/rcp-Gappler/.venv, read only. PYTHONDONTWRITEBYTECODE=1, so no cache
+        files were written. Nothing was installed.
+  Checked first that no bench or CI run was active (pgrep Runner.Worker, bench/run.sh).
+  To repeat, in a checkout of the branch:
+        ~/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_replay_loader
+
+Full output of the tests [observed]
+-------------------------------------------------------------------------------------------
+host: iot22-Computer   date: 2026-10-07 19:22 CST
+python: /home/rcp2026/rcp-Gappler/.venv/bin/python 3.10.12 numpy 2.2.6 scipy 1.15.3 opencv 4.13.0
+
+######## python -m unittest -v memory_graph.tests.test_replay_loader ########
+test_a_scale_of_zero_is_an_error (memory_graph.tests.test_replay_loader.ConversionTest) ... ok
+test_a_zero_quaternion_is_an_error (memory_graph.tests.test_replay_loader.ConversionTest) ... ok
+test_bad_readings_become_zero (memory_graph.tests.test_replay_loader.ConversionTest) ... ok
+test_depth_in_millimetres_becomes_metres (memory_graph.tests.test_replay_loader.ConversionTest) ... ok
+test_nearest_in_time (memory_graph.tests.test_replay_loader.ConversionTest) ... ok
+test_quaternion_to_matrix_matches_scipy (memory_graph.tests.test_replay_loader.ConversionTest) ... ok
+test_the_tum_scale (memory_graph.tests.test_replay_loader.ConversionTest) ... ok
+test_a_float_image_is_an_error (memory_graph.tests.test_replay_loader.ToObservationTest) ... ok
+test_a_pose_that_is_not_rigid_is_an_error (memory_graph.tests.test_replay_loader.ToObservationTest) ... ok
+test_bgr_is_flipped_and_rgb_is_not (memory_graph.tests.test_replay_loader.ToObservationTest) ... ok
+test_depth_and_colour_of_different_sizes_is_an_error (memory_graph.tests.test_replay_loader.ToObservationTest) ... ok
+test_fields (memory_graph.tests.test_replay_loader.ToObservationTest) ... ok
+test_the_mount_is_applied_once (memory_graph.tests.test_replay_loader.ToObservationTest) ... ok
+test_without_a_mount_the_pose_is_the_cameras (memory_graph.tests.test_replay_loader.ToObservationTest) ... ok
+test_a_frame_with_no_depth_or_pose_nearby_is_left_out (memory_graph.tests.test_replay_loader.TumLayoutTest) ... ok
+ok
+test_colour_order_depth_units_and_pose (memory_graph.tests.test_replay_loader.TumLayoutTest) ... ok
+test_comment_lines_are_skipped (memory_graph.tests.test_replay_loader.TumLayoutTest) ... ok
+test_max_dt_is_respected (memory_graph.tests.test_replay_loader.TumLayoutTest) ... ok
+test_same_wall_from_two_poses_lands_in_the_same_place (memory_graph.tests.test_replay_loader.TumLayoutTest)
+The T6.3b done-when, on a recording the test wrote: back-projecting ... ok
+test_the_mount_reaches_every_frame (memory_graph.tests.test_replay_loader.TumLayoutTest) ... ok
+test_both_frames_load_in_the_agreed_form (memory_graph.tests.test_replay_loader.TumRealFramesTest) ... ok
+test_same_surfaces_from_two_poses_land_in_the_same_place (memory_graph.tests.test_replay_loader.TumRealFramesTest)
+The T6.3b done-when, on a real recording. Measured 2026-10-07: ... ok
+test_the_check_fails_when_the_loader_would_be_wrong (memory_graph.tests.test_replay_loader.TumRealFramesTest)
+The same check with each S0 mistake made on purpose. Measured ... ok
+
+----------------------------------------------------------------------
+Ran 24 tests in 0.759s
+
+OK
+
+######## every test in memory_graph/tests (unittest discover) ########
+----------------------------------------------------------------------
+Ran 82 tests in 1.945s
+
+OK (skipped=1)
+SKIP: memory_graph.tests.test_clip_encoder (unittest.loader.ModuleSkipped) needs open_clip and torch: No module named 'open_clip'
+scratch folders removed
