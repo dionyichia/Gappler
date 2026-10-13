@@ -65,6 +65,8 @@
       manipulation_done: "/manipulation/done"
       # nobody yet (T2.6) -> nav: object_approach_node, launchers/grasp_orchestrator.py
       manipulator_release: "/manipulator/release"
+      # by hand today, the glasses side later (T2.6) -> grasp: grasp_state_machine (T1.25)
+      manipulator_grasp_request: "/manipulator/grasp_request"
       # grasp: grasp_state_machine -> nav: goto_glasses
       manipulator_return_to_user: "/manipulator/return_to_user"
       # nav: pose_publisher -> aria: pose_fusion_node
