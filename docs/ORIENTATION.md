@@ -208,7 +208,7 @@ Top-level, with an honest note on whether you will ever need to touch each one.
 |---|---|---|
 | `aria/aria_app/` (was `src/`) | **Subsystem A.** All Aria glasses code: streaming, eye tracking, ASR, LLM, SAM3, feature matching, pose fusion, OpenCV visualiser. | **Yes, a lot.** |
 | `arm/` | **Subsystem C, the arm.** `estop/`, `rm_ros_interfaces/`, and RealMan's code in `vendor/`. Built together with `grasp/` by `./build.sh`. Replaced the `ros2_robot_ws/` workspace 2026-09-21. | `estop/` and `rm_ros_interfaces/` only. |
-| `launchers/` | `start_camera_arm_sam3_grasp.py` (camera, arm bring-up, SAM3, AnyGrasp, state machine) and `grasp_orchestrator.py` (waits for the start-grasp message, then runs the pipeline). Were `ros2_robot_ws/src/main.py` and `orchestrator.py`. **Never launch either** (CLAUDE.md). | Yes. |
+| `launchers/` | `start_camera_arm_grasp.py` (camera, arm bring-up, the grasp segmentation client, AnyGrasp (off for bring-up), state machine. The segmentation service itself runs on its own, `T2.1`) and `grasp_orchestrator.py` (waits for the start-grasp message, then runs the pipeline). Were `ros2_robot_ws/src/main.py` and `orchestrator.py`. **Never launch either** (CLAUDE.md). | Yes. |
 | `grasp/` (was `ros2_robot_ws/src/rm_mtc/`) | **Ours.** One folder per node: `grasp_state_machine/` (with the MoveIt Task Constructor planner), `anygrasp_node/`, `segmentation/`, `grasp_viz/`, plus `grasp_interfaces/` (our messages) and `tools/`. | **Yes.** This is the heart of the arm logic. |
 | `arm/vendor/`: `rm_driver`, `rm_control`, `rm_description`, `rm_moveit2_config`, `rm_gazebo`, `rm_example`, `rm_arm_examples`, `rm_doc`, `rm_install` | RealMan's shipped vendor packages — driver, URDF model, MoveIt config, sim, docs, install scripts. | **No.** Read `rm_description`'s URDF when you need to know where the camera is mounted. |
 | `arm/rm_ros_interfaces/` | 79 custom message definitions. Includes ours: `GraspCandidate.msg`, `GraspCandidateArray.msg`. | Only if you add a message. |
@@ -797,9 +797,9 @@ camera_color_optical_frame` exists only when that package is installed and the R
 running. Every grasp transform depends on it. A missing/unlaunched RealSense presents as grasp
 candidates being silently skipped.
 
-**`/object_centroid_2d` has no consumer-side staleness check.** The age guard in
-`grasp_state_machine.cpp` is commented out (`:637-641`), so SELECTING will keep servoing toward a
-centroid that stopped updating.
+~~**`/object_centroid_2d` has no consumer-side staleness check.**~~ **Fixed 2026-10-12 (`T1.24`,
+PR #57):** SELECTING ends the approach when the newest centroid is older than `centroid_max_age_s`
+(2.0 s, `grasp/grasp_config.yaml`), at `grasp_state_machine.cpp:646-662`.
 
 ### 8.9 Dead code and debug leftovers `[code]`
 
@@ -1275,3 +1275,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-23 | Claude Opus 5.5 + Dion | §8.1 and the §B4 bullet: HOME validated on the real arm in T1.7, extends slightly outside the base. |
 | 2026-09-26 | OpenCode + Sherman | §5: T3.3 DONE — both SLAM launches publish `robot_base_to_arm` (mapping `:117-122`, localization `:107-112`). Full mapping-launch tree untested; values duplicated until T5.4. |
 | 2026-10-06 | Claude (Opus 5.5) + Dion | T0.14: §2 rows for `global_config.yaml` and `gappler_common.py`, the aria `config/` line and reading-order row 1 now describe the two config levels. §8.17 marked resolved. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | §8.8: the centroid staleness check is back (`T1.24`, PR #57). |

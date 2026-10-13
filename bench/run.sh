@@ -61,10 +61,17 @@ step() {
 s=$(step "L0  Static checks" python3 bench/static.py)
 row L0 "Static checks" "$s" ""
 
-# The memory graph's stdlib-only tests (T6.3a). Its stage tests need numpy and
-# scipy, so they are not run here yet: python3 -m unittest discover -s memory_graph/tests -t .
+# The memory graph's stdlib-only tests (T6.3a), which run anywhere.
 s=$(step "L0  Unit tests: memory graph" python3 -m unittest memory_graph.tests.test_anchor_object_graph)
 row L0 "Unit tests: memory graph" "$s" ""
+# All of its tests, with the real image-feature model (T6.3f). Needs .venv and the weights.
+s=$(step "L0  Unit tests: memory graph stages" ./bench/memory_graph_tests.sh)
+row L0 "Memory graph stages" "$s" "$([ "$s" = SKIPPED ] && echo "needs .venv, the open_clip weights and the test photos")"
+# The segmentation service's maths (T2.1). Needs numpy, so it runs with .venv. The node tests
+# (test_segmentation_service.py) need ROS, so they are not part of L0.
+s=$(step "L0  Unit tests: segmentation logic" bash -c '[ -x .venv/bin/python ] || { echo "SKIP: no .venv -- run uv sync"; exit 3; }
+  .venv/bin/python -m unittest discover -s shared_services/segmentation -p "test_segmentation_logic.py"')
+row L0 "Segmentation logic" "$s" "$([ "$s" = SKIPPED ] && echo "needs .venv")"
 
 s=$(step "L0  Geometry wiring" python3 bench/test_geometry.py --wiring)
 row L0 "Geometry wiring" "$s" ""
@@ -78,7 +85,9 @@ s=$(step "L0  T3.4 LiDAR-only wiring" python3 bench/test_t34_launch.py)
 row L0 "T3.4 LiDAR-only wiring" "$s" ""
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
-s=$(step "L0  D455 model" python3 bench/test_geometry.py --camera-model)
+# xacro and realsense2_description come from ROS, which CI does not source. Source it here when present.
+s=$(step "L0  D455 model" bash -c 'set +u; [ -f /opt/ros/humble/setup.bash ] && source /opt/ros/humble/setup.bash
+                                   exec python3 bench/test_geometry.py --camera-model')
 row L0 "D455 model" "$s" "requires installed ROS/xacro camera description"
 
 # The extractor self-test first: a broken extractor would make every check below pass.
@@ -105,7 +114,7 @@ else
   if [ "$arm" != PASS ]; then
     row L4 "Simulation" SKIPPED "arm build did not pass (see L3)"
   else
-    for t in sim_moveit estop_delivery state_machine_sim nav_nodes velocity_smoother anygrasp_env anygrasp_replay; do
+    for t in sim_moveit estop_delivery state_machine_sim nav_nodes velocity_smoother anygrasp_env anygrasp_replay segmentation_service; do
       s=$(step "L4  Simulation: $t" ./bench/$t.sh)
       row L4 "Sim: $t" "$s" ""
     done

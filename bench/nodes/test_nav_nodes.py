@@ -9,13 +9,16 @@ Each case starts its node(s) fresh from nav/<package>/
   control  approach, far object         camera 0.6 m from object, compensating lateral TF offset
   control  approach, near object        /manipulation/start, no /goal_pose
   control  approach, nav succeeds       bridge -> "success" -> /manipulation/start
-  xfail    approach after nav failure   a second object is still acted on        F1
+  xfail    approach after nav failure   a second object is acted on, after the back-off  F1
+  xfail    approach after release       a second object is acted on after a finished cycle  F5
   control  goal bridge, nav aborts      /goal_reached "failed"
   xfail    goal bridge, server down     /goal_reached "failed" within 6 s        F1
+  xfail    goal bridge, Nav2 goes away  an accepted goal still ends in "failed"  F1
   xfail    return retry                 a second return reaches Nav2             F2
   xfail    fused pose frame             goal = the fused pose moved into map     E1
   control  QoS relay                    /cloud_relay is BEST_EFFORT, >= 90 % kept  (J4)
   control  robot pose                   /robot_pose ~10 Hz, in map, at the TF pose
+  xfail    clean Ctrl+C                 all five nodes exit 0 with no traceback  F4
 
 Controls must pass. An xfail that passes is XPASS: the finding did not reproduce,
 retag it. A case whose own setup fails is a FAIL. A case whose node can't import its
@@ -53,6 +56,7 @@ ARM_MOUNT = (0.18, 0.0, 0.48, math.pi)
 CAMERA_X, CAMERA_Y = 0.31, -0.06  # deliberately differ from fitted camera: proves TF consumption
 CAMERA_FRAME = "base_d455_depth_optical_frame"
 APPROACH = 0.6        # object_approach_node.py:55
+RETRY_BACKOFF = 3.0   # nav_config.yaml object_approach_node retry_backoff_s
 SIDE_OFFSET = 0.6     # goto_glasses.py:33
 # modules each script imports beyond rclpy + the message packages checked above
 NEEDS = {
@@ -144,13 +148,16 @@ class Rig(Node):
 
 class MockNav2(Node):
     """Stands in for Nav2's navigate_to_pose: records every goal, drives nothing.
-    mode: 'succeed' (status 4), 'abort' (status 6) or 'reject'."""
+    mode: 'succeed' (status 4), 'abort' (status 6), 'reject', or 'hang' (accepts the
+    goal and never finishes it)."""
 
     def __init__(self, mode):
         super().__init__("bench_mock_nav2")
         self.mode, self.goals, self.closed = mode, [], False
+        # 'hang': an accepted goal is never executed, so it never gets a result
+        extra = {"handle_accepted_callback": lambda goal_handle: None} if mode == "hang" else {}
         self.server = ActionServer(self, NavigateToPose, "navigate_to_pose",
-                                   execute_callback=self._execute, goal_callback=self._goal)
+                                   execute_callback=self._execute, goal_callback=self._goal, **extra)
         EX.add_node(self)
 
     def _goal(self, request):
@@ -175,14 +182,15 @@ class Case:
     def __init__(self, name, log):
         self.rig, self.log, self.procs, self.navs = Rig(name), log, [], []
 
-    def start(self, script, ready_topic, kind="sub", sec=25.0):
+    def start(self, script, ready_topic, kind="sub", sec=25.0, out=None):
         """Start a node; wait until it shows up on ready_topic (its subscription or
-        publisher), then give TF and discovery a moment to settle."""
+        publisher), then give TF and discovery a moment to settle. out: a file for the
+        node's own output instead of the shared log."""
         count = self.rig.count_subscribers if kind == "sub" else self.rig.count_publishers
         base = count(ready_topic)
         self.log.write(f"\n===== {script} =====\n")
         self.log.flush()
-        p = subprocess.Popen([sys.executable, str(next(NAV.glob(f"*/{script}")))], stdout=self.log,
+        p = subprocess.Popen([sys.executable, str(next(NAV.glob(f"*/{script}")))], stdout=out or self.log,
                              stderr=subprocess.STDOUT, start_new_session=True)
         self.procs.append(p)
         if not spin(sec, lambda: count(ready_topic) > base or p.poll() is not None) or p.poll() is not None:
@@ -307,13 +315,34 @@ def case_approach_after_failure(c):
     send_object(c, 2.18, 0.5)
     if not spin(8.0, lambda: nav.goals):
         raise SetupError("the first approach goal never reached the mock Nav2")
-    spin(2.0)
-    t1 = send_object(c, 1.5, -1.0)  # a second, different object
+    if not spin(5.0, lambda: c.rig.got["/goal_reached"]):
+        return False, "Nav2 rejected goal 1; /goal_reached silent"
+    t1 = send_object(c, 1.5, -1.0)  # a second, different object, inside the back-off
+    spin(1.0)
+    early = len(c.rig.since("/goal_pose", t1))
+    spin(RETRY_BACKOFF)
+    t2 = send_object(c, 1.5, -1.0)  # the same object again, after the back-off
+    spin(5.0, lambda: c.rig.since("/goal_pose", t2))
+    second = c.rig.since("/goal_pose", t2)
+    reached = [m.data for _, m in c.rig.got["/goal_reached"]]
+    return bool(second) and not early, (f"Nav2 rejected goal 1; /goal_reached {reached}; second object -> "
+                                        f"{early} /goal_pose inside the back-off (want 0), {len(second)} after it")
+
+
+def case_approach_after_release(c):
+    """A finished cycle must not block the next one. An in-range object starts the arm
+    and sets the guard with no nav goal, so no /goal_reached will ever clear it."""
+    approach_rig(c)
+    c.rig.pub("/manipulator/release", Bool)
+    t0 = send_object(c, 0.60, 0.10)  # in range: /manipulation/start, no goal
+    if not spin(4.0, lambda: c.rig.since("/manipulation/start", t0)):
+        raise SetupError("the in-range object never produced /manipulation/start")
+    c.rig.send("/manipulator/release", Bool(data=True))
+    spin(1.0)
+    t1 = send_object(c, 2.18, 0.5)  # a second object, out of range
     spin(5.0, lambda: c.rig.since("/goal_pose", t1))
     second = c.rig.since("/goal_pose", t1)
-    reached = [m.data for _, m in c.rig.got["/goal_reached"]]
-    return bool(second), (f"Nav2 rejected goal 1; /goal_reached {reached or 'silent'}; "
-                          f"second object -> {len(second)} /goal_pose")
+    return bool(second), f"cycle 1 started the arm, then release; second object -> {len(second)} /goal_pose"
 
 
 def bridge_rig(c):
@@ -340,6 +369,22 @@ def case_bridge_server_down(c):
     got = [(round(ts - t0, 1), m.data) for ts, m in c.rig.got["/goal_reached"] if ts >= t0]
     ok = any(m == "failed" and dt <= 6.0 for dt, m in got)
     return ok, f"no Nav2 on the channel; /goal_reached in 8 s: {got or 'nothing'}"
+
+
+def case_bridge_nav2_goes_away(c):
+    nav = c.nav2("hang")
+    bridge_rig(c)
+    c.rig.send("/goal_pose", pose("map", 1.0, 0.0))
+    if not spin(8.0, lambda: nav.goals):
+        raise SetupError("the goal never reached the mock Nav2")
+    spin(1.5)  # accepted, navigating
+    before = [m.data for _, m in c.rig.got["/goal_reached"]]
+    t0 = time.time()
+    nav.close()  # Nav2 dies with the goal still open
+    spin(10.0, lambda: c.rig.since("/goal_reached", t0))
+    after = [m.data for m in c.rig.since("/goal_reached", t0)]
+    return not before and after == ["failed"], (f"goal accepted, /goal_reached {before or 'silent'}; "
+                                                f"Nav2 gone -> {after or 'nothing in 10 s'}")
 
 
 def glasses_rig(c, camera=True):
@@ -481,20 +526,52 @@ def case_robot_pose(c):
     return ok, f"{hz:.1f} Hz, '{m.header.frame_id}', at {xy(m.pose.position)} yaw {yaw_of(m.pose.orientation):.2f} (want ({x}, {y}) yaw {yaw})"
 
 
+# each node, and the topic that shows it is up (as the cases above start them)
+READY = [("object_approach_node.py", "/manipulation/goal_pose", "sub"),
+         ("goal_reached_publisher.py", "/goal_pose", "sub"),
+         ("goto_glasses.py", "/goto_glasses/trigger", "sub"),
+         ("qos_relay.py", "/livox/lidar", "sub"),
+         ("pose_publisher.py", "/robot_pose", "pub")]
+
+
+def case_clean_ctrl_c(c):
+    """Ctrl+C (SIGINT, as Case.close sends it) must end each node with exit code 0 and
+    no traceback. Before the F4 fix all five printed one, in three shapes."""
+    bad = []
+    for script, topic, kind in READY:
+        out = LOG.parent / f"bench_nav_ctrl_c_{script}.txt"
+        with open(out, "w") as f:
+            p = c.start(script, topic, kind=kind, out=f)
+            os.killpg(p.pid, signal.SIGINT)
+            try:
+                code = p.wait(5)
+            except subprocess.TimeoutExpired:
+                os.killpg(p.pid, signal.SIGKILL)
+                code = f"hung, killed ({p.wait(5)})"
+        text = out.read_text(errors="replace")
+        c.log.write(f"\n===== {script} after SIGINT, exit {code} =====\n{text}")
+        if code != 0 or "Traceback" in text:
+            bad.append(f"{script} exit {code}{', traceback' if 'Traceback' in text else ''}")
+    return not bad, "; ".join(bad) or "all five exited 0 with no traceback"
+
+
 CASES = [  # name, kind, audit id, scripts it starts, function
     ("approach, far object", "control", "", ["object_approach_node.py"], case_approach_far),
     ("approach, near object", "control", "", ["object_approach_node.py"], case_approach_near),
     ("approach, missing camera", "control", "", ["object_approach_node.py"], case_approach_missing_camera),
     ("approach, nav succeeds", "control", "", ["object_approach_node.py", "goal_reached_publisher.py"], case_approach_nav_succeeds),
     ("approach after nav failure", "xfail", "F1", ["object_approach_node.py", "goal_reached_publisher.py"], case_approach_after_failure),
+    ("approach after release", "xfail", "F5", ["object_approach_node.py"], case_approach_after_release),
     ("goal bridge, nav aborts", "control", "", ["goal_reached_publisher.py"], case_bridge_aborts),
     ("goal bridge, server down", "xfail", "F1", ["goal_reached_publisher.py"], case_bridge_server_down),
+    ("goal bridge, Nav2 goes away", "xfail", "F1", ["goal_reached_publisher.py"], case_bridge_nav2_goes_away),
     ("return retry", "xfail", "F2", ["goto_glasses.py"], case_return_retry),
     ("return camera clearance", "control", "", ["goto_glasses.py"], case_return_camera),
     ("return missing camera", "control", "", ["goto_glasses.py"], case_return_missing_camera),
     ("fused pose frame", "xfail", "E1", ["goto_glasses.py"], case_fused_pose_frame),
     ("QoS relay", "control", "J4", ["qos_relay.py"], case_qos_relay),
     ("robot pose", "control", "", ["pose_publisher.py"], case_robot_pose),
+    ("clean Ctrl+C", "xfail", "F4", [s for s, _, _ in READY], case_clean_ctrl_c),
 ]
 
 

@@ -1,0 +1,67 @@
+T6.4c -- object store tests on the lab box   lab box, scratch copy in /tmp, 2026-10-07 19:01
+===========================================================================================
+First run of the S11 insert-or-merge tests (memory_graph/tests/test_object_store.py), and a
+rerun of every other memory graph test with the new code present. Run by Zongzhe's session
+over ssh, with Zongzhe's go-ahead.
+
+  RESULT: PASS for T6.4c. 17 tests in test_object_store.py, 17 passed, 0 failed, 0 skipped.
+  All memory graph tests: 75 ran, 74 passed, 0 failed, 1 SKIPPED (the whole encoder file).
+
+  Covers the T6.4c done-when: 10 views of one object give 1 entry with 10 labels, 10 sightings
+  and a bounded point count. The entry held 800 points after 10 views, with 7526 fed in. The
+  count reached 800 at the third view and stayed there.
+
+  NOT covered: memory_graph/tests/test_clip_encoder.py, SKIPPED. open_clip is not installed in
+  the shared .venv. That file holds the merge test with real CLIP vectors, written in this
+  change. It has not run anywhere yet. The same averaging is tested here with plain vectors.
+  Not a full bench run: only the memory graph tests. CPU only, no GPU, no ROS, no hardware.
+
+How it was run [observed]
+  Code: the working tree of branch t6.4c-insert-or-merge (cut from dev at 3dde592), copied from
+        the Mac to /tmp/zongzhe-t6.4c on the lab box before it was committed, and deleted after
+        the run. ~/rcp-Gappler stayed on dev at 3dde592 and was not modified.
+  Python: the shared ~/rcp-Gappler/.venv, read only. PYTHONDONTWRITEBYTECODE=1, so no cache
+        files were written. Nothing was installed.
+  Checked first that no bench or CI run was active (pgrep Runner.Worker, bench/run.sh).
+  To repeat, in a checkout of the branch:
+        ~/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_object_store
+
+Full output [observed]
+-------------------------------------------------------------------------------------------
+host: iot22-Computer   date: 2026-10-07 19:01 CST
+python: /home/rcp2026/rcp-Gappler/.venv/bin/python 3.10.12 numpy 2.2.6 scipy 1.15.3
+
+######## python -m unittest -v memory_graph.tests.test_object_store ########
+test_targets_must_match_candidates (memory_graph.tests.test_object_store.BadInputTest) ... ok
+test_unknown_target_is_an_error_and_changes_nothing (memory_graph.tests.test_object_store.BadInputTest) ... ok
+test_a_sighting_without_a_feature_does_not_dilute_it (memory_graph.tests.test_object_store.FeatureTest) ... ok
+test_an_unnormalised_feature_gets_no_extra_weight (memory_graph.tests.test_object_store.FeatureTest) ... ok
+test_feature_is_the_sighting_average_renormalised (memory_graph.tests.test_object_store.FeatureTest) ... ok
+test_no_feature_at_all_is_none (memory_graph.tests.test_object_store.FeatureTest) ... ok
+test_label_is_the_majority_and_the_index_follows_it (memory_graph.tests.test_object_store.LabelTest) ... ok
+test_ids_are_never_reused (memory_graph.tests.test_object_store.MergeObjectsTest) ... ok
+test_merging_an_entry_with_itself_does_nothing (memory_graph.tests.test_object_store.MergeObjectsTest) ... ok
+test_the_survivor_takes_everything (memory_graph.tests.test_object_store.MergeObjectsTest) ... ok
+test_new_candidates_from_one_photo_stay_separate (memory_graph.tests.test_object_store.SamePhotoTest) ... ok
+test_two_candidates_may_merge_into_one_entry (memory_graph.tests.test_object_store.SamePhotoTest)
+Greedy matching, D-MG8: both are fused, and the one edge counts two. ... ok
+test_an_entry_outlives_its_anchors (memory_graph.tests.test_object_store.TenViewsTest)
+The graph forgets an object with no anchor left. The store does not. ... ok
+test_an_object_elsewhere_is_a_new_entry (memory_graph.tests.test_object_store.TenViewsTest) ... ok
+test_each_sighting_records_its_anchor (memory_graph.tests.test_object_store.TenViewsTest)
+The hook for D-MG9: an entry can be rebuilt from its anchors. ... ok
+test_ten_views_give_one_entry (memory_graph.tests.test_object_store.TenViewsTest)
+The T6.4c done-when: 10 views of one object give 1 entry with 10 ... ok
+test_the_box_follows_the_merged_cloud (memory_graph.tests.test_object_store.TenViewsTest) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.166s
+
+OK
+
+######## every test in memory_graph/tests (unittest discover) ########
+----------------------------------------------------------------------
+Ran 75 tests in 0.342s
+
+OK (skipped=1)
+SKIP: memory_graph.tests.test_clip_encoder (unittest.loader.ModuleSkipped) needs open_clip and torch: No module named 'open_clip'

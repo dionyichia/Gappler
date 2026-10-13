@@ -1,8 +1,10 @@
 """S4 erosion and S5 mask cleanup (part of T6.3d).
 
-The box-to-mask model itself (S4's segmenter) is not here yet: which model
-(MobileSAM as upstream, or the SAM 3 the arm pipeline already runs) is still
-open. Anything that returns one bool mask per box can feed these functions.
+The masks come from SAM 3, the model the arm pipeline already runs, not
+upstream's MobileSAM (D-MG6 in docs/MEMORY_GRAPH_DESIGN.md). sam3_adapter.py
+turns its result into Detections and calls clean_masks. Anything that returns
+one bool mask per box can feed these functions, so the model can be changed
+later.
 """
 
 from __future__ import annotations

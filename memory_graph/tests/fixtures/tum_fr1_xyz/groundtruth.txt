@@ -1,0 +1,5 @@
+# ground truth trajectory
+# file: 'rgbd_dataset_freiburg1_xyz.bag'
+# timestamp tx ty tz qx qy qz qw
+1305031102.1758 1.3405 0.6266 1.6575 0.6574 0.6126 -0.2949 -0.3248
+1305031106.3158 1.0733 0.6329 1.3610 0.6967 0.6145 -0.2576 -0.2660

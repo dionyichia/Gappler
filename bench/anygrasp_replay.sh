@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # L4 -- replay recorded wrist-camera frames through SAM 3 and AnyGrasp (PROJECT_PLAN T0.12).
-# Plays a bag made by grasp/tools/record_wrist_camera.sh, runs sam3_ros_node and
-# anygrasp_detection_node on it, and plays the state machine's part by publishing
+# Plays a bag made by grasp/tools/record_wrist_camera.sh, runs the segmentation service, the grasp
+# segmentation client (T2.1) and anygrasp_detection_node on it, and plays the state machine's part by publishing
 # /pipeline_state. No camera, no arm, no state machine: nothing can move.
 #
-#   ./bench/anygrasp_replay.sh      needs ./build.sh (grasp_interfaces), .venv (SAM 3),
+#   ./bench/anygrasp_replay.sh      needs ./build.sh (grasp_interfaces, segmentation_interfaces), .venv (SAM 3),
 #                                   grasp/anygrasp_venv/.venv, the weights, and a recording
 #
 # Env: WRIST_CAMERA_BAG (default assets/recordings/wrist_camera), BENCH_DOMAIN (default 77).
@@ -22,7 +22,7 @@ skip() { echo "SKIP: $*"; exit 3; }
 [ -x "$REPO/.venv/bin/python" ] || skip "no .venv -- run uv sync"
 [ -x "$REPO/grasp/anygrasp_venv/.venv/bin/python" ] || skip "no grasp/anygrasp_venv/.venv -- run ./grasp/anygrasp_venv/build_anygrasp_venv.sh"
 [ -f "$REPO/grasp/anygrasp_node/log/checkpoint_detection.tar" ] || skip "AnyGrasp checkpoint missing (docs/ASSETS.md)"
-[ -f "$REPO/aria/aria_app/models/sam3/sam3.pt" ] || skip "SAM 3 weights missing (docs/ASSETS.md)"
+[ -f "${GAPPLER_SAM3_WEIGHTS:-$REPO/assets/models/sam3/sam3.pt}" ] || skip "SAM 3 weights missing (docs/ASSETS.md)"
 export ROS_DOMAIN_ID="$DOMAIN" ROS_LOCALHOST_ONLY=1 PYTHONUNBUFFERED=1
 # the grasp subsystem's own env: ROS, install/, shared/ (gappler_common) and .venv
 set +u; source "$REPO/grasp/grasp_env.sh" || { echo "FAIL: grasp/grasp_env.sh did not load"; exit 1; }; set -u

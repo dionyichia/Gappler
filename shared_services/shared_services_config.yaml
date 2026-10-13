@@ -1,0 +1,13 @@
+# Shared services config: values only the shared services read, one section per node.
+# Values more than one subsystem reads (like the service names) are in shared/global_config.yaml.
+# Read with gappler_common.config("shared_services", "<node>").
+# Format: a ROS parameter file, like the subsystem config files.
+
+# shared_services/segmentation/segmentation_service.py
+segmentation_service:
+  ros__parameters:
+    min_score: 0.5        # SAM 3 score below this is not a detection, when the request sends 0
+    max_detections: 5     # most detections per reply, when the request sends 0
+    # No depth for a mask unless at least this share of its pixels has a reading. Too close to
+    # the camera, the few readings left are background: a box at 0.15 m read 1.26 m (T1.24 3b).
+    min_valid_depth_fraction: 0.5

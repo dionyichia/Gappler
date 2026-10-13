@@ -5,7 +5,8 @@ private, no rm_driver exists and the real arm is unreachable. This test plays ev
   camera      /camera/camera/color/camera_info  (the real D435i intrinsics, docs/archive/output.log:200)
   camera TF   camera_link -> ... -> camera_color_optical_frame, only if the model lacks it (the
               RealSense driver publishes these on the robot)
-  detector    /object_centroid_2d: an object straight ahead, far, then near
+  detector    /object_centroid_2d: an object straight ahead, far, lost for a while, far, then near
+  operator    /manipulator/grasp_request: centroids only count after one (T1.25)
   gripper     records /rm_driver/set_gripper_{position,pick_on}_cmd -- nothing acts on them
 and watches /pipeline_state, /joint_states, /manipulator/return_to_user and the launch log.
 
@@ -28,7 +29,7 @@ try:
     from rclpy.time import Time
     from geometry_msgs.msg import PointStamped, TransformStamped
     from sensor_msgs.msg import CameraInfo, JointState
-    from std_msgs.msg import Bool, String
+    from std_msgs.msg import Bool, Empty, String
     from tf2_ros import Buffer, StaticTransformBroadcaster, TransformListener
     from rm_ros_interfaces.msg import Gripperpick, Gripperset
 except ImportError as e:
@@ -64,6 +65,7 @@ class Actors(Node):
         self.create_subscription(Bool, "/manipulator/return_to_user", lambda m: self.returned.append((now(), m.data)), 10)
         self.cam_pub = self.create_publisher(CameraInfo, "/camera/camera/color/camera_info", 1)
         self.cen_pub = self.create_publisher(PointStamped, "/object_centroid_2d", 10)
+        self.req_pub = self.create_publisher(Empty, "/manipulator/grasp_request", 10)
         self.depth = None
         self.create_timer(0.2, self._camera)
         self.create_timer(0.1, self._centroid)
@@ -85,6 +87,9 @@ class Actors(Node):
         m.header.frame_id, m.header.stamp = OPT, self.get_clock().now().to_msg()
         m.point.x, m.point.y, m.point.z = CX + OFFSET_X + CY_OFF, CY, self.depth
         self.cen_pub.publish(m)
+
+    def request(self):
+        self.req_pub.publish(Empty())
 
     def spin_until(self, pred, sec):
         end = time.time() + sec
@@ -183,14 +188,30 @@ def main():
                 return check("camera frame reachable from base_link", False,
                              "no camera_link or camera_color_optical_frame in the TF tree")
 
-        # ---- SELECTING: object far, straight ahead -----------------------------
-        t1 = time.time()
+        # ---- gate closed: centroids with no request start nothing (T1.25) -------
+        t_gate = time.time()
         n.depth = FAR
+        n.spin_until(lambda: n.seen("SELECTING", t_gate), 5)
+        ignored = log_has(r"Centroid ignored: no grasp request open")
+        check("centroids with no request are ignored, stays IDLE", ignored and not n.seen("SELECTING", t_gate),
+              "5 s of centroids, no SELECTING, 'Centroid ignored' logged" if ignored and not n.seen("SELECTING", t_gate)
+              else f"SELECTING {'seen' if n.seen('SELECTING', t_gate) else 'not seen'}, "
+                   f"'Centroid ignored' {'logged' if ignored else 'not logged'}")
+        if n.seen("SELECTING", t_gate):
+            return
+
+        # ---- SELECTING: request, object far, straight ahead -------------------
+        t1 = time.time()
+        n.request()
         sel = n.spin_until(lambda: n.seen("SELECTING", t1), 120)
-        check("object seen -> re-homes, then SELECTING", sel,
-              "seen" if sel else "no SELECTING within 120 s of the first centroid")
+        check("request + centroid -> re-homes, then SELECTING", sel,
+              "seen" if sel else "no SELECTING within 120 s of the request")
         if not sel:
             return
+        n.request()
+        busy = n.spin_until(lambda: log_has(r"Grasp request ignored: busy"), 5)
+        check("a request during the approach is refused as busy", busy,
+              "'busy' logged" if busy else "no 'busy' line in 5 s")
         before = n.joints()
         moved = n.spin_until(lambda: max(abs(a - b) for a, b in zip(n.joints(), before)) > 0.005
                              or log_has(r"SELECTING: (step failed|Cartesian step failed|EEF transform failed|goal transform failed)"), 90)
@@ -200,6 +221,39 @@ def main():
         if step_fail:
             return
 
+        # ---- object lost mid-approach: centroids stop, the age limit ends it ---
+        t_lost = time.time()
+        n.depth = None
+        # Wait for both: IDLE on the topic can arrive before the log line reaches the file
+        lost = n.spin_until(lambda: n.seen("IDLE", t_lost) and log_has(r"object lost"), 60)
+        check("centroids stop -> approach ends, back to IDLE", lost,
+              "'object lost' logged, IDLE seen" if lost else
+              f"in 60 s: IDLE {'seen' if n.seen('IDLE', t_lost) else 'not seen'}, "
+              f"'object lost' {'logged' if log_has(r'object lost') else 'not logged'}")
+        if not lost:
+            return
+        # A request with no centroid lapses after grasp_request_timeout_s (10 s)
+        t_lapse = time.time()
+        n.request()
+        lapsed = n.spin_until(lambda: log_has(r"Grasp request lapsed"), 20)
+        check("a request with no centroid lapses, stays IDLE", lapsed and not n.seen("SELECTING", t_lapse),
+              "'lapsed' logged, no SELECTING" if lapsed else "no 'lapsed' line in 20 s")
+        if not lapsed:
+            return
+        # The failed approach closed the gate: the object coming back needs a new request
+        t_back = time.time()
+        n.depth = FAR
+        n.spin_until(lambda: False, 2)
+        if n.seen("SELECTING", t_back):
+            return check("gate closed again after the failed approach", False,
+                         "SELECTING with no new request")
+        n.request()
+        ignored_before = log_count(r"Centroid ignored")
+        back = n.spin_until(lambda: n.seen("SELECTING", t_back), 120)
+        check("object back + new request -> SELECTING again", back, "seen" if back else "no SELECTING within 120 s")
+        if not back:
+            return
+
         # ---- EXECUTING: object now within reach --------------------------------
         t2 = time.time()
         n.depth = NEAR
@@ -207,6 +261,10 @@ def main():
         check("object near -> EXECUTING", ex, "seen" if ex else "no EXECUTING in 90 s")
         if not ex:
             return
+        # Centroids keep coming at NEAR. Once the snapshot is taken they must be dropped
+        after_snap = n.spin_until(lambda: log_count(r"Centroid ignored") > ignored_before, 10)
+        check("centroids after the EXECUTING snapshot are ignored", after_snap,
+              "'Centroid ignored' logged after EXECUTING" if after_snap else "none logged in 10 s")
         opened = n.spin_until(lambda: any(k == "set_position" and t >= t2 for t, k, _ in n.grip), 15)
         check("gripper told to open", opened,
               next((d for t, k, d in n.grip if k == "set_position" and t >= t2), "no set_gripper_position_cmd"))

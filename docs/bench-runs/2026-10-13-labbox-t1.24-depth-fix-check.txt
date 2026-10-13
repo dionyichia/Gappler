@@ -1,0 +1,13 @@
+T1.24 too-close depth fix (PR #62) checked at the box, before 3c
+2026-10-13, lab box, ~/rcp-Gappler on dev e19d58a (PR #62 merged, min_valid_depth_fraction 0.5).
+Domain 91, localhost only. Arm off, no rm_driver, no state machine. Dion at the robot sliding the
+box. Claude Opus 5.5 started and read tmux session t1_24_3c, window check: camera 640x480x15,
+segmentation service (SAM 3 loaded in 57 s), grasp client (prompt 'box'), topic hz and echo.
+
+Box slid toward the wrist camera and back, about 6 times. 119 z values from /object_centroid_2d.
+  Every pass reached below 0.18 m: lowest 0.156 to 0.170 m.                      PASS
+  Closer than that, centroids stop. No value above 0.38 m (before the fix,
+  17 frames read 1.22 to 1.28 m in the same test).                                PASS
+  Average rate 0.71 to 0.74 per second, gaps while moving the box included.
+
+Result: PASS. 3c can go ahead.

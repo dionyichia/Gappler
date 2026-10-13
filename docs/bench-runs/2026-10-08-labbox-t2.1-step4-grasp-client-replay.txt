@@ -1,0 +1,24 @@
+T2.1 step 4: the grasp segmentation client on the recorded box video, with AnyGrasp
+Date: 2026-10-08   Machine: lab box (iot22-Computer), ~/rcp-Gappler   Branch: t2.1-sam3-service
+(working tree = commit ca541ee plus the step 4 files, committed right after this run)
+Run by: Claude Opus 5.5 for Dion. GPU free before each run (only the remote desktop, 120 MiB).
+No camera, no arm. ROS channel 77 (replay) and 78 (unit tests), localhost only.
+
+RESULT: PASS
+
+1. Unit tests, grasp_env.sh:
+   python -m unittest discover -s grasp/grasp_segmentation_client -p "test_*.py"
+   Ran 16 tests ... OK
+
+2. ./bench/anygrasp_replay.sh, now starting segmentation_service.py + grasp_segmentation_client.py
+   (default_prompt "box") in place of sam3_ros_node:
+     [PASS ] segmentation       117 masks, 117 centroids in 60 s, mean area 4.1 % of the image, median depth 0.360 m
+     [PASS ] grasp detection    144 candidate sets, 2.39/s, top score 0.370
+     [XFAIL] gate (A1)          EXECUTING 0 sets, IDLE 144 sets (want EXECUTING > 0, IDLE 0)
+   RESULT: PASS (controls pass; XFAIL = known finding reproduced)
+
+Compared with sam3_ros_node on the same recording (2026-09-22-labbox-t0.12-anygrasp-replay.txt):
+119 masks in 61 s, mean area 4.1 %. Same rate and the same masks, through the service.
+
+A first attempt failed at setup: AnyGrasp's licence check calls ifconfig, which lives in /sbin,
+and the shell had PATH=/usr/bin:/bin. Not a code fault. Re-run with the normal system PATH.

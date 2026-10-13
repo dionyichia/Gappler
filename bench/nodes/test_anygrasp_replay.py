@@ -1,11 +1,11 @@
 """Recorded wrist-camera frames through SAM 3 and AnyGrasp (PROJECT_PLAN T0.12).
 
 Run by bench/anygrasp_replay.sh, which has already proven the ROS channel is private and
-empty. Plays the bag on a loop, starts sam3_ros_node (.venv) and anygrasp_detection_node
-(grasp/anygrasp_venv/.venv) as launchers/start_camera_arm_sam3_grasp.py does, then publishes
+empty. Plays the bag on a loop, starts the segmentation service and the grasp segmentation
+client (.venv, T2.1) and anygrasp_detection_node (grasp/anygrasp_venv/.venv), then publishes
 /pipeline_state the way grasp_state_machine does: EXECUTING for a while, then IDLE.
 
-  control  segmentation      SAM 3 publishes a mask on the recorded frames
+  control  segmentation      a mask and a centroid on the recorded frames
   control  grasp detection   AnyGrasp publishes candidates in either state
   xfail    gate (A1)         candidates during EXECUTING and none during IDLE
 
@@ -21,7 +21,9 @@ from pathlib import Path
 
 try:
     import rclpy
+    from geometry_msgs.msg import PointStamped
     from grasp_interfaces.msg import GraspCandidateArray
+    from segmentation_interfaces.srv import Segment
     from sensor_msgs.msg import Image
     from std_msgs.msg import String
 except ImportError as e:
@@ -32,7 +34,6 @@ REPO = Path(__file__).resolve().parents[2]
 LOG = REPO / os.environ.get("BENCH_REPLAY_LOG", "log/bench_anygrasp_replay.txt")
 BAG = os.environ.get("WRIST_CAMERA_BAG", str(REPO / "assets/recordings/wrist_camera"))
 ANYGRASP_DIR = REPO / "grasp/anygrasp_node"
-SAM3_WORK_DIR = REPO / "aria/aria_app/services/object_recognition"
 PHASE_SEC = 30.0   # each /pipeline_state phase
 LOAD_SEC = 180.0   # both models loading on one GPU
 
@@ -40,8 +41,11 @@ LOAD_SEC = 180.0   # both models loading on one GPU
 def main():
     rclpy.init()
     node = rclpy.create_node("bench_anygrasp_replay")
-    masks, grasps = [], []   # (time, msg)
+    masks, centroids, grasps = [], [], []   # (time, msg)
     node.create_subscription(Image, "/camera/sam/mask", lambda m: masks.append((time.time(), m)), 10)
+    node.create_subscription(PointStamped, "/object_centroid_2d",
+                             lambda m: centroids.append((time.time(), m)), 10)
+    segment = node.create_client(Segment, "/segmentation/segment")
     node.create_subscription(GraspCandidateArray, "/grasp_candidates",
                              lambda m: grasps.append((time.time(), m)), 10)
     state_pub = node.create_publisher(String, "/pipeline_state", 10)
@@ -76,17 +80,22 @@ def main():
     results = []   # (tag, name, detail)
     try:
         sam_env = dict(os.environ, PYTHONPATH=f"{REPO / 'aria/aria_app'}{os.pathsep}{os.environ.get('PYTHONPATH', '')}")
-        sam = start([REPO / ".venv/bin/python", REPO / "grasp/segmentation/sam3_ros_node.py"],
-                    cwd=SAM3_WORK_DIR, env=sam_env)
+        sam = start([REPO / ".venv/bin/python",
+                     REPO / "shared_services/segmentation/segmentation_service.py"], env=sam_env)
+        client = start([REPO / ".venv/bin/python",
+                        REPO / "grasp/grasp_segmentation_client/grasp_segmentation_client.py"])
         ag = start([REPO / "grasp/anygrasp_venv/.venv/bin/python", "anygrasp_detection_node.py",
                     "--checkpoint_path", "log/checkpoint_detection.tar"], cwd=ANYGRASP_DIR)
         # AnyGrasp creates its publisher only after the model has loaded
+        # the service exists only once SAM 3 has loaded
         ready = spin(LOAD_SEC, lambda: node.count_publishers("/grasp_candidates") > 0
+                     and segment.service_is_ready()
                      and node.count_publishers("/camera/sam/mask") > 0
-                     or sam.poll() is not None or ag.poll() is not None)
-        if not ready or sam.poll() is not None or ag.poll() is not None:
-            raise RuntimeError(f"models not loaded in {LOAD_SEC:.0f} s (sam exit {sam.poll()}, "
-                               f"anygrasp exit {ag.poll()}) -- see {LOG.name}")
+                     or any(p.poll() is not None for p in (sam, client, ag)))
+        if not ready or any(p.poll() is not None for p in (sam, client, ag)):
+            raise RuntimeError(f"models not loaded in {LOAD_SEC:.0f} s (service exit {sam.poll()}, "
+                               f"client exit {client.poll()}, anygrasp exit {ag.poll()}) "
+                               f"-- see {LOG.name}")
         start(["ros2", "bag", "play", "--loop", BAG])
 
         t0 = time.time()
@@ -96,10 +105,14 @@ def main():
         t2 = time.time()
 
         area = [sum(m.data) / len(m.data) for _, m in masks] if masks else []
-        seg_ok = bool(masks)
+        seg_ok = bool(masks) and bool(centroids)
+        depth = [m.point.z for _, m in centroids]
         results.append(("PASS " if seg_ok else "FAIL ", "segmentation",
-                        f"{len(masks)} masks in {t2 - t0:.0f} s, mean area {100 * sum(area) / len(area):.1f} % of the image"
-                        if seg_ok else "no mask -- is the prompt object in the recording? (sam3_ros_node TEXT_PROMPT)"))
+                        f"{len(masks)} masks, {len(centroids)} centroids in {t2 - t0:.0f} s, "
+                        f"mean area {100 * sum(area) / len(area):.1f} % of the image, "
+                        f"median depth {sorted(depth)[len(depth) // 2]:.3f} m"
+                        if seg_ok else f"{len(masks)} masks, {len(centroids)} centroids -- is the "
+                        "prompt object in the recording? (grasp_config.yaml default_prompt)"))
 
         def phase(a, b):
             ms = [m for ts, m in grasps if a <= ts < b]

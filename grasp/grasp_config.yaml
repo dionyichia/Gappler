@@ -28,11 +28,16 @@
     # read by: anygrasp_node, anygrasp_detection_node
     num_grasp_candidates: 5
 
-# grasp/segmentation/sam3_ros_node.py
-sam3_ros_node:
+# grasp/grasp_segmentation_client/grasp_segmentation_client.py
+grasp_segmentation_client:
   ros__parameters:
-    text_prompt: "box"   # fixed object word until voice is wired in (T1.12)
-    confidence: 0.5      # SAM3 score below this is not a detection
+    # FOR TESTING THE GRASP CLIENT WITHOUT THE GLASSES ONLY (bench, arm bring-up).
+    # Used at start when nothing publishes on /grasp/target. Dropped as soon as something does,
+    # or on the first Target message, so a spoken word always wins. "" = wait for a Target.
+    default_prompt: "box"
+    # Give up on a request with no reply after this long, so a service that dies mid-call does not
+    # stall the client for good. A normal call takes about 0.25 s.
+    segment_timeout_s: 5.0
 
 # grasp/anygrasp_node/anygrasp_detection_node.py
 anygrasp_detection_node:
@@ -58,6 +63,22 @@ grasp_state_machine:
     approach_step_final_m: 0.10      # step in the final simple execute
     max_approach_steps: 50
     execute_depth_thresh_m: 0.18     # stop approaching when the object is this close
+    # End the approach if the newest centroid is older than this. Age counts from the camera
+    # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
+    # frame (measured 2026-10-12, T1.24 3b)
+    centroid_max_age_s: 2.0
+    # After a /manipulator/grasp_request, the first centroid must arrive within this time or the
+    # request lapses (T1.25). SAM 3 gives the first one in about 1 s when the object is in view
+    # (0.27 to 0.53 s per frame, 0.5 s warm-up, measured 2026-10-08 and 2026-10-12)
+    grasp_request_timeout_s: 10.0
+    # Wait before planning each Cartesian step, so the real arm has settled after the last one.
+    # With no wait the second approach step was rejected, "start point deviates from current
+    # robot state more than 0.01" (T1.24 3c, 2026-10-13)
+    step_settle_s: 0.5
+    # Top of the table, in metres above the arm's base_link. The planner's "table" collision box
+    # sits just under it. Measured 2026-10-13 (T1.24 3c): 0.68 m from the floor, 0.12 m above the
+    # arm base. Was hard-coded at 0.195 m, 7.5 cm too high, which stopped the approach short
+    table_top_z_m: 0.12
     final_exec_thresh_m: 0.25
     centroid_target_offset_x_px: 55.0   # where the object should sit in the image, from centre
     centroid_target_offset_y_px: 0.0

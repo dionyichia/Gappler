@@ -1,0 +1,71 @@
+T2.11: SAM 3 time per call at the wrist camera's default 1280x720 against 640x480
+2026-10-13, lab box (rcp2026@100.98.10.50), ~/rcp-Gappler on dev at 49d80f7 (PR #57 merged)
+Run over SSH by Claude Opus 5.5. Domain 93, ROS_LOCALHOST_ONLY=1, checked empty first.
+Arm off, no state machine, no rm_driver, no MoveIt. Wrist camera pointed at the ceiling.
+Raw logs on the box: ~/t211_logs/ (probe.py, mode.sh, service.log, camera_*.log, probe_*.json,
+camcpu_*.txt).
+
+Before start
+  nvidia-smi 522 MiB, 0 %. fuser /dev/video*: nothing. No rs_launch, ros2 launch, bench or
+  runner job running. One tmux session not ours (b1, a shell), left alone.
+
+Processes (each started with setsid, stopped only by its own process group)
+  service  pgid 258074  shared_services/segmentation/segmentation_service.py, loaded in 9 s
+  camera   one per mode, ros2 launch realsense2_camera rs_launch.py serial_no:=_243222074878
+           align_depth.enable:=true, plus the mode's arguments below
+
+Method (probe.py)
+  Wait for color, aligned depth and camera_info. Count frames received for 10 s with no calls.
+  Then 20 calls to /segmentation/segment, prompt "light", each on the newest frame.
+  inference = the service's own inference_ms, round trip = the probe's call to answer.
+  Modes run in the order A1, B1, A2, C1, B2, so CPU heat hits both sizes.
+
+Modes
+  A  rgb_camera.color_profile:=640x480x15 depth_module.depth_profile:=640x480x15  (3b settings)
+  B  pointcloud.enable:=true, nothing else  (what ./quickstart_terminals.sh grasp starts)
+     Driver defaults: color 1280x720x30, depth 848x480x30. Aligned depth comes out 1280x720.
+  C  driver defaults, no point cloud
+
+Results (medians of 20 calls, ranges in brackets)
+  mode  frames   rate in   request  inference        round trip       camera CPU  CPU
+  A1    640x480  15 / 15   1.5 MB   258 ms (254-534) 271 ms (257-547)  23 %       89-93 C
+  A2    640x480  15 / 15   1.5 MB   271 ms (267-298) 279 ms (270-311)  32 %       89 C
+  B1    1280x720 25 / 25   4.6 MB   412 ms (367-507) 429 ms (382-533)  66 %       90-92 C
+  C1    1280x720 30 / 30   4.6 MB   362 ms (345-373) 380 ms (357-392)  66 %       90 C
+  B2    1280x720 30 / 30   4.6 MB   367 ms (329-376) 382 ms (350-396)  88 %       89-90 C
+  rate in = color / aligned depth frames per second at the probe.
+  camera CPU = the realsense node, % of one thread, sampled once a second.
+  SAM 3 found the light in every call of every mode (1 detection each time).
+
+What it shows
+  1. 1280x720 costs about 40 % more per call: 360-410 ms against 260-270 ms. SAM 3 resizes
+     every image to the same input size itself [inferred], so the extra time is in the bigger
+     request (3x the bytes) and the work on full-size images around the model: conversion,
+     resize, mask upsampling, depth lookup [inferred, not profiled].
+  2. Best case for the grasp client, calling back to back: about 2.6 calls a second at
+     1280x720, 3.6 at 640x480. Both clear the 2.0 s stale-centroid limit (T1.24).
+  3. The point cloud does not change SAM 3's time (C1 vs B2) but takes the camera node from
+     66 % to 88 % of a thread. The grasp path does not use it [unverified: check before
+     dropping it from quickstart].
+  4. The driver defaults now deliver frames. On 2026-10-07 they sent none. Today 25-30 fps.
+     B1 logged one "Frames didn't arrive within 5 seconds" warning, about 23 s after start,
+     B2 and C1 none [unverified whether it was during the probe or during shutdown].
+  5. The CPU stayed at 89-93 C the whole run, clock 800-1500 MHz (intel_powerclamp, as on
+     2026-10-12). All numbers above are on a throttled CPU. A1's one 534 ms call is the first.
+
+Not measured
+  The full loop through grasp_segmentation_client.py (its own centroid rate at each size).
+  Depth quality at short range. A RealSense's closest usable depth depends on the depth
+  resolution [unverified for this camera], which matters for 3b's "distance where z stops".
+
+Decision (Dion, 2026-10-13): pin the grasp layout's wrist camera to 640x480x15, for now.
+  quickstart_terminals.sh grasp now starts it with rgb_camera.color_profile:=640x480x15
+  depth_module.depth_profile:=640x480x15 and no point cloud. Checked on the box with --print:
+  the pane command matches mode A above, which ran clean twice.
+
+Point cloud check (2026-10-13, [code])
+  Nothing in the grasp path subscribes to /camera/camera/depth/color/points. AnyGrasp and the
+  segmentation client read the colour and aligned depth images. MoveIt has no octomap sensor
+  config. The only reader is the RViz display in grasp/grasp_viz/rviz_config.rviz:116, which
+  shows nothing now unless the camera is started with pointcloud.enable:=true.
+  launchers/start_camera_arm_grasp.py:95 and aria/aria_app/main.py:288 still turn it on.

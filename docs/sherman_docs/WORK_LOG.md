@@ -220,6 +220,14 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Whole quick-bench disposition on box: FAIL, exit 1. L0/L1 passed; L2 lacked three model-weight files in the separate test checkout. No guard bypass, asset duplication, full build or whole-stack PASS claimed.
 - Handoff: no hardware driver launched or motion commanded. Original lab checkout/untracked work preserved; user-started communications-only node remains untouched. Power/charging/custody unconfirmed. T3.4 PROGRESS; attended driving/physical stopping remain open, no completion PR or merge. Hosted task-tree Artifact republish owed.
 
+## [2026-10-13] T1.5 | Runbook validated, DONE
+
+- Evidence: [`../bench-runs/2026-10-13-labbox-t1.5-validation.txt`](../bench-runs/2026-10-13-labbox-t1.5-validation.txt); runbook [`../ARM_BRINGUP.md`](../ARM_BRINGUP.md) (banner validated, observed rate note, changelog).
+- Verified: attended session, Sherman operating, Dion at the rear power button. Box `dev` `49d80f7`, overlay rebuilt same day, domain 91 empty. Handshake RM65-BI/controller-3/UDP-5ms-8089; 23,043 wire packets ~14:55:07–14:57:03 (0 drops) spanning echo stamp `1791874553` (joint1–6 finite); `hz` opens ~200 steady; stop path 1 pub + 1 sub; ping 0% loss, 8080 open; no motion commanded or observed. Shutdown: driver exited, estop closed, controller off by Sherman, ping DOWN 15:08:59.
+- Outcome: the cached-readings gap is closed; T1.5 DONE in task-tree with residuals. Supersedes stale branch `t1.5-runbook-followup` (never PR'd, 96 behind).
+- Residuals: ROS-hz late-watch wobble 140–171 (ROS-side, T4.3 candidate); velocity/effort empty (known). Hosted task-tree Artifact republish owed.
+- Next: PR `t1.5-closeout` to `dev`; CI green + merge word.
+
 ## Record Template
 
 ```markdown
