@@ -21,7 +21,7 @@ from config import AriaConfig, ROS2Topics
 from services.arcuo import detect_aruco
 from services.aria_device import AriaStreamClient, ImageObserver
 from services.aria_device.eye_tracking import EyeTrackingPipeline
-from services.aria_device.stream.undistortion_helper import build_remap_maps
+from services.aria_device.stream.undistortion_helper import build_remap_maps, to_published_pixel
 from services.ros import ROSPublisher
 
 logger = logging.getLogger(__name__)
@@ -129,10 +129,12 @@ def rgb_worker(
         except Exception:
             continue
 
-        image = np.rot90(image, -1)
-        rgb_publisher.publish_image(image)
+        rgb_publisher.publish_image(np.ascontiguousarray(np.rot90(image, -1)))
 
-        undistorted_image = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
+        # Undistort, then rotate: the calibration is for the unrotated camera, and its lens centre
+        # is not mid-image, so rotating first shifted the result ~12.5 px (T2.13)
+        undistorted_image = np.ascontiguousarray(
+            np.rot90(cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR), -1))
         undistorted_rgb_publisher.publish_image(undistorted_image)
 
         now = time.monotonic()
@@ -169,6 +171,12 @@ def et_worker(
         return
 
     eye_tracking = EyeTrackingPipeline(device_calibration, rgb_camera_calibration)
+    dest_calibration = get_linear_camera_calibration(
+        AriaConfig.DEST_CALIBRATION_WIDTH_PX,
+        AriaConfig.DEST_CALIBRATION_HEIGHT_PX,
+        AriaConfig.DEST_CALIBRATION_FOCAL_LENGTH,
+        "camera-rgb",
+    )
 
     while not quit_event.is_set():
         try:
@@ -181,6 +189,10 @@ def et_worker(
         gaze_estimate = eye_tracking.predict_eye_gaze(image)
         gaze_estimate = eye_tracking.project_gaze(gaze_estimate=gaze_estimate)
 
+        if gaze_estimate is None:
+            continue
+        # In the pixels of the published undistorted image, where its readers look (T2.9)
+        gaze_estimate = to_published_pixel(gaze_estimate, rgb_camera_calibration, dest_calibration)
         if gaze_estimate is None:
             continue
 

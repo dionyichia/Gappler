@@ -99,3 +99,16 @@ eye_tracking:
   ros__parameters:
     # Gaze has no depth, so the gaze ray is cut at this distance (NEXT_STEPS 2.13, T2.3)
     default_depth_m: 1.5
+
+# read by: aria/aria_app/services/aria_segmentation_client/ (and aria/tools/replay_recording_gaze_pick.py)
+aria_segmentation_client:
+  ros__parameters:
+    # Gaze is averaged over this long before picking: nobody holds their eyes on one point
+    # (Dion, 2026-10-13). 1 s is 10 eye frames at 10 fps.
+    gaze_window_s: 1.0
+    # A glasses image older than gaze_window_s may not match the gaze, so the client waits up to
+    # this long for the next one. The replayed recording sends one every 1.9 s (T2.9).
+    image_wait_s: 3.0
+    # Pick the mask under the gaze, else the nearest within this many pixels of the published
+    # 1408 px image. Recording c2cbafe8 needed about 60 at 1.4 m. Tune on more recordings.
+    pick_radius_px: 80
