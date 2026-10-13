@@ -78,7 +78,8 @@ refused, 3 skipped — never a pass.
 | `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 16 cases, 7 expected-fail (F1 ×3, F5, F2, E1, F4). The F1, F4 and F5 fixes landed 2026-10-05 and 2026-10-07 (T3.8), so those five should now report XPASS. Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
 | `memory_graph_tests.sh [PYTHON]` | every test in `memory_graph/tests`, including `test_clip_encoder.py`, which loads open_clip ViT-B-32 and checks it for upstream's four uses of CLIP: object features, matching, task relevance from text, and scoring a whole photo. Default env: `.venv`. Needs no ROS. One skipped test makes the step SKIPPED. None is skipped by design since 2026-10-07, when the feature merge test was written (T6.4c). The step still reports SKIPPED where open_clip or the weights are missing. Weights: `.venv/bin/python -m memory_graph.clip_encoder` | nothing to isolate: no ROS, no network |
 | `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `grasp/anygrasp_venv/.venv`, built by `./grasp/anygrasp_venv/build_anygrasp_venv.sh` | GPU only, no ROS |
-| `anygrasp_replay.sh` | a recorded wrist-camera bag (`WRIST_CAMERA_BAG`, default `assets/recordings/wrist_camera`, made by `grasp/tools/record_wrist_camera.sh`) through `sam3_ros_node` and `anygrasp_detection_node`, with `/pipeline_state` played as EXECUTING then IDLE. 2 controls (a mask, candidates) and the A1 gate case, expected-fail. SKIPPED with no recording | channel must be empty **including hidden topics**. No camera, no state machine |
+| `anygrasp_replay.sh` | a recorded wrist-camera bag (`WRIST_CAMERA_BAG`, default `assets/recordings/wrist_camera`, made by `grasp/tools/record_wrist_camera.sh`) through the segmentation service, the grasp segmentation client (T2.1, default prompt "box") and `anygrasp_detection_node`, with `/pipeline_state` played as EXECUTING then IDLE. 2 controls (a mask with a centroid, candidates) and the A1 gate case, expected-fail. SKIPPED with no recording | channel must be empty **including hidden topics**. No camera, no state machine |
+| `segmentation_service.sh` | the segmentation service (`shared_services/segmentation/segmentation_service.py`, T2.1) with the real SAM 3, on one frame of the recorded wrist-camera bag read straight from the file. Three calls: image only, image with depth and camera info, empty prompt. SKIPPED with no recording or no SAM 3 weights | channel must be empty **including hidden topics**. No camera, no arm |
 
 Tests that encode a CODE_AUDIT finding assert the *intended* behaviour and report **XFAIL** while the
 bug is there, **XPASS** once it isn't — then retag the finding.
@@ -147,7 +148,7 @@ system's interface — which is worth having in review on its own.
 
 `preflight.py` runs everything up to **but not including** commanding the arm. That line is
 enforced in the code, not just in a comment: the script never publishes to any `/rm_driver/*_cmd`
-topic and never launches `grasp_state_machine` or `launchers/start_camera_arm_sam3_grasp.py`, because both home
+topic and never launches `grasp_state_machine` or `launchers/start_camera_arm_grasp.py`, because both home
 the arm within seconds of start, unprompted (`ORIENTATION.md` §8.1).
 
 Everything short of that is checked, in two runs. The default run (L2) covers the machine: GPU

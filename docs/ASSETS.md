@@ -14,7 +14,7 @@ record. Tags as elsewhere: `[code]` read from source · `[observed]` measured on
 
 | File (repo-relative) | Size | SHA-256 | What it is | Why not in git |
 |---|---|---|---|---|
-| `src/models/sam3/sam3.pt` | 3,450,062,241 B | `9999e2341ceef5e136daa386eecb55cb414446a00ac2b55eb2dfd2f7c3cf8c9e` | SAM 3 segmentation weights | Over GitHub's 100 MB limit; Meta's weights are licence-gated `[inferred]`. Ignored by root `.gitignore:16` |
+| `assets/models/sam3/sam3.pt` (was `aria/aria_app/models/sam3/sam3.pt` until 2026-10-09, `src/models/sam3/` before the reorg) | 3,450,062,241 B | `9999e2341ceef5e136daa386eecb55cb414446a00ac2b55eb2dfd2f7c3cf8c9e` | SAM 3 segmentation weights. Path set once in `shared/global_config.yaml` `paths: sam3_weights`, `GAPPLER_SAM3_WEIGHTS` overrides it per machine | Over GitHub's 100 MB limit; Meta's weights are licence-gated `[inferred]`. Ignored by the `assets/models/` rule |
 | `ros2_robot_ws/src/rm_mtc/src/perception/log/checkpoint_detection.tar` | 296,408,957 B | `a05c3690b95c8b65e78b1bb8a28f1d5ca96613391946e450afacae840bbcf7b2` | AnyGrasp detection network — what `main` launches (`ros2_robot_ws/src/main.py:30`) | Over 100 MB, and ignored **by accident**: `ros2_robot_ws/.gitignore:3` ignores every folder named `log` (meant for colcon logs) |
 | `ros2_robot_ws/src/rm_mtc/src/perception/log/checkpoint_tracking.tar` | 23,723,468 B | `98271b6125c2cc05e118ac0537fefb335c06dbd7d55fdd36fee25f55fd6eccd6` | AnyGrasp tracking network — the one verified on 2026-08-25 | Same accidental `log` rule |
 | `assets/recordings/wrist_camera/` | 227,774,464 B (`wrist_camera_0.db3`) + `metadata.yaml` | `f86a69ee212209b98673ffe909a13a81bad91586eea55713e1596d8aa8129613` (the `.db3`) | 10 s ROS bag from the wrist D435i, 2026-09-22: colour, aligned depth, camera info, a hand holding a cardboard box. Replayed by `bench/anygrasp_replay.sh`. Remake with `grasp/tools/record_wrist_camera.sh` | Over 100 MB. On the lab box in `~/rcp-Gappler` and a copy on Dion's Mac. Ignored by the root `.gitignore` `recordings` rule |
@@ -68,6 +68,10 @@ lab may have changed since. Re-mapping is T3.5.
 
 ## Where they are read from `[code]`
 
+> **SAM 3, since 2026-10-09:** read through `gappler_common.path("sam3_weights")` by the segmentation
+> service and aria's `ModelPaths`, and checked by `bench/preflight.py`, `bench/segmentation_service.sh` and
+> `bench/anygrasp_replay.sh`. The paragraph below is the pre-reorg history.
+
 `src/models/sam3/sam3.pt` — `ros2_robot_ws/src/rm_mtc/src/perception/sam3_ros_node.py:38` and
 `src/services/object_recognition/sam3_model.py:91`, both as absolute `/home/iot22/...` paths
 (NEXT_STEPS §2.5). The AnyGrasp checkpoints — passed as `--checkpoint_path log/checkpoint_*.tar`
@@ -98,3 +102,4 @@ one configurable path instead of hardcoded ones. Tracked as NEXT_STEPS §2.8. Wh
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
 | 2026-09-22 | Claude (Opus 5) + Dion | Added the wrist-camera recording (T0.12): where it is, checksum, how to remake it. |
 | 2026-10-07 | Claude (Opus 5.5) + Zongzhe | Added the open_clip ViT-B-32 weights (T6.3f): where they go, checksum, how to fetch them. First file to use the proposed `assets/models/` layout. |
+| 2026-10-09 | Claude Opus 5.5 + Dion | SAM 3 weights moved to `assets/models/sam3/sam3.pt` (T2.1), path in `global_config.yaml` `paths:`. AnyGrasp checkpoints not moved yet. |

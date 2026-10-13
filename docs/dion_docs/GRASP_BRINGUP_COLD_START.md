@@ -1,5 +1,10 @@
 # Grasp bring-up: cold start
 
+> **Superseded 2026-10-08.** Start at [`GRASP_BRINGUP_STEPS.md`](GRASP_BRINGUP_STEPS.md), "Start
+> here". This file is the 2026-09-23 snapshot, kept for its reasoning. Most of what it lists as open
+> has since been done or re-planned (T1.3, T1.7, T1.13, T1.16 done, the order decided in the task
+> tree).
+
 **Purpose:** start the grasp phase in a fresh session without re-deriving anything. Written
 2026-09-23, after T1.6 passed.
 
@@ -181,4 +186,5 @@ bench defaults to domain 77 and the T1.6 session used 91, so the two cannot coll
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-10-08 | Claude Opus 5.5 + Dion | Marked superseded by GRASP_BRINGUP_STEPS.md "Start here". |
 | 2026-09-23 | Claude Opus 5 + Dion | Created after T1.6 passed. Records the three T1.8 defects at verified line numbers, the B-1 ordering consequence, the four unticketed blockers, the suggested order, and what T1.6 changed about T1.7. |

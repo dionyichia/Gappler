@@ -23,7 +23,7 @@ from std_msgs.msg import Bool, String
 
 # Started when the start-grasp message arrives: the camera, arm and grasp nodes.
 PIPELINE_DIR = str(ROOT / "launchers")
-PIPELINE_PATH = f"{PIPELINE_DIR}/start_camera_arm_sam3_grasp.py"
+PIPELINE_PATH = f"{PIPELINE_DIR}/start_camera_arm_grasp.py"
 
 # shared/global_config.yaml
 TOPICS = config()["topics"]

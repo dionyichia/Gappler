@@ -186,6 +186,50 @@ is the sole publisher of the mask/centroid topics. Both current call sites becom
 identity both change what this service's interface should be. Unifying now and re-doing it after
 the HiCo-Nav scope lands would be wasted effort.
 
+#### `[decided 2026-10-08]` Revised design: a stateless request/reply service (`T2.1`)
+
+**Dion decided 2026-10-08.** `sam3_ros_node.py` is still retired, but the pipeline no longer
+becomes the service. The 2026-09-20 decision below is kept as the record of how we got here.
+
+- **One service, `/segmentation/segment`** (`segmentation_interfaces/srv/Segment`). A caller sends
+  one image, one prompt, and optionally aligned depth and `CameraInfo`. The reply lists every
+  detection, best score first: mask, score, box, pixel centroid, median depth, and a 3D point in
+  the camera's optical frame (frame id copied from the request). The service keeps nothing between
+  calls apart from the loaded model, and stays up the whole time.
+- **The service knows nothing about the arm, the glasses or the base.** No camera topics, no gaze,
+  no stop word, no transforms. It does not pick one detection. Its code imports nothing from a
+  subsystem either: since 2026-10-09 it builds SAM 3 itself instead of through aria's wrapper, which
+  pulled in the glasses SDK. Weights path: `shared/global_config.yaml` `paths: sam3_weights`.
+- **Clients hold the workflow logic, one per subsystem.**
+  - `grasp/grasp_segmentation_client/`: feeds wrist frames to the service, picks one detection,
+    and is the only publisher of `/camera/sam/mask`, `/object_centroid_2d` and `/object_centroid`.
+    Same messages as today, so AnyGrasp and the state machine do not change. `/manipulation/goal_pose`
+    is off for now. A `default_prompt` in config lets it run without the glasses, for testing only.
+    It steps aside when a publisher exists on `/grasp/target` and is dropped on the first message.
+  - `aria/aria_app/services/aria_segmentation_client/`: turns voice (and, after `T2.2`, gaze) into
+    a `Target` on `/grasp/target`. Built 2026-10-08 with the word only.
+  - A nav client, and whether the memory graph calls the service instead of loading its own SAM 3
+    (`memory_graph/sam3_adapter.py`), is for Dion and Zongzhe later.
+- **Where it lives.** A fifth top-level folder, `shared_services/` (`CHANNEL_CONTRACT` G-2), since
+  grasp, aria and nav all call it. Interfaces in `shared_services/segmentation/segmentation_interfaces/`,
+  built by `./build.sh` into `install/`. Not yet in the nav build: add it when a nav client exists.
+- **Started once, on its own.** Launchers start only their client. The service refuses to start, before
+  loading SAM 3, if another one is already on the ROS channel, loading or serving. The guard looks
+  for the node name, which appears before SAM 3 loads, so SAM 3 never loads twice (fixed 2026-10-13:
+  it looked for the service, which appears only after loading, and missed a start during the load).
+  `quickstart_terminals.sh grasp` and `full` start the service and the grasp client (`nomask` skips them).
+- **Built 2026-10-08, all six steps** (`T2.1`). Results in `docs/bench-runs/2026-10-08-labbox-t2.1-*`.
+  On the recorded box video it gives 117 masks in 60 s against the old node's 119 in 61 s, and
+  AnyGrasp runs unchanged on them. `sam3_ros_node.py` is parked in `grasp/tools/` (`T2.7`).
+- **Left alone for now.** `object_recognition_pipeline.py` keeps its own SAM 3 and its publishing
+  line stays commented out. `dummy_mask_publisher.py` is kept (§2.3). `T2.4` (trigger, age limit,
+  freeing the GPU) is paused.
+- **Found while designing, matters after `T2.2`.** The gaze pixel is in the raw glasses camera
+  image (`eye_tracking.py:147`, published by `image_streaming_pipeline.py:186`), but the published
+  glasses image is rotated 90° (`:132`) and undistorted (`:135`). The aria client must put the gaze
+  pixel through both before comparing it with masks. Today's code only handles the rotation
+  (`object_recognition_pipeline.py:675`) `[code]`.
+
 #### `[decided 2026-09-20]` Decision: retire `sam3_ros_node.py` (Option 2)
 
 **Dion decided 2026-09-20: Option 2. Retire `sam3_ros_node.py` and restore the pipeline call site
@@ -474,6 +518,9 @@ rosbag (W6/W8).
 ---
 
 ### 2.8 🟡 One folder for model weights — `assets/models/`
+
+> **SAM 3 done 2026-10-09 (T2.1):** `assets/models/sam3/sam3.pt`, path in `shared/global_config.yaml`
+> `paths: sam3_weights`. The AnyGrasp checkpoints are still under `grasp/anygrasp_node/log/`.
 
 Dion, 2026-09-11. Model files are scattered: `src/models/sam3/sam3.pt`, and the AnyGrasp checkpoints
 under `ros2_robot_ws/src/rm_mtc/src/perception/log/` — ignored only because of a catch-all `log`
@@ -1126,7 +1173,7 @@ Run `./bench/run.sh` before and after every step.
    | `rm_ros_interfaces/msg/GraspCandidate*.msg` | `grasp/grasp_interfaces/msg/` (package `grasp_interfaces`) |
    | `ros2_robot_ws/src/rm_ros_interfaces/` | `arm/rm_ros_interfaces/`, then `arm/vendor/rm_ros_interfaces/` in step 5 |
    | `ros2_robot_ws/src/estop.py` | `arm/estop/estop.py` |
-   | `ros2_robot_ws/src/main.py` | `launchers/start_camera_arm_sam3_grasp.py` |
+   | `ros2_robot_ws/src/main.py` | `launchers/start_camera_arm_grasp.py` |
    | `ros2_robot_ws/src/orchestrator.py` | `launchers/grasp_orchestrator.py` |
    | `Navigation_Module/src/<pkg>/` (`robot_slam`, `robot_navigation`, `simple_teleop`, `echo_plus_driver`) | `nav/<pkg>/` |
    | `robot_slam/scripts/<script>.py` | `nav/<package>/<script>.py`: `object_approach`, `goto_glasses`, `goal_reached` (`goal_reached_publisher.py`), `pose_publisher`, `qos_relay`, `aria_image_relay`. `ros2 run robot_slam X.py` becomes `ros2 run <package> X.py` |
@@ -1174,7 +1221,7 @@ keeps merges manageable for everyone else.
 
 #### Open, decide in the PR that needs it
 
-- ✅ **Where the three launchers go. Settled in step 4 (2026-09-21).** `launchers/start_camera_arm_sam3_grasp.py`
+- ✅ **Where the three launchers go. Settled in step 4 (2026-09-21).** `launchers/start_camera_arm_grasp.py`
   and `launchers/grasp_orchestrator.py`, root `main.py` stays. Which launcher owns arm bring-up is
   `CODE_AUDIT` I1, part of T1.2.
 - **One build or two. Two today, one question left for Zongzhe** (updated 2026-09-22). `./build.sh`
@@ -1430,3 +1477,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-22 | Claude (Opus 5) + Dion | Header now points at `task-tree.html` (renamed from `next-steps-map.html`) as the one task list. §2.12 marked done (T0.10, T0.11). |
 | 2026-10-06 | Claude (Opus 5.5) + Dion | §2.15 config: three levels cut to two (global plus one file per subsystem, per-node sections inside it, no per-node files, no aggregated global). Recorded that no subsystem config file was ever created, the work is new task T0.14. Duplicate-key bench check deferred. Step 2 note on `aria_config.yaml` corrected. |
 | 2026-10-06 | Claude (Opus 5.5) + Dion | §2.15 config: built in T0.14. All four subsystem files exist, all 34 channel names that were hardcoded moved into config, each entry says who uses it. Global also holds the robot's hardware and the machine's paths. How Python and C++ read it, what stays in code, duplicate keys refused by the loader. |
+| 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: revised design for `T2.1`. A stateless request/reply segmentation service in `shared_services/`, with one client per subsystem, replaces "the pipeline becomes the service". Gaze pixel-space mismatch recorded for `T2.2`. |
+| 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: `T2.1` built (all six steps), start-once rule and its guard, results recorded. |
+| 2026-10-09 | Claude Opus 5.5 + Dion | §2.2: the service imports nothing from a subsystem. §2.8: SAM 3 weights moved to `assets/models/` (T2.1). The segmentation service builds SAM 3 itself, so `shared_services/` no longer imports aria. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | §2.2: start-once guard now looks for the node name, which appears before SAM 3 loads. It looked for the service, which appears only after, so a second start during the ~20 s load was not refused (found in the T2.1 review). |
