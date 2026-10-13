@@ -56,7 +56,9 @@ lay_grasp() {
   pane auto arm "$ESTOP"
   pane auto grasp "ros2 launch arm_bringup arm_bringup.launch.py"
   # The leading _ makes the launch file read the serial as text, as the grasp launcher does.
-  pane auto arm "ros2 launch realsense2_camera rs_launch.py \"serial_no:='_$serial'\" align_depth.enable:=true pointcloud.enable:=true"
+  # 640x480x15: SAM 3 is ~40 % faster a call than at the driver default 1280x720, and the driver
+  # uses a third of the CPU (T2.11). No point cloud: only grasp_viz's RViz display reads it.
+  pane auto arm "ros2 launch realsense2_camera rs_launch.py \"serial_no:='_$serial'\" align_depth.enable:=true rgb_camera.color_profile:=640x480x15 depth_module.depth_profile:=640x480x15"
   if [ "${1:-}" != nomask ]; then
     pane auto shared_services "python $R/shared_services/segmentation/segmentation_service.py"
     pane auto grasp "python $R/grasp/grasp_segmentation_client/grasp_segmentation_client.py"

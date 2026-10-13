@@ -12,42 +12,31 @@ authoritative for status. This file holds the reasoning, the commands and the pa
 [`T1.7_FIRST_COMMANDED_MOTION.md`](T1.7_FIRST_COMMANDED_MOTION.md) for how the first motion was
 sent. This file does not repeat them.
 
-## Start here, 2026-10-08 (cold start)
+## Start here, 2026-10-13 (cold start)
 
-**Where we are.** Steps 1, 2 and 3a pass. The state machine homes the real arm on start and stays
-idle (3a). The arm was then sent back to its straight-up rest pose by hand. Nothing has approached
-or grasped anything yet. All of this is in PR #48 into `dev`.
+**Where we are.** Steps 1, 2 and 3a pass (the state machine homes the real arm and stays idle).
+Step 3b is half done: on 2026-10-12, over SSH with the arm off, SAM 3 ran on the live wrist camera
+and the timing was measured. The stale-centroid check is written and passes on the simulated arm.
+Both are in PR #57 (`t1.24-t2.8-centroid-age-and-voice-replay`), with the voice work (T2.8, T2.10).
+Review guide: [`T1.24_T2.10_REVIEW_GUIDE.md`](T1.24_T2.10_REVIEW_GUIDE.md).
 
-**Next: step 3b, then 3c.** One step at a time. Do not start 3c in the same session as 3b unless 3b
-passes cleanly.
-
-1. **Desk, new branch** (from `dev` after PR #48 merges), named for the task, for example
-   `t1.24-sam3-stale-centroid`. Write the stale-centroid check (see "With 3b" below): re-enable
-   the age check at `grasp_state_machine.cpp:646-652` under `centroid_mutex_`, read the limit from
-   `centroid_max_age_s` in `grasp/grasp_config.yaml` (start at 1.0 s), publish `IDLE` on that exit.
-   Run `./bench/state_machine_sim.sh` on the box with the arm powered off.
-2. **At the robot, 3b** (arm off, no state machine): wrist camera at `640x480x15`, then the
-   segmentation service and the grasp client (T2.1, which replaced `sam3_ros_node.py` on
-   2026-10-08), with the test-only default prompt "box". Record the centroid rate, depth against a tape measure, and the distance where
-   depth drops out. Commands in "Step 3b" below.
-3. **At the robot, 3c**, only after 3b passes and the fix is merged.
+**Next, at the robot: finish 3b**, arm off, no state machine. Box under the wrist camera. Record z
+against a tape measure at 0.6, 0.4 and 0.25 m, the centroid rate on the box, and the distance
+where z stops coming. Commands in "Step 3b" below. **Then 3c**, only after 3b passes and PR #57
+is merged.
 
 **Before touching the box:**
-- Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.98.10.50`. On 2026-10-08 that worked
-  while `100.87.133.60` and `ssh labbox` (the Orin's cable link) did not. Try each.
-- `git log -1` in `~/rcp-Gappler`: expect `dev` with PR #48 merged. Rebuild with `./build.sh` if
-  the pull touched C++ (the stale-centroid fix will).
+- Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.98.10.50`. `100.87.133.60` has been
+  offline since mid-September.
+- `git log -1` in `~/rcp-Gappler`: expect `dev` with PR #57 merged. Rebuild with `./build.sh`.
 - Check who else is on it: `ps -eo pid,user,etime,args | grep -iE "realsense|rs_launch|ros2 launch|bench/run.sh|Runner.Worker"`,
-  `nvidia-smi`, `fuser /dev/video*`, `tmux ls`. On 2026-10-07 someone ran LiDAR mapping on domain
-  91, the same channel we use.
-- The `arm` tmux session from 2026-10-07 may still be up. Ask Dion before closing it.
-- Claude Code's permission check blocks an agent from typing commands into the box's panes or
-  reading them. Either Dion runs the command with the `!` prefix, or adds an allow rule for
-  `ssh labbox`.
+  `nvidia-smi`, `fuser /dev/video*`, `tmux ls`.
+- The box CPU was overheating on 2026-10-12: 89 C at 12% load, clamped to 0.8 GHz. It slows
+  SAM 3 from 0.27 to about 0.5 s a frame. Worth checking the fan before 3c.
 
-**Known gap:** `./quickstart_terminals.sh grasp` starts the wrist camera at the driver defaults with
-the point cloud on, which sent no frames on 2026-10-07. Start the camera by hand for 3b. Fix the
-layout once 3b confirms the settings.
+**Wrist camera:** `./quickstart_terminals.sh grasp` now starts it at `640x480x15` with no point
+cloud (T2.11, 2026-10-13), so no need to start it by hand for 3b. The driver default, 1280x720,
+sends frames again but makes SAM 3 about 40 % slower a call.
 
 ---
 
@@ -157,17 +146,17 @@ Changes, all in `grasp_state_machine.cpp`:
    arrived.
 4. Entering EXECUTING sets the flag false, right where the snapshot is taken. Every path back to
    IDLE (a failed approach, a finished cycle) also sets it false, so each request gives one attempt.
-5. SELECTING gets back the stale-centroid check that is commented out at `:648-653`. It uses the
-   time the message arrived rather than the camera timestamp, so it does not depend on the two
-   clocks agreeing. If SAM 3 loses the box mid-approach, the arm stops and returns instead of
-   steering toward the last point it saw.
+5. SELECTING gets back the stale-centroid check. **Done 2026-10-12 in T1.24 (PR #57), but with the
+   camera timestamp, not the arrival time planned here.** The camera stamp counts segmentation time
+   too, which is what makes a centroid stale, and the camera, SAM 3 and the state machine share one
+   clock on the box. If the clients ever run on another machine, switch to the arrival time.
 
 Option B (T2.4) is the same idea on the SAM 3 side: start segmenting on `grasp_request`, stop on
 `/manipulation/done`. It saves GPU time and keeps old centroids off the wire. A alone protects
 the arm. B alone does not, because the arm would then depend on another node behaving.
 
-**Overlap with T1.9.** IDLE writes `has_centroid_` without the lock (`:627`), and one condition
-variable is shared by two mutexes. T1.25 touches exactly this code, so fix those two things in the
+**Overlap with T1.9.** One condition variable is shared by two mutexes. (The unlocked
+`has_centroid_` write in IDLE was fixed in the PR #57 review, `CODE_AUDIT` C3.) T1.25 touches exactly this code, so fix those two things in the
 same change rather than building on them.
 
 **Bench impact.** A new channel moves the contract, so run `python3 bench/contracts.py snapshot`
@@ -338,9 +327,11 @@ approach is too many new things at once. So step 3 is now three steps, each addi
 
 ### With 3b: the stale-centroid check (code, desk)
 
+**Done 2026-10-12, PR #57.** The check is at `grasp_state_machine.cpp:646-662`. What follows is the
+plan as written, kept for the reasoning.
+
 **The problem.** During SELECTING the state machine reads the last centroid it received and never
-asks how old it is. The age check is there but commented out
-(`grasp/grasp_state_machine/src/grasp_state_machine.cpp:646-652`) `[code]`. If SAM 3 loses the box,
+asks how old it is. The age check was there but commented out `[code]`. If SAM 3 loses the box,
 it stops publishing, and the arm keeps stepping toward the old point, up to 50 steps of 4 cm.
 
 This is needed for 3c, not 3a (3a never leaves IDLE). It lands with 3b, on the branch after 3a
@@ -352,8 +343,14 @@ the simulated arm (`./bench/state_machine_sim.sh`) before the robot. Its fake de
 centroid with the current time at 10 Hz (`bench/nodes/test_state_machine_sim.py:85`), so it should
 still pass `[inferred]`.
 
-The limit starts at 1.0 s, the value in the commented code. 3b measures how fast SAM 3 actually
-publishes. If it is slower than about 2 per second, raise the limit before 3c.
+~~The limit starts at 1.0 s, the value in the commented code.~~ **Set to 2.0 s (2026-10-12, Dion),
+written on branch `t1.24-t2.8-centroid-age-and-voice-replay`.** The age counts from when the camera
+took the frame, so it includes segmentation. Measured in 3b: a centroid every 0.54 s and 0.3 to
+0.5 s of SAM 3 time, so the newest centroid is about 1.05 s old just before the next arrives, and
+1.6 s after one dropped frame. 1.0 s would end good approaches. The check now also takes the lock
+before reading the centroid, and publishes `IDLE` when an approach ends. `./bench/state_machine_sim.sh`
+has a new case: the fake detector goes quiet mid-approach, the node must log "object lost" and
+publish `IDLE`, then the object comes back and the cycle carries on.
 
 ### Step 3a: the state machine homes the real arm
 
@@ -418,6 +415,40 @@ That sent no frames on 2026-10-07, so start the camera by hand here.
 - with the box out of view: does SAM 3 still find a "box" somewhere?
 
 **Pass:** the mask covers the box, z is within about 2 cm of the tape, the rate is steady.
+
+### Result, 2026-10-12: 3b partial, run over SSH, box and tape checks owed
+
+Run from the Mac over SSH while Dion reviewed code, `t2.1-sam3-service` on the box (code as at
+`de87183`), domain 91, localhost only. Camera, service and client started by hand as in the table.
+The wrist camera pointed at the ceiling, no box in view.
+
+- **Live camera into SAM 3 works.** Serial `243222074878` found, depth at 10 Hz. The service
+  loaded SAM 3 in 10 s and answered every call.
+- **No box in view, no box found.** The client ran with the default prompt `box` and SAM 3
+  returned nothing, so nothing was published on `/camera/sam/mask` or `/object_centroid_2d`.
+  No false box.
+- **Speed: one SAM 3 call on one 640x480 frame takes 0.27 to 0.53 s**, so about 2 to 3.7
+  frames per second, with nothing else on the GPU. 0.27 s at first, then it slowed as the CPU
+  throttled (below). The age limit for 3c is 2.0 s, see the stale-centroid check above.
+- **The client's centroid rate: 1.85 per second**, 0.53 to 0.56 s apart, steady, with the aria
+  client sending the word `light` (T2.8 typed-word check, PASS). Just under the 2 per second bar,
+  with the CPU throttled. The age limit is set to 2.0 s with this in mind (see the stale-centroid
+  check above).
+- **Depth on a real object.** Prompt `light` found the ceiling light panel (score 0.84), depth
+  1.255 m. Dion checked the mask by eye: it fits the panel. Depth not checked against a tape.
+  Picture: [`t1.24_3b/2026-10-12-ceiling-light-mask.png`](t1.24_3b/2026-10-12-ceiling-light-mask.png).
+- **GPU (RTX 4060 Ti, 16 GB).** The service holds 5.8 GB. During back-to-back calls: 61% busy on
+  average, 80 W of 165 W, 55 C, not throttled. So the GPU has room for AnyGrasp alongside.
+- **CPU (i5-13400F, 16 threads).** The service uses about 1.2 threads on average, 2.1 at peak.
+  The camera driver about 0.13. The whole box is only 12% busy.
+- **The CPU is overheating.** 89 C at 12% load. The kernel forces it idle a quarter of the time
+  and the cores average 0.8 GHz. That is the likely cause of the slowdown from 0.27 to 0.5 s.
+  Likely a fan or cooler problem `[inferred]`, not checked at the box. Worth a look before 3c.
+
+Full record: [`../bench-runs/2026-10-12-labbox-t1.24-3b-live-sam3.txt`](../bench-runs/2026-10-12-labbox-t1.24-3b-live-sam3.txt).
+
+Still owed, needs someone at the robot: box in view, the centroid rate on the box, z against
+the tape at 0.6, 0.4 and 0.25 m, and the distance where z stops.
 
 ### Step 3c: the approach with live SAM 3
 
@@ -501,3 +532,8 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-07 | Claude Opus 5.5 + Dion | 3a PASS: the state machine homed the real arm on start, went IDLE, no further motion. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | "Start here" added for the next session (3b). Old "Where we stopped" removed, its findings already folded into 3a to 3c. Collision boxes moved to "Things to watch". SAM 3 has run on the box on a bag (T0.12). |
 | 2026-10-08 | Claude Opus 5.5 + Dion | T2.1 landed: 3b and 3c use the segmentation service and the grasp client instead of `sam3_ros_node.py`, the trigger notes and the depth cite follow. Box access note updated (100.98.10.50 worked). |
+| 2026-10-12 | Claude Opus 5.5 + Dion | Step 3b partial result, run over SSH: SAM 3 works on the live wrist camera, no false box, 0.27 to 0.53 s per frame, GPU and CPU load, CPU overheating found. Box and tape checks still owed. Record in bench-runs/2026-10-12-labbox-t1.24-3b-live-sam3.txt. |
+| 2026-10-12 | Claude Opus 5.5 + Dion | 3b: centroid rate measured through the aria client (1.85 per second). |
+| 2026-10-12 | Claude Opus 5.5 + Dion | Stale-centroid check written, limit 2.0 s, with the reasoning from the 3b timing. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | "Start here" rewritten for the 3b robot session after PR #57. Stale-centroid check marked done, and the T1.25 note says it uses the camera stamp, not the arrival time. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | Known gap: T2.11 result added (default 1280x720 sends frames now, SAM 3 about 40 % slower than 640x480). Grasp layout pinned to 640x480x15. |

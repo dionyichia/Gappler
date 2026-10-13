@@ -797,9 +797,9 @@ camera_color_optical_frame` exists only when that package is installed and the R
 running. Every grasp transform depends on it. A missing/unlaunched RealSense presents as grasp
 candidates being silently skipped.
 
-**`/object_centroid_2d` has no consumer-side staleness check.** The age guard in
-`grasp_state_machine.cpp` is commented out (`:637-641`), so SELECTING will keep servoing toward a
-centroid that stopped updating.
+~~**`/object_centroid_2d` has no consumer-side staleness check.**~~ **Fixed 2026-10-12 (`T1.24`,
+PR #57):** SELECTING ends the approach when the newest centroid is older than `centroid_max_age_s`
+(2.0 s, `grasp/grasp_config.yaml`), at `grasp_state_machine.cpp:646-662`.
 
 ### 8.9 Dead code and debug leftovers `[code]`
 
@@ -1275,3 +1275,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-23 | Claude Opus 5.5 + Dion | §8.1 and the §B4 bullet: HOME validated on the real arm in T1.7, extends slightly outside the base. |
 | 2026-09-26 | OpenCode + Sherman | §5: T3.3 DONE — both SLAM launches publish `robot_base_to_arm` (mapping `:117-122`, localization `:107-112`). Full mapping-launch tree untested; values duplicated until T5.4. |
 | 2026-10-06 | Claude (Opus 5.5) + Dion | T0.14: §2 rows for `global_config.yaml` and `gappler_common.py`, the aria `config/` line and reading-order row 1 now describe the two config levels. §8.17 marked resolved. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | §8.8: the centroid staleness check is back (`T1.24`, PR #57). |

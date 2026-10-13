@@ -5,7 +5,7 @@ private, no rm_driver exists and the real arm is unreachable. This test plays ev
   camera      /camera/camera/color/camera_info  (the real D435i intrinsics, docs/archive/output.log:200)
   camera TF   camera_link -> ... -> camera_color_optical_frame, only if the model lacks it (the
               RealSense driver publishes these on the robot)
-  detector    /object_centroid_2d: an object straight ahead, far, then near
+  detector    /object_centroid_2d: an object straight ahead, far, lost for a while, far, then near
   gripper     records /rm_driver/set_gripper_{position,pick_on}_cmd -- nothing acts on them
 and watches /pipeline_state, /joint_states, /manipulator/return_to_user and the launch log.
 
@@ -198,6 +198,24 @@ def main():
         check("SELECTING: an approach step moves the arm", moved and not step_fail,
               "joints moved" if not step_fail else "step failed -- see the launch log for which")
         if step_fail:
+            return
+
+        # ---- object lost mid-approach: centroids stop, the age limit ends it ---
+        t_lost = time.time()
+        n.depth = None
+        # Wait for both: IDLE on the topic can arrive before the log line reaches the file
+        lost = n.spin_until(lambda: n.seen("IDLE", t_lost) and log_has(r"object lost"), 60)
+        check("centroids stop -> approach ends, back to IDLE", lost,
+              "'object lost' logged, IDLE seen" if lost else
+              f"in 60 s: IDLE {'seen' if n.seen('IDLE', t_lost) else 'not seen'}, "
+              f"'object lost' {'logged' if log_has(r'object lost') else 'not logged'}")
+        if not lost:
+            return
+        t_back = time.time()
+        n.depth = FAR
+        back = n.spin_until(lambda: n.seen("SELECTING", t_back), 120)
+        check("object back -> SELECTING again", back, "seen" if back else "no SELECTING within 120 s")
+        if not back:
             return
 
         # ---- EXECUTING: object now within reach --------------------------------
