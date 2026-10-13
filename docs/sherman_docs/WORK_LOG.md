@@ -315,9 +315,16 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 ## [2026-10-13] T3.5 | Phase 1 source-only (parallel to T3.4 merge resolution)
 
 - Evidence: [`T3.5_MANUAL_CONTROL.md`](T3.5_MANUAL_CONTROL.md) (reconciliation table), [`T3.5_MAP_PREP.md`](T3.5_MAP_PREP.md) (route memo + G2–G4 proposal).
-- Verified: working tree clean before/after; local `t3.5-launch-prep` @ `ac1addf` in sync with origin; T3.4 resolution isolated in its own worktree/branch (`t3.4-bringup-evidence`), untouched. No T3.4-owned files modified. Mac `git diff --check` clean; `./bench/run.sh quick` PASS (L0 12 pass / 2 PyYAML-ROS skips, L1-L2 pass, L3-L6 skipped off-box as expected).
+- Verified: working tree clean at phase start; local `t3.5-launch-prep` @ `ac1addf` in sync with origin; T3.4 resolution isolated in its own worktree/branch (`t3.4-bringup-evidence`), untouched. No T3.4-owned files modified. Mac `git diff --check` clean; `./bench/run.sh quick` PASS for executed checks, with explicit environment/subtest skips and L3-L6 not run.
 - Outcome: driving-sheet rows 1–4, 6–7 reconciled with T3.4 DONE with reported/observed limits; silence timing, timed stop, braking, watchdog, calibration, charger custody, mapping and localization remain open. SLAM baseline stands, team sign-off owed. G2 dry-load / G3 re-verify / G4 corrupt-graph procedure proposed, not implemented. T3.5 stays PROGRESS; no PR/merge.
 - Next: Phase 2 isolated box benches after T3.4 merge lands + idle-box window coordinated; Phase 3 live mapping only after deployment review.
+
+## [2026-10-13] T3.5 | Phase 2 isolated software verification
+
+- Evidence: [Phase 2 box results](../bench-runs/2026-10-13-sherman-t3.5-phase2.txt), tested commit `9c098dc`, exact tree `d9f55d45dfb8f992d409014ea2ee60185a080896`.
+- Verified: 29 focused tests, construction-only launches, 12 synthetic cloud/scan cases (10/10 scans each) and installed SLAM save/restart/reload passed. Explicit saver pause restoration after normal/SIGINT/SIGTERM completion and localization-mode refusal passed. Exact raster reload and three synthetic pose errors 0.000–0.001 m / 0.001 rad; `/initialpose` reseeding passed. Final domain 127 empty, no matching driver/test processes.
+- Limits: corrupt graph still aborts the localizer; installed comparison exit 1 (3 drift/1 missing), unchanged before/after. No build, deployment, hardware, historical graph load, full suite or parameter-startup localization proof. G2–G4 remain proposals. T3.5/T3.9 remain PROGRESS.
+- Handoff: another session briefly began a dev merge in this checkout during testing; its conflicts were left untouched. After Sherman's merge confirmation, inspection found T3.4 PR #69 merged into dev but T3.5 still at the tested `9c098dc`, with no merge in progress. Commit this pinned evidence before a shared-safe dev update; verify the resulting source separately before requesting deployment.
 
 ## Record Template
 
