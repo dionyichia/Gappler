@@ -3,7 +3,9 @@
 # The arm is ros2_control's mock_components: joint positions exist only in memory. rm_driver
 # is never started; the gripper commands the state machine sends are only recorded.
 #
-#   ./bench/state_machine_sim.sh        needs ./build.sh to have passed
+#   ./bench/state_machine_sim.sh              needs ./build.sh to have passed
+#   ./bench/state_machine_sim.sh candidates   the AnyGrasp path: use_simple_execute false, and the
+#                                             test plays AnyGrasp on /grasp_candidates (T1.17)
 #
 # CLAUDE.md forbids launching grasp_state_machine; Dion allowed this one exception on
 # 2026-09-11 for the simulated arm only, behind every guard below.
@@ -12,6 +14,11 @@
 set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOMAIN="${BENCH_DOMAIN:-77}"
+case "${1:-}" in
+  "") ;;
+  candidates) export BENCH_SM_PATH=candidates ;;
+  *) echo "unknown mode: $1 (none or candidates)"; exit 1 ;;
+esac
 CFG=rm_65_w_gripper_config
 
 [ -f /opt/ros/humble/setup.bash ] || { echo "SKIP: no ROS 2 Humble here"; exit 3; }

@@ -27,7 +27,7 @@ from gappler_common import ROOT, camera_serial
 REPO_ROOT = str(ROOT)
 GRASP = os.path.join(REPO_ROOT, "grasp")
 
-ANYGRASP_CONDA_ENV = "anygrasp"
+ANYGRASP_PYTHON = os.path.join(GRASP, "anygrasp_venv", ".venv", "bin", "python")  # T1.10, was conda
 ANYGRASP_DIR = os.path.join(GRASP, "anygrasp_node")
 ANYGRASP_CHECKPOINT = "log/checkpoint_detection.tar"  # relative to ANYGRASP_DIR
 
@@ -119,14 +119,10 @@ if __name__ == "__main__":
     # /object_centroid_2d and ignores /grasp_candidates. Starting it anyway loads the model,
     # takes the GPU and adds a startup failure mode for output nobody uses.
     #
-    # Put it back in T1.17, when the flag is flipped, together with the T1.8 gate fixes.
+    # Put it back in T1.17, when the flag is flipped. The T1.8 gate fix is in.
     # launch(
     #     [
-    #         "conda",
-    #         "run",
-    #         "-n",
-    #         ANYGRASP_CONDA_ENV,
-    #         "python",
+    #         ANYGRASP_PYTHON,
     #         ANYGRASP_NODE_PATH,
     #         "--checkpoint_path",
     #         ANYGRASP_CHECKPOINT,
