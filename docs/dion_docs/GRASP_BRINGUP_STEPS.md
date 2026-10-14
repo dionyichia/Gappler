@@ -12,76 +12,41 @@ authoritative for status. This file holds the reasoning, the commands and the pa
 [`T1.7_FIRST_COMMANDED_MOTION.md`](T1.7_FIRST_COMMANDED_MOTION.md) for how the first motion was
 sent. This file does not repeat them.
 
-## Start here, 2026-10-14 (at the robot: step 5, then step 6)
+## Start here, 2026-10-14 evening (step 7 next)
 
-**Where we are.** Steps 1 to 4 pass on the real arm. Step 6's code (T1.14, PR #75) and step 7's
-prep (PR #79, draft) pass on the simulated arm
-([`../bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt`](../bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt)).
-`~/rcp-Gappler` is on `dev` at `d762f86`. `dev` has moved on since (PR #73, #74, #77), but only memory
-graph tests and docs, no grasp code, so a `git pull` is optional.
+**Where we are.** Steps 1 to 6 pass on the real arm
+([`../bench-runs/2026-10-14-labbox-t1.12-t1.14-real-arm.txt`](../bench-runs/2026-10-14-labbox-t1.12-t1.14-real-arm.txt)).
+- **Step 5 (T1.12):** 8 voice-started attempts, 5 grasped. 5 of 6 within reach. The front face must be
+  under about 50 cm from the arm's black base: at 54.5 cm the final step is out of reach.
+- **Step 6 (T1.14):** one launch grasped, held at HOME, let go on "release", went back to IDLE, and
+  grasped again. On `dev` once PR #75 merges.
+- `~/rcp-Gappler` is back on `dev` (8b2e8ea at the end of the session).
 
-### Step 5 (T1.12): five attempts, success rate, on `dev`
+**Next: step 7 (T1.17), the AnyGrasp path.** Prep on branch `t1.8-t1.10-anygrasp-gate-and-pane`
+(PR #79, draft). AnyGrasp's grasps drawn on the replay look impossible. Find out why before the arm
+moves to an AnyGrasp grasp (step 7 below).
 
-Same setup as step 4:
-1. Power the arm on, wait about a minute, then `./quickstart_terminals.sh grasp` in `~/rcp-Gappler`.
-   Start the state machine only after the driver has connected.
-2. Two more panes (Ctrl-b %), each set up with
-   `source aria/aria_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1`:
-   the aria client, left running,
-   `python aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py`, and per
-   attempt the replay, `python aria/tools/replay_audio_file_to_prompt.py assets/recordings/voice_commands/pick_up_box_command.wav`.
-   Stop the replay only with Ctrl-C.
-3. Per attempt: restart the state machine (on `dev` it still stops after one grasp), wait for
-   `IDLE`, replay. Record grasped or not, and where it went wrong if not.
-4. Release by hand with three messages, not `--once`:
-   `ros2 topic pub -w 1 -t 3 -r 2 /rm_driver/set_gripper_position_cmd rm_ros_interfaces/msg/Gripperset "{position: 1000, block: false, timeout: 0}"`.
-
-Pass: 5 attempts recorded with the success rate.
-
-### Step 6 (T1.14): release by voice, then a second grasp in the same launch
-
-Needs the PR #75 branch on the box. Do it after step 5, with every arm process stopped.
-1. In `~/rcp-Gappler`: `git fetch && git checkout t1.14-multi-grasp-loop && ./build.sh`
-   (about 2 min). Afterwards put it back with `git checkout dev && ./build.sh`.
-2. Same panes as step 5, plus a pane echoing `/manipulation/done`:
-   `ros2 topic echo /manipulation/done std_msgs/msg/Empty`.
-3. Start the state machine **once**, wait for `IDLE`, replay `pick_up_box_command.wav`.
-4. After the grasp the arm goes to the return pose (HOME) and holds. Check: `/manipulation/done`
-   prints once, the log says "Holding the object: waiting for /manipulator/release", the gripper
-   stays shut, and a typed grasp request is refused as busy.
-5. **Hold a hand under the box**, then replay `release_command.wav`. The gripper opens at HOME, so
-   the box drops. Check: "Release received", gripper opens, the arm re-homes, `IDLE`.
-6. Without restarting anything, put the box back and replay `pick_up_box_command.wav` again.
-   Pass: a second grasp in the same launch.
-
-Typed fallback for release:
-`ros2 topic pub -w 1 -t 3 -r 2 /manipulator/release std_msgs/msg/Bool "{data: true}"`. The extra
-messages after the first are logged "Release ignored" and do nothing. A release sent before the
-gripper has closed is also ignored.
-
-**Things to know from step 4:**
-- The grip lands about 3 cm short of the box centre: the camera sees only the front face. Accepted,
-  fixed by AnyGrasp in step 7 (T1.17).
-- The `/pipeline_state` echo pane exits at start. Restart it as
-  `ros2 topic echo /pipeline_state std_msgs/msg/String` (T1.26).
-- The grasp client prints "Glasses client found: default prompt dropped" once the aria client is
-  up. From then on only voice sets the target.
-- The CPU ran at 90 to 93 C, clamped to 800 MHz. The replay takes about a minute to load, not 10 to
-  20 s. Check the fan.
-- The `grasp` layout plus the extra panes is a 4 by 3 grid. Name panes by position when guiding
-  someone, not by tmux id: on 2026-10-13 that mix-up sent two typed requests instead of voice.
+**Known from steps 5 and 6, all parked:**
+- The grip closes a few cm short and always at the same angle, so the box must face the arm. Most
+  grasps closed on the edge of the box. AnyGrasp (T1.17) is meant to fix both.
+- Two stale-centroid misses early in SELECTING, cause unknown (T1.30). Ask again.
+- `/pipeline_state` shows EXECUTING while the arm holds (T1.31).
+- MoveIt's joint-flip check is skipped on the small steps (T1.29).
+- The replay reloads its models each run, about a minute. Fixed on branch `t2.16-replay-load-once`
+  (T2.16): it now loads once and asks for the next file.
+- **Don't use the hand-release command while T1.14 runs.** It opens the gripper behind the state
+  machine's back. Say "release" instead. With the T2.16 replay, type `release` at its prompt.
 
 **Before touching the box:**
-- Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60`, active again since
-  2026-10-13 evening. The second node, `100.98.10.50`, went offline then with an expired key.
-  `tailscale status` shows which one is active.
-- `git log -1` in `~/rcp-Gappler`: `dev` at `93e49bc` or later.
-- **Never run anything from a scratch clone whose env files can build.** On 2026-10-13 a test in a `/tmp` clone sourced `grasp/grasp_env.sh` in six panes. Each found no AnyGrasp venv and started compiling it, the load hit 54 and the box had to be restarted ([`../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt`](../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt)). Run from `~/rcp-Gappler`.
-- After a restart, the CI runner needs starting again (tmux `gh-runner`).
+- Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60`. `tailscale status` shows
+  which node is active.
+- **Never run anything from a scratch clone whose env files can build.** A `/tmp` clone sourcing
+  `grasp/grasp_env.sh` started six AnyGrasp builds on 2026-10-13 and the box had to be restarted
+  ([`../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt`](../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt)).
 - Check who else is on it: `ps -eo pid,user,etime,args | grep -iE "realsense|rs_launch|ros2 launch|bench/run.sh|Runner.Worker"`,
   `nvidia-smi`, `fuser /dev/video*`, `tmux ls`.
-- `./bench/state_machine_sim.sh` refuses while any `rm_driver` runs. Run it before or after the
-  robot session.
+- Panes added to a quickstart session with `tmux split-window` open in `sh`. Pass `bash` as the
+  command. Name panes by position (row, column) when guiding someone, never by number.
 
 **Wrist camera:** `./quickstart_terminals.sh grasp` starts it at `640x480x15` with no point cloud
 (T2.11). At this resolution depth stops at about 0.182 m.
@@ -645,6 +610,33 @@ C7 XFAIL).
   1 to 3 grasps per frame, scores 0.007 to 0.036. Cause not known yet, the possible ones are in the
   bench-run record. Fix before step 7 runs the arm.
 
+### Result, 2026-10-14: step 5 PASS, 5 of 8
+
+Run on `dev` d762f86, every attempt started by voice, the state machine restarted before each one
+(on `dev` it ends after one grasp). Distance is from the box's front face to the arm's black base.
+
+| # | Placement | Result |
+|---|---|---|
+| 1 | 44.5 cm, orientation A | grasped |
+| 2 | 44.5 cm, orientation B | grasped, on the edge, almost dropped |
+| 3 | 10 cm right, turned to face the arm, A | grasped, on the edge, almost missed |
+| 4 | 10 cm left, turned to face the arm, A | grasped, on the edge |
+| 5 | 54.5 cm, A | failed: final step only 67% plannable, out of reach `[inferred]` |
+| 6 | 54.5 cm, A | failed: same |
+| 7 | 49.5 cm, A | failed: stale centroid in SELECTING (T1.30) |
+| 8 | 49.5 cm, A | grasped |
+
+The planner refuses a final step under 80% (`mtc_planner.cpp:118`). The side walls were not in the
+way. Details and logs: [`../bench-runs/2026-10-14-labbox-t1.12-t1.14-real-arm.txt`](../bench-runs/2026-10-14-labbox-t1.12-t1.14-real-arm.txt).
+
+### Result, 2026-10-14: step 6 PASS
+
+One launch of `t1.14-multi-grasp-loop` 6c23cfa. Grasp, HOME, "Holding the object: waiting for
+/manipulator/release", `/manipulation/done` once. Two pick-up replays sent by accident were refused
+as busy. Release by voice, IDLE. Then a second grasp in the same launch and a release that dropped
+the box into Dion's hand, IDLE. The first release ran on an empty gripper: the hand-release command
+had opened it earlier, and the state machine did not notice.
+
 ---
 
 ## Things to watch
@@ -703,5 +695,5 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-13 | Claude Opus 5.5 + Dion | Step 4 (T1.11) PASS, attempt 4 started by voice. Result table, the depth blind zone and the config change (uncommitted, branch t1.11-stop-before-depth-blind), the 3 cm front-face bias. Start here rewritten for step 5: release with `-t 3 -r 2`, the `/pipeline_state` type, pane names by position. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | Start here: the step 4 config is merged (#71), the box is reached at `100.87.133.60` again. |
 | 2026-10-14 | Claude Opus 5.5 + Dion | Steps 6 and 7: box sim and replay checks PASS. Things to watch: failed final step now goes home (T1.14), new E6 late TF in SELECTING. |
-
 | 2026-10-14 | Claude Opus 5.5 + Dion | Start here rewritten for the robot: step 5 on `dev`, step 6 on the PR #75 branch (release by voice, second grasp in one launch). Step 7: AnyGrasp's drawn grasps look impossible. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Steps 5 (T1.12) and 6 (T1.14) PASS on the real arm, result tables. Start here moved on to step 7. |
