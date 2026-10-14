@@ -22,7 +22,7 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 **Dion's current work (2026-10-14) is the grasp bring-up, not the bench.** Cold start at
 [`dion_docs/GRASP_BRINGUP_STEPS.md`](dion_docs/GRASP_BRINGUP_STEPS.md), "Start here". Steps 1 to 6
-pass (step 6: grasp, release by voice and a second grasp in one launch). Step 7, T1.17, AnyGrasp: the first AnyGrasp grasp ran on 2026-10-14 and failed on a 180 degree wrist turn, next is T1.33 (`dion_docs/GRASP_BRINGUP_STEPS.md` Start here). The rest of this section is the bench and CI state as of 2026-09-22.
+pass (step 6: grasp, release by voice and a second grasp in one launch). Step 7, T1.17, AnyGrasp: the first AnyGrasp grasp ran on 2026-10-14 and failed on a 180 degree wrist turn, fixed by T1.33 (PR #84, merged, sim only so far). T1.32 (does the object fit the real gripper) is built on PR branch `t1.32-grasp-fits-gripper`. Next at the robot: T1.34, a camera mount check, 7d again, T1.17, then T1.35 (box at random positions and angles). See `dion_docs/GRASP_BRINGUP_STEPS.md` Start here. The rest of this section is the bench and CI state as of 2026-09-22.
 
 ### T0.11 is done (2026-09-22). The CI setup, for whoever maintains it
 
@@ -871,4 +871,5 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-10-13 | Claude Opus 5.5 + Dion | "Start here": steps 1 to 4 pass, next is step 5 (T1.12). |
 | 2026-10-14 | Claude Opus 5.5 + Dion | "Start here": steps 1 to 6 pass, next is step 7 (T1.17). |
 | 2026-10-14 | Claude Opus 5.5 + Dion | "Start here": step 7 status, first AnyGrasp grasp, next T1.33. |
+| 2026-10-15 | Claude Opus 5.5 + Dion | "Start here": T1.33 merged, T1.32 built, next at the robot T1.34 to T1.35. |
 | 2026-10-15 | Claude Opus 5.5 + Dion | T0.19: §3 gains "Rule history", the dated reasons and incidents moved out of CLAUDE.md. §7 gains the two tailscale nodes. |
