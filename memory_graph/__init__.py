@@ -21,6 +21,7 @@ docs/hico-nav/hico-nav-github-docs/cmg_construction_pipeline.md:
     task.py                the task: its text feature, target and related classes, the score
     target_finder.py       the query: objects that answer the task, their best photo, rejections
     anchor_object_graph.py the graph: anchors, objects, the edges between them
+    recording_check.py     is a lab recording usable here (T6.2a), see RECORDING_SPEC.md
 
 Only anchor_object_graph.py is stdlib-only. The stage modules need numpy and
 scipy, so this file imports nothing, and the graph stays usable without them.

@@ -16,6 +16,7 @@ dependencies = [
     # pre-release 0.30.0a4, which PyPI has since removed, so any re-lock jumped to the
     # newest release. Pinned to the final 0.30.0, the closest version that still exists.
     "rerun-sdk==0.30.0",
+    "rosbags>=0.10",  # memory graph: read lab recordings without ROS (T6.2a)
     "sam3",
     "scipy>=1.15.3",
     "setuptools<81",  # aria CLI imports pkg_resources, removed in setuptools 81+
