@@ -28,8 +28,10 @@ def generate_launch_description():
                            mappings={"initial_positions_file": os.path.join(cfg, "initial_positions.yaml")})
         .to_moveit_configs()
     )
-    # "candidates" mode (state_machine_sim.sh candidates): the AnyGrasp path, sim only (T1.17)
-    path = [{"use_simple_execute": False}] if os.environ.get("BENCH_SM_PATH") == "candidates" else []
+    # "candidates" mode (state_machine_sim.sh candidates): the AnyGrasp path, sim only (T1.17).
+    # A -p argument, not a parameters dict: a dict lands under /** and loses to grasp_config.yaml's
+    # grasp_state_machine: block whatever the order.
+    path = ["--ros-args", "-p", "use_simple_execute:=false"] if os.environ.get("BENCH_SM_PATH") == "candidates" else []
     state_machine = Node(package="grasp_state_machine", executable="grasp_state_machine", output="screen",
-                         parameters=[moveit_config.to_dict(), *CONFIG_FILES, *path])
+                         parameters=[moveit_config.to_dict(), *CONFIG_FILES], arguments=path)
     return LaunchDescription([*generate_demo_launch(moveit_config).entities, state_machine])
