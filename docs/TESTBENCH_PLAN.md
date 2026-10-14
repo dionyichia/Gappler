@@ -20,9 +20,9 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 ## ▶ Start here — next session (updated 2026-09-22)
 
-**Dion's current work (2026-10-13) is the grasp bring-up, not the bench.** Cold start at
-[`dion_docs/GRASP_BRINGUP_STEPS.md`](dion_docs/GRASP_BRINGUP_STEPS.md), "Start here". Steps 1 to 4
-pass (step 4: a grasp started by voice). Next is step 5, T1.12. The rest of this section is the bench and CI state as of 2026-09-22.
+**Dion's current work (2026-10-14) is the grasp bring-up, not the bench.** Cold start at
+[`dion_docs/GRASP_BRINGUP_STEPS.md`](dion_docs/GRASP_BRINGUP_STEPS.md), "Start here". Steps 1 to 6
+pass (step 6: grasp, release by voice and a second grasp in one launch). Next is step 7, T1.17, AnyGrasp. The rest of this section is the bench and CI state as of 2026-09-22.
 
 ### T0.11 is done (2026-09-22). The CI setup, for whoever maintains it
 
@@ -836,3 +836,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-23 | Claude Opus 5.5 + Dion | Rule 1: the home pose is validated on the real arm (T1.7), the unprompted-homing warning stays. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | "Start here" points at GRASP_BRINGUP_STEPS.md for Dion's current work (T1.24 step 3b). |
 | 2026-10-13 | Claude Opus 5.5 + Dion | "Start here": steps 1 to 4 pass, next is step 5 (T1.12). |
+| 2026-10-14 | Claude Opus 5.5 + Dion | "Start here": steps 1 to 6 pass, next is step 7 (T1.17). |
