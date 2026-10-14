@@ -1,0 +1,101 @@
+# Grasp config. Values only the grasp subsystem reads (NEXT_STEPS 2.15).
+# Values another subsystem also reads (the wrist camera topics, the mask and centroid, the
+# gripper commands) live in shared/global_config.yaml. Each value is written once.
+#
+# How it is read:
+#   Python nodes:  gappler_common.config("grasp", "<node name>"), which adds global + "/**" below
+#                  + that node's section.
+#   grasp_state_machine (C++): grasp_state_machine.launch.py loads global_config.yaml, then this
+#                  file, as ROS parameters. A missing parameter stops the node at start-up.
+# Edit a value and restart the node. No rebuild: the launch file reads this file from the repo.
+#
+# Format: a ROS parameter file. "/**" holds values two or more grasp nodes read. Each other
+# top-level key is one node, by its ROS node name.
+/**:
+  ros__parameters:
+    # Topics only grasp publishes and reads. publisher -> subscribers.
+    topics:
+      # anygrasp_node, anygrasp_detection_node -> grasp_state_machine, grasp_viz
+      grasp_candidates: "/grasp_candidates"
+      # grasp_state_machine -> anygrasp_node, anygrasp_detection_node, grasp_viz
+      pipeline_state: "/pipeline_state"
+      # grasp_viz -> RViz (debug only, these four)
+      grasp_candidate_markers: "/grasp_candidate_markers"
+      debug_sam_mask: "/debug/sam_mask"
+      debug_centroid_marker: "/debug/centroid_marker"
+      debug_state_marker: "/debug/state_marker"
+    # How many grasp candidates AnyGrasp publishes per frame.
+    # read by: anygrasp_node, anygrasp_detection_node
+    num_grasp_candidates: 5
+
+# grasp/grasp_segmentation_client/grasp_segmentation_client.py
+grasp_segmentation_client:
+  ros__parameters:
+    # FOR TESTING THE GRASP CLIENT WITHOUT THE GLASSES ONLY (bench, arm bring-up).
+    # Used at start when nothing publishes on /grasp/target. Dropped as soon as something does,
+    # or on the first Target message, so a spoken word always wins. "" = wait for a Target.
+    default_prompt: "box"
+    # Give up on a request with no reply after this long, so a service that dies mid-call does not
+    # stall the client for good. A normal call takes about 0.25 s.
+    segment_timeout_s: 5.0
+
+# grasp/anygrasp_node/anygrasp_detection_node.py
+anygrasp_detection_node:
+  ros__parameters:
+    # Workspace box in the camera frame, metres: [x_min, x_max, y_min, y_max, z_min, z_max].
+    # Wide on purpose: the SAM mask does the spatial filtering.
+    workspace_limits_m: [-1.0, 1.0, -1.0, 1.0, 0.0, 1.5]
+
+# grasp/grasp_viz/grasp_viz.py. Size of the gripper drawn in RViz, metres.
+grasp_visualizer:
+  ros__parameters:
+    palm_length_m: 0.04     # cylinder along the approach axis
+    palm_radius_m: 0.006
+    finger_length_m: 0.04   # finger bar length along the approach axis
+    finger_radius_m: 0.005
+    finger_offset_m: 0.01   # finger offset along the approach axis from the palm centre
+
+# grasp/grasp_state_machine/src/grasp_state_machine.cpp. These move the real arm: change them
+# only with a plan to test on the simulated arm first (./bench/state_machine_sim.sh).
+grasp_state_machine:
+  ros__parameters:
+    # The approach steps toward the object, reading its depth from the wrist camera each step,
+    # and stops once the depth is under execute_depth_thresh_m. Then the gripper opens and
+    # the arm makes one blind step of approach_step_final_m and closes.
+    # The wrist camera gives no depth closer than about 0.182 m (640x480, measured 2026-10-13,
+    # T1.11). So the stop must sit above that by at least one step, or the last reading comes
+    # from inside the blind zone, the centroid goes stale and the approach ends short.
+    # Was 0.04 / 0.18 / 0.10: twice in a row the camera went blind at 0.182 m, 2 mm before the stop.
+    approach_step_m: 0.02            # step towards the object while approaching
+    # Final blind step. The stop reading is 0.19 to 0.21 m, so the jaws end 0.07 to 0.09 m from
+    # the camera's view of the object. The 3c grasp (T1.24, 2026-10-13) ended at 0.077 m
+    approach_step_final_m: 0.12
+    max_approach_steps: 50           # 50 x 0.02 m = 1 m of approach, the object starts about 0.46 m away
+    execute_depth_thresh_m: 0.21     # stop approaching when the object is this close
+    # End the approach if the newest centroid is older than this. Age counts from the camera
+    # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
+    # frame (measured 2026-10-12, T1.24 3b)
+    centroid_max_age_s: 2.0
+    # After a /manipulator/grasp_request, the first centroid must arrive within this time or the
+    # request lapses (T1.25). SAM 3 gives the first one in about 1 s when the object is in view
+    # (0.27 to 0.53 s per frame, 0.5 s warm-up, measured 2026-10-08 and 2026-10-12)
+    grasp_request_timeout_s: 10.0
+    # Wait before planning each Cartesian step, so the real arm has settled after the last one.
+    # With no wait the second approach step was rejected, "start point deviates from current
+    # robot state more than 0.01" (T1.24 3c, 2026-10-13)
+    step_settle_s: 0.5
+    # Top of the table, in metres above the arm's base_link. The planner's "table" collision box
+    # sits just under it. Measured 2026-10-13 (T1.24 3c): 0.68 m from the floor, 0.12 m above the
+    # arm base. Was hard-coded at 0.195 m, 7.5 cm too high, which stopped the approach short
+    table_top_z_m: 0.12
+    final_exec_thresh_m: 0.25
+    centroid_target_offset_x_px: 55.0   # where the object should sit in the image, from centre
+    centroid_target_offset_y_px: 0.0
+    min_approach_angle_deg: 20.0     # reject grasps steeper than this
+    max_orient_step_deg: 5.0         # slerp step size, used when use_slerp_execute is true
+    use_simple_execute: true         # grasp from the centroid, not AnyGrasp (CHANNEL_CONTRACT B-1, T1.17)
+    use_slerp_execute: false
+    # A grasp is stable when the last N candidates agree within these limits
+    stability_n_frames: 5
+    stability_trans_mm: 15.0
+    stability_rot_deg: 10.0

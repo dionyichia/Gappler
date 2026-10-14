@@ -1,0 +1,58 @@
+T0.12 -- wrist camera recording + AnyGrasp replay   lab box, ~/rcp-Gappler, 2026-09-22 12:05-12:45
+===========================================================================================
+Ran from ~/rcp-Gappler @ 75f398e (t0.10-refactor) with the three new files copied in untracked
+(grasp/tools/record_wrist_camera.sh, bench/anygrasp_replay.sh, bench/nodes/test_anygrasp_replay.py),
+since the branch t0.12-anygrasp-replay was not pushed yet. Dion's go-ahead for the camera, this session.
+
+  RESULT: PASS. Segmentation and grasp detection work on real wrist-camera frames.
+  A1 reproduced: AnyGrasp published 154 candidate sets while IDLE and 0 while EXECUTING.
+  Nothing moved. No arm, no state machine, private ROS channels 79 (camera) and 76 (replay).
+
+1. Camera back after the replug [observed]
+   lsusb: 8086:0b3a D435i and 8086:0b5c D455, both USB 3.2 (5000M).
+   preflight -g net: realsense-usb PASS, realsense-stream PASS.
+   Camera serials (from the driver, not sysfs; the sysfs "serial" is the USB serial):
+     D435i 243222074878  -- the wrist camera, the same unit that failed on 2026-09-14
+     D455  146222253541
+   The replug fixed the 09-14 fault: colour and depth both open, 15 Hz each.
+
+2. Recording: ./grasp/tools/record_wrist_camera.sh 10
+   Driver pinned to serial 243222074878, 640x480 at 15 Hz, aligned depth.
+   Bag: assets/recordings/wrist_camera (gitignored), 217.2 MiB, 148 messages on each of
+   color/image_raw, color/camera_info, aligned_depth_to_color/image_raw and its camera_info.
+   Scene: a hand holding a small cardboard box above the camera, ceiling behind.
+   Median depth 1.24 m, 87 % of depth pixels valid.
+   sha256 wrist_camera_0.db3 f86a69ee212209b98673ffe909a13a81bad91586eea55713e1596d8aa8129613
+   A backup copy is on Dion's Mac (same path, same checksum).
+
+3. Replay: BENCH_DOMAIN=76 ./bench/anygrasp_replay.sh
+   Models load in about 45 s together (AnyGrasp licence check passed). Intrinsics from the bag:
+   fx=607.18 fy=606.92 cx=331.95 cy=250.13. Bag played on a loop. /pipeline_state held at
+   EXECUTING for 30 s, then IDLE for 30 s, as grasp_state_machine publishes it.
+
+     [PASS ] segmentation       119 masks in 61 s, mean area 4.1 % of the image
+     [PASS ] grasp detection    154 candidate sets, 2.54/s, top score 0.466
+     [XFAIL] gate (A1)          EXECUTING 0 sets, IDLE 154 sets (want EXECUTING > 0, IDLE 0)
+     RESULT: PASS (controls pass; XFAIL = known finding reproduced)
+
+   Node log counts: SAM "No detection above threshold" 94 (frames where the box is out of
+   view or blurred), AnyGrasp "No grasps detected" 30, "No SAM mask received yet" 8 (start-up).
+   These numbers are the baseline for a later perception change.
+
+4. Side findings
+   - sam3_ros_node tracebacks on Ctrl+C: rclpy.shutdown() is called after the signal handler
+     already shut the context down (sam3_ros_node.py:193). Same class as F4 in the nav nodes.
+     Harmless for the result.
+   - Two RealSense cameras are plugged in, and both places that start the driver
+     (launchers/start_grasp_pipeline.py:88-96, aria/aria_app/main.py:279-289) pass no serial_no,
+     so the driver opens whichever camera it finds first. The pipeline can read the wrong camera.
+     New task T1.13.
+
+5. An incident. While restarting my own driver I ran `pkill -u rcp2026 -f rs_launch.py`, which
+   also stopped another person's D455 driver (domain 88, /tmp/d455_t01d.log) mid-test. It shut
+   down cleanly and the camera stayed on the bus. The rule is now in CLAUDE.md (Safety): check
+   who uses the hardware first, stop only your own process group. record_wrist_camera.sh refuses
+   to start while any RealSense driver is running.
+
+Cleaned up: my driver, the 4 s plumbing bag (log/t0.12/plumb_bag) and the frame grabs. No
+process of mine left running.

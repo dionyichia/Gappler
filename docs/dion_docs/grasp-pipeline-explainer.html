@@ -1,0 +1,721 @@
+<title>How the Arm Grasps</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#f3f5f4; --surface:#ffffff; --surface-2:#e9eeec;
+  --ink:#17201d; --ink-2:#4a5752; --ink-3:#76827d;
+  --line:#d3dcd8; --line-2:#b6c3bd;
+  --accent:#0b6b73; --accent-soft:#e1f0f1;
+  --decide:#9a5d08; --decide-soft:#fbf0dd;
+  --ok:#2f7a45; --ok-soft:#e3f2e7;
+  --bad:#b0352e; --bad-soft:#f9e4e2;
+  --idle:#6d7873; --idle-soft:#eceff0;
+  --display:'Barlow Semi Condensed','Arial Narrow',Arial,sans-serif;
+  --body:'Source Sans 3',-apple-system,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono','SF Mono',Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#121716; --surface:#1a211f; --surface-2:#232c29;
+    --ink:#e4ebe8; --ink-2:#a9b6b0; --ink-3:#7f8c86;
+    --line:#2d3834; --line-2:#3e4a46;
+    --accent:#56b6bf; --accent-soft:#16292b;
+    --decide:#e2a54d; --decide-soft:#2b2216;
+    --ok:#6cc38a; --ok-soft:#18281d;
+    --bad:#ec7b71; --bad-soft:#2d1b19;
+    --idle:#96a29c; --idle-soft:#222a27;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#121716; --surface:#1a211f; --surface-2:#232c29;
+  --ink:#e4ebe8; --ink-2:#a9b6b0; --ink-3:#7f8c86;
+  --line:#2d3834; --line-2:#3e4a46;
+  --accent:#56b6bf; --accent-soft:#16292b;
+  --decide:#e2a54d; --decide-soft:#2b2216;
+  --ok:#6cc38a; --ok-soft:#18281d;
+  --bad:#ec7b71; --bad-soft:#2d1b19;
+  --idle:#96a29c; --idle-soft:#222a27;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6;
+  padding-inline:16px;padding-block:0 80px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto}
+header.top{padding-block:40px 28px;border-bottom:1px solid var(--line);margin-bottom:36px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(34px,6vw,50px);line-height:1.05;margin:0 0 14px;letter-spacing:-.01em;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:28px;line-height:1.15;margin:0 0 10px;text-wrap:balance}
+h3{font-family:var(--display);font-weight:600;font-size:21px;margin:0 0 6px;text-wrap:balance}
+p{margin:0 0 12px;max-width:68ch}
+.dek{font-size:19px;color:var(--ink-2);max-width:62ch}
+section{margin:0 0 56px}
+.sub{color:var(--ink-2);margin-bottom:20px}
+code,.mono{font-family:var(--mono);font-size:.84em}
+code{background:var(--surface-2);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.summary{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);
+  padding:18px 20px;border-radius:4px;margin-top:22px}
+.summary p{margin:0;max-width:none}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;padding:3px 9px;border-radius:3px;border:1px solid;white-space:nowrap}
+.c-ok{color:var(--ok);background:var(--ok-soft);border-color:var(--ok)}
+.c-bad{color:var(--bad);background:var(--bad-soft);border-color:var(--bad)}
+.c-dec{color:var(--decide);background:var(--decide-soft);border-color:var(--decide)}
+.c-idle{color:var(--idle);background:var(--idle-soft);border-color:var(--idle)}
+
+.diagram{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:10px}
+.diagram svg{display:block;min-width:900px;width:100%;height:auto}
+.d-box{fill:var(--surface-2);stroke:var(--line-2);stroke-width:1.2}
+.d-main{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.6}
+.d-off{fill:var(--surface);stroke:var(--line-2);stroke-width:1.2;stroke-dasharray:5 4}
+.d-miss{fill:var(--bad-soft);stroke:var(--bad);stroke-width:1.2;stroke-dasharray:5 4}
+.d-t{fill:var(--ink);font-family:var(--display);font-weight:600;font-size:16px}
+.d-s{fill:var(--ink-2);font-family:var(--body);font-size:12.5px}
+.d-lab{fill:var(--ink-2);font-family:var(--mono);font-size:11px}
+.d-labd{fill:var(--ink-3);font-family:var(--mono);font-size:11px}
+.d-labx{fill:var(--bad);font-family:var(--mono);font-size:11px}
+.d-arrow{stroke:var(--ink-2);stroke-width:1.6;fill:none}
+.d-arrowd{stroke:var(--line-2);stroke-width:1.6;fill:none;stroke-dasharray:5 4}
+.d-arrowx{stroke:var(--bad);stroke-width:1.6;fill:none;stroke-dasharray:5 4}
+.d-head{fill:var(--ink-2)}
+.d-headd{fill:var(--line-2)}
+.d-headx{fill:var(--bad)}
+.caption{font-size:14.5px;color:var(--ink-3);margin-top:10px;max-width:72ch}
+
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:15.5px;min-width:560px}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+  text-align:left;padding:10px 12px;background:var(--surface-2);border-bottom:1px solid var(--line-2);font-weight:500}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+td:first-child{color:var(--ink);font-weight:600}
+tr:last-child td{border-bottom:none}
+td.num{font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:14px;white-space:nowrap}
+
+/* route: the list of stops */
+.route{list-style:none;padding:0;margin:0;display:grid;gap:4px;counter-reset:r}
+.route li{counter-increment:r;display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:baseline}
+.route li::before{content:counter(r);font-family:var(--mono);font-size:13px;color:var(--accent);text-align:right}
+.route a{text-decoration:none;color:var(--ink)}
+.route a:hover{text-decoration:underline;color:var(--accent)}
+.route .f{font-family:var(--mono);font-size:12.5px;color:var(--ink-3);margin-left:8px;overflow-wrap:anywhere}
+
+/* one stop of the walkthrough */
+.stop{display:grid;grid-template-columns:48px 1fr;gap:16px;padding-block:26px;border-top:1px solid var(--line)}
+.stop:first-of-type{border-top:none;padding-top:6px}
+.badge{font-family:var(--display);font-weight:700;font-size:22px;color:var(--accent);border:1.5px solid var(--accent);
+  border-radius:50%;width:42px;height:42px;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.stop .body{min-width:0}
+.open{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin:2px 0 12px;font-size:14.5px;color:var(--ink-3)}
+.open .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.open code{color:var(--ink);font-size:13px}
+pre{font-family:var(--mono);font-size:13px;line-height:1.55;background:var(--surface);border:1px solid var(--line);
+  border-radius:4px;padding:12px 14px;margin:6px 0 14px;overflow-x:auto;color:var(--ink)}
+pre .ln{color:var(--ink-3);user-select:none}
+pre .cm{color:var(--ink-3)}
+.lines{list-style:none;padding:0;margin:4px 0 14px;display:grid;gap:8px}
+.lines li{display:grid;grid-template-columns:88px 1fr;gap:12px;align-items:baseline}
+.lines .at{font-family:var(--mono);font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
+.lines p{margin:0}
+@media (max-width:560px){
+  .stop{grid-template-columns:1fr;gap:8px}
+  .lines li{grid-template-columns:1fr;gap:0}
+}
+.note{background:var(--surface-2);border-radius:4px;padding:12px 16px;margin:6px 0 12px;font-size:15.5px}
+.note p{margin:0;max-width:none}
+.note.warn{background:var(--bad-soft)}
+.note.warn strong{color:var(--bad)}
+.example{background:var(--accent-soft);border-radius:4px;padding:14px 18px;margin:8px 0 14px}
+.example p{max-width:none}
+.example table{min-width:0;font-size:15px;background:transparent}
+.example td{border-bottom:1px dashed var(--line-2);padding:5px 8px;color:var(--ink)}
+.example td:first-child{font-weight:400;color:var(--ink-2)}
+.example tr:last-child td{border-bottom:none}
+
+.states{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 6px}
+.st{font-family:var(--mono);font-size:13px;padding:5px 11px;border:1.5px solid var(--accent);border-radius:20px;color:var(--accent);background:var(--accent-soft)}
+.arr{color:var(--ink-3);font-family:var(--mono)}
+
+.decisions{display:grid;gap:14px}
+.dec{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:16px 20px}
+.dec .hd{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px}
+.dec p{max-width:none;color:var(--ink-2)}
+.dec p:last-child{margin-bottom:0}
+
+.status{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.status li{display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:start}
+.status .chip{text-align:center}
+.status p{margin:0}
+@media (max-width:560px){.status li{grid-template-columns:1fr;gap:4px}.status .chip{justify-self:start}}
+
+dl.gloss{display:grid;grid-template-columns:170px 1fr;gap:10px 18px;margin:0}
+dl.gloss dt{font-weight:600}
+dl.gloss dd{margin:0;color:var(--ink-2)}
+@media (max-width:560px){dl.gloss{grid-template-columns:1fr}dl.gloss dd{margin-bottom:6px}}
+
+.foot{border-top:1px solid var(--line);padding-top:18px;font-size:14.5px;color:var(--ink-3)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <p class="eyebrow">Dion's notes · grasp pipeline · read from the code on 6 Oct 2026</p>
+  <h1>How the Arm Grasps</h1>
+  <p class="dek">A walk through one grasp, from the launch command to the gripper closing. Each stop
+  names a file and the lines to open. Read it with the code beside it, top to bottom.</p>
+  <div class="summary">
+    <p><strong>In one line:</strong> the wrist camera sees the object, SAM 3 says where it is in the
+    image, and the state machine moves the gripper toward it 4 cm at a time. When the object is
+    closer than 18 cm, it makes one last 10 cm move, closes the gripper and goes back to the home
+    pose.</p>
+  </div>
+  <div class="facts">
+    <span class="chip c-ok">home pose checked on the real arm</span>
+    <span class="chip c-ok">full grasp runs on the simulated arm</span>
+    <span class="chip c-ok">gripper opens and closes on the real arm</span>
+    <span class="chip c-bad">never grasped on the real arm</span>
+  </div>
+</header>
+
+<section id="before">
+  <h2>Three ideas first</h2>
+  <p class="sub">You need these to read any of the code. The rest of the vocabulary is in
+  <a href="#words">Words you will meet</a> at the bottom.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Idea</th><th>What it means here</th></tr></thead>
+    <tbody>
+      <tr><td>Programs talk through topics</td><td>Each program (a ROS "node") runs on its own. It writes messages to named channels like <code>/object_centroid_2d</code>, and any program can read them. Nobody calls anybody directly. So to follow the flow, follow the topic names.</td></tr>
+      <tr><td>The state machine is the brain</td><td>One C++ program decides every arm move. It is always in one of three states, IDLE, SELECTING or EXECUTING, and loops through them.</td></tr>
+      <tr><td>Every point has a frame</td><td>"10 cm forward" means nothing until you say forward from what. The camera, the gripper and the arm's base each have their own axes. A library called TF converts a point between them. The camera frame's z axis points straight out of the lens.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="picture">
+  <h2>The picture</h2>
+  <p class="sub">Solid lines run today. Grey dashed lines are wired but switched off. Red dashed
+  lines are messages that something waits for but nothing sends yet.</p>
+  <div class="diagram">
+  <svg viewBox="0 0 960 360" role="img" aria-label="Data flow: wrist camera to SAM 3 to the state machine to MoveIt to the arm driver. AnyGrasp is switched off. After the grasp, the state machine announces return_to_user. The done and release messages are missing.">
+    <defs>
+      <marker id="h" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="d-head" d="M0 0 L8 4 L0 8 z"/></marker>
+      <marker id="hd" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="d-headd" d="M0 0 L8 4 L0 8 z"/></marker>
+      <marker id="hx" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="d-headx" d="M0 0 L8 4 L0 8 z"/></marker>
+    </defs>
+    <rect class="d-box" x="10" y="80" width="140" height="64" rx="4"/>
+    <text class="d-t" x="80" y="108" text-anchor="middle">Wrist camera</text>
+    <text class="d-s" x="80" y="128" text-anchor="middle">RealSense D435i</text>
+
+    <rect class="d-box" x="210" y="80" width="140" height="64" rx="4"/>
+    <text class="d-t" x="280" y="108" text-anchor="middle">SAM 3</text>
+    <text class="d-s" x="280" y="128" text-anchor="middle">or the stand-in</text>
+
+    <rect class="d-main" x="410" y="72" width="160" height="80" rx="4"/>
+    <text class="d-t" x="490" y="104" text-anchor="middle">State machine</text>
+    <text class="d-s" x="490" y="124" text-anchor="middle">decides each move</text>
+    <text class="d-s" x="490" y="140" text-anchor="middle">(the brain)</text>
+
+    <rect class="d-box" x="630" y="80" width="130" height="64" rx="4"/>
+    <text class="d-t" x="695" y="108" text-anchor="middle">MoveIt</text>
+    <text class="d-s" x="695" y="128" text-anchor="middle">plans the path</text>
+
+    <rect class="d-box" x="810" y="80" width="140" height="64" rx="4"/>
+    <text class="d-t" x="880" y="108" text-anchor="middle">Arm driver</text>
+    <text class="d-s" x="880" y="128" text-anchor="middle">moves the motors</text>
+
+    <path class="d-arrow" d="M150 112 H206" marker-end="url(#h)"/>
+    <text class="d-lab" x="178" y="60" text-anchor="middle">colour +</text>
+    <text class="d-lab" x="178" y="72" text-anchor="middle">depth</text>
+    <path class="d-arrow" d="M350 112 H406" marker-end="url(#h)"/>
+    <text class="d-lab" x="380" y="60" text-anchor="middle">centroid</text>
+    <text class="d-lab" x="380" y="72" text-anchor="middle">x, y, depth</text>
+    <path class="d-arrow" d="M570 112 H626" marker-end="url(#h)"/>
+    <text class="d-lab" x="598" y="60" text-anchor="middle">target</text>
+    <text class="d-lab" x="598" y="72" text-anchor="middle">pose</text>
+    <path class="d-arrow" d="M760 112 H806" marker-end="url(#h)"/>
+    <text class="d-lab" x="784" y="60" text-anchor="middle">joint</text>
+    <text class="d-lab" x="784" y="72" text-anchor="middle">angles</text>
+    <path class="d-arrow" d="M490 72 V30 H880 V76" marker-end="url(#h)"/>
+    <text class="d-lab" x="685" y="24" text-anchor="middle">open / close gripper</text>
+
+    <rect class="d-off" x="210" y="210" width="140" height="56" rx="4"/>
+    <text class="d-t" x="280" y="235" text-anchor="middle">AnyGrasp</text>
+    <text class="d-s" x="280" y="254" text-anchor="middle">not started (T1.17)</text>
+    <path class="d-arrowd" d="M80 144 V238 H206" marker-end="url(#hd)"/>
+    <path class="d-arrowd" d="M350 238 H460 V156" marker-end="url(#hd)"/>
+    <text class="d-labd" x="366" y="230">grip poses, ignored</text>
+
+    <rect class="d-box" x="630" y="210" width="320" height="56" rx="4"/>
+    <text class="d-t" x="790" y="235" text-anchor="middle">Navigation + glasses</text>
+    <text class="d-s" x="790" y="254" text-anchor="middle">object_approach_node, orchestrator</text>
+    <path class="d-arrow" d="M520 152 V224 H626" marker-end="url(#h)"/>
+    <text class="d-lab" x="530" y="216">return_to_user</text>
+    <path class="d-arrowx" d="M540 152 V300 H700 V270" marker-end="url(#hx)"/>
+    <text class="d-labx" x="550" y="318">/manipulation/done: nobody sends it (T1.14)</text>
+    <path class="d-arrowx" d="M880 330 V270" marker-end="url(#hx)"/>
+    <text class="d-labx" x="760" y="346">/manipulator/release: nobody sends it yet (T2.6)</text>
+  </svg>
+  </div>
+  <p class="caption">Topic names and who owns each one: <code>docs/CHANNEL_CONTRACT.md</code>.</p>
+</section>
+
+<section id="route">
+  <h2>The route</h2>
+  <p class="sub">Twelve stops, in the order things happen. Line numbers are from <code>dev</code> on 6 Oct 2026, after T0.14
+  moved the tuning values and topic names into config files.</p>
+  <ol class="route">
+    <li><span><a href="#s1">The launcher starts everything</a><span class="f">launchers/start_camera_arm_grasp.py</span></span></li>
+    <li><span><a href="#s2">Arm bring-up: driver, model, MoveIt</a><span class="f">arm/arm_bringup/launch/arm_bringup.launch.py</span></span></li>
+    <li><span><a href="#s3">Where the camera and gripper sit on the arm</a><span class="f">rm_65_w_gripper.urdf.xacro</span></span></li>
+    <li><span><a href="#s4">SAM 3 finds the object</a><span class="f">grasp/segmentation/sam3_ros_node.py</span></span></li>
+    <li><span><a href="#s5">The state machine wires itself up</a><span class="f">grasp_state_machine.cpp:92-224</span></span></li>
+    <li><span><a href="#s6">The tuning numbers</a><span class="f">grasp/grasp_config.yaml:54-71</span></span></li>
+    <li><span><a href="#s7">Start-up: walls, then home</a><span class="f">grasp_state_machine.cpp:604-610</span></span></li>
+    <li><span><a href="#s8">IDLE: wait for the object</a><span class="f">grasp_state_machine.cpp:622-638</span></span></li>
+    <li><span><a href="#s9">SELECTING: creep toward it</a><span class="f">grasp_state_machine.cpp:641-675, 381-435</span></span></li>
+    <li><span><a href="#s10">One straight-line move</a><span class="f">mtc_planner.cpp:106-133</span></span></li>
+    <li><span><a href="#s11">EXECUTING: last move and close</a><span class="f">grasp_state_machine.cpp:678-735</span></span></li>
+    <li><span><a href="#s12">After the grasp, and what is missing</a><span class="f">object_approach_node.py, grasp_orchestrator.py</span></span></li>
+  </ol>
+</section>
+
+<section id="walk">
+  <h2>The walkthrough</h2>
+
+  <article class="stop" id="s1">
+    <div class="badge">1</div>
+    <div class="body">
+      <h3>The launcher starts everything</h3>
+      <div class="open"><span class="lbl">Open</span><code>launchers/start_camera_arm_grasp.py</code><span>lines 85 to 159</span></div>
+      <p>This is a plain Python script. It does nothing clever. It starts the other programs one
+      after another as separate processes, and stops them all on Ctrl+C (<code>shutdown()</code>,
+      line 63).</p>
+      <ul class="lines">
+        <li><span class="at">:87-100</span><p><strong>Camera driver.</strong> Starts the RealSense
+        driver with the wrist camera's serial number from <code>shared/global_config.yaml</code>.
+        Two cameras are plugged into the box, so without the serial it could open the wrong one
+        (T1.13).</p></li>
+        <li><span class="at">:103-107</span><p><strong>Arm bring-up.</strong> Stop 2.</p></li>
+        <li><span class="at">:110-121</span><p><strong>SAM 3.</strong> Stop 4. Runs in its own
+        Python environment through <code>uv</code>.</p></li>
+        <li><span class="at">:123-145</span><p><strong>AnyGrasp, commented out.</strong> Nothing
+        reads its output while the simple path is on, so it would only take the GPU.</p></li>
+        <li><span class="at">:148-152</span><p><strong>Viewers.</strong> A grasp viewer and RViz.
+        They only draw. They change nothing.</p></li>
+        <li><span class="at">:155-159</span><p><strong>State machine, last</strong>, after a 5
+        second wait so the others are up. Stop 5.</p></li>
+      </ul>
+      <div class="note warn"><p><strong>Never run this script on the real arm.</strong> The state
+      machine moves the arm to home a few seconds after it starts, without asking. For the first
+      real-arm runs, start each part by hand instead (T1.24, <code>docs/dion_docs/GRASP_BRINGUP_STEPS.md</code> step 3). The docstring
+      at the top (lines 6 to 14) is out of date: it still says a stand-in mask publisher starts at
+      step 2. The code starts SAM 3.</p></div>
+    </div>
+  </article>
+
+  <article class="stop" id="s2">
+    <div class="badge">2</div>
+    <div class="body">
+      <h3>Arm bring-up: driver, model, MoveIt</h3>
+      <div class="open"><span class="lbl">Open</span><code>arm/arm_bringup/launch/arm_bringup.launch.py</code></div>
+      <p>This launch file includes four others from the vendor code under <code>arm/vendor/</code>.
+      You do not need to read inside them. Know what each one is for:</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Part</th><th>Job</th></tr></thead>
+        <tbody>
+          <tr><td><code>rm_driver</code></td><td>Talks to the arm over the network (192.168.1.18, port 8080). The only program that actually moves motors. It reads commands from topics like <code>/rm_driver/movej_cmd</code></td></tr>
+          <tr><td><code>rm_description</code></td><td>Loads the arm's 3D model and publishes where every link is right now. This is what TF uses</td></tr>
+          <tr><td><code>rm_control</code></td><td>Turns a planned path into a stream of commands for the driver</td></tr>
+          <tr><td><code>move_group</code></td><td>MoveIt. Give it a goal, it plans a path that avoids collisions</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </article>
+
+  <article class="stop" id="s3">
+    <div class="badge">3</div>
+    <div class="body">
+      <h3>Where the camera and gripper sit on the arm</h3>
+      <div class="open"><span class="lbl">Open</span><code>arm/vendor/rm_description/urdf/rm_65_w_gripper.urdf.xacro</code><span>lines 8 to 24</span></div>
+      <p>The model file says where things are bolted on. Two lines matter for grasping:</p>
+      <ul class="lines">
+        <li><span class="at">:15-18</span><p><strong><code>grasp_frame</code></strong> is a point
+        14.75 cm out from the last link (<code>Link6</code>), between the gripper fingers. When MoveIt
+        is told "put the gripper here", this is the point it puts there.</p></li>
+        <li><span class="at">:23-24</span><p><strong>The camera</strong> is also fixed to
+        <code>Link6</code>, offset a few centimetres. Because both hang off the same link, TF always
+        knows where the camera is relative to the gripper and the base, wherever the arm moves.</p></li>
+      </ul>
+      <p>That is the whole trick behind the next stops. The camera sees the object in camera
+      coordinates. TF turns that into arm-base coordinates. MoveIt plans in arm-base coordinates.</p>
+    </div>
+  </article>
+
+  <article class="stop" id="s4">
+    <div class="badge">4</div>
+    <div class="body">
+      <h3>SAM 3 finds the object</h3>
+      <div class="open"><span class="lbl">Open</span><code>grasp/segmentation/sam3_ros_node.py</code><span>whole file, 200 lines</span></div>
+      <p>For every camera frame, SAM 3 looks for the prompt word and says
+      which pixels belong to it. The output the arm uses is one point: the object's centre.</p>
+      <ul class="lines">
+        <li><span class="at">:28-37</span><p>Topic names, read from the config files. Reads colour
+        and depth, writes the mask and the centroid.</p></li>
+        <li><span class="at">:43</span><p>The prompt word, <code>text_prompt: "box"</code> in
+        <code>grasp/grasp_config.yaml:34</code>. Fixed. Voice does not change it yet.</p></li>
+        <li><span class="at">:106</span><p><code>rgb_depth_callback</code> runs once per frame
+        pair. Everything below happens inside it.</p></li>
+        <li><span class="at">:117-127</span><p>Run the model, keep the best-scoring mask and its
+        centre pixel.</p></li>
+        <li><span class="at">:139</span><p>Publish the mask on <code>/camera/sam/mask</code>. Only
+        AnyGrasp would read it.</p></li>
+        <li><span class="at">:150-158</span><p>Depth: take every depth reading inside the mask,
+        drop the zeros (pixels with no reading), use the median. Depth images store millimetres,
+        so multiply by 0.001 for metres (<code>depth_scale_m</code>,
+        <code>shared/global_config.yaml:84</code>).</p></li>
+        <li><span class="at">:161-167</span><p>Publish the centroid on
+        <code>/object_centroid_2d</code>. <strong>This is the message the state machine
+        uses.</strong></p></li>
+      </ul>
+      <pre><span class="ln">164</span>  pt.point.x = float(cx_px)  <span class="cm"># pixel column</span>
+<span class="ln">165</span>  pt.point.y = float(cy_px)  <span class="cm"># pixel row</span>
+<span class="ln">166</span>  pt.point.z = z             <span class="cm"># depth in metres</span></pre>
+      <div class="note"><p><strong>Odd but true:</strong> x and y are pixels, z is metres, all in
+      one message. Every reader of this topic has to know that.</p></div>
+      <p><strong>The stand-in.</strong> <code>grasp/tools/dummy_mask_publisher.py</code> does the
+      same job without the model, for testing (T1.16). It claims every pixel is the object, so it
+      publishes the image centre (line 80) and the median depth of the whole frame (line 72).
+      Merged into <code>dev</code> on 6 Oct. Put
+      one object in front of the camera on a clear table when you use it.</p>
+    </div>
+  </article>
+
+  <article class="stop" id="s5">
+    <div class="badge">5</div>
+    <div class="body">
+      <h3>The state machine wires itself up</h3>
+      <div class="open"><span class="lbl">Open</span><code>grasp/grasp_state_machine/src/grasp_state_machine.cpp</code><span>lines 92 to 224</span></div>
+      <p>From here on, line numbers without a file name are in this file.</p>
+      <ul class="lines">
+        <li><span class="at">:92-97</span><p><code>create()</code> builds the node, then starts
+        <code>workerLoop()</code> on its own thread. <strong>So two things run at once:</strong> ROS
+        delivers messages to the callbacks on one thread, and the worker loop moves the arm on
+        another. They share data through variables guarded by locks (mutexes).</p></li>
+        <li><span class="at">:123-136</span><p>Reads the tuning values (stop 6) from ROS parameters.
+        <code>param()</code> at 166 has no fallback: if a value is missing, the node stops at
+        start-up rather than move the arm on a guess. That is why it must be started with
+        <code>grasp_state_machine.launch.py</code>, which loads the config files.</p></li>
+        <li><span class="at">:138-148</span><p>Reads: camera calibration, AnyGrasp's grip poses,
+        and the centroid.</p></li>
+        <li><span class="at">:150-159</span><p>Writes: two gripper commands (open, close), its
+        current state on <code>/pipeline_state</code>, and <code>/manipulator/return_to_user</code>
+        after a grasp.</p></li>
+        <li><span class="at">:181-193</span><p>Camera calibration arrives once. It gives
+        <code>fx</code>, <code>fy</code> (focal length in pixels) and <code>cx</code>,
+        <code>cy</code> (the image centre). Needed to turn pixels into metres in stop 9.</p></li>
+        <li><span class="at">:206-212</span><p><code>centroidCallback</code>: store the newest
+        centroid, set <code>has_centroid_</code>, wake the worker. Only the newest one is kept.</p></li>
+        <li><span class="at">:217-224</span><p><code>publishState</code>: remember the state and
+        announce it.</p></li>
+      </ul>
+    </div>
+  </article>
+
+  <article class="stop" id="s6">
+    <div class="badge">6</div>
+    <div class="body">
+      <h3>The tuning numbers</h3>
+      <div class="open"><span class="lbl">Open</span><code>grasp/grasp_config.yaml</code><span>lines 54 to 71</span></div>
+      <p>Every distance in the behaviour comes from here. Until T0.14 (6 Oct) these were constants
+      at the top of the C++ file. Now they are a config file, so changing one needs no rebuild. The
+      C++ keeps the old upper-case names for the variables they load into. The ones the simple
+      path uses:</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Key</th><th>Value</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><code>approach_step_m</code></td><td class="num">0.04 m</td><td>Each SELECTING step moves the gripper 4 cm</td></tr>
+          <tr><td><code>approach_step_final_m</code></td><td class="num">0.10 m</td><td>The last move before closing is 10 cm</td></tr>
+          <tr><td><code>max_approach_steps</code></td><td class="num">50</td><td>Give up approaching after 50 steps</td></tr>
+          <tr><td><code>execute_depth_thresh_m</code></td><td class="num">0.18 m</td><td>Closer than this, stop creeping and grasp</td></tr>
+          <tr><td><code>centroid_target_offset_x_px</code></td><td class="num">55 px</td><td>Aim to put the object 55 pixels right of the image centre, not at it. Most likely because the camera sits beside the gripper <span class="mono">[inferred]</span></td></tr>
+          <tr><td><code>use_simple_execute</code></td><td class="num">true</td><td>Which way to finish. True skips AnyGrasp. Kept true for bring-up (CHANNEL_CONTRACT B-1)</td></tr>
+        </tbody>
+      </table></div>
+      <p style="margin-top:12px">The others (angles, stability window, slerp) belong to the AnyGrasp
+      path and do nothing today. The gripper's own numbers (open position, close speed and force)
+      are not in this file yet. They are still written into <code>openGripper()</code> and
+      <code>closeGripper()</code> in the C++ (stop 11).</p>
+    </div>
+  </article>
+
+  <article class="stop" id="s7">
+    <div class="badge">7</div>
+    <div class="body">
+      <h3>Start-up: walls, then home</h3>
+      <div class="open"><span class="lbl">Open</span><span>lines 604 to 610, then 302 to 365</span></div>
+      <p>The worker loop starts here. Read <code>workerLoop()</code> (604 to 756) as the spine of the
+      program. Everything else is a helper it calls.</p>
+      <pre><span class="ln">607</span>  sleep 2 s
+<span class="ln">608</span>  addSafetyWalls();
+<span class="ln">609</span>  homeWithRetry();
+<span class="ln">610</span>  publishState(State::IDLE);</pre>
+      <ul class="lines">
+        <li><span class="at">:302-354</span><p><strong>Safety walls.</strong> Adds four invisible
+        boxes to MoveIt's world: walls at the sides and front, and a table. MoveIt then refuses any
+        path through them. They exist only in the planner. Nothing physical stops the arm.</p></li>
+        <li><span class="at">:356-365</span><p><strong>Home, retried forever</strong> until it
+        succeeds or the node shuts down. It calls <code>moveToHome()</code> in
+        <code>mtc_planner.cpp:71</code>, which asks MoveIt to reach six joint angles at 10% speed.</p></li>
+      </ul>
+      <p>The six angles are <code>HOME_JOINTS</code> in
+      <code>grasp/grasp_state_machine/include/grasp_state_machine/mtc_planner.hpp:51</code>:
+      0°, 0°, 45°, 0°, 90°, 90°. Checked on the real arm on 23 Sep (T1.7), every joint within 0.02°.
+      <code>RETURN_JOINTS</code> (line 63) is now the same pose.</p>
+    </div>
+  </article>
+
+  <article class="stop" id="s8">
+    <div class="badge">8</div>
+    <div class="body">
+      <h3>IDLE: wait for the object</h3>
+      <div class="open"><span class="lbl">Open</span><span>lines 622 to 638</span></div>
+      <div class="states" aria-label="States in order">
+        <span class="st">IDLE</span><span class="arr">→</span>
+        <span class="st">SELECTING</span><span class="arr">→</span>
+        <span class="st">EXECUTING</span><span class="arr">→</span>
+        <span class="st">IDLE</span>
+      </div>
+      <p>The loop clears <code>has_centroid_</code> and sleeps until <code>centroidCallback</code>
+      (stop 5) wakes it with a new centroid. Then it goes home again, so every attempt starts from
+      the same pose.</p>
+      <p>In practice SAM 3 publishes a centroid on almost every frame, so IDLE lasts a fraction of a
+      second once an object is in view. That is also why one launch cannot simply loop: the next
+      frame would start a new approach. T1.25 adds a gate, so a centroid only counts after an
+      explicit "new target" request.</p>
+    </div>
+  </article>
+
+  <article class="stop" id="s9">
+    <div class="badge">9</div>
+    <div class="body">
+      <h3>SELECTING: creep toward it</h3>
+      <div class="open"><span class="lbl">Open</span><span>lines 641 to 675, then <code>selectingStep()</code> at 381 to 435</span></div>
+      <p>The loop at 644 runs up to 50 times. Each pass checks the depth first:</p>
+      <ul class="lines">
+        <li><span class="at">:657-663</span><p>Object closer than 18 cm? Leave the loop and go to
+        EXECUTING.</p></li>
+        <li><span class="at">:664-668</span><p>Otherwise take one step. If the step fails, give up
+        and go back to IDLE (673).</p></li>
+      </ul>
+      <p><strong>One step, in <code>selectingStep()</code>:</strong></p>
+      <ul class="lines">
+        <li><span class="at">:386-397</span><p>Ask where the gripper is now, and express it in the
+        camera's frame.</p></li>
+        <li><span class="at">:402-403</span><p>How far is the object from where we want it in the
+        image, in pixels?</p></li>
+        <li><span class="at">:406-407</span><p>Turn pixels into metres sideways. A pixel covers
+        more ground the further away the object is, so multiply by depth and divide by focal
+        length.</p></li>
+        <li><span class="at">:408-415</span><p>Add 4 cm forward (camera z). Then scale the whole
+        move so its total length is exactly 4 cm.</p></li>
+        <li><span class="at">:421</span><p>Convert that goal into the arm base's frame.</p></li>
+        <li><span class="at">:429</span><p>Ask for a straight-line move there. Stop 10.</p></li>
+      </ul>
+      <div class="example">
+        <p><strong>Worked example.</strong> Using the calibration the bench test uses (<code>test_state_machine_sim.py:44</code>): fx 607,
+        cx 332. The object's centre is at pixel column 400, 30 cm away.</p>
+        <table>
+          <tr><td>Target column</td><td class="num">332 + 55 = 387</td></tr>
+          <tr><td>Error</td><td class="num">400 − 387 = 13 px</td></tr>
+          <tr><td>Sideways, in metres</td><td class="num">13 ÷ 607 × 0.30 = 0.0064 m</td></tr>
+          <tr><td>Forward</td><td class="num">0.04 m</td></tr>
+          <tr><td>Length of that move</td><td class="num">√(0.0064² + 0.04²) = 0.0405 m</td></tr>
+          <tr><td>Scaled to 4 cm</td><td class="num">6.3 mm sideways, 39.5 mm forward</td></tr>
+        </table>
+        <p style="margin:10px 0 0">So most of each step goes forward, with a small sideways
+        correction. Repeat until depth reads under 0.18 m.</p>
+      </div>
+    </div>
+  </article>
+
+  <article class="stop" id="s10">
+    <div class="badge">10</div>
+    <div class="body">
+      <h3>One straight-line move</h3>
+      <div class="open"><span class="lbl">Open</span><code>grasp/grasp_state_machine/src/mtc_planner.cpp</code><span>lines 106 to 133</span></div>
+      <p>Every small move goes through <code>moveCartesianStep</code>. "Cartesian" means the gripper
+      travels in a straight line, rather than each joint swinging to its new angle.</p>
+      <ul class="lines">
+        <li><span class="at">:108-110</span><p>10% of top speed and acceleration. Start from where
+        the arm is now.</p></li>
+        <li><span class="at">:113</span><p>MoveIt plans the line in 1 cm pieces.</p></li>
+        <li><span class="at">:114-118</span><p>If it can only plan less than 80% of the line, for
+        example because a wall is in the way, refuse.</p></li>
+        <li><span class="at">:122-128</span><p>Add timing so the motion is smooth.</p></li>
+        <li><span class="at">:132</span><p>Send it to the arm and wait until it finishes.</p></li>
+      </ul>
+      <p>Home and return use a different call, <code>moveToHome()</code> at line 71. That plans
+      freely in joint space, so the gripper's path there is not a straight line.</p>
+    </div>
+  </article>
+
+  <article class="stop" id="s11">
+    <div class="badge">11</div>
+    <div class="body">
+      <h3>EXECUTING: last move and close</h3>
+      <div class="open"><span class="lbl">Open</span><span>lines 678 to 735</span></div>
+      <ul class="lines">
+        <li><span class="at">:678-683</span><p>Announce EXECUTING. Copy the latest centroid so it
+        cannot change mid-move. Open the gripper (<code>openGripper()</code> at 229: position 1000
+        is fully open, then wait 1.5 s).</p></li>
+        <li><span class="at">:685</span><p>The switch. <code>use_simple_execute</code> is true, so
+        we take this branch.</p></li>
+        <li><span class="at">:688-709</span><p>Same maths as a SELECTING step, but 10 cm instead of
+        4.</p></li>
+        <li><span class="at">:718</span><p>Overwrite the goal's height with the current height.
+        The gripper moves level and never dips toward the table.</p></li>
+        <li><span class="at">:722-726</span><p>Make the move. <strong>If it fails, the worker loop
+        ends</strong> (<code>return</code>). The node stays running but does nothing more.</p></li>
+        <li><span class="at">:727</span><p>Close the gripper (<code>closeGripper()</code> at 239:
+        speed 200, force 150, then wait 1.5 s). The close stops when the grip force passes the
+        <code>force</code> value, out of 1000 (about 1.5 kg). Both gripper commands were checked on
+        the real arm on 6 Oct, closing on air (T1.22). Closing on a box is next.</p></li>
+        <li><span class="at">:729</span><p>Go to the return pose. Since 5 Oct that is the home pose.</p></li>
+        <li><span class="at">:732-734</span><p>Announce <code>/manipulator/return_to_user</code>.</p></li>
+        <li><span class="at">:735</span><p><strong><code>return</code> again.</strong> The loop
+        ends after one grasp, holding the object. Lines 752 to 754, which would go home and start
+        over, are never reached on this path. T1.14 replaces this (see Decisions).</p></li>
+      </ul>
+      <div class="note"><p><strong>The other branch</strong> (737 to 746) is the AnyGrasp path. It
+      waits for grip poses, picks one, waits until it holds still for 5 frames, then moves the
+      gripper to exactly that pose and angle. It has never run. It is blocked by three bugs (T1.8)
+      and switched on in T1.17. Skip it for now.</p></div>
+    </div>
+  </article>
+
+  <article class="stop" id="s12">
+    <div class="badge">12</div>
+    <div class="body">
+      <h3>After the grasp, and what is missing</h3>
+      <div class="open"><span class="lbl">Open</span><code>nav/object_approach/object_approach_node.py</code><span>:88-91, :123-135</span><code>launchers/grasp_orchestrator.py</code><span>:69, :111-120</span></div>
+      <p>The arm now holds the object at home. Two messages are supposed to come next. Neither is
+      sent by anything:</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Message</th><th>Who waits for it</th><th>Who should send it</th></tr></thead>
+        <tbody>
+          <tr><td><code>/manipulation/done</code></td><td>Navigation (<code>object_approach_node.py:88</code>), to know the grasp is over</td><td>The state machine, after it opens the gripper on release. <strong>T1.14</strong></td></tr>
+          <tr><td><code>/manipulator/release</code></td><td>Navigation (<code>:91</code>) deletes its marker. The orchestrator (<code>:69</code>) opens the gripper</td><td>The glasses, when you say "release". <strong>T2.6</strong></td></tr>
+        </tbody>
+      </table></div>
+      <p style="margin-top:12px">So today, after a grasp, the gripper stays closed until someone
+      sends the release message by hand. And the only program that would open the gripper on
+      release is the orchestrator, which we never run on the real arm. Decided 6 Oct: the state
+      machine takes over that job (T1.14), and the glasses learn to send "release" and "new
+      target" as two separate messages (T2.6).</p>
+    </div>
+  </article>
+</section>
+
+<section id="problems">
+  <h2>Problems you will pass on the way</h2>
+  <p class="sub">You will see these while reading. None of them stops a single simple grasp on a
+  good day. Each has a task.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Where</th><th>What goes wrong</th><th>Task</th></tr></thead>
+    <tbody>
+      <tr><td class="num">:206-212</td><td>Any centroid starts a cycle. SAM 3 publishes one on every frame, so a loop back to IDLE would start a new approach at once</td><td>T1.25</td></tr>
+      <tr><td class="num">:725, :735</td><td>The worker loop ends after one grasp, or after one failed final move. Restart everything to try again</td><td>T1.14</td></tr>
+      <tr><td class="num">:694, :714</td><td>Two frame conversions have no error handling. If TF is missing a link, the node crashes. The same calls in <code>selectingStep()</code> are guarded</td><td>T1.9</td></tr>
+      <tr><td class="num">:627-634, :654</td><td>One wake-up signal shared by two different locks, and the depth read without its lock. In C++ this is undefined behaviour, not just untidy</td><td>T1.9</td></tr>
+      <tr><td class="num">:648-653</td><td>The age check on the centroid is commented out. The arm acts on the last centroid even if it is old</td><td>T1.25</td></tr>
+      <tr><td class="num">:197, <code>grasp_config.yaml:66</code></td><td>The AnyGrasp path: the producer and the consumer only work in opposite states, and the switch hides it</td><td>T1.8</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="decisions">
+  <h2>Decisions</h2>
+  <div class="decisions">
+    <article class="dec">
+      <div class="hd"><h3>One launch does more than one grasp</h3><span class="chip c-ok">decided</span></div>
+      <p>Decided 6 Oct. After the return, the state machine waits for release, opens the gripper,
+      publishes <code>/manipulation/done</code> and goes back to IDLE. That replaces the
+      <code>return</code> at line 735 (T1.14). It needs the trigger gate first (T1.25), or the next
+      camera frame would start a new approach while the gripper still holds the object. The first
+      real grasps keep the one-shot <code>return</code>, so the arm cannot run twice by accident.</p>
+    </article>
+    <article class="dec">
+      <div class="hd"><h3>The state machine opens the gripper on "release"</h3><span class="chip c-ok">decided</span></div>
+      <p>Decided 6 Oct. Today only the orchestrator does, and it shuts itself down right after. The
+      state machine listens for <code>/manipulator/release</code> and calls its own
+      <code>openGripper()</code>. It already owns both gripper commands, and it knows when a grasp
+      has finished, so it can ignore a release that comes too early (T1.14). The glasses never send
+      words to the state machine. They send "release" and "new target" as separate messages
+      (T2.6, was T1.15).</p>
+    </article>
+    <article class="dec">
+      <div class="hd"><h3>Simple path first, AnyGrasp later</h3><span class="chip c-ok">decided</span></div>
+      <p>Decided 23 Sep. The first real grasps (T1.11, T1.12) use the simple path. AnyGrasp is
+      fixed (T1.8, T1.10) and switched on afterwards (T1.17), so only one thing changes at a time.</p>
+    </article>
+    <article class="dec">
+      <div class="hd"><h3>Return pose is the home pose</h3><span class="chip c-ok">decided</span></div>
+      <p>Decided 5 Oct. Home is the only pose checked on the real arm. A real hand-to-user pose is
+      future work, T1.20.</p>
+    </article>
+  </div>
+</section>
+
+<section id="state">
+  <h2>Where things stand</h2>
+  <ul class="status">
+    <li><span class="chip c-ok">done</span><p>Arm powered and talking to the box (T1.6). Home pose chosen (T1.3) and reached on the real arm (T1.7).</p></li>
+    <li><span class="chip c-ok">works</span><p>The gripper opens and closes on command, on the real arm, closing on air (T1.22, 6 Oct).</p></li>
+    <li><span class="chip c-ok">works</span><p>The whole simple grasp on the simulated arm: <code>./bench/state_machine_sim.sh</code> on the box.</p></li>
+    <li><span class="chip c-ok">works</span><p>SAM 3 finds the box on real recorded wrist-camera frames (T0.12).</p></li>
+    <li><span class="chip c-ok">merged</span><p>Camera by serial (T1.13) and the stand-in sending a centroid (T1.16). Their last box checks are part of T1.24.</p></li>
+    <li><span class="chip c-bad">missing</span><p>The done and release messages (T1.14, T2.6).</p></li>
+    <li><span class="chip c-idle">next</span><p>One step at a time (<code>docs/dion_docs/GRASP_BRINGUP_STEPS.md</code>): gripper on a box (T1.22), the cycle on the simulated arm (T1.23), one motion check on the real arm (T1.24), the first real grasp (T1.11), then five with SAM 3 (T1.12).</p></li>
+  </ul>
+</section>
+
+<section id="watch">
+  <h2>Watch it run, safely</h2>
+  <p>On the lab box, <code>./bench/state_machine_sim.sh</code> runs this exact program against a
+  simulated arm on a private channel. Nothing real moves. It feeds fake centroids and checks each
+  state in turn. The test that drives it is <code>bench/nodes/test_state_machine_sim.py</code>.
+  Reading that test is a good second pass: it lists what the program should do, in order, as
+  checks.</p>
+  <p>To see a tuning value matter, change <code>approach_step_m</code> in
+  <code>grasp/grasp_config.yaml</code> on a scratch branch, rerun, and watch the simulated arm take
+  bigger steps. No rebuild needed: the launch file reads the config from the repo.</p>
+</section>
+
+<section id="words">
+  <h2>Words you will meet</h2>
+  <dl class="gloss">
+    <dt>Node</dt><dd>One running program in ROS.</dd>
+    <dt>Topic</dt><dd>A named channel one program writes to and others read from.</dd>
+    <dt>Callback</dt><dd>A function ROS calls for you when a message arrives on a topic you read.</dd>
+    <dt>Mask</dt><dd>An image the same size as the camera's, marking which pixels belong to the object.</dd>
+    <dt>Centroid</dt><dd>The centre of the mask. Here: pixel column, pixel row, and depth in metres.</dd>
+    <dt>Depth image</dt><dd>An image where each pixel holds a distance in millimetres instead of a colour. Zero means no reading.</dd>
+    <dt>Intrinsics</dt><dd>The camera's calibration: focal length and image centre, in pixels. Used to turn pixels into metres.</dd>
+    <dt>Pose</dt><dd>A position plus a direction. Where the gripper is and which way it points.</dd>
+    <dt>Frame, TF</dt><dd>A coordinate system, and the tool that converts points between them.</dd>
+    <dt>Cartesian move</dt><dd>A straight-line move of the gripper.</dd>
+    <dt>MoveIt</dt><dd>The motion planner. Give it a goal, it finds joint angles and a path that avoids collisions.</dd>
+    <dt>Mutex, lock</dt><dd>A guard that stops two threads changing the same variable at once.</dd>
+    <dt>Grasp candidate</dt><dd>One proposal from AnyGrasp: a gripper pose, a width and a score.</dd>
+  </dl>
+</section>
+
+<p class="foot">Source: <code>docs/dion_docs/grasp-pipeline-explainer.html</code>. Read from the code
+on <code>dev</code> after T0.14, 6 Oct 2026 <span class="mono">[code]</span>. The 55-pixel
+reason is a guess <span class="mono">[inferred]</span>. Rewritten on 6 Oct as a walkthrough to read
+next to the code, replacing the 22 Sep overview. Brought up to date the same day after T0.14
+moved the config, T1.13 and T1.16 merged and the two grasp decisions were settled. Defects in full: <code>docs/CODE_AUDIT.md</code>.
+Channel owners: <code>docs/CHANNEL_CONTRACT.md</code>. Tasks: <code>docs/task-tree.html</code>.</p>
+</div>

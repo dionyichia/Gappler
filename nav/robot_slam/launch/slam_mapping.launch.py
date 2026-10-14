@@ -9,7 +9,7 @@ from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
-from gappler_common import path
+from gappler_common import path, static_transform_args
 
 
 # Where saved maps live: `map_dir` in shared/global_config.yaml, overridden by
@@ -103,7 +103,21 @@ def generate_launch_description():
         package="tf2_ros",
         executable="static_transform_publisher",
         name="base_to_livox",
-        arguments=["0.18", "0", "0.2", "0", "0", "0", "robot_base_link", "livox_frame"],
+        arguments=static_transform_args("lidar_mount"),
+    )
+
+    # Arm is physically mounted 0.18 m forward and 0.48 m above robot_base_link.
+    # Yaw=π rotates the arm frame 180° so its X-axis (forward) aligns with the
+    # robot's forward direction (arm was mounted facing backward).
+    # This static TF bridges the SLAM tree and the arm tree so object_approach_node
+    # can transform directly from base_link (arm frame) → map via TF.
+    # Both SLAM launches read shared/global_config.yaml geometry.arm_mount.
+    # A future combined URDF with this fixed joint would retire both publishers.
+    arm_mount_tf = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="robot_base_to_arm",
+        arguments=static_transform_args("arm_mount"),
     )
 
     pointcloud_to_laserscan = Node(
@@ -198,6 +212,7 @@ def generate_launch_description():
             livox_launch,
             qos_relay_node,
             static_tf_node,
+            arm_mount_tf,
             pointcloud_to_laserscan,
             slam_toolbox,
             delayed_nav2,

@@ -30,7 +30,12 @@ pipeline cannot work as written.
 
 *Box 2026-09-11:* the `main` checkout on the machine (`~/rcp-github`, byte-identical to `main` @
 `2d36a89`) has the same line. The hardware-verified `~/rcp-desktop` has no
-`anygrasp_detection_node.py` at all. Behaviour still `[unverified]` — nothing has been run.
+`anygrasp_detection_node.py` at all.
+
+**`[observed]` 2026-09-22** (T0.12, `bench/anygrasp_replay.sh`, [`bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt`](bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt)): on a
+recorded wrist-camera bag, AnyGrasp published 154 candidate sets while `/pipeline_state` was IDLE
+and 0 while it was EXECUTING. The code is now at `grasp/anygrasp_node/anygrasp_detection_node.py:182`.
+Fixed by T1.8.
 
 ```python
 def synced_callback(self, rgb_msg: Image, depth_msg: Image):
@@ -214,6 +219,11 @@ validated, and anyone who cleared space based on the guide cleared the wrong vol
 *Simulated arm 2026-09-11* `[observed]`: a build of `main` homes to `main`'s row (within 0.0001 rad) —
 `bench/state_machine_sim.sh`. Reachable and collision-free in the model; that says nothing about the real cell.
 
+*Real arm 2026-09-23* `[observed]`: T1.3 kept `main`'s row. T1.7 sent it straight to the driver, one
+joint at a time at speed 1, and every joint landed within 0.02° of it
+(`dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`). The tool ends slightly outside the base footprint.
+The state machine itself has still never homed the real arm, so the unprompted-homing risk stands.
+
 ### B5. The orchestrator orphans the arm driver and state machine on exit
 
 `orchestrator.py:85-97` — the handler that terminated the child processes is commented out. Nothing
@@ -259,7 +269,8 @@ table"* returns `STOP_KEYWORD` (`:113`) and the object name is lost. One line, b
 (`ITERATION_INTERVAL_SECONDS = 1`, `:4`; `audio_streaming_pipeline.py:173-187`), and an unchanged
 transcription is still published (J1, `audio_streaming_pipeline.py:128`). So a single spoken word is
 re-transcribed and re-published roughly **ten times** — a false positive is ~10 stop messages, and a
-genuine *"Stop."* is ~10 consecutive misses.
+genuine *"Stop."* is ~10 consecutive misses. **The repetition is fixed by `T2.10` (2026-10-12, PR #57):**
+each finished sentence is transcribed and published once. The keyword match itself is unchanged.
 
 **Not a duplicate of the neighbouring entries, and they should be read together:** J2 is the *model*
 path (the few-shot block ending in an empty completion), B7 is the *fallback* meant to back it up,
@@ -285,6 +296,13 @@ string, given a loaded model.
 undefined behaviour, not merely a race. Symptoms would be lost wakeups and hangs that come and go
 with timing and optimisation level.
 
+**Resolved 2026-10-13 (`T1.25`):** read against the standard, this is not undefined behaviour here.
+The rule only covers waiters that wait at the same time, and only the worker thread ever waits on
+`queue_cv_`, so the two waits never overlap. The comment at the IDLE wait now says so. The real
+defect was a lost wake-up at shutdown: the destructor set `shutdown_` under `queue_mutex_` only,
+so the IDLE wait on `centroid_mutex_` could miss it and never return. The destructor now takes both
+locks. Untested directly, because C6 stops the destructor running at all.
+
 ### C2. The centroid is read without its lock in the loop that decides to close in
 
 `grasp_state_machine.cpp:633-641`
@@ -306,9 +324,16 @@ SELECTING → EXECUTING, i.e. whether the arm closes on the object.
 `ORIENTATION.md` §8.8 records the missing staleness guard. It does not record that removing it also
 removed the lock.
 
+**Fixed 2026-10-12 (`T1.24`, PR #57):** the read takes `centroid_mutex_` again and the staleness
+guard is back, limit `centroid_max_age_s` (2.0 s) in `grasp/grasp_config.yaml`
+(`grasp_state_machine.cpp:646-662`). Checked on the simulated arm, not yet on the real one.
+
 ### C3. `has_centroid_ = false` written without the mutex
 
 `:604`, one line before the block that locks `centroid_mutex_` to wait on it.
+
+**Fixed 2026-10-13 (`T1.24`, PR #57, review):** the reset now sits inside the locked block, just
+before the wait (`grasp_state_machine.cpp:628-632`). Same behaviour. Checked on the simulated arm.
 
 ### C4. `state_` is not atomic
 
@@ -418,8 +443,7 @@ measurement, in a fifth place.
 **Recount 2026-09-14 `[code]`.** The full set is larger than "three plus a fourth". Six source
 literals plus a test fixture carry the same two measurements: `slam_localization.launch.py:90` and
 `:102`, `slam_mapping.launch.py:97`, `object_approach_node.py:53` and `:143`, `goto_glasses.py:35`,
-and `bench/nodes/test_nav_nodes.py:52`. Note `slam_mapping.launch.py` has the LiDAR offset but **no**
-`robot_base_to_arm` transform at all, which is the defect T3.3 addresses.
+and `bench/nodes/test_nav_nodes.py:52`. `slam_mapping.launch.py` carried only the LiDAR offset until **T3.3 (DONE 2026-09-26)** added its `robot_base_to_arm` transform; the shared 0.18 stays duplicated until T5.4 single-sources it.
 
 ### E5. 🔴 Two nodes race for Nav2 on the same spoken word `[code]`
 
@@ -498,6 +522,30 @@ The same wedge follows a plain `"failed"` outcome, which the bridge *does* publi
 confirms it) — `:148` returns early for anything but `"success"`. That variant was not exercised
 separately. `[inferred from the same two lines]`
 
+**Fix on branch `t3.8-nav-node-fixes`, 2026-10-05 (T3.8), not yet run on the box.** The bridge now
+answers every goal exactly once: `"failed"` when Nav2 is unavailable, when it rejects the goal, or
+when sending or reading the result raises (`nav/goal_reached/goal_reached_publisher.py`).
+`object_approach_node` releases `_approach_done` on any outcome, not only `"success"`, so the next
+object pose starts a new approach (`nav/object_approach/object_approach_node.py`, `_on_goal_reached`).
+Retag to fixed once `bench/nav_nodes.sh` reports XPASS for both F1 cases.
+
+**Follow-up on branch `t3.8-bridge-timeout-backoff-release`, 2026-10-07 (T3.8), not yet run on the
+box.** A review of the fix above found two gaps. `[code]`
+
+- **A fourth silent path.** A goal Nav2 accepted and then never reported on (Nav2 crashed, or the
+  result never came) still published nothing, because only the result callback answered an accepted
+  goal. The bridge now checks its open goals once a second. A goal fails when Nav2 has been gone
+  from the network for three checks in a row, or when no result came within `result_timeout_s`
+  (`nav/nav_config.yaml`, 180 s). On the timeout it cancels the goal first, so the base is not still
+  driving when the approach node is told `"failed"`. A result that arrives after that is dropped, so
+  each goal still gets one answer. New bench case "goal bridge, Nav2 goes away". The timeout branch
+  has no bench case: the value comes from config and 180 s is too long for the bench.
+- **The fix opened a retry loop.** The perception pipeline publishes the object pose on every
+  detection (`object_recognition_pipeline.py:481`). With the guard released on failure, a goal Nav2
+  keeps refusing was sent again on every frame. `object_approach_node` now ignores object poses for
+  `retry_backoff_s` (3 s) after a failed approach. There is still no limit on the number of retries.
+  The "approach after nav failure" case now also checks that a pose inside the back-off sends no goal.
+
 ### F2. 🟠 A failed return leg can never be retried `[observed]`
 
 `goto_glasses.py:222-225` — if Nav2 is unavailable, it sets `self._navigating = False` but leaves
@@ -514,6 +562,27 @@ returning to user."* With Nav2 back up, the second return reached it **0** times
 `/return_to_user/goal_reached` stayed silent throughout. `[observed]`
 
 ### F3. 🟠 `goto_glasses.py:247` — `future.result()` unguarded, same class as F1.
+
+### F5. 🔴 A finished approach blocks every later object `[code]`
+
+Added 2026-10-07 from a review of the F1 fix. F1 is the failure path. The same guard also sticks
+on the two paths that work. `[code]`, not yet run.
+
+| Where `_approach_done` is set | What clears it |
+|---|---|
+| `object_approach_node.py:227`, object already in range: `/manipulation/start`, no nav goal | nothing. No goal was sent, so no `/goal_reached` ever comes |
+| `:173`, after a `"success"`: `/manipulation/start` is published and the guard set again | nothing, until some later `/goal_reached` |
+
+So after one grasp cycle, in range or approached, `_on_object_pose` drops every later object pose
+until the node is restarted. `_on_release` cleared `_last_object_map` and the marker at the end of
+the cycle but not the guard.
+
+**Fix on branch `t3.8-bridge-timeout-backoff-release`, 2026-10-07 (T3.8), not yet run on the box.**
+`_on_release` now clears the guard too: `/manipulator/release` with `true` ends the cycle. New
+bench case "approach after release". **Still open:** nothing publishes `/manipulator/release` yet
+(T1.15), so on the real system the node stays blocked after its first cycle until that lands. A
+new voice prompt was considered as a second way to clear the guard and left out: it could send the
+base a new goal while the arm is mid-grasp. That is a decision for the owners of the handover (T3.7).
 
 ### F4. 🟠 All five nav nodes exit with a traceback on Ctrl+C `[observed]`
 
@@ -535,6 +604,14 @@ Noisy but harmless while the robot is parked. The concern is mid-leg: `goto_glas
 `_cancel_navigation()` (`:231-244`) that **nothing calls on shutdown**, so Ctrl+C during a
 navigation leg would leave the Nav2 goal live and the base driving with its commander gone.
 `[inferred]` — nothing drove in this run, and this bench cannot test it.
+
+**Fix on branch `t3.8-nav-node-fixes`, 2026-10-05 (T3.8), not yet run on the box.** All five
+`main()`s now catch `KeyboardInterrupt` and `ExternalShutdownException`, destroy the node, and call
+`rclpy.try_shutdown()`, which does not raise when rclpy's handler already shut down. A new
+`bench/nav_nodes.sh` case, "clean Ctrl+C", checks each node exits 0 with no traceback. Retag to fixed
+once it reports XPASS. **Not fixed:** `goto_glasses` still does not cancel a live Nav2 goal on
+shutdown. That needs rclpy's own SIGINT handler turned off, as `estop.py` does (B2), and is a
+behaviour decision left to the owner.
 
 ---
 
@@ -576,6 +653,8 @@ Any encoding that is not exactly `rgb8` or `mono8` — `bgr8`, `rgba8`, `bgra8` 
 ### G3. 🟡 `sam3_ros_node.py:108-110` parses RGB without checking `encoding` at all, and reshapes
 with `-1` so a 4-channel image is accepted silently. Channel order into SAM 3 is unverified.
 
+> **Resolved 2026-10-13 (T2.7) `[code]`.** `sam3_ros_node.py` is deleted. Its replacement, the segmentation service (T2.1), is a separate review. Record kept.
+
 ### G4. 🟡 Masks carry 0/1, not 0/255
 
 `sam3_ros_node.py:135` and `dummy_mask_publisher.py:41` both publish `mono8` images whose "true"
@@ -590,6 +669,8 @@ trap on the exact topic you would open RViz to inspect.
 
 `grasp_state_machine.cpp` back-projects the centroid pixel using that `z` as if it were the depth of
 that pixel. For a tilted, large, or leaky mask the resulting 3D point is not on the object surface.
+
+> **Resolved 2026-10-13 (T2.7) `[code]`.** `sam3_ros_node.py` is deleted. Its replacement, the segmentation service (T2.1), is a separate review. Record kept.
 Same code, same mismatch, in `object_recognition_pipeline.py:440-446`.
 
 ### G6. 🟡 No minimum-point guard before AnyGrasp
@@ -619,7 +700,7 @@ connects fine, zero feedback"). Instead of a diagnosable hang, you get a segfaul
 | Where | Problem |
 |---|---|
 | `mtc_planner.cpp:66` | `task.execute(...)` result discarded; `moveToPose` returns `true` unconditionally. Currently unreachable (A3), but it is the "real" grasp path. |
-| `mtc_planner.cpp:82, 96` | `move_group_->execute(plan)` result discarded in `moveToHome` / `moveToReturn`. `homeWithRetry` retries on **planning** failure only — an execution failure is reported as success and the state machine proceeds believing the arm is home. |
+| `mtc_planner.cpp:82, 96` | `move_group_->execute(plan)` result discarded in `moveToHome` / `moveToReturn`. `homeWithRetry` retries on **planning** failure only — an execution failure is reported as success and the state machine proceeds believing the arm is home. **Observed on the real arm 2026-10-13** (`T1.24` 3c): started before `rm_driver` had connected, the home move aborted and the state machine published IDLE with the arm straight up. Fix in `T1.26`. |
 
 **Correction to existing docs:** `ORIENTATION.md` §8.2 lists a third self-annotated bug —
 *"706 — LOGICAL ERROR: return value of moveCartesianStep ignored"*. **The comment at `:706` is
@@ -678,7 +759,8 @@ noticed roughly never. `ros2_robot_ws/src/main.py:165` polls every 2 s.
   transcription is unchanged (the `if transcription == previous_transcription` branch falls through
   to `publish`). `goto_glasses._on_audio_prompt` calls `_trigger_navigation()` on every message, and
   its `_navigating` guard clears on arrival — so a repeated transcription re-sends the robot to the
-  user. There is no edge-triggering anywhere on this topic.
+  user. There is no edge-triggering anywhere on this topic. **Fixed by `T2.10` (2026-10-12, PR #57):**
+  one message per finished sentence, nothing when the LLM finds no object.
 - **J2** `prompt_extractor.py` — the few-shot block ends with `"What time is it?" -> ` (an example
   with an *empty* completion) immediately before the user's turn. The model may continue that
   example rather than answer. Worth an eval before trusting the "end" kill word.
@@ -702,6 +784,7 @@ noticed roughly never. `ros2_robot_ws/src/main.py:165` polls every 2 s.
 - **J11** `sam3_ros_node.py` has **no `/pipeline_state` gate at all** — full SAM 3 inference on every
   synchronised frame pair, forever, unconditionally. This is `NEXT_STEPS.md` §2.1, restated here
   because it is the most expensive thing in the system and the gate already exists next door.
+  Resolved 2026-10-13 (T2.7): the file is deleted.
 - **J12** Three nodes consume `/pipeline_state` three different ways:
   `anygrasp_detection_node.py` gates inverted (A1), `anygrasp_node.py:199` has its gate **commented
   out** so it runs unconditionally, `grasp_viz.py:65` tracks it for display only.
@@ -715,6 +798,12 @@ extractor's known blind spot: it cannot resolve `ROS2Topics.X.value` (TESTBENCH_
 Aria-side publishers are under-counted, not over-counted.
 
 ### K1. 38 of 54 owned channel names are declared outside `shared/config.yaml` `[code]`
+
+> **Resolved 2026-10-06 (T0.14) `[code]`.** All 53 owned channels are now in a config file: 50 in
+> `shared/global_config.yaml` or a `<subsystem>/<subsystem>_config.yaml`, 3 (`/scan`, `/odom`,
+> `/livox/lidar_2d`) in the Nav2 and SLAM parameter files. Nodes read them through
+> `gappler_common.config()`, the C++ state machine as ROS parameters. The bench's extractor sees the
+> same publishers and subscribers as before. Kept below as the 2026-09-13 record.
 
 | | Topics |
 |---|---|
@@ -835,7 +924,8 @@ publishers racing on the same three topics.
 2. ✅ **B4 — who changed `HOME_JOINTS`? Answered 2026-09-20: use the `realman_manip` values**, the
    ones the safety document describes. ⚠️ **Trust neither set.** Dion's instruction is to
    recalibrate and validate the pose on the simulated arm before any powered run.
-   `CHANNEL_CONTRACT` §6 B-2, task T1.3.
+   `CHANNEL_CONTRACT` §6 B-2, task T1.3. **Superseded 2026-09-23:** T1.3 kept `main`'s row and T1.7
+   validated it on the real arm (§B4).
 3. ✅ **A1 — typo. Answered 2026-09-20: AnyGrasp runs during `EXECUTING`, so A1 is the bug and A2
    is correct.** `[code]` The sequence is `SELECTING` (step the arm toward the segmentation centroid
    4 cm at a time until the object is under 0.18 m away), then `EXECUTING` (AnyGrasp proposes, wait
@@ -897,3 +987,15 @@ publishers racing on the same three topics.
 | 2026-09-21 | Claude (Opus 5) + Dion | **B2 now `[observed]`**: the e-stop's SIGINT stop was lost in 0-5 of 5 trials across four box runs. **New B2c `[observed]`**: `estop.py` drops a key pressed while the previous one is being handled, so S then E fast can lose the e-stop. Both found by `bench/estop_delivery.sh`. `code-audit-page.html` not yet updated with either, still owed. |
 | 2026-09-21 | Claude (Opus 5) + Dion | **B2, B2a and B2c fixed** in `estop.py` (task T1.2) and confirmed on the box: five runs of `bench/estop_delivery.sh`, every key and every stop path delivered, `kill -INT` 25 of 25. The Ctrl+C and SIGINT cases are now required checks. `code-audit-page.html` still owes these updates. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T1.1 closed in the task tree. Checked the six answers against the code: A1's gate is still inverted (`anygrasp_detection_node.py:182`), the duplicate arm bring-up launch is still in `launchers/grasp_orchestrator.py:69` (T1.2), and nothing yet publishes `/manipulation/done` or `/manipulator/release`. |
+| 2026-09-22 | Claude (Opus 5) + Dion | **A1 now `[observed]`** on real wrist-camera frames by the new L4 replay (T0.12). |
+| 2026-09-23 | Claude Opus 5.5 + Dion | B4: real-arm result from T1.7 added. Open question 2 answer superseded by T1.3 and T1.7. |
+| 2026-09-26 | OpenCode + Sherman | E4: T3.3 DONE — `slam_mapping.launch.py` now carries `robot_base_to_arm`. Shared 0.18 still duplicated; single-sourcing stays with T5.4. |
+| 2026-10-05 | Claude (Opus 5.5) + Zongzhe | F1 and F4: fixes written on branch `t3.8-nav-node-fixes` (T3.8), awaiting a `bench/nav_nodes.sh` run on the box before retagging. New bench case for F4. F3 and the cancel-on-shutdown concern under F4 are untouched. |
+| 2026-10-07 | Claude (Opus 5.5) + Zongzhe | F1 follow-up on branch `t3.8-bridge-timeout-backoff-release` (T3.8): a fourth silent path (accepted goal, no result) and the retry loop the first fix opened, both fixed in code, not yet run. **New finding F5**: the approach guard also sticks after a finished cycle. Cleared on `/manipulator/release` now, which nothing publishes until T1.15. Three bench cases added or changed. |
+| 2026-10-06 | Claude (Opus 5.5) + Dion | K1 resolved by T0.14: every owned channel name is in a config file. Note added at the top of K1, record kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | C2 fixed and J1 fixed by PR #57 (`T1.24`, `T2.10`). Notes added, records kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | C3 fixed in the PR #57 review. Note added, record kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | C1 resolved in `T1.25`: not undefined behaviour with one waiting thread, the shutdown lost wake-up fixed. Note added, record kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | Execute result discarded in `moveToHome` (line 699): observed on the real arm in `T1.24` 3c, fix is `T1.26`. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | G3, G5 and J11 resolved by T2.7: `sam3_ros_node.py` deleted. Notes added, records kept. |

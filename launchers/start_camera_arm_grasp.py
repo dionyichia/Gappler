@@ -1,17 +1,16 @@
 """
 Starts the robot grasping pipeline. launchers/grasp_orchestrator.py runs it when the
 start-grasp message arrives. By hand, after `source global_env.sh`:
-    python3 launchers/start_grasp_pipeline.py
+    python3 launchers/start_camera_arm_grasp.py
 
 Launches in order:
   1. ROS2 bringup (rm_driver, robot_state_publisher, move_group, rm_control)
-  2. [TEMPORARY] Dummy mask publisher — replace with SAM node when ready
-  3. AnyGrasp node (conda env)
+  2. Grasp segmentation client (T2.1). It asks the segmentation service, which is NOT started
+     here: start it once, on its own (shared_services/segmentation/segmentation_service.py), since
+     grasp, aria and nav all use it. The client waits for it.
+  3. AnyGrasp node — commented out for bring-up, see the note at its call site (T1.17)
   4. Grasp visualizer
   5. Grasp state machine
-
-Note: When the full perception pipeline is ready, items 2 and 3 will be
-removed from here and launched separately as part of that pipeline.
 """
 
 import os
@@ -20,7 +19,7 @@ import subprocess
 import sys
 import time
 
-from gappler_common import ROOT
+from gappler_common import ROOT, camera_serial
 
 # ---------------------------------------------------------------------------
 # Paths, from the repo root that gappler_common finds (NEXT_STEPS 2.15)
@@ -36,9 +35,9 @@ ANYGRASP_CHECKPOINT = "log/checkpoint_detection.tar"  # relative to ANYGRASP_DIR
 ANYGRASP_NODE_PATH = os.path.join(
     ANYGRASP_DIR, "anygrasp_detection_node.py"
 )
-SAM3_PROJECT_ROOT = REPO_ROOT
-SAM3_NODE_PATH = os.path.join(GRASP, "segmentation", "sam3_ros_node.py")
-SAM3_WORK_DIR = os.path.join(REPO_ROOT, "aria/aria_app/services/object_recognition")
+SEGMENTATION_CLIENT_PATH = os.path.join(
+    GRASP, "grasp_segmentation_client", "grasp_segmentation_client.py"
+)
 GRASP_VIZ_NODE_PATH = os.path.join(GRASP, "grasp_viz", "grasp_viz.py")
 RVIZ_CONFIG_PATH = os.path.join(GRASP, "grasp_viz", "rviz_config.rviz")
 
@@ -90,6 +89,8 @@ if __name__ == "__main__":
             "launch",
             "realsense2_camera",
             "rs_launch.py",
+            # The leading _ makes the launch file read the serial as text, not a number.
+            f"serial_no:='_{camera_serial('wrist_camera')}'",
             "align_depth.enable:=true",
             "pointcloud.enable:=true",
         ],
@@ -104,36 +105,36 @@ if __name__ == "__main__":
         delay=0.0,
     )
 
-    # 2. Local SAM3 Node publisher
+    # 2. Grasp segmentation client. The segmentation service runs on its own (see the top).
     launch(
-        ["uv", "run", "--project", SAM3_PROJECT_ROOT, "python", SAM3_NODE_PATH],
-        label="sam3_ros_node",
+        [sys.executable, SEGMENTATION_CLIENT_PATH],
+        label="grasp_segmentation_client",
         delay=0.0,
-        cwd=SAM3_WORK_DIR,
-        env={
-            **os.environ,
-            "PYTHONPATH": os.path.join(REPO_ROOT, "aria/aria_app")
-            + os.pathsep
-            + os.environ.get("PYTHONPATH", ""),
-        },
     )
 
-    # 3. AnyGrasp node — runs in conda env
-    launch(
-        [
-            "conda",
-            "run",
-            "-n",
-            ANYGRASP_CONDA_ENV,
-            "python",
-            ANYGRASP_NODE_PATH,
-            "--checkpoint_path",
-            ANYGRASP_CHECKPOINT,
-        ],
-        label="anygrasp_detection_node",
-        delay=2.0,
-        cwd=ANYGRASP_DIR,
-    )
+    # 3. AnyGrasp node — OFF for bring-up (T1.17), commented out 2026-09-23.
+    #
+    # Nothing reads what it publishes while use_simple_execute is true
+    # (grasp/grasp_config.yaml, CHANNEL_CONTRACT B-1): the state machine grasps from
+    # /object_centroid_2d and ignores /grasp_candidates. Starting it anyway loads the model,
+    # takes the GPU and adds a startup failure mode for output nobody uses.
+    #
+    # Put it back in T1.17, when the flag is flipped, together with the T1.8 gate fixes.
+    # launch(
+    #     [
+    #         "conda",
+    #         "run",
+    #         "-n",
+    #         ANYGRASP_CONDA_ENV,
+    #         "python",
+    #         ANYGRASP_NODE_PATH,
+    #         "--checkpoint_path",
+    #         ANYGRASP_CHECKPOINT,
+    #     ],
+    #     label="anygrasp_detection_node",
+    #     delay=2.0,
+    #     cwd=ANYGRASP_DIR,
+    # )
 
     # 4. Grasp visualizer — runs in normal ROS2 env
     launch(["python3", GRASP_VIZ_NODE_PATH], label="grasp_viz", delay=2.0)

@@ -14,7 +14,7 @@ type, change a frame, or add a channel that another subsystem reads, this file s
 yours to change and who you have to tell.
 
 **This file is the single source.** [`ORIENTATION.md`](ORIENTATION.md) §5, `PROJECT_PLAN` §3.5,
-[`next-steps-map.html`](next-steps-map.html) and [`wiring-map.html`](wiring-map.html) used to carry
+[`task-tree.html`](task-tree.html) and [`wiring-map.html`](wiring-map.html) used to carry
 their own copies of the handover list. They now point here.
 
 **Provenance tags** are the same as the rest of `docs/`: `[code]` read from source, `[reported]` a
@@ -69,16 +69,19 @@ These cross a subsystem boundary. They are the contract.
 
 | # | Channel | Type and frame | From | To | Owner | State |
 |---|---|---|---|---|---|---|
-| H1 | `/aria/audio/prompt` | `String`, the object word | Aria, `audio_streaming_pipeline.py:49` | Nav, `object_approach_node.py:80` and `goto_glasses.py:59` | Dion | works. Two nav consumers race for Nav2 (E5). Segmentation never listens (L1) |
+| H1 | `/aria/audio/prompt` | `String`, the object word | Aria, `audio_streaming_pipeline.py:49` | Nav, `object_approach_node.py:80` and `goto_glasses.py:59` | Dion | works. Two nav consumers race for Nav2 (E5). Segmentation never listens (L1). Becomes one message per finished sentence (A-5, `T2.10`) |
 | H2 | `/manipulation/goal_pose` | `PoseStamped`, `base_link` | Grasp, `object_recognition_pipeline.py:204` | Nav, `object_approach_node.py:74` | Dion | works. From M7 the graph writes it through `T7.1` |
 | H3 | `/manipulation/start` | `Bool` | Nav, `object_approach_node.py:97` | Bot, `orchestrator.py:56` | Zongzhe | works. Today it launches a process. Becomes an arm and disarm gate, see B-4 in §6 |
 | H4 | `/goal_pose` | `PoseStamped`, `map` | Nav, `object_approach_node.py:90` | Nav2, via `goal_reached_publisher.py:29` | Zongzhe | works. Becomes a handover when the frontier layer writes it (M9) |
-| H5 | `/object_centroid_2d` | `PointStamped`, but x = pixel column, y = pixel row, z = depth in metres | Grasp, `sam3_ros_node.py:66` **and** `object_recognition_pipeline.py:192` | Bot, `grasp_state_machine.cpp:146` | Dion | works. Two publishers. Rename pending, §7 |
+| H5 | `/object_centroid_2d` | `PointStamped`, but x = pixel column, y = pixel row, z = depth in metres | Grasp, `grasp_segmentation_client.py` only (since 2026-10-08, `T2.1`). `object_recognition_pipeline.py:192` creates a publisher but its call site stays commented out. Stand-ins `dummy_mask_publisher.py` and the parked `grasp/tools/sam3_ros_node.py` are never run alongside | Bot, `grasp_state_machine.cpp:146` | Dion | works on the replay bench. One live publisher. Rename pending, §7 |
+| H5a | `/grasp/target` | `segmentation_interfaces/Target`: the prompt, plus an optional reference crop | Aria, `aria_segmentation_client.py` | Grasp, `grasp_segmentation_client.py` | Dion | new 2026-10-08 (`T2.1`). Word only until `T2.2`. An empty prompt stops segmentation |
+| H5b | `/segmentation/segment` (service) | `segmentation_interfaces/Segment` request/reply | Shared services, `segmentation_service.py`, one per channel (it refuses to start twice) | Grasp, `grasp_segmentation_client.py`. Aria, `aria_segmentation_client.py` after `T2.2`. Nav later | Dion | new 2026-10-08 (`T2.1`). PASS on the box with the real SAM 3 |
 | H6 | `/grasp_candidates` | `GraspCandidateArray` | Grasp, `anygrasp_detection_node.py:81` **and** `anygrasp_node.py:71` | Bot, `grasp_state_machine.cpp:142` | Dion | works. Two publishers. Nothing reaches the arm today, `CODE_AUDIT` A1 to A3 |
 | H7 | `/pipeline_state` | `String`: `IDLE`, `SELECTING`, `EXECUTING` | Bot, `grasp_state_machine.cpp:156` | Grasp, `anygrasp_detection_node.py:65`, `anygrasp_node.py:55`, `grasp_viz.py:61` | Dion | works. The gate that reads it is inverted, see G-4 in §6 |
 | H8 | `/camera/camera/color/image_raw`, `/camera/camera/aligned_depth_to_color/image_raw`, `/camera/camera/color/camera_info` | `Image`, `Image`, `CameraInfo`. `BEST_EFFORT` | Wrist RealSense driver | Grasp, 5 nodes. Bot, `grasp_state_machine.cpp:138` | Dion | the wrist D435i is faulty. Replacement decided, T-3 in §6 |
 | H9 | `/manipulation/done` | `Empty` | **nobody** | Nav, `object_approach_node.py:83` | Dion | broken. The approach node stays latched without it (F1, observed) |
-| H10 | `/manipulator/release` | `Bool` | **nobody** | Nav, `object_approach_node.py:86`. Bot, `orchestrator.py:65` | Dion | broken. Aria will publish it, see A-1 in §6 |
+| H10 | `/manipulator/release` | `Bool` | Aria, `audio_streaming_pipeline.py` (`T2.6`, 2026-10-13) | Nav, `object_approach_node.py:86`. Bot, `orchestrator.py:65` | Dion | live, ungated (see A-1 in §6). The state machine does not read it until `T1.14` |
+| H10a | `/manipulator/grasp_request` | `Empty` | Aria, `aria_segmentation_client.py`, on every object word, a repeat too, never on the stop word (`T2.6`, 2026-10-13). By hand still works: `ros2 topic pub --once` | Bot, `grasp_state_machine.cpp:156` | Dion | new 2026-10-13 (`T1.25`). Opens the trigger gate: centroids count only from a request until EXECUTING takes its snapshot. A request lapses after `grasp_request_timeout_s` (10 s) with no centroid, and is refused outside IDLE. Simulated arm PASS, `bench-runs/2026-10-13-labbox-t1.25-grasp-request-gate.txt` |
 | H11 | `/aria/eye_tracking/gaze_estimate` | `Point` | Aria, `image_streaming_pipeline.py:153` | Grasp, the recognition pipeline | Dion | switched off. M2 and M8 need it, `T2.2` |
 | H12 | `/aria/rgb_camera/undistorted` | `CompressedImage`, `BEST_EFFORT` | Aria, `image_streaming_pipeline.py:85` | Nav, `aria_image_relay.py:27`, which decompresses to `/aria/rgb_camera/view` for viewing | Dion | switched off. The relay is kept, see A-4 in §6 |
 
@@ -108,7 +111,7 @@ therefore have **no owner** until that changes. They are not deleted, they are p
 | P1 | Base camera stream, `/base_camera/...` | D455 driver on the base | Nav, the memory graph. Dion, calibration | Dion | Dion brings it up first for the calibration in `T5.5`. Sherman owns the mount and the hardware |
 | P2 | Graph query: sentence in, object position out | Nav, the memory graph, `T6.8` | Dion's C++ node, `T7.1`, which then writes H2 | Zongzhe | A ROS service, see N-3 in §6 |
 | P3 | Gaze image feature into the graph query | Aria, `T8.1` | Nav, the graph query, `T8.2` | Dion | Can ride inside P2's request |
-| P4 | Segmentation trigger | Phase logic | Grasp, the one segmentation service | Dion | Dion owns the service and the trigger, see G-5 in §6 |
+| P4 | Segmentation trigger | Phase logic | the segmentation service, `shared_services/` (G-1, G-2) | Dion | Dion owns the service and the trigger, see G-5 in §6 |
 
 ---
 
@@ -118,7 +121,7 @@ One subsystem writes these down and the others depend on them. Sherman owns the 
 
 | # | Measurement | Where it is written today | Owner |
 |---|---|---|---|
-| M1 | Arm on the base, `robot_base_link` → `base_link`: 0.18 m forward, 0.48 m up, yawed 180° | `slam_localization.launch.py:98-103`, missing from `slam_mapping.launch.py` (`T3.3`) | Sherman |
+| M1 | Arm on the base, `robot_base_link` → `base_link`: 0.18 m forward, 0.48 m up, yawed 180° | `slam_localization.launch.py:107-112` and `slam_mapping.launch.py:117-122` (`T3.3` DONE 2026-09-26) | Sherman |
 | M2 | LiDAR on the base, `robot_base_link` → `livox_frame`: 0.18 m forward, 0.2 m up | both SLAM launch files | Sherman |
 | M3 | Forward offset `CAMERA_X_OFFSET = 0.18` | `object_approach_node.py:51`, `goto_glasses.py:35`, and the robot model. `T5.4` makes it one source | Sherman |
 | M4 | Base camera pose relative to the LiDAR | not measured. `T5.5` | Dion, with Sherman's rig |
@@ -139,11 +142,30 @@ All of these were decided by Dion. Each names where the detail lives.
 - **A-1. Aria publishes `/manipulator/release`** when the spoken word is "release". With the return
   leg out of scope, the order is: the grasp finishes, the state machine publishes
   `/manipulation/done`, then release is accepted. Closes `CODE_AUDIT` open question 4.
+  **Owned by `T2.6` (was `T1.15`) since 2026-09-23.** Before that no task built it, so H10 stayed broken with
+  subscribers only.
+  **Built 2026-10-13 (`T2.6`) `[code]`.** The voice pipeline publishes `true` when a finished sentence
+  has "release" or "let go" as whole words (`release_phrases` in `aria_config.yaml`), and the stop
+  word wins over it. The word never goes out on `/aria/audio/prompt`, because `goto_glasses.py`
+  drives to the user on any word there. **Not gated on `/manipulation/done`** (Dion, 2026-10-13):
+  nothing publishes done until `T1.14`, and there the state machine acts on release only while it
+  holds an object.
 - **A-2. The return leg is out of scope.** H13 to H16 have no owner. Pose fusion is parked rather
   than dropped, because a later gaze-in-3D method would want the glasses transform. This settles
   `CODE_AUDIT` open question 6: `/aria/fused_pose`'s frame is not fixed now.
 - **A-3. Gaze by geometry** is not planned in. Build the appearance baseline in M2 first, then decide
   on the evidence. `PROJECT_PLAN` D9, `NEXT_STEPS` §2.13.
+- **A-5. The voice pipeline acts on finished sentences, not on a sliding window (Dion,
+  2026-10-12, `T2.10`).** Today it transcribes the last 10 s once a second and publishes whatever
+  object word the LLM names, so half-heard phrases go out as junk words (`pick`, `book`, `night`,
+  found in `T2.8`). Instead it waits until you stop speaking (a short silence, found by the Silero
+  voice detector that ships with faster-whisper), then transcribes that one sentence and publishes
+  its word once. **Trade-off accepted:** the word arrives about 1.1 s after you finish speaking
+  (0.7 s of silence plus the detector's 0.4 s padding, both in `aria/aria_config.yaml` and
+  `audio_streaming_pipeline.py`) instead of while you speak. Getting the right command beats shaving that half second. **Not
+  done:** a hard-coded list of command phrases. This is meant to be a natural conversation helper
+  and the LLM already decides what the object is. H1 changes meaning: one message per finished
+  sentence that names an object, not one per second.
 - **A-4. Keep `aria_image_relay.py` as is.** It is a decompressor for viewing, not a duplicate
   publisher, and it is useful when stubbing the glasses with a recorded video.
 
@@ -152,11 +174,25 @@ All of these were decided by Dion. Each names where the detail lives.
 - **G-1. Retire `sam3_ros_node.py`.** The pipeline already subscribes to both cameras and publishes
   the same channels, so retiring the node loses nothing and saves a second 3.21 GB copy of SAM 3.
   Detail and the VRAM argument in `NEXT_STEPS` §2.2 and §2.14.
+  **Revised 2026-10-08 (Dion, `T2.1`).** The node is still retired, but the pipeline does not
+  replace it. A new segmentation service does: a ROS 2 request/reply service,
+  `/segmentation/segment`, that owns the only SAM 3 and returns every detection for one frame and
+  one prompt. It holds no state between calls and knows nothing about the arm, the glasses or the
+  base. Thin clients in each subsystem do the rest. The grasp client
+  (`grasp/grasp_segmentation_client/`) becomes the only publisher of `/camera/sam/mask`,
+  `/object_centroid_2d` and `/object_centroid`, so H5 keeps its consumers and loses its second
+  publisher. Its `/manipulation/goal_pose` output is off for now. `object_recognition_pipeline.py`
+  is left as it is until the aria side is reworked. Design in `NEXT_STEPS` §2.2.
 - **G-2. Folder layout: four top-level folders, one folder per node inside each.** `aria`, `grasp`,
   `arm`, `nav`, and within each, a folder per node holding its code, launch file, config and tests.
   The segmentation service goes in `grasp`, since that is where its model and its consumers are. A
   caller in another subsystem reaches it over ROS. This is also the layout `T0.11` needs, so CI can
   run one test suite per subsystem.
+  **Revised 2026-10-08 (Dion, `T2.1`).** The segmentation service moved out of `grasp` into a fifth
+  top-level folder, `shared_services/`, owned by Dion, because grasp, aria and nav all call it.
+  `shared_services/segmentation/segmentation_interfaces/` holds its messages. Each subsystem keeps
+  its own client, named after the subsystem (`grasp_segmentation_client`,
+  `aria_segmentation_client`, later a nav one).
 - **G-3. Which AnyGrasp program is authoritative stays open** until the box check of
   `anygrasp_node.sh` in `T0.0`. The two differ in method, tracker against detector, not only in
   checkpoint.
@@ -176,16 +212,26 @@ All of these were decided by Dion. Each names where the detail lives.
 
 - **B-1. `USE_SIMPLE_EXECUTE` stays `true` for bring-up.** Treated as deliberate, step by step.
   Answers `CODE_AUDIT` open question 1. It hides A1 and A2, so both are fixed before it is flipped.
+  **Consequence settled 2026-09-23:** while it is `true` a grasp uses the SAM3 centroid and never
+  calls AnyGrasp, so `T1.11` and `T1.12` no longer wait on `T1.8` or `T1.10`. Flipping the flag is
+  `T1.17`, after the first grasp works. The launcher no longer starts `anygrasp_detection_node`:
+  its call is commented out since 2026-09-23 (`launchers/start_camera_arm_grasp.py:115`), since
+  nothing reads its output during bring-up.
 - **B-2. Use the `realman_manip` home pose values**, the ones the safety document describes.
   ⚠️ **Do not trust either set.** Recalibrate and validate on the simulated arm before any powered
   run. Answers `CODE_AUDIT` open question 2.
+  **Superseded 2026-09-23.** T1.3 kept `main`'s row after the simulated arm checks, and T1.7
+  validated it on the real arm: every joint within 0.02° (`dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`).
+  The tool sits slightly outside the base footprint at this pose, so it is not a rest pose for
+  driving. A tucked pose inside the base is T1.18.
 - **B-3. `ros2_robot_ws/src/main.py` owns `background.launch.py`.** Delete the launch in
   `orchestrator.py:69-74`. Already recorded in `CODE_AUDIT` open question 5.
 - **B-4. "Arrived" stops launching processes.** The arm stack is already running and the state
   machine subscribes to `/manipulation/start` as an arm and disarm gate. Closes `CODE_AUDIT` B6.
   The larger design is `NEXT_STEPS` §2.14.
-- **B-5. The state machine publishes `/manipulation/done`** at the end of each cycle, in `T1.8` or
-  `T1.9`. Closes H9 and the F1 latch.
+- **B-5. The state machine publishes `/manipulation/done`** at the end of each cycle. Closes H9 and
+  the F1 latch. **Owned by `T1.14` since 2026-09-23**, moved out of `T1.9` so it is not gated by the
+  AnyGrasp work.
 - **B-6. Today's names are frozen, target names recorded.** One rename pass later. §7.
 
 ### Nav
@@ -213,7 +259,8 @@ All of these were decided by Dion. Each names where the detail lives.
 - **T-2. Dion keeps `T5.5` to `T5.7`**, the calibration and localisation-error work. Answers
   `PROJECT_PLAN` D2.
 - **T-3. Buy a replacement wrist camera** if the D435i does not survive a replug. Replacements are
-  available `[reported]`. Answers `PROJECT_PLAN` D8.
+  available `[reported]`. Answers `PROJECT_PLAN` D8. **Not needed so far:** the D435i survived the
+  replug on 2026-09-22, colour and depth at 15 Hz `[observed]` (T0.12).
 - **T-4. Config: one tree per subsystem, with a shared constants package underneath.**
   `NEXT_STEPS` §2.10.
 - **T-5. This file is the single source** for the contract.
@@ -267,6 +314,7 @@ Channels that a topic list does not show. Each says whether it is assigned.
 | X9 | Visualisation and debug topics | No | whoever publishes them | `/debug/*`, the markers, `/object_marker`, `/object_map_pose`, `/aria/glasses_marker`, and the pickled mask topics. The pickled ones go when `T2.1` lands |
 | X10 | OpenVINS and `/aria/vio_pose` | No, out of scope | none | Launched from `src/main.py:309`, no publisher in this repo, only feeds pose fusion |
 | X11 | `/goto_glasses/trigger`, `/goto_glasses/cancel` | No, out of scope | none | Subscribed, never published. Return leg only |
+| X12 | Camera serial numbers | Yes, one key per camera | wrist: Dion. Base: Sherman | Added 2026-09-23 (`T1.13`). `wrist_camera.serial` and `mobile_base_camera.serial` in `shared/global_config.yaml`, read with `gappler_common.camera_serial()`. **One key per camera, named after the camera, not one `cameras:` block** (Dion, 2026-09-23): a reader should see which camera a value belongs to without tracing the mount. Every RealSense launch passes its serial, because two cameras are plugged in and a launch without one opens whichever the driver finds first. The base camera is mounted, so its serial is an open box check: `rs-enumerate-devices -s` |
 
 ### The TF tree, one owner per edge
 
@@ -274,7 +322,7 @@ Channels that a topic list does not show. Each says whether it is assigned.
 |---|---|---|
 | `map` → `odom` | SLAM Toolbox | Sherman |
 | `odom` → `robot_base_link` | base driver, `ros2_interface.cpp:165` | Sherman |
-| `robot_base_link` → `base_link` | static, `slam_localization.launch.py:98-103` only | Sherman |
+| `robot_base_link` → `base_link` | static, both SLAM launch files (`T3.3` DONE 2026-09-26) | Sherman |
 | `robot_base_link` → `livox_frame` | static, both SLAM launch files | Sherman |
 | `base_link` → `Link1…Link6` → `camera_link` | the arm's robot model | Dion |
 | `camera_link` → `camera_color_optical_frame` | the RealSense driver at run time | Dion |
@@ -284,8 +332,7 @@ Channels that a topic list does not show. Each says whether it is assigned.
 `/aria/aruco_pose`, and `camera_color_optical_frame`, which exists only if the camera driver is
 running. Every TF lookup against a missing frame fails silently.
 
-⚠️ `[code]` The `robot_base_link` → `base_link` edge exists in the localisation launch file and not
-in the mapping one, so during a mapping run the arm is not attached to the tree at all. `T3.3`.
+✅ `[code]` The `robot_base_link` → `base_link` edge is now published by both the localisation and the mapping launch files (`T3.3` DONE 2026-09-26). Full mapping-launch TF tree still untested; values stay duplicated until `T5.4` single-sources them.
 
 ---
 
@@ -319,3 +366,15 @@ Known problems inside subsystems, so they are not lost:
 | 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |
 | 2026-09-21 | Claude (Opus 5) + Dion | X7: `shared/config.yaml` renamed to `shared/global_config.yaml` (reorg step 2). |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T-3: the wrist D435i survived the replug (T0.12), so no replacement is needed so far. Same camera update in `testbench-map.html` and the task tree's 14 September note. |
+| 2026-09-23 | Claude Opus 5.5 + Dion | B-2 superseded: HOME is `main`'s row, validated on the real arm in T1.7. It extends slightly outside the base, tucked pose is T1.18. |
+| 2026-09-26 | OpenCode + Sherman | T3.3 DONE: `slam_mapping.launch.py:117-122` publishes `robot_base_to_arm`, same arguments as localization. M1 and the TF edge table updated; full mapping-launch tree still untested, values duplicated until T5.4. |
+| 2026-09-23 | Claude Opus 5 + Dion | New X12: camera serial numbers, one key per camera (`wrist_camera.serial`, `mobile_base_camera.serial`), after T1.13 found that no shared config held the wrist serial. |
+| 2026-09-23 | Claude Opus 5 + Dion | B-1's ordering consequence settled: `T1.11` and `T1.12` no longer wait on `T1.8` or `T1.10`, and flipping the flag became `T1.17`. The two channels with subscribers but no publisher got owners: B-5 `/manipulation/done` is `T1.14` (moved out of `T1.9`), A-1 and H10 `/manipulator/release` is `T1.15`. |
+| 2026-10-06 | Claude Opus 5.5 + Dion | `T1.15` renamed `T2.6` and moved to M2: publishing `/manipulator/release` is glasses-side work, and M1 grasps with release sent by hand. H10 and A-1 updated. |
+| 2026-10-08 | Claude Opus 5.5 + Dion | G-1 and G-2 revised for `T2.1`: the segmentation service is a stateless request/reply service in a new top-level `shared_services/`, with one client per subsystem. The grasp client becomes the only publisher of the H5 mask channels. P4 points at the new folder. |
+| 2026-10-08 | Claude Opus 5.5 + Dion | `T2.1` built: H5 has one live publisher, the grasp segmentation client. New H5a `/grasp/target` (aria to grasp) and H5b, the `/segmentation/segment` service. |
+| 2026-10-12 | Claude Opus 5.5 + Dion | A-5 added: the voice pipeline acts on finished sentences (`T2.10`), accepting about 0.7 s more latency. H1 note updated. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | H10a `/manipulator/grasp_request` added (`T1.25`), the trigger gate. Orphan by design until `T2.6`, re-baselined with `contracts.py snapshot`. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | `T2.6`: H10 live, the voice pipeline publishes `/manipulator/release`. A-1 notes the ungated choice and why release is not sent as a word. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | `T2.6`: H10a has its publisher, the aria segmentation client, one request per object word. |

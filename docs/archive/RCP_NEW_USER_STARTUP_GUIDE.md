@@ -4,6 +4,10 @@
 > the "no base camera" finding are out of date.** For the current setup, read
 > [`../START_HERE.md`](../START_HERE.md) and [`../TESTBENCH_PLAN.md`](../TESTBENCH_PLAN.md).
 > It is kept because other docs and `bench/` cite it by section number.
+>
+> **Correction 2026-09-23 (T1.3):** §7 quotes the `realman_manip` home row. That row is
+> rejected (5/5 final-approach sim FAILs, joint4 at its limit); the final home row is the
+> MAIN row `[0, 0, 0.7854, 0, 1.5708, 1.5708]`. The §7 text below is unchanged history.
 
 # RCP — New User Start-Up Guide
 

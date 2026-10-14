@@ -1,11 +1,12 @@
 from enum import Enum
 
-from gappler_common import config as global_config
+from gappler_common import config as gappler_config
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 
-config = global_config()
+# shared/global_config.yaml + aria/aria_config.yaml
+config = gappler_config("aria")
 
-# Topics enum — built dynamically from yaml
+# Topics enum, built from yaml at import time. Holds aria's own topics and the global ones.
 ROS2Topics = Enum(
     "ROS2Topics", {k.upper(): v for k, v in config["topics"].items()}
 )

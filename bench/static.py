@@ -96,7 +96,7 @@ def owned(msg: str) -> bool:
     return is_owned(path) or path.startswith(BLOCKING_VENDOR)
 
 
-# Roots that end up on PYTHONPATH at runtime (main.py and launchers/start_grasp_pipeline.py
+# Roots that end up on PYTHONPATH at runtime (main.py and launchers/start_camera_arm_grasp.py
 # put aria/aria_app/ there explicitly; scripts dirs are added by ament install rules).
 IMPORT_ROOTS = ["aria/aria_app", "."]
 
@@ -336,11 +336,13 @@ def check_launch_executables() -> Result:
                "every executable a launch file names is installed by its package")
     pkgs = repo_packages()
 
-    def installed(pkg_dir: Path) -> set[str]:
+    def installed(pkg_dir: Path, pkg_name: str) -> set[str]:
         names: set[str] = set()
         cml = pkg_dir / "CMakeLists.txt"
         if cml.exists():
-            txt = cml.read_text(errors="replace")
+            # ROS CMake projects use the package name for PROJECT_NAME; Livox's
+            # component macro installs ${PROJECT_NAME}_node rather than a literal.
+            txt = cml.read_text(errors="replace").replace("${PROJECT_NAME}", pkg_name)
             for m in re.finditer(r"install\s*\(\s*(?:PROGRAMS|TARGETS)([^)]*)\)", txt, re.S):
                 for tok in re.split(r"[\s\n]+", m.group(1)):
                     tok = tok.strip().strip('"')
@@ -382,7 +384,7 @@ def check_launch_executables() -> Result:
                 continue  # covered by check_launch_packages
             r.n_checked += 1
             if pkg not in cache:
-                cache[pkg] = installed(pkgs[pkg])
+                cache[pkg] = installed(pkgs[pkg], pkg)
             if exe not in cache[pkg] and Path(exe).stem not in cache[pkg]:
                 r.fail(f"{rel(p)}:{n.lineno}: Node(package='{pkg}', executable='{exe}') "
                        f"-- '{exe}' is not installed by {pkg}")
@@ -464,6 +466,92 @@ def check_generated_manifests() -> Result:
     return r
 
 
+def check_arm_bringup_single_launch() -> Result:
+    """arm_bringup.launch.py is launched from exactly one owned site.
+
+    T1.2/I1: the orchestrator and the grasp pipeline each launched
+    rm_bringup, yielding two rm_driver instances on one arm. AST (not grep),
+    so commented-out copies do not count.
+    """
+    r = Result("arm-bringup-single-launch",
+               "arm_bringup.launch.py is launched from exactly one owned site")
+    sites: list[str] = []
+    for p in walk(".py"):
+        if rel(p) == "bench/static.py":
+            continue  # this check names the file it looks for
+        try:
+            tree = ast.parse(p.read_text(errors="replace"))
+        except SyntaxError:
+            continue  # reported by check_python_syntax
+        r.n_checked += 1
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Constant) and n.value == "arm_bringup.launch.py":
+                sites.append(f"{rel(p)}:{n.lineno}")
+    owned_sites = [s for s in sites if owned(s)]
+    if len(owned_sites) != 1:
+        r.fail(f"arm_bringup.launch.py launched from {len(owned_sites)} owned sites "
+               f"(want exactly 1): {', '.join(sorted(owned_sites)) or 'none'}")
+    return r
+
+
+def _urdf_joint_limits() -> dict[str, tuple[float, float]]:
+    """(lower, upper) per joint, read from the arm's vendor URDF.
+
+    The URDF is the manufacturer's description of the physical robot. It is the
+    only authority on what the joints can reach, so it is read, never edited.
+    """
+    urdf = REPO / "arm/vendor/rm_description/urdf/rm_65.urdf"
+    if not urdf.is_file():
+        return {}
+    text = urdf.read_text(errors="replace")
+    limits: dict[str, tuple[float, float]] = {}
+    # <joint name="joint1" ...> ... <limit ... lower="-3.1" upper="3.1" .../>
+    for m in re.finditer(r'<joint\s+name="(joint\d)"(.*?)</joint>', text, re.S):
+        name, body = m.group(1), m.group(2)
+        lo = re.search(r'lower="(-?[\d.eE+]+)"', body)
+        up = re.search(r'upper="(-?[\d.eE+]+)"', body)
+        if lo and up:
+            limits[name] = (float(lo.group(1)), float(up.group(1)))
+    return limits
+
+
+def check_joint_poses_within_limits() -> Result:
+    """Every hard-coded joint pose in owned code is reachable, with margin.
+
+    T1.3: RETURN_JOINTS set joint3 to 2.3562 against a 2.355 limit, so the pose
+    could never be planned and moveToReturn() would retry forever. The same
+    class of defect sank the realman_manip home row, whose joint4 sat 0.028 rad
+    from its limit and left the grasp approach no room to finish.
+
+    A pose outside its limit is unreachable. A pose just inside is reachable but
+    leaves the next motion nowhere to go, which is why MARGIN is not zero.
+    """
+    MARGIN = 0.02  # rad, about 1.1 deg -- the floor, not the target. See T1.3.
+    r = Result("joint-poses-within-limits",
+               "hard-coded joint poses are inside the URDF limits, with margin")
+    limits = _urdf_joint_limits()
+    if not limits:
+        r.note("arm/vendor/rm_description/urdf/rm_65.urdf not readable -- nothing checked")
+        return r
+    pose = re.compile(r'\{\s*"(joint\d)"\s*,\s*(-?[\d.]+(?:[eE][-+]?\d+)?)\s*\}')
+    for p in walk(".cpp", ".hpp", ".h"):
+        path = rel(p)
+        if not owned(path):
+            continue
+        for i, line in enumerate(p.read_text(errors="replace").splitlines(), 1):
+            for name, raw in pose.findall(line):
+                if name not in limits:
+                    continue
+                r.n_checked += 1
+                val, (lo, up) = float(raw), limits[name]
+                room = min(up - val, val - lo)
+                if room < MARGIN:
+                    verdict = "OUTSIDE its limit" if room < 0 else f"only {room:.4f} rad of room"
+                    r.fail(f"{path}:{i}: {name} = {val} is {verdict} "
+                           f"(limit {lo} to {up}, want {MARGIN} rad clear)")
+    return r
+
+
 CHECKS = [
     check_python_syntax,
     check_undefined_names,
@@ -475,6 +563,8 @@ CHECKS = [
     check_launch_file_includes,
     check_install_targets_exist,
     check_generated_manifests,
+    check_arm_bringup_single_launch,
+    check_joint_poses_within_limits,
 ]
 
 

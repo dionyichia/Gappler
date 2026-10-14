@@ -6,8 +6,10 @@ via Whisper, and intent extraction via an LLM, publishing results over ROS2.
 """
 
 import logging
+import math
 import multiprocessing
 import queue
+import re
 import time
 from multiprocessing import Queue
 from multiprocessing.synchronize import Event
@@ -16,9 +18,10 @@ import aria.sdk as aria
 import numpy as np
 from faster_whisper import WhisperModel
 from faster_whisper.transcribe import Segment
+from faster_whisper.vad import VadOptions, get_speech_timestamps
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from scipy.signal import resample
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 
 from config import AriaConfig, AudioStreamingPipelineConfig, ROS2Topics, Settings
 from services.aria_device import AriaStreamClient, AudioObserver
@@ -42,6 +45,27 @@ def _put_latest(q: Queue, item) -> None:
         pass
 
 
+def finished_sentence(speech, window_s, silence_s, handled_until):
+    """The sentence to transcribe now, as (start, end), or None (T2.10, CHANNEL_CONTRACT A-5).
+
+    speech: the voice detector's (start, end) spans. All times are seconds from the window start.
+    handled_until: where the last transcribed sentence ended, negative once it has left the window.
+    Every span starting after it is one new sentence, finished once silence_s has passed since
+    its last span ended.
+    """
+    new = [(start, end) for start, end in speech if start > handled_until]
+    if not new or window_s - new[-1][1] < silence_s:
+        return None
+    return new[0][0], new[-1][1]
+
+
+def is_release(transcription: str) -> bool:
+    """True if the sentence has a release phrase as whole words, so "released" and "let's go" do
+    not count (T2.6, CHANNEL_CONTRACT A-1)."""
+    words = " " + " ".join(re.findall(r"[a-z']+", transcription.lower())) + " "
+    return any(f" {phrase} " in words for phrase in AudioStreamingPipelineConfig.RELEASE_PHRASES)
+
+
 def audio_worker(
     raw_audio_queue: Queue,
     quit_event: Event,
@@ -56,14 +80,30 @@ def audio_worker(
             depth=10,
         ),
     )
+    release_publisher = ROSPublisher(
+        "Aria_release_publisher",
+        Bool,
+        ROS2Topics.MANIPULATOR_RELEASE.value,
+        QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10,
+        ),
+    )
     whisper_model = WhisperModel(
         AudioStreamingPipelineConfig.TRANSCRIPTION_MODEL,
         device=Settings.DEVICE,
         compute_type="int8",
     )
     llm_extractor = LLMPromptExtractor(AudioStreamingPipelineConfig.LLM_MODEL)
-    previous_transcription = ""
-    previous_prompt = ""
+    sample_rate = AudioStreamingPipelineConfig.WHISPER_SAMPLE_RATE
+    silence_s = AudioStreamingPipelineConfig.END_OF_SPEECH_SILENCE_SECONDS
+    # Splits speech at pauses of silence_s, so a pause inside a sentence shorter than that is kept.
+    # Other settings are faster-whisper's defaults: speech threshold 0.5, and each span padded by
+    # 0.4 s so Whisper gets whole words. The padding adds to the wait: a sentence counts as
+    # finished about silence_s + 0.4 s after its last word.
+    vad_options = VadOptions(min_silence_duration_ms=int(silence_s * 1000))
+    handled_until = -math.inf   # monotonic time the last transcribed sentence ended
 
     def _get_resampled_audio(channel_buffers: np.ndarray) -> np.ndarray:
         """Mix, downsample and normalise raw channel buffers into a 16 kHz mono array."""
@@ -102,26 +142,22 @@ def audio_worker(
 
     def _process_segments(segments: list[Segment]) -> None:
         """
-        Join all segment texts, log the full transcription, extract intent via
-        the LLM, and publish the resulting prompt over ROS2.
+        Join the sentence's segment texts, extract the object via the LLM, and publish it once.
+        Nothing is published when the LLM finds no object (T2.10). The stop word wins over
+        release, and release goes to /manipulator/release, never out as a word (T2.6).
         """
-        nonlocal previous_transcription, previous_prompt
-
         if not segments:
             return
 
         transcription = "\n".join(seg.text for seg in segments)
-
-        if transcription == previous_transcription:
-            prompt = previous_prompt
-        else:
-            previous_transcription = transcription
-            logger.info(
-                f"Transcription: {transcription}",
-            )
-
-            prompt = llm_extractor.extract_object(transcription)
-            previous_prompt = prompt
+        prompt = llm_extractor.extract_object(transcription)
+        if prompt != AudioStreamingPipelineConfig.STOP_KEYWORD and is_release(transcription):
+            logger.info(f"Transcription: {transcription!r} -> release")
+            release_publisher.publish(Bool(data=True))
+            return
+        logger.info(f"Transcription: {transcription!r} -> {prompt!r}")
+        if not prompt:
+            return
 
         msg = String()
         msg.data = prompt
@@ -134,7 +170,19 @@ def audio_worker(
             if len(audio_16k) == 0:
                 continue
 
-            segments = _transcribe(audio_16k)
+            # The buffer ends now: act only on a sentence followed by silence_s of quiet
+            window_s = len(audio_16k) / sample_rate
+            window_start = time.monotonic() - window_s
+            speech = [(span["start"] / sample_rate, span["end"] / sample_rate)
+                      for span in get_speech_timestamps(audio_16k, vad_options)]
+            sentence = finished_sentence(speech, window_s, silence_s,
+                                         handled_until - window_start)
+            if sentence is None:
+                continue
+            handled_until = window_start + sentence[1]
+
+            start, end = (int(t * sample_rate) for t in sentence)
+            segments = _transcribe(audio_16k[start:end])
             _process_segments(segments)
 
         except queue.Empty:

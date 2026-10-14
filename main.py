@@ -2,7 +2,8 @@
 """
 Top-level entry point.
 Launches orchestrator and AriaApplication in parallel.
-Press 'q' or Ctrl+C for emergency stop.
+Ctrl+C shuts down the launchers. For the arm emergency stop,
+run arm/estop/ in its own terminal.
 """
 
 import os
@@ -65,7 +66,7 @@ if __name__ == "__main__":
         },
     )
 
-    print("[root] Running — press 'q' for emergency stop.")
+    print("[root] Running — Ctrl+C shuts down launchers. Arm e-stop: arm/estop/ (separate terminal).")
 
     try:
         while True:

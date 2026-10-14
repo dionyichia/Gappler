@@ -17,7 +17,7 @@ when one moves.
 Keyed by contract, not by file
 ------------------------------
 Locations are recorded but are NOT part of the pass/fail comparison, because
-the planned refactor moves nearly every file. Moving `sam3_ros_node.py` into a
+the planned refactor moves nearly every file. Moving `dummy_mask_publisher.py` into a
 new package is fine. Moving the topic it publishes is not.
 
 Usage
@@ -35,6 +35,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import math
 import re
 import subprocess
 import sys
@@ -81,8 +82,20 @@ def rel(path: Path) -> str:
     return str(path.relative_to(REPO))
 
 
+def repo_files():
+    """Files git tracks or would track: ignored local files (recordings, weights, build output)
+    are left out, so a snapshot taken on one machine matches a clean CI checkout. Every file on
+    disk when git is not available."""
+    try:
+        out = subprocess.run(["git", "ls-files", "-co", "--exclude-standard", "-z"], cwd=REPO,
+                             capture_output=True, check=True).stdout.decode()
+        return [REPO / f for f in out.split("\0") if f]
+    except (OSError, subprocess.CalledProcessError):
+        return list(REPO.rglob("*"))
+
+
 def walk(*suffixes: str):
-    for p in sorted(REPO.rglob("*")):
+    for p in sorted(repo_files()):
         r = p.relative_to(REPO)
         # bench/ is the instrument, not the robot: its test nodes subscribe to
         # /joint_states etc. and would otherwise read as contract changes.
@@ -176,6 +189,12 @@ class PyExtractor(ast.NodeVisitor):
             return lit
         if isinstance(node, ast.Name):
             return self.consts.get(node.id)
+        if isinstance(node, ast.Subscript):
+            # `TOPICS["object_centroid_2d"]`, `config("grasp")["topics"]["x"]`: the last key
+            # names a config entry (gappler_common.config, NEXT_STEPS 2.15).
+            sl = node.slice.value if type(node.slice).__name__ == "Index" else node.slice  # 3.8
+            key = literal_str(sl)
+            return self.from_config(key) if key else None
         if isinstance(node, ast.Attribute):
             dotted = attr_path(node)
             if dotted:
@@ -294,6 +313,9 @@ def attr_path(node: ast.AST) -> str | None:
 CPP_PUB = re.compile(r'create_publisher\s*<\s*([\w:]+)\s*>\s*\(\s*"([^"]+)"')
 CPP_SUB = re.compile(r'create_subscription\s*<\s*([\w:]+)\s*>\s*\(\s*"([^"]+)"')
 CPP_MF_SUB = re.compile(r'message_filters::Subscriber\s*<\s*([\w:]+)\s*>[^;]*?"([^"]+)"')
+# A topic read from config: `create_publisher<T>(topic("key"), ...)` (grasp_state_machine.cpp)
+CPP_PUB_CFG = re.compile(r'create_publisher\s*<\s*([\w:]+)\s*>\s*\(\s*topic\(\s*"([^"]+)"\s*\)')
+CPP_SUB_CFG = re.compile(r'create_subscription\s*<\s*([\w:]+)\s*>\s*\(\s*topic\(\s*"([^"]+)"\s*\)')
 CPP_FRAME = re.compile(r'frame_id\s*=\s*"([^"]+)"')
 CPP_TF = re.compile(r'(?:lookupTransform|canTransform)\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"')
 CPP_TF_TARGET = re.compile(r'\.transform\s*\([^,]+,\s*"([^"]+)"')
@@ -306,16 +328,24 @@ def cpp_type(t: str) -> str:
     return "/".join(parts) if len(parts) > 1 else t
 
 
-def extract_cpp(path: Path, src: str, out: dict) -> None:
+def extract_cpp(path: Path, src: str, out: dict, config: dict | None = None) -> None:
     loc = rel(path)
     lines = src.splitlines()
+    config = config or {}
 
     def line_of(pos: int) -> int:
         return src.count("\n", 0, pos) + 1
 
-    for rx, direction in ((CPP_PUB, "publishers"), (CPP_SUB, "subscribers"), (CPP_MF_SUB, "subscribers")):
+    def from_config(key: str) -> str:
+        vals = config.get(key, set())
+        return next(iter(vals)) if len(vals) == 1 else ""   # ambiguous or missing: skip
+
+    for rx, direction, resolve in ((CPP_PUB, "publishers", None), (CPP_SUB, "subscribers", None),
+                                   (CPP_MF_SUB, "subscribers", None),
+                                   (CPP_PUB_CFG, "publishers", from_config),
+                                   (CPP_SUB_CFG, "subscribers", from_config)):
         for m in rx.finditer(src):
-            topic = m.group(2)
+            topic = resolve(m.group(2)) if resolve else m.group(2)
             if not topic.startswith("/"):
                 continue
             e = out["topics"][topic]
@@ -370,6 +400,27 @@ def extract_launch(path: Path, src: str, out: dict) -> None:
             # static_transform_publisher encodes the TF tree in its argv
             if exe == "static_transform_publisher":
                 args = kw.get("arguments")
+                if (isinstance(args, ast.Call) and isinstance(args.func, ast.Name)
+                        and args.func.id == "static_transform_args" and len(args.args) == 1):
+                    mount_name = literal_str(args.args[0])
+                    source = (REPO / "shared/global_config.yaml").read_text()
+                    match = re.search(r"^\s+" + re.escape(mount_name or "") + r":\s*(\{[^\n]+\})\s*$", source, re.M)
+                    if match:
+                        try:
+                            mount = json.loads(match.group(1))
+                            xyz = [float(v) for v in mount["xyz_m"]]
+                            rpy = [float(v) for v in mount["rpy_rad"]]
+                            parent, child = mount["parent"], mount["child"]
+                            if len(xyz) != 3 or len(rpy) != 3 or not all(math.isfinite(v) for v in xyz + rpy):
+                                raise ValueError("expected finite xyz/rpy triples")
+                            if not isinstance(parent, str) or not isinstance(child, str) or not parent or not child or parent == child:
+                                raise ValueError("expected distinct nonempty parent/child frames")
+                            values = [str(v) for v in xyz + list(reversed(rpy))] + [parent, child]
+                            args = ast.List(elts=[ast.Constant(value=v) for v in values])
+                        except (ValueError, KeyError, TypeError) as error:
+                            out["parse_errors"].append(f"{loc}: invalid shared mount {mount_name}: {error}")
+                    else:
+                        out["parse_errors"].append(f"{loc}: unresolved shared mount {mount_name}")
                 if isinstance(args, (ast.List, ast.Tuple)):
                     vals = [v for v in (literal_str(e) for e in args.elts) if v is not None]
                     nums = [v for v in vals if re.fullmatch(r"-?[\d.]+", v)]
@@ -568,7 +619,7 @@ def extract_all() -> dict:
 
     for p in walk(".cpp", ".hpp", ".h", ".cc"):
         src = p.read_text(errors="replace")
-        extract_cpp(p, src, out)
+        extract_cpp(p, src, out, cfg)
         extract_paths(p, src, out)
 
     for p in walk(".urdf", ".xacro"):

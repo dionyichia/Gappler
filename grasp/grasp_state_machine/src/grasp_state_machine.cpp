@@ -6,6 +6,7 @@
 #include <queue>
 #include <thread>
 #include <cmath>
+#include <stdexcept>
 
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/msg/collision_object.hpp>
@@ -17,6 +18,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/empty.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
@@ -26,25 +28,9 @@
 #include <grasp_interfaces/msg/grasp_candidate_array.hpp>
 #include "grasp_state_machine/mtc_planner.hpp"
 
-// ===========================================================================
-// Tuning constants
-// ===========================================================================
-static constexpr double APPROACH_STEP_M = 0.04;
-static constexpr double APPROACH_STEP_FINAL = 0.10;
-static constexpr int MAX_APPROACH_STEPS = 50;
-static constexpr double EXECUTE_DEPTH_THRESH_M = 0.18;
-static constexpr double FINAL_EXEC_THRESH_M = 0.25;
-static constexpr double CENTROID_TARGET_OFFSET_X = 55.0;
-static constexpr double CENTROID_TARGET_OFFSET_Y = 0.0;
-static constexpr double MIN_APPROACH_ANGLE_DEG = 20.0;
-static constexpr double MAX_ORIENT_STEP_DEG = 5.0;
-static constexpr bool USE_SIMPLE_EXECUTE = true;
-static constexpr bool USE_SLERP_EXECUTE = false;
-
-// Stability criterion
-static constexpr int STABILITY_N_FRAMES = 5;
-static constexpr double STABILITY_TRANS_MM = 15.0;
-static constexpr double STABILITY_ROT_DEG = 10.0;
+// Tuning values and topic names come from grasp/grasp_config.yaml (section grasp_state_machine)
+// and shared/global_config.yaml, loaded as ROS parameters by grasp_state_machine.launch.py.
+// See the members under "Tuning values" below.
 
 // ===========================================================================
 // State definitions
@@ -115,7 +101,10 @@ public:
   ~GraspStateMachine()
   {
     {
-      std::lock_guard<std::mutex> lock(queue_mutex_);
+      // Both locks: the worker reads shutdown_ under centroid_mutex_ in IDLE and under
+      // queue_mutex_ in EXECUTING. Setting it under only one could let the notify land between
+      // the other wait's check and its sleep, and the worker would never wake (CODE_AUDIT C1)
+      std::scoped_lock lock(queue_mutex_, centroid_mutex_);
       shutdown_ = true;
     }
     queue_cv_.notify_all();
@@ -135,31 +124,67 @@ private:
         state_(State::IDLE),
         shutdown_(false)
   {
+    APPROACH_STEP_M = param("approach_step_m").as_double();
+    APPROACH_STEP_FINAL = param("approach_step_final_m").as_double();
+    MAX_APPROACH_STEPS = static_cast<int>(param("max_approach_steps").as_int());
+    EXECUTE_DEPTH_THRESH_M = param("execute_depth_thresh_m").as_double();
+    CENTROID_MAX_AGE_S = param("centroid_max_age_s").as_double();
+    GRASP_REQUEST_TIMEOUT_S = param("grasp_request_timeout_s").as_double();
+    TABLE_TOP_Z_M = param("table_top_z_m").as_double();
+    FINAL_EXEC_THRESH_M = param("final_exec_thresh_m").as_double();
+    CENTROID_TARGET_OFFSET_X = param("centroid_target_offset_x_px").as_double();
+    CENTROID_TARGET_OFFSET_Y = param("centroid_target_offset_y_px").as_double();
+    MIN_APPROACH_ANGLE_DEG = param("min_approach_angle_deg").as_double();
+    MAX_ORIENT_STEP_DEG = param("max_orient_step_deg").as_double();
+    USE_SIMPLE_EXECUTE = param("use_simple_execute").as_bool();
+    USE_SLERP_EXECUTE = param("use_slerp_execute").as_bool();
+    STABILITY_N_FRAMES = static_cast<int>(param("stability_n_frames").as_int());
+    STABILITY_TRANS_MM = param("stability_trans_mm").as_double();
+    STABILITY_ROT_DEG = param("stability_rot_deg").as_double();
+
     camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
-        "/camera/camera/color/camera_info", 1,
+        topic("wrist_camera_info"), 1,
         std::bind(&GraspStateMachine::cameraInfoCallback, this, std::placeholders::_1));
 
     grasp_sub_ = this->create_subscription<grasp_interfaces::msg::GraspCandidateArray>(
-        "/grasp_candidates", 10,
+        topic("grasp_candidates"), 10,
         std::bind(&GraspStateMachine::graspCallback, this, std::placeholders::_1));
 
     centroid_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
-        "/object_centroid_2d", 10,
+        topic("object_centroid_2d"), 10,
         std::bind(&GraspStateMachine::centroidCallback, this, std::placeholders::_1));
 
+    grasp_request_sub_ = this->create_subscription<std_msgs::msg::Empty>(
+        topic("manipulator_grasp_request"), 10,
+        std::bind(&GraspStateMachine::graspRequestCallback, this, std::placeholders::_1));
+
     gripper_position_pub_ = this->create_publisher<rm_ros_interfaces::msg::Gripperset>(
-        "/rm_driver/set_gripper_position_cmd", 10);
+        topic("rm_driver_set_gripper_position_cmd"), 10);
 
     gripper_pick_on_pub_ = this->create_publisher<rm_ros_interfaces::msg::Gripperpick>(
-        "/rm_driver/set_gripper_pick_on_cmd", 10);
+        topic("rm_driver_set_gripper_pick_on_cmd"), 10);
 
     pipeline_state_pub_ = this->create_publisher<std_msgs::msg::String>(
-        "/pipeline_state", 10);
+        topic("pipeline_state"), 10);
 
-    return_to_user_pub_ = this->create_publisher<std_msgs::msg::Bool>("/manipulator/return_to_user", 10);
+    return_to_user_pub_ = this->create_publisher<std_msgs::msg::Bool>(topic("manipulator_return_to_user"), 10);
 
     RCLCPP_INFO(this->get_logger(), "Grasp state machine constructed");
   }
+
+  // A parameter from the config files. There is no fallback value: a missing one stops the node
+  // at start-up rather than letting the arm run on a guessed value.
+  rclcpp::Parameter param(const std::string &name)
+  {
+    if (!this->has_parameter(name))
+      throw std::runtime_error("missing parameter '" + name + "'. Start the node with "
+                               "grasp_state_machine.launch.py, which loads shared/global_config.yaml "
+                               "and grasp/grasp_config.yaml");
+    return this->get_parameter(name);
+  }
+
+  // A topic name from the config files: key "x" is parameter "topics.x".
+  std::string topic(const std::string &key) { return param("topics." + key).as_string(); }
 
   // =========================================================================
   // Callbacks
@@ -189,11 +214,39 @@ private:
     queue_cv_.notify_one();
   }
 
+  // Centroids count only from a grasp request until EXECUTING takes its snapshot (T1.25).
+  // Segmentation publishes on every frame, so without the gate any centroid would start the arm.
   void centroidCallback(const geometry_msgs::msg::PointStamped::SharedPtr msg)
   {
     std::lock_guard<std::mutex> lock(centroid_mutex_);
+    if (!accepting_centroids_)
+    {
+      RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+                           "Centroid ignored: no grasp request open");
+      return;
+    }
     latest_centroid_ = *msg;
     has_centroid_ = true;
+    queue_cv_.notify_one();
+  }
+
+  // Opens the gate, only while the worker waits in IDLE. waiting_in_idle_ changes under the same
+  // lock, so a request is either taken before the worker leaves IDLE or refused after.
+  void graspRequestCallback(const std_msgs::msg::Empty::SharedPtr)
+  {
+    std::lock_guard<std::mutex> lock(centroid_mutex_);
+    if (!waiting_in_idle_)
+    {
+      RCLCPP_WARN(this->get_logger(), "Grasp request ignored: busy, not waiting in IDLE");
+      return;
+    }
+    accepting_centroids_ = true;
+    has_centroid_ = false;
+    request_deadline_ = std::chrono::steady_clock::now() +
+                        std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                            std::chrono::duration<double>(GRASP_REQUEST_TIMEOUT_S));
+    RCLCPP_INFO(this->get_logger(), "Grasp request: accepting centroids for %.1fs",
+                GRASP_REQUEST_TIMEOUT_S);
     queue_cv_.notify_one();
   }
 
@@ -300,7 +353,7 @@ private:
         {"+x_wall", 0.15 + T / 2, 0.0, 0.5, T, 0.60 + T, 1.0},
         {"+y_wall", 0.0, 0.30 + T / 2, 0.5, 2.0, T, 1.0},
         {"-y_wall", 0.0, -0.30 - T / 2, 0.5, 2.0, T, 1.0},
-        {"table", -0.425, 0.0, 0.18, 0.75, 0.75, T},
+        {"table", -0.425, 0.0, TABLE_TOP_Z_M - T / 2, 0.75, 0.75, T},
     };
 
     std::vector<moveit_msgs::msg::CollisionObject> objs;
@@ -610,11 +663,37 @@ private:
       // =====================================================================
       // IDLE — wait for object detection
       // =====================================================================
-      has_centroid_ = false;
+      // Waits for a grasp request, then for a centroid. queue_cv_ is shared with EXECUTING's wait
+      // on queue_mutex_. That is allowed because only this worker thread ever waits on it, so the
+      // two waits never overlap (CODE_AUDIT C1). Each notifier changes its flag under the mutex
+      // of the wait it wakes.
       {
         std::unique_lock<std::mutex> lock(centroid_mutex_);
-        queue_cv_.wait(lock, [this]
-                       { return has_centroid_ || shutdown_; });
+        // Close the gate on every entry, so each request gives one attempt. Reset under the lock,
+        // because the callbacks set these from the spin thread (race, audit C3)
+        accepting_centroids_ = false;
+        has_centroid_ = false;
+        waiting_in_idle_ = true;
+        while (!shutdown_ && !(accepting_centroids_ && has_centroid_))
+        {
+          if (!accepting_centroids_)
+          {
+            queue_cv_.wait(lock);
+            continue;
+          }
+          queue_cv_.wait_until(lock, request_deadline_);
+          // Re-read after waking: a second request moves the deadline, a centroid ends the wait
+          if (accepting_centroids_ && !has_centroid_ &&
+              std::chrono::steady_clock::now() >= request_deadline_)
+          {
+            accepting_centroids_ = false;
+            RCLCPP_WARN(this->get_logger(), "Grasp request lapsed: no centroid within %.1fs",
+                        GRASP_REQUEST_TIMEOUT_S);
+          }
+        }
+        // Leaving IDLE in the same locked block that saw the centroid: a request arriving from
+        // here on is refused, and the deadline is never read again this cycle
+        waiting_in_idle_ = false;
         if (shutdown_)
           return;
       }
@@ -630,14 +709,19 @@ private:
       for (int steps = 0; steps < MAX_APPROACH_STEPS; ++steps)
       {
         double object_depth;
+        double age_s;
         {
-          // auto age = this->now() - latest_centroid_.header.stamp;
-          // if (age > rclcpp::Duration::from_seconds(1.0))
-          // {
-          //   RCLCPP_WARN(this->get_logger(), "SELECTING: centroid lost — returning to IDLE");
-          //   break;
-          // }
+          std::lock_guard<std::mutex> lock(centroid_mutex_);
+          age_s = (this->now() - rclcpp::Time(latest_centroid_.header.stamp)).seconds();
           object_depth = latest_centroid_.point.z;
+        }
+        // The stamp is the camera frame's, so the age includes segmentation time
+        if (age_s > CENTROID_MAX_AGE_S)
+        {
+          RCLCPP_WARN(this->get_logger(),
+                      "SELECTING: centroid %.2fs old (limit %.2fs), object lost — returning to IDLE",
+                      age_s, CENTROID_MAX_AGE_S);
+          break;
         }
 
         if (object_depth < EXECUTE_DEPTH_THRESH_M)
@@ -656,6 +740,7 @@ private:
 
       if (!transition_to_executing)
       {
+        publishState(State::IDLE);
         continue;
       }
       // ==================================================================
@@ -665,6 +750,7 @@ private:
       {
         std::lock_guard<std::mutex> lock(centroid_mutex_);
         centroid_snapshot_ = latest_centroid_;
+        accepting_centroids_ = false; // the snapshot is the target from here on (T1.25)
       }
       openGripper();
 
@@ -748,6 +834,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_sub_;
   rclcpp::Subscription<grasp_interfaces::msg::GraspCandidateArray>::SharedPtr grasp_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr centroid_sub_;
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr grasp_request_sub_;
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperset>::SharedPtr gripper_position_pub_;
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperpick>::SharedPtr gripper_pick_on_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pipeline_state_pub_;
@@ -770,6 +857,10 @@ private:
   // Centroid (shared with callbacks)
   geometry_msgs::msg::PointStamped latest_centroid_;
   bool has_centroid_ = false;
+  // The trigger gate (T1.25), also under centroid_mutex_
+  bool accepting_centroids_ = false;
+  bool waiting_in_idle_ = false;
+  std::chrono::steady_clock::time_point request_deadline_;
   std::mutex centroid_mutex_;
   geometry_msgs::msg::PointStamped centroid_snapshot_;
 
@@ -788,6 +879,27 @@ private:
   // Flags
   bool debug_flag_ = false;
   bool grasped_ = false;
+
+  // Tuning values, set once in the constructor from grasp/grasp_config.yaml before the worker
+  // thread starts. Names kept from when these were constants.
+  double APPROACH_STEP_M;
+  double APPROACH_STEP_FINAL;
+  int MAX_APPROACH_STEPS;
+  double EXECUTE_DEPTH_THRESH_M;
+  double CENTROID_MAX_AGE_S;
+  double GRASP_REQUEST_TIMEOUT_S;
+  double TABLE_TOP_Z_M;
+  double FINAL_EXEC_THRESH_M;
+  double CENTROID_TARGET_OFFSET_X;
+  double CENTROID_TARGET_OFFSET_Y;
+  double MIN_APPROACH_ANGLE_DEG;
+  double MAX_ORIENT_STEP_DEG;
+  bool USE_SIMPLE_EXECUTE;
+  bool USE_SLERP_EXECUTE;
+  // Stability criterion
+  int STABILITY_N_FRAMES;
+  double STABILITY_TRANS_MM;
+  double STABILITY_ROT_DEG;
 };
 
 // ===========================================================================

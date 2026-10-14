@@ -15,7 +15,7 @@ from typing import Optional
 import rclpy
 
 from config import Settings
-from gappler_common import path
+from gappler_common import camera_serial, path
 from schemas.application import ApplicationConfig
 from services.process_manager import ProcessManager
 from utils import exit_keypress, safe_update_iptables, setup_logging
@@ -282,6 +282,8 @@ class AriaApplication:
                     "launch",
                     "realsense2_camera",
                     "rs_launch.py",
+                    # The leading _ makes the launch file read the serial as text, not a number.
+                    f"serial_no:='_{camera_serial('wrist_camera')}'",
                     "align_depth.enable:=true",
                     "pointcloud.enable:=true",
                 ],

@@ -1,0 +1,131 @@
+# T1.7 first commanded motion, real arm, 2026-09-23. Dion and Sherman at the robot.
+# HOME sent one joint at a time via /rm_driver/movej_cmd, speed 1, block false, ROS_DOMAIN_ID=91.
+# Verbatim copy of ~/rcp-Gappler/docs/dion_docs/t1.7_logs/ on the lab box.
+# joint_states_1_j3.txt holds two readings: the second (sec 1790163979, j5 0.7497) was taken
+# while step 2 was still moving, halfway to 1.5708.
+# RESULT: PASS. Every joint within 0.0004 rad (0.02 deg) of HOME, all moves slow and smooth.
+# The tool ends slightly outside the base footprint (observed at the robot, accepted).
+# Write-up: docs/dion_docs/T1.7_FIRST_COMMANDED_MOTION.md
+
+===== joint_states_0_rest.txt
+WARNING: topic [/joint_states] does not appear to be published yet
+header:
+  stamp:
+    sec: 1790163663
+    nanosec: 478169467
+  frame_id: ''
+name:
+- joint1
+- joint2
+- joint3
+- joint4
+- joint5
+- joint6
+position:
+- 0.019212449151277542
+- 0.0005234999882988632
+- 0.010731750166416169
+- 0.0012563999459147452
+- 0.0012215000052005053
+- 0.001570500062406063
+velocity: []
+effort: []
+---
+===== joint_states_1_j3.txt
+header:
+  stamp:
+    sec: 1790163862
+    nanosec: 943978060
+  frame_id: ''
+name:
+- joint1
+- joint2
+- joint3
+- joint4
+- joint5
+- joint6
+position:
+- 0.0
+- 1.7450000828830525e-05
+- 0.7852674404144288
+- -3.490000165766105e-05
+- -1.7450000828830525e-05
+- 0.0
+velocity: []
+effort: []
+---
+header:
+  stamp:
+    sec: 1790163979
+    nanosec: 612514054
+  frame_id: ''
+name:
+- joint1
+- joint2
+- joint3
+- joint4
+- joint5
+- joint6
+position:
+- -1.7450000828830525e-05
+- -1.7450000828830525e-05
+- 0.7852674404144288
+- 3.490000165766105e-05
+- 0.7496869314193726
+- 1.7450000828830525e-05
+velocity: []
+effort: []
+---
+===== joint_states_2_j5.txt
+header:
+  stamp:
+    sec: 1790164018
+    nanosec: 184905481
+  frame_id: ''
+name:
+- joint1
+- joint2
+- joint3
+- joint4
+- joint5
+- joint6
+position:
+- -1.7450000828830525e-05
+- 0.0
+- 0.7852674404144288
+- -3.490000165766105e-05
+- 1.5705
+- 0.0
+velocity: []
+effort: []
+---
+===== joint_states_3_home.txt
+header:
+  stamp:
+    sec: 1790164194
+    nanosec: 535288762
+  frame_id: ''
+name:
+- joint1
+- joint2
+- joint3
+- joint4
+- joint5
+- joint6
+position:
+- -1.7450000828830525e-05
+- 0.0
+- 0.7852151191711426
+- 3.490000165766105e-05
+- 1.5705174404144286
+- 1.5704651191711425
+velocity: []
+effort: []
+---
+===== movej_result.txt
+data: true
+---
+data: true
+---
+data: true
+---

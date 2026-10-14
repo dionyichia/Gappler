@@ -1,0 +1,101 @@
+# Aria (glasses) config. Values only the aria subsystem reads (NEXT_STEPS 2.15).
+# Values another subsystem also reads live in shared/global_config.yaml. Each value is written once.
+#
+# How it is read: the Aria app is not started by ROS. aria/aria_app/config/*.py load this file
+# through gappler_common.config("aria", ...) and keep their class names, so callers do not change.
+# Values that are facts of the Aria SDK or a model (stream IDs, sample rates), computed values
+# (paths from the repo root, CUDA or CPU) and the visualizer's colours stay in those Python files.
+#
+# Format: a ROS parameter file. "/**" holds values several parts of aria read. Each other
+# top-level key is one part's section.
+/**:
+  ros__parameters:
+    # Topics only aria publishes and reads. publisher -> subscribers.
+    topics:
+      # image_streaming_pipeline -> visualizer
+      rgb_camera_raw: "/aria/rgb_camera/raw"
+      # pose_streaming_pipeline -> OpenVINS (parked). Its topic list is in
+      #   aria_device/calibration/kalibr_imucam_chain.yaml and must match
+      slam_left_raw: "/aria/slam_left/raw"
+      slam_right_raw: "/aria/slam_right/raw"
+      # image_streaming_pipeline -> visualizer
+      eye_tracking_raw: "/aria/eye_tracking/raw"
+      # image_streaming_pipeline -> object_recognition_pipeline, visualizer
+      eye_tracking_gaze_estimate: "/aria/eye_tracking/gaze_estimate"
+      # object_recognition_pipeline -> visualizer
+      rgb_camera_with_object_masks: "/aria/rgb_camera/object_masks"
+      # object_recognition_pipeline -> visualizer (masks drawn on the wrist camera image)
+      ros_camera_with_object_masks: "/realman/rgb_camera/object_masks"
+      # object_recognition_pipeline -> visualizer
+      combined_visualization: "/combined/object_masks"
+      # feature_matching, object_recognition_pipeline -> visualizer
+      feature_match_results: "/aria/rgb_camera/feature_match"
+      # pose_streaming_pipeline -> OpenVINS (parked). Must match calibration/kalibr_imu_chain.yaml
+      imu: "/aria/imu"
+      # image_streaming_pipeline -> pose_fusion_node (parked)
+      aruco_pose: "/aria/aruco_pose"
+      # nobody today. Planned: OpenVINS -> pose_fusion_node (both parked, the code is commented out)
+      vio_pose: "/aria/vio_pose"
+      # nobody yet
+      is_stationary: "/aria/is_stationary"
+      # pose_fusion_node -> RViz
+      glasses_marker: "/aria/glasses_marker"
+      # pose_fusion_node -> nobody yet
+      pose_initialized: "/aria/pose_initialized"
+
+    # QoS for the image streams. read by: feature_matching, object_recognition_pipeline,
+    # visualizer, ros_publisher, realsense_helper (all through config.VIDEO_QOS)
+    qos:
+      video:
+        reliability: "BEST_EFFORT"
+        history: "KEEP_LAST"
+        depth: 10
+
+# read by: aria/aria_app/config/base.py (Settings)
+app:
+  ros__parameters:
+    realsense_init_delay_s: 3   # seconds to wait for the RealSense node to start
+
+# read by: aria/aria_app/config/aria.py (AriaConfig)
+aria_device:
+  ros__parameters:
+    streaming_profile_name: "profile18"   # profile18 is for USB
+    use_ephemeral_certs: true
+    # Size and focal length of the undistorted RGB image the app publishes.
+    undistorted_image_size_px: 1408
+    undistorted_focal_length_px: 609
+    # Glasses IP for Wi-Fi streaming. Empty means USB.
+    device_ip_address: ""
+
+# read by: aria/aria_app/config/audio_streaming_pipeline_config.py
+audio_streaming_pipeline:
+  ros__parameters:
+    transcription_model: "small.en"           # Whisper model
+    llm_model: "Qwen/Qwen2.5-0.5B-Instruct"   # turns the transcript into an object name
+    # How often the newest audio goes to the voice detector. Cheap: Whisper and the LLM run
+    # only once a sentence has finished (T2.10). Was 1 s.
+    iteration_interval_s: 0.25
+    # Audio kept, so the longest sentence heard in full. Commands take 2 to 6 s. Can go up to
+    # 30 s (Whisper's own window), but the voice detector reruns over all of it every tick,
+    # about 5 ms per second of audio (lab box, 2026-10-12). Was 10 s.
+    max_buffer_s: 15
+    # Quiet after speech that marks the end of a sentence. Shorter answers faster but may cut a
+    # sentence at a pause. The voice detector also pads speech by 0.4 s (faster-whisper default,
+    # set in audio_streaming_pipeline.py), so the word goes out about 1.1 s after the last word,
+    # plus up to one tick. CHANNEL_CONTRACT A-5 accepts this wait to avoid half-heard words.
+    end_of_speech_silence_s: 0.7
+    stop_keyword: "end"
+    # A sentence with one of these, as whole words, publishes true on /manipulator/release instead
+    # of a word on /aria/audio/prompt, where goto_glasses would drive to you on it (T2.6).
+    release_phrases: ["release", "let go"]
+
+# read by: aria/aria_app/config/playback_controller_config.py
+playback_controller:
+  ros__parameters:
+    playback_speed: 1.0
+
+# read by: aria/aria_app/config/eye_tracking.py
+eye_tracking:
+  ros__parameters:
+    # Gaze has no depth, so the gaze ray is cut at this distance (NEXT_STEPS 2.13, T2.3)
+    default_depth_m: 1.5

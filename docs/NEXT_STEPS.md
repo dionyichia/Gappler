@@ -20,14 +20,12 @@ session · `[inferred]` reasoning, not fact · `[open]` genuinely undecided ·
 
 **Priority key:** 🔴 blocks other work · 🟠 needed for the HiCo-Nav milestone · 🟡 quality/debt
 
-> ➡️ **This file is the register of everything we *could* do. What we *will* do, in what order and
-> who owns it, is now in [`PROJECT_PLAN.md`](PROJECT_PLAN.md)** — 11 milestones and 70 tasks, mapped
-> onto the real capstone calendar from 2026-09-14 to 2027-04-18 (recess, exam period and winter break
-> excluded, the four official deadlines marked), with the three-way split validated, the scope
-> written down, and the cut list decided in advance. Visual version:
-> [`next-steps-map.html`](next-steps-map.html)
+> ➡️ **This file is the register of everything we *could* do, and why.** What we *will* do, in what
+> order and who owns it, is in [`PROJECT_PLAN.md`](PROJECT_PLAN.md): 11 milestones mapped onto the
+> capstone calendar from 2026-09-14 to 2027-04-18. **The tasks themselves (73) are listed in one
+> place, [`task-tree.html`](task-tree.html)**
 > (<https://claude.ai/code/artifact/65c7784d-1284-4ebd-a481-43951f8ce676>). Items here map onto task
-> IDs there — for example §2.5 is T0.3, §2.9 is T0.4, §2.2 is T2.0 and T2.1, §3.2 is T3.1, and
+> IDs there. For example §2.5 is T0.3, §2.9 is T0.4, §2.2 is T2.0 and T2.1, §3.2 is T3.1, and
 > §3.3 is **T0.0, done 2026-09-21**.
 
 ---
@@ -187,6 +185,50 @@ is the sole publisher of the mask/centroid topics. Both current call sites becom
 **Sequencing:** settle §1.3 and §2.1 first — the trigger policy and the source of truth for object
 identity both change what this service's interface should be. Unifying now and re-doing it after
 the HiCo-Nav scope lands would be wasted effort.
+
+#### `[decided 2026-10-08]` Revised design: a stateless request/reply service (`T2.1`)
+
+**Dion decided 2026-10-08.** `sam3_ros_node.py` is still retired, but the pipeline no longer
+becomes the service. The 2026-09-20 decision below is kept as the record of how we got here.
+
+- **One service, `/segmentation/segment`** (`segmentation_interfaces/srv/Segment`). A caller sends
+  one image, one prompt, and optionally aligned depth and `CameraInfo`. The reply lists every
+  detection, best score first: mask, score, box, pixel centroid, median depth, and a 3D point in
+  the camera's optical frame (frame id copied from the request). The service keeps nothing between
+  calls apart from the loaded model, and stays up the whole time.
+- **The service knows nothing about the arm, the glasses or the base.** No camera topics, no gaze,
+  no stop word, no transforms. It does not pick one detection. Its code imports nothing from a
+  subsystem either: since 2026-10-09 it builds SAM 3 itself instead of through aria's wrapper, which
+  pulled in the glasses SDK. Weights path: `shared/global_config.yaml` `paths: sam3_weights`.
+- **Clients hold the workflow logic, one per subsystem.**
+  - `grasp/grasp_segmentation_client/`: feeds wrist frames to the service, picks one detection,
+    and is the only publisher of `/camera/sam/mask`, `/object_centroid_2d` and `/object_centroid`.
+    Same messages as today, so AnyGrasp and the state machine do not change. `/manipulation/goal_pose`
+    is off for now. A `default_prompt` in config lets it run without the glasses, for testing only.
+    It steps aside when a publisher exists on `/grasp/target` and is dropped on the first message.
+  - `aria/aria_app/services/aria_segmentation_client/`: turns voice (and, after `T2.2`, gaze) into
+    a `Target` on `/grasp/target`. Built 2026-10-08 with the word only.
+  - A nav client, and whether the memory graph calls the service instead of loading its own SAM 3
+    (`memory_graph/sam3_adapter.py`), is for Dion and Zongzhe later.
+- **Where it lives.** A fifth top-level folder, `shared_services/` (`CHANNEL_CONTRACT` G-2), since
+  grasp, aria and nav all call it. Interfaces in `shared_services/segmentation/segmentation_interfaces/`,
+  built by `./build.sh` into `install/`. Not yet in the nav build: add it when a nav client exists.
+- **Started once, on its own.** Launchers start only their client. The service refuses to start, before
+  loading SAM 3, if another one is already on the ROS channel, loading or serving. The guard looks
+  for the node name, which appears before SAM 3 loads, so SAM 3 never loads twice (fixed 2026-10-13:
+  it looked for the service, which appears only after loading, and missed a start during the load).
+  `quickstart_terminals.sh grasp` and `full` start the service and the grasp client (`nomask` skips them).
+- **Built 2026-10-08, all six steps** (`T2.1`). Results in `docs/bench-runs/2026-10-08-labbox-t2.1-*`.
+  On the recorded box video it gives 117 masks in 60 s against the old node's 119 in 61 s, and
+  AnyGrasp runs unchanged on them. `sam3_ros_node.py` is parked in `grasp/tools/` (`T2.7`).
+- **Left alone for now.** `object_recognition_pipeline.py` keeps its own SAM 3 and its publishing
+  line stays commented out. `dummy_mask_publisher.py` is kept (§2.3). `T2.4` (trigger, age limit,
+  freeing the GPU) is paused.
+- **Found while designing, matters after `T2.2`.** The gaze pixel is in the raw glasses camera
+  image (`eye_tracking.py:147`, published by `image_streaming_pipeline.py:186`), but the published
+  glasses image is rotated 90° (`:132`) and undistorted (`:135`). The aria client must put the gaze
+  pixel through both before comparing it with masks. Today's code only handles the rotation
+  (`object_recognition_pipeline.py:675`) `[code]`.
 
 #### `[decided 2026-09-20]` Decision: retire `sam3_ros_node.py` (Option 2)
 
@@ -477,6 +519,9 @@ rosbag (W6/W8).
 
 ### 2.8 🟡 One folder for model weights — `assets/models/`
 
+> **SAM 3 done 2026-10-09 (T2.1):** `assets/models/sam3/sam3.pt`, path in `shared/global_config.yaml`
+> `paths: sam3_weights`. The AnyGrasp checkpoints are still under `grasp/anygrasp_node/log/`.
+
 Dion, 2026-09-11. Model files are scattered: `src/models/sam3/sam3.pt`, and the AnyGrasp checkpoints
 under `ros2_robot_ws/src/rm_mtc/src/perception/log/` — ignored only because of a catch-all `log`
 rule. Move them to `assets/models/{sam3,anygrasp}/`, gitignore that folder explicitly, keep the
@@ -655,7 +700,14 @@ only the vendor half of it.
 
 **Specified 2026-09-21 in §2.15**, which also puts the full reorg in scope.
 
-### 2.12 🟡 CI: run the bench automatically on every push, once M0 is done
+### 2.12 ✅ CI: run the bench automatically on every push, **done 2026-09-22 (T0.10, T0.11)**
+
+**Status 2026-09-22.** Done. `bench` (L0-L2) runs on GitHub's machines for every PR and push to `dev`
+and `main`. `full` (L0-L4, no level skipped) runs on the lab box for PRs into `main`, on Monday and
+Wednesday nights on `dev`, and from the button. Both are required on `main`. First `full` run:
+[`bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt`](bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt).
+One bench suite per subsystem is deferred (`PROJECT_PLAN` §4.3). The text below is the original
+reasoning, kept for the record.
 
 Dion, 2026-09-16. Raised as a task rather than left as the "deferred, after this plan ends" item
 `PROJECT_PLAN.md` §4.3 used to call it — a running CI job now has real value once there is more
@@ -995,28 +1047,58 @@ bench/  docs/  main.py
 `arm/` holds almost none of our code (only `estop`). That is accurate, not a problem: the arm
 subsystem is mostly RealMan's.
 
-#### Config: three levels, each value written once
+#### Config: two levels, each value written once
+
+> **Revised 2026-10-06 (Dion): two levels, not three.** Per-node files dropped. The seven steps
+> below only moved files. The config files were built afterwards in **T0.14** (2026-10-06, branch
+> `t0.14-subsystem-config`): all four subsystem files exist, and every channel name our code uses
+> is in a config file.
 
 | Level | File | Holds |
 |---|---|---|
-| global | `shared/global_config.yaml` | values two or more subsystems read: shared topic names, frame names, machine paths |
-| subsystem | `<subsystem>/<subsystem>_config.yaml` | values two or more nodes in that subsystem read |
-| node | `<subsystem>/<node>/config.yaml` | values only that node reads |
+| global | `shared/global_config.yaml` | values two or more subsystems read, plus this robot's hardware (camera serials, mount geometry) and this machine's paths, so moving robot or machine means editing one file |
+| subsystem | `<subsystem>/<subsystem>_config.yaml` | everything else in that subsystem, with one section per node |
 
-- **A value lives at the lowest level that covers all its readers.** When it gains a reader in
-  another subsystem, move it up and delete it below.
-- **References only point down.** Global has no list of subsystem files, and a subsystem file never
-  copies a global value. So editing a subsystem file never touches global.
-- **ROS nodes get their values as ROS parameters.** The launch file loads global, then subsystem,
-  then node, and later files win. One file can hold several nodes, keyed by node name, with `/**:`
-  for values every node in the file shares. Nodes still declare each parameter with a default, so
-  launch can remap (§2.10 point 2).
-- **The Aria app is not launched by ROS.** It reads the same files through `gappler_common`.
+Every entry carries a comment saying who uses it. For a topic: publisher, then subscribers.
+
+- **A value starts in its subsystem's file.** When a second subsystem starts reading it, move it up
+  to global and delete it below. Each value lives in exactly one file.
+- **Global does not list or include the subsystem files.** A subsystem file never copies a global
+  value. This is what lets one subsystem start on its own.
+- **Starting one subsystem** loads two files: global, then its own. Nothing from other subsystems.
+- **Starting the whole system** loads global plus all four subsystem files. There is no generated or
+  aggregated config file.
+- **Per-node values go in a section of the subsystem file**, keyed by node name, with `/**:` for
+  values every node in that subsystem reads. This is standard ROS parameter-file syntax, so no
+  separate file per node is needed. Example:
+
+  ```yaml
+  # nav/nav_config.yaml
+  /**:                      # every nav node reads these
+    ros__parameters:
+      base_frame: "mobile_base_link"
+  goto_glasses:             # only goto_glasses reads these
+    ros__parameters:
+      standoff_m: 0.6
+  ```
+- **How code reads it.** Python, ROS nodes included, calls `gappler_common.config("nav",
+  "goto_glasses")`: global, then the subsystem's `/**`, then that node's section. It works the same
+  under `ros2 run`, the launchers and tests. The Aria app's settings classes in
+  `aria/aria_app/config/` read it this way too and keep their names. The C++ state machine cannot
+  import Python, so `grasp_state_machine.launch.py` loads global, then `grasp_config.yaml`, as ROS
+  parameters. It has no fallback values: a missing one stops it at start-up.
+- **Topic names can still be changed at launch** with ordinary ROS remapping
+  (`--ros-args -r /old:=/new`), which works on any topic whatever the code reads it from.
+- **Config is read from the repo, not from `install/`**, so editing a YAML file needs no rebuild.
 - **Vendor parameter files keep their own format and place** (`nav2_params.yaml`, the SLAM Toolbox
   files). Our levels are for our nodes.
-- **A bench check fails when one key is defined in two files**, so duplicates cannot creep back.
-  L0 is stdlib only, so it reads keys line by line rather than with a YAML parser. `[open]` whether
-  that is enough, decide when writing it.
+- **What stays in code:** facts of an SDK or model (Aria stream IDs, Whisper's sample rate),
+  computed values (paths from the repo root, CUDA or CPU), the Aria visualizer's colours, and frame
+  names (a separate naming pass, §2.4).
+- **One key in two files is refused** by `gappler_common.config()` when it merges them. A separate
+  bench check for it is deferred (Dion, 2026-10-06), until a duplicate gets past the loader.
+- **The bench still sees every channel.** `bench/contracts.py` resolves `TOPICS["key"]` and the C++
+  `topic("key")` through the config files (`bench/test_contracts.py`).
 
 #### Paths: no file finds the repo by itself
 
@@ -1055,7 +1137,8 @@ Run `./bench/run.sh` before and after every step.
    to 3 (two vendor, one the OpenVINS default in `global_config.yaml`). `[unverified]` at runtime:
    compiled and import-checked, not yet started on the box. **Scope narrowed:** `src/config/*.py`
    (the Aria settings classes) folds into `aria_config.yaml` in step 4, when `aria/` exists, and so
-   does sorting the aria-only topics out of `global_config.yaml`.
+   does sorting the aria-only topics out of `global_config.yaml`. **Not done in step 4**, which only
+   moved files. Now T0.14 (2026-10-06).
 3. ✅ **Done 2026-09-21 (on the branch).** **Vendor moves**, as pure moves (§2.11 steps 1 and 2).
    Commit `2cd2297` is 2,145 renames and nothing else. The next commit fixed the references:
    `bench/build.sh` base paths (and `--symlink-install`), bench exclusions, the AnyGrasp env
@@ -1090,7 +1173,7 @@ Run `./bench/run.sh` before and after every step.
    | `rm_ros_interfaces/msg/GraspCandidate*.msg` | `grasp/grasp_interfaces/msg/` (package `grasp_interfaces`) |
    | `ros2_robot_ws/src/rm_ros_interfaces/` | `arm/rm_ros_interfaces/`, then `arm/vendor/rm_ros_interfaces/` in step 5 |
    | `ros2_robot_ws/src/estop.py` | `arm/estop/estop.py` |
-   | `ros2_robot_ws/src/main.py` | `launchers/start_grasp_pipeline.py` |
+   | `ros2_robot_ws/src/main.py` | `launchers/start_camera_arm_grasp.py` |
    | `ros2_robot_ws/src/orchestrator.py` | `launchers/grasp_orchestrator.py` |
    | `Navigation_Module/src/<pkg>/` (`robot_slam`, `robot_navigation`, `simple_teleop`, `echo_plus_driver`) | `nav/<pkg>/` |
    | `robot_slam/scripts/<script>.py` | `nav/<package>/<script>.py`: `object_approach`, `goto_glasses`, `goal_reached` (`goal_reached_publisher.py`), `pose_publisher`, `qos_relay`, `aria_image_relay`. `ros2 run robot_slam X.py` becomes `ros2 run <package> X.py` |
@@ -1138,12 +1221,17 @@ keeps merges manageable for everyone else.
 
 #### Open, decide in the PR that needs it
 
-- **Where the three launchers go.** Root `main.py`, `ros2_robot_ws/src/main.py` and
-  `orchestrator.py` start processes across subsystems. `CODE_AUDIT` I1 already says
-  `ros2_robot_ws/src/main.py` owns `background.launch.py`. Keep one launcher at the root.
-- **One build or two.** Today there are two builds (`ros2_robot_ws/src` + `arm/vendor` +
-  `grasp/vendor`, and `Navigation_Module/src` + `nav/vendor`) and two overlays (`install/`, `install_nav/`). colcon finds packages at any
-  depth, so one build from the repo root works. Nav could stay a separate build because it is slow.
+- ✅ **Where the three launchers go. Settled in step 4 (2026-09-21).** `launchers/start_camera_arm_grasp.py`
+  and `launchers/grasp_orchestrator.py`, root `main.py` stays. Which launcher owns arm bring-up is
+  `CODE_AUDIT` I1, part of T1.2.
+- **One build or two. Two today, one question left for Zongzhe** (updated 2026-09-22). `./build.sh`
+  builds `arm/` and `grasp/` with their vendor code into `install/`, and `./build.sh nav` builds
+  `nav/` into `install_nav/`. `deps_ws/` and `ros2_robot_ws/install.sh` are gone, so MoveIt Task
+  Constructor now builds inside the arm overlay. **Open, deferred (Dion):** Zongzhe's
+  `zongzhe_docs/BUILD_WORKSPACES.md` "For Dion" item 2. With MTC in the same overlay, clearing a bad
+  `install/` rebuilds MTC too (10 to 15 minutes). Giving MTC its own underlay again would avoid
+  that. Not blocking: colcon is incremental, so ordinary rebuilds are fast either way. Raised with
+  Zongzhe 2026-09-22, see "For Zongzhe" below.
 - ~~Tell Zongzhe and Sherman before step 3.~~ Not needed: neither had open work, both are waiting on the refactor (Dion, 2026-09-21).
 
 #### For Sherman (nav), found during step 2, not changed
@@ -1169,8 +1257,32 @@ Left for the nav owner, part of `PROJECT_PLAN` T3.5. Checked 2026-09-21 `[code]`
   one is 203 lines with `robot_base_link`, the AMCL one 105 lines with `base_link`. Merging would bake
   in a choice between them. Decide the merge together with the question above. The six node scripts
   already moved out of `robot_slam` into one package each (§2.15 step 5).
+- **Where the saved maps are.** `paths.map_dir` in `shared/global_config.yaml`, default `~/maps`,
+  overridden by `GAPPLER_MAP_DIR`. On the lab box the existing map is under `/home/iot22/maps/`, so
+  set the variable there rather than editing the file `[code]`.
+- **Build and run nav after the refactor.** `./build.sh nav` builds into `install_nav/`, and
+  `source nav/nav_env.sh` (or `global_env.sh`) sets up a shell, nav overlay included.
 - **`slam_toolbox_localization.yaml:17`**, `map_file_name`, is commented out with a note: the launch
   file always overrode it. Delete it when next working on that file.
+
+#### For Zongzhe (graph, bridge nodes), after the refactor
+
+Checked 2026-09-22 `[code]`.
+
+- **The bridge nodes moved.** `robot_slam/scripts/` is gone. Each script is its own package in
+  `nav/`: `goal_reached/goal_reached_publisher.py`, `object_approach/object_approach_node.py`,
+  `goto_glasses/goto_glasses.py`, `pose_publisher/`, `qos_relay/`, `aria_image_relay/`.
+  `ros2 run robot_slam X.py` is now `ros2 run <package> X.py`. Line numbers did not change, so the
+  T3.8 cites (`CODE_AUDIT` F1, F4) still hold.
+- **`zongzhe_docs/BUILD_WORKSPACES.md` describes a build that no longer exists** (`deps_ws/`,
+  `install.sh`). The note `zongzhe_docs/NOTE_deps_ws_removed.md` asks Zongzhe to update or retire it.
+  The underlay question in it is still open, see "One build or two" above.
+- **T0.3's items for Dion, where they ended up.** The OpenVINS paths are now `paths.openvins_ws` in
+  `shared/global_config.yaml`, and the in-repo copy is `aria/vendor/open_vins/`, unused and a
+  deletion candidate (step 3). `install.sh` is deleted (step 4). AnyGrasp through `conda run` is
+  T1.10.
+- **T0.5 is unblocked.** Clone `dev`, not `main`: the refactor is on `dev` and has not been
+  promoted yet.
 
 ---
 
@@ -1312,6 +1424,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 
 | Date | Who | Change |
 |---|---|---|
+| 2026-10-07 | OpenCode + Sherman | Recorded T3.4 attended LiDAR PointCloud2 at 9.999-10.002 Hz and Sherman-reported 19.3 V battery hold before driver/teleop startup. T3.4 PROGRESS; charger compatibility, driving/stopping and shutdown sign-off remain open. See sherman_docs/T3.4_BASE_BRINGUP.md. |
 | 2026-09-14 | Claude (Opus 5) + Dion | §3.3 promoted to 🔴 and re-checked against the branch: exactly 15 files exist on `realman_manip` and not on `main`, ten of them pre-reorg duplicates. Added a fifth file to take, `anygrasp_node.sh`, which records that the verified session ran `checkpoint_tracking.tar` while `main` launches `checkpoint_detection.tar`. It is now `PROJECT_PLAN` T0.0, the first task in the plan. §3.2 marked done: the nav workspace built 10/10 on 2026-09-14, with two corrections — 10 packages not 8, and colcon does build `Livox-SDk2/` without a manifest. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added the pointer under §2.7 to the new `TESTBENCH_PLAN.md` handoff, and a root `CLAUDE.md` so a fresh session loads context automatically. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §2.6b pointing at the new `CODE_AUDIT.md` — a line-by-line read of all owned code. Headline finding: the grasp path cannot work, for three interlocking reasons. |
@@ -1361,3 +1474,11 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 step 7 done on the branch: `global_env.sh` plus one env file per subsystem, shared setup in `shared/`, nav's overlay now sourced. The refactor's seven steps are all done on the branch. |
 | 2026-09-22 | Claude (Opus 5) + Dion | §2.15 marked done: all seven steps verified on the box. Post-merge cleanup of the nightly runner's copy recorded. |
 | 2026-09-22 | Claude (Opus 5) + Dion | Republished `next-steps-map.html` (T0.11, T2.1, T3.5, reorg row), `wiring-map.html` (new paths, folder and entry-point tables) and `testbench-map.html` (`./build.sh`). The republish owed since 2026-09-21 is done. |
+| 2026-09-22 | Claude (Opus 5) + Dion | §2.15 "Open": launchers marked settled (step 4), "one build or two" rewritten to today's two builds, with Zongzhe's MTC underlay question recorded as open and deferred. New "For Zongzhe" block (bridge nodes moved, stale `BUILD_WORKSPACES.md`, T0.3 items resolved, T0.5 unblocked). "For Sherman" gained the map folder setting and the nav build and env commands. `wiring-map.html`: the last four old launcher paths renamed, and "what is ours" now states the `vendor/` rule. Both HTML pages republished. |
+| 2026-09-22 | Claude (Opus 5) + Dion | Header now points at `task-tree.html` (renamed from `next-steps-map.html`) as the one task list. §2.12 marked done (T0.10, T0.11). |
+| 2026-10-06 | Claude (Opus 5.5) + Dion | §2.15 config: three levels cut to two (global plus one file per subsystem, per-node sections inside it, no per-node files, no aggregated global). Recorded that no subsystem config file was ever created, the work is new task T0.14. Duplicate-key bench check deferred. Step 2 note on `aria_config.yaml` corrected. |
+| 2026-10-06 | Claude (Opus 5.5) + Dion | §2.15 config: built in T0.14. All four subsystem files exist, all 34 channel names that were hardcoded moved into config, each entry says who uses it. Global also holds the robot's hardware and the machine's paths. How Python and C++ read it, what stays in code, duplicate keys refused by the loader. |
+| 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: revised design for `T2.1`. A stateless request/reply segmentation service in `shared_services/`, with one client per subsystem, replaces "the pipeline becomes the service". Gaze pixel-space mismatch recorded for `T2.2`. |
+| 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: `T2.1` built (all six steps), start-once rule and its guard, results recorded. |
+| 2026-10-09 | Claude Opus 5.5 + Dion | §2.2: the service imports nothing from a subsystem. §2.8: SAM 3 weights moved to `assets/models/` (T2.1). The segmentation service builds SAM 3 itself, so `shared_services/` no longer imports aria. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | §2.2: start-once guard now looks for the node name, which appears before SAM 3 loads. It looked for the service, which appears only after, so a second start during the ~20 s load was not refused (found in the T2.1 review). |

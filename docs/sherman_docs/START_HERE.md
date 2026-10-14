@@ -33,7 +33,17 @@ evidence into the shared documents.
 | [`WORK_LOG.md`](WORK_LOG.md) | Chronological index of Sherman's sessions, outcomes, and next actions | At the start or end of every session |
 | [`T0.2_SESSION.md`](T0.2_SESSION.md) | Evidence for the T0.2 network-switch proof | When reviewing M0 network evidence |
 | [`T0.9_BASE_FOOTPRINT.md`](T0.9_BASE_FOOTPRINT.md) | Reported base identity and pending footprint-measurement record | Before measuring or changing the navigation footprint |
+| [`T0.5_FRESH_CLONE.md`](T0.5_FRESH_CLONE.md) | Fresh Mac clone and safe-bench evidence | When reviewing M0 portability acceptance |
+| [`T0.1_D455_VALIDATION.md`](T0.1_D455_VALIDATION.md) | D455 USB 3 link and ROS-driver stream evidence | When reviewing M0 camera acceptance |
+| [`T1.2_SAFETY_FIXES.md`](T1.2_SAFETY_FIXES.md) | B1 launcher wording + I1 double-launch deletion evidence | When reviewing M1 pre-power safety |
+| [`T1.3_HOME_POSE.md`](T1.3_HOME_POSE.md) | Final T1.3 sim verdicts; original row retained; replacement pose still owed | When reviewing the arm home pose |
+| [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md) | T1.4 physical visit and no-motion power-on verdict; cell and motion checks remain downstream | Before the attended T1.6 session |
+| [`T3.4_BASE_BRINGUP.md`](T3.4_BASE_BRINGUP.md) | T3.4 DONE for attended keyboard/LiDAR scope, verified process shutdown and explicit unmeasured safety/calibration residuals | Before planning T3.5 or reviewing base evidence |
+| [`T3.4_REMOTE_CHECKS.md`](T3.4_REMOTE_CHECKS.md) | Maintained isolated keyboard/smoother tests, LiDAR-only launch and gated attended handoff | Re-running remote T3.4 checks |
 | [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md) | Reported D455 mount design and remaining fabrication evidence | Before fabricating the camera mount |
+
+The shared, unvalidated T1.5 procedure is in [`../ARM_BRINGUP.md`](../ARM_BRINGUP.md). This
+personal folder holds Sherman's session evidence, not a second copy of the operating procedure.
 
 ## Recording work
 
@@ -66,3 +76,12 @@ From [`../START_HERE.md`](../START_HERE.md) and the root `CLAUDE.md`:
 | 2026-09-16 | OpenCode (GPT-5.6 Terra) + Sherman | Folder created. Added `T0.2_SESSION.md`. |
 | 2026-09-16 | OpenCode (GPT-5.6 Terra) + Sherman | Added shared-source-of-truth rules and `WORK_LOG.md`. |
 | 2026-09-16 | OpenCode (GPT-5.6 Terra) + Sherman | Added the T0.9 base-identification and footprint record. |
+| 2026-09-21 | OpenCode (GPT-5.6 Terra) + Sherman | Added T0.5 fresh-clone bench evidence. |
+| 2026-09-22 | OpenCode (Muse Spark) + Sherman | Pointed T1.3 at the final verdict: original row retained, replacement pose still owed. |
+| 2026-09-22 | OpenCode (Muse Spark) + Sherman | Added T1.4 measurement-plan pointer; robot-side sheet now, cell half blocked. |
+| 2026-09-23 | OpenCode + Sherman | Linked the draft T1.5 no-motion arm bring-up procedure; T1.5 and T1.6 remain open. |
+| 2026-09-23 | OpenCode + Sherman | Pointed at the shared draft in ../ARM_BRINGUP.md; no personal procedure copy remains. |
+| 2026-09-23 | OpenCode + Sherman | Updated the T1.4 pointer after its visit verdict was merged into dev (PR #22). |
+| 2026-10-06 | OpenCode + Sherman | Indexed T3.4 partial bring-up evidence; keyboard driving and physical stopping remain unproven. |
+| 2026-10-06 | OpenCode + Sherman | Indexed maintained T3.4 remote controls checks and attended acceptance outline. |
+| 2026-10-13 | OpenCode + Sherman | Updated T3.4 index after attended driving/LiDAR and verified shutdown close-out; measured braking/watchdog/calibration remain unproven. |

@@ -1,0 +1,22 @@
+T0.5 half 2 (refresh): fresh clone + bench on Sherman's Mac, 2026-09-24
+================================================================================
+Host: Darwin arm64 (Apple silicon), no ROS 2 Humble, no NVIDIA environment.
+Clone: git clone --branch dev https://github.com/dionyichia/Gappler.git
+  -> ~/fresh-clone-t05 @ 787f2cc (Merge PR #28, T1.7-home-validated)
+Command: ./build.sh, then ./bench/run.sh   (full, not quick)
+
+RESULT: PASS (every level that ran passed)
+  L0  Static checks              PASS
+  L1  Contracts                  PASS  (RESULT 10 pass, 0 fail, 0 warn, 13 skipped)
+  L2  Lab box check              PASS  (no ROS 2 Humble, so not the lab box)
+  L3  Build                      SKIPPED  needs the lab box (./build.sh: clean SKIP, exit 0)
+  L4  Simulation                 SKIPPED  needs the lab box
+  L5  Robot check                SKIPPED  needs the lab box
+  L6  Hardware                   SKIPPED  L5 did not pass. Not needed to merge
+
+Notes:
+- Supersedes the 2026-09-21 run at 9bbb26a (same machine, older dev).
+  Current dev is ~40 commits newer (T1.3 MAIN final, T1.4 DONE, T1.5 runbook,
+  T1.6/T1.7 sessions, joint-limit L0 check).
+- Probe clone at ~/fresh-clone-t05, deleted after recording (not a second checkout).
+- No ROS nodes, drivers, simulators, or hardware-control processes were started.

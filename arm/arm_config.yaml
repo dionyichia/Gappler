@@ -1,0 +1,22 @@
+# Arm config. Values only the arm subsystem reads (NEXT_STEPS 2.15).
+# The gripper commands, which grasp also sends, live in shared/global_config.yaml.
+# Each value is written once.
+#
+# How it is read: gappler_common.config("arm", "<node name>"), which adds global + "/**" below
+# + that node's section. Edit a value and restart the node. No rebuild.
+#
+# Format: a ROS parameter file. "/**" holds values two or more arm nodes read. Each other
+# top-level key is one node, by its ROS node name.
+/**:
+  ros__parameters:
+    # RealMan's rm_driver (arm/vendor) sets these names, not us. publisher -> subscriber.
+    topics:
+      # estop -> rm_driver
+      rm_driver_emergency_stop_cmd: "/rm_driver/emergency_stop_cmd"
+      # estop -> rm_driver
+      rm_driver_move_stop_cmd: "/rm_driver/move_stop_cmd"
+
+# arm/estop/estop.py
+estop:
+  ros__parameters:
+    ack_wait_s: 1.0   # how long to wait for the driver to confirm the last stop before exiting

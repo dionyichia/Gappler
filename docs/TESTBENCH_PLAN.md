@@ -20,11 +20,17 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 ## ▶ Start here — next session (updated 2026-09-22)
 
-### Next: finish T0.11, the no-skips `full` job (written 2026-09-22 for a cold start)
+**Dion's current work (2026-10-13) is the grasp bring-up, not the bench.** Cold start at
+[`dion_docs/GRASP_BRINGUP_STEPS.md`](dion_docs/GRASP_BRINGUP_STEPS.md), "Start here". Steps 1 to 4
+pass (step 4: a grasp started by voice). Next is step 5, T1.12. The rest of this section is the bench and CI state as of 2026-09-22.
 
-**Branch:** `t0.11-ci-full-job`, cut from `dev` at `0f87c89` (the refactor, PR #5). Open the PR into `dev`.
+### T0.11 is done (2026-09-22). The CI setup, for whoever maintains it
 
-**Goal of this branch:** a `full` CI job that runs L0-L4 on the lab box with **no level skipped**,
+**Next bench and CI work:** none open. T0.12 (AnyGrasp replay) is done, 2026-09-22: `./bench/anygrasp_replay.sh`
+replays a recorded wrist-camera bag through SAM 3 and AnyGrasp, and reproduces A1.
+Dion's next task is T1.1, the code audit's open questions.
+
+**What T0.11 delivered:** a `full` CI job that runs L0-L4 on the lab box with **no level skipped**,
 and is a **required check on PRs from `dev` into `main`**. The rest of T0.11 is decided:
 
 - **Fork-PR guard: waived for now** (Dion, 2026-09-22). The repo is public and stays so until
@@ -37,10 +43,10 @@ and is a **required check on PRs from `dev` into `main`**. The rest of T0.11 is 
 | Piece | Where | State |
 |---|---|---|
 | `bench` job | `.github/workflows/bench.yml` | L0-L2 on GitHub's machines, every PR and push to `dev` or `main`. Required on both |
-| `full` job (2026-09-22, this branch) | `.github/workflows/bench.yml`, same file | `./bench/run.sh --no-skips` on the lab box. PRs into `main`, Mon and Wed 23:00 on `dev`, and the "Run workflow" button. Replaces `bench-nightly.yml`. Not yet run `[unverified]` |
+| `full` job (2026-09-22) | `.github/workflows/bench.yml`, same file | `./bench/run.sh --no-skips` on the lab box. PRs into `main`, Mon and Wed 23:00 on `dev`, and the "Run workflow" button. Replaces `bench-nightly.yml`. **Passed on its first run**, PR #7 (`dev` into `main`), every L0-L4 level PASS, 4.5 minutes incremental `[observed]` [`bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt`](bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt). Required on `main`, with `bench` |
 | ~~`bench-nightly` job~~ | ~~`.github/workflows/bench-nightly.yml`~~, merged into `full` on this branch | Full bench on `dev`, Mon and Wed 23:00 Singapore time, plus the "Run workflow" button. `runs-on: [self-hosted, lab-box]`, `concurrency: lab-box`, `clean: false`. Never runs on a PR |
 | The runner | `~/actions-runner` on the box, user `rcp2026`, name `iot22-Computer` | Runs in tmux session `gh-runner` (`tmux attach -t gh-runner`). **A reboot stops it**, restart with `cd ~/actions-runner && ./run.sh` in that tmux session |
-| The runner's copy | `~/actions-runner/_work/Gappler/Gappler` | Cleaned 2026-09-22 and on `dev` `0f87c89`. SAM3 weights and AnyGrasp checkpoints are **symlinks** to the files in `~/rcp-Gappler`. L2 there: 17 pass, 0 fail |
+| The runner's copy | `~/actions-runner/_work/Gappler/Gappler` | Cleaned 2026-09-22 and on `dev` `0f87c89`. SAM3 weights and AnyGrasp checkpoints are **symlinks** to the files in `~/rcp-Gappler`. L2 there: 17 pass, 0 fail. **Two more links since 2026-09-22 (T0.12):** `.venv` → `~/rcp-Gappler/.venv` (SAM 3 runs in it, and the runner's `grasp/anygrasp_venv/.venv` already layers on it through a `.pth` file) and `assets/recordings/wrist_camera` → `~/rcp-Gappler/assets/recordings/wrist_camera` (the bag `anygrasp_replay.sh` plays). Without either, `anygrasp_replay` is SKIPPED and `full` fails under `--no-skips`. Re-create all of them if the runner's copy is ever re-cloned |
 
 **The work, in order:**
 
@@ -51,12 +57,10 @@ and is a **required check on PRs from `dev` into `main`**. The rest of T0.11 is 
    Dion chose one file: `full` is a second job in `bench.yml` and also took over the nightly schedule
    and the button, so `bench-nightly.yml` is gone. Each job's `if:` line picks its events.
    Tested on the Mac only: `--no-skips` exits 1 when L3-L4 skip, the plain run still exits 0.
-3. **Next: run `full` once.** After this branch merges into `dev`, press "Run workflow" on the
-   Actions tab (branch `dev`), or wait for the next night. The button only appears once the workflow
-   is on `dev`. Then **make `full` required** in `main`'s branch protection (`gh api` on
-   `repos/dionyichia/Gappler/branches/main/protection`). Do this only after the job has passed once,
-   or every `dev` into `main` PR is blocked.
-4. **Test it** with a real `dev` into `main` PR. Record the run in `bench-runs/`.
+3. ✅ **Done 2026-09-22. `full` ran and passed** on PR #7, a real `dev` into `main` PR (workflow run
+   35678486519). L0-L4 all PASS, L5 failed only because the arm was off, which never gates a merge.
+4. ✅ **Done 2026-09-22. `full` is required** in `main`'s branch protection, next to `bench`
+   (checked with `gh api repos/dionyichia/Gappler/branches/main/protection`).
 
 **Gotchas for whoever picks this up:**
 
@@ -68,8 +72,7 @@ and is a **required check on PRs from `dev` into `main`**. The rest of T0.11 is 
   (the Livox `package.xml`), or the nav build finds two packages with one name. Done once already, for
   the refactor.
 - **Timing:** a clean build plus L4 is about 40 minutes, an incremental one about 20.
-- **The first nightly since the refactor has not run yet.** Its result is the first proof that the
-  runner copy works in the new layout. Check it under the Actions tab.
+- **The runner copy works in the new layout.** The PR #7 run above was the first proof.
 
 ---
 
@@ -89,9 +92,8 @@ Both held files are now on `main`, so T0.0 is closed.
 
 **Work items live in the task tree, not here** (since 2026-09-21). This page records what the bench
 is, what it found and the evidence. Every open item it found is a task in
-[`next-steps-map.html`](next-steps-map.html) and [`PROJECT_PLAN.md`](PROJECT_PLAN.md) §6, so it can be
-seen, owned and ticked off in one place. Bench and CI tasks: **T0.11** (CI on the lab box, per-subsystem
-suites) and **T0.12** (AnyGrasp replay, was W6). Ownership is one rule, `is_owned` in `bench/_common.py` (since 2026-09-22): our code is everything except what sits under a folder named `vendor/`. Put third-party code under its subsystem's `vendor/`, and nothing in the bench needs editing when code moves. The refactor (target layout, config levels, env files) is **done and verified on the box, 2026-09-22**:
+[`task-tree.html`](task-tree.html), so it can be
+seen, owned and ticked off in one place. Bench and CI tasks: **T0.11** (CI on the lab box, done 2026-09-22) and **T0.12** (AnyGrasp replay, was W6). Ownership is one rule, `is_owned` in `bench/_common.py` (since 2026-09-22): our code is everything except what sits under a folder named `vendor/`. Put third-party code under its subsystem's `vendor/`, and nothing in the bench needs editing when code moves. The refactor (target layout, config levels, env files) is **done and verified on the box, 2026-09-22**:
 [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.15, which also has the old-to-new path table. Build with `./build.sh`, set up a
 shell with `source global_env.sh` (or one `<subsystem>/<subsystem>_env.sh`).
 
@@ -131,7 +133,7 @@ Dion's standing instruction still holds: `~/rcp-Gappler` only, no real-world mov
 | W4a nav code vs `iot22` | ✅ repo newer; `robot_navigation`, `xpkg_demo` only outside git | [`…-w4a-nav-diff.txt`](bench-runs/2026-09-11-labbox-w4a-nav-diff.txt) |
 | W4b nav build | ✅ **PASS** 10/10 packages, 2 min 34 s. No blocker: Livox-SDK2 already installed | [`…-w4b-nav-build.txt`](bench-runs/2026-09-14-labbox-w4b-nav-build.txt) |
 | W5 AnyGrasp env | ✅ done 2026-09-21: `grasp/anygrasp_venv/build_anygrasp_venv.sh` (was `envs/anygrasp/build.sh`) rebuilds it from nothing, demo passes | [`…-w5-anygrasp-env.txt`](bench-runs/2026-09-11-labbox-w5-anygrasp-env.txt) |
-| W6 AnyGrasp gate + replay | **now task T0.12.** Blocked on a replug. Dion approved starting the camera 2026-09-14; the D435i was already faulty (colour stream dead) and a hardware reset took it off the USB bus. No frames recorded | [`…-w6-camera-attempt.txt`](bench-runs/2026-09-14-labbox-w6-camera-attempt.txt) |
+| W6 AnyGrasp gate + replay | ✅ **done 2026-09-22 as task T0.12.** After the replug: 10 s bag recorded, replay PASS, segmentation and grasp detection work on real frames, **A1 reproduced** (154 candidate sets in IDLE, 0 in EXECUTING) | [`…-t0.12-anygrasp-replay.txt`](bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt) |
 | W7 nav node tests | ✅ **PASS first run**, no fix needed: 6 controls pass, 4 xfail reproduced (F1 ×2, F2, E1), 0 skipped. **E1, F1, F2 now `[observed]`**; new finding F4 | [`…-w7-nav-nodes.txt`](bench-runs/2026-09-14-labbox-w7-nav-nodes.txt) |
 | W8 Tier 4 | now L6 (hardware), gated by the L5 robot check. The runs are tasks T1.6 onward | — |
 | Preflight glasses check | ✅ **fix confirmed on the box 2026-09-14**: `aria-sdk` now FAILs "aria CLI works, but no glasses are connected over USB". It used to wrongly PASS | `bench/preflight.py` |
@@ -321,6 +323,21 @@ in the repo builds the env from nothing and AnyGrasp prints `license passed` on 
 
 **W6 — AnyGrasp gate test** (A1, expected-fail) and perception replay. Needs W5 + frames.
 
+> ✅ **Done 2026-09-22 as task T0.12** ([`bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt`](bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt)). Someone replugged the camera and it works:
+> colour and depth at 15 Hz. Two parts, both in the repo:
+>
+> - `./grasp/tools/record_wrist_camera.sh [SECONDS]` starts the driver for the wrist D435i only (serial
+>   `243222074878`), records colour, aligned depth and their camera info to a bag, then stops the driver.
+>   The recording is `assets/recordings/wrist_camera/` (217 MB, gitignored, checksum in `ASSETS.md`).
+>   It refuses to start if any RealSense driver is already running, since the box is shared.
+> - `./bench/anygrasp_replay.sh` (L4) plays that bag on a loop through `sam3_ros_node` (the segmentation service and grasp client since T2.1, the node deleted in T2.7) and
+>   `anygrasp_detection_node`, and publishes `/pipeline_state` as the state machine would: EXECUTING
+>   for 30 s, then IDLE for 30 s. Result: segmentation PASS (119 masks, 4.1 % of the image), detection
+>   PASS (154 candidate sets, 2.5 per second, top score 0.466), **A1 XFAIL**: all 154 sets came in IDLE,
+>   none in EXECUTING `[observed]`. When T1.8 fixes A1, this case turns XPASS.
+>
+> The 2026-09-14 note below is history.
+
 > **Attempted 2026-09-14 with Dion's go-ahead. Not done: no frames**
 > ([`bench-runs/2026-09-14-labbox-w6-camera-attempt.txt`](bench-runs/2026-09-14-labbox-w6-camera-attempt.txt)).
 > The camera was **already faulty before anything was launched**: depth opened at 640x480x30, colour
@@ -505,15 +522,23 @@ ORIENTATION §8.16's decision (fix the config's simulated-arm launch, or keep it
 
 ## 3. Safety rules — non-negotiable for any session on the lab machine
 
+For an attended first-power, **no-motion** RM65 handshake, use the shared
+[`ARM_BRINGUP.md`](ARM_BRINGUP.md). It remains **unvalidated** until T1.6 evidence and Dion's
+review. The rules below were written before the 2026-09-21 layout move; current launch paths and
+the driver-only boundary are in the runbook.
+
 1. **Never launch** `grasp_state_machine` (directly or via `grasp_state_machine.launch.py`),
-   `ros2_robot_ws/src/main.py`, `ros2_robot_ws/src/orchestrator.py`, or root `main.py`. The state
-   machine homes the arm within seconds, unprompted (ORIENTATION §8.1) — and to a **home pose that has
-   changed and never been validated** (CODE_AUDIT §B4). The orchestrator launches the arm stack
-   itself and `main.py` launches it a second time (CODE_AUDIT §I1).
+   `launchers/start_camera_arm_grasp.py`, `launchers/grasp_orchestrator.py`, or root `main.py`. The state
+   machine homes the arm within seconds, unprompted (ORIENTATION §8.1) — and to the home pose. That pose
+   was reached on the real arm by direct command in T1.7 (2026-09-23), but the state machine has never
+   homed the real arm, and it homes without asking (CODE_AUDIT §B4). T1.2 removed the orchestrator's duplicate
+   arm bring-up launch (`sherman_docs/T1.2_SAFETY_FIXES.md` §I1); the grasp pipeline still includes
+   the state machine and is not a no-motion launcher.
 2. **Never publish** to any `/rm_driver/*_cmd` topic, `/goal_pose`, `/cmd_vel`,
    `/manipulation/start`, `/manipulation/goal_pose`, or `/object_centroid_2d` on the real ROS domain.
    Each of those moves something, or triggers something that does.
-3. **`background.launch.py` connects to the real arm.** Not needed for anything in Phases 0–4.
+3. **`arm_bringup.launch.py` connects to the real arm.** It starts the driver, control, robot
+   description and MoveIt; T1.6's narrower procedure starts the driver only.
 4. **Before any node runs in Phase 5**, isolate the ROS graph: `export ROS_DOMAIN_ID=77` (any
    unused id) **and** `export ROS_LOCALHOST_ONLY=1`, then confirm `ros2 node list` is empty. A
    synthetic `/object_centroid_2d` on the real domain would reach a running state machine.
@@ -803,4 +828,11 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-22 | Claude (Opus 5) + Dion | "Start here" opens with a cold-start block for finishing T0.11: branch `t0.11-ci-full-job`, the no-skips `full` job, what exists (both workflows, the runner in tmux, the cleaned runner copy with linked weights), the decided scope (fork-PR guard waived, suites deferred) and the gotchas. |
 | 2026-09-22 | Claude (Opus 5) + Dion | T0.11 steps 1-2 done: `bench/run.sh --no-skips`, and the `full` job as a second job in `bench.yml`, which also took over the nightly schedule (`bench-nightly.yml` removed). Not yet run on the box. |
 | 2026-09-22 | Claude (Opus 5) + Dion | T0.11: per-subsystem suites paused until a need arises (L0-L2 take about 30 s). T0.11 closes once `full` is required on `main` and has passed on a real `dev` into `main` PR. |
-| 2026-09-22 | Claude (Opus 5) + Dion | AnyGrasp venv recipe moved from `envs/anygrasp/` into the grasp subsystem: `grasp/anygrasp_venv/build_anygrasp_venv.sh` and `anygrasp_requirements.txt`, venv at `grasp/anygrasp_venv/.venv`. `grasp_env.sh` now builds it on first use (Dion's choice, about 20 min). Also: L2 `hardcoded-homes` now skips `install_nav/`, `build_nav/`, `log_nav/`. It failed the first `full` run on vendor Livox files there. The W5 write-up below keeps the old path as history. |
+| 2026-09-22 | Claude (Opus 5) + Dion | AnyGrasp venv recipe moved from `envs/anygrasp/` into the grasp subsystem: `grasp/anygrasp_venv/build_anygrasp_venv.sh` and `anygrasp_requirements.txt`, venv at `grasp/anygrasp_venv/.venv`. `grasp_env.sh` now builds it on first use (Dion's choice, about 20 min). Also: L2 `hardcoded-homes` now skips `install_nav/`, `build_nav/`, `log_nav/`. It failed the first `full` run on vendor Livox files there. The W5 write-up below keeps the old path as history. On the box the built venv was moved to the new path, with a link left at the old one in `~/rcp-Gappler` and in the runner copy. The AnyGrasp probe passes from the new path `[observed]`. |
+| 2026-09-22 | Claude (Opus 5) + Dion | T0.11 closed in "Start here": `full` passed on PR #7 and is required on `main`, evidence in `bench-runs/2026-09-22-labbox-t0.11-full-job-ci.txt`. Task pointer now names `task-tree.html` only. |
+| 2026-09-22 | Claude (Opus 5) + Dion | **T0.12 done.** Wrist camera back after the replug. New `grasp/tools/record_wrist_camera.sh` and L4 `bench/anygrasp_replay.sh` (in `run.sh`). Replay PASS, **A1 reproduced on real frames**. Evidence: `bench-runs/2026-09-22-labbox-t0.12-anygrasp-replay.txt`. |
+| 2026-09-22 | Claude (Opus 5) + Dion | Recorded the runner copy's two new links, `.venv` and the wrist-camera recording, both needed by `anygrasp_replay`. First `full` run on `dev` after T0.12 (run 35690851133): `anygrasp_replay` SKIPPED for want of `.venv` (now linked), and `state_machine_sim` refused because the real arm was on the network while someone worked at the robot. That refusal is the guard working, not a fault. |
+| 2026-09-23 | OpenCode + Sherman | §3 links the unvalidated shared ARM_BRINGUP.md and corrects moved launch paths and the T1.2 single-launch result. |
+| 2026-09-23 | Claude Opus 5.5 + Dion | Rule 1: the home pose is validated on the real arm (T1.7), the unprompted-homing warning stays. |
+| 2026-10-08 | Claude Opus 5.5 + Dion | "Start here" points at GRASP_BRINGUP_STEPS.md for Dion's current work (T1.24 step 3b). |
+| 2026-10-13 | Claude Opus 5.5 + Dion | "Start here": steps 1 to 4 pass, next is step 5 (T1.12). |
