@@ -27,8 +27,13 @@ sent. This file does not repeat them.
 the gripper opens 0.07 m, which left no room around the box's 6 cm face. Now 0.10 m plus a 30 degree
 approach limit, both in `grasp/grasp_config.yaml`
 ([`../bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt`](../bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt)).
-Next at the robot, arm still: check AnyGrasp's grasp axes against `grasp_frame` in RViz, and what
-the state machine's own angle check measures (step 7 below). Only then let the arm move to one.
+**Step 7b done 2026-10-14 (arm still): the arm would have come in 90 degrees off.** AnyGrasp and
+`grasp_frame` name the grasp's axes differently, and the node passed AnyGrasp's straight through.
+Fix on branch `t1.17-anygrasp-to-grasp-frame`: every grasp is turned into `grasp_frame`'s axes
+before it is published (step 7 below). Simulated arm check PASS, 22 of 22, the gripper 0.0 degrees off AnyGrasp's approach.
+
+**Next, arm still:** merge the fix, rebuild, then measure where AnyGrasp puts the grasp point along
+the approach compared with `grasp_frame` `[unverified]`. Only then let the arm move to one.
 
 **Known from steps 5 and 6, all parked:**
 - The grip closes a few cm short and always at the same angle, so the box must face the arm. Most
@@ -617,10 +622,36 @@ C7 XFAIL).
   0.10 m it finds front-face grasps, scores 0.34 to 0.5. Settings now in `grasp/grasp_config.yaml`:
   `max_gripper_width_m: 0.10` and `max_approach_deg: 30`, a first-run limit, not measured. AnyGrasp no
   longer checks the object fits the real 71 mm opening (T1.32), so only place the box in an
-  orientation the gripper can close on. Still to check in RViz: the state machine's own
-  `min_approach_angle_deg` check (`grasp_state_machine.cpp:82-86`) uses the grasp's z axis, while
-  AnyGrasp's approach is its x axis `[unverified]`. And EXECUTING starts AnyGrasp at about 0.21 m,
-  not the 0.4 m tested.
+  orientation the gripper can close on. And EXECUTING starts AnyGrasp at about 0.21 m, not the
+  0.4 m tested.
+
+### Result, 2026-10-14: step 7b, AnyGrasp's axes are not grasp_frame's
+
+Live camera, arm still, a stand-in `EXECUTING` on `/pipeline_state` and no state machine. Nothing
+draws the candidates in RViz, so 100 to 155 candidates were recorded and checked with the live TF
+instead ([`../bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt`](../bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt)).
+
+| Check | Result |
+|---|---|
+| 30 degree approach limit | Works: every grasp 10 to 30 degrees off the camera's view |
+| The box's mask | The box only, 63 mm across the face the fingers close on. Fits the 71 mm gripper |
+| AnyGrasp's width | 0.10 m (the cap) for most. It is the opening AnyGrasp wants. The state machine never reads it |
+| Grasp axes | **Wrong.** AnyGrasp: approach x, closing y. `grasp_frame`: approach -z, closing y |
+
+`grasp_frame` from the live TF: `Link6` sits 0.147 m along its +z, the fingers at +-0.040 m on y
+(`rm_65_w_gripper.urdf.xacro:15-18`). `moveToPose` aims `grasp_frame` at the candidate
+(`mtc_planner.cpp:41`), so with AnyGrasp's rotation unchanged the gripper would point 90 degrees
+away from AnyGrasp's approach. The state machine's 20 degree check (`grasp_state_machine.cpp:82-86`)
+reads `grasp_frame`'s z, so it is right once the axes are converted.
+
+**Fix** (branch `t1.17-anygrasp-to-grasp-frame`): `grasp/anygrasp_node/anygrasp_to_grasp_frame.py`
+turns each grasp by a fixed -90 degrees about y, the same conversion for every grasp. The node uses
+it before publishing. Its self-check passes on the box. `./bench/state_machine_sim.sh candidates` now
+builds its fake grasp in AnyGrasp's axes from where the gripper's links are, runs it through the same
+conversion, and checks the simulated gripper points within 5 degrees of it. PASS 2026-10-14, 22 of 22, gripper 0.0 deg off AnyGrasp's approach and finger line (box log/bench_state_machine_2026-10-14_1901.txt).
+
+Left `[unverified]`: where AnyGrasp puts the grasp point along the approach, compared with
+`grasp_frame`. If they differ, the gripper stops short or pushes into the box.
 
 ### Result, 2026-10-14: step 5 PASS, 5 of 8
 
@@ -710,3 +741,4 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-14 | Claude Opus 5.5 + Dion | Start here rewritten for the robot: step 5 on `dev`, step 6 on the PR #75 branch (release by voice, second grasp in one launch). Step 7: AnyGrasp's drawn grasps look impossible. |
 | 2026-10-14 | Claude Opus 5.5 + Dion | Steps 5 (T1.12) and 6 (T1.14) PASS on the real arm, result tables. Start here moved on to step 7. |
 | 2026-10-14 | Claude Opus 5.5 + Dion | Step 7a (T1.17) on the live camera, arm still: cause of AnyGrasp's impossible grasps found (gripper model 0.07 m), now 0.10 m plus a 30 degree approach limit. T1.32 added. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Step 7b (T1.17), arm still: AnyGrasp's grasp axes differ from `grasp_frame`'s, the arm would have come in 90 degrees off. Fix and sim check on `t1.17-anygrasp-to-grasp-frame`. Start here updated. |

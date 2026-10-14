@@ -72,3 +72,38 @@ first real candidate (T1.17), together with grasp_frame.
 Not tested: anything with the arm or the state machine. The node with the new settings (only the
 scratch tool ran them). The candidate path starts AnyGrasp in EXECUTING at about 0.21 m from the
 box, not 0.4 m (T1.17 risk).
+
+=== Step 7b, 2026-10-14 evening: AnyGrasp's axes against grasp_frame (arm still) ===
+Box: 100.87.133.60, ~/rcp-Gappler on t1.8-t1.10-anygrasp-gate-and-pane e51040e, local edit
+use_simple_execute false, ./build.sh PASS. ./quickstart_terminals.sh grasp --anygrasp, arm on,
+no state machine. A stand-in std_msgs/String "EXECUTING" at 1 Hz on /pipeline_state.
+Box 44.5 cm, 6 cm face to the camera, SAM 3 prompt 'box'.
+
+Rates: /camera/sam/mask 1.7 Hz, /grasp_candidates 3.0 Hz. The node logs nothing per frame.
+Nothing draws the candidates in RViz, so they were recorded (10 s) and checked against the live TF
+(base_link -> camera_color_optical_frame: [-0.310, -0.020, 0.569]).
+
+1. Approach vs the camera's view (AnyGrasp x axis): 10 to 30 deg, median 23, 100 grasps. The 30
+   deg limit works.
+2. Mask: 15091 px, 91 x 181 px, depth 0.397 to 0.479 m (p5 to p95) = 63 mm x 126 mm. The box only.
+   Closing axis mostly along the camera's x (median |x| 0.93), across the 63 mm face. Fits 71 mm.
+3. Width: 128 of 155 at 0.10 (the cap), 3 at or under 0.071. Not the box size (item 4 above). The
+   state machine never reads width [code].
+4. grasp_frame from the live TF: Link6 at (0, 0, +0.147), fingers gripper_Link1/3 at
+   (0, +-0.040, 0.053). So grasp_frame approaches along -z and closes along y.
+   AnyGrasp approaches along x and closes along y. The node published AnyGrasp's rotation
+   unchanged, and moveToPose aims grasp_frame at it (mtc_planner.cpp:41), so the gripper would
+   have pointed 90 deg off AnyGrasp's approach [code + live TF]. Never seen before because every
+   real grasp so far used use_simple_execute true, and the sim's fake candidate was built in
+   grasp_frame's axes.
+5. The state machine's angle check (grasp_state_machine.cpp:82-86) reads grasp_frame's z, so it
+   is right once candidates use grasp_frame's axes. On the unconverted candidates 66 of 100 passed,
+   for the wrong reason. Replaces the [unverified] note above.
+
+Fix (branch t1.17-anygrasp-to-grasp-frame): grasp/anygrasp_node/anygrasp_to_grasp_frame.py, a fixed
+-90 deg turn about y (x_g = z_a, y_g = y_a, z_g = -x_a). Self-check PASS on the box.
+Sim: ./bench/state_machine_sim.sh candidates with the fake grasp built in AnyGrasp's axes from the
+gripper's link positions: PASS 2026-10-14, 22 of 22, gripper 0.0 deg off AnyGrasp's approach and finger line (box log/bench_state_machine_2026-10-14_1901.txt). Arm off, rm_driver stopped, domain 77.
+
+Not tested: where AnyGrasp puts the grasp point along the approach compared with grasp_frame
+[unverified]. The arm did not move in this step.
