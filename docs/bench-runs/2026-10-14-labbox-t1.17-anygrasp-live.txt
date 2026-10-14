@@ -51,6 +51,11 @@ Modes the tool switched between:
    model width fits around the object. So told 0.07, a 6 cm face leaves 5 mm a side, too little
    for the depth noise at the box's edges [inferred]. That is the cause of the impossible grasps:
    the obvious grasp was rejected, leaving only odd ones.
+   Corrected 2026-10-15: not the collision check, since nocoll (collision off) was just as bad
+   in run 1. More likely AnyGrasp adds a margin to the width it needs and drops grasps over the
+   cap: GraspNet, which AnyGrasp grew from, multiplies its width by 1.2, and 6.1 cm x 1.2 is
+   about 7.3 cm, over 0.07, under 0.08 (where noise drops about half, run 5), well under 0.10
+   [inferred, the SDK is compiled].
 
 5. Gripper model 0.08 m, both faces, f on
    6 cm face:   58% of 135 frames have a grasp, top score 0.143 (0.10 m gave 100%, 0.344)
@@ -166,3 +171,21 @@ a planned joint move (moveToPose, grasp_state_machine.cpp:655, "Planning to pose
 line, so the wrist is free to turn the long way next to the box.
 Fix proposed (T1.33, not built): before the final move, if the target's closing axis points
 opposite to the gripper's current one, turn the target 180 deg about its approach.
+
+=== T1.32, 2026-10-14 late: does the object fit the real gripper (arm off, replay) ===
+Branch t1.32-grasp-fits-gripper on dev f165e02, local edit use_simple_execute false.
+anygrasp_to_grasp_frame.py fits_gripper(): the masked points in the slice the pads sweep
+(finger_height_m 0.02 tall, tips back max_grasp_depth_m 0.045). Width = their spread along the
+closing axis, depth = how far the tips go past the nearest of them, 2nd to 98th percentile.
+Drop the grasp if width > max_object_width_m 0.068 or depth > 0.045 (grasp_config.yaml).
+Self-check PASS on the box: keeps a 6 cm box, drops 8 cm, drops tips 6 cm in, ignores 10 stray
+edge points (with min and max they would read 9 cm).
+
+./bench/anygrasp_replay.sh on wrist_camera_box_at_home_2026-10-13 (box 0.400 m), three runs:
+  T1.32 on    106 candidate sets, top score 0.418, gate EXECUTING 105 / IDLE 1
+  T1.32 on    126 candidate sets, top score 0.423, gate EXECUTING 125 / IDLE 1
+  T1.32 off   130 candidate sets, top score 0.423, gate EXECUTING 129 / IDLE 1
+No "No grasp fits the gripper" in the node log: every frame kept a grasp that fits.
+The gate FAIL is the same with T1.32 off, so not T1.32. One set lands just after the switch to
+IDLE [inferred: a frame started under EXECUTING]. Parked as T1.36.
+Not yet checked: a face too big for the gripper is dropped on the live camera (7.5 cm face).
