@@ -116,6 +116,11 @@ near face 0.393 m from the camera (mask depth p5).
 Measured by Dion at the robot, gripper closed: arm end face to fingertips 147.5 mm, the same as
 grasp_frame (rm_65_w_gripper.urdf.xacro:18). So grasp_frame is at the fingertips. The middle of
 the finger pads is about 8 mm behind the tips.
+Added later 2026-10-14 (Dion): the gripper is a U on a connector. Inside the U is 50 mm deep (tips
+to the base of the U) and 71 mm wide, on a connector, like a tuning fork: base of the fork to
+fingertips 147.5 mm, as above. Each tip has a rubber pad 16 mm long starting at the tip, its middle
+42 mm from the base of the U (8 mm behind the tips, as above). So an object can sit at most 50 mm past the tips' line, and the tips must not go
+more than about 50 mm past the near face, or the base of the U pushes the object.
 
 AnyGrasp's point is not at the fingertips: its fingers reach `depth` (0.02 or 0.03 m) past the
 point along the approach (graspnetAPI utils.py plot_gripper_pro_max) [code]. We assume the
@@ -133,6 +138,9 @@ Live check, 20 s of stand-in EXECUTING. The fixed node ran as a second node on
   unchanged: 370 grasps, approach 5 to 30 deg (median 18), point past the face min -0.001,
              median 0.007, max 0.108 m
 So the fingertips now go about 3.8 cm past the face, the pad middles about 3 cm in.
+Against the 50 mm inside depth (Dion, added later the same day): the median leaves 12 mm
+between the face and the base of the U, but the max (0.133 m) would push the box with the
+base of the U. Nothing drops such grasps yet: T1.32 [inferred].
 
 Sim, run later the same night with the arm off: ./bench/state_machine_sim.sh candidates on
 t1.17-grasp-depth-offset f0bb852, PASS 23 of 23. New check: grasp_frame 0.0 mm from the published

@@ -40,6 +40,9 @@ sent. This file does not repeat them.
      to `max_orient_step_deg`, or leave it off for now.
 3. **Build and sim, arm off.** `./build.sh`, then `./bench/state_machine_sim.sh candidates`. Add a sim
    case where the fake grasp starts turned 180 degrees, and check the wrist stays within 90.
+4. **First thing at the box: T1.34 (Dion, key).** The RViz gripper drawing (grasp_viz) is wrong
+   since #82 and #83: fingers 90 degrees off, approach arrow reversed, palm on the tips. Fix it and
+   check it against a live candidate before trusting RViz in 7d. Until then judge 7d by eye and numbers.
 4. **Step 7d again, at the robot.** Arm on, `./quickstart_terminals.sh grasp --anygrasp`, start the
    state machine, box at 44.5 cm with the 6 cm face to the arm, hand on the e-stop pane (row 1,
    column 1), one `/manipulator/grasp_request`. Watch the wrist in the last move.
@@ -665,6 +668,9 @@ conversion, and checks the simulated gripper points within 5 degrees of it. PASS
 
 Measured next (step 7c): `grasp_frame` is at the fingertips, AnyGrasp's point is `depth` short of
 them. Fixed on `t1.17-grasp-depth-offset`, see the bench-run record.
+Gripper inside (Dion, 2026-10-14): a U 50 mm deep and 71 mm wide, like a tuning fork on the
+flange (147.5 mm to the tips). Rubber pads 16 mm long from each tip, their middles 42 mm from its base. Tips more than about 50 mm past the near face push the box with the base of the U. Live, the
+median was 38 mm but the max 133 mm, so T1.32 also checks depth.
 
 ### Result, 2026-10-14: step 7d, first AnyGrasp grasp FAIL (wrist turned 180 degrees)
 
