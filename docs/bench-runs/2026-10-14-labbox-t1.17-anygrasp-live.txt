@@ -1,0 +1,109 @@
+2026-10-14 lab box: AnyGrasp on the live wrist camera, arm still (T1.17, step 7a)
+
+Why: on the replay, AnyGrasp's grasps looked impossible (Dion), scores 0.007 to 0.036
+(bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt). Find the cause before the arm
+moves to an AnyGrasp grasp.
+
+Setup: branch t1.8-t1.10-anygrasp-gate-and-pane at 296cc64, ROS domain 97, localhost only. Wrist
+camera (640x480x15), segmentation service (SAM 3), grasp segmentation client (default prompt
+"box"). No arm driver, no state machine, no anygrasp_detection_node: nothing could move. A
+scratch tool (~/dion_t1.17_live/live_anygrasp_check.py on the box, not in the repo) ran its own
+AnyGrasp with the node's settings on the same topics, drew the top 5 grasps live on the box's
+screen, and logged each set (~/dion_t1.17_live/<time>/sets.csv). Box about 0.4 m from the camera,
+arm at HOME. Box: 6 cm x 7.5 cm x 14 cm high. The camera sees the front face and the top face.
+
+Modes the tool switched between:
+  node    box points only (SAM mask), wide limits, collision check on: what the node does
+  scene   every point within 10 cm of the box, tight limits, collision on, grasps kept only if
+          their centre lands on the mask
+  nocoll  node, collision check off
+  tight   node, but the scene mode's tight limits
+  f       filter: keep grasps whose approach is within 30 deg of the camera's view
+
+1. Gripper model 0.07 m, as the node had it (cfgs.max_gripper_width, anygrasp_detection_node.py:34)
+   mode    frames  with grasps  top score (median)  approach (median)
+   node      94        59           0.007               89 deg
+   scene     36         9           0.043               55 deg
+   nocoll   117        95           0.005               89 deg
+   Points per frame: 15,800 on the box, 90,300 in scene mode. So "too few points" is ruled out.
+   node = nocoll, so the collision check against the mat is ruled out. Dion: the grasps go for
+   the box's right face, which the camera cannot see, some from the left side through the box.
+
+2. Depth inside the mask, one frame: 15,781 valid points, 0.38 to 0.48 m, continuous (front face
+   plus the top face seen from above). 157 stray points at 0.63 m. No sheet of points behind the
+   box. Mask 93 px wide at 0.40 m, about 6.1 cm: the box's 6 cm face.
+
+3. Gripper model 0.10 m (same frames, same box)
+   mode      f   frames  with grasps  top score (median)  approach (median)
+   node      off   401       401          0.505               52 deg
+   node      on    253       253          0.367               23 deg
+   scene     on     31        31          0.387               10 deg
+   nocoll    on    112       112          0.573               26 deg
+   tight     on     55        55          0.367               23 deg
+   Dion: much better, "finding the obvious front face grasp". node off still has some diagonals
+   across the top face, tight the most diagonals, nocoll the best.
+   The "f on" rows of this run came from a tool version that kept the SDK's grasp objects while
+   iterating, and a few logged angles were over 30 deg. Fixed in the next run (copied the values
+   out): approach max 30 deg with f on.
+
+4. AnyGrasp's width (logged from run 4 on): every grasp is reported at exactly the model width
+   (0.100 on both faces). AnyGrasp does not predict the opening, it checks a gripper open to the
+   model width fits around the object. So told 0.07, a 6 cm face leaves 5 mm a side, too little
+   for the depth noise at the box's edges [inferred]. That is the cause of the impossible grasps:
+   the obvious grasp was rejected, leaving only odd ones.
+
+5. Gripper model 0.08 m, both faces, f on
+   6 cm face:   58% of 135 frames have a grasp, top score 0.143 (0.10 m gave 100%, 0.344)
+   7.5 cm face: 3 of 5 frames (f was mostly off then, too few to judge)
+   0.08 does not separate "fits in the real 71 mm gripper" from "does not": the good face loses
+   half its grasps. Not used.
+
+Decision (Dion): max_gripper_width_m 0.10 and max_approach_deg 30 in grasp/grasp_config.yaml,
+the node drops grasps beyond 30 deg. 30 deg is a first-run safety limit, not measured: the
+candidate path moves to the grasp's full pose (moveToPose, grasp_state_machine.cpp:660), so
+larger angles may work. The object-fits-in-71-mm check is T1.32. Until then only place the box
+in an orientation the gripper can close on.
+
+Found while reading the candidate path [unverified]: the state machine's own angle check,
+min_approach_angle_deg 20 (grasp_state_machine.cpp:597), computes 1 - 2(qx^2 + qy^2) (:82-86),
+the z component of the grasp's z axis. AnyGrasp's approach is its x axis. Check in RViz with the
+first real candidate (T1.17), together with grasp_frame.
+
+Not tested: anything with the arm or the state machine. The node with the new settings (only the
+scratch tool ran them). The candidate path starts AnyGrasp in EXECUTING at about 0.21 m from the
+box, not 0.4 m (T1.17 risk).
+
+=== Step 7b, 2026-10-14 evening: AnyGrasp's axes against grasp_frame (arm still) ===
+Box: 100.87.133.60, ~/rcp-Gappler on t1.8-t1.10-anygrasp-gate-and-pane e51040e, local edit
+use_simple_execute false, ./build.sh PASS. ./quickstart_terminals.sh grasp --anygrasp, arm on,
+no state machine. A stand-in std_msgs/String "EXECUTING" at 1 Hz on /pipeline_state.
+Box 44.5 cm, 6 cm face to the camera, SAM 3 prompt 'box'.
+
+Rates: /camera/sam/mask 1.7 Hz, /grasp_candidates 3.0 Hz. The node logs nothing per frame.
+Nothing draws the candidates in RViz, so they were recorded (10 s) and checked against the live TF
+(base_link -> camera_color_optical_frame: [-0.310, -0.020, 0.569]).
+
+1. Approach vs the camera's view (AnyGrasp x axis): 10 to 30 deg, median 23, 100 grasps. The 30
+   deg limit works.
+2. Mask: 15091 px, 91 x 181 px, depth 0.397 to 0.479 m (p5 to p95) = 63 mm x 126 mm. The box only.
+   Closing axis mostly along the camera's x (median |x| 0.93), across the 63 mm face. Fits 71 mm.
+3. Width: 128 of 155 at 0.10 (the cap), 3 at or under 0.071. Not the box size (item 4 above). The
+   state machine never reads width [code].
+4. grasp_frame from the live TF: Link6 at (0, 0, +0.147), fingers gripper_Link1/3 at
+   (0, +-0.040, 0.053). So grasp_frame approaches along -z and closes along y.
+   AnyGrasp approaches along x and closes along y. The node published AnyGrasp's rotation
+   unchanged, and moveToPose aims grasp_frame at it (mtc_planner.cpp:41), so the gripper would
+   have pointed 90 deg off AnyGrasp's approach [code + live TF]. Never seen before because every
+   real grasp so far used use_simple_execute true, and the sim's fake candidate was built in
+   grasp_frame's axes.
+5. The state machine's angle check (grasp_state_machine.cpp:82-86) reads grasp_frame's z, so it
+   is right once candidates use grasp_frame's axes. On the unconverted candidates 66 of 100 passed,
+   for the wrong reason. Replaces the [unverified] note above.
+
+Fix (branch t1.17-anygrasp-to-grasp-frame): grasp/anygrasp_node/anygrasp_to_grasp_frame.py, a fixed
+-90 deg turn about y (x_g = z_a, y_g = y_a, z_g = -x_a). Self-check PASS on the box.
+Sim: ./bench/state_machine_sim.sh candidates with the fake grasp built in AnyGrasp's axes from the
+gripper's link positions: PASS 2026-10-14, 22 of 22, gripper 0.0 deg off AnyGrasp's approach and finger line (box log/bench_state_machine_2026-10-14_1901.txt). Arm off, rm_driver stopped, domain 77.
+
+Not tested: where AnyGrasp puts the grasp point along the approach compared with grasp_frame
+[unverified]. The arm did not move in this step.

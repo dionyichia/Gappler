@@ -1,0 +1,5 @@
+# Loaded after grasp/grasp_config.yaml by sim_state_machine.launch.py in candidates mode (T1.17).
+# Keyed on the node name: a /** or -p value loses to grasp_config.yaml's grasp_state_machine: block.
+grasp_state_machine:
+  ros__parameters:
+    use_simple_execute: false

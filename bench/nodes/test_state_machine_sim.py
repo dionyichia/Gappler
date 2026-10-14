@@ -9,6 +9,10 @@ private, no rm_driver exists and the real arm is unreachable. This test plays ev
   operator    /manipulator/grasp_request: centroids only count after one (T1.25)
               /manipulator/release: lets go of the held object (T1.14)
   gripper     records /rm_driver/set_gripper_{position,pick_on}_cmd -- nothing acts on them
+  AnyGrasp    in candidates mode only: /grasp_candidates, one fixed grasp at the gripper's pose
+              1 cm up, sent in the camera frame as anygrasp_detection_node does. It is built in
+              AnyGrasp's axes from where the gripper's links are, then turned into grasp_frame's
+              by the node's own to_grasp_frame (T1.17)
 and watches /pipeline_state, /joint_states, /manipulator/return_to_user, /manipulation/done and
 the launch log.
 
@@ -29,16 +33,22 @@ try:
     import rclpy
     from rclpy.node import Node
     from rclpy.time import Time
-    from geometry_msgs.msg import PointStamped, TransformStamped
+    from geometry_msgs.msg import PointStamped, Pose, TransformStamped
     from sensor_msgs.msg import CameraInfo, JointState
     from std_msgs.msg import Bool, Empty, String
     from tf2_ros import Buffer, StaticTransformBroadcaster, TransformListener
+    from tf2_geometry_msgs import do_transform_pose
+    from grasp_interfaces.msg import GraspCandidate, GraspCandidateArray
     from rm_ros_interfaces.msg import Gripperpick, Gripperset
+    import numpy as np
+    from scipy.spatial.transform import Rotation
 except ImportError as e:
     print(f"SKIP: {e} -- source ROS 2 Humble + the overlay first")
     sys.exit(3)
 
 REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "grasp/anygrasp_node"))
+from anygrasp_to_grasp_frame import to_grasp_frame  # noqa: E402
 LOG = REPO / os.environ.get("BENCH_SM_LOG", "log/bench_state_machine.txt")
 JOINTS = [f"joint{i}" for i in range(1, 7)]
 HOME_MAIN = [0.0, 0.0, 0.7854, 0.0, 1.5708, 1.5708]      # mtc_planner.hpp HOME_JOINTS on main (CODE_AUDIT B4)
@@ -50,6 +60,7 @@ FAR, NEAR = 0.30, 0.15  # m; the code switches to EXECUTING below execute_depth_
 CY_OFF = float(os.environ.get("SM_CY", "0"))    # lateral px added to the fake centroid
 FAR = float(os.environ.get("SM_FAR", "0.30"))   # start depth (m); keep above 0.21
 OPT = "camera_color_optical_frame"
+CANDIDATES = os.environ.get("BENCH_SM_PATH") == "candidates"  # use_simple_execute false (T1.17)
 TOL = 0.02  # rad
 
 
@@ -62,20 +73,42 @@ class Actors(Node):
         self.create_subscription(JointState, "/joint_states", lambda m: self.js.update(zip(m.name, m.position)), 10)
         self.create_subscription(Gripperset, "/rm_driver/set_gripper_position_cmd",
                                  lambda m: self.grip.append((now(), "set_position", f"position={m.position}")), 10)
-        self.create_subscription(Gripperpick, "/rm_driver/set_gripper_pick_on_cmd",
-                                 lambda m: self.grip.append((now(), "pick_on", f"speed={m.speed} force={m.force}")), 10)
+        self.create_subscription(Gripperpick, "/rm_driver/set_gripper_pick_on_cmd", self._pick_on, 10)
+        self.axes_at_close = None  # gripper approach and closing directions when told to close
         self.create_subscription(Bool, "/manipulator/return_to_user", lambda m: self.returned.append((now(), m.data)), 10)
         self.create_subscription(Empty, "/manipulation/done", lambda m: self.done.append(now()), 10)
         self.cam_pub = self.create_publisher(CameraInfo, "/camera/camera/color/camera_info", 1)
         self.cen_pub = self.create_publisher(PointStamped, "/object_centroid_2d", 10)
         self.req_pub = self.create_publisher(Empty, "/manipulator/grasp_request", 10)
         self.rel_pub = self.create_publisher(Bool, "/manipulator/release", 10)
+        self.cand_pub = self.create_publisher(GraspCandidateArray, "/grasp_candidates", 10)
+        self.cand_base = None  # Pose in base_link; published in the camera frame while set
         self.depth = None
         self.create_timer(0.2, self._camera)
         self.create_timer(0.1, self._centroid)
+        self.create_timer(0.2, self._candidate)
         self.tf = Buffer()
         self.tfl = TransformListener(self.tf, self)
         self.static = StaticTransformBroadcaster(self)
+
+    def _pick_on(self, m):
+        self.grip.append((time.time(), "pick_on", f"speed={m.speed} force={m.force}"))
+        try:
+            self.axes_at_close = self.gripper_axes()
+        except Exception:
+            pass
+
+    def gripper_axes(self):
+        """The gripper's approach and closing directions in base_link, from where its links are.
+        Approach: Link6 towards grasp_frame. Closing: the line between the fingers."""
+        def at(frame):
+            t = self.tf.lookup_transform("base_link", frame, Time()).transform.translation
+            return np.array([t.x, t.y, t.z])
+        a = at("grasp_frame") - at("Link6")
+        a /= np.linalg.norm(a)
+        c = at("gripper_Link1") - at("gripper_Link3")
+        c -= c.dot(a) * a
+        return a, c / np.linalg.norm(c)
 
     def _camera(self):
         m = CameraInfo()
@@ -91,6 +124,18 @@ class Actors(Node):
         m.header.frame_id, m.header.stamp = OPT, self.get_clock().now().to_msg()
         m.point.x, m.point.y, m.point.z = CX + OFFSET_X + CY_OFF, CY, self.depth
         self.cen_pub.publish(m)
+
+    def _candidate(self):
+        if self.cand_base is None:
+            return
+        try:
+            to_opt = self.tf.lookup_transform(OPT, "base_link", Time())
+        except Exception:
+            return
+        m = GraspCandidateArray()
+        m.header.frame_id, m.header.stamp = OPT, self.get_clock().now().to_msg()
+        m.grasps = [GraspCandidate(score=0.9, width=0.05, depth=0.02, pose=do_transform_pose(self.cand_base, to_opt))]
+        self.cand_pub.publish(m)
 
     def request(self):
         self.req_pub.publish(Empty())
@@ -160,7 +205,7 @@ def main():
         return ok
 
     def run():
-        print(f"scenario: CY_OFF={CY_OFF:.0f}px FAR={FAR:.2f}m")
+        print(f"scenario: CY_OFF={CY_OFF:.0f}px FAR={FAR:.2f}m path={'candidates' if CANDIDATES else 'simple'}")
         # ---- startup: safety walls, home, IDLE ---------------------------------
         t0 = time.time()
         if not n.spin_until(lambda: len(n.js) >= 6, 30):
@@ -281,14 +326,46 @@ def main():
         opened = n.spin_until(lambda: any(k == "set_position" and t >= t2 for t, k, _ in n.grip), 15)
         check("gripper told to open", opened,
               next((d for t, k, d in n.grip if k == "set_position" and t >= t2), "no set_gripper_position_cmd"))
-        closed = n.spin_until(lambda: any(k == "pick_on" for t, k, _ in n.grip)
-                              or log_has(r"EXECUTING: final Cartesian step failed"), 90)
-        final_fail = log_has(r"EXECUTING: final Cartesian step failed")
+        if CANDIDATES:
+            try:
+                # moveToPose aims grasp_frame, not Link6, at the candidate (mtc_planner.cpp setIKFrame)
+                eef = n.tf.lookup_transform("base_link", "grasp_frame", Time()).transform
+            except Exception as e:
+                return check("gripper pose for the fake candidate", False, f"no base_link -> grasp_frame: {e}")
+            n.cand_base = Pose()
+            n.cand_base.position.x, n.cand_base.position.y = eef.translation.x, eef.translation.y
+            n.cand_base.position.z = eef.translation.z + 0.01
+            # The grasp in AnyGrasp's axes (x approach, y closing), then the node's conversion
+            a, c = n.gripper_axes()
+            want = np.column_stack([a, c, np.cross(a, c)])
+            q = n.cand_base.orientation
+            q.x, q.y, q.z, q.w = (float(v) for v in Rotation.from_matrix(to_grasp_frame(want)).as_quat())
+            angle = math.degrees(math.asin(min(1.0, abs(1 - 2 * (q.x * q.x + q.y * q.y)))))  # approachAngleDeg()
+            locked = n.spin_until(lambda: log_has(r"EXECUTING: pose stable") or log_has(r"no candidate"), 30)
+            check("candidates -> stability lock", locked and log_has(r"EXECUTING: pose stable"),
+                  f"locked; candidate approach angle {angle:.1f} deg" if log_has(r"EXECUTING: pose stable") else
+                  f"no lock in 30 s; approach angle {angle:.1f} deg (min_approach_angle_deg rejects below 20)")
+            if not log_has(r"EXECUTING: pose stable"):
+                return
+        fail_re = (r"EXECUTING: (Cartesian move failed|no candidates received)" if CANDIDATES
+                   else r"EXECUTING: final Cartesian step failed")
+        closed = n.spin_until(lambda: any(k == "pick_on" for t, k, _ in n.grip) or log_has(fail_re), 90)
+        n.cand_base = None
+        final_fail = log_has(fail_re)
         check("final approach, then gripper told to close", closed and not final_fail,
-              "final Cartesian step failed -- worker thread exits, node stays up doing nothing" if final_fail
+              "final move failed -- see the launch log" if final_fail
               else next((d for t, k, d in n.grip if k == "pick_on"), "no set_gripper_pick_on_cmd in 90 s"))
         if final_fail or not closed:
             return
+        if CANDIDATES:
+            # Did the gripper come in the way AnyGrasp asked? A wrong axis conversion is 90 deg off
+            deg = lambda u, v: math.degrees(math.acos(min(1.0, abs(float(u.dot(v))))))
+            if n.axes_at_close is None:
+                return check("gripper points the way AnyGrasp asked", False, "no TF when told to close")
+            app, clo = deg(n.axes_at_close[0], want[:, 0]), deg(n.axes_at_close[1], want[:, 1])
+            if not check("gripper points the way AnyGrasp asked", app < 5 and clo < 5,
+                         f"approach off by {app:.1f} deg, closing line off by {clo:.1f} deg (limit 5)"):
+                return
         n.depth = None
         ret = n.spin_until(lambda: any(v for _, v in n.returned), 120)
         ok, dev = n.near(RETURN)
