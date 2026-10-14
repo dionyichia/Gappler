@@ -22,7 +22,7 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 **Dion's current work (2026-10-14) is the grasp bring-up, not the bench.** Cold start at
 [`dion_docs/GRASP_BRINGUP_STEPS.md`](dion_docs/GRASP_BRINGUP_STEPS.md), "Start here". Steps 1 to 6
-pass (step 6: grasp, release by voice and a second grasp in one launch). Next is step 7, T1.17, AnyGrasp. The rest of this section is the bench and CI state as of 2026-09-22.
+pass (step 6: grasp, release by voice and a second grasp in one launch). Step 7, T1.17, AnyGrasp: the first AnyGrasp grasp ran on 2026-10-14 and failed on a 180 degree wrist turn, next is T1.33 (`dion_docs/GRASP_BRINGUP_STEPS.md` Start here). The rest of this section is the bench and CI state as of 2026-09-22.
 
 ### T0.11 is done (2026-09-22). The CI setup, for whoever maintains it
 
@@ -837,3 +837,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-10-08 | Claude Opus 5.5 + Dion | "Start here" points at GRASP_BRINGUP_STEPS.md for Dion's current work (T1.24 step 3b). |
 | 2026-10-13 | Claude Opus 5.5 + Dion | "Start here": steps 1 to 4 pass, next is step 5 (T1.12). |
 | 2026-10-14 | Claude Opus 5.5 + Dion | "Start here": steps 1 to 6 pass, next is step 7 (T1.17). |
+| 2026-10-14 | Claude Opus 5.5 + Dion | "Start here": step 7 status, first AnyGrasp grasp, next T1.33. |

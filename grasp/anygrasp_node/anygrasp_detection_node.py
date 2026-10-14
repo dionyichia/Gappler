@@ -20,7 +20,7 @@ from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import String
 from gappler_common import config
-from anygrasp_to_grasp_frame import to_grasp_frame
+from anygrasp_to_grasp_frame import fingertip_position, to_grasp_frame
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -165,7 +165,8 @@ class AnyGraspDetectionNode(Node):
             g.width = float(gg[i].width)
             g.depth = float(gg[i].depth)
 
-            t = gg[i].translation
+            # grasp_frame is at the fingertips, AnyGrasp's point is depth short of them
+            t = fingertip_position(gg[i].translation, gg[i].rotation_matrix, gg[i].depth)
             g.pose.position.x = float(t[0])
             g.pose.position.y = float(t[1])
             g.pose.position.z = float(t[2])
