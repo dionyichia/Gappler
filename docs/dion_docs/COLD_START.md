@@ -72,6 +72,7 @@ Before that, check the two PRs from this session (section 2) and merge them if g
   side), and the pad width (finger_height_m 0.02).
 - T1.36: the replay gate check. T1.26 item 6: the slerp final move closes at the wrong angle.
 - Dion owes HF_TOKEN on the box (older loop).
+- PR #79 is still open as a draft but fully merged (via #82): close it. PR #76 (T2.9) is separate work.
 
 ## 5. Gotchas learned
 
