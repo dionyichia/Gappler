@@ -107,3 +107,52 @@ gripper's link positions: PASS 2026-10-14, 22 of 22, gripper 0.0 deg off AnyGras
 
 Not tested: where AnyGrasp puts the grasp point along the approach compared with grasp_frame
 [unverified]. The arm did not move in this step.
+
+=== Step 7c, 2026-10-14 evening: where the fingertips land (arm still) ===
+Box: ~/rcp-Gappler on dev c854d07 (PR #82 merged), local edit use_simple_execute false.
+./quickstart_terminals.sh grasp --anygrasp, arm on, no state machine. Box 6 cm face forward,
+near face 0.393 m from the camera (mask depth p5).
+
+Measured by Dion at the robot, gripper closed: arm end face to fingertips 147.5 mm, the same as
+grasp_frame (rm_65_w_gripper.urdf.xacro:18). So grasp_frame is at the fingertips. The middle of
+the finger pads is about 8 mm behind the tips.
+
+AnyGrasp's point is not at the fingertips: its fingers reach `depth` (0.02 or 0.03 m) past the
+point along the approach (graspnetAPI utils.py plot_gripper_pro_max) [code]. We assume the
+compiled SDK uses the same gripper model [inferred]. Unshifted, the state machine would put the
+fingertips at the point: median 7 mm past the box face, so the pad middles about 1 mm short of it.
+
+Fix (option A, Dion), branch t1.17-grasp-depth-offset: anygrasp_to_grasp_frame.py
+fingertip_position() moves each point `depth` along AnyGrasp's approach, and the node publishes
+that. Self-check PASS on the box.
+
+Live check, 20 s of stand-in EXECUTING. The fixed node ran as a second node on
+/grasp_candidates_depth_test next to the unchanged one on /grasp_candidates:
+  fixed:     335 grasps, approach 5 to 30 deg (median 22), tips past the face min 0.029,
+             median 0.038, max 0.133 m
+  unchanged: 370 grasps, approach 5 to 30 deg (median 18), point past the face min -0.001,
+             median 0.007, max 0.108 m
+So the fingertips now go about 3.8 cm past the face, the pad middles about 3 cm in.
+
+Not run: the sim check with the new fingertip position case (rm_driver was up, the sim refuses).
+Not tested: the arm moving to one of these grasps.
+
+=== Step 7d, 2026-10-14 evening: the first AnyGrasp grasp on the real arm ===
+Box ~/rcp-Gappler on dev c854d07 plus the depth fix copied in (uncommitted) and the local edit
+use_simple_execute false. ./quickstart_terminals.sh grasp --anygrasp, AnyGrasp restarted with the
+fix, state machine started by Dion, one /manipulator/grasp_request typed. Box at 44.5 cm, 6 cm face
+forward. Pane logs on the box: ~/dion_logs/2026-10-14_t1.17_anygrasp/.
+
+Result: FAIL, box knocked off. SELECTING approached the box to 0.209 m, EXECUTING, gripper opened,
+"pose stable, locking target", MtcPlanner planned to x -0.580 y -0.024 z 0.237 (base_link),
+executed in 9 s, "Cartesian move succeeded", gripper closed, then the return.
+Seen by Dion: the approach looked right, but right before closing the wrist turned about 180 deg
+and the jaws knocked the box off the table.
+
+Cause [inferred, the wrist joint was not recorded]: the gripper is symmetric, so a grasp and the
+same grasp turned 180 deg about the approach are equal, and AnyGrasp picks either (the sign of its
+closing axis is arbitrary). The state machine sends the orientation unchanged. The final move is
+a planned joint move (moveToPose, grasp_state_machine.cpp:655, "Planning to pose"), not a straight
+line, so the wrist is free to turn the long way next to the box.
+Fix proposed (T1.33, not built): before the final move, if the target's closing axis points
+opposite to the gripper's current one, turn the target 180 deg about its approach.

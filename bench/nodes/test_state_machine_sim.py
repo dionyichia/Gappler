@@ -75,6 +75,7 @@ class Actors(Node):
                                  lambda m: self.grip.append((now(), "set_position", f"position={m.position}")), 10)
         self.create_subscription(Gripperpick, "/rm_driver/set_gripper_pick_on_cmd", self._pick_on, 10)
         self.axes_at_close = None  # gripper approach and closing directions when told to close
+        self.tip_at_close = None   # grasp_frame (the fingertips) in base_link when told to close
         self.create_subscription(Bool, "/manipulator/return_to_user", lambda m: self.returned.append((now(), m.data)), 10)
         self.create_subscription(Empty, "/manipulation/done", lambda m: self.done.append(now()), 10)
         self.cam_pub = self.create_publisher(CameraInfo, "/camera/camera/color/camera_info", 1)
@@ -95,6 +96,8 @@ class Actors(Node):
         self.grip.append((time.time(), "pick_on", f"speed={m.speed} force={m.force}"))
         try:
             self.axes_at_close = self.gripper_axes()
+            t = self.tf.lookup_transform("base_link", "grasp_frame", Time()).transform.translation
+            self.tip_at_close = np.array([t.x, t.y, t.z])
         except Exception:
             pass
 
@@ -350,6 +353,9 @@ def main():
         fail_re = (r"EXECUTING: (Cartesian move failed|no candidates received)" if CANDIDATES
                    else r"EXECUTING: final Cartesian step failed")
         closed = n.spin_until(lambda: any(k == "pick_on" for t, k, _ in n.grip) or log_has(fail_re), 90)
+        if CANDIDATES:
+            p = n.cand_base.position
+            tip_target = np.array([p.x, p.y, p.z])  # the fingertip target the node publishes
         n.cand_base = None
         final_fail = log_has(fail_re)
         check("final approach, then gripper told to close", closed and not final_fail,
@@ -365,6 +371,10 @@ def main():
             app, clo = deg(n.axes_at_close[0], want[:, 0]), deg(n.axes_at_close[1], want[:, 1])
             if not check("gripper points the way AnyGrasp asked", app < 5 and clo < 5,
                          f"approach off by {app:.1f} deg, closing line off by {clo:.1f} deg (limit 5)"):
+                return
+            off = float(np.linalg.norm(n.tip_at_close - tip_target)) * 1000
+            if not check("fingertips reach the published grasp point", off < 5,
+                         f"grasp_frame {off:.1f} mm from it (limit 5)"):
                 return
         n.depth = None
         ret = n.spin_until(lambda: any(v for _, v in n.returned), 120)

@@ -12,7 +12,7 @@ authoritative for status. This file holds the reasoning, the commands and the pa
 [`T1.7_FIRST_COMMANDED_MOTION.md`](T1.7_FIRST_COMMANDED_MOTION.md) for how the first motion was
 sent. This file does not repeat them.
 
-## Start here, 2026-10-14 evening (step 7 next)
+## Start here, 2026-10-14 night (step 7, fix the wrist turn next)
 
 **Where we are.** Steps 1 to 6 pass on the real arm
 ([`../bench-runs/2026-10-14-labbox-t1.12-t1.14-real-arm.txt`](../bench-runs/2026-10-14-labbox-t1.12-t1.14-real-arm.txt)).
@@ -30,10 +30,16 @@ approach limit, both in `grasp/grasp_config.yaml`
 **Step 7b done 2026-10-14 (arm still): the arm would have come in 90 degrees off.** AnyGrasp and
 `grasp_frame` name the grasp's axes differently, and the node passed AnyGrasp's straight through.
 Fix on branch `t1.17-anygrasp-to-grasp-frame`: every grasp is turned into `grasp_frame`'s axes
-before it is published (step 7 below). Simulated arm check PASS, 22 of 22, the gripper 0.0 degrees off AnyGrasp's approach.
+before it is published (step 7 below). Simulated arm check PASS, 22 of 22. Merged in PR #82.
+**Step 7c done 2026-10-14 (arm still):** `grasp_frame` is at the fingertips (147.5 mm from the flange,
+measured), but AnyGrasp's point is 2 to 3 cm short of where its fingertips go. Fix on branch
+`t1.17-grasp-depth-offset` (uncommitted when written): tips now a median 3.8 cm past the box face.
+**Step 7d, 2026-10-14: the first AnyGrasp grasp, FAIL.** The approach looked right, but the wrist
+turned about 180 degrees just before closing and knocked the box off. Cause `[inferred]`: the
+gripper is symmetric and AnyGrasp's closing axis sign is arbitrary.
 
-**Next, arm still:** merge the fix, rebuild, then measure where AnyGrasp puts the grasp point along
-the approach compared with `grasp_frame` `[unverified]`. Only then let the arm move to one.
+**Next:** T1.33, turn the target 180 degrees about its approach when that is closer to the current
+wrist (design to Dion first). Then the sim with the depth and turn fixes, arm off, then step 7d again.
 
 **Known from steps 5 and 6, all parked:**
 - The grip closes a few cm short and always at the same angle, so the box must face the arm. Most
@@ -650,8 +656,15 @@ it before publishing. Its self-check passes on the box. `./bench/state_machine_s
 builds its fake grasp in AnyGrasp's axes from where the gripper's links are, runs it through the same
 conversion, and checks the simulated gripper points within 5 degrees of it. PASS 2026-10-14, 22 of 22, gripper 0.0 deg off AnyGrasp's approach and finger line (box log/bench_state_machine_2026-10-14_1901.txt).
 
-Left `[unverified]`: where AnyGrasp puts the grasp point along the approach, compared with
-`grasp_frame`. If they differ, the gripper stops short or pushes into the box.
+Measured next (step 7c): `grasp_frame` is at the fingertips, AnyGrasp's point is `depth` short of
+them. Fixed on `t1.17-grasp-depth-offset`, see the bench-run record.
+
+### Result, 2026-10-14: step 7d, first AnyGrasp grasp FAIL (wrist turned 180 degrees)
+
+One grasp request, box at 44.5 cm. SELECTING to 0.209 m, EXECUTING, pose locked, a planned move
+to the grasp (9 s), gripper closed. Just before closing the wrist turned about 180 degrees and the
+jaws knocked the box off. The approach itself looked right. Cause `[inferred]` and the proposed
+fix are in T1.33 and the bench-run record. Pane logs: `~/dion_logs/2026-10-14_t1.17_anygrasp/` on the box.
 
 ### Result, 2026-10-14: step 5 PASS, 5 of 8
 
@@ -742,3 +755,4 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-14 | Claude Opus 5.5 + Dion | Steps 5 (T1.12) and 6 (T1.14) PASS on the real arm, result tables. Start here moved on to step 7. |
 | 2026-10-14 | Claude Opus 5.5 + Dion | Step 7a (T1.17) on the live camera, arm still: cause of AnyGrasp's impossible grasps found (gripper model 0.07 m), now 0.10 m plus a 30 degree approach limit. T1.32 added. |
 | 2026-10-14 | Claude Opus 5.5 + Dion | Step 7b (T1.17), arm still: AnyGrasp's grasp axes differ from `grasp_frame`'s, the arm would have come in 90 degrees off. Fix and sim check on `t1.17-anygrasp-to-grasp-frame`. Start here updated. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Steps 7c (depth offset) and 7d (first AnyGrasp grasp, wrist turned 180 degrees, FAIL). Start here points at T1.33. |
