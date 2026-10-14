@@ -19,6 +19,14 @@ wrist never turns more than 90. The camera is on the wrist, so in its frame the 
 axis is fixed: -x of camera_color_optical_frame (rm_65_w_gripper.urdf.xacro grasp_frame_joint and
 sensor_d435 origin, D435 nominal optical frame). Approach is +z, straight out of the lens.
 
+Fit (T1.32): AnyGrasp is told the gripper opens 0.10 m (grasp_config.yaml), so it no longer checks
+the object fits the real one. fits_gripper measures it from the masked points: the slice the pads
+sweep (finger_height tall, through the grasp centre), from the tips back max_depth along the
+approach. Width is that slice's spread along the closing axis. Depth is how far the tips go past
+its nearest point. Percentiles, not min and max, so stray edge points (flying pixels) are ignored.
+The camera sees only the faces turned to it, but the node keeps grasps within 30 deg of its view,
+so the closing axis runs across the image, where the full width is visible [inferred].
+
 Run this file to check the conversion: python3 anygrasp_to_grasp_frame.py
 """
 import numpy as np
@@ -49,6 +57,22 @@ def fingertip_position(translation, rotation_matrix, depth):
     return translation + depth * rotation_matrix[:, 0]
 
 
+def fits_gripper(points, translation, rotation_matrix, depth, max_width, max_depth, finger_height,
+                 percentile):
+    """(fits, width, depth_in) for one AnyGrasp grasp against the real gripper, in metres."""
+    tips = fingertip_position(translation, rotation_matrix, depth)
+    p = (points - tips) @ rotation_matrix  # columns: along approach, closing, finger height
+    slab = p[np.abs(p[:, 2]) <= finger_height / 2]
+    if len(slab) == 0:
+        return False, float("nan"), float("nan")
+    depth_in = -np.percentile(slab[:, 0], percentile)
+    between = slab[(slab[:, 0] <= 0) & (slab[:, 0] >= -max_depth), 1]
+    if len(between) == 0:
+        return False, float("nan"), depth_in
+    width = np.percentile(between, 100 - percentile) - np.percentile(between, percentile)
+    return bool(width <= max_width and depth_in <= max_depth), width, depth_in
+
+
 if __name__ == "__main__":
     rng = np.random.default_rng(0)
     for _ in range(100):
@@ -67,3 +91,28 @@ if __name__ == "__main__":
         assert np.allclose(tip - point, -0.03 * r_g[:, 2]), "tips 0.03 m further along the approach"
     print("PASS: AnyGrasp approach -> grasp_frame -z, closing stays on y, tips depth past the point,"
           " twin closes the gripper's way")
+
+    # T1.32: a box seen from the camera (x right, y down, z forward), front face at z 0.40, top face
+    # at y -0.05. The grasp comes straight in along z and closes along x (AnyGrasp axes).
+    def box(width, n=4000):
+        front = np.column_stack([rng.uniform(-width / 2, width / 2, n), rng.uniform(-0.05, 0.05, n),
+                                 np.full(n, 0.40)])
+        top = np.column_stack([rng.uniform(-width / 2, width / 2, n), np.full(n, -0.05),
+                               rng.uniform(0.40, 0.46, n)])
+        return np.vstack([front, top])
+    r_a = np.column_stack([[0, 0, 1], [1, 0, 0], [0, 1, 0]]).astype(float)
+    LIMITS = dict(max_width=0.068, max_depth=0.045, finger_height=0.02, percentile=2)
+    point = lambda tips_in: np.array([0.0, 0.0, 0.40 + tips_in - 0.02])  # AnyGrasp's point, depth 0.02
+    ok, w, d = fits_gripper(box(0.06), point(0.03), r_a, 0.02, **LIMITS)
+    assert ok and abs(w - 0.06) < 0.003 and abs(d - 0.03) < 0.002, ("6 cm box, tips 3 cm in", w, d)
+    ok, w, _ = fits_gripper(box(0.08), point(0.03), r_a, 0.02, **LIMITS)
+    assert not ok and w > 0.075, ("8 cm box is too wide for the 71 mm gripper", w)
+    ok, _, d = fits_gripper(box(0.06), point(0.06), r_a, 0.02, **LIMITS)
+    assert not ok and d > 0.055, ("tips 6 cm in: the base of the U pushes the box", d)
+    stray = np.column_stack([rng.choice([-0.045, 0.045], 10), rng.uniform(-0.01, 0.01, 10),
+                             rng.uniform(0.40, 0.42, 10)])  # flying pixels at the edges, ~1%
+    ok, w, _ = fits_gripper(np.vstack([box(0.06), stray]), point(0.03), r_a, 0.02, **LIMITS)
+    assert ok and w < 0.065, ("stray edge points must not widen the box", w)
+    ok, _, _ = fits_gripper(box(0.06) + [0, 0.5, 0], point(0.03), r_a, 0.02, **LIMITS)
+    assert not ok, "no points between the fingers: cannot judge, drop it"
+    print("PASS: fits_gripper keeps a 6 cm box, drops 8 cm, drops tips 6 cm in, ignores stray points")

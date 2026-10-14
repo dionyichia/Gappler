@@ -20,7 +20,7 @@ from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import String
 from gappler_common import config
-from anygrasp_to_grasp_frame import fingertip_position, nearer_twin, to_grasp_frame
+from anygrasp_to_grasp_frame import fingertip_position, fits_gripper, nearer_twin, to_grasp_frame
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -54,6 +54,9 @@ LIMS = CFG["workspace_limits_m"]
 cfgs.max_gripper_width = CFG["max_gripper_width_m"]
 # A grasp's approach is its rotation's x column. Kept if within max_approach_deg of the camera's z.
 MIN_APPROACH_COS = float(np.cos(np.radians(CFG["max_approach_deg"])))
+# Does the object fit the real gripper (T1.32, anygrasp_to_grasp_frame.py fits_gripper)
+FIT = dict(max_width=CFG["max_object_width_m"], max_depth=CFG["max_grasp_depth_m"],
+           finger_height=CFG["finger_height_m"], percentile=CFG["fit_percentile"])
 
 
 class AnyGraspDetectionNode(Node):
@@ -237,6 +240,14 @@ class AnyGraspDetectionNode(Node):
         if len(gg) == 0:
             self.get_logger().warn("No grasp along the camera's view", throttle_duration_sec=5.0)
             return
+        fit = [fits_gripper(points, t, r, d, **FIT)
+               for t, r, d in zip(gg.translations, gg.rotation_matrices, gg.depths)]
+        keep = np.array([f[0] for f in fit])
+        if not keep.any():
+            self.get_logger().warn(f"No grasp fits the gripper ({len(fit)} checked, T1.32)",
+                                   throttle_duration_sec=5.0)
+            return
+        gg = gg[keep]
 
         msg = self.build_grasp_msg(gg)
         self.grasp_pub.publish(msg)
