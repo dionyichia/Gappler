@@ -171,9 +171,16 @@ class ObjectStore:
 
         All of one photo's matches are decided before any is applied, so two new
         candidates from the same photo never merge with each other here.
+
+        Raises ValueError, before changing anything, if the graph already holds
+        `anchor`: a photo is applied once. Without this check a repeated frame id
+        would count its sightings twice and fuse its edges into the old photo's,
+        and AnchorStore.add would only refuse it afterwards.
         """
         if len(targets) != len(candidates):
             raise ValueError("targets must have one item per candidate")
+        if self.graph.objects_of(anchor):
+            raise ValueError(f"anchor {anchor} is already in the graph. Frame ids must not repeat")
         unknown = sorted({t for t in targets if t is not None and t not in self._objects})
         if unknown:
             raise KeyError(f"no object entries with ids {unknown}")

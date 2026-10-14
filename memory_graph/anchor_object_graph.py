@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field, replace
-from typing import Callable, Dict, FrozenSet, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import Callable, Container, Dict, FrozenSet, Iterable, Iterator, List, Optional, Set, Tuple
 
 AnchorId = int
 ObjectId = int
@@ -153,12 +153,18 @@ class AnchorObjectGraph:
     def objects(self) -> FrozenSet[ObjectId]:
         return frozenset(self._by_object)
 
-    def best_anchor_for(self, obj: ObjectId) -> Optional[AnchorId]:
-        """The edge attribute payoff: pick the image that shows `obj` best."""
-        cands = self._by_object.get(obj)
+    def best_anchor_for(
+        self, obj: ObjectId, among: Optional[Container[AnchorId]] = None
+    ) -> Optional[AnchorId]:
+        """The edge attribute payoff: pick the image that shows `obj` best.
+
+        `among`, if given, limits the choice to those anchors, for example the
+        ones whose photo is still stored. Equal views go to the newest anchor,
+        the highest id. None if no anchor qualifies."""
+        cands = [a for a in self._by_object.get(obj, ()) if among is None or a in among]
         if not cands:
             return None
-        return max(cands, key=lambda a: self._edges[(a, obj)].view_quality())
+        return max(cands, key=lambda a: (self._edges[(a, obj)].view_quality(), a))
 
     def __len__(self) -> int:
         return len(self._edges)

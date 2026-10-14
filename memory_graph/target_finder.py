@@ -105,11 +105,7 @@ class TargetFinder:
     def best_anchor(self, obj: ObjectId) -> Optional[AnchorId]:
         """The stored photo with the best view of `obj`, or None. Equal views
         go to the newest photo."""
-        graph = self.objects.graph
-        seen = [a for a in graph.anchors_of(obj) if a in self.anchors]
-        if not seen:
-            return None
-        return max(seen, key=lambda a: (graph.sighting(a, obj).view_quality(), a))
+        return self.objects.graph.best_anchor_for(obj, among=self.anchors)
 
     # ---------------------------------------------------------------- mutate
 
