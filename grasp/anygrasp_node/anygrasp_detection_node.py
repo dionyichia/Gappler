@@ -31,7 +31,6 @@ parser.add_argument("--gripper_height", type=float, default=0.03)
 parser.add_argument("--top_down_grasp", action="store_true")
 parser.add_argument("--debug", action="store_true")
 cfgs, _ = parser.parse_known_args()
-cfgs.max_gripper_width = 0.07
 cfgs.gripper_height = 0.04
 cfgs.top_down_grasp = False
 
@@ -51,6 +50,9 @@ NUM_CANDIDATES = CFG["num_grasp_candidates"]
 
 # Wide lims — SAM mask handles spatial filtering
 LIMS = CFG["workspace_limits_m"]
+cfgs.max_gripper_width = CFG["max_gripper_width_m"]
+# A grasp's approach is its rotation's x column. Kept if within max_approach_deg of the camera's z.
+MIN_APPROACH_COS = float(np.cos(np.radians(CFG["max_approach_deg"])))
 
 
 class AnyGraspDetectionNode(Node):
@@ -227,6 +229,10 @@ class AnyGraspDetectionNode(Node):
             return
 
         gg = gg.nms().sort_by_score()
+        gg = gg[gg.rotation_matrices[:, 2, 0] >= MIN_APPROACH_COS]
+        if len(gg) == 0:
+            self.get_logger().warn("No grasp along the camera's view", throttle_duration_sec=5.0)
+            return
 
         msg = self.build_grasp_msg(gg)
         self.grasp_pub.publish(msg)

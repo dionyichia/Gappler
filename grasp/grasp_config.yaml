@@ -45,6 +45,17 @@ anygrasp_detection_node:
     # Workspace box in the camera frame, metres: [x_min, x_max, y_min, y_max, z_min, z_max].
     # Wide on purpose: the SAM mask does the spatial filtering.
     workspace_limits_m: [-1.0, 1.0, -1.0, 1.0, 0.0, 1.5]
+    # AnyGrasp's gripper model, not the real opening (the real gripper opens about 71 mm).
+    # AnyGrasp reports every grasp at this width and needs clearance around the object: told
+    # 0.07, it found no grasp on a 6 cm box face (top score 0.005); told 0.10, 0.34 to 0.5
+    # (T1.17, bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt). It does not check the
+    # object fits in 71 mm (T1.32).
+    max_gripper_width_m: 0.10
+    # Drop grasps whose approach is further than this from the wrist camera's view axis. A
+    # first-run safety limit (Dion, 2026-10-14), not a measured one: the candidate path moves to
+    # the grasp's full pose, so larger angles may work. Raise it once RViz and a few real grasps
+    # show they do. Without it, most grasps came from the side or across the top face.
+    max_approach_deg: 30
 
 # grasp/grasp_viz/grasp_viz.py. Size of the gripper drawn in RViz, metres.
 grasp_visualizer:
