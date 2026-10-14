@@ -611,12 +611,14 @@ C7 XFAIL).
   One request per attempt (T1.25). Without it, SAM 3 would start a new cycle as soon as the
   one-shot `return;` is removed.
 - **Step 6 (T1.14, T2.6):** release, done, back to IDLE, a second grasp in the same launch.
-  Code on branch `t1.14-multi-grasp-loop` (PR #75), sim run owed.
+  Code on branch `t1.14-multi-grasp-loop` (PR #75). Simulated arm PASS 2026-10-14, 20 of 20 ([`bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt`](../bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt)).
 - **Step 7 (T1.17):** the AnyGrasp path. Desk prep on branch `t1.8-t1.10-anygrasp-gate-and-pane`
   (stacked on PR #75): the gate fix (T1.8), the detector chosen and started from its venv
-  (T1.10), `state_` atomic (C4). On the box first, both with no `rm_driver` running:
-  `./bench/anygrasp_replay.sh`, then `./bench/state_machine_sim.sh candidates`. At the robot:
-  `./quickstart_terminals.sh grasp --anygrasp`, with `use_simple_execute: false`.
+  (T1.10), `state_` atomic (C4). Box checks PASS 2026-10-14: `./bench/anygrasp_replay.sh` and
+  `./bench/state_machine_sim.sh candidates` ([`bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt`](../bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt)). At the robot:
+  `./quickstart_terminals.sh grasp --anygrasp`, with `use_simple_execute: false`. The sim used a
+  fake candidate, so first check that AnyGrasp's grasp axes line up with `grasp_frame`: hand-check
+  the first candidate in RViz before letting the arm move to it.
 
 ---
 
@@ -634,8 +636,9 @@ From reading the code. None of these is confirmed on the real arm.
   `[unverified]`. Look at them in RViz before 3c.
 - **A lost object is not noticed** until the stale-centroid check is in (see "With 3b"). Even
   then, the check only runs between steps, and each step takes a few seconds at 10% speed.
-- **A failed final step ends the node.** `:725` returns from the worker loop (the check is at `:722`), just like `:735`.
-  The gripper is open at that point, so it is safe, but nothing else will happen until a restart.
+- **A failed final step goes home and back to IDLE** since T1.14 (PR #75). It used to end the node.
+- **A late TF can end a request in SELECTING** (CODE_AUDIT E6, T1.28). Seen once in sim. If the arm
+  goes back to IDLE right after SELECTING with "EEF transform failed" in the log, ask again.
 - **"Object grasped successfully" means nothing.** It is logged unconditionally (`:728`). Judge
   grasp success by eye.
 - **Two unguarded transforms in EXECUTING** (`:694`, `:714`). If the camera's TF is late, the
@@ -674,3 +677,4 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-13 | Claude Opus 5.5 + Dion | After T2.6 (#64) and T2.7 (#63): Start here says voice sends the grasp request, step 4 starts each attempt with the `pick_up_box_command.wav` replay, the signals table names the publishers. Box restart incident and the runner restart noted. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | Step 4 (T1.11) PASS, attempt 4 started by voice. Result table, the depth blind zone and the config change (uncommitted, branch t1.11-stop-before-depth-blind), the 3 cm front-face bias. Start here rewritten for step 5: release with `-t 3 -r 2`, the `/pipeline_state` type, pane names by position. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | Start here: the step 4 config is merged (#71), the box is reached at `100.87.133.60` again. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Steps 6 and 7: box sim and replay checks PASS. Things to watch: failed final step now goes home (T1.14), new E6 late TF in SELECTING. |

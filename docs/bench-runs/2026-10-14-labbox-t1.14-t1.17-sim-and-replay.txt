@@ -1,0 +1,52 @@
+T1.14 and T1.17: state machine on the simulated arm (both paths), AnyGrasp replay
+2026-10-14, lab box (rcp2026@100.87.133.60), ~/rcp-Gappler checked out on branch
+t1.8-t1.10-anygrasp-gate-and-pane (stacked on t1.14-multi-grasp-loop, PR #75), then put back
+on dev d762f86 and rebuilt. Domain 95, ROS_LOCALHOST_ONLY=1, checked empty first. No rm_driver,
+no CI run, no camera in use. Run by Claude Opus 5.5 over SSH. No robot.
+
+The CPU sat at 89-92 C with nothing running (load 0.2, kernel idle_inject active), so the
+script's cooling wait never cleared overnight. Dion lifted it in the morning. Nothing timed out.
+
+Build (./build.sh, 2 jobs): PASS, 25 packages.
+
+1. ./bench/state_machine_sim.sh (step 6, simple path), commit c7452db: PASS, 20 of 20
+   New for T1.14, all PASS:
+     a release with nothing held is ignored
+     announces /manipulation/done at the return pose
+     holds with no release: gripper shut, requests refused (5 s, IDLE not seen)
+     release opens the gripper
+     after the release: re-homes and returns to IDLE (joints 0.0001 rad from home)
+     second request in the same launch -> SELECTING
+   CODE_AUDIT C7 does not reproduce any more.
+
+2. ./bench/state_machine_sim.sh candidates (the AnyGrasp path, first time ever run)
+   The test plays a fake AnyGrasp candidate on /grasp_candidates. Three bench-only fixes were
+   needed before it ran as intended, none in the state machine:
+     c7452db  FAIL. The state machine took the simple path: the launch override
+              {"use_simple_execute": False} lands under /** and loses to grasp_config.yaml's
+              grasp_state_machine: block, whatever the order.
+     98dd3f5  FAIL, same cause. -p is stored under /** too. Checked on the box with
+              demo_nodes_cpp parameter_blackboard on domain 96: -p after the file gives True,
+              a yaml keyed grasp_state_machine: loaded last gives False.
+     c99a5ad  FAIL. Candidates path ran, stability lock PASS, final move planning failed.
+              The fake candidate was at Link6. moveToPose solves IK for grasp_frame
+              (mtc_planner.cpp, setIKFrame), 14.75 cm past Link6 and flipped
+              (rm_65_w_gripper.urdf.xacro:17), so the tip was asked to reach inside the wrist.
+     296cc64  PASS. Candidate at grasp_frame plus 1 cm up, approach angle 45 deg:
+              stability lock, final approach, gripper close, return pose, /manipulation/done,
+              hold, release, home, IDLE, second request -> SELECTING.
+   Seen in the 296cc64 run, not a test failure: on the second request, SELECTING logged
+   "EEF transform failed: Lookup would require extrapolation into the future" (30 ms ahead of
+   the latest TF) and went back to IDLE. The next request worked. CODE_AUDIT E6.
+
+3. ./bench/anygrasp_replay.sh (recorded wrist-camera bag, real SAM 3 and AnyGrasp), c7452db: PASS
+     segmentation     136 masks, 136 centroids in 61 s, median depth 0.400 m
+     grasp detection  41 candidate sets, 0.67/s, top score 0.040
+     gate (A1)        EXECUTING 41 sets, IDLE 0 sets
+   CODE_AUDIT A1 fix confirmed. On 2026-09-22 (before the fix) it was 154 in IDLE, 0 in EXECUTING.
+
+Not tested: anything on the real arm. Real AnyGrasp candidates driving the simulated arm (the
+sim check uses a fake candidate, so it does not show whether AnyGrasp's grasp axes match
+grasp_frame's). Both are T1.17 at the robot.
+
+Box output: ~/t1.17-bench-2026-10-14/ (rerun_candidates*/ per attempt).
