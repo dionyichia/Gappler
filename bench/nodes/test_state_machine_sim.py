@@ -303,9 +303,10 @@ def main():
               next((d for t, k, d in n.grip if k == "set_position" and t >= t2), "no set_gripper_position_cmd"))
         if CANDIDATES:
             try:
-                eef = n.tf.lookup_transform("base_link", "Link6", Time()).transform  # rm_group's tip (SRDF)
+                # moveToPose aims grasp_frame, not Link6, at the candidate (mtc_planner.cpp setIKFrame)
+                eef = n.tf.lookup_transform("base_link", "grasp_frame", Time()).transform
             except Exception as e:
-                return check("gripper pose for the fake candidate", False, f"no base_link -> Link6: {e}")
+                return check("gripper pose for the fake candidate", False, f"no base_link -> grasp_frame: {e}")
             n.cand_base = Pose()
             n.cand_base.position.x, n.cand_base.position.y = eef.translation.x, eef.translation.y
             n.cand_base.position.z = eef.translation.z + 0.01
