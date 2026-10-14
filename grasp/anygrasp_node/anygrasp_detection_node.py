@@ -244,8 +244,12 @@ class AnyGraspDetectionNode(Node):
                for t, r, d in zip(gg.translations, gg.rotation_matrices, gg.depths)]
         keep = np.array([f[0] for f in fit])
         if not keep.any():
-            self.get_logger().warn(f"No grasp fits the gripper ({len(fit)} checked, T1.32)",
-                                   throttle_duration_sec=5.0)
+            # Why, from the narrowest grasp (T1.37). nan: no object points between the pads.
+            _, w, d = min(fit, key=lambda f: np.nan_to_num(f[1], nan=np.inf))
+            self.get_logger().warn(
+                f"No grasp fits the gripper: narrowest {w:.3f} m wide "
+                f"(limit {FIT['max_width']}), tips {d:.3f} m in (limit {FIT['max_depth']}). "
+                f"{len(fit)} grasps checked (T1.32)", throttle_duration_sec=5.0)
             return
         gg = gg[keep]
 
