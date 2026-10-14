@@ -96,20 +96,20 @@ class Actors(Node):
         self.grip.append((time.time(), "pick_on", f"speed={m.speed} force={m.force}"))
         try:
             self.axes_at_close = self.gripper_axes()
-            t = self.tf.lookup_transform("base_link", "grasp_frame", Time()).transform.translation
-            self.tip_at_close = np.array([t.x, t.y, t.z])
+            self.tip_at_close = self._at("grasp_frame")
         except Exception:
             pass
+
+    def _at(self, frame):
+        t = self.tf.lookup_transform("base_link", frame, Time()).transform.translation
+        return np.array([t.x, t.y, t.z])
 
     def gripper_axes(self):
         """The gripper's approach and closing directions in base_link, from where its links are.
         Approach: Link6 towards grasp_frame. Closing: the line between the fingers."""
-        def at(frame):
-            t = self.tf.lookup_transform("base_link", frame, Time()).transform.translation
-            return np.array([t.x, t.y, t.z])
-        a = at("grasp_frame") - at("Link6")
+        a = self._at("grasp_frame") - self._at("Link6")
         a /= np.linalg.norm(a)
-        c = at("gripper_Link1") - at("gripper_Link3")
+        c = self._at("gripper_Link1") - self._at("gripper_Link3")
         c -= c.dot(a) * a
         return a, c / np.linalg.norm(c)
 

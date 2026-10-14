@@ -41,6 +41,5 @@ if __name__ == "__main__":
         assert np.isclose(np.linalg.det(r_g), 1.0), "must stay a rotation"
         point = rng.normal(size=3)
         tip = fingertip_position(point, r_a, 0.03)
-        assert np.isclose((tip - point) @ -r_g[:, 2], 0.03), "tips 0.03 m further along the approach"
-        assert np.allclose(tip - point, -0.03 * r_g[:, 2]), "and nowhere else"
+        assert np.allclose(tip - point, -0.03 * r_g[:, 2]), "tips 0.03 m further along the approach"
     print("PASS: AnyGrasp approach -> grasp_frame -z, closing stays on y, tips depth past the point")
