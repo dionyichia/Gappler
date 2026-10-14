@@ -20,7 +20,7 @@ from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import String
 from gappler_common import config
-from anygrasp_to_grasp_frame import fingertip_position, to_grasp_frame
+from anygrasp_to_grasp_frame import fingertip_position, nearer_twin, to_grasp_frame
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -171,8 +171,9 @@ class AnyGraspDetectionNode(Node):
             g.pose.position.y = float(t[1])
             g.pose.position.z = float(t[2])
 
-            # AnyGrasp's axes -> grasp_frame's, which moveToPose aims (anygrasp_to_grasp_frame.py)
-            q = self.rotation_to_quaternion(to_grasp_frame(gg[i].rotation_matrix))
+            # AnyGrasp's axes -> grasp_frame's, which moveToPose aims, then the twin that turns the
+            # wrist least (anygrasp_to_grasp_frame.py)
+            q = self.rotation_to_quaternion(nearer_twin(to_grasp_frame(gg[i].rotation_matrix)))
             g.pose.orientation.x = float(q[0])
             g.pose.orientation.y = float(q[1])
             g.pose.orientation.z = float(q[2])
