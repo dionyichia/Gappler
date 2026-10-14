@@ -533,6 +533,57 @@ are mostly about *why*:
   solved greedily here and exactly, with a solver, upstream.
 - **`find`'s two groups** (Q15) and **when task scores are recomputed** (Q14).
 
+### My gaps, one line each
+
+Every point I missed or got wrong, to tick off when I can explain it without looking.
+
+**S0 to S6**
+
+- [ ] Q1. S0's output is an `Observation` (`rgb`, `depth`, `K`, `T_world_cam`, `frame_id`,
+      `timestamp`). `TumFrame` is only the reader's list of files.
+- [ ] Q2. The box-size rule is a share of the image area (`min_box_area_ratio`), not pixels.
+- [ ] Q2. The upstream bug: it sorts into a new list, then reads the unsorted arrays by sorted
+      position, so a detection can get another one's box or label.
+- [ ] Q3. "First photo" means the first ever accepted. The gate does not track labels.
+- [ ] Q3. `commit` moves the last accepted pose only after S12 stores the photo.
+- [ ] Q4. Why erode: edge pixels sit on depth jumps and back-project onto the wall behind,
+      which gives the cloud long tails. It is one pixel, not two.
+- [ ] Q5. S6 is three steps: padded crop, encode, L2-normalise. The encoder is only the middle one.
+- [ ] Q5. The second reason for two files: `image_feature.py` runs without torch, so bench L0
+      can test it with a stand-in.
+
+**S7 to S11**
+
+- [ ] Q6. S7 back-projects pixels, not voxels: pixel + depth + `K` gives a camera-frame point,
+      then `T_world_cam` moves it into the map.
+- [ ] Q6. A mask with fewer than `min_points` (16) valid pixels is dropped, and so is a box under
+      `min_box_volume_m3`.
+- [ ] Q7. The first cheap check is a k-d tree on object centres. The box test is the second.
+- [ ] Q8. Write the formula: `score = (1 + phys_bias) * overlap + (1 - phys_bias) * appearance`.
+- [ ] Q8. `one_to_one` (Hungarian) lets each object take at most one candidate. Greedy does not.
+- [ ] Q9. A match fuses into the stored entry's cloud. `_add_sighting` also updates `clip_sum`,
+      the graph edge, the label index and the task score.
+- [ ] Q10. Derived values are computed so they cannot fall out of step with the lists. A label
+      tie goes to the label seen first.
+
+**S12, S13, task and query**
+
+- [ ] Q11. The four resized things are the colour image, depth, `K` and boxes.
+- [ ] Q11. Depth is never blended because a blend invents a distance where there is no surface
+      (between 1.5 m and 3 m gives 2.25 m).
+- [ ] Q11. Check 2 in `add` is "one object id per candidate".
+- [ ] Q12. A `Sighting`'s use: `view_quality()`, for the best photo and the pruning tie-break.
+- [ ] Q13. Denoising also keeps the largest DBSCAN cluster.
+- [ ] Q13. kappa is a minimum coverage, not a maximum or a count kept per object.
+- [ ] Q13. Here pruning is greedy. The ILP with PuLP and CBC is upstream's (D-MG3).
+- [ ] Q13. Between equally useful photos, the better view is kept (`view_cost`).
+- [ ] Q14. A task score is also recomputed on every sighting and every merge.
+- [ ] Q14. One encoder for both, because a cosine only means something within one model's space.
+- [ ] Q15. `find` returns all targets, then all related objects. A related object never
+      outranks a target.
+- [ ] Q15. The rejected list is emptied by `_follow_task` when the instruction changes, not by a
+      call to `clear_rejected`.
+
 ### All code issues, ranked
 
 | # | Issue | Where | Kind |
