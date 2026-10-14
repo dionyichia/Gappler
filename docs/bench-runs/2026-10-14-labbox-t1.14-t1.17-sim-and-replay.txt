@@ -50,3 +50,18 @@ sim check uses a fake candidate, so it does not show whether AnyGrasp's grasp ax
 grasp_frame's). Both are T1.17 at the robot.
 
 Box output: ~/t1.17-bench-2026-10-14/ (rerun_candidates*/ per attempt).
+
+Later the same day: AnyGrasp's grasps drawn on the replay
+A scratch script (not in the repo) ran the same replay on dev d762f86, domain 96, with
+/pipeline_state IDLE (dev still has the A1 gate), and drew each grasp set on the colour image it
+arrived after: the top 5 grasps as gripper outlines, graspnetAPI convention (rotation x = approach,
+y = closing, translation = centre between the fingertips). 40 sets, 1 to 3 grasps each, top score
+0.007 to 0.036. GIF and stills kept on the box in ~/anygrasp-gif-scratch-2026-10-14/out/.
+
+Dion's judgement: the grasps are bad. They come at the box at an angle no real gripper could hold.
+Dion's first guess: the cause is the 2D mask rather than the 3D point cloud. Code check: the node
+does build a 3D cloud from depth and keeps the points inside the mask
+(anygrasp_detection_node.py:197-215), so AnyGrasp gets 3D points, but only the faces the camera
+sees. Other possible causes, none checked [inferred]: few points (box at 0.4 m, 640x480 depth),
+collision_detection against the mat, workspace_limits_m, scores this low meaning AnyGrasp has
+little confidence in any grasp, or the drawing convention being wrong. Parked for step 7 (T1.17).
