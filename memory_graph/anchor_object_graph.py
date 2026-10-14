@@ -226,7 +226,7 @@ class AnchorObjectGraph:
 
         while any(d > 0 for d in demand.values()):
             best, best_score = None, 0.0
-            for anchor in available:
+            for anchor in sorted(available):      # so equal scores go to the lowest id
                 gain = sum(1 for obj in self._by_anchor[anchor] if demand.get(obj, 0) > 0)
                 if gain == 0:
                     continue
