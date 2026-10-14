@@ -63,7 +63,9 @@ Rule history and the incidents behind these rules: TESTBENCH_PLAN §3.
   with the same ID: `T1.8: ...`. If no task covers the work, add one to the task tree first.
 - Bring a branch up to date by merging `origin/dev` into it. Never rebase and force-push a shared
   branch.
-- `/ship` (`.claude/skills/ship/`) runs the commit, PR, CI and merge steps for one task.
+- **Ship each task with `/ship`** ([`.claude/skills/ship/SKILL.md`](.claude/skills/ship/SKILL.md)).
+  It runs the task tree update, quick bench, commit, merge of `dev`, PR, CI watch and merge for one
+  task. If your tool doesn't load project skills, read that file and follow its steps.
 
 ## The lab machine
 
