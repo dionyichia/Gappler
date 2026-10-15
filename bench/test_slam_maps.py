@@ -10,7 +10,8 @@ from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "shared"))
-from slam_maps import require_initial_pose, require_serialized_map, require_snapshot_manifest
+from slam_maps import (require_initial_pose, require_serialized_map, require_snapshot_manifest,
+                          stage_snapshot)
 
 
 class SlamMapTests(unittest.TestCase):
@@ -76,6 +77,35 @@ class SlamMapTests(unittest.TestCase):
             with patch.object(Path, "open", side_effect=PermissionError("denied")):
                 with self.assertRaisesRegex(ValueError, "unreadable"):
                     require_serialized_map(prefix)
+
+    def test_stage_copies_snapshot_into_independent_files(self):
+        with tempfile.TemporaryDirectory(prefix="source with spaces ") as source:
+            with tempfile.TemporaryDirectory() as staging:
+                folder = Path(source)
+                manifest = self.valid_snapshot(folder)
+                staged, checked = stage_snapshot(folder, Path(staging))
+                self.assertEqual(checked, manifest)
+                self.assertEqual(staged.parent, Path(staging))
+                for name in ("completed_map.posegraph", "completed_map.data",
+                             "current_map.yaml", "current_map.pgm", "manifest.json"):
+                    self.assertTrue((staged / name).is_file(), name)
+                    self.assertFalse((staged / name).is_symlink(), name)
+                (staged / "current_map.pgm").write_bytes(b"staged edit")
+                self.assertEqual((folder / "current_map.pgm").read_bytes(), b"P5 fixture")
+
+    def test_stage_refuses_missing_manifest_tampered_and_missing_file(self):
+        with tempfile.TemporaryDirectory() as source:
+            with tempfile.TemporaryDirectory() as staging:
+                with self.assertRaisesRegex(ValueError, "manifest"):
+                    stage_snapshot(Path(source), Path(staging))
+                manifest = self.valid_snapshot(Path(source))
+                (Path(source) / "current_map.pgm").write_bytes(b"tampered")
+                with self.assertRaisesRegex(ValueError, "checksum|sha256|mismatch"):
+                    stage_snapshot(Path(source), Path(staging))
+                self.valid_snapshot(Path(source))
+                (Path(source) / "completed_map.data").unlink()
+                with self.assertRaisesRegex(ValueError, "unreadable|missing|checksum|sha256"):
+                    stage_snapshot(Path(source), Path(staging))
 
     def test_localization_requires_explicit_start_pose(self):
         tree = ast.parse((REPO / "nav/robot_slam/launch/slam_localization.launch.py").read_text())

@@ -69,3 +69,39 @@ def require_snapshot_manifest(folder: str | Path) -> dict:
         if digest != expected:
             raise ValueError(f"snapshot file checksum mismatch: {name}")
     return manifest
+
+
+def stage_snapshot(source: str | Path, staging_root: str | Path) -> tuple[Path, dict]:
+    """Copy a verified snapshot into independent private files; hash what was copied.
+
+    Returns the new staging directory and the captured manifest. Rechecks staged
+    hashes before/after use; excludes concurrent writers by procedure, not by lock.
+    Same-user change-and-restore between checks remains a residual.
+    """
+    source = Path(source).expanduser()
+    manifest = require_snapshot_manifest(source)
+    staged = Path(staging_root).expanduser() / f"staged-{os.getpid()}"
+    staged.mkdir(parents=True)
+    try:
+        for name in (*SNAPSHOT_FILES, "manifest.json"):
+            (staged / name).write_bytes((source / name).read_bytes())
+        staged_manifest = json.loads((staged / "manifest.json").read_text())
+        if staged_manifest != manifest:
+            raise ValueError(f"staged manifest differs from source: {staged}")
+        checksums = staged_manifest["sha256"]
+        for name in SNAPSHOT_FILES:
+            digest = hashlib.sha256((staged / name).read_bytes()).hexdigest()
+            if digest != checksums[name]:
+                raise ValueError(f"staged file checksum mismatch: {name}")
+    except BaseException:
+        for leftover in sorted(staged.glob("*")):
+            try:
+                leftover.unlink()
+            except OSError:
+                pass
+        try:
+            staged.rmdir()
+        except OSError:
+            pass
+        raise
+    return staged, manifest
