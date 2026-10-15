@@ -4,10 +4,8 @@
 # Scratch folder: a copy of the repo in $S/repo (.venv, install, assets linked from the main
 # clone), the recording in $S. Logs go to $S/e2e_logs.
 S="${T29_SCRATCH:-$HOME/dion_t2.9}"
-cd "$S/repo"
+cd "$S/repo" || exit 1
 export ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=88
-# test only: the locked eye-tracking commit predates its torch 2.6 fix (weights_only)
-export TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1
 source aria/aria_env.sh >/dev/null
 L="$S/e2e_logs"; rm -rf $L; mkdir -p $L
 PG=()

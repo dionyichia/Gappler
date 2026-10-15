@@ -51,10 +51,19 @@ def main():
     for s in (rgb, eye):
         options.activate_stream(s)
     try:
+        # Each worker reads its queue only once set up (eye model, undistortion maps: 20 s or more
+        # on the box), so hand each one frame and wait until both are taken. full(), not empty():
+        # put() returns before its feeder thread writes the frame to the pipe, so empty() is True
+        # at once. full() stays True until the worker's get() (only this process puts here).
         print("Waiting for the workers: the eye model and rgb_worker's undistortion maps...")
-        # ponytail: fixed wait. rgb_worker's maps took about 20 s on the box. Frames before the
-        # workers are up are dropped. Wait on their first published message if this ever fails
-        time.sleep(30)
+        waited = time.monotonic()
+        for q, s in ((rgb_queue, rgb), (eye_queue, eye)):
+            q.put(provider.get_image_data_by_index(s, 0)[0].to_numpy_array())
+        while rgb_queue.full() or eye_queue.full():
+            if not all(w.is_alive() for w in workers):
+                raise SystemExit("A worker stopped while starting")
+            time.sleep(0.5)
+        print(f"Both workers took their first frame after {time.monotonic() - waited:.0f} s")
         t0 = start = None
         for data in provider.deliver_queued_sensor_data(options):
             t = data.get_time_ns(TimeDomain.DEVICE_TIME) / 1e9

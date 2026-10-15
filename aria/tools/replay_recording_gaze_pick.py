@@ -3,9 +3,9 @@
 
 Stage 1, frames: the RGB frames, rotated and undistorted. Each output image shows three panels:
   raw       rotated 90 degrees clockwise, as the app publishes it
-  live      rotated, then undistorted with the unrotated calibration (image_streaming_pipeline.py:132-135)
-  fixed     undistorted, then rotated
-If live and fixed differ, the live order is wrong.
+  old       rotated, then undistorted with the unrotated calibration, the app's order before T2.13
+  fixed     undistorted, then rotated, the app's order since T2.13
+The shift between old and fixed is the T2.13 error.
 
 Stage 2, gaze: the eye model on every eye camera frame, cut at the fixed gaze depth
 (eye_tracking.py) and moved through the same undistort and rotate as the image, as et_worker
@@ -175,10 +175,10 @@ def main():
         name = f"{(t_ns - t0) / 1e9:06.1f}s" + (f"_stop{stop}" if stop else "")
 
         if args.stage == 1:
-            raw = np.rot90(image, -1)
-            live = calibration.distort_by_calibration(np.ascontiguousarray(raw), dest, src)
-            panels = [cv2.resize(np.ascontiguousarray(p), (PANEL_PX, PANEL_PX)) for p in (raw, live, fixed)]
-            for p, label in zip(panels, ("raw", "live", "fixed")):
+            raw = np.ascontiguousarray(np.rot90(image, -1))
+            old = calibration.distort_by_calibration(raw, dest, src)
+            panels = [cv2.resize(p, (PANEL_PX, PANEL_PX)) for p in (raw, old, fixed)]
+            for p, label in zip(panels, ("raw", "old", "fixed")):
                 cv2.putText(p, label, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
             cv2.imwrite(str(out / f"{name}.jpg"), cv2.cvtColor(np.hstack(panels), cv2.COLOR_RGB2BGR))
             continue

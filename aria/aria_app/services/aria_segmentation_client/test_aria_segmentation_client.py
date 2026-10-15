@@ -105,6 +105,9 @@ class AriaClientTest(unittest.TestCase):
         self.node.on_prompt(String(data=words))
         return [m.prompt for m in self.node.target_pub.sent]
 
+    def requests(self):
+        return len(self.node.request_pub.sent)
+
     def test_a_word_becomes_a_target(self):
         self.assertEqual(self.say("  Red Cup "), ["red cup"])
         target = self.node.target_pub.sent[0]
@@ -142,6 +145,18 @@ class AriaClientTest(unittest.TestCase):
         self.reply(box(25, 15, 34, 24, 0.5))
         self.assertEqual([m.prompt for m in self.node.target_pub.sent], ["box", ""])
 
+    def test_a_late_reply_after_the_same_word_again_is_dropped(self):
+        # "box", stop, "box" inside one service call: only the newest call's reply counts
+        self.look(30, 20)
+        self.say("box")
+        self.say(STOP_KEYWORD)
+        self.say("box")
+        old, new = self.node.service.futures
+        old.finish(Segment.Response(success=True, detections=[box(25, 15, 34, 24, 0.5)]))
+        self.assertEqual(len(self.node.target_pub.sent), 3)   # box, stop, box: no reference
+        new.finish(Segment.Response(success=True, detections=[box(25, 15, 34, 24, 0.5)]))
+        self.assertEqual(self.node.target_pub.sent[-1].reference.width, 10)
+
     def test_old_gaze_is_not_used(self):
         self.look(30, 20)
         self.node.gaze = [(time.monotonic() - 5, 30.0, 20.0)]
@@ -176,30 +191,18 @@ class AriaClientTest(unittest.TestCase):
         self.say("box")
         self.assertEqual(self.say(STOP_KEYWORD.upper()), ["box", ""])
 
-    def test_the_same_word_again_is_resent(self):
-        # a restarted grasp client gets the word back only when you say it again
+    def test_the_same_word_again_is_resent_and_requested(self):
+        # a restarted grasp client gets the word back only when you say it again,
+        # and each time you ask is a new grasp (T1.25 gate, T2.6)
         self.say("box")
         self.assertEqual(self.say("Box"), ["box", "box"])
+        self.assertEqual(self.requests(), 2)
 
     def test_silence_is_ignored(self):
         self.assertEqual(self.say("   "), [])
 
     def test_stop_is_always_sent(self):
         self.assertEqual(self.say(STOP_KEYWORD), [""])
-
-
-    def requests(self):
-        return len(self.node.request_pub.sent)
-
-    def test_a_word_sends_one_grasp_request(self):
-        self.say("box")
-        self.assertEqual(self.requests(), 1)
-
-    def test_the_same_word_again_sends_another_request(self):
-        # each time you ask is a new grasp (T1.25 gate, T2.6)
-        self.say("box")
-        self.say("box")
-        self.assertEqual(self.requests(), 2)
 
     def test_stop_and_silence_send_no_request(self):
         self.say(STOP_KEYWORD)

@@ -15,8 +15,8 @@ Turns what you say and what you look at into what the arm looks for.
 
 Every word is sent, even a repeat, and /grasp/target is not latched. So if the grasp client
 restarts, it looks for nothing until you say the word again: a restart never resumes an old
-command on its own (Dion, 2026-10-13). A reply that comes back after a newer word or the stop
-word is dropped, so it never brings an old target back.
+command on its own (Dion, 2026-10-13). A reply that comes back after any newer word, even the
+same one, or the stop word is dropped, so it never brings an old target back.
 
 Gaze arrives in the pixels of the published undistorted image (et_worker, T2.9).
 
@@ -77,6 +77,7 @@ class AriaSegmentationClient(Node):
             Empty, ROS2Topics.MANIPULATOR_GRASP_REQUEST.value, 10)
         self.service = self.create_client(Segment, SERVICE_NAME)
         self.prompt = ""
+        self.words = 0                              # bumped by every word: is a reply still current
         self.image, self.image_at = None, -np.inf   # newest glasses image and when it came
         self.wait_until = -np.inf                   # segment the next image if it comes by then
         self.gaze = deque(maxlen=200)               # (time, x, y), ~20 s at 10 fps
@@ -102,6 +103,7 @@ class AriaSegmentationClient(Node):
         if not words:
             return
         self.prompt = "" if words == STOP_KEYWORD else words
+        self.words += 1
         self.wait_until = -np.inf   # a new word or the stop word replaces any wait
         target = Target(prompt=self.prompt)
         target.header.stamp = self.get_clock().now().to_msg()
@@ -138,11 +140,12 @@ class AriaSegmentationClient(Node):
         rgb = cv2.imdecode(np.frombuffer(self.image.data, np.uint8), cv2.IMREAD_COLOR)
         future = self.service.call_async(Segment.Request(image=image_msg(rgb, "rgb8", header),
                                                          prompt=prompt))
-        future.add_done_callback(lambda f: self.on_reply(f, prompt, rgb, gaze, header))
+        word = self.words
+        future.add_done_callback(lambda f: self.on_reply(f, word, prompt, rgb, gaze, header))
 
-    def on_reply(self, future, prompt: str, rgb: np.ndarray, gaze, header):
-        if prompt != self.prompt:
-            return   # a newer word or the stop word came in meanwhile
+    def on_reply(self, future, word: int, prompt: str, rgb: np.ndarray, gaze, header):
+        if word != self.words:
+            return   # a newer word, even the same one, or the stop word came in meanwhile
         response = future.result()
         if response is None or not response.success:
             reason = response.message if response is not None else "no reply"

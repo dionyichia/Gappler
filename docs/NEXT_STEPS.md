@@ -224,11 +224,17 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
 - **Left alone for now.** `object_recognition_pipeline.py` keeps its own SAM 3 and its publishing
   line stays commented out. `dummy_mask_publisher.py` is kept (§2.3). `T2.4` (trigger, age limit,
   freeing the GPU) is paused.
-- **Found while designing, matters after `T2.2`.** The gaze pixel is in the raw glasses camera
-  image (`eye_tracking.py:147`, published by `image_streaming_pipeline.py:186`), but the published
-  glasses image is rotated 90° (`:132`) and undistorted (`:135`). The aria client must put the gaze
-  pixel through both before comparing it with masks. Today's code only handles the rotation
-  (`object_recognition_pipeline.py:675`) `[code]`.
+- **Gaze pixel, resolved 2026-10-14 (`T2.9`, PR #76).** The gaze was in the raw glasses camera's
+  pixels, but the published glasses image is undistorted and rotated 90°. `et_worker` now
+  publishes gaze in the published image's pixels (`undistortion_helper.to_published_pixel`), so
+  every reader compares it with masks directly. The old rotations in the visualizer and
+  `object_recognition_pipeline.py` are commented out. The image was also undistorted in the wrong
+  order, about 12.5 px off (`T2.13`, fixed in the same PR) `[code]`. The aria client now picks the
+  mask under the gaze and sends it as the Target's reference. End to end on a recording replayed
+  on the box: 4 of 4 words sent a reference once, 3 of 4 in two later runs (the replay started
+  before its workers were ready, fixed in the review). The grasp side does not use the reference
+  yet (`T8.5`), so which object the arm takes is unchanged. Write-up:
+  `dion_docs/T2.9_GAZE_PICK_ON_RECORDING.md`.
 
 #### `[decided 2026-09-20]` Decision: retire `sam3_ros_node.py` (Option 2)
 
@@ -1482,3 +1488,5 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: `T2.1` built (all six steps), start-once rule and its guard, results recorded. |
 | 2026-10-09 | Claude Opus 5.5 + Dion | §2.2: the service imports nothing from a subsystem. §2.8: SAM 3 weights moved to `assets/models/` (T2.1). The segmentation service builds SAM 3 itself, so `shared_services/` no longer imports aria. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | §2.2: start-once guard now looks for the node name, which appears before SAM 3 loads. It looked for the service, which appears only after, so a second start during the ~20 s load was not refused (found in the T2.1 review). |
+| 2026-10-14 | Claude Opus 5.5 + Dion | §2.2: gaze pixel finding resolved by T2.9 (PR #76): gaze published in the published image's pixels, undistort order fixed (T2.13). |
+| 2026-10-15 | Claude Opus 5.5 + Dion | §2.2: T2.9 result stated as all three runs, and that the grasp side does not use the reference yet (T8.5). |
