@@ -390,6 +390,23 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: investigate shutdown abort and startup readiness before changing control behavior. Upstream stationary scan gating is a hypothesis, not installed-runtime proof. No relaxed thresholds, vendor changes, hardware or deployment. T3.5 stays PROGRESS.
 - Close-out: final available Mac quick checks exit0 with explicit skips; source diff only expands two diagnostic messages. Read-only evidence review passed; preservation manifests independently compared identical. Box suite remains failed/inconclusive, not a green runtime checkpoint. No completion PR.
 
+## [2026-10-15] T3.5 | Split into T3.5a-f, FAST-LIVO2 replay record
+
+- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md)
+- Verified: task-tree T3.5 split into six subtasks (public replay, sensor
+  capture, our-data replay, live mapping, persistent localization, Nav2
+  handover); T3.6 repointed to T3.5f; T5.9 reframed (FAST-LIVO2 implements
+  T3.5 directly, staged 2D-first gate superseded). T3.5a progressed: U-AMC
+  fork builds in isolation, authors' bag converts 14,850/14,850 and replays
+  to EOF with 664 odom, 663 valid clouds, 600 images, 0 invalid; empty LIO
+  clouds are upstream design (heartbeats). Nominal mount values kept as
+  labelled working estimates pending T5.5; unaltered setup means no new drift.
+- Outcome: T3.5/T3.5a-f PROGRESS in task-tree; hosted Artifact republish owed.
+  One mapper teardown crash open (GDB: heap dispose under ~LIVMapper; ASan
+  rebuild staged). No hardware touched; MID-360 answers ping, drivers unrun.
+- Next: ASan backtrace, minimal fork patch, normal rebuild, PASS rerun; then
+  T3.5b attended capture. No PR (task open).
+
 ## Record Template
 
 ```markdown
