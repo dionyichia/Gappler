@@ -8,10 +8,11 @@ Turns what you say and what you look at into what the arm looks for.
    Each word also sends /manipulator/grasp_request, which opens the state machine's trigger gate
    (T1.25), so every time you ask is one grasp (T2.6). The stop word sends none.
 2. If the glasses image and gaze are coming in, the newest glasses image is segmented with the
-   same word, and the mask you look at is picked: the one under your gaze averaged over the last
-   gaze_window_s, else the nearest within pick_radius_px (gaze_pick.py). A second Target with the
-   same word follows, carrying that object's crop and mask as its reference. If nothing is near
-   the gaze, the word alone stands.
+   same word, and the mask you look at is picked: the one under your gaze averaged over
+   gaze_window_s, ending speech_latency_s before the word came (when you spoke it), else the
+   nearest within pick_radius_px (gaze_pick.py). A second Target with the same word follows,
+   carrying that object's crop and mask as its reference. If nothing is near the gaze, the word
+   alone stands.
 
 Every word is sent, even a repeat, and /grasp/target is not latched. So if the grasp client
 restarts, it looks for nothing until you say the word again: a restart never resumes an old
@@ -128,7 +129,7 @@ class AriaSegmentationClient(Node):
             self.get_logger().info(f"Glasses image is {now - self.image_at:.1f} s old: "
                                    "waiting for the next one")
             return
-        gaze = mean_gaze(self.gaze, now, window)
+        gaze = mean_gaze(self.gaze, now - CFG["speech_latency_s"], window)
         if gaze is None:
             self.get_logger().info("No recent gaze: the word alone is sent")
             return

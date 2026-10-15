@@ -91,12 +91,14 @@ class AriaClientTest(unittest.TestCase):
         self.node.service = FakeServiceClient()
 
     def look(self, x, y):
-        """A 60 x 40 glasses image and gaze at (x, y), as the glasses app sends them."""
+        """A 60 x 40 glasses image and gaze at (x, y), as the glasses app sends them. The gaze is
+        1 s old, from while the word was spoken (speech_latency_s 0.65 before it arrives)."""
         image = CompressedImage(format="jpeg",
                                 data=cv2.imencode(".png", np.full((40, 60, 3), 90, np.uint8))[1].tobytes())
         image.header.stamp.sec = 7
         self.node.on_image(image)
         self.node.on_gaze(Point(x=float(x), y=float(y)))
+        self.node.gaze[-1] = (time.monotonic() - 1.0, float(x), float(y))
 
     def reply(self, *dets):
         self.node.service.futures[-1].finish(Segment.Response(success=True, detections=list(dets)))
@@ -160,6 +162,13 @@ class AriaClientTest(unittest.TestCase):
     def test_old_gaze_is_not_used(self):
         self.look(30, 20)
         self.node.gaze = [(time.monotonic() - 5, 30.0, 20.0)]
+        self.say("box")
+        self.assertEqual(self.node.service.requests, [])
+
+    def test_gaze_after_the_word_was_spoken_is_not_used(self):
+        # the word arrives speech_latency_s after you spoke: gaze since then is not averaged
+        self.look(30, 20)
+        self.node.gaze = [(time.monotonic(), 30.0, 20.0)]
         self.say("box")
         self.assertEqual(self.node.service.requests, [])
 

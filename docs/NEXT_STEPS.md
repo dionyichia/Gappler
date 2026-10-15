@@ -232,7 +232,8 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
   order, about 12.5 px off (`T2.13`, fixed in the same PR) `[code]`. The aria client now picks the
   mask under the gaze and sends it as the Target's reference. End to end on a recording replayed
   on the box: 4 of 4 words sent a reference once, 3 of 4 in two later runs (the replay started
-  before its workers were ready, fixed in the review). The grasp side does not use the reference
+  before its workers were ready, fixed in the review), then 4 of 4 again with the fix
+  (`bench-runs/2026-10-15-labbox-t2.9-review-fixes.txt`). The grasp side does not use the reference
   yet (`T8.5`), so which object the arm takes is unchanged. Write-up:
   `dion_docs/T2.9_GAZE_PICK_ON_RECORDING.md`.
 
@@ -1490,3 +1491,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-13 | Claude Opus 5.5 + Dion | §2.2: start-once guard now looks for the node name, which appears before SAM 3 loads. It looked for the service, which appears only after, so a second start during the ~20 s load was not refused (found in the T2.1 review). |
 | 2026-10-14 | Claude Opus 5.5 + Dion | §2.2: gaze pixel finding resolved by T2.9 (PR #76): gaze published in the published image's pixels, undistort order fixed (T2.13). |
 | 2026-10-15 | Claude Opus 5.5 + Dion | §2.2: T2.9 result stated as all three runs, and that the grasp side does not use the reference yet (T8.5). |
+| 2026-10-15 | Claude Opus 5.5 + Dion | §2.2: T2.9 e2e 4 of 4 after the readiness fix. |
