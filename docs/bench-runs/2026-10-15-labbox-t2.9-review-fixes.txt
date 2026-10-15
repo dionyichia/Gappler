@@ -28,7 +28,12 @@ install linked from ~/rcp-Gappler). Box idle before each run: no ROS processes, 
    the true latency at least what is shown.
    5 plays: 1.32 s (first, warm-up), 0.62, 0.65, 0.65, 0.65 s. Median 0.65 s. Word 'box' each time.
    Not measured: the glasses' own audio streaming delay, which happens before audio_worker.
-   Result: Dion chose the knob, speech_latency_s 0.65 in aria_config.yaml. Client tests after
+   CORRECTION (same evening): the recording is noisy (loudness floor about 0.05 of peak), so the
+   voice detector ran its span to the file's end. Loudness in 0.1 s steps shows the last speech
+   peak at about 3.3 s, so speech ends near 3.4 s [inferred], and the latency is about
+   0.65 + 0.9 = 1.5 s. That fits CHANNEL_CONTRACT A-5: 1.1 s by design (0.7 s quiet, 0.4 s
+   padding) plus Whisper and the LLM. 0.65 s is a lower bound only.
+   Result: Dion chose the knob, speech_latency_s 0.65 in aria_config.yaml, before the correction. Client tests after
    it: 22 pass (16 client plus 6 gaze pick).
 
 4. End to end again with speech_latency_s 0.65, domain 88, same script

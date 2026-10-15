@@ -107,8 +107,9 @@ aria_segmentation_client:
     # (Dion, 2026-10-13). 1 s is 10 eye frames at 10 fps.
     gaze_window_s: 1.0
     # The word arrives this long after you stop speaking (audio_worker waits for a pause, then
-    # Whisper and the LLM run), so the gaze window ends this far back. Measured 0.65 s on the box
-    # with a recorded command, not counting the glasses' own audio delay (T2.9, 2026-10-15).
+    # Whisper and the LLM run), so the gaze window ends this far back. Measured about 1.5 s on
+    # the box with a recorded command, not counting the glasses' own audio delay. 0.65 is the
+    # first, wrong reading: value open with Dion (T2.9 review guide section 8, 2026-10-15).
     speech_latency_s: 0.65
     # A glasses image older than gaze_window_s may not match the gaze, so the client waits up to
     # this long for the next one. The replayed recording sends one every 1.9 s (T2.9).
