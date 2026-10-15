@@ -47,7 +47,40 @@ class SlamFixtureTests(unittest.TestCase):
                                 (expected, (1, 0, 0)), ((float('nan'), 2, 0), (0, 0, 0))):
             self.assertFalse(helper(pose, transform, expected, expected))
 
-    def test_interrupted_startup_stops_owned_child(self):
+    def test_relocation_replay_advances_both_worlds_equally(self):
+        helper = getattr(persistence, "relocation_replay", None)
+        self.assertTrue(callable(helper), "missing scan-admitting continuous replay")
+        start, relocated = (1.0, 1.0, 0.0), (0.2, -0.5, 0.0)
+        frames = helper(start, relocated)
+        self.assertEqual(len(frames), 30)
+        self.assertEqual(frames[0], (relocated, start))
+        for index, (scan, odom) in enumerate(frames):
+            self.assertAlmostEqual(scan[0] - relocated[0], odom[0] - start[0])
+            self.assertEqual(scan[1:], relocated[1:])
+            self.assertEqual(odom[1:], start[1:])
+            if index:
+                self.assertAlmostEqual(odom[0] - frames[index - 1][1][0], 0.02)
+        self.assertAlmostEqual(frames[-1][0][0], 0.78)
+        self.assertAlmostEqual(frames[-1][1][0], 1.58)
+
+    def test_map_match_distinguishes_absent_from_unequal(self):
+        helper = getattr(persistence, "map_match_reason", None)
+        self.assertTrue(callable(helper), "missing raster readiness check")
+        good = (("t35_map", 4, 3, [0, 100, -1, 0, 0, 0, 100, 0, 0, -1, 0, 0]),
+                ("t35_map", 4, 3, [0, 100, -1, 0, 0, 0, 100, 0, 0, -1, 0, 0]))
+        self.assertIsNone(helper(*good[0], *good[1]))
+        self.assertIn("frame", helper("map", 4, 3, good[0][3], *good[1]))
+        self.assertIn("absent", helper("t35_map", 0, 0, [], *good[1]))
+        self.assertIn("data", helper("t35_map", 4, 3, [0] * 12, *good[1]))
+
+    def test_tf_change_needs_numerically_new_correction(self):
+        helper = getattr(persistence, "correction_changed", None)
+        self.assertTrue(callable(helper), "missing TF change witness")
+        self.assertFalse(helper([]))
+        self.assertFalse(helper([(1, 2, 0)]))
+        self.assertFalse(helper([(1, 2, 0), (1, 2, 0)]))
+        self.assertTrue(helper([(1, 2, 0), (1.01, 2, 0)]))
+        self.assertFalse(helper([(float("nan"), 2, 0), (1, 2, 0)]))
         child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True)
 
         def stop(process):

@@ -76,6 +76,32 @@ def odometry_pose(pose: tuple, bias: tuple, fixed: tuple = None) -> tuple:
     return fixed if fixed is not None else tuple(value + offset for value, offset in zip(pose, bias))
 
 
+def relocation_replay(start: tuple, relocated: tuple, steps: int = 30, advance: float = 0.02) -> list:
+    """Identical relative motion in both worlds; absolute A/B offset preserved."""
+    return [((relocated[0] + i * advance, *relocated[1:]),
+             (start[0] + i * advance, *start[1:])) for i in range(steps)]
+
+
+def map_match_reason(frame, width, height, data,
+                     expected_frame, expected_width, expected_height, expected_data):
+    """None when the loaded raster matches; otherwise which part differs."""
+    if frame != expected_frame:
+        return f"frame {frame!r} != {expected_frame!r}"
+    if not width or not height or not data:
+        return f"absent map {width}x{height}/{len(data)} cells"
+    if (width, height) != (expected_width, expected_height) or list(data) != list(expected_data):
+        return (f"unequal raster data loaded={width}x{height}/{len(data)} cells "
+                f"expected={expected_width}x{expected_height}/{len(expected_data)} cells")
+    return None
+
+
+def correction_changed(corrections: list) -> bool:
+    """True only when a finite correction numerically differs from an earlier one."""
+    finite = [c for c in corrections if all(math.isfinite(v) for v in c)]
+    return any(abs(a - b) > 1e-9 for first in finite[:1] for other in finite[1:]
+               for a, b in zip(first, other))
+
+
 def await_startup(child, ready, spin_for, stop):
     """Own the child until readiness succeeds, including interrupted startup."""
     try:
@@ -126,6 +152,7 @@ def main() -> None:
     static = StaticTransformBroadcaster(node)
     poses = []
     node.create_subscription(PoseWithCovarianceStamped, "/t35_slam/pose", poses.append, 10)
+    odom_by_stamp = {}
     transforms = []
     node.create_subscription(TFMessage, "/t35_slam/tf", lambda msg: transforms.extend(
         tf for tf in msg.transforms if tf.header.frame_id == "t35_map" and tf.child_frame_id == "t35_odom"), 100)
@@ -154,6 +181,24 @@ def main() -> None:
         finally:
             node.destroy_client(client)
 
+    def feed_frames(frames):
+        sent = set()
+        for scan_pose, odom_pose in frames:
+            sent |= feed(scan_pose, repeats=1, odometry=odom_pose)
+        return sent
+
+    def await_loaded_map(label):
+        deadline = time.monotonic() + 15
+        while True:
+            loaded = call("dynamic_map", GetMap, GetMap.Request()).map
+            reason = map_match_reason(loaded.header.frame_id, loaded.info.width, loaded.info.height,
+                                      loaded.data, "t35_map", original.info.width, original.info.height,
+                                      original.data)
+            if reason is None:
+                return loaded
+            if time.monotonic() >= deadline:
+                raise AssertionError(f"automatic startup {label}: {reason}")
+            spin_for(0.5)
     def wait_departed():
         """Do not mistake stale DDS discovery for a newly restarted localizer."""
         deadline = time.monotonic() + 20
@@ -185,6 +230,7 @@ def main() -> None:
             scan.ranges = scan_ranges(pose)
             publisher.publish(scan)
             sent.add((stamp.sec, stamp.nanosec))
+            odom_by_stamp[(stamp.sec, stamp.nanosec)] = odom
             spin_for(0.1)
         return sent
 
@@ -316,7 +362,12 @@ def main() -> None:
             assert image_path.is_file() and image_path.stat().st_size > 0
             assert math.isclose(metadata["resolution"], 0.05, abs_tol=1e-6)
             print("PASS image save with YAML/image reference; path contains spaces", flush=True)
+            # Let the mapper settle with no new input before shutdown; an abort
+            # here is an observed limitation, not a clean stop.
+            spin_for(1.0)
             stop_process(process)
+            if "karto::Exception" in (REPO / "log/t35-slam-mapping.log").read_text():
+                raise RuntimeError("mapper shutdown abort; inspect log/t35-slam-mapping.log")
             process = None
             wait_departed()
 
@@ -330,33 +381,36 @@ def main() -> None:
                            (p.header.stamp.sec, p.header.stamp.nanosec) in sent]
                 now = node.get_clock().now().nanoseconds
                 fresh = [t for t in transforms if started <= t.header.stamp.sec * 10**9 + t.header.stamp.nanosec <= now + 600_000_000]
+                corrections = [(t.transform.translation.x, t.transform.translation.y,
+                                2 * math.atan2(t.transform.rotation.z, t.transform.rotation.w))
+                               for t in transforms]
+                changed = correction_changed(corrections)
                 assert current and fresh, (
                     "inconclusive trial: missing fresh scan-derived pose/map->odom TF; "
                     f"poses={len(poses)}, scan_matched_poses={len(current)}, "
-                    f"map_odom_tf={len(transforms)}, fresh_tf={len(fresh)}, sent_scans={len(sent)}")
+                    f"map_odom_tf={len(transforms)}, fresh_tf={len(fresh)}, tf_changed={changed}, "
+                    f"sent_scans={len(sent)}")
                 latest, tf = current[-1].pose.pose, fresh[-1].transform
                 pose = (latest.position.x, latest.position.y, 2 * math.atan2(latest.orientation.z, latest.orientation.w))
                 mapped = (tf.translation.x, tf.translation.y, 2 * math.atan2(tf.rotation.z, tf.rotation.w))
                 assert node.get_clock().now().nanoseconds - (fresh[-1].header.stamp.sec * 10**9 + fresh[-1].header.stamp.nanosec) < 10**9, "stale map->odom TF"
                 assert all(math.isfinite(v) for v in (*pose, *mapped)), "nonfinite localization witness"
-                disagreement = pose_error(compose_pose(mapped, at_a), pose)
+                stamp = (current[-1].header.stamp.sec, current[-1].header.stamp.nanosec)
+                assert stamp in odom_by_stamp, "missing odometry for latest pose stamp"
+                disagreement = pose_error(compose_pose(mapped, odom_by_stamp[stamp]), pose)
                 assert disagreement[0] <= 0.15 and disagreement[1] <= 0.10, "pose/TF disagreement"
-                return localization_matches(pose, mapped, at_a, expected), pose_error(pose, expected)
+                return localization_matches(pose, mapped, odom_by_stamp[stamp], expected), pose_error(pose, expected)
 
             for treatment in (False, True):
                 label = "startup-reseed" if treatment else "startup-control"
                 poses.clear()
                 maps.clear()
                 transforms.clear()
+                odom_by_stamp.clear()
                 process = start("localization_slam_toolbox_node", "localization",
                                 str(owned_snapshot / "completed_map"), at_a, label)
-                loaded = call("dynamic_map", GetMap, GetMap.Request()).map
-                assert loaded.header.frame_id == "t35_map" and loaded.info == original.info and loaded.data == original.data, (
-                    "automatic startup failed to load saved raster; "
-                    f"frame={loaded.header.frame_id!r}, "
-                    f"loaded={loaded.info.width}x{loaded.info.height}/{len(loaded.data)} cells, "
-                    f"expected={original.info.width}x{original.info.height}/{len(original.data)} cells, "
-                    f"metadata_equal={loaded.info == original.info}, data_equal={loaded.data == original.data}")
+                loaded = await_loaded_map(label)
+                assert loaded.header.frame_id == "t35_map", f"unexpected loaded frame {loaded.header.frame_id!r}"
                 started = node.get_clock().now().nanoseconds
                 sent = feed(at_a, repeats=20, odometry=at_a)
                 spin_for(0.3)
@@ -379,15 +433,20 @@ def main() -> None:
                     spin_for(0.1)
                 poses.clear()
                 transforms.clear()
+                odom_by_stamp.clear()
                 started = node.get_clock().now().nanoseconds
-                sent = feed(at_b, repeats=30, odometry=at_a)
+                # Identical continuous motion in both scan and odometry worlds, so the
+                # movement gate can admit scans in both trials; only the seed differs.
+                # The replay advances, so the witness target is its end, not its start.
+                replay = relocation_replay(at_a, at_b)
+                sent = feed_frames(replay)
                 spin_for(0.3)
                 assert process.poll() is None, "localizer exited during matched trial"
-                matched, error = observe(at_b, sent, started)
+                matched, error = observe(replay[-1][0], sent, started)
                 if not treatment:
                     assert error[0] > 0.15 or error[1] > 0.10, "inconclusive control: pose recovered without reseed"
                 assert matched == treatment, f"reseed control inconclusive/failed: {label} matched={matched}, error={error}"
-                print(f"PASS matched {label}: B scan with fixed A odometry; error {error[0]:.3f}m/{error[1]:.3f}rad", flush=True)
+                print(f"PASS matched {label}: B scan with shared relative motion; error {error[0]:.3f}m/{error[1]:.3f}rad", flush=True)
                 stop_process(process)
                 process = None
                 wait_departed()

@@ -1,0 +1,70 @@
+T3.5 targetfix verification: FULL PASS, 2026-10-15
+Isolated software only; no deployment, hardware commands, or live mapping.
+
+Frozen tree: f36b3ba7833557f394014ce83eb5e6684b8b916f
+Runtime source matches feature branch head at verification time; later doc edits separate.
+Candidate: log/t35-targetfix-f36b-20261015 under approved lab checkout.
+Built from retained 0eb9f3fc6c977329c5c31da88bdeebdc6952f3da archive plus delta
+t35-targetfix-delta.tar (SHA256 9aac01ec030cf41eab7e6faaf3d628990077ca49f18fb12439e286f6a7c689c5).
+Delta content: bench/nodes/test_slam_persistence.py, bench/test_slam_fixture.py + docs only.
+Exact indexed tree before/after; source diff empty. No snapshot HEAD.
+Only change vs prior 9777 run: witness target is replay end (0.78,-0.5,0),
+not replay start; replay/seed/motion unchanged.
+
+One verifier owned all box execution, serially on domain127/localhost-only.
+Fresh process/CI/hardware preflight and native-empty-domain guards passed.
+Infra note: first preflight exported domain127 and spawned a ros2 CLI daemon
+that blocked the guard; cleared with owned `ros2 daemon stop`, re-guarded empty,
+preflight re-run clean. Tainted log preserved; gh-runner tmux untouched.
+Original teammate checkout (t1.32-grasp-fits-gripper) never switched/staged/edited.
+No build/install/deploy, dependency changes, full SLAM/Nav2 launches, drivers,
+goal/arm/wheel commands, or teammate/tmux cleanup.
+
+Focused unit checks: 34 PASS, zero FAIL/SKIP:
+fixture 11; map prerequisites 8; launch wiring 2; saver 5;
+both coverage tests 2 each; installed-checker self-test 4.
+Launch construction --runtime: 7 PASS observations, exit0; no actions executed.
+First construction attempt without overlay failed xpkg_demo lookup (procedural,
+no launch executed); retry with read-only installed overlay passed.
+
+bash bench/slam_persistence.sh: exit0 FULL PASS:
+PASS owned saver graph/image/manifest with spaces; mapper resumed
+PASS saver SIGINT/SIGTERM recovery with fresh scans
+PASS mapping and real graph serialization
+PASS image save with YAML reference
+PASS automatic parameter startup (both trials): exact saved raster plus fresh
+     scan-derived pose/TF, localization YAML, nonempty map_file_name, nonzero
+     map_start_pose, NO deserialize call
+PASS matched startup-control: shared relative-motion replay, no seed,
+     error 1.440m/0.366rad -- correctly wrong, outside tolerance
+PASS matched startup-reseed: identical replay plus B /initialpose seed,
+     error 0.080m/0.000rad against replay end -- seed caused recovery
+PASS missing load: service replies but no usable map; no success claim
+OBSERVED LIMITATION: corrupt graph aborts installed localizer (std::length_error);
+     NOT safe rejection (pre-existing, re-observed)
+PASS service reload exact 160x120 raster; three biased-odometry localizations
+     0.000-0.001m/0.001rad; post-/initialpose observation 0.000m; saver refusal
+Final domain guard passed.
+
+bash bench/cloud_scan.sh: exit0; 12/12 cases, each 10/10 scans; QoS observations.
+Synthetic geometry/filtering only; live LiDAR/TF/safety NOT proven.
+
+Installed comparison exit1 before AND after, byte-identical:
+4 MATCH, 3 DRIFT, 1 MISSING (lidar_only.launch.py), 1 SKIP. NOT deployment PASS.
+
+Preservation: original branch/head/status identical before/after; both overlays
+unchanged (install_nav 689 entries, install 2761 entries, manifests identical).
+Owned processes exited via scripts; final native graph no nodes, only
+/parameter_events and /rosout. No teammate interference.
+
+Raw evidence: candidate log/VERIFICATION-SUMMARY.txt, provenance.txt,
+slam-persistence-full.log, cloud-scan-full.log, per-test logs/exits,
+construction-runtime.log, installed before/after, guard/native/process manifests.
+Local ignored copy: log/t35-targetfix-20261015-evidence/.
+
+Outcome: automatic parameter startup observed across runs and matched reseed
+efficacy demonstrated with a discriminating control on the synthetic fixture.
+No historical/live-map, physical accuracy, staging-gate, or deployment proof.
+Mapper shutdown abort seen on an earlier diagnostic run did not recur here;
+cause remains unestablished. T3.5/T3.9 remain PROGRESS; no completion PR or
+live-work approval.
