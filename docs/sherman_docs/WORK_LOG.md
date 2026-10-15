@@ -361,6 +361,21 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Available Mac quick checks passed with explicit environment/subtest skips. Both lab-access routes failed before transfer; no box job, graph check, hardware action or deployment occurred. Runtime assertions, discriminating negative control and parameter-startup efficacy remain UNVERIFIED. T3.5 stays PROGRESS.
 - Next: restore lab access, verify fresh idle conditions and exact candidate tree, run serial isolated regressions and review evidence before any live-work proposal. Push this preparation for visibility, not as runtime acceptance.
 
+## [2026-10-15] T3.5 | FAST-LIVO2 selected; SLAM Toolbox work held
+
+- Decision (Sherman): FAST-LIVO2 is the T3.5 implementation from here on.
+  SLAM Toolbox-specific development is held; nothing is discarded or merged.
+  Branch `t3.5-launch-prep`, all pushed evidence, and box snapshots are preserved
+  as the verified software record, reusable for comparison.
+- FAST-LIVO2 evaluation runs on `t5.9-fastlivo-feasibility` (other agent):
+  ROS 2 bag conversion verified (14,850 messages, originals untouched),
+  isolated container replay next, off domain 127. No action from this session
+  until replay review lands; coordinate the window when called.
+- Remaining T3.5 tasks reframe around FAST-LIVO2: real-data check replays the
+  shared converted bag; live session maps/localizes with FAST-LIVO2 once its
+  replay is reviewed. Overlay rebuild and reuse-vs-remap calls stay open,
+  now against the FAST-LIVO2 path. T3.5 stays PROGRESS; no completion PR.
+
 ## [2026-10-15] T3.5 | Fair-control fix prepared; box verification next
 
 - Fix (test-first, box-untested): map readiness polls up to 15 s for the expected raster with absent/unequal/frame diagnostics; mapper settles 1 s before shutdown and a `karto::Exception` fails fast with a log pointer; relocation trials replay identical 2 cm-step motion in scan and odometry worlds so the movement gate admits scans in both; pose/TF agreement uses per-stamp odometry and reports TF numerical change separately. No thresholds, config defaults, vendor code, or production drivers changed. Eleven fixture tests pass after RED.
