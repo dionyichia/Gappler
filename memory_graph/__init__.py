@@ -17,6 +17,7 @@ docs/hico-nav/hico-nav-github-docs/cmg_construction_pipeline.md:
     association.py         S10 overlap score and the match decision
     object_store.py        S11 insert or merge: the object entries, fused over sightings
     anchor_store.py        S12 the stored photos: image, depth, intrinsics, pose, object boxes
+    cleanup.py             S13 every N photos: denoise the objects, prune redundant anchors
     task.py                the task: its text feature, target and related classes, the score
     target_finder.py       the query: objects that answer the task, their best photo, rejections
     anchor_object_graph.py the graph: anchors, objects, the edges between them

@@ -1,3 +1,4 @@
+#include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <deque>
@@ -158,6 +159,10 @@ private:
         topic("manipulator_grasp_request"), 10,
         std::bind(&GraspStateMachine::graspRequestCallback, this, std::placeholders::_1));
 
+    release_sub_ = this->create_subscription<std_msgs::msg::Bool>(
+        topic("manipulator_release"), 10,
+        std::bind(&GraspStateMachine::releaseCallback, this, std::placeholders::_1));
+
     gripper_position_pub_ = this->create_publisher<rm_ros_interfaces::msg::Gripperset>(
         topic("rm_driver_set_gripper_position_cmd"), 10);
 
@@ -168,6 +173,8 @@ private:
         topic("pipeline_state"), 10);
 
     return_to_user_pub_ = this->create_publisher<std_msgs::msg::Bool>(topic("manipulator_return_to_user"), 10);
+
+    manipulation_done_pub_ = this->create_publisher<std_msgs::msg::Empty>(topic("manipulation_done"), 10);
 
     RCLCPP_INFO(this->get_logger(), "Grasp state machine constructed");
   }
@@ -250,6 +257,23 @@ private:
     queue_cv_.notify_one();
   }
 
+  // Lets go of the held object (T1.14). Accepted from the gripper closing until the gripper opens,
+  // so a release said during the move to the return pose is kept and acted on there.
+  void releaseCallback(const std_msgs::msg::Bool::SharedPtr msg)
+  {
+    if (!msg->data)
+      return;
+    std::lock_guard<std::mutex> lock(centroid_mutex_);
+    if (!accepting_release_)
+    {
+      RCLCPP_WARN(this->get_logger(), "Release ignored: not holding an object");
+      return;
+    }
+    release_received_ = true;
+    RCLCPP_INFO(this->get_logger(), "Release received");
+    queue_cv_.notify_one();
+  }
+
   // =========================================================================
   // State publisher
   // =========================================================================
@@ -282,6 +306,11 @@ private:
     msg.force = 150;
     msg.block = false;
     gripper_pick_on_pub_->publish(msg);
+    {
+      // Closing means holding, so a release counts from here (T1.14)
+      std::lock_guard<std::mutex> lock(centroid_mutex_);
+      accepting_release_ = true;
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(1500));
     RCLCPP_INFO(this->get_logger(), "Gripper closed");
   }
@@ -413,6 +442,29 @@ private:
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
   }
+
+  // After a grasp: hold the object out at the return pose until /manipulator/release, then let go
+  // (T1.14). There is no timeout, so the arm never drops the object on its own. Grasp requests are
+  // refused as busy meanwhile, because the worker is not waiting in IDLE.
+  void holdUntilRelease()
+  {
+    returnWithRetry();
+    std_msgs::msg::Bool return_msg;
+    return_msg.data = true;
+    return_to_user_pub_->publish(return_msg);
+    // Done before release: nav reads it as "holding the object" (CHANNEL_CONTRACT A-1, B-5)
+    manipulation_done_pub_->publish(std_msgs::msg::Empty());
+    RCLCPP_INFO(this->get_logger(), "Holding the object: waiting for /manipulator/release");
+    {
+      std::unique_lock<std::mutex> lock(centroid_mutex_);
+      queue_cv_.wait(lock, [this] { return release_received_ || shutdown_; });
+      accepting_release_ = false;
+      release_received_ = false;
+    }
+    if (shutdown_)
+      return;
+    openGripper();
+  }
   // =========================================================================
   // SELECTING — iterative approach step (called once per loop iteration)
   // =========================================================================
@@ -522,7 +574,7 @@ private:
         return true;
       if (!got || candidate_queue_.empty())
       {
-        RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidates received — aborting");
+        RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidates in 3 s, back to IDLE. The AnyGrasp node log says why (T1.37)");
         return true; // signal done, return to IDLE
       }
       // Drain stale candidates, keep latest
@@ -608,6 +660,7 @@ private:
       {
         RCLCPP_INFO(this->get_logger(), "EXECUTING: Cartesian move succeeded");
         closeGripper();
+        grasped_ = true;
       }
       else
       {
@@ -752,7 +805,13 @@ private:
         centroid_snapshot_ = latest_centroid_;
         accepting_centroids_ = false; // the snapshot is the target from here on (T1.25)
       }
+      {
+        // Candidates from an earlier cycle's hold were seen from the return pose, not from here
+        std::lock_guard<std::mutex> lock(queue_mutex_);
+        candidate_queue_ = {};
+      }
       openGripper();
+      grasped_ = false;
 
       if (USE_SIMPLE_EXECUTE)
       {
@@ -789,22 +848,18 @@ private:
         // to prevent the planner from trying to move down into the table
         goal_pose_base.pose.position.z = current_pose_stamped.pose.position.z;
 
-        // LOGICAL ERROR: return value of moveCartesianStep ignored —
-        // executingSimple() will run even if the Cartesian step failed
+        // The gripper is open here, so going home from a failed step is safe
         if (!mtc_planner_->moveCartesianStep(goal_pose_base.pose))
         {
-          RCLCPP_WARN(this->get_logger(), "EXECUTING: final Cartesian step failed — aborting");
-          return; // exit worker loop, effectively halting the node
+          RCLCPP_WARN(this->get_logger(), "EXECUTING: final Cartesian step failed — back to HOME and IDLE");
         }
-        executingSimple();
-        RCLCPP_INFO(this->get_logger(), "Object grasped successfully");
-        returnWithRetry();
-
-        // Publish completion message to orchestrator
-        std_msgs::msg::Bool return_msg;
-        return_msg.data = true;
-        return_to_user_pub_->publish(return_msg);
-        return;
+        else
+        {
+          executingSimple();
+          grasped_ = true;
+          // Logged without checking the jaws: judge a grasp by eye (GRASP_BRINGUP_STEPS)
+          RCLCPP_INFO(this->get_logger(), "Object grasped successfully");
+        }
       }
       else
       {
@@ -816,6 +871,10 @@ private:
         while (!executing_done)
           executing_done = executingStep(pose_locked, stable_pose_base);
       }
+      if (grasped_)
+        holdUntilRelease();
+      if (shutdown_)
+        return;
       // =================================================================
 
       // =====================================================================
@@ -835,10 +894,12 @@ private:
   rclcpp::Subscription<grasp_interfaces::msg::GraspCandidateArray>::SharedPtr grasp_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr centroid_sub_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr grasp_request_sub_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr release_sub_;
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperset>::SharedPtr gripper_position_pub_;
   rclcpp::Publisher<rm_ros_interfaces::msg::Gripperpick>::SharedPtr gripper_pick_on_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pipeline_state_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr return_to_user_pub_;
+  rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr manipulation_done_pub_;
 
   // TF2
   tf2_ros::Buffer tf_buffer_;
@@ -848,8 +909,8 @@ private:
   double fx_ = 0.0, fy_ = 0.0, image_cx_ = 0.0, image_cy_ = 0.0;
   bool intrinsics_received_ = false;
 
-  // State
-  State state_;
+  // State. Atomic: the worker writes it and graspCallback reads it on the spin thread (CODE_AUDIT C4)
+  std::atomic<State> state_;
 
   // Motion planner
   std::shared_ptr<MtcPlanner> mtc_planner_;
@@ -861,6 +922,9 @@ private:
   bool accepting_centroids_ = false;
   bool waiting_in_idle_ = false;
   std::chrono::steady_clock::time_point request_deadline_;
+  // The release gate (T1.14), also under centroid_mutex_
+  bool accepting_release_ = false;
+  bool release_received_ = false;
   std::mutex centroid_mutex_;
   geometry_msgs::msg::PointStamped centroid_snapshot_;
 
@@ -878,7 +942,7 @@ private:
 
   // Flags
   bool debug_flag_ = false;
-  bool grasped_ = false;
+  bool grasped_ = false; // this cycle closed the gripper on the object (worker thread only)
 
   // Tuning values, set once in the constructor from grasp/grasp_config.yaml before the worker
   // thread starts. Names kept from when these were constants.

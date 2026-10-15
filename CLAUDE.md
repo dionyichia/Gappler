@@ -4,115 +4,99 @@ Gappler: Aria smart glasses (voice + gaze) → SAM 3 segmentation → AnyGrasp �
 LiDAR-navigating mobile base, glued by ROS 2 Humble. Being integrated with the HiCo-Nav paper and
 refactored toward one-folder-per-node modular code.
 
-## Read first — global docs vs. per-person docs
+## Read first: global docs vs. per-person docs
 
-**Reorganised 2026-09-16.** `docs/` holds two different things now, and the distinction matters:
-
-- **Global docs live directly in `docs/`** — they describe state shared by everyone, not one
-  person's session: `ORIENTATION`, `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`,
-  `CHANNEL_CONTRACT`, `MEMORY_GRAPH_DESIGN`, `NEXT_STEPS`, `PROJECT_PLAN`, `TESTBENCH_PLAN`,
-  `hico-nav/`, `bench-runs/`,
-  and the three published HTML pages (`task-tree.html`, `wiring-map.html`, `testbench-map.html`).
-- **Personal docs live in per-person folders**, `docs/<name>_docs/` — session notes, handoffs and
-  evidence write-ups not yet folded into the shared docs above.
-
-Rules:
-
+- **Global docs live directly in `docs/`** and describe state shared by everyone: `ORIENTATION`,
+  `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `CHANNEL_CONTRACT`, `MEMORY_GRAPH_DESIGN`,
+  `NEXT_STEPS`, `PROJECT_PLAN`, `TESTBENCH_PLAN`, `hico-nav/`, `bench-runs/`, and the three published
+  HTML pages (`task-tree.html`, `wiring-map.html`, `testbench-map.html`).
+- **Personal docs live in `docs/<firstname>_docs/`**: session notes, handoffs and evidence not yet
+  folded into the global docs. Write only in your own folder (ask the user's name if unknown). Never
+  edit another person's folder: write the correction in yours and tell them.
 - **Everyone starts at [`docs/START_HERE.md`](docs/START_HERE.md), then
-  [`docs/ORIENTATION.md`](docs/ORIENTATION.md).** START_HERE explains the layout and reading order.
-- **Keep the global docs current — this applies to every session, not just Dion's.** If your
-  session's work changes what a global doc says (a task moves from open to done, a finding is
-  confirmed, a decision is settled), **update that doc directly, in the same session**, following
-  its citation/tag/changelog conventions. Don't leave the correction in a personal folder waiting
-  for someone else to notice.
-  - **Tasks live in one place: `docs/task-tree.html`'s task data (the `T` array).** `PROJECT_PLAN.md`
-    §6 explains how to read it but no longer repeats the tasks (since 2026-09-22). Add a new task
-    there. A task's optional 9th field holds its long notes. When a task is done, prefix the task's description with
-    `"DONE <date>. ..."`. The page derives its done state (strikethrough, green mark) from that
-    prefix on load for every viewer — it is not enough to just narrate completion in the markdown
-    while the tracker still shows the task open.
-  - If your tooling can publish Artifacts (the Claude Code `Artifact` tool), republish
-    `task-tree.html` (and any other HTML page you edited) after the edit so the live page
-    matches the file. If it can't, say in the doc's changelog that a republish is still owed, so the
-    next session with publish access does it.
-- **Personal work** — plans, session notes, handoffs not yet ready to be shared fact — goes in your
-  own `docs/<firstname>_docs/` (ask the user if you don't know their name). Never edit another
-  person's personal folder; write the correction in your own and tell them.
-- **Dion's current work:** [`docs/TESTBENCH_PLAN.md`](docs/TESTBENCH_PLAN.md) — "▶ Start here"
-  (status, decisions, work queue W1–W8).
+  [`docs/ORIENTATION.md`](docs/ORIENTATION.md).**
+- **Keep the global docs current, in the same session.** If your work changes what a global doc says
+  (a task is done, a finding is confirmed, a decision is settled), update that doc directly,
+  following its citation, tag and changelog conventions.
+- **Tasks live in one place: the `T` array in `docs/task-tree.html`.** Add new tasks there. Other
+  docs hold status and evidence and point at task IDs, never their own to-do lists. A task's optional
+  9th field holds long notes. When a task is done, start its description with `"DONE <date>. ..."`:
+  the page derives the done mark from that prefix.
+- **Republish every HTML page you edit** with the Claude Code `Artifact` tool so the live page matches
+  the file. If you can't publish, say "republish owed" in that doc's changelog.
 - The root `README.md` is stale (a different upstream project). Ignore it.
 
-## Design consideration — the lab box is not guaranteed long-term
+## Portability tiebreaker
 
-The lab workstation is confirmed available for **two months from 2026-09-16**; what happens after
-that is not known. When a design choice is otherwise a wash, prefer the more portable one — config
-over hardcoded machine-specific paths, derived-from-repo-root over absolute paths, environment
-variables with sensible defaults over constants tied to one box — so that a forced move to
-different hardware later is a config change, not a rewrite. This is a tiebreaker, not a mandate to
-over-engineer: only pay for portability when it isn't much extra effort. Zongzhe's `T0.3` (folding
-the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this in progress already.
+The lab box is confirmed until 2026-11-16 only. When a design choice is otherwise a wash, prefer the
+portable one: config over hardcoded machine paths, paths derived from the repo root, environment
+variables with defaults. Only when it costs little extra.
 
-## Safety — this code moves a real robot arm
+## Safety: this code moves a real robot arm
 
-- Never launch `grasp_state_machine`, `launchers/start_camera_arm_grasp.py`, `launchers/grasp_orchestrator.py`
-  or root `main.py` (the two launchers were `ros2_robot_ws/src/main.py` and `orchestrator.py` until 2026-09-21, and the first was
-  `start_grasp_pipeline.py` until 2026-10-06, then `start_camera_arm_sam3_grasp.py` until 2026-10-08). The state machine homes the arm within seconds, unprompted. The home pose itself
-  was validated on the real arm by direct command in T1.7 (2026-09-23), but the state machine has
-  never run on the real arm. **One exception (Dion, 2026-09-11):** `bench/state_machine_sim.sh` may
-  launch the state machine against the *simulated* arm, behind its guards (mock hardware, private
-  channel, no `rm_driver`, preflight shows the arm unreachable).
-- Never publish to `/rm_driver/*_cmd`, `/goal_pose`, `/cmd_vel`, `/manipulation/*`, or
-  `/object_centroid_2d` on the real ROS domain. Isolate tests with `ROS_DOMAIN_ID` + `ROS_LOCALHOST_ONLY=1`.
-  Other users (`iot22`, and other people logged in as `rcp2026`) share the box; localhost-only does
-  not separate you from their processes — a unique, empty domain id does.
-- **The box's hardware is shared: check before you use it** (Dion, 2026-09-22). `rcp2026` is used by
-  three people. Before starting anything that uses a camera, the GPU, the arm, the glasses or the LiDAR,
-  check whether someone else is already using it:
+Rule history and the incidents behind these rules: TESTBENCH_PLAN §3.
+
+- **Never launch** `grasp_state_machine`, `launchers/start_camera_arm_grasp.py`,
+  `launchers/grasp_orchestrator.py` or root `main.py`. The state machine homes the arm within seconds,
+  unprompted, and has never run on the real arm. Exception: `bench/state_machine_sim.sh` runs it on
+  the *simulated* arm, behind its guards.
+- **Never publish** to `/rm_driver/*_cmd`, `/goal_pose`, `/cmd_vel`, `/manipulation/*` or
+  `/object_centroid_2d` on the real ROS domain. Isolate tests with a unique, empty `ROS_DOMAIN_ID`
+  plus `ROS_LOCALHOST_ONLY=1`. Localhost-only does not separate you from other users on the box. The
+  domain id does.
+- **The box's hardware is shared: check before you use it.** `rcp2026` is used by three people, plus
+  `iot22`. Before using a camera, the GPU, the arm, the glasses or the LiDAR, run
   `ps -eo pid,user,etime,args | grep -iE "realsense|rs_launch|ros2 launch|bench/run.sh|Runner.Worker"`,
-  `nvidia-smi`, `fuser /dev/video*`. If anyone is, stop and tell the user who and what, then wait.
-  **Never stop a process you did not start.** `pkill -u rcp2026 -f <pattern>` also hits other people's
-  work (on 2026-09-22 it stopped someone's camera driver mid-test). Start your processes with `setsid`
-  and stop them only by their own process group: `kill -INT -<pgid>`.
-- **Never close a tmux session without asking first** (Dion, 2026-10-07). Before any
-  `tmux kill-session` or `kill-server` on the box, stop, tell the user which session and what runs in
-  it, and wait for a yes, even for a session you think you made. Always target the exact name,
-  `-t "=name"`: a plain `-t name` matches by prefix. On 2026-10-07 test cleanup ran
-  `tmux kill-session -t grasp`, which closed someone's attached `grasp_t1_24` session.
-- **Fixes go on branches for review** (Dion, 2026-09-19, replacing the 2026-09-11 "no fixes yet"
-  rule). The project is in implementation. Each fix lands through a PR into `dev`
-  (the default branch), where CI runs the bench. `dev` is promoted to `main` by PR.
-- **Branch names start with the task ID** (Dion, 2026-09-22), lower case, then a short
-  description: `t1.8-anygrasp-gate`, `t1.2-t1.3-estop-and-home-pose`. Anyone reading the branch
-  list should see which task it serves without opening it. Put the same ID at the start of the PR
-  title (`T1.8: ...`). If no task in `docs/task-tree.html` covers the work, add one there first.
+  `nvidia-smi` and `fuser /dev/video*`. If anyone is using it, tell the user who and what, then wait.
+- **Never stop a process you did not start.** No `pkill` or `killall`. Start yours with `setsid` and
+  stop them only by process group: `kill -INT -<pgid>`.
+- **Never close a tmux session without asking first**, even one you think you made. Always target the
+  exact name, `-t "=name"`: a plain `-t name` matches by prefix.
+- `.claude/hooks/lab_safety_guard.py` blocks or asks before the commands above. It is a backstop, not
+  a reason to skip the checks.
+
+## Git workflow
+
+- **Fixes land through a PR into `dev`** (the default branch), where CI runs the bench. `dev` is
+  promoted to `main` by PR.
+- **Branch names start with the task ID**, lower case: `t1.8-anygrasp-gate`. The PR title starts
+  with the same ID: `T1.8: ...`. If no task covers the work, add one to the task tree first.
+- Bring a branch up to date by merging `origin/dev` into it. Never rebase and force-push a shared
+  branch.
+- **Ship each task with `/ship`** ([`.claude/skills/ship/SKILL.md`](.claude/skills/ship/SKILL.md)).
+  It runs the task tree update, quick bench, commit, merge of `dev`, PR, CI watch and merge for one
+  task. If your tool doesn't load project skills, read that file and follow its steps.
 
 ## The lab machine
 
-- **Connect over tailscale** (works from anywhere): `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60`.
-  Check it's up with `tailscale ping 100.87.133.60`. The campus address `rcp2026@10.91.242.76` works only
-  on the NTU network. Key auth from the Mac.
-- **Same physical machine, a second tailscale node.** It also answers as `weejingjie24@100.98.10.50`
-  (hostname `iot22-computer-1`), registered under a different tailscale account (Sherman's, 2026-09-16).
-  Confirmed by Dion to be the same box, not a second one. Use whichever address is up;
-  `tailscale ping` either if unsure.
-- **All work happens in `~/rcp-Gappler`** — a clone of Gappler `main`; build, test and commit there.
-  `~/rcp-desktop` (`realman_manip`), `~/rcp-github` (`combined`) and `~/rcp-old-ros-wkspace` (copy of
-  `iot22`'s nav workspace) are old code / reference: never modify them or their `install/` overlays.
-  Don't touch `/home/iot22`; never set `PYTHONNOUSERSITE=1`; never `pip install --user`.
-- MoveIt with `mock_components` (simulated arm) is allowed; anything with `rm_driver` is not.
-- **Start robot sessions with `./quickstart_terminals.sh <layout>`** (Dion, 2026-10-07, T0.16), not
-  by hand-typed terminals. Layouts: `gripper`, `arm`, `grasp`, `nav`, `aria`, `full`. It opens a tmux
-  session named after the layout, one pane per process, each pane set up with its subsystem's env
-  file on domain 91, localhost only. Drivers, the stop, cameras and monitors start on their own.
-  Anything that moves the arm or base is typed but not sent. It refuses to start if what it would
-  start, or a bench run, is already up. `--print` lists the panes, `--dry` types every command and
-  starts nothing. `full` leaves nav out until T3.9. When giving someone commands for a robot
-  session, point at the script and only spell out what it does not cover.
-- **The GitHub Actions runner** lives in `~/actions-runner` (tmux session `gh-runner`, stops on reboot).
-  Its checkout `~/actions-runner/_work/Gappler/Gappler` belongs to CI: don't work in it. Only one bench
-  run at a time on the box, so check `pgrep -af "Runner.Worker|bench/run.sh"` before starting one.
-  Details in TESTBENCH_PLAN "Start here".
-- `/home` is nearly full (14 GB free on 2026-09-11) — check `df -h ~` before large builds or downloads.
+- **Connect over tailscale:** `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60`. The box has a
+  second tailscale node, `rcp2026@100.98.10.50`. Use whichever `tailscale status` shows active. On the
+  NTU network, `rcp2026@10.91.242.76` also works.
+- **All work happens in `~/rcp-Gappler`.** `~/rcp-desktop`, `~/rcp-github` and `~/rcp-old-ros-wkspace`
+  are old reference code: never modify them or their `install/` overlays. Don't touch `/home/iot22`,
+  never set `PYTHONNOUSERSITE=1`, never `pip install --user`.
+- MoveIt with `mock_components` (simulated arm) is allowed. Anything with `rm_driver` needs a person
+  at the robot.
+- **Start robot sessions with `./quickstart_terminals.sh <layout>`** (`gripper`, `arm`, `grasp`,
+  `nav`, `aria`, `full`). It opens a tmux session named after the layout, one pane per process, on
+  domain 91, localhost only. Drivers, the stop, cameras and monitors start on their own. Commands that
+  move the arm or base are typed but not sent. `--print` lists the panes, `--dry` starts nothing.
+  When giving someone commands for a robot session, point at the script and only spell out what it
+  does not cover.
+- **During a robot session, run commands in its tmux panes over ssh**, so the user sees them, using
+  `./tmux_pane_by_row_col.sh`. Quick read-only checks (`ps`, `nvidia-smi`, reading a log) can run over
+  plain ssh.
+  - Commands that don't move anything: `run`.
+  - Commands that move the arm, gripper or base: `type` only (no Enter), then tell the user which
+    pane to press Enter in.
+  - Name panes by row and column ("row 1, col 2: the driver"), never by pane number. `map` prints
+    the grid.
+- **The GitHub Actions runner** lives in `~/actions-runner` (tmux session `gh-runner`). Its checkout
+  `~/actions-runner/_work/Gappler/Gappler` belongs to CI: don't work in it. Only one bench run at a
+  time on the box: check `pgrep -af "Runner.Worker|bench/run.sh"` first.
+- Sourcing a subsystem env file can build its venv. Never run panes from a scratch clone without
+  linking its venvs first (TESTBENCH_PLAN §3).
+- `/home` is nearly full. Check `df -h ~` before large builds or downloads.
 
 ## The bench
 
@@ -124,35 +108,33 @@ the seven hardcoded paths in `NEXT_STEPS.md` §2.5 into config) is exactly this 
 ./bench/run.sh report                  # contract inventory + orphan analysis
 python3 bench/contracts.py snapshot    # re-baseline after a deliberate contract change
 # lab box only (ROS + the built overlay):
-./build.sh [nav]                       # L3: colcon build into this checkout (was bench/build.sh)
+./build.sh [nav]                       # L3: colcon build into this checkout
 ./bench/sim_moveit.sh                  # L4: MoveIt on a simulated arm
 ./bench/estop_delivery.sh              # L4: does estop.py's stop message leave
 ./bench/state_machine_sim.sh           # L4: grasp state machine on the simulated arm
+./bench/state_machine_sim.sh candidates # L4: same, the AnyGrasp path (use_simple_execute false)
 ./bench/nav_nodes.sh                   # L4: the five nav nodes vs a mock Nav2 (nothing drives)
 ./bench/anygrasp_env.sh [PYTHON]       # can this env run AnyGrasp (imports + SDK demo)
 ./bench/memory_graph_tests.sh [PYTHON] # all memory graph tests, with the real open_clip model (needs .venv, no ROS)
 ```
 
-Levels L0-L6 are defined in `bench/README.md` (renamed from Tiers 0-4 on 2026-09-19, L5 robot
-check added 2026-09-21). L0-L2 are stdlib-only and need no ROS. Run them before and after any
-refactor. L5 checks the robot is connected and gates L6. L6 is the real robot and is
-never automated. What counts as our code is one rule, `is_owned` in `bench/_common.py`: everything
-except what sits under a `vendor/` folder. Put third-party code under its subsystem's `vendor/`.
-Every L4 (simulation) script refuses to start unless its ROS channel is private and empty. Results go in
-`docs/bench-runs/`; status and next work in TESTBENCH_PLAN "▶ Start here".
+Levels L0-L6 are defined in `bench/README.md`. L0-L2 are stdlib-only and need no ROS: run them before
+and after any refactor. L6 is the real robot and is never automated. Our code is everything except
+what sits under a `vendor/` folder (`is_owned` in `bench/_common.py`). Put third-party code under its
+subsystem's `vendor/`. Results go in `docs/bench-runs/`.
 
 ## Conventions
 
 - Tag claims in docs: `[code]` read from source · `[reported]` from the 2026-08-25 hardware session ·
   `[inferred]` reasoning · `[unverified]` static finding not yet confirmed at the machine. Retag when
-  you verify; delete what turns out wrong.
+  you verify. Delete what turns out wrong.
 - Append to each doc's changelog on substantive edits. Cite `file.py:123`.
-- Name things descriptively by subsystem (`arm_base_link`, not `base_link`) — ORIENTATION §0b.
+- Name things descriptively by subsystem (`arm_base_link`, not `base_link`): ORIENTATION §0b.
 - Skipped checks are reported as skipped, never as passing.
 - **Writing style. If you are Dion's agent, read
   [`docs/dion_docs/WRITING_STYLE.md`](docs/dion_docs/WRITING_STYLE.md) before doing anything else,
-  and follow it in every document, comment, commit message and chat reply.** Short version: clear,
-  concise, main point first, plain language before jargon, no em dashes, no semicolons, no emojis,
-  no hype. Readers include mechanical engineering students new to code.
-- On macOS, `grep` is ugrep; multi-path `grep -r --include` can silently return nothing — use
+  and follow it everywhere.** Short version: main point first, plain language before jargon, no em
+  dashes, no semicolons, no emojis, no hype. Readers include mechanical engineering students new to
+  code.
+- On macOS, `grep` is ugrep: multi-path `grep -r --include` can silently return nothing. Use
   `find ... | xargs grep`.

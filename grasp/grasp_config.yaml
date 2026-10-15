@@ -49,6 +49,35 @@ anygrasp_detection_node:
     # Workspace box in the camera frame, metres: [x_min, x_max, y_min, y_max, z_min, z_max].
     # Wide on purpose: the SAM mask does the spatial filtering.
     workspace_limits_m: [-1.0, 1.0, -1.0, 1.0, 0.0, 1.5]
+    # AnyGrasp's gripper model, not the real opening (the real gripper opens about 71 mm).
+    # AnyGrasp reports every grasp at this width and needs clearance around the object: told
+    # 0.07, it found no grasp on a 6 cm box face (top score 0.005); told 0.10, 0.34 to 0.5
+    # (T1.17, bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt). It does not check the
+    # object fits in 71 mm (T1.32).
+    max_gripper_width_m: 0.10
+    # Drop grasps whose approach is further than this from the wrist camera's view axis. A
+    # first-run safety limit (Dion, 2026-10-14), not a measured one: the candidate path moves to
+    # the grasp's full pose, so larger angles may work. Raise it once RViz and a few real grasps
+    # show they do. Without it, most grasps came from the side or across the top face.
+    max_approach_deg: 30
+    # T1.32: does the object fit the REAL gripper? AnyGrasp cannot tell (it is told 0.10 m above),
+    # so the node measures each grasp from the masked points and drops it if any limit fails.
+    # Gripper (Dion, 2026-10-14): a U 50 mm deep inside, opens 71 mm, rubber pads 16 mm long.
+    # Widest the object may be where the pads close, metres. 71 mm opening minus 3 mm for depth
+    # noise. A 6 cm box measures about 63 mm in the point cloud (step 7a). Raise toward 0.071 if
+    # good grasps are dropped, lower if grasps close on objects that do not fit.
+    # [unverified] whether 71 mm is between the pads or outside them (pads about 2 mm a side).
+    max_object_width_m: 0.068
+    # Furthest the fingertips may go past the object's near face, metres. Past 0.050 the base of
+    # the U pushes the object. 5 mm kept as margin. In step 7c tips went up to 0.133 m in.
+    max_grasp_depth_m: 0.045
+    # Height of the slice measured, across the finger, metres. Roughly the pad width. [unverified]
+    # Larger counts more of the object (safer for boxes, drops grasps on narrow necks).
+    finger_height_m: 0.02
+    # Ignore this percent of points at each edge of the slice. They are often flying pixels: the
+    # camera mixes near and far depth at an edge. 0 uses the extreme points (strays then make
+    # objects look wider). Raise if stray points still widen objects.
+    fit_percentile: 2
 
 # grasp/grasp_viz/grasp_viz.py. Size of the gripper drawn in RViz, metres.
 grasp_visualizer:
