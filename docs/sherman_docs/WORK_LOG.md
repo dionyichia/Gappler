@@ -361,6 +361,15 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Available Mac quick checks passed with explicit environment/subtest skips. Both lab-access routes failed before transfer; no box job, graph check, hardware action or deployment occurred. Runtime assertions, discriminating negative control and parameter-startup efficacy remain UNVERIFIED. T3.5 stays PROGRESS.
 - Next: restore lab access, verify fresh idle conditions and exact candidate tree, run serial isolated regressions and review evidence before any live-work proposal. Push this preparation for visibility, not as runtime acceptance.
 
+## [2026-10-15] T3.5 | Access restored; automatic startup observed, control inconclusive
+
+- Evidence: [startup/control results](../bench-runs/2026-10-15-sherman-t3.5-startup-control.txt), exact tree `0eb9f3fc6c977329c5c31da88bdeebdc6952f3da`. Single verifier, serial private-domain tests; original teammate grasp checkout and both overlays preserved.
+- Verified: 32 focused unit tests and seven construction observations passed. Saver/interruption/graph/image checks passed; fresh localizer automatically loaded the owned snapshot with exact raster plus fresh scan-derived pose/TF, without deserialize request.
+- Stopped: no-reseed relocation control lacked current pose or TF observations; combined assertion cannot distinguish which. Suite exit1, treatment/subsequent stages not reached, cloud skipped. No causal reseeding proof. Installed drift unchanged; domain127 empty after owned-process cleanup.
+- Diagnostic: one fresh exact-tree `2652fb69` run with counters failed earlier at raster equality, so counts are unavailable. Mapper shutdown also logged `karto::Exception`/Aborted, not the corrupt-map stage. No root cause established, no retry. Original work/overlays preserved and private domain empty again. First startup pass is not repeatability proof.
+- Next: distinguish absent/unequal raster and missing pose/TF with improved assertion diagnostics, investigate shutdown abort and startup readiness before changing control behavior. Upstream stationary scan gating is a hypothesis, not installed-runtime proof. No relaxed thresholds, vendor changes, hardware or deployment. T3.5 stays PROGRESS.
+- Close-out: final available Mac quick checks exit0 with explicit skips; source diff only expands two diagnostic messages. Read-only evidence review passed; preservation manifests independently compared identical. Box suite remains failed/inconclusive, not a green runtime checkpoint. No completion PR.
+
 ## Record Template
 
 ```markdown

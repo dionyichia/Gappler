@@ -330,7 +330,10 @@ def main() -> None:
                            (p.header.stamp.sec, p.header.stamp.nanosec) in sent]
                 now = node.get_clock().now().nanoseconds
                 fresh = [t for t in transforms if started <= t.header.stamp.sec * 10**9 + t.header.stamp.nanosec <= now + 600_000_000]
-                assert current and fresh, "inconclusive trial: missing fresh scan-derived pose/map->odom TF"
+                assert current and fresh, (
+                    "inconclusive trial: missing fresh scan-derived pose/map->odom TF; "
+                    f"poses={len(poses)}, scan_matched_poses={len(current)}, "
+                    f"map_odom_tf={len(transforms)}, fresh_tf={len(fresh)}, sent_scans={len(sent)}")
                 latest, tf = current[-1].pose.pose, fresh[-1].transform
                 pose = (latest.position.x, latest.position.y, 2 * math.atan2(latest.orientation.z, latest.orientation.w))
                 mapped = (tf.translation.x, tf.translation.y, 2 * math.atan2(tf.rotation.z, tf.rotation.w))
@@ -348,7 +351,12 @@ def main() -> None:
                 process = start("localization_slam_toolbox_node", "localization",
                                 str(owned_snapshot / "completed_map"), at_a, label)
                 loaded = call("dynamic_map", GetMap, GetMap.Request()).map
-                assert loaded.header.frame_id == "t35_map" and loaded.info == original.info and loaded.data == original.data, "automatic startup failed to load saved raster"
+                assert loaded.header.frame_id == "t35_map" and loaded.info == original.info and loaded.data == original.data, (
+                    "automatic startup failed to load saved raster; "
+                    f"frame={loaded.header.frame_id!r}, "
+                    f"loaded={loaded.info.width}x{loaded.info.height}/{len(loaded.data)} cells, "
+                    f"expected={original.info.width}x{original.info.height}/{len(original.data)} cells, "
+                    f"metadata_equal={loaded.info == original.info}, data_equal={loaded.data == original.data}")
                 started = node.get_clock().now().nanoseconds
                 sent = feed(at_a, repeats=20, odometry=at_a)
                 spin_for(0.3)

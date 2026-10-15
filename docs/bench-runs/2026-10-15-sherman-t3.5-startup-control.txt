@@ -1,0 +1,106 @@
+T3.5 restored-access verification: startup observed once, repeatability blocked
+2026-10-15; isolated software only, no deployment or hardware commands.
+
+Frozen tree: 0eb9f3fc6c977329c5c31da88bdeebdc6952f3da
+Runtime source matches feature commit 603a7a7; later documentation is separate.
+Candidate: log/t35-startup-0eb9-20261015 under approved lab checkout.
+Constructed from retained 06b89328 archive plus 16-file delta; no deletions.
+Delta SHA256: 9b75c703c083072e3cb82d95a949705b50de6c626a97174b435950a391d0dbf8
+Exact indexed tree before/after; source diff empty. No committed snapshot HEAD.
+Initial full-archive transfer timed out; partial archive retained and NOT used.
+
+One verifier owned all box execution, serially on domain127/localhost-only.
+Fresh shared-box/CI/process and native-empty-domain checks passed. Original
+checkout contains teammate grasp work and was not switched, staged or edited.
+No build/install/deploy, dependency changes, full SLAM/Nav2 launches, drivers,
+goal/arm/wheel commands, network changes or teammate/tmux cleanup.
+
+Focused unit checks: 32 PASS, zero FAIL/SKIP:
+fixture 9; map prerequisites 8; launch wiring 2; saver 5;
+both coverage tests 2 each; installed-checker self-test 4.
+Launch construction: 7 PASS observations, exit0; no actions executed.
+
+Persistence wrapper: exit1 after six PASS checkpoints:
+PASS owned saver: graph/image/manifest with spaces; mapper resumed
+PASS saver SIGINT recovery: fresh scans processed
+PASS saver SIGTERM recovery: fresh scans processed
+PASS mapping and real graph serialization
+PASS image save with YAML reference
+PASS automatic parameter startup startup-control: exact saved raster and fresh
+     scan-derived pose plus map->odom TF, composed with supplied odometry;
+     localization YAML, nonempty map_file_name and nonzero map_start_pose;
+     NO deserialize call in this fresh startup trial.
+
+Then the unseeded relocation control failed its witness requirement:
+test_slam_persistence.py:378 -> observe():333
+AssertionError: inconclusive trial: missing fresh scan-derived pose/map->odom TF
+A=(1,1,0); B=(0.2,-0.5,0); scan moved to B while odometry stayed at A.
+The combined assertion does not identify which observation was absent.
+Localizer log shows loaded graph, sensor registration, a Ceres thread-cap
+warning, then clean signal shutdown; no vendor crash trace.
+This is NOT a passing negative control and NOT causal reseeding proof.
+Treatment, subsequent service/missing/corrupt/localization/saver-refusal stages
+were NOT REACHED. Cloud/scan was SKIPPED after this failure, not passed.
+Corrupt-file abort remains a prior known limitation, not re-observed here.
+
+Installed comparison exit1 before/after, identical output/full hashes:
+4 MATCH, 3 DRIFT, 1 MISSING, 1 SKIP. NOT installed/deployment readiness.
+Original branch/head/index/status and recorded tracked/nonignored untracked
+bytes unchanged. install_nav (689 entries) and install (2761 entries) unchanged.
+Owned wrapper/localizer exited; no manual kill or teammate interference.
+Final native graph: no nodes, only /parameter_events and /rosout; guard passed.
+Graph emptiness is a bounded observation, not exclusive domain reservation.
+
+Raw evidence: candidate log/VERIFICATION-SUMMARY.txt,
+slam-persistence-full.log, t35-slam-startup-control.log, individual unit logs,
+construction-runtime.log, invariance-final.log, before/after manifests,
+native-final.json and processes-final.txt.
+Local ignored copy: log/t35-startup-20261015-evidence/.
+Lead verified captured exit codes and byte-identical preservation manifests.
+
+Outcome: automatic loading in this trusted synthetic fixture is observed;
+startup-seed causal efficacy, matched reseeding, live localization, historical
+map compatibility, staging/readiness gates and physical accuracy remain open.
+T3.5/T3.9 remain PROGRESS. No completion PR or live-work approval.
+
+Read-only upstream investigation (hypothesis, not installed binary proof):
+SLAM Toolbox tag2.6.10 resolves to commit
+8293d21fe5c816d0405e0cc1f3eb46c70659c267.
+src/slam_toolbox_localization.cpp:117-141 calls shared shouldProcessScan;
+src/slam_toolbox_common.cpp:502-547 rejects ordinary stationary-odometry scans
+under minimum_travel_distance. Changing ranges/waiting alone cannot open it.
+localization.cpp:209-233 makes /initialpose set first_measurement_=true and
+clear localization buffer; this admits the next scan via a different path.
+common.cpp:245-269 can rebroadcast unchanged TF with advancing scan stamps.
+Thus a stationary control can confound seed benefit with scan admission.
+Reference: https://github.com/SteveMacenski/slam_toolbox/tree/8293d21fe5c816d0405e0cc1f3eb46c70659c267
+No upstream/vendor/config change proposed. Diagnostic counters must distinguish
+fresh pose from TF broadcasts before attributing the installed run's failure.
+
+ONE diagnostic rerun, stopped without retry:
+Exact tree 2652fb69e789dbd488bc0448c112f387ade7f3d5, new candidate
+log/t35-startup-diagnostic-2652-20261015. Runtime diff is assertion-message
+counters only. Fixture tests 9 PASS. Persistence exit1 after five checkpoints,
+BEFORE startup pose/TF observation, A scan input or the new control counters:
+test_slam_persistence.py:354: automatic startup failed to load saved raster.
+Combined assertion compared frame, metadata and cell data; did not expose which
+part differed or distinguish absent map from unequal raster. All five counters
+are UNAVAILABLE, not zero. No diagnosis of missing pose versus TF obtained.
+Localizer log shows graph load/sensor registration then shutdown. Mapper log
+additionally ends after shutdown signal with karto::Exception / [ros2run]: Aborted.
+This is NOT the corrupt-map test; that stage was never reached. No established
+causal link between shutdown abort and raster mismatch. Do not call shutdown safe.
+Previous startup observation stands only for its run; repeatability NOT proven.
+Treatment/cloud/subsequent stages not reached; no causal reseeding proof.
+Original checkout/user work, both overlays, previous snapshot and compared hashes
+unchanged; diagnostic tree/source unchanged; no owned processes left; final
+domain127 graph empty except standard topics. No teammate/tmux interference.
+Raw candidate log/DIAGNOSTIC-SUMMARY.txt, counter-results.json, mapper/localizer
+logs, full persistence output, invariance-final.log and native-final.json.
+Local copy: log/t35-startup-diagnostic-20261015-evidence/.
+
+No further run or behavior/threshold/vendor change after the earlier failure.
+Local code now expands BOTH assertion messages to distinguish absent/unequal
+raster and missing pose/TF on a future bounded investigation. These final logging
+changes are not box-tested and do not fix either failure. Continuous-odometry
+control remains a design proposal; not substituted for the failed trial here.
