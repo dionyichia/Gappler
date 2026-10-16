@@ -437,6 +437,21 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: review the minimal guard, compile the full patched mapper, then perform
   attended patched ASan and normal replay checks. No PR or merge yet.
 
+## [2026-10-16] T3.5a | Destructor root-caused to Eigen/PCL alignment
+
+- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md), patched ASan
+  image `56f183c4`, run `t59-replay-20261016T083645Z-421664`.
+- Verified: sampling guard held for the full recording (no vio report; 331
+  valid clouds, 0 invalid). ASan diagnosed the original crash site:
+  `handmade_aligned_free` on a PCL-`malloc`'d VoxelGrid buffer —
+  `-march=native` (AVX2, 32-byte Eigen alignment) vs prebuilt PCL (16-byte).
+  Alignment fix staged in recipe: 10/10 tests pass both sides, real-file dry
+  run clean on both pinned CMakeLists. Recipe hashes match Mac↔lab.
+- Outcome: root cause identified with a staged fix, not yet proven by a clean
+  normal replay. No robot command or deployment change.
+- Next: patched normal-image rebuild, then full normal replay expecting clean
+  shutdown. No PR or merge yet.
+
 ## Record Template
 
 ```markdown
