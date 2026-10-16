@@ -28,8 +28,16 @@ git rules in `CLAUDE.md`. Stop and ask whenever a step below says so, or when so
 ## 3. Review the changes
 
 Two reviews of the files chosen in step 2. The diff is `git diff $(git merge-base HEAD origin/dev)`
-(committed and uncommitted work on the branch) plus any new files being added. Skip both if only
-docs changed, and say so.
+(committed and uncommitted work on the branch) plus any new files being added.
+
+Skip both reviews, say why in one line, and go on to step 4 when the change is minimal:
+
+- only docs, comments or prose changed, or
+- a small code change (roughly under 20 lines) with no new logic: a rename, a typo, a log
+  message, a constant.
+
+Always review a change that touches arm, gripper or base motion, safety checks, or ROS topics,
+however small.
 
 **Ponytail review (background).** Start it first so it runs while you do the lead review. Use the
 Agent tool with `subagent_type: "fork"` and this brief, filled in:
