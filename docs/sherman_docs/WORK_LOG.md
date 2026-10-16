@@ -419,6 +419,24 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   the run. No hardware touched.
 - Next: instrumented replay, then patch from the ASan report.
 
+## [2026-10-16] T3.5a | Audit reset and ASan image-read finding
+
+- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md), runs
+  `t59-replay-20261016T070324Z-414486` and `t59-replay-20261016T070602Z-414943`.
+- Correction to the earlier entry: empty LIO clouds are source-observed behavior,
+  not proven intentional design. ASan-only preload did not fix startup; ASan plus
+  the C++ runtime completed a paused diagnostic. Linkage does not prove uniform
+  instrumentation. The data side was not fully reconciled: normal replay missed
+  ten initial IMU callback logs; ASan replay had a large trailing backlog.
+- Verified: separate harness candidate, 44/44 lab pure tests, normal paused
+  diagnostic clean. Full ASan replay at 0.2 aborted during callback drain, before
+  cleanup, on a one-byte image overread in pinned `vio.cpp:1679`. A standalone
+  candidate regression reproduces the unsafe footprint and tests a guard.
+- Outcome: actionable memory finding, not task completion. Original destructor
+  crash is not explained. No mapper rebuild, robot command or deployment change.
+- Next: review the minimal guard, compile the full patched mapper, then perform
+  attended patched ASan and normal replay checks. No PR or merge yet.
+
 ## Record Template
 
 ```markdown
