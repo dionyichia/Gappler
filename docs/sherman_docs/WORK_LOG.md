@@ -452,6 +452,18 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: patched normal-image rebuild, then full normal replay expecting clean
   shutdown. No PR or merge yet.
 
+## [2026-10-17] T3.5a | DONE — PASS replay, clean shutdown
+
+- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md), patched
+  normal image `d0dcfa8a`, run `t59-replay-20261016T175305Z-433728`.
+- Verified: verdict PASS, supervisor exit 0, all processes exit 0; EOF with
+  reconciled coverage (667/668/13,511+4 prestart, allowance 21); 665 odom,
+  663 valid clouds (9.18 M points), 618 RGB, 0 invalid, 663 visual retrievals.
+- Outcome: T3.5a done criteria met. Task-tree T3.5a flipped DONE on
+  `t3.5-launch-prep`; no merge until all of T3.5 completes. No accuracy,
+  live-sensor or Nav2 claims.
+- Next: T3.5b attended stationary capture on the same branch.
+
 ## Record Template
 
 ```markdown
