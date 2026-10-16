@@ -477,6 +477,30 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: confirm operator attendance and an agreed sensor window, then inspect
   exact installed driver settings and perform staged operator-run capture.
 
+## [2026-10-17] T3.5b | DONE — stationary capture recorded and characterised
+
+- Evidence: [`T3.5_SENSOR_CAPTURE.md`](T3.5_SENSOR_CAPTURE.md); primary bag
+  `t35b_proof3` (74.03 s, 19,987 msgs, 2.2 GiB) plus `t35b_proof2` backup on
+  the lab box at `log/t59-fastlivo/log/t35b-capture.R0fVks/`; analysis
+  `analyze_proof3_ros.py` (`rosbag2_py` + `rclpy` deserialisation, no
+  hand-rolled CDR).
+- Verified: native CustomMsg (10 Hz, `timebase` == header, ns offsets spanning
+  each ~100 ms scan, all finite, lines 0–3); IMU 200.0 Hz, zero non-finite,
+  stationary gyro, accel |a| = 0.990 as-published (g-scale vs m/s² flagged for
+  the T3.5c consumer, bag untouched); colour-only 640x480 rgb8 @30 Hz with
+  1:1 matching stable CameraInfo (zero stamp mismatches); first headers
+  aligned within ~20 ms; zero backwards stamps on all streams; colour-only
+  log shows zero USB overflow warnings; provenance (driver/firmware/serial/
+  SHAs/commands) recorded; shutdown verified (no LiDAR/camera/recorder/daemon
+  processes, only pre-existing `gh-runner` remains).
+- Outcome: T3.5b done criteria met. Task-tree T3.5b flipped DONE on
+  `t3.5-launch-prep`; no merge until all of T3.5 completes. The first
+  `t35b_proof` bag lacks LiDAR (recorder missed the overlay) and is retained
+  as unusable. Stationary data proves delivery, not physical sync, delay
+  calibration or extrinsics.
+- Next: T3.5c replay of `t35b_proof3` through FAST-LIVO2 offline (gated also
+  on T5.5 nominal mount transform).
+
 ## Record Template
 
 ```markdown
