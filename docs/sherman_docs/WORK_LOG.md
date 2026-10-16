@@ -464,6 +464,19 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   live-sensor or Nav2 claims.
 - Next: T3.5b attended stationary capture on the same branch.
 
+## [2026-10-17] T3.5b | Stationary capture preparation
+
+- Plan: [`T3.5_SENSOR_CAPTURE.md`](T3.5_SENSOR_CAPTURE.md).
+- Verified read-only: both cameras enumerated on 5000M USB links, 54 GiB free,
+  required host Ethernet addresses retained, no matching hardware/bench/replay
+  jobs or video holders reported. These checks do not establish custody or
+  sensor streaming. No driver startup, recording, network edit or motion command.
+- Outcome: T3.5b PROGRESS on the existing T3.5 branch. Native Livox CustomMsg
+  is required for point timing; existing PointCloud2-only and full robot launch
+  paths are unsuitable. Shared lab checkout's unrelated changes left untouched.
+- Next: confirm operator attendance and an agreed sensor window, then inspect
+  exact installed driver settings and perform staged operator-run capture.
+
 ## Record Template
 
 ```markdown
