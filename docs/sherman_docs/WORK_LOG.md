@@ -407,6 +407,18 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: ASan backtrace, minimal fork patch, normal rebuild, PASS rerun; then
   T3.5b attended capture. No PR (task open).
 
+## [2026-10-16] T3.5a | Heartbeat gate, ASan runs staged
+
+- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md) (findings 3, 6)
+- Verified: LIO empty clouds proven upstream design from pinned source and
+  counted as heartbeats (664 heartbeats, 663 valid clouds, 0 invalid on
+  rerun). ASan image built with verified linkage after one mislabeled build
+  (guard added: overridden image requires flags). Mixed-binary abort fixed
+  with `T35_LD_PRELOAD`. Recipe 8/8, replay 32/32 tests pass on the box.
+- Outcome: data side fully clean; only the mapper teardown crash still FAILs
+  the run. No hardware touched.
+- Next: instrumented replay, then patch from the ASan report.
+
 ## Record Template
 
 ```markdown
