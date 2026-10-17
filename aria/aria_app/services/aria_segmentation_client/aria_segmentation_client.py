@@ -42,10 +42,9 @@ import rclpy
 from geometry_msgs.msg import PointStamped
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from segmentation_interfaces.msg import Target
+from segmentation_interfaces.msg import SpokenWord, Target
 from segmentation_interfaces.srv import Segment
 from sensor_msgs.msg import CompressedImage, Image
-from segmentation_interfaces.msg import SpokenWord
 from std_msgs.msg import Empty
 
 from config import VIDEO_QOS, AudioStreamingPipelineConfig, ROS2Topics
@@ -153,9 +152,11 @@ class AriaSegmentationClient(Node):
             self.get_logger().info("No gaze from the glasses: the word alone is sent")
             return
         start, end = self.said[0] - CFG["gaze_before_word_s"], self.said[1]
-        missing = [what for what, came in (
-            ("gaze", any(t >= end for _, t, _, _ in self.gaze)),
-            ("glasses image", any(t >= start for _, t, _ in self.images))) if not came]
+        missing = []
+        if not any(t >= end for _, t, _, _ in self.gaze):
+            missing.append("gaze")
+        if not any(t >= start for _, t, _ in self.images):
+            missing.append("glasses image")
         if missing and not last_try:
             if self.wait_until == -np.inf:
                 self.wait_until = time.monotonic() + CFG["matching_image_wait_s"]

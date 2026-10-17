@@ -34,3 +34,15 @@ is untouched.
 Note on 70 s: the image used was taken 1.4 s from the middle of the gaze. The wait ends as soon as
 any image taken since the window's start arrives, and the nearest one that has come is used. A
 nearer image may have arrived later. This is PR A's rule (T2.20), unchanged here.
+
+3. Re-run after the /ship review fixes (rclpy Time for the stamps, the replay reads the WAV with
+   replay_audio_file_to_prompt.read_wav, the client's wait check written as two ifs). Box free
+   before the run. Same copy, the 4 changed files md5 checked.
+   Unit tests: stream 23, client folder 31, tools 7 (3 new swap_sound), all OK.
+   E2e: workers ready after 60 s, played 0 to 118 s. Word stamps identical to run 2 (to the ns).
+   4 of 4 words sent a reference:
+     22 s  no wait. Image +0.40 s, 6 samples. #7 of 12, score 0.44, 100%, 0 px
+     46 s  no wait. Image -0.60 s, 6 samples. #1 of 8, score 0.64, 100%, 1 px
+     70 s  no wait. Image -0.60 s, 7 samples. #9 of 9, score 0.34, 100%, 10 px
+     95 s  no wait. Image +0.55 s, 7 samples. #5 of 5, score 0.39, 100%, 2 px
+   Which image arrives first varies run to run (the box's worker speed), so the masks differ.

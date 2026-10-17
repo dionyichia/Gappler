@@ -26,15 +26,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
-
-def wav_samples(path: str, rate: int) -> np.ndarray:
-    """A 16-bit mono WAV at `rate` as int32 samples."""
-    from scipy.io import wavfile   # scipy, not wave: afconvert writes headers wave cannot read
-    file_rate, audio = wavfile.read(path)
-    if file_rate != rate or audio.dtype != np.int16 or audio.ndim != 1:
-        raise SystemExit(f"{path}: needs 16-bit mono at {rate} Hz "
-                         f"(afconvert -f WAVE -d LEI16@{rate} -c 1 in.m4a out.wav)")
-    return audio.astype(np.int32)
+from replay_audio_file_to_prompt import read_wav
 
 
 def swap_sound(stamps, wav: np.ndarray, first_ns: int, sample_ns: float, channels: int):
@@ -76,7 +68,8 @@ def main():
     calib_json = provider.get_file_tags()["calib_json"]   # what the live stream hands the workers
     if args.audio:
         mic_first_ns = provider.get_audio_data_by_index(mic, 0)[1].capture_timestamps_ns[0]
-        wav = wav_samples(args.audio_wav, AriaConfig.AUDIO_SAMPLE_RATE) if args.audio_wav else None
+        wav = (read_wav(args.audio_wav, AriaConfig.AUDIO_SAMPLE_RATE).mean(axis=0).astype(np.int32)
+               if args.audio_wav else None)
         # no WAV chunks saved, as the live observer does every 10 s
         observer = AudioObserver(save_dir=tempfile.mkdtemp(), save_interval=10**9)
 

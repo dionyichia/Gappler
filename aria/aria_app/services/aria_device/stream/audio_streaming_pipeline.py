@@ -20,8 +20,8 @@ from faster_whisper import WhisperModel
 from faster_whisper.transcribe import Segment
 from faster_whisper.vad import VadOptions, get_speech_timestamps
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
+from rclpy.time import Time
 from scipy.signal import resample
-from builtin_interfaces.msg import Time
 from segmentation_interfaces.msg import SpokenWord
 from std_msgs.msg import Bool, String
 
@@ -79,12 +79,6 @@ def word_span(words, prompt: str):
         if want and all(said[i + k][0].startswith(w) for k, w in enumerate(want)):
             return said[i][1], said[i + len(want) - 1][2]
     return None
-
-
-def ros_time(t: float) -> Time:
-    """Seconds -> builtin_interfaces/Time."""
-    sec = int(t)
-    return Time(sec=sec, nanosec=int(round((t - sec) * 1e9)))
 
 
 def audio_worker(
@@ -198,8 +192,9 @@ def audio_worker(
         if span is None:
             logger.info(f"{prompt!r} not in the transcript: stamped with the whole sentence")
             span = (0.0, end - start)
-        stamped = SpokenWord(word=prompt, word_end=ros_time(start + span[1]))
-        stamped.header.stamp = ros_time(start + span[0])
+        stamped = SpokenWord(word=prompt,
+                             word_end=Time(nanoseconds=round((start + span[1]) * 1e9)).to_msg())
+        stamped.header.stamp = Time(nanoseconds=round((start + span[0]) * 1e9)).to_msg()
         stamped_publisher.publish(stamped)
 
         msg = String()
