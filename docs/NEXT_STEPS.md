@@ -236,7 +236,7 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
   (`bench-runs/2026-10-15-labbox-t2.9-review-fixes.txt`). The grasp side does not use the reference
   yet (`T8.5`), so which object the arm takes is unchanged. Write-up:
   `dion_docs/T2.9_GAZE_PICK_ON_RECORDING.md`.
-- **Timing, open 2026-10-17 (`T2.19` to `T2.21`).** The aria client times the word, the gaze and
+- **Timing, built 2026-10-18 (`T2.19` to `T2.21`).** The aria client times the word, the gaze and
   the image by when each reaches it, not when the glasses captured it, and guesses the gaps with
   `speech_latency_s` (1.5 s, measured) and `image_wait_s` `[code]`. Those knobs measure how fast the
   box is, so they need retuning whenever the box changes. The fix is the standard one: stamp each
@@ -249,6 +249,16 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
   mask, replacing the 1 s mean. `image_wait_s` is now `matching_image_wait_s`. Still by arrival
   time: the word to the gaze, through `speech_latency_s`, until `T2.21` `[code]`. On the box: e2e
   replay 4 of 4, stamps on the glasses clock (`bench-runs/2026-10-17-labbox-t2.19-t2.20-capture-timestamps.txt`).
+  PR A merged as PR #90.
+  **PR B built 2026-10-18 (`T2.21`, branch `t2.21-stamped-spoken-word`):** the word is stamped
+  with when it was said, from the glasses microphone's capture times and Whisper's word times, on
+  `/aria/audio/prompt_stamped` (`SpokenWord`). The client takes gaze from `gaze_before_word_s`
+  (1 s) before the word to its end, by glasses time. `speech_latency_s` and `gaze_window_s` are
+  gone, so no knob depends on how fast the box is except the bounded wait `[code]`. On the box: e2e
+  replay of recording c2cbafe8 with a recorded command stitched into its sound, 4 of 4, word stamps
+  within 8 ms of where the command was placed (`bench-runs/2026-10-18-labbox-t2.21-stamped-word.txt`).
+  Still owed: a real recording with live speech (decision 9b in
+  `dion_docs/T2.19_T2.21_CAPTURE_TIMESTAMPS_PLAN.md`).
 
 #### `[decided 2026-09-20]` Decision: retire `sam3_ros_node.py` (Option 2)
 
@@ -1507,3 +1517,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-15 | Claude Opus 5.5 + Dion | §2.2: T2.9 e2e 4 of 4 after the readiness fix. |
 | 2026-10-17 | Claude Opus 5.5 + Dion | §2.2: T2.9 timing is by arrival, not capture. Plan to fix it is T2.19 to T2.21. |
 | 2026-10-17 | Claude Opus 5.5 + Dion | §2.2: T2.19 and T2.20 (PR A) built, box checks owed. |
+| 2026-10-18 | Claude Opus 5.5 + Dion | §2.2: PR A merged (#90). T2.21 (PR B) built, the word stamped with when it was said, box e2e 4 of 4. |

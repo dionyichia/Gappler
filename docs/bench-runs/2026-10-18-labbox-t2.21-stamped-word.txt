@@ -1,0 +1,48 @@
+T2.21 (PR B) on the lab box, 2026-10-18, branch t2.21-stamped-spoken-word at 1ca40df plus the e2e
+script's overlay line. Box free before the run: no ROS, camera or bench processes, GPU idle, load
+0.07. Copy in ~/dion_t2.9/repo, the 17 files changed since dev 66b9eae copied in, md5 checked
+against the Mac. .venv and install linked from ~/rcp-Gappler. segmentation_interfaces with the new
+SpokenWord built into a private overlay, ~/dion_t2.9/t2.21_install (14 s), so the shared install
+is untouched.
+
+1. Unit tests, domain 87, localhost only
+   stream folder (observer + pipeline): Ran 23 tests, OK
+   client folder: Ran 31 tests, OK (22 client, 9 gaze pick)
+   aria/tools: Ran 4 tests, OK
+
+2. End to end on recording c2cbafe8 with its sound swapped, domain 88, localhost only
+   bash docs/dion_docs/t2.21_e2e_replay_on_box.sh
+   Sound: c2cbafe8-...commands.wav, Dion's "pick up the box" (4.3 s) at 22, 46, 70, 95 s from the
+   first microphone sample, silence elsewhere (decision 9b). No word was faked with ros2 topic pub:
+   each went through AudioObserver, audio_worker, Whisper and the LLM.
+   Workers, Whisper and the LLM took their first input after 56 s. Played 0 to 118 s.
+   Words on /aria/audio/prompt_stamped (glasses clock), and the String twin 4 times:
+     box  4249.161 to 4249.821
+     box  4273.161 to 4273.821   +24.000 s from the first (placed 24 s apart)
+     box  4297.161 to 4297.821   +48.000 s (placed 48 s)
+     box  4322.153 to 4322.813   +72.992 s (placed 73 s)
+   "box" at 2.59 to 3.25 s into the clip. The clip's loudness peaks at 3.0 s, the "b" of box, so
+   Whisper's start may be up to 0.3 s early [inferred]. The 1 s of gaze before the word covers it.
+   4 of 4 words sent a reference:
+     22 s  no wait. Image +0.45 s from the gaze, 7 samples vote. #7 of 12, score 0.44, 100%, 0 px
+     46 s  waited for the image. +0.40 s, 6 samples. #1 of 9, score 0.58, 100%, 0 px
+     70 s  waited for the image. +1.40 s, 6 samples. #6 of 8, score 0.33, 100%, 13 px
+     95 s  no wait. -0.60 s, 6 samples. #5 of 5, score 0.33, 100%, 3 px
+   Which object each pick is was not checked on the image [unverified].
+   All processes stopped by the script. No audio gap was logged.
+
+Note on 70 s: the image used was taken 1.4 s from the middle of the gaze. The wait ends as soon as
+any image taken since the window's start arrives, and the nearest one that has come is used. A
+nearer image may have arrived later. This is PR A's rule (T2.20), unchanged here.
+
+3. Re-run after the /ship review fixes (rclpy Time for the stamps, the replay reads the WAV with
+   replay_audio_file_to_prompt.read_wav, the client's wait check written as two ifs). Box free
+   before the run. Same copy, the 4 changed files md5 checked.
+   Unit tests: stream 23, client folder 31, tools 7 (3 new swap_sound), all OK.
+   E2e: workers ready after 60 s, played 0 to 118 s. Word stamps identical to run 2 (to the ns).
+   4 of 4 words sent a reference:
+     22 s  no wait. Image +0.40 s, 6 samples. #7 of 12, score 0.44, 100%, 0 px
+     46 s  no wait. Image -0.60 s, 6 samples. #1 of 8, score 0.64, 100%, 1 px
+     70 s  no wait. Image -0.60 s, 7 samples. #9 of 9, score 0.34, 100%, 10 px
+     95 s  no wait. Image +0.55 s, 7 samples. #5 of 5, score 0.39, 100%, 2 px
+   Which image arrives first varies run to run (the box's worker speed), so the masks differ.

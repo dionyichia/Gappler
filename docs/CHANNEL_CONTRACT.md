@@ -70,6 +70,7 @@ These cross a subsystem boundary. They are the contract.
 | # | Channel | Type and frame | From | To | Owner | State |
 |---|---|---|---|---|---|---|
 | H1 | `/aria/audio/prompt` | `String`, the object word | Aria, `audio_streaming_pipeline.py:49` | Nav, `object_approach_node.py:80` and `goto_glasses.py:59` | Dion | works. Two nav consumers race for Nav2 (E5). Segmentation never listens (L1). Becomes one message per finished sentence (A-5, `T2.10`) |
+| H1a | `/aria/audio/prompt_stamped` | `segmentation_interfaces/SpokenWord`: the object word, `header.stamp` when it started and `word_end` when it ended, on the glasses clock (`T2.21`). If the word is not in the transcript, the sentence's start and end | Aria, `audio_streaming_pipeline.py`, with every H1 word | Aria, `aria_segmentation_client.py` (it no longer reads H1) | Dion | new 2026-10-18 (`T2.21`), branch `t2.21-stamped-spoken-word`. Box e2e 4 of 4 (`bench-runs/2026-10-18-labbox-t2.21-stamped-word.txt`). H1 stays for nav until `T2.22` moves its readers here |
 | H2 | `/manipulation/goal_pose` | `PoseStamped`, `base_link` | Grasp, `object_recognition_pipeline.py:204` | Nav, `object_approach_node.py:74` | Dion | works. From M7 the graph writes it through `T7.1` |
 | H3 | `/manipulation/start` | `Bool` | Nav, `object_approach_node.py:97` | Bot, `orchestrator.py:56` | Zongzhe | works. Today it launches a process. Becomes an arm and disarm gate, see B-4 in §6 |
 | H4 | `/goal_pose` | `PoseStamped`, `map` | Nav, `object_approach_node.py:90` | Nav2, via `goal_reached_publisher.py:29` | Zongzhe | works. Becomes a handover when the frontier layer writes it (M9) |
@@ -384,3 +385,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-10-14 | Claude Opus 5.5 + Dion | `T1.17`: H6 says which axes and which point a candidate pose uses (grasp_frame axes, fingertips), and that it reached the arm. |
 | 2026-10-15 | Claude Opus 5.5 + Dion | H5a: the aria client now sends a reference Target after the word (`T2.9`). |
 | 2026-10-17 | Claude Opus 5.5 + Dion | H11: gaze is `PointStamped` with the glasses capture time, and the glasses images carry their capture time (`T2.19`). Re-baselined with `contracts.py snapshot`. |
+| 2026-10-18 | Claude (Opus 5.5) + Dion | H1a `/aria/audio/prompt_stamped` added (`T2.21`): the spoken word with when it was said. The aria client moved to it from H1. Retiring H1 is `T2.22`. |

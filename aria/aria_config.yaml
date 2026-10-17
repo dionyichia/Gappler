@@ -12,6 +12,9 @@
   ros__parameters:
     # Topics only aria publishes and reads. publisher -> subscribers.
     topics:
+      # audio_streaming_pipeline -> aria_segmentation_client. The object word and when it was said
+      #   (segmentation_interfaces/msg/SpokenWord, T2.21)
+      audio_prompt_stamped: "/aria/audio/prompt_stamped"
       # image_streaming_pipeline -> visualizer
       rgb_camera_raw: "/aria/rgb_camera/raw"
       # pose_streaming_pipeline -> OpenVINS (parked). Its topic list is in
@@ -103,16 +106,13 @@ eye_tracking:
 # read by: aria/aria_app/services/aria_segmentation_client/ (and aria/tools/replay_recording_gaze_pick.py)
 aria_segmentation_client:
   ros__parameters:
-    # Gaze from this long votes on the mask: nobody holds their eyes on one point
-    # (Dion, 2026-10-13). 1 s is 10 eye frames at the recorded 10 fps, about 4 on the box (4.5 a second).
-    gaze_window_s: 1.0
-    # The word arrives this long after you stop speaking (audio_worker waits for a pause, then
-    # Whisper and the LLM run), so the gaze window ends this far back. Measured about 1.5 s on
-    # the box with a recorded command, not counting the glasses' own audio delay (Dion, 2026-10-17).
-    # A stopgap: T2.21 replaces it with the word's own capture time.
-    speech_latency_s: 1.5
-    # If no glasses image taken since you started speaking has arrived when the word comes, the
-    # client waits up to this long for one. Images arrive 1 to 3 s late on the box (T2.9, T2.20).
+    # Gaze from this long before the object word starts, to when it ends, is the gaze from when
+    # you spoke (T2.21, Dion 2026-10-18). Nobody holds their eyes on one point. 1 s plus a 0.4 s
+    # "box" is about 14 eye frames at the recorded 10 fps, about 6 on the box (4.5 a second).
+    gaze_before_word_s: 1.0
+    # If the gaze up to the word's end, or a glasses image taken since the gaze window started,
+    # has not arrived when the word comes, the client waits up to this long for them. Images
+    # arrive 1 to 3 s late on the box (T2.9, T2.20).
     matching_image_wait_s: 3.0
     # Pick the mask under the gaze, else the nearest within this many pixels of the published
     # 1408 px image. Recording c2cbafe8 needed about 60 at 1.4 m. Tune on more recordings.

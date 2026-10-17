@@ -7,6 +7,10 @@ changes. Like AudioObserver, it hands over the last max_buffer_s seconds once ev
 iteration_interval_s. The file is followed by max_buffer_s of silence, so the last words roll
 out of the window as they would live.
 
+The stamped word (T2.21) carries this computer's clock, not the glasses' one, so it does not
+line up with recorded gaze. For that, replay a recording with its own sound:
+replay_recording_to_glasses_topics.py --audio.
+
 Whisper and the LLM load once, about a minute on the box. After each file the script asks for the
 next one, so later replays start at once (T2.16): Enter plays the same file again, a short name
 plays assets/recordings/voice_commands/<name>_command.wav (release, pick_up_box), a path plays
@@ -88,7 +92,7 @@ def main():
         # The worker skips an empty chunk, so once it takes one Whisper and the LLM are loaded.
         # put() lands in the background: wait for the chunk to show, then for it to go.
         print("Loading Whisper and the LLM...")
-        queue.put(np.zeros((1, 0), np.int32))
+        queue.put((np.zeros((1, 0), np.int32), 0))
         for want_empty in (False, True):
             while queue.empty() != want_empty:
                 if not worker.is_alive():
@@ -102,7 +106,8 @@ def main():
                                       cfg.MAX_BUFFER_SECONDS):
                 if not worker.is_alive():
                     raise SystemExit("The audio worker stopped, see the error above")
-                _put_latest(queue, audio[:, start:end])
+                # with the newest sample's time, as AudioObserver.snapshot() gives it
+                _put_latest(queue, (audio[:, start:end], time.monotonic_ns()))
                 time.sleep(cfg.ITERATION_INTERVAL_SECONDS)
             answer = input("Next: Enter = same file, a name (release, pick_up_box), a path, q = quit: ")
             while answer.strip() != "q" and next_wav(answer, wav) is None:

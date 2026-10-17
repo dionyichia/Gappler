@@ -453,6 +453,7 @@ svg.scn{display:block;width:100%;height:auto;min-width:560px}
 
 <header class="masthead">
   <div class="inner">
+    <!-- Changelog 2026-10-18: /aria/audio/prompt_stamped row added (T2.21). Republish owed until branch t2.21-stamped-spoken-word merges. -->
     <!-- Changelog 2026-10-17: gaze_estimate and undistorted rows say they carry the glasses capture time (T2.19). Republish owed until this branch merges. -->
     <!-- Changelog 2026-10-15: /aria/rgb_camera/undistorted row names the aria segmentation client as a reader (T2.9 review). Republish owed after PR #76 merges. -->
     <!-- Changelog 2026-10-14: /aria/eye_tracking/gaze_estimate row updated for T2.9 (gaze in undistorted image pixels, aria segmentation client reads it). The rest of the page is still the 13 Sep snapshot. -->
@@ -1228,6 +1229,10 @@ sensors_calib_json_str = self.config_queue.get()
             <tr><td><span class="topic">/aria/audio/prompt</span></td>
               <td>The object name you spoke</td><td>audio pipeline</td>
               <td>navigation ×2; the recognition pipeline (not running)</td></tr>
+            <tr><td><span class="topic">/aria/audio/prompt_stamped</span></td>
+              <td>The same object name, with when you started and stopped saying it, on the glasses clock
+                (a SpokenWord, since T2.21, 2026-10-18). The String above stays for navigation until T2.22</td>
+              <td>audio pipeline</td><td>aria segmentation client</td></tr>
             <tr><td><span class="topic">/aria/eye_tracking/gaze_estimate</span></td>
               <td>Where you are looking, in the pixels of the undistorted glasses image (since T2.9, 2026-10-14).
                 A PointStamped, stamped with when the eye camera took the frame, on the glasses clock (since T2.19)
