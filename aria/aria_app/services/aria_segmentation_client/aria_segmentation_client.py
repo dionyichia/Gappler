@@ -7,10 +7,16 @@ Turns what you say and what you look at into what the arm looks for.
    segmentation client reads. The stop word clears it.
    Each word also sends /manipulator/grasp_request, which opens the state machine's trigger gate
    (T1.25), so every time you ask is one grasp (T2.6). The stop word sends none.
-2. If the glasses image and gaze are coming in, the newest glasses image is segmented with the
-   same word, and the mask you look at is picked: the one under your gaze averaged over
-   gaze_window_s, ending speech_latency_s before the word came (when you spoke it), else the
-   nearest within pick_radius_px (gaze_pick.py). A second Target with the same word follows,
+2. If the glasses image and gaze are coming in, the glasses image from when you spoke is
+   segmented with the same word, and the mask you look at is picked by a vote (T2.19, T2.20):
+   a. The gaze samples that arrived in the gaze_window_s ending speech_latency_s before the
+      word came are the ones from when you spoke.
+   b. Their glasses capture times pick the image: the one taken nearest the middle of them. If
+      no image taken since the first of them has arrived yet, it waits up to
+      matching_image_wait_s for one (images arrive 1 to 3 s late on the box).
+   c. Every gaze sample taken within gaze_to_image_max_s of that image votes for the mask under
+      it, else the nearest within pick_radius_px. The mask with at least vote_min_share of the
+      votes wins (gaze_pick.py). A second Target with the same word follows,
    carrying that object's crop and mask as its reference. If nothing is near the gaze, the word
    alone stands.
 
@@ -19,7 +25,9 @@ restarts, it looks for nothing until you say the word again: a restart never res
 command on its own (Dion, 2026-10-13). A reply that comes back after any newer word, even the
 same one, or the stop word is dropped, so it never brings an old target back.
 
-Gaze arrives in the pixels of the published undistorted image (et_worker, T2.9).
+Gaze arrives in the pixels of the published undistorted image (et_worker, T2.9). Gaze and images
+are stamped with their capture time on the glasses clock (T2.19). Arrival times only bridge the
+word to the gaze, until T2.21 stamps the word too.
 
     source aria/aria_env.sh && source install/local_setup.bash
     python aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py
@@ -31,7 +39,7 @@ from collections import deque
 import cv2
 import numpy as np
 import rclpy
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import PointStamped
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from segmentation_interfaces.msg import Target
@@ -41,11 +49,22 @@ from std_msgs.msg import Empty, String
 
 from config import VIDEO_QOS, AudioStreamingPipelineConfig, ROS2Topics
 from gappler_common import config
-from gaze_pick import mean_gaze, pick_mask
+from gaze_pick import vote
 
 STOP_KEYWORD = AudioStreamingPipelineConfig.STOP_KEYWORD
 CFG = config("aria", "aria_segmentation_client")
 SERVICE_NAME = CFG["services"]["segmentation_segment"]
+HISTORY_S = 20.0   # how long images and gaze are kept, by arrival time
+
+
+def seconds(stamp) -> float:
+    return stamp.sec + stamp.nanosec * 1e-9
+
+
+def drop_older(history: deque, now: float) -> None:
+    """Drop entries (arrival time, ...) that arrived more than HISTORY_S before now."""
+    while history and history[0][0] < now - HISTORY_S:
+        history.popleft()
 
 
 def image_msg(array: np.ndarray, encoding: str, header=None) -> Image:
@@ -72,7 +91,7 @@ class AriaSegmentationClient(Node):
         self.create_subscription(
             CompressedImage, ROS2Topics.RGB_CAMERA_UNDISTORTED.value, self.on_image, VIDEO_QOS)
         self.create_subscription(
-            Point, ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value, self.on_gaze, VIDEO_QOS)
+            PointStamped, ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value, self.on_gaze, VIDEO_QOS)
         self.target_pub = self.create_publisher(Target, ROS2Topics.GRASP_TARGET.value, 10)
         self.request_pub = self.create_publisher(
             Empty, ROS2Topics.MANIPULATOR_GRASP_REQUEST.value, 10)
@@ -80,25 +99,25 @@ class AriaSegmentationClient(Node):
         self.prompt = ""
         self.words = 0                              # bumped by every word: is a reply still current
         self.word_at = -np.inf                      # when the newest word came
-        self.image, self.image_at = None, -np.inf   # newest glasses image and when it came
-        self.wait_until = -np.inf                   # segment the next image if it comes by then
-        self.gaze = deque(maxlen=200)               # (time, x, y), ~20 s at 10 fps
+        self.wait_until = -np.inf      # waiting for an image from when you spoke, until then
+        self.images = deque()          # (arrival, glasses time, CompressedImage), kept undecoded
+        self.gaze = deque()            # (arrival, glasses time, x, y)
         self.get_logger().info(
             f"Aria segmentation client ready: {ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value} "
             f"-> {ROS2Topics.GRASP_TARGET.value}")
 
     def on_image(self, msg: CompressedImage):
-        self.image, self.image_at = msg, time.monotonic()
-        if self.wait_until == -np.inf:
-            return
-        on_time, self.wait_until = self.image_at <= self.wait_until, -np.inf
-        if on_time:
-            self.segment(self.prompt)
-        else:
-            self.get_logger().info("No glasses image within image_wait_s: the word alone stands")
+        now = time.monotonic()
+        self.images.append((now, seconds(msg.header.stamp), msg))
+        drop_older(self.images, now)
+        if self.wait_until != -np.inf:
+            # past the wait, the nearest image is used even if it is from before you spoke
+            self.segment(self.prompt, last_try=now > self.wait_until)
 
-    def on_gaze(self, msg: Point):
-        self.gaze.append((time.monotonic(), msg.x, msg.y))
+    def on_gaze(self, msg: PointStamped):
+        now = time.monotonic()
+        self.gaze.append((now, seconds(msg.header.stamp), msg.point.x, msg.point.y))
+        drop_older(self.gaze, now)
 
     def on_prompt(self, msg: String):
         words = msg.data.strip().lower()
@@ -118,30 +137,38 @@ class AriaSegmentationClient(Node):
         else:
             self.get_logger().info("Target cleared")
 
-    def segment(self, prompt: str):
-        """Ask the service about the newest glasses image. If that image is older than the gaze
-        window, the gaze may not match it, so wait for the next one (on_image). Skipped, with the
-        reason logged, when no glasses image or recent gaze has come, or the service is not up."""
-        now, window = time.monotonic(), CFG["gaze_window_s"]
-        if self.image is None:
-            self.get_logger().info("No glasses image: the word alone is sent")
+    def segment(self, prompt: str, last_try: bool = False):
+        """Ask the service about the glasses image from when you spoke (module docstring, 2).
+        Waits (on_image) while no image taken since then has arrived. Skipped, with the reason
+        logged, when no gaze from then, or near the image, has come, or the service is not up."""
+        # from the word's arrival, not now: after an image wait, now is up to the wait later
+        spoke, window = self.word_at - CFG["speech_latency_s"], CFG["gaze_window_s"]
+        taken = [t for at, t, _, _ in self.gaze if spoke - window < at <= spoke]
+        if not taken:
+            self.wait_until = -np.inf
+            self.get_logger().info("No gaze from when you spoke: the word alone is sent")
             return
-        if now - self.image_at > window:
-            self.wait_until = now + CFG["image_wait_s"]
-            self.get_logger().info(f"Glasses image is {now - self.image_at:.1f} s old: "
-                                   "waiting for the next one")
+        if not last_try and not any(t >= min(taken) for _, t, _ in self.images):
+            if self.wait_until == -np.inf:
+                self.wait_until = time.monotonic() + CFG["matching_image_wait_s"]
+                self.get_logger().info("No glasses image from when you spoke yet: waiting")
             return
-        # from the word's arrival, not now: after an image wait, now is up to image_wait_s later
-        gaze = mean_gaze(self.gaze, self.word_at - CFG["speech_latency_s"], window)
-        if gaze is None:
-            self.get_logger().info("No recent gaze: the word alone is sent")
+        self.wait_until = -np.inf
+        middle = (min(taken) + max(taken)) / 2
+        _, image_t, image = min(self.images, key=lambda i: abs(i[1] - middle))
+        gaze = [(x, y) for _, t, x, y in self.gaze if abs(t - image_t) <= CFG["gaze_to_image_max_s"]]
+        if not gaze:
+            self.get_logger().info(f"No gaze within gaze_to_image_max_s of the nearest image, taken "
+                                   f"{image_t - middle:+.1f} s from it: the word alone stands")
             return
         if not self.service.service_is_ready():
             self.get_logger().warn(f"{SERVICE_NAME} not up: the word alone is sent")
             return
-        header = self.image.header
+        self.get_logger().info(f"Image taken {image_t - middle:+.2f} s from the gaze while you "
+                               f"spoke, {len(gaze)} gaze samples vote")
+        header = image.header
         # publish_image encoded the RGB array as if it were BGR, so decoding gives RGB back
-        rgb = cv2.imdecode(np.frombuffer(self.image.data, np.uint8), cv2.IMREAD_COLOR)
+        rgb = cv2.imdecode(np.frombuffer(image.data, np.uint8), cv2.IMREAD_COLOR)
         future = self.service.call_async(Segment.Request(image=image_msg(rgb, "rgb8", header),
                                                          prompt=prompt))
         word = self.words
@@ -156,10 +183,12 @@ class AriaSegmentationClient(Node):
             self.get_logger().warn(f"Segment failed ({reason}): the word alone stands")
             return
         masks = [mask_array(d.mask) for d in response.detections]
-        i, dist = pick_mask(masks, *gaze, CFG["pick_radius_px"])
+        i, share, dist = vote(masks, gaze, CFG["pick_radius_px"], CFG["vote_min_share"])
         if i is None:
-            # ponytail: the word alone stands. T7.4 is to go back to navigation along the gaze ray
-            self.get_logger().info(f"{len(masks)} found, none near the gaze (nearest {dist:.0f} px): "
+            # ponytail: the word alone stands. T2.18 is to ask the user, T7.4 to go back to
+            # navigation along the gaze ray
+            self.get_logger().info(f"{len(masks)} found, no clear vote from {len(gaze)} gaze samples "
+                                   f"(best share {share:.2f}, distance {dist:.0f} px): "
                                    "the word alone stands")
             return
         det = response.detections[i]
@@ -169,7 +198,8 @@ class AriaSegmentationClient(Node):
                         reference_mask=image_msg(masks[i][y:y + h, x:x + w], "mono8", header))
         self.target_pub.publish(target)
         self.get_logger().info(f"Looked at: {prompt!r} #{i + 1} of {len(masks)}, score "
-                               f"{det.score:.2f}, {dist:.0f} px from the gaze, reference sent")
+                               f"{det.score:.2f}, {share:.0%} of {len(gaze)} gaze samples, "
+                               f"{dist:.0f} px from them, reference sent")
 
 
 def main():

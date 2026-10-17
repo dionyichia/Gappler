@@ -243,6 +243,12 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
   glasses message with its capture time (glasses clock), keep a short history, look up the image
   and gaze from when the word was said, and vote by gaze dwell. Plan and an independent review:
   `dion_docs/T2.9_TIMING_REVIEW.md` sections 9.1 to 9.10.
+  **PR A built 2026-10-17 (`T2.19`, `T2.20`, branch `t2.19-glasses-capture-timestamps`):** images
+  and gaze carry the glasses capture time (gaze is `PointStamped`). The client keeps 20 s of both,
+  and the gaze from when you spoke picks the image taken then. Gaze near that image votes on the
+  mask, replacing the 1 s mean. `image_wait_s` is now `matching_image_wait_s`. Still by arrival
+  time: the word to the gaze, through `speech_latency_s`, until `T2.21` `[code]`. On the box: e2e
+  replay 4 of 4, stamps on the glasses clock (`bench-runs/2026-10-17-labbox-t2.19-t2.20-capture-timestamps.txt`).
 
 #### `[decided 2026-09-20]` Decision: retire `sam3_ros_node.py` (Option 2)
 
@@ -1500,3 +1506,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-15 | Claude Opus 5.5 + Dion | §2.2: T2.9 result stated as all three runs, and that the grasp side does not use the reference yet (T8.5). |
 | 2026-10-15 | Claude Opus 5.5 + Dion | §2.2: T2.9 e2e 4 of 4 after the readiness fix. |
 | 2026-10-17 | Claude Opus 5.5 + Dion | §2.2: T2.9 timing is by arrival, not capture. Plan to fix it is T2.19 to T2.21. |
+| 2026-10-17 | Claude Opus 5.5 + Dion | §2.2: T2.19 and T2.20 (PR A) built, box checks owed. |

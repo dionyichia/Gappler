@@ -8,7 +8,7 @@ import threading
 from typing import Callable, Optional
 
 import rclpy
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import PointStamped
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
@@ -31,7 +31,7 @@ class ROSManager:
         self,
         on_raw_image: Callable[[CompressedImage], None],
         on_undistorted_image: Callable[[CompressedImage], None],
-        on_gaze_position: Callable[[Point], None],
+        on_gaze_position: Callable[[PointStamped], None],
         on_et_raw_image: Callable[[CompressedImage], None],
         on_aria_mask_bundle: Callable[[dict], None],
         on_ros_mask_bundle: Callable[[dict], None],
@@ -75,7 +75,7 @@ class ROSManager:
             VIDEO_QOS,
         )
         self._subscriber.create_subscription(
-            Point,
+            PointStamped,
             ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value,
             self._on_gaze_position,
             VIDEO_QOS,

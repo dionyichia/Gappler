@@ -3,12 +3,18 @@ import logging
 import cv2
 import numpy as np
 import rclpy
+from builtin_interfaces.msg import Time
 from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 
 from config import VIDEO_QOS
 
 logger = logging.getLogger(__name__)
+
+
+def stamp_from_ns(ns: int) -> Time:
+    """A ROS stamp from a time in nanoseconds, such as a glasses capture time (T2.19)."""
+    return Time(sec=int(ns // 1_000_000_000), nanosec=int(ns % 1_000_000_000))
 
 
 class ROSPublisher(Node):
@@ -28,9 +34,11 @@ class ROSPublisher(Node):
     def publish(self, msg):
         self.publisher.publish(msg)
 
-    def publish_image(self, image: np.ndarray):
+    def publish_image(self, image: np.ndarray, stamp_ns: int = None):
+        """stamp_ns: when the image was captured. Without it, the computer's time now."""
         msg = CompressedImage()
-        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.stamp = (self.get_clock().now().to_msg() if stamp_ns is None
+                            else stamp_from_ns(stamp_ns))
         msg.format = "jpeg"
 
         # Encode to JPEG — quality 80 is a good balance

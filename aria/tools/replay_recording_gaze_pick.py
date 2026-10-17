@@ -9,15 +9,16 @@ The shift between old and fixed is the T2.13 error.
 
 Stage 2, gaze: the eye model on every eye camera frame, cut at the fixed gaze depth
 (eye_tracking.py) and moved through the same undistort and rotate as the image, as et_worker
-publishes it. For each RGB frame the gaze is averaged over the last gaze_window_s, as the aria
-segmentation client does (gaze_pick.mean_gaze). Draws the averaged gaze (big ring) and the newest eye frame's
-gaze (small ring). Writes gaze.csv, one row per RGB frame, and the frames without rings in
-clean/, for SAM 3 on the box (segment_frames_with_sam3.py, stage 3).
+publishes it. Draws, on each RGB frame, the gaze samples that vote on it (a ring each). Writes
+gaze_samples.csv, one row per eye frame with its capture time, gaze.csv, one row per RGB frame
+with its capture time, and the frames without rings in clean/, for SAM 3 on the box
+(segment_frames_with_sam3.py, stage 3).
 
-Stage 4, pick: the mask under the averaged gaze, else the nearest within pick_radius_px
-(gaze_pick.pick_mask, aria_config.yaml).
-Reads gaze.csv and the box's masks, copied into <id>.pick/3_masks/. Writes pick.csv and, per
-frame, every mask with its score, the picked one boxed thick.
+Stage 4, pick: the gaze samples captured within gaze_to_image_max_s of the frame vote, as the
+aria segmentation client does (gaze_pick.vote, aria_config.yaml): each picks the mask under it,
+else the nearest within pick_radius_px. The mask with at least vote_min_share of the votes wins.
+Reads gaze.csv, gaze_samples.csv and the box's masks, copied into <id>.pick/3_masks/. Writes
+pick.csv and, per frame, every mask with its score, the picked one boxed thick.
 
 Runs on any machine, no ROS, no glasses SDK. Needs projectaria_tools, and for stage 2 torch and
 projectaria-eyetracking (pyproject.toml). Dion's Mac has them in the aria-test venv:
@@ -46,7 +47,7 @@ for folder in ("shared", "aria/aria_app/services/aria_device/stream",
                "aria/aria_app/services/aria_segmentation_client"):
     sys.path.insert(0, str(REPO / folder))
 from gappler_common import config  # noqa: E402
-from gaze_pick import mean_gaze, pick_mask  # noqa: E402
+from gaze_pick import vote  # noqa: E402
 from undistortion_helper import to_published_pixel  # noqa: E402
 
 RGB_STREAM_ID = "214-1"  # AriaConfig.RGB_STREAM_ID
@@ -82,8 +83,14 @@ def gaze_pixel(yaw: float, pitch: float, device_calib, src, depth_m: float):
         device_calibration=device_calib, camera_calibration=src, depth_m=depth_m)
 
 
-def draw_detections(image, masks, scores, picked, x, y):
-    """Every mask tinted and tagged #n, the gaze ring, and a legend of scores on the right."""
+def voters(samples, t: float):
+    """The (x, y) of the (time, x, y) samples captured within gaze_to_image_max_s of time t."""
+    return [(x, y) for ts, x, y in samples if abs(ts - t) <= PICK["gaze_to_image_max_s"]]
+
+
+def draw_detections(image, masks, scores, picked, points, share):
+    """Every mask tinted and tagged #n, a dot per voting gaze sample with the pick radius around
+    the first, and a legend of scores and the vote share on the right."""
     colors = [tuple(int(c) for c in np.random.default_rng(j).integers(60, 255, 3)) for j in range(len(masks))]
     for j, m in enumerate(masks):
         image[m] = 0.45 * image[m] + 0.55 * np.array(colors[j])
@@ -91,12 +98,14 @@ def draw_detections(image, masks, scores, picked, x, y):
         ys, xs = np.nonzero(m)
         cv2.rectangle(image, (xs.min(), ys.min()), (xs.max(), ys.max()), colors[j], 5 if j == picked else 2)
         cv2.putText(image, f"#{j + 1}", (int(xs.min()), max(int(ys.min()) - 8, 25)), 0, 0.9, colors[j], 2)
-    cv2.circle(image, (int(x), int(y)), int(PICK["pick_radius_px"]), (255, 0, 0), 3)
-    cv2.circle(image, (int(x), int(y)), 8, (255, 0, 0), -1)
+    if points:
+        cv2.circle(image, tuple(int(v) for v in points[0]), int(PICK["pick_radius_px"]), (255, 0, 0), 3)
+    for x, y in points:
+        cv2.circle(image, (int(x), int(y)), 8, (255, 0, 0), -1)
     legend = np.full((image.shape[0], 380, 3), 30, np.uint8)
     lines = [(f"{len(masks)} found", (255, 255, 255))] + [
         (f"#{j + 1}  {s:.2f}" + ("  PICKED" if j == picked else ""), colors[j]) for j, s in enumerate(scores)]
-    lines.append(("nothing picked" if picked is None else "", (80, 80, 255)))
+    lines.append((f"vote share {share:.2f}" + ("  nothing picked" if picked is None else ""), (80, 80, 255)))
     for k, (text, color) in enumerate(lines):
         cv2.putText(legend, text, (15, 45 + 45 * k), 0, 0.9, color, 2)
     return np.hstack([image, legend])
@@ -106,25 +115,28 @@ def pick_stage(pick_dir: Path) -> None:
     out = pick_dir / "4_pick"
     out.mkdir(exist_ok=True)
     with open(pick_dir / "2_gaze" / "gaze.csv") as f:
-        gaze = list(csv.DictReader(f))
+        frames = list(csv.DictReader(f))
+    with open(pick_dir / "2_gaze" / "gaze_samples.csv") as f:
+        samples = [(float(r["t_s"]), float(r["x_px"]), float(r["y_px"])) for r in csv.DictReader(f)]
     rows = []
-    for g in gaze:
+    for g in frames:
         mask_file = pick_dir / "3_masks" / f"{g['frame']}.npz"
-        if not mask_file.exists() or not g["x_px"]:
+        points = voters(samples, float(g["t_s"]))
+        if not mask_file.exists() or not points:
             continue
         found = np.load(mask_file)
         masks, scores = found["masks"], found["scores"]
-        x, y = float(g["x_px"]), float(g["y_px"])
-        i, dist = pick_mask(masks, x, y, PICK["pick_radius_px"])
-        rows.append([g["frame"], g["stop"], len(masks), "" if i is None else i,
-                     "" if i is None else round(float(scores[i]), 3), round(dist, 1)])
+        i, share, dist = vote(masks, points, PICK["pick_radius_px"], PICK["vote_min_share"])
+        rows.append([g["frame"], g["stop"], len(masks), len(points), "" if i is None else i,
+                     "" if i is None else round(float(scores[i]), 3), round(share, 2), round(dist, 1)])
 
         image = cv2.imread(str(pick_dir / "2_gaze" / "clean" / f"{g['frame']}.jpg"))
-        cv2.imwrite(str(out / f"{g['frame']}.jpg"), draw_detections(image, masks, scores, i, x, y))
+        cv2.imwrite(str(out / f"{g['frame']}.jpg"), draw_detections(image, masks, scores, i, points, share))
 
     with open(out / "pick.csv", "w", newline="") as f:
-        csv.writer(f).writerows([["frame", "stop", "masks", "picked", "score", "dist_px"], *rows])
-    print(f"{sum(r[3] != '' for r in rows)} of {len(rows)} frames picked a mask -> {out}")
+        csv.writer(f).writerows(
+            [["frame", "stop", "masks", "votes", "picked", "score", "share", "dist_px"], *rows])
+    print(f"{sum(r[4] != '' for r in rows)} of {len(rows)} frames picked a mask -> {out}")
 
 
 def main():
@@ -183,21 +195,19 @@ def main():
             cv2.imwrite(str(out / f"{name}.jpg"), cv2.cvtColor(np.hstack(panels), cv2.COLOR_RGB2BGR))
             continue
 
-        px = mean_gaze(samples, t_ns / 1e9, PICK["gaze_window_s"])
-        px_now = mean_gaze(samples, t_ns / 1e9, 0.1)   # the newest eye frame alone, at 10 fps
-        rows.append([name, stop, *(px or ("", "")), *(px_now or ("", ""))])
+        rows.append([name, stop, t_ns / 1e9])
         cv2.imwrite(str(out / "clean" / f"{name}.jpg"), cv2.cvtColor(fixed, cv2.COLOR_RGB2BGR))
-        if px is not None:
-            cv2.circle(fixed, (int(px[0]), int(px[1])), 25, (255, 0, 0), 6)
-        if px_now is not None:
-            cv2.circle(fixed, (int(px_now[0]), int(px_now[1])), 10, (255, 255, 0), 3)
+        for x, y in voters(samples, t_ns / 1e9):
+            cv2.circle(fixed, (int(x), int(y)), 10, (255, 0, 0), 3)
         cv2.imwrite(str(out / f"{name}.jpg"),
                     cv2.cvtColor(cv2.resize(fixed, (PANEL_PX * 2, PANEL_PX * 2)), cv2.COLOR_RGB2BGR))
 
     if args.stage == 2:
+        # Times on the glasses clock, as the live topics are stamped (T2.19)
         with open(out / "gaze.csv", "w", newline="") as f:
-            csv.writer(f).writerows(
-                [["frame", "stop", "x_px", "y_px", "x_now_px", "y_now_px"], *rows])
+            csv.writer(f).writerows([["frame", "stop", "t_s"], *rows])
+        with open(out / "gaze_samples.csv", "w", newline="") as f:
+            csv.writer(f).writerows([["t_s", "x_px", "y_px"], *samples])
     print(f"{n} frames -> {out}")
 
 

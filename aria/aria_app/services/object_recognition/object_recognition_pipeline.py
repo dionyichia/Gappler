@@ -10,7 +10,7 @@ import rclpy.duration
 import tf2_geometry_msgs
 import tf2_ros
 import torch
-from geometry_msgs.msg import Point, PointStamped, PoseStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
@@ -155,7 +155,7 @@ class ObjectRecognitionPipeline:
             callback_group=state_cb_group,
         )
         self._object_recognition_node.create_subscription(
-            Point,
+            PointStamped,
             ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value,
             self._on_gaze,
             VIDEO_QOS,
@@ -245,9 +245,9 @@ class ObjectRecognitionPipeline:
         )
         self._ros_feed.update(rgb, depth, rgb_msg.header)
 
-    def _on_gaze(self, msg: Point) -> None:
+    def _on_gaze(self, msg: PointStamped) -> None:
         with self._state_lock:
-            self._gaze_point = (msg.x, msg.y)
+            self._gaze_point = (msg.point.x, msg.point.y)
 
     def _on_prompt(self, msg: String) -> None:
         command = msg.data.strip().lower()

@@ -453,6 +453,7 @@ svg.scn{display:block;width:100%;height:auto;min-width:560px}
 
 <header class="masthead">
   <div class="inner">
+    <!-- Changelog 2026-10-17: gaze_estimate and undistorted rows say they carry the glasses capture time (T2.19). Republish owed until this branch merges. -->
     <!-- Changelog 2026-10-15: /aria/rgb_camera/undistorted row names the aria segmentation client as a reader (T2.9 review). Republish owed after PR #76 merges. -->
     <!-- Changelog 2026-10-14: /aria/eye_tracking/gaze_estimate row updated for T2.9 (gaze in undistorted image pixels, aria segmentation client reads it). The rest of the page is still the 13 Sep snapshot. -->
     <p class="eyebrow">Gappler · engineering reference · updated 13 Sep 2026</p>
@@ -1228,11 +1229,12 @@ sensors_calib_json_str = self.config_queue.get()
               <td>The object name you spoke</td><td>audio pipeline</td>
               <td>navigation ×2; the recognition pipeline (not running)</td></tr>
             <tr><td><span class="topic">/aria/eye_tracking/gaze_estimate</span></td>
-              <td>Where you are looking, in the pixels of the undistorted glasses image (since T2.9, 2026-10-14)
+              <td>Where you are looking, in the pixels of the undistorted glasses image (since T2.9, 2026-10-14).
+                A PointStamped, stamped with when the eye camera took the frame, on the glasses clock (since T2.19)
                 <span class="flag">Assumes everything is 1.5 m away — see Section 10</span></td>
               <td>image pipeline (off)</td><td>recognition pipeline, aria segmentation client</td></tr>
             <tr><td><span class="topic">/aria/rgb_camera/undistorted</span></td>
-              <td>Glasses camera image, lens distortion removed</td>
+              <td>Glasses camera image, lens distortion removed. Stamped with when it was taken, on the glasses clock (since T2.19)</td>
               <td>image pipeline (off)</td><td>recognition pipeline, RViz relay, aria segmentation client</td></tr>
             <tr><td><span class="topic">/aria/aruco_pose</span></td>
               <td>Printed marker sighting — how the glasses locate themselves</td>

@@ -15,7 +15,7 @@ import unittest
 import cv2
 import numpy as np
 import rclpy
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PointStamped
 from segmentation_interfaces.msg import Detection
 from segmentation_interfaces.srv import Segment
 from sensor_msgs.msg import CompressedImage
@@ -90,19 +90,30 @@ class AriaClientTest(unittest.TestCase):
         self.node.request_pub = Recorder()
         self.node.service = FakeServiceClient()
 
-    def image(self):
-        """A 60 x 40 glasses image, as the glasses app sends it."""
+    def image(self, taken=10.0):
+        """A 60 x 40 glasses image taken at glasses time `taken` s, as the glasses app sends it."""
         image = CompressedImage(format="jpeg",
                                 data=cv2.imencode(".png", np.full((40, 60, 3), 90, np.uint8))[1].tobytes())
-        image.header.stamp.sec = 7
+        image.header.stamp.sec, image.header.stamp.nanosec = int(taken), round(taken % 1 * 1e9)
         self.node.on_image(image)
 
+    def gaze(self, x, y, taken=10.0, age=2.0):
+        """Gaze at (x, y) taken at glasses time `taken`, which arrived `age` s ago. 2 s ago is from
+        while the word was spoken (the window is 1.0 s, ending speech_latency_s 1.5 before the word)."""
+        msg = PointStamped(point=Point(x=float(x), y=float(y)))
+        msg.header.stamp.sec, msg.header.stamp.nanosec = int(taken), round(taken % 1 * 1e9)
+        self.node.on_gaze(msg)
+        self.node.gaze[-1] = (time.monotonic() - age, *self.node.gaze[-1][1:])
+
     def look(self, x, y):
-        """A glasses image and gaze at (x, y). The gaze is 2 s old, from while the word was
-        spoken (the window is 1.0 s, ending speech_latency_s 1.5 before the word arrives)."""
+        """A glasses image and gaze at (x, y), both taken at glasses time 10 s, while you spoke."""
         self.image()
-        self.node.on_gaze(Point(x=float(x), y=float(y)))
-        self.node.gaze[-1] = (time.monotonic() - 2.0, float(x), float(y))
+        self.gaze(x, y)
+
+    def asked_about(self):
+        """The glasses time each service request's image was taken at."""
+        return [r.image.header.stamp.sec + r.image.header.stamp.nanosec * 1e-9
+                for r in self.node.service.requests]
 
     def reply(self, *dets):
         self.node.service.futures[-1].finish(Segment.Response(success=True, detections=list(dets)))
@@ -135,7 +146,7 @@ class AriaClientTest(unittest.TestCase):
         self.assertEqual((first.prompt, first.reference.width), ("box", 0))
         self.assertEqual((second.prompt, second.reference.width, second.reference.height), ("box", 10, 10))
         self.assertEqual(second.reference_mask.encoding, "mono8")
-        self.assertEqual(second.header.stamp.sec, 7)   # the glasses frame it came from
+        self.assertEqual(second.header.stamp.sec, 10)  # the glasses frame it came from
         self.assertEqual(self.requests(), 1)            # one grasp request per word
 
     def test_nothing_near_the_gaze_sends_no_reference(self):
@@ -164,52 +175,65 @@ class AriaClientTest(unittest.TestCase):
         self.assertEqual(self.node.target_pub.sent[-1].reference.width, 10)
 
     def test_old_gaze_is_not_used(self):
-        self.look(30, 20)
-        self.node.gaze = [(time.monotonic() - 5, 30.0, 20.0)]
+        self.image()
+        self.gaze(30, 20, age=5)
         self.say("box")
         self.assertEqual(self.node.service.requests, [])
 
     def test_gaze_after_the_word_was_spoken_is_not_used(self):
-        # the word arrives speech_latency_s after you spoke: gaze since then is not averaged
-        self.look(30, 20)
-        self.node.gaze = [(time.monotonic(), 30.0, 20.0)]
+        # the word arrives speech_latency_s after you spoke: gaze since then does not vote
+        self.image()
+        self.gaze(30, 20, age=0)
         self.say("box")
         self.assertEqual(self.node.service.requests, [])
 
-    def test_an_old_image_waits_for_the_next(self):
+    def test_the_image_from_when_you_spoke_beats_a_newer_one(self):
         self.look(30, 20)
-        self.node.image_at -= 5
+        self.image(taken=15.0)
+        self.say("box")
+        self.assertEqual(self.asked_about(), [10.0])
+
+    def test_no_image_from_when_you_spoke_waits_for_one(self):
+        self.image(taken=8.0)
+        self.gaze(30, 20)
         self.say("box")
         self.assertEqual(self.node.service.requests, [])
-        self.look(30, 20)   # the next image
-        self.assertEqual([r.prompt for r in self.node.service.requests], ["box"])
+        self.image(taken=10.2)   # taken while you spoke, arrived late
+        self.assertEqual(self.asked_about(), [10.2])
+
+    def test_after_the_wait_the_nearest_image_needs_gaze_near_it(self):
+        self.image(taken=8.0)
+        self.gaze(30, 20)
+        self.say("box")
+        self.node.wait_until -= 10
+        self.image(taken=9.0)   # still before you spoke, 1 s from the gaze: nothing votes
+        self.assertEqual(self.node.service.requests, [])
+        self.assertEqual(self.node.wait_until, -np.inf)
 
     def test_after_a_wait_the_gaze_is_from_when_the_word_came(self):
         # the image comes 2 s after the word: the gaze window still ends speech_latency_s
         # before the word's arrival, not before the image's
-        self.look(30, 20)
-        self.node.image_at -= 5
+        self.image(taken=8.0)
+        self.gaze(30, 20)
         self.say("box")
         self.node.word_at -= 2
-        self.node.gaze = [(self.node.word_at - 2.0, 30.0, 20.0)]
-        self.image()
-        self.assertEqual([r.prompt for r in self.node.service.requests], ["box"])
-
-    def test_an_image_after_the_wait_is_not_used(self):
-        self.look(30, 20)
-        self.node.image_at -= 5
-        self.say("box")
-        self.node.wait_until -= 10
-        self.look(30, 20)
-        self.assertEqual(self.node.service.requests, [])
+        self.node.gaze[-1] = (self.node.word_at - 2.0, *self.node.gaze[-1][1:])
+        self.image(taken=10.0)
+        self.assertEqual(self.asked_about(), [10.0])
 
     def test_the_stop_word_ends_the_wait(self):
-        self.look(30, 20)
-        self.node.image_at -= 5
+        self.image(taken=8.0)
+        self.gaze(30, 20)
         self.say("box")
         self.say(STOP_KEYWORD)
-        self.look(30, 20)
+        self.image(taken=10.0)
         self.assertEqual(self.node.service.requests, [])
+
+    def test_history_is_kept_by_arrival_time(self):
+        self.look(30, 20)
+        self.node.images[0] = (time.monotonic() - 21, *self.node.images[0][1:])
+        self.image(taken=11.0)
+        self.assertEqual([t for _, t, _ in self.node.images], [11.0])
 
     def test_the_stop_word_clears(self):
         self.say("box")

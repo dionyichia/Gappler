@@ -15,6 +15,9 @@ start python -u aria/aria_app/services/aria_segmentation_client/aria_segmentatio
 start ros2 topic echo /grasp/target segmentation_interfaces/msg/Target --no-arr > $L/target.log 2>&1
 start ros2 topic hz /aria/eye_tracking/gaze_estimate > $L/gaze_hz.log 2>&1
 start ros2 topic hz /aria/rgb_camera/undistorted > $L/image_hz.log 2>&1
+# one gaze and one image header: since T2.19 both carry the glasses capture time, not the box's clock
+start ros2 topic echo --once /aria/eye_tracking/gaze_estimate geometry_msgs/msg/PointStamped > $L/gaze_once.log 2>&1
+start ros2 topic echo --once --no-arr /aria/rgb_camera/undistorted sensor_msgs/msg/CompressedImage > $L/image_once.log 2>&1
 start python -u aria/tools/replay_recording_to_glasses_topics.py "$S"/c2cbafe8-ebc9-4279-8782-8cdaeb81b99b.vrs --from-s 0 --to-s 118 > $L/replay.log 2>&1
 stop() { for p in "${PG[@]}"; do kill -INT -$p 2>/dev/null; done; sleep 3; for p in "${PG[@]}"; do kill -KILL -$p 2>/dev/null; done; }
 trap stop EXIT

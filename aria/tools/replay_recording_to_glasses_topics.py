@@ -58,7 +58,8 @@ def main():
         print("Waiting for the workers: the eye model and rgb_worker's undistortion maps...")
         waited = time.monotonic()
         for q, s in ((rgb_queue, rgb), (eye_queue, eye)):
-            q.put(provider.get_image_data_by_index(s, 0)[0].to_numpy_array())
+            image, record = provider.get_image_data_by_index(s, 0)
+            q.put((image.to_numpy_array(), record.capture_timestamp_ns))
         while rgb_queue.full() or eye_queue.full():
             if not all(w.is_alive() for w in workers):
                 raise SystemExit("A worker stopped while starting")
@@ -77,7 +78,9 @@ def main():
                 print(f"Playing from {args.from_s:g} s")
             time.sleep(max(0.0, (t - t0) - (time.monotonic() - start)))
             queue = rgb_queue if data.stream_id() == rgb else eye_queue
-            _put_latest(queue, data.image_data_and_record()[0].to_numpy_array())
+            image, record = data.image_data_and_record()
+            # The recorded glasses capture time, as the live stream sends it (T2.19)
+            _put_latest(queue, (image.to_numpy_array(), record.capture_timestamp_ns))
         print(f"Done at {t - t0:.0f} s" if t0 is not None else "No frames")
     except KeyboardInterrupt:   # Ctrl-C
         pass
