@@ -5,7 +5,9 @@ Exit code is the verdict: CONFIG_OK (0) / CONFIG_FAILED (1). Read-only.
 
 The pair under test is:
     config/t35b_proof3_lio.yaml     -> fastlivo_mapping node parameters
+    config/t35b_proof3_visual.yaml  -> fastlivo_mapping parameters (visual mode)
     config/t35b_proof3_camera.yaml  -> parameter_blackboard node values
+    (--lio selects the mapping file: the diagnostic or the visual one)
 
 Checks, against the pinned consumer contract (T3.5_CONSUMER_CONTRACT.md):
   * bag identity: exactly the four frozen t35b_proof3 topics with the frozen
@@ -17,7 +19,9 @@ Checks, against the pinned consumer contract (T3.5_CONSUMER_CONTRACT.md):
     precision; image encoding/geometry equals the camera geometry
   * LiDAR sample: every point `line` satisfies the scan_line gate and all
     offset_time values stay within the scan budget (nanosecond timebase)
-  * declared-mode check: this pair is the LiDAR-IMU diagnostic (img_en == 0)
+  * mode check: img_en declares the run - 0 = LiDAR-IMU diagnostic (extrinsic
+    presence only), 1 = visual run whose Rcl/Pcl must equal the reviewed
+    nominal composition (T5.4 chain + M2; provenance-labelled, not calibrated)
   * typo guard: every config key is a parameter the pinned consumer declares;
     known-inert keys are reported as notes, unknown keys fail
 
@@ -52,6 +56,18 @@ EXPECTED_DURATION_NS = 74_030_703_312
 EXPECTED_MESSAGE_COUNT = 19_987
 
 MAX_OFFSET_NS = 120_000_000  # same scan budget as analyze_bag.py
+
+# Reviewed nominal LiDAR->camera extrinsic for the visual file (the diagnostic
+# file keeps the fork's non-empty placeholder). Composed 2026-10-17 from the
+# full chain (T3.5_CONSUMER_CONTRACT.md section 7): T_base<-livox = M2 retained
+# mount (0.18, 0, 0.2; eye-estimated zero rotation); T_base<-colour_optical =
+# the T5.4 as-fitted chain (screw 0.208, 0, 0.528 + Intel body +0.01115,
+# +0.0475, +0.0145 + colour y -0.059 + optical rpy -pi/2, 0, -pi/2).
+# p_cam = Rcl * p_lidar + Pcl (vio.cpp:38-39, 58-59). NOT calibrated: mount
+# angles are eye-estimated and translation is tape-level. T5.5 owns the
+# calibrated values; the projection check and T5.6 verify by image.
+NOMINAL_RCL = (0.0, -1.0, 0.0, 0.0, 0.0, -1.0, 1.0, 0.0, 0.0)
+NOMINAL_PCL = (-0.0115, 0.3425, -0.03915)
 
 # Parameters the pinned consumer declares, generated mechanically from
 # src/*.cpp (declare_parameter) at U-AMC/FAST-LIVO2-ROS2 @ a09599a288c56b832114d7ad9e898248a4111d9e.
@@ -359,6 +375,60 @@ def check_camera_config(cam: dict, caminfo: dict, image: dict) -> tuple[list[str
     return failures, notes
 
 
+def check_camera_extrinsics(section: dict) -> list[str]:
+    """Visual mode: staged Rcl/Pcl must carry exactly the reviewed nominal values.
+
+    These are provenance-labelled working estimates (T5.4 chain + M2), not a
+    target calibration; equality keeps an unreviewed edit out of the staged
+    pair. T5.5 owns the calibrated replacement.
+    """
+    failures: list[str] = []
+    for key, expected in (
+        ("extrin_calib.Rcl", NOMINAL_RCL),
+        ("extrin_calib.Pcl", NOMINAL_PCL),
+    ):
+        actual = section.get(key)
+        if not isinstance(actual, (list, tuple)) or len(actual) != len(expected):
+            failures.append(
+                f"{key}: expected {len(expected)} reviewed nominal values, got {actual!r}"
+            )
+            continue
+        for index, (got, want) in enumerate(zip(actual, expected)):
+            if isinstance(got, bool) or not isinstance(got, (int, float)):
+                failures.append(f"{key}[{index}]={got!r} is not a number")
+                break
+            if abs(float(got) - want) > 1e-9:
+                failures.append(
+                    f"{key}[{index}]={got!r} != reviewed nominal {want!r} "
+                    "(T5.4-chain composition; T5.5 owns calibrated values)"
+                )
+                break
+    return failures
+
+
+def check_mode(section: dict) -> tuple[str | None, list[str]]:
+    """img_en declares the run mode; each mode has its own extrinsic contract.
+
+    0 = LiDAR-IMU diagnostic (VIO does not run; the placeholder must simply be
+    non-empty because the mapper loads it unconditionally), 1 = visual run
+    (Rcl/Pcl must equal the reviewed nominal composition).
+    """
+    img_en = section.get("common.img_en")
+    if isinstance(img_en, bool) or img_en not in (0, 1):
+        return None, [f"common.img_en={img_en!r}: must be 0 (diagnostic) or 1 (visual run)"]
+    if img_en == 0:
+        failures: list[str] = []
+        for key in ("extrin_calib.Rcl", "extrin_calib.Pcl"):
+            value = section.get(key)
+            if not isinstance(value, (list, tuple)) or not value:
+                failures.append(
+                    f"{key} must be non-empty: the mapper loads it unconditionally "
+                    "(LIVMapper.cpp:186-187, 218)"
+                )
+        return "diagnostic", failures
+    return "visual", check_camera_extrinsics(section)
+
+
 def read_bag(bag_dir: Path, sample_scans: int) -> dict:
     """Read the frozen identity facts, first CameraInfo/Image and a LiDAR sample."""
     import rosbag2_py  # noqa: PLC0415
@@ -527,15 +597,19 @@ def main() -> int:
             f"{bag['image']['height']} step={bag['image']['step']}"
         )
 
-    if lio.get("common.img_en") != 0:
-        audit.fail(
-            "common.img_en != 0: this staged pair is the LiDAR-IMU diagnostic; "
-            "a visual run requires the T5.5-calibrated pair"
+    mode, mode_failures = check_mode(lio)
+    audit.failures.extend(mode_failures)
+    if mode is not None:
+        print(f"MODE {mode} (img_en={lio.get('common.img_en')})")
+    if mode == "visual" and not mode_failures:
+        print(
+            "EXTRINSICS Rcl/Pcl = reviewed nominal composition (T5.4 chain + M2); "
+            "not target-calibrated"
         )
     for key in ("time_offset.img_time_offset", "time_offset.imu_time_offset", "time_offset.lidar_time_offset"):
         value = lio.get(key)
         if value != 0.0:
-            audit.fail(f"{key}={value!r} claims an unverifiable timing correction (T5.5 unresolved)")
+            audit.fail(f"{key}={value!r} claims an unverifiable timing correction (no measured sync exists)")
         else:
             print(f"TIMEOFFSET {key}=0.0 (no correction claimed)")
 

@@ -553,6 +553,37 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: Phase C diagnostic replay run on the lab box, then resolve T5.5 with
   Dion for T3.5c.
 
+## [2026-10-17] T3.5 | Phase B revision: nominal visual config, mode-aware checker
+
+- Evidence: [consumer contract](T3.5_CONSUMER_CONTRACT.md) (status, §4, §7, §8, R1).
+- Fresh: review found Phase B declared the visual leg blocked on missing
+  T5.5 numbers, but Sherman's as-fitted camera measurements (T5.4 chain) compose
+  into a nominal camera-LiDAR transform, and T3.5c's own framing ("nominal mount
+  transform is the starting estimate") is the authority for staging the visual
+  leg ahead of T5.5. New `t35b_proof3_visual.yaml` (img_en=1) carries the
+  full-chain composition: T_base<-livox (M2 retained mount) composed with
+  T_base<-colour_optical (T5.4: screw 0.208/0/0.528 + Intel body
+  +0.01115/+0.0475/+0.0145 + colour y -0.059 + optical rpy -pi/2, 0, -pi/2)
+  -> Rcl [0,-1,0, 0,0,-1, 1,0,0], Pcl (-0.0115, 0.3425, -0.03915) m;
+  provenance-labelled nominal, explicitly not calibrated. Checker gained a mode
+  contract: img_en 0 = diagnostic (non-empty placeholder), img_en 1 = visual
+  (Rcl/Pcl must equal the reviewed composition), anything else fails; unit test
+  recomposes the chain from documented inputs and pins the constants; 42 tests
+  (37 run on Mac, 5 PyYAML-gated). Diagnostic pair byte-unchanged.
+- Findings: direction/frame questions resolved from pinned source — p_cam =
+  Rcl*p_lidar + Pcl (vio.cpp:38-39, 58-59), camera = D455 colour optical frame
+  (the bag's image frame); no online extrinsic refinement exists (image
+  time-delay estimator only, disabled). A wrong-axis or mirrored closure fails
+  the recomposition test. Rotation is the weak axis (~6.7 px/deg at fx 385):
+  the pre-fusion projection check is the next build item, before any visual
+  replay or fusion claim.
+- Outcome: staged and pushed; T3.5 remains PROGRESS. Visual-mode box round owed
+  (unit tests + both checker runs + truncated-Pcl and img_en mutations). No
+  mapper run, no hardware, no bag modification; no PR or merge.
+- Next: build the projection pre-check tool against the existing bag with the
+  nominal extrinsic, then the T3.5c visual replay runner; resolve T5.5 numbers
+  with Dion.
+
 ## Record Template
 
 

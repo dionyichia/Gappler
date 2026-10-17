@@ -10,6 +10,7 @@ documented in T3.5_CONSUMER_CONTRACT.md.
 """
 from __future__ import annotations
 
+import math
 import sys
 import unittest
 from pathlib import Path
@@ -257,6 +258,93 @@ class TestBagIdentity(unittest.TestCase):
         self.assertIn("type", failures[0])
 
 
+class TestCameraExtrinsics(unittest.TestCase):
+    """Nominal camera-extrinsic composition and the mode-aware checker."""
+
+    @staticmethod
+    def _rpy_to_matrix(roll: float, pitch: float, yaw: float) -> tuple[tuple[float, ...], ...]:
+        """R = Rz(yaw) @ Ry(pitch) @ Rx(roll): ROS fixed-axis rpy convention."""
+        cr, sr = math.cos(roll), math.sin(roll)
+        cp, sp = math.cos(pitch), math.sin(pitch)
+        cy_, sy = math.cos(yaw), math.sin(yaw)
+        return (
+            (cy_ * cp, cy_ * sp * sr - sy * cr, cy_ * sp * cr + sy * sr),
+            (sy * cp, sy * sp * sr + cy_ * cr, sy * sp * cr - cy_ * sr),
+            (-sp, cp * sr, cp * cr),
+        )
+
+    def _compose_full_nominal_chain(self) -> tuple[tuple[float, ...], tuple[float, ...]]:
+        """Recompute Rcl/Pcl from the documented chain inputs, not the constants."""
+        # T_base<-livox: M2 retained mount, eye-estimated zero rotation.
+        livox = (0.18, 0.0, 0.2)
+        # T_base<-colour frame: T5.4 as-fitted chain (screw + Intel body + colour y).
+        screw = (0.208, 0.0, 0.528)
+        body = (0.01115, 0.0475, 0.0145)
+        colour = (screw[0] + body[0], screw[1] + body[1] - 0.059, screw[2] + body[2])
+        # Optical axes: fixed rpy(-pi/2, 0, -pi/2) off the colour frame.
+        rot = self._rpy_to_matrix(-math.pi / 2, 0.0, -math.pi / 2)
+        rot_t = tuple(tuple(rot[j][i] for j in range(3)) for i in range(3))
+        delta = tuple(livox[i] - colour[i] for i in range(3))
+        rcl = tuple(rot_t[i][j] for i in range(3) for j in range(3))
+        pcl = tuple(sum(rot_t[i][k] * delta[k] for k in range(3)) for i in range(3))
+        return rcl, pcl
+
+    def _section(self, img_en: object, rcl: object, pcl: object) -> dict:
+        return {"common.img_en": img_en, "extrin_calib.Rcl": rcl, "extrin_calib.Pcl": pcl}
+
+    def test_full_chain_reproduces_reviewed_nominal(self) -> None:
+        rcl, pcl = self._compose_full_nominal_chain()
+        for got, want in zip(rcl, checker.NOMINAL_RCL):
+            self.assertAlmostEqual(got, want, places=12)
+        for got, want in zip(pcl, checker.NOMINAL_PCL):
+            self.assertAlmostEqual(got, want, places=12)
+
+    def test_visual_mode_accepts_reviewed_nominal(self) -> None:
+        mode, failures = checker.check_mode(
+            self._section(1, list(checker.NOMINAL_RCL), list(checker.NOMINAL_PCL))
+        )
+        self.assertEqual((mode, failures), ("visual", []))
+
+    def test_visual_mode_rejects_fork_placeholder(self) -> None:
+        mode, failures = checker.check_mode(
+            self._section(
+                1,
+                [-0.99592574, 0.01558709, 0.08881982, -0.07711178, -0.65783989,
+                 -0.74919988, 0.04675138, -0.75299650, 0.65636163],
+                [-0.19803049, 0.12062488, 0.22892291],
+            )
+        )
+        self.assertEqual(mode, "visual")
+        self.assertEqual(len(failures), 2)  # one first-mismatch per vector
+        self.assertTrue(all("!= reviewed nominal" in f for f in failures))
+
+    def test_visual_mode_rejects_truncated_pcl(self) -> None:
+        pcl = list(checker.NOMINAL_PCL)
+        pcl[1] = 0.342  # truncated 0.3425
+        mode, failures = checker.check_mode(self._section(1, list(checker.NOMINAL_RCL), pcl))
+        self.assertEqual(mode, "visual")
+        self.assertEqual(len(failures), 1)
+        self.assertIn("extrin_calib.Pcl[1]", failures[0])
+
+    def test_diagnostic_mode_accepts_nonempty_placeholder(self) -> None:
+        mode, failures = checker.check_mode(self._section(0, [-1.0] * 9, [0.0, 0.0, 0.0]))
+        self.assertEqual((mode, failures), ("diagnostic", []))
+
+    def test_diagnostic_mode_rejects_empty_extrinsics(self) -> None:
+        mode, failures = checker.check_mode(self._section(0, [], []))
+        self.assertEqual(mode, "diagnostic")
+        self.assertEqual(len(failures), 2)
+
+    def test_invalid_img_en_fails(self) -> None:
+        for bad in (2, None, True, "1"):
+            with self.subTest(bad=bad):
+                mode, failures = checker.check_mode(
+                    self._section(bad, list(checker.NOMINAL_RCL), list(checker.NOMINAL_PCL))
+                )
+                self.assertIsNone(mode)
+                self.assertEqual(len(failures), 1)
+
+
 @unittest.skipUnless(HAVE_YAML, "PyYAML not available")
 class TestStagedPairKeys(unittest.TestCase):
     """The staged repo configs must satisfy the checker's static key checks."""
@@ -286,6 +374,26 @@ class TestStagedPairKeys(unittest.TestCase):
             "time_offset.lidar_time_offset",
         ):
             self.assertEqual(section[key], 0.0)
+
+    def test_staged_visual_pair_is_visual_mode(self) -> None:
+        section = checker.yaml_section(self.CONFIG / "t35b_proof3_visual.yaml", "laserMapping")
+        mode, failures = checker.check_mode(section)
+        self.assertEqual((mode, failures), ("visual", []))
+        for key in (
+            "time_offset.img_time_offset",
+            "time_offset.imu_time_offset",
+            "time_offset.lidar_time_offset",
+        ):
+            self.assertEqual(section[key], 0.0)
+
+    def test_visual_pair_equals_diagnostic_except_declared_delta(self) -> None:
+        """The visual file may differ from the diagnostic only in mode + Rcl/Pcl."""
+        diagnostic = checker.yaml_section(self.CONFIG / "t35b_proof3_lio.yaml", "laserMapping")
+        visual = checker.yaml_section(self.CONFIG / "t35b_proof3_visual.yaml", "laserMapping")
+        for key in ("common.img_en", "extrin_calib.Rcl", "extrin_calib.Pcl"):
+            diagnostic.pop(key, None)
+            visual.pop(key, None)
+        self.assertEqual(diagnostic, visual)
 
 
 if __name__ == "__main__":
