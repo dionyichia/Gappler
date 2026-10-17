@@ -20,6 +20,8 @@ from services.aria_device.stream.base_streaming_client_observer import (
 MAX_BUFFER_SAMPLES = (
     AriaConfig.AUDIO_SAMPLE_RATE * AudioStreamingPipelineConfig.MAX_BUFFER_SECONDS
 )
+SAMPLE_NS = 1e9 / AriaConfig.AUDIO_SAMPLE_RATE
+MAX_GAP_NS = 5e6   # a chunk starting later than this after the last one ended is a gap (T2.21)
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,10 @@ class AudioObserver(BaseStreamingClientObserver):
     Receives interleaved 7-channel audio from the Aria device, demultiplexes
     it into per-channel buffers, and exposes helpers to downsample to 16 kHz
     mono for Whisper inference or WAV export.
+
+    It also keeps the glasses capture time of the newest sample (T2.21). Samples are evenly
+    spaced, so any earlier sample's time is counted back from it. A gap in the audio is filled
+    with silence, so counting back stays right across it.
     """
 
     def __init__(
@@ -40,6 +46,7 @@ class AudioObserver(BaseStreamingClientObserver):
         )
         self._write_pos = 0
         self._full = False  # True once the buffer has wrapped at least once
+        self._end_ns = None  # glasses capture time of the newest sample
         self._lock = threading.Lock()
 
         self.save_dir = Path(save_dir)
@@ -55,17 +62,19 @@ class AudioObserver(BaseStreamingClientObserver):
         samples_per_channel = len(raw) // AriaConfig.NUM_AUDIO_CHANNELS
         frame = raw.reshape(samples_per_channel, AriaConfig.NUM_AUDIO_CHANNELS).T
 
+        stamps = record.capture_timestamps_ns  # one per sample, glasses clock
         with self._lock:
-            end = self._write_pos + samples_per_channel
-            if end <= MAX_BUFFER_SAMPLES:
-                self._buffers[:, self._write_pos : end] = frame
-            else:
-                # Wrap around
-                first = MAX_BUFFER_SAMPLES - self._write_pos
-                self._buffers[:, self._write_pos :] = frame[:, :first]
-                self._buffers[:, : end % MAX_BUFFER_SAMPLES] = frame[:, first:]
-                self._full = True  # marked on first wrap
-            self._write_pos = end % MAX_BUFFER_SAMPLES
+            gap_ns = 0 if self._end_ns is None else stamps[0] - self._end_ns
+            if gap_ns > MAX_GAP_NS:
+                missing = round(gap_ns / SAMPLE_NS) - 1
+                if missing >= MAX_BUFFER_SAMPLES:
+                    logger.warning(f"Audio gap of {gap_ns / 1e6:.0f} ms, buffer cleared")
+                    self._write_pos, self._full = 0, False
+                else:
+                    logger.warning(f"Audio gap of {gap_ns / 1e6:.0f} ms, filled with silence")
+                    self._write(np.zeros((frame.shape[0], missing), dtype=np.int32))
+            self._write(frame)
+            self._end_ns = stamps[-1]
         self.received = True
 
         # Periodically export a WAV chunk.
@@ -82,11 +91,26 @@ class AudioObserver(BaseStreamingClientObserver):
                     logger.error(f"Error saving audio: {e}")
             self._last_save_time = now
 
-    def snapshot(self) -> np.ndarray:
+    def _write(self, frame: np.ndarray) -> None:
+        """Append (channels, n) samples to the ring buffer. Caller holds the lock."""
+        n = frame.shape[1]
+        end = self._write_pos + n
+        if end <= MAX_BUFFER_SAMPLES:
+            self._buffers[:, self._write_pos : end] = frame
+        else:
+            # Wrap around
+            first = MAX_BUFFER_SAMPLES - self._write_pos
+            self._buffers[:, self._write_pos :] = frame[:, :first]
+            self._buffers[:, : end % MAX_BUFFER_SAMPLES] = frame[:, first:]
+            self._full = True  # marked on first wrap
+        self._write_pos = end % MAX_BUFFER_SAMPLES
+
+    def snapshot(self) -> tuple[np.ndarray, int]:
+        """The buffered audio, oldest to newest, and the newest sample's glasses time (ns)."""
         with self._lock:
             if not self._full:
                 # Buffer hasn't wrapped — only the filled portion is valid
-                return self._buffers[:, : self._write_pos].copy()
+                return self._buffers[:, : self._write_pos].copy(), self._end_ns
             # Reorder so oldest → newest
             return np.concatenate(
                 [
@@ -94,7 +118,7 @@ class AudioObserver(BaseStreamingClientObserver):
                     self._buffers[:, : self._write_pos],
                 ],
                 axis=1,
-            )
+            ), self._end_ns
 
     def get_resampled_audio(self) -> np.ndarray:
         """
@@ -104,7 +128,7 @@ class AudioObserver(BaseStreamingClientObserver):
         Amplitude is normalised to [-1, 1] using the actual peak value so
         the output level is independent of the hardware gain setting.
         """
-        frames = self.snapshot()  # (NUM_CHANNELS, N)
+        frames, _ = self.snapshot()  # (NUM_CHANNELS, N)
         if frames.size == 0:
             return np.array([], dtype=np.float32)
         mono = np.mean(frames.astype(np.float32), axis=0)
