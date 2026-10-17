@@ -529,6 +529,30 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: Phase A complete; T3.5 remains PROGRESS. Phase B (consumer contract)
   next; T3.5c stays gated on T5.5.
 
+## [2026-10-17] T3.5 | Phase B: consumer contract, config pair, checker
+
+- Evidence: [consumer contract](T3.5_CONSUMER_CONTRACT.md).
+- Fresh: pinned source read at exact commits (FAST-LIVO2 `a09599a`, vikit
+  `6f213c7`): routing, preprocess clamp/blind/sampling, IMU init and
+  normalisation, image cv_bridge path, remote camera loader, all 79 declared
+  parameters. Staged the `t35b_proof3` replay pair plus
+  `check_replay_configs.py`; box run `CONFIG_OK`, 33/33 unit tests, and two
+  mutations each failing with exactly their intended single failure. All six
+  repo copies byte-identical to the box manifest
+  `EVIDENCE_t35c-config-check.sha256`; sample statistics pinned (0.216% clamp
+  rewrites; inversions <= 458 us).
+- Findings: recording-driver messages identical to pinned-driver messages
+  (CDR-safe); the CustomMsg path requires `lidar_type: 1` (8 would subscribe
+  PointCloud2 and receive nothing); the IMU deskew path never sorts while our
+  scans are unsorted (stationary-inert, unproven for motion); k3 not
+  representable in the pinned camera loader; camera values must be served by
+  `parameter_blackboard` before mapper start.
+- Outcome: Phase B complete; T3.5 remains PROGRESS. T3.5c visual acceptance
+  stays gated on T5.5. Phase C (LiDAR-IMU diagnostic replay of the unchanged
+  bag) next; no PR or merge until all of T3.5 completes.
+- Next: Phase C diagnostic replay run on the lab box, then resolve T5.5 with
+  Dion for T3.5c.
+
 ## Record Template
 
 

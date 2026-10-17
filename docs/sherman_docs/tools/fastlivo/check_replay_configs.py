@@ -1,0 +1,554 @@
+#!/usr/bin/env python3
+"""Validate a staged FAST-LIVO2 replay config pair against the recorded bag.
+
+Exit code is the verdict: CONFIG_OK (0) / CONFIG_FAILED (1). Read-only.
+
+The pair under test is:
+    config/t35b_proof3_lio.yaml     -> fastlivo_mapping node parameters
+    config/t35b_proof3_camera.yaml  -> parameter_blackboard node values
+
+Checks, against the pinned consumer contract (T3.5_CONSUMER_CONTRACT.md):
+  * bag identity: exactly the four frozen t35b_proof3 topics with the frozen
+    types, message counts and duration (byte hashes stay under EVIDENCE_*.sha256)
+  * LiDAR routing: preprocess.lidar_type selects the branch matching the
+    recorded lidar message type (1 -> CustomMsg, 8 -> PointCloud2) and
+    common.livox_msg_type names the recorded package
+  * camera: parameter_blackboard values equal the bag's CameraInfo K/D at full
+    precision; image encoding/geometry equals the camera geometry
+  * LiDAR sample: every point `line` satisfies the scan_line gate and all
+    offset_time values stay within the scan budget (nanosecond timebase)
+  * declared-mode check: this pair is the LiDAR-IMU diagnostic (img_en == 0)
+  * typo guard: every config key is a parameter the pinned consumer declares;
+    known-inert keys are reported as notes, unknown keys fail
+
+Requires the lab ROS environment (rosbag2_py, livox_ros_driver2, sensor_msgs):
+    source /opt/ros/humble/setup.bash
+    source ~/rcp-Gappler/install_nav/setup.bash
+    python3 check_replay_configs.py --bag-dir <bag-dir> \
+        --lio replay/config/t35b_proof3_lio.yaml \
+        --camera replay/config/t35b_proof3_camera.yaml
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import sys
+from pathlib import Path
+
+NS = 1_000_000_000
+LIDAR = "/livox/lidar"
+IMU = "/livox/imu"
+IMAGE = "/camera/camera/color/image_raw"
+CAMINFO = "/camera/camera/color/camera_info"
+
+# Frozen t35b_proof3 identity (EVIDENCE_t35b-capture.sha256 pins the bytes).
+EXPECTED_TOPICS = {
+    LIDAR: ("livox_ros_driver2/msg/CustomMsg", 740),
+    IMU: ("sensor_msgs/msg/Imu", 14807),
+    IMAGE: ("sensor_msgs/msg/Image", 2220),
+    CAMINFO: ("sensor_msgs/msg/CameraInfo", 2220),
+}
+EXPECTED_DURATION_NS = 74_030_703_312
+EXPECTED_MESSAGE_COUNT = 19_987
+
+MAX_OFFSET_NS = 120_000_000  # same scan budget as analyze_bag.py
+
+# Parameters the pinned consumer declares, generated mechanically from
+# src/*.cpp (declare_parameter) at U-AMC/FAST-LIVO2-ROS2 @ a09599a288c56b832114d7ad9e898248a4111d9e.
+# Re-generate with the regex declare_parameter<[^()]*>\(\s*"([^"]+)" over src/*.cpp
+# (the [^()]* form is required to survive vector<double> / vector<int64_t> templates).
+DECLARED = frozenset({
+    "common.img_en",
+    "common.img_topic",
+    "common.imu_topic",
+    "common.lid_topic",
+    "common.lidar_en",
+    "common.livox_msg_type",
+    "common.ros_driver_bug_fix",
+    "debug.frame_cnt",
+    "debug.plot_time",
+    "evo.pose_output_en",
+    "evo.seq_name",
+    "extrin_calib.Pcl",
+    "extrin_calib.Rcl",
+    "extrin_calib.extrinsic_R",
+    "extrin_calib.extrinsic_T",
+    "image_save.img_save_en",
+    "image_save.interval",
+    "imu.acc_cov",
+    "imu.ba_bg_est_en",
+    "imu.gravity_est_en",
+    "imu.gyr_cov",
+    "imu.imu_en",
+    "imu.imu_int_frame",
+    "lio.beam_err",
+    "lio.dept_err",
+    "lio.layer_init_num",
+    "lio.max_layer",
+    "lio.max_points_num",
+    "lio.min_eigen_value",
+    "lio.min_iterations",
+    "lio.sigma_num",
+    "lio.voxel_size",
+    "local_map.half_map_size",
+    "local_map.map_sliding_en",
+    "local_map.sliding_thresh",
+    "pcd_save.colmap_output_en",
+    "pcd_save.filter_size_pcd",
+    "pcd_save.interval",
+    "pcd_save.pcd_save_en",
+    "pcd_save.type",
+    "preprocess.blind",
+    "preprocess.feature_extract_enabled",
+    "preprocess.filter_size_surf",
+    "preprocess.hilti_en",
+    "preprocess.lidar_type",
+    "preprocess.point_filter_num",
+    "preprocess.scan_line",
+    "publish.blind_rgb_points",
+    "publish.dense_map_en",
+    "publish.pub_effect_point_en",
+    "publish.pub_plane_en",
+    "publish.pub_scan_num",
+    "rolling_shutter.anchor_factor",
+    "rolling_shutter.debug_print",
+    "rolling_shutter.enable",
+    "rolling_shutter.td_estimate_enable",
+    "rolling_shutter.td_lambda",
+    "rolling_shutter.td_min_jac_sq",
+    "rolling_shutter.td_step_alpha",
+    "rolling_shutter.td_step_cap",
+    "rolling_shutter.tr_readout",
+    "time_offset.exposure_time_init",
+    "time_offset.img_time_offset",
+    "time_offset.imu_time_offset",
+    "time_offset.lidar_time_offset",
+    "uav.gravity_align_en",
+    "uav.imu_rate_odom",
+    "vio.exposure_estimate_en",
+    "vio.grid_n_height",
+    "vio.grid_size",
+    "vio.img_point_cov",
+    "vio.inv_expo_cov",
+    "vio.inverse_composition_en",
+    "vio.max_iterations",
+    "vio.normal_en",
+    "vio.outlier_threshold",
+    "vio.patch_pyrimid_level",
+    "vio.patch_size",
+    "vio.raycast_en",
+})
+
+# Declared by the consumer but documented as inert in this fork; reported, not failed.
+KNOWN_INERT_LIO = frozenset({"imu.b_acc_cov", "imu.b_gyr_cov"})
+
+# Built-in node parameters set through the params file.
+BUILTIN = frozenset({"use_sim_time"})
+
+# Keys read by the pinned camera loader (camera_loader.cpp:16-38).
+CAMERA_DECLARED = frozenset({
+    "cam_model", "cam_width", "cam_height", "scale",
+    "cam_fx", "cam_fy", "cam_cx", "cam_cy",
+    "cam_d0", "cam_d1", "cam_d2", "cam_d3",
+})
+# Carried for reference; the pinned loader never reads cam_d4 (pinhole_camera.h:40).
+KNOWN_INERT_CAMERA = frozenset({"cam_d4"})
+
+CAMERA_INT_KEYS = ("cam_width", "cam_height")
+CAMERA_FLOAT_KEYS = (
+    "scale", "cam_fx", "cam_fy", "cam_cx", "cam_cy",
+    "cam_d0", "cam_d1", "cam_d2", "cam_d3",
+)
+
+
+class Audit:
+    """Collects invariant violations; empty list == PASS."""
+
+    def __init__(self) -> None:
+        self.failures: list[str] = []
+        self.notes: list[str] = []
+
+    def fail(self, message: str) -> None:
+        self.failures.append(message)
+
+    def note(self, message: str) -> None:
+        self.notes.append(message)
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def yaml_section(path: Path, root: str) -> dict:
+    """Load path's root -> ros__parameters mapping; raises ValueError."""
+    import yaml  # noqa: PLC0415
+
+    document = yaml.safe_load(path.read_text())
+    if not isinstance(document, dict) or set(document) != {root}:
+        raise ValueError(f"{path}: expected a single root key {root!r}")
+    node = document[root]
+    if not isinstance(node, dict) or set(node) != {"ros__parameters"}:
+        raise ValueError(f"{path}: expected {root}.ros__parameters mapping")
+    section = node["ros__parameters"]
+    if not isinstance(section, dict):
+        raise ValueError(f"{path}: ros__parameters must be a mapping")
+    return section
+
+
+def check_bag_identity(
+    counts: dict, types: dict, duration_ns: int, message_count: int
+) -> tuple[list[str], list[str]]:
+    """Return (failures, notes) for the frozen bag-identity expectations."""
+    failures: list[str] = []
+    notes: list[str] = []
+    expected_names = set(EXPECTED_TOPICS)
+    actual_names = set(counts)
+    for name in sorted(expected_names - actual_names):
+        failures.append(f"bag is missing frozen topic {name}")
+    for name in sorted(actual_names - expected_names):
+        failures.append(f"bag has unexpected topic {name}")
+    for name in sorted(expected_names & actual_names):
+        expected_type, expected_count = EXPECTED_TOPICS[name]
+        actual_type = types.get(name)
+        if actual_type != expected_type:
+            failures.append(f"{name} type {actual_type} != frozen {expected_type}")
+        if counts[name] != expected_count:
+            failures.append(f"{name} count {counts[name]} != frozen {expected_count}")
+    if duration_ns != EXPECTED_DURATION_NS:
+        failures.append(f"duration {duration_ns} != frozen {EXPECTED_DURATION_NS}")
+    if message_count != EXPECTED_MESSAGE_COUNT:
+        failures.append(f"message_count {message_count} != frozen {EXPECTED_MESSAGE_COUNT}")
+    notes.append(
+        "byte hashes are pinned separately by EVIDENCE_t35b-capture.sha256; "
+        "this identity check is structural"
+    )
+    return failures, notes
+
+
+def check_param_keys(
+    section: dict, declared: frozenset, known_inert: frozenset
+) -> tuple[list[str], list[str]]:
+    """Typo guard: every key must be declared by the pinned consumer."""
+    failures: list[str] = []
+    notes: list[str] = []
+    for key in sorted(section):
+        if key in BUILTIN:
+            continue
+        if key in known_inert:
+            notes.append(f"inert key carried for documentation: {key}")
+        elif key not in declared:
+            failures.append(f"config key the pinned consumer does not declare: {key}")
+    return failures, notes
+
+
+def check_routing(lidar_type: int, livox_msg_type: str, recorded_type: str | None) -> list[str]:
+    """The lidar_type branch must subscribe the recorded lidar message type."""
+    failures: list[str] = []
+    if lidar_type == 1:
+        if livox_msg_type != "livox_ros_driver2":
+            failures.append(
+                f"livox_msg_type {livox_msg_type!r} != 'livox_ros_driver2' "
+                "for the recorded CustomMsg bag"
+            )
+        if recorded_type != "livox_ros_driver2/msg/CustomMsg":
+            failures.append(f"lidar_type 1 needs CustomMsg but bag has {recorded_type}")
+    elif lidar_type == 8:
+        if recorded_type != "sensor_msgs/msg/PointCloud2":
+            failures.append(f"lidar_type 8 needs PointCloud2 but bag has {recorded_type}")
+    else:
+        failures.append(
+            f"lidar_type {lidar_type}: the fork subscribes PointCloud2 for any "
+            "non-AVIA value and this bag is not validated for that branch"
+        )
+    return failures
+
+
+def check_scan_line(max_line: int | None, scan_line: object) -> list[str]:
+    """Every point line must pass the avia_handler gate line < scan_line."""
+    failures: list[str] = []
+    if not isinstance(scan_line, int) or isinstance(scan_line, bool) or scan_line < 1:
+        return [f"scan_line {scan_line!r} is not a positive integer"]
+    if max_line is None:
+        return ["no LiDAR points sampled for the scan_line gate"]
+    if max_line >= scan_line:
+        failures.append(
+            f"sampled point line {max_line} >= scan_line {scan_line}: "
+            "points would be silently dropped by avia_handler"
+        )
+    return failures
+
+
+def check_offset_bounds(min_offset_ns: int | None, max_offset_ns: int | None) -> list[str]:
+    """offset_time must be a non-negative nanosecond offset within the scan budget."""
+    failures: list[str] = []
+    if min_offset_ns is None or max_offset_ns is None:
+        return ["no LiDAR points sampled for the offset_time budget"]
+    if min_offset_ns < 0:
+        failures.append(f"negative offset_time {min_offset_ns} ns")
+    if max_offset_ns > MAX_OFFSET_NS:
+        failures.append(
+            f"offset_time {max_offset_ns} ns exceeds the {MAX_OFFSET_NS} ns scan budget"
+        )
+    return failures
+
+
+def _exact(actual: object, expected: float) -> bool:
+    return isinstance(actual, (float, int)) and not isinstance(actual, bool) and float(actual) == float(expected)
+
+
+def check_camera_config(cam: dict, caminfo: dict, image: dict) -> tuple[list[str], list[str]]:
+    """Camera values must equal the bag's CameraInfo at full precision."""
+    failures: list[str] = []
+    notes: list[str] = []
+
+    if cam.get("cam_model") != "Pinhole":
+        failures.append(f"cam_model {cam.get('cam_model')!r} != 'Pinhole'")
+    if caminfo["model"] != "plumb_bob":
+        notes.append(f"bag CameraInfo model is {caminfo['model']!r}, not plumb_bob")
+
+    for key in CAMERA_INT_KEYS:
+        if not isinstance(cam.get(key), int) or isinstance(cam.get(key), bool):
+            failures.append(f"{key} must be an integer in the YAML")
+    for key in CAMERA_FLOAT_KEYS:
+        if not isinstance(cam.get(key), float):
+            failures.append(f"{key} must be a float in the YAML")
+
+    if isinstance(cam.get("scale"), float) and not cam["scale"] > 0:
+        failures.append(f"scale {cam['scale']} is not positive")
+
+    for key, index in (("cam_fx", 0), ("cam_cx", 2), ("cam_fy", 4), ("cam_cy", 5)):
+        value = caminfo["k"][index]
+        if not _exact(cam.get(key), value):
+            failures.append(f"{key} {cam.get(key)!r} != CameraInfo K entry {value!r}")
+
+    d = caminfo["d"]
+    if len(d) != 5:
+        failures.append(f"CameraInfo D has {len(d)} coefficients; plumb_bob must carry 5")
+    else:
+        for index in range(4):
+            key = f"cam_d{index}"
+            if not _exact(cam.get(key), d[index]):
+                failures.append(f"{key} {cam.get(key)!r} != CameraInfo D[{index}] {d[index]!r}")
+        if "cam_d4" in cam:
+            if not _exact(cam["cam_d4"], d[4]):
+                failures.append(f"cam_d4 {cam.get('cam_d4')!r} != CameraInfo D[4] {d[4]!r}")
+            else:
+                notes.append("cam_d4 (k3) carried for reference only; the pinned loader reads d0-d3")
+        else:
+            failures.append("cam_d4 absent: carry the true k3 for reference even though the loader ignores it")
+
+    for key in CAMERA_INT_KEYS:
+        image_dim = image["width"] if key == "cam_width" else image["height"]
+        if cam.get(key) != image_dim or cam.get(key) != caminfo["width" if key == "cam_width" else "height"]:
+            failures.append(
+                f"{key} {cam.get(key)!r} != image/CameraInfo dimension {image_dim!r}"
+            )
+    if isinstance(cam.get("scale"), (float, int)) and not isinstance(cam.get("scale"), bool):
+        scaled_width = cam.get("cam_width", 0) * cam["scale"]
+        scaled_height = cam.get("cam_height", 0) * cam["scale"]
+        if scaled_width != image["width"] or scaled_height != image["height"]:
+            failures.append(
+                f"camera internal geometry {scaled_width}x{scaled_height} != image "
+                f"{image['width']}x{image['height']}: the viewer would take its resize path"
+            )
+
+    if image["encoding"] != "rgb8":
+        failures.append(f"image encoding {image['encoding']!r} != 'rgb8' (cv_bridge bgr8 path not proven for it)")
+    if image["step"] != image["width"] * 3:
+        failures.append(f"image step {image['step']} != width*3 for a 3-channel encoding")
+    return failures, notes
+
+
+def read_bag(bag_dir: Path, sample_scans: int) -> dict:
+    """Read the frozen identity facts, first CameraInfo/Image and a LiDAR sample."""
+    import rosbag2_py  # noqa: PLC0415
+    import yaml  # noqa: PLC0415
+    from rclpy.serialization import deserialize_message  # noqa: PLC0415
+    from sensor_msgs.msg import CameraInfo, Image  # noqa: PLC0415
+    from livox_ros_driver2.msg import CustomMsg  # noqa: PLC0415
+
+    metadata = yaml.safe_load((bag_dir / "metadata.yaml").read_text())["rosbag2_bagfile_information"]
+    counts: dict[str, int] = {}
+    meta_types: dict[str, str] = {}
+    for entry in metadata["topics_with_message_count"]:
+        topic = entry["topic_metadata"]
+        counts[topic["name"]] = entry["message_count"]
+        meta_types[topic["name"]] = topic["type"]
+
+    reader = rosbag2_py.SequentialReader()
+    reader.open(
+        rosbag2_py.StorageOptions(uri=str(bag_dir), storage_id="sqlite3"),
+        rosbag2_py.ConverterOptions("cdr", "cdr"),
+    )
+    topics = {t.name: t.type for t in reader.get_all_topics_and_types()}
+
+    caminfo = None
+    image = None
+    scans = 0
+    points = 0
+    min_line: int | None = None
+    max_line: int | None = None
+    min_offset: int | None = None
+    max_offset: int | None = None
+    while reader.has_next():
+        topic, data, _ = reader.read_next()
+        if topic == LIDAR and scans < sample_scans:
+            msg = deserialize_message(data, CustomMsg)
+            scans += 1
+            points += msg.point_num
+            for point in msg.points:
+                line = int(point.line)
+                min_line = line if min_line is None else min(min_line, line)
+                max_line = line if max_line is None else max(max_line, line)
+                offset = int(point.offset_time)
+                min_offset = offset if min_offset is None else min(min_offset, offset)
+                max_offset = offset if max_offset is None else max(max_offset, offset)
+        elif topic == CAMINFO and caminfo is None:
+            msg = deserialize_message(data, CameraInfo)
+            caminfo = {
+                "width": int(msg.width),
+                "height": int(msg.height),
+                "model": msg.distortion_model,
+                "frame": msg.header.frame_id,
+                "k": [float(v) for v in msg.k],
+                "d": [float(v) for v in msg.d],
+            }
+        elif topic == IMAGE and image is None:
+            msg = deserialize_message(data, Image)
+            image = {
+                "width": int(msg.width),
+                "height": int(msg.height),
+                "encoding": msg.encoding,
+                "step": int(msg.step),
+                "frame": msg.header.frame_id,
+            }
+        if scans >= sample_scans and caminfo is not None and image is not None:
+            break
+
+    return {
+        "counts": counts,
+        "meta_types": meta_types,
+        "duration_ns": metadata["duration"]["nanoseconds"],
+        "message_count": metadata["message_count"],
+        "topics": topics,
+        "caminfo": caminfo,
+        "image": image,
+        "scan": {
+            "scans": scans,
+            "points": points,
+            "min_line": min_line,
+            "max_line": max_line,
+            "min_offset_ns": min_offset,
+            "max_offset_ns": max_offset,
+        },
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--bag-dir", required=True, type=Path, help="rosbag2 directory (sqlite3 storage)")
+    parser.add_argument("--lio", required=True, type=Path, help="fastlivo_mapping params YAML")
+    parser.add_argument("--camera", required=True, type=Path, help="parameter_blackboard params YAML")
+    parser.add_argument("--sample-scans", type=int, default=20, help="LiDAR scans to sample (default 20)")
+    args = parser.parse_args()
+
+    audit = Audit()
+    try:
+        lio = yaml_section(args.lio, "laserMapping")
+        cam = yaml_section(args.camera, "parameter_blackboard")
+    except ValueError as error:
+        print(f"FAIL {error}")
+        print("CONFIG_FAILED failures=1")
+        return 1
+
+    for path in (args.lio, args.camera):
+        print(f"INPUT {path.name} sha256={_sha256(path)}")
+
+    bag = read_bag(args.bag_dir, args.sample_scans)
+
+    failures, notes = check_bag_identity(
+        bag["counts"], bag["meta_types"], bag["duration_ns"], bag["message_count"]
+    )
+    audit.failures.extend(failures)
+    audit.notes.extend(notes)
+    print(
+        f"BAG topics={len(bag['counts'])} duration_ns={bag['duration_ns']} "
+        f"messages={bag['message_count']}"
+    )
+    for name in sorted(bag["counts"]):
+        print(f"BAG_TOPIC {name} {bag['meta_types'][name]} count={bag['counts'][name]}")
+
+    failures, notes = check_param_keys(lio, DECLARED, KNOWN_INERT_LIO)
+    audit.failures.extend(failures)
+    audit.notes.extend(notes)
+    failures, notes = check_param_keys(cam, CAMERA_DECLARED, KNOWN_INERT_CAMERA)
+    audit.failures.extend(failures)
+    audit.notes.extend(notes)
+
+    lidar_topic = lio.get("common.lid_topic")
+    recorded_type = bag["topics"].get(lidar_topic) if isinstance(lidar_topic, str) else None
+    audit.failures.extend(
+        check_routing(lio.get("preprocess.lidar_type"), lio.get("common.livox_msg_type"), recorded_type)
+    )
+    if recorded_type is None:
+        audit.fail("common.lid_topic is not a topic in the bag")
+    for key, wanted in (("common.imu_topic", "sensor_msgs/msg/Imu"), ("common.img_topic", "sensor_msgs/msg/Image")):
+        topic = lio.get(key)
+        actual = bag["topics"].get(topic) if isinstance(topic, str) else None
+        if actual != wanted:
+            audit.fail(f"{key} {topic!r} has type {actual}, expected {wanted}")
+    print(
+        f"ROUTING lidar_type={lio.get('preprocess.lidar_type')} "
+        f"livox_msg_type={lio.get('common.livox_msg_type')!r} recorded={recorded_type}"
+    )
+
+    scan = bag["scan"]
+    audit.failures.extend(check_scan_line(scan["max_line"], lio.get("preprocess.scan_line")))
+    audit.failures.extend(check_offset_bounds(scan["min_offset_ns"], scan["max_offset_ns"]))
+    print(
+        f"SCAN_SAMPLE scans={scan['scans']} points={scan['points']} "
+        f"line=[{scan['min_line']},{scan['max_line']}] scan_line={lio.get('preprocess.scan_line')} "
+        f"offset_ns=[{scan['min_offset_ns']},{scan['max_offset_ns']}]"
+    )
+
+    if bag["caminfo"] is None or bag["image"] is None:
+        audit.fail("bag sample did not reach the first CameraInfo and Image")
+    else:
+        failures, notes = check_camera_config(cam, bag["caminfo"], bag["image"])
+        audit.failures.extend(failures)
+        audit.notes.extend(notes)
+        caminfo = bag["caminfo"]
+        print(
+            f"CAMERA model={caminfo['model']} {caminfo['width']}x{caminfo['height']} "
+            f"frame={caminfo['frame']} fx={caminfo['k'][0]!r} d4={caminfo['d'][4]!r}"
+        )
+        print(
+            f"IMAGE encoding={bag['image']['encoding']} {bag['image']['width']}x"
+            f"{bag['image']['height']} step={bag['image']['step']}"
+        )
+
+    if lio.get("common.img_en") != 0:
+        audit.fail(
+            "common.img_en != 0: this staged pair is the LiDAR-IMU diagnostic; "
+            "a visual run requires the T5.5-calibrated pair"
+        )
+    for key in ("time_offset.img_time_offset", "time_offset.imu_time_offset", "time_offset.lidar_time_offset"):
+        value = lio.get(key)
+        if value != 0.0:
+            audit.fail(f"{key}={value!r} claims an unverifiable timing correction (T5.5 unresolved)")
+        else:
+            print(f"TIMEOFFSET {key}=0.0 (no correction claimed)")
+
+    for note in audit.notes:
+        print(f"NOTE {note}")
+    if audit.failures:
+        for failure in audit.failures:
+            print(f"FAIL {failure}")
+        print(f"CONFIG_FAILED failures={len(audit.failures)}")
+        return 1
+    print("CONFIG_OK")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
