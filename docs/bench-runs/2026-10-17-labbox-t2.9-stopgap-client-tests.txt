@@ -1,0 +1,13 @@
+T2.9 stopgap on the lab box, 2026-10-17 (PR #76, commit 201bebb)
+Box free before the run: no ROS, camera or bench processes. Copy in ~/dion_t2.9/repo, with the
+three changed files copied in (aria_config.yaml, aria_segmentation_client.py and its test, md5
+checked against the Mac). .venv and install linked from ~/rcp-Gappler.
+
+Aria client unit tests, domain 87, localhost only
+  python -m unittest discover -s aria/aria_app/services/aria_segmentation_client -p "test_*.py"
+  Ran 23 tests in 0.247s, OK (17 client, among them the new
+  test_after_a_wait_the_gaze_is_from_when_the_word_came, plus 6 gaze pick)
+
+What changed: the gaze window ends speech_latency_s before the word's arrival (self.word_at), not
+before a late image's arrival. speech_latency_s 1.5 (measured, 2026-10-15 run item 3).
+Not run: the e2e replay with the new values. The code path it changes is covered by the new test.
