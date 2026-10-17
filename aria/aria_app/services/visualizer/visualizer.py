@@ -14,7 +14,7 @@ from typing import Dict, Optional, Tuple
 
 import cv2
 import numpy as np
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import CompressedImage
 
 from config import ROS2Topics, VisualizerConfig
@@ -177,10 +177,10 @@ class Visualizer:
             # gaze arrives in this image's pixels (T2.9)
             self._reference_frame = self._ingest_compressed_image(msg)
 
-    def _on_gaze_position(self, msg: Point) -> None:
+    def _on_gaze_position(self, msg: PointStamped) -> None:
         if self.current_topic == ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE:
             if self._reference_frame is not None:
-                annotated = self._gaze_viz.visualize(self._reference_frame, (msg.x, msg.y))
+                annotated = self._gaze_viz.visualize(self._reference_frame, (msg.point.x, msg.point.y))
                 if annotated is not None:
                     self._set_display_frame(annotated)
                     frame = annotated
@@ -189,7 +189,7 @@ class Visualizer:
             self._write_synced_frame(frame, self._et_raw_frame)
 
         # Just keep the latest raw gaze point; the Aria mask bundle is the draw trigger.
-        # self._gaze_point_raw = (msg.x, msg.y)
+        # self._gaze_point_raw = (msg.point.x, msg.point.y)
 
     def _on_et_raw_image(self, msg: CompressedImage) -> None:
         frame = self._ingest_compressed_image(msg)

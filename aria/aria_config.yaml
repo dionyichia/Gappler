@@ -103,7 +103,7 @@ eye_tracking:
 # read by: aria/aria_app/services/aria_segmentation_client/ (and aria/tools/replay_recording_gaze_pick.py)
 aria_segmentation_client:
   ros__parameters:
-    # Gaze is averaged over this long before picking: nobody holds their eyes on one point
+    # Gaze from this long votes on the mask: nobody holds their eyes on one point
     # (Dion, 2026-10-13). 1 s is 10 eye frames at the recorded 10 fps, about 4 on the box (4.5 a second).
     gaze_window_s: 1.0
     # The word arrives this long after you stop speaking (audio_worker waits for a pause, then
@@ -111,9 +111,18 @@ aria_segmentation_client:
     # the box with a recorded command, not counting the glasses' own audio delay (Dion, 2026-10-17).
     # A stopgap: T2.21 replaces it with the word's own capture time.
     speech_latency_s: 1.5
-    # A glasses image older than gaze_window_s may not match the gaze, so the client waits up to
-    # this long for the next one. The replayed recording sends one every 1.9 s (T2.9).
-    image_wait_s: 3.0
+    # If no glasses image taken since you started speaking has arrived when the word comes, the
+    # client waits up to this long for one. Images arrive 1 to 3 s late on the box (T2.9, T2.20).
+    matching_image_wait_s: 3.0
     # Pick the mask under the gaze, else the nearest within this many pixels of the published
     # 1408 px image. Recording c2cbafe8 needed about 60 at 1.4 m. Tune on more recordings.
     pick_radius_px: 80
+    # The vote (T2.20): each gaze sample votes for the mask it picks. The mask with the most votes
+    # wins if it has at least this share of them. Else the word alone stands.
+    # 0.5 chosen by Dion (2026-10-17). Every value from 0.3 to 0.9 gave the same 60 of 61 on
+    # recording c2cbafe8, a steady stare: tune on a recording where the eyes move between objects.
+    vote_min_share: 0.5
+    # Only gaze samples captured within this long of the image vote: the head moves the scene
+    # under the gaze (T2.9_TIMING_REVIEW 9.10 point 1). Glasses clock on both.
+    # 0.5 s chosen by Dion (2026-10-17): about 4 to 5 samples on the box, 10 on the recording.
+    gaze_to_image_max_s: 0.5
