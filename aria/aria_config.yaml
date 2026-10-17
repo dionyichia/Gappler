@@ -104,13 +104,13 @@ eye_tracking:
 aria_segmentation_client:
   ros__parameters:
     # Gaze is averaged over this long before picking: nobody holds their eyes on one point
-    # (Dion, 2026-10-13). 1 s is 10 eye frames at 10 fps.
+    # (Dion, 2026-10-13). 1 s is 10 eye frames at the recorded 10 fps, about 4 on the box (4.5 a second).
     gaze_window_s: 1.0
     # The word arrives this long after you stop speaking (audio_worker waits for a pause, then
     # Whisper and the LLM run), so the gaze window ends this far back. Measured about 1.5 s on
-    # the box with a recorded command, not counting the glasses' own audio delay. 0.65 is the
-    # first, wrong reading: value open with Dion (T2.9 review guide section 8, 2026-10-15).
-    speech_latency_s: 0.65
+    # the box with a recorded command, not counting the glasses' own audio delay (Dion, 2026-10-17).
+    # A stopgap: T2.21 replaces it with the word's own capture time.
+    speech_latency_s: 1.5
     # A glasses image older than gaze_window_s may not match the gaze, so the client waits up to
     # this long for the next one. The replayed recording sends one every 1.9 s (T2.9).
     image_wait_s: 3.0

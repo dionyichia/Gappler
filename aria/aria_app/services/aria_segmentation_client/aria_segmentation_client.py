@@ -79,6 +79,7 @@ class AriaSegmentationClient(Node):
         self.service = self.create_client(Segment, SERVICE_NAME)
         self.prompt = ""
         self.words = 0                              # bumped by every word: is a reply still current
+        self.word_at = -np.inf                      # when the newest word came
         self.image, self.image_at = None, -np.inf   # newest glasses image and when it came
         self.wait_until = -np.inf                   # segment the next image if it comes by then
         self.gaze = deque(maxlen=200)               # (time, x, y), ~20 s at 10 fps
@@ -105,6 +106,7 @@ class AriaSegmentationClient(Node):
             return
         self.prompt = "" if words == STOP_KEYWORD else words
         self.words += 1
+        self.word_at = time.monotonic()
         self.wait_until = -np.inf   # a new word or the stop word replaces any wait
         target = Target(prompt=self.prompt)
         target.header.stamp = self.get_clock().now().to_msg()
@@ -129,7 +131,8 @@ class AriaSegmentationClient(Node):
             self.get_logger().info(f"Glasses image is {now - self.image_at:.1f} s old: "
                                    "waiting for the next one")
             return
-        gaze = mean_gaze(self.gaze, now - CFG["speech_latency_s"], window)
+        # from the word's arrival, not now: after an image wait, now is up to image_wait_s later
+        gaze = mean_gaze(self.gaze, self.word_at - CFG["speech_latency_s"], window)
         if gaze is None:
             self.get_logger().info("No recent gaze: the word alone is sent")
             return

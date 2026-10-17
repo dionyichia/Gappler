@@ -90,15 +90,19 @@ class AriaClientTest(unittest.TestCase):
         self.node.request_pub = Recorder()
         self.node.service = FakeServiceClient()
 
-    def look(self, x, y):
-        """A 60 x 40 glasses image and gaze at (x, y), as the glasses app sends them. The gaze is
-        1 s old, from while the word was spoken (speech_latency_s 0.65 before it arrives)."""
+    def image(self):
+        """A 60 x 40 glasses image, as the glasses app sends it."""
         image = CompressedImage(format="jpeg",
                                 data=cv2.imencode(".png", np.full((40, 60, 3), 90, np.uint8))[1].tobytes())
         image.header.stamp.sec = 7
         self.node.on_image(image)
+
+    def look(self, x, y):
+        """A glasses image and gaze at (x, y). The gaze is 2 s old, from while the word was
+        spoken (the window is 1.0 s, ending speech_latency_s 1.5 before the word arrives)."""
+        self.image()
         self.node.on_gaze(Point(x=float(x), y=float(y)))
-        self.node.gaze[-1] = (time.monotonic() - 1.0, float(x), float(y))
+        self.node.gaze[-1] = (time.monotonic() - 2.0, float(x), float(y))
 
     def reply(self, *dets):
         self.node.service.futures[-1].finish(Segment.Response(success=True, detections=list(dets)))
@@ -178,6 +182,17 @@ class AriaClientTest(unittest.TestCase):
         self.say("box")
         self.assertEqual(self.node.service.requests, [])
         self.look(30, 20)   # the next image
+        self.assertEqual([r.prompt for r in self.node.service.requests], ["box"])
+
+    def test_after_a_wait_the_gaze_is_from_when_the_word_came(self):
+        # the image comes 2 s after the word: the gaze window still ends speech_latency_s
+        # before the word's arrival, not before the image's
+        self.look(30, 20)
+        self.node.image_at -= 5
+        self.say("box")
+        self.node.word_at -= 2
+        self.node.gaze = [(self.node.word_at - 2.0, 30.0, 20.0)]
+        self.image()
         self.assertEqual([r.prompt for r in self.node.service.requests], ["box"])
 
     def test_an_image_after_the_wait_is_not_used(self):
