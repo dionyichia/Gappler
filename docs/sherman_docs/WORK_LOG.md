@@ -584,6 +584,49 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   nominal extrinsic, then the T3.5c visual replay runner; resolve T5.5 numbers
   with Dion.
 
+## [2026-10-17] T3.5 | T3.5c: visual-config box round (revision's owed evidence)
+
+- Evidence: [consumer contract](T3.5_CONSUMER_CONTRACT.md) (§8 visual-config
+  round), [round manifest](tools/fastlivo/EVIDENCE_t35c-visual-config-20261017.sha256);
+  box dir `~/rcp-Gappler/log/t59-fastlivo/log/t35c-visual-config` at commit
+  `47a9b2e`.
+- Fresh: 42/42 unit tests on the box; diagnostic file `MODE diagnostic` +
+  `CONFIG_OK` (pair byte-unchanged, `05f849d0`/`977b6db9` in the manifest);
+  visual file `MODE visual` + `EXTRINSICS` + `CONFIG_OK`; `Pcl[1]` and
+  `img_en: 2` mutations each exactly one failure; manifest 19/19 verified.
+- Findings: mode contract holds end to end on the box; checker outputs are
+  run-stable byte-for-byte except rosbag2's bag-open timestamp log line.
+- Outcome: revision's owed round closed; T3.5 remains PROGRESS. No mapper
+  run, no hardware, no bag modification.
+- Next: projection pre-check tool and first round on the same bag.
+
+## [2026-10-17] T3.5 | T3.5c: projection pre-check tool + first box round
+
+- Evidence: [consumer contract](T3.5_CONSUMER_CONTRACT.md) (§8 projection
+  block, R1), [box manifest](tools/fastlivo/EVIDENCE_t35c-projection-20261017.sha256);
+  box dir `~/rcp-Gappler/log/t59-fastlivo/log/t35c-projection.zD3Wie` at commit
+  `2c9abff`.
+- Fresh: `project_scan.py` (+26 stdlib tests, commit `2c9abff`) projects
+  sampled scans onto nearest-in-time images with the staged nominal `Rcl/Pcl`
+  and refuses the diagnostic config. Box round: 68/68 unit tests (26 tool +
+  42 checker), 8 overlays, manifest 16/16 verified; repo tool copies
+  hash-match the box manifest.
+- Findings: in-frame LiDAR returns are 170–241 of 19,968 points per sampled
+  scan, all at 0.16–0.23 m camera depth in a bottom band — `t35b_proof3`
+  faces an acoustic-foam barrier ~0.2 m ahead of the sensor head; the LiDAR
+  (max elevation 52°) cannot see over its top edge (61° needed), so only the
+  top fan rings graze the bottom of the camera view. Scene-consistent with the
+  nominal composition (band and depths where the geometry predicts, nothing
+  elsewhere) but no rotation or far-field leverage — not an alignment check.
+  No existing recording qualifies: `t35b_proof` has no LiDAR topic;
+  `t35b_proof2/3` are the same scene; Bright_Screen_Wall used a different
+  camera (`/left_camera/*`, 1280×1024, fx ≈ 1293.6).
+- Outcome: T3.5 remains PROGRESS. Visual acceptance needs a fresh
+  depth-bearing recording (standoff ≈ 1.5–3 m); no mapper run, no fusion
+  claim, no PR or merge.
+- Next: record the new scene bag on the box; re-run `project_scan.py` on it;
+  then the T3.5c visual replay runner; resolve T5.5 numbers with Dion.
+
 ## Record Template
 
 
