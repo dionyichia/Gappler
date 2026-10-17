@@ -501,7 +501,20 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: T3.5c replay of `t35b_proof3` through FAST-LIVO2 offline (gated also
   on T5.5 nominal mount transform).
 
+## [2026-10-17] T3.5 | Verification audit, no hardware restart
+
+- Evidence: [verification report](T3.5_VERIFICATION_20261017.md).
+- Fresh: full primary bag deserialisation/integrity, all-point finite/count/time
+  checks, exact calibration pairing; Mac available bench PASS; lab recipe 10,
+  harness 45 and sampling 7 tests PASS. Retained T3.5a result rechecked, not rerun.
+- Findings: zero-range returns ~51.8%, corrected image lag 31.7 ms, analyser unit
+  bugs, incomplete runtime provenance, clock-domain uncertainty and untracked
+  build tooling. Previous universal guard/allocator claims qualified.
+- Outcome: T3.5 overall remains PROGRESS; capture characterisation stands with
+  explicit limits. No physical synchronisation, calibrated fusion or Nav2 claim.
+
 ## Record Template
+
 
 ```markdown
 ## [YYYY-MM-DD] T<id> | Short title
