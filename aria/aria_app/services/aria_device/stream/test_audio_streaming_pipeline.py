@@ -11,7 +11,11 @@ Times are seconds from the start of the audio window.
 import math
 import unittest
 
-from services.aria_device.stream.audio_streaming_pipeline import finished_sentence, is_release
+from services.aria_device.stream.audio_streaming_pipeline import (
+    finished_sentence,
+    is_release,
+    word_span,
+)
 
 WINDOW, SILENCE, NOTHING_HANDLED = 15.0, 0.7, -math.inf
 
@@ -45,6 +49,34 @@ class FinishedSentenceTest(unittest.TestCase):
         # "pick up the light" handled (ended at 6.0), then "release" finished
         self.assertEqual(finished_sentence([(3.0, 6.0), (11.0, 12.5)], WINDOW, SILENCE, 6.0),
                          (11.0, 12.5))
+
+
+# Whisper's words, with their leading spaces and punctuation, and times from the sentence start
+PICK_UP_THE_BOX = [(" Pick", 0.0, 0.3), (" up", 0.3, 0.5), (" the", 0.5, 0.6), (" box.", 0.6, 1.1)]
+
+
+class WordSpanTest(unittest.TestCase):
+    def test_the_object_word(self):
+        self.assertEqual(word_span(PICK_UP_THE_BOX, "box"), (0.6, 1.1))
+
+    def test_two_word_object(self):
+        words = [(" Get", 0.0, 0.2), (" the", 0.2, 0.3), (" water", 0.3, 0.6),
+                 (" bottle!", 0.6, 1.0)]
+        self.assertEqual(word_span(words, "water bottle"), (0.3, 1.0))
+
+    def test_the_last_mention_wins(self):
+        words = [(" Box", 0.0, 0.3), (" no,", 0.3, 0.5), (" the", 0.5, 0.6), (" box", 0.8, 1.2)]
+        self.assertEqual(word_span(words, "box"), (0.8, 1.2))
+
+    def test_plural(self):
+        self.assertEqual(word_span([(" Boxes", 0.0, 0.5)], "box"), (0.0, 0.5))
+
+    def test_not_in_the_transcript(self):
+        # the LLM answers "end" for "stop the robot"
+        self.assertIsNone(word_span([(" Stop", 0.0, 0.3), (" the", 0.3, 0.4)], "end"))
+
+    def test_no_words(self):
+        self.assertIsNone(word_span([], "box"))
 
 
 class IsReleaseTest(unittest.TestCase):

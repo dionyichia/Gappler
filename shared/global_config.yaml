@@ -51,7 +51,8 @@
       #   visualizer. nav: aria_image_relay
       rgb_camera_undistorted: "/aria/rgb_camera/undistorted"
       # aria: audio_streaming_pipeline -> aria: object_recognition_pipeline.
-      #   nav: object_approach_node, goto_glasses
+      #   nav: object_approach_node, goto_glasses. The aria client reads the stamped twin,
+      #   audio_prompt_stamped (T2.21). Retiring this String is T2.22
       audio_transcription_prompt: "/aria/audio/prompt"
       # aria: pose_fusion_node -> nav: goto_glasses
       fused_pose: "/aria/fused_pose"

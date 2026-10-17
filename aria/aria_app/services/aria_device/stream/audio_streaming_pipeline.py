@@ -21,6 +21,8 @@ from faster_whisper.transcribe import Segment
 from faster_whisper.vad import VadOptions, get_speech_timestamps
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from scipy.signal import resample
+from builtin_interfaces.msg import Time
+from segmentation_interfaces.msg import SpokenWord
 from std_msgs.msg import Bool, String
 
 from config import AriaConfig, AudioStreamingPipelineConfig, ROS2Topics, Settings
@@ -66,6 +68,25 @@ def is_release(transcription: str) -> bool:
     return any(f" {phrase} " in words for phrase in AudioStreamingPipelineConfig.RELEASE_PHRASES)
 
 
+def word_span(words, prompt: str):
+    """When the object word was said, as (start, end), or None if it is not in the transcript
+    (T2.21). words: Whisper's (text, start, end) in order. The last match wins, as the LLM picks
+    the last object named. A word counts if it starts with the prompt's word, so "boxes" matches
+    "box". Several prompt words ("water bottle") must follow each other."""
+    want = re.findall(r"[a-z']+", prompt.lower())
+    said = [(re.sub(r"[^a-z']", "", text.lower()), start, end) for text, start, end in words]
+    for i in range(len(said) - len(want), -1, -1):
+        if want and all(said[i + k][0].startswith(w) for k, w in enumerate(want)):
+            return said[i][1], said[i + len(want) - 1][2]
+    return None
+
+
+def ros_time(t: float) -> Time:
+    """Seconds -> builtin_interfaces/Time."""
+    sec = int(t)
+    return Time(sec=sec, nanosec=int(round((t - sec) * 1e9)))
+
+
 def audio_worker(
     raw_audio_queue: Queue,
     quit_event: Event,
@@ -74,6 +95,16 @@ def audio_worker(
         "Aria_audio_prompt_publisher",
         String,
         ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value,
+        QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10,
+        ),
+    )
+    stamped_publisher = ROSPublisher(
+        "Aria_audio_prompt_stamped_publisher",
+        SpokenWord,
+        ROS2Topics.AUDIO_PROMPT_STAMPED.value,
         QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,
             history=HistoryPolicy.KEEP_LAST,
@@ -103,7 +134,7 @@ def audio_worker(
     # 0.4 s so Whisper gets whole words. The padding adds to the wait: a sentence counts as
     # finished about silence_s + 0.4 s after its last word.
     vad_options = VadOptions(min_silence_duration_ms=int(silence_s * 1000))
-    handled_until = -math.inf   # monotonic time the last transcribed sentence ended
+    handled_until = -math.inf   # glasses time the last transcribed sentence ended
 
     def _get_resampled_audio(channel_buffers: np.ndarray) -> np.ndarray:
         """Mix, downsample and normalise raw channel buffers into a 16 kHz mono array."""
@@ -140,11 +171,14 @@ def audio_worker(
         # Materialise the generator so segments can be reused.
         return list(segments)
 
-    def _process_segments(segments: list[Segment]) -> None:
+    def _process_segments(segments: list[Segment], start: float, end: float) -> None:
         """
         Join the sentence's segment texts, extract the object via the LLM, and publish it once.
         Nothing is published when the LLM finds no object (T2.10). The stop word wins over
         release, and release goes to /manipulator/release, never out as a word (T2.6).
+        start, end: the sentence's glasses times. Whisper's word times count from start.
+        The word goes out twice: stamped with when it was said (T2.21), and as plain text for
+        the nav nodes (until T2.22).
         """
         if not segments:
             return
@@ -159,20 +193,30 @@ def audio_worker(
         if not prompt:
             return
 
+        words = [(w.word, w.start, w.end) for seg in segments for w in (seg.words or [])]
+        span = word_span(words, prompt)
+        if span is None:
+            logger.info(f"{prompt!r} not in the transcript: stamped with the whole sentence")
+            span = (0.0, end - start)
+        stamped = SpokenWord(word=prompt, word_end=ros_time(start + span[1]))
+        stamped.header.stamp = ros_time(start + span[0])
+        stamped_publisher.publish(stamped)
+
         msg = String()
         msg.data = prompt
         prompt_publisher.publish(msg)
 
     while not quit_event.is_set():
         try:
-            channel_buffers = raw_audio_queue.get(timeout=0.1)
+            channel_buffers, end_ns = raw_audio_queue.get(timeout=0.1)
             audio_16k = _get_resampled_audio(channel_buffers)
             if len(audio_16k) == 0:
                 continue
 
-            # The buffer ends now: act only on a sentence followed by silence_s of quiet
+            # The buffer ends at its newest sample's glasses time (T2.21): act only on a sentence
+            # followed by silence_s of quiet
             window_s = len(audio_16k) / sample_rate
-            window_start = time.monotonic() - window_s
+            window_start = end_ns / 1e9 - window_s
             speech = [(span["start"] / sample_rate, span["end"] / sample_rate)
                       for span in get_speech_timestamps(audio_16k, vad_options)]
             sentence = finished_sentence(speech, window_s, silence_s,
@@ -183,7 +227,8 @@ def audio_worker(
 
             start, end = (int(t * sample_rate) for t in sentence)
             segments = _transcribe(audio_16k[start:end])
-            _process_segments(segments)
+            _process_segments(segments, window_start + start / sample_rate,
+                              window_start + end / sample_rate)
 
         except queue.Empty:
             pass
