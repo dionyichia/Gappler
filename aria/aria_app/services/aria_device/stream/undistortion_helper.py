@@ -16,3 +16,14 @@ def build_remap_maps(source_calib: CameraCalibration, dest_calib: CameraCalibrat
     map_x = src_pixels[:, 0].reshape(height, width).astype(np.float32)
     map_y = src_pixels[:, 1].reshape(height, width).astype(np.float32)
     return map_x, map_y
+
+
+def to_published_pixel(pixel, source_calib: CameraCalibration, dest_calib: CameraCalibration):
+    """A pixel of the raw RGB camera image -> the same point in the published image, which is
+    undistorted first, then rotated 90 degrees clockwise (image_streaming_pipeline.rgb_worker).
+    None if it falls outside the published image."""
+    p = dest_calib.project(source_calib.unproject_no_checks(np.asarray(pixel, dtype=np.float64)))
+    if p is None:
+        return None
+    height = dest_calib.get_image_size()[1]
+    return height - 1 - p[1], p[0]   # where (x, y) lands after np.rot90(image, -1)

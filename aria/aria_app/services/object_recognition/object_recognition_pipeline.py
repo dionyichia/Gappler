@@ -667,13 +667,15 @@ class ObjectRecognitionPipeline:
                 if k not in ("backbone_out", "masks_logits")
             }
 
-            # Rotate the raw gaze point (original camera space) to match the
-            # aria_locked_image which has already been rotated 90° CW.
-            rotated_gaze = None
-            if gaze_point is not None:
-                h = reference_image.shape[0]
-                gx, gy = gaze_point
-                rotated_gaze = (h - gy, gx)
+            # Gaze now arrives in the undistorted image's pixels, already rotated (T2.9), so it is
+            # passed on as is. The old rotation is commented out, not deleted (Dion, 2026-10-14).
+            # Delete once T2.9 passes end to end on the live glasses.
+            rotated_gaze = gaze_point
+            # rotated_gaze = None
+            # if gaze_point is not None:
+            #     h = reference_image.shape[0]
+            #     gx, gy = gaze_point
+            #     rotated_gaze = (h - gy, gx)
 
             payload = pickle.dumps(
                 {
