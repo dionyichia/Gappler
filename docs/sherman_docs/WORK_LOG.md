@@ -627,6 +627,42 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: record the new scene bag on the box; re-run `project_scan.py` on it;
   then the T3.5c visual replay runner; resolve T5.5 numbers with Dion.
 
+## [2026-10-17] T3.5 | T3.5c: standoff re-capture, depth probe, scene correction
+
+- Evidence: [consumer contract](T3.5_CONSUMER_CONTRACT.md) (§8 correction
+  block, R1); box dirs `t35c-projection-standoff.DxdNlI` (round 2) and
+  `t35c-depth-check` (depth probe).
+- Verified: the pre-check re-run on the standoff bag `t35c_standoff` (746
+  scans / 2238 images, 8 overlays, 68/68 unit tests) draws 127–230 of
+  ≈20,000 points per sampled scan in frame, all at 0.16–0.24 m camera depth in
+  the bottom band — the same picture as `t35b_proof3` (162–241, 0.16–0.23 m;
+  the round-1 block's "170–241" was a one-sample error). A deliberate 1.5–3 m
+  retreat from the mats does not move the in-frame returns off the near
+  surface.
+- Fresh: D455 depth probe of the same setup (depth + aligned depth + factory
+  `extrinsics/depth_to_color`; 1.73 GB, 9,419 messages): 582 raw and 582
+  aligned frames, 0.03 % of pixels valid, none at the frame centre, no coherent
+  surface anywhere — consistent with the near surface inside min-Z (0.35 m at
+  848×480). No distance measurement obtained. Side finding: the camera pair's
+  factory extrinsic (5.91 cm along the optical x, rotation within 0.2° of
+  identity) agrees with the URDF's 5.9 cm colour↔depth offset.
+- Correction: §8 read the scene as an "acoustic-foam barrier ~0.2 m ahead" with
+  a "61°-top-edge" argument; both were inference from the image alone and are
+  withdrawn. The scene is interlocking foam mats resting on a cushioned bench
+  (operator, on site) — a low compliant surface, flat across its middle,
+  curving away at the edge. The withdrawn claims never entered the tooling,
+  the configs or the bag evidence; no data artifact changes.
+- Outcome: T3.5 remains PROGRESS. Both projection rounds are consistent with the
+  nominal composition and neither is evidence against it, but they exercise no
+  rotation or far-field translation, so they are not an alignment verification;
+  T5.5 remains the calibration owner and T3.5c's formal dependency on it stands.
+- Next: fold the corrected scene reading into T3.5c's write-up; if a
+  rotation-discriminating check is wanted, stage a scene the LiDAR sees beyond
+  the near surface. No mapper run, no fusion claim, no PR or merge.
+- Ops: all T3.5c processes stopped and the three task tmux sessions (`t35c`,
+  `t35c-depth`, `t35c-rec`) closed; both bags and the repo working tree
+  untouched.
+
 ## Record Template
 
 
