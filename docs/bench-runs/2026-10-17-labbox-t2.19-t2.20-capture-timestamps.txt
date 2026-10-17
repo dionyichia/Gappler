@@ -1,0 +1,32 @@
+T2.19 + T2.20 (PR A) on the lab box, 2026-10-17, branch t2.19-glasses-capture-timestamps at 09d5ad0
+plus the e2e script's stamp echo. Box free before the run: no ROS, camera or bench processes,
+GPU idle. Copy in ~/dion_t2.9/repo, the 23 files changed since 201bebb copied in, md5 checked
+against the Mac. .venv and install linked from ~/rcp-Gappler.
+
+1. Aria client and gaze pick unit tests, domain 87, localhost only
+   python -m unittest discover -s aria/aria_app/services/aria_segmentation_client -p "test_*.py"
+   Ran 28 tests in 0.416s, OK (19 client, 9 gaze pick)
+
+2. End to end on recording c2cbafe8, domain 88, localhost only
+   bash docs/dion_docs/t2.9_e2e_replay_on_box.sh
+   Workers took their first frame after 55 s. Played 0 to 118 s. "box" said at 22, 46, 70, 95 s.
+   4 of 4 words sent a reference:
+     22 s  waited for an image from when you spoke. Image +0.55 s from the gaze, 3 samples vote.
+           #7 of 12, score 0.44, 100% of 3, 0 px
+     46 s  waited. Image -0.45 s, 8 samples. #1 of 10, score 0.59, 100% of 8, 1 px
+     70 s  no wait. Image -0.05 s, 8 samples. #7 of 9, score 0.41, 100% of 8, 11 px
+     95 s  no wait. Image -0.15 s, 8 samples. #5 of 7, score 0.38, 100% of 8, 1 px
+   Which object each pick is was not checked on the image [unverified].
+
+3. Stamps, from one message each (ros2 topic echo --once)
+   gaze  /aria/eye_tracking/gaze_estimate  PointStamped, stamp 4224.562611125, frame_id ''
+   image /aria/rgb_camera/undistorted      stamp 4225.362587562, frame_id ''
+   Both equal the VRS capture times of the first eye and RGB frames (checked on the Mac), so they
+   are the glasses clock, not the box's (which reads about 1792252224 s).
+   Rates: gaze 4.9 per s, image 0.56 per s (one every 1.1 to 3.1 s).
+
+Not clean: after "Done at 118 s", the RGB worker raised "Failed to publish: publisher's context is
+invalid" (image_streaming_pipeline.py:133). The script's stop signal reached it mid-publish. After
+the run, so the results stand. Whether older runs did the same is unknown (their logs were
+overwritten).
+No processes left behind: no ROS, service, client or replay process after the run.

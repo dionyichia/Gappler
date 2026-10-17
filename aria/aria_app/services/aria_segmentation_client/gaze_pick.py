@@ -8,8 +8,9 @@ import numpy as np
 def vote(masks, points, radius: float, min_share: float):
     """Which mask most gaze points fall on (T2.20). Each (x, y) point votes for the mask
     pick_mask gives it, or for none. (index, share, mean distance px of its votes) for the mask
-    with the most votes, if its share of all points is at least min_share. Else (None, share,
-    nearest distance px). Ties go to the earlier mask, the higher score.
+    with the most votes, if its share of all points is at least min_share, else with None in
+    place of the index. With no votes at all: (None, 0.0, nearest distance px). Ties go to the
+    earlier mask, the higher score.
     Unlike a mean, two fixations on two objects do not average to a point between them."""
     picks = [pick_mask(masks, x, y, radius) for x, y in points]
     votes = Counter(i for i, _ in picks if i is not None)

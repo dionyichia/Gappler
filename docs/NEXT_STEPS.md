@@ -247,8 +247,8 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
   and gaze carry the glasses capture time (gaze is `PointStamped`). The client keeps 20 s of both,
   and the gaze from when you spoke picks the image taken then. Gaze near that image votes on the
   mask, replacing the 1 s mean. `image_wait_s` is now `matching_image_wait_s`. Still by arrival
-  time: the word to the gaze, through `speech_latency_s`, until `T2.21` `[code]`. Box checks are
-  still owed.
+  time: the word to the gaze, through `speech_latency_s`, until `T2.21` `[code]`. On the box: e2e
+  replay 4 of 4, stamps on the glasses clock (`bench-runs/2026-10-17-labbox-t2.19-t2.20-capture-timestamps.txt`).
 
 #### `[decided 2026-09-20]` Decision: retire `sam3_ros_node.py` (Option 2)
 
