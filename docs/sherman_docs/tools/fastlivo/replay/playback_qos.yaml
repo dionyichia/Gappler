@@ -1,0 +1,16 @@
+# Mapper uses reliable subscriptions; explicitly override recorded sensor QoS.
+/livox/lidar:
+  history: keep_last
+  depth: 100
+  reliability: reliable
+  durability: volatile
+/livox/imu:
+  history: keep_last
+  depth: 1000
+  reliability: reliable
+  durability: volatile
+/left_camera/image:
+  history: keep_last
+  depth: 100
+  reliability: reliable
+  durability: volatile

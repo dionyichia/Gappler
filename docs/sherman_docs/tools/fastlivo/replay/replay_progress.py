@@ -1,0 +1,149 @@
+"""Pinned-mapper callback evidence, not estimator-completion instrumentation."""
+from collections import Counter
+from contextlib import closing
+import math
+from pathlib import Path
+import re
+import sqlite3
+import struct
+
+PATTERNS = {
+    '/livox/lidar': re.compile(r'Get LiDAR, its header time: ([0-9]+\.[0-9]{6})'),
+    '/livox/imu': re.compile(r'get imu at time: ([0-9]+\.[0-9]{6})'),
+    '/left_camera/image': re.compile(r'Get image, its header time: ([0-9]+\.[0-9]{6})'),
+}
+
+
+def playback_rate(value: str, duration: float) -> float:
+    """Allow slower playback only when startup/drain still fit the existing window."""
+    rate = float(value)
+    if not math.isfinite(rate) or not 0 < rate <= 0.25:
+        raise ValueError('T35_REPLAY_RATE must be finite, positive and no faster than 0.25')
+    if not math.isfinite(duration) or duration <= 0 or duration / rate + 60 + 120 + 10 > 600:
+        raise ValueError('playback plus 60s startup/120s drain/10s cleanup exceeds 600s budget')
+    return rate
+
+
+def expected_callbacks(database: Path, topics: dict, image_offset: float) -> dict:
+    """Read only CDR1 Header prefixes; all three reviewed types start with Header.
+
+    Match the source's %.6f logs, including its configured image offset. This is
+    microsecond-resolution callback evidence, not full serialized-message proof.
+    """
+    if not math.isfinite(image_offset):
+        raise ValueError('nonfinite image offset')
+    expected = {name: Counter() for name in topics}
+    with closing(sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True)) as db:
+        rows = db.execute('SELECT id,name,type,serialization_format FROM topics').fetchall()
+        if {name: typ for _, name, typ, _ in rows} != topics:
+            raise ValueError('bag topics/types differ from reviewed raw inputs')
+        for topic_id, name, _, encoding in rows:
+            if encoding != 'cdr':
+                raise ValueError('expected CDR serialization')
+            offset = image_offset if name == '/left_camera/image' else 0.0
+            for (header,) in db.execute('SELECT substr(data,1,12) FROM messages WHERE topic_id=?', (topic_id,)):
+                if len(header) != 12 or header[:4] not in (b'\x00\x01\x00\x00', b'\x00\x00\x00\x00'):
+                    raise ValueError('unsupported or truncated CDR1 header')
+                endian = '<' if header[1] == 1 else '>'
+                sec, nsec = struct.unpack(endian + 'iI', header[4:])
+                if sec < 0 or nsec >= 10**9:
+                    raise ValueError('invalid sensor timestamp')
+                # stamp2Sec uses rclcpp::Time::seconds(): chrono converts the
+                # combined int64 nanoseconds to double, then divides by 1e9.
+                # Split sec/nsec arithmetic differs at six-decimal boundaries.
+                stamp = float(sec * 10**9 + nsec) / 1e9 + offset
+                expected[name][f'{stamp:.6f}'] += 1
+            if not expected[name]:
+                raise ValueError('bag input topic is empty: ' + name)
+    return expected
+
+
+class CallbackTracker:
+    """Incrementally reconcile pinned callback log stamps with bag header stamps."""
+
+    def __init__(self, expected: dict):
+        self.expected = expected
+        self.observed = {name: Counter() for name in expected}
+        self.last = {name: None for name in expected}
+        self.offset = 0
+        self.pending = b''
+
+    def update(self, log: Path) -> None:
+        """Consume new complete lines only; missing prelaunch log is normal."""
+        if not log.exists():
+            return
+        with log.open('rb') as source:
+            source.seek(self.offset)
+            data = source.read()
+            self.offset = source.tell()
+        lines = (self.pending + data).split(b'\n')
+        self.pending = lines.pop()
+        for raw in lines:
+            line = raw.decode(errors='replace')
+            for name, counts in self.observed.items():
+                match = PATTERNS[name].search(line)
+                if match:
+                    stamp = match.group(1)
+                    counts[stamp] += 1
+                    self.last[name] = stamp
+                    break
+
+    def tails_seen(self) -> bool:
+        """A terminal callback is only a drain heuristic; gaps still fail coverage."""
+        return all(seen[max(expected, key=float)] >= expected[max(expected, key=float)]
+                   for name, expected in self.expected.items()
+                   for seen in (self.observed[name],))
+
+    def summary(self) -> dict:
+        """Bound report size while retaining total gaps and representative stamps."""
+        result = {}
+        for name, expected in self.expected.items():
+            seen = self.observed[name]
+            missing, unexpected = expected - seen, seen - expected
+            result[name] = {
+                'expected': sum(expected.values()), 'observed': sum(seen.values()),
+                'matched': sum((expected & seen).values()),
+                'missing': sum(missing.values()), 'unexpected': sum(unexpected.values()),
+                'last_callback_stamp': self.last[name],
+                'expected_last_stamp': max(expected, key=float),
+                'missing_stamp_examples': list(missing)[:5],
+                'unexpected_stamp_examples': list(unexpected)[:5],
+            }
+        return result
+
+
+def drain_state(now: float, deadline: float, last_activity: float, tails_seen: bool) -> str:
+    """Never extend custody; five quiet log seconds do not prove estimator idle."""
+    if now >= deadline:
+        return 'timeout'
+    if tails_seen and now - last_activity >= 5:
+        return 'callbacks_quiet'
+    return 'waiting'
+
+
+def prestart_allowance(imu_expected_count: int, duration_seconds: float) -> int:
+    """Bound the startup race window: at most one 10 Hz lidar period of IMU.
+
+    Pinned imu_cbk drops IMU processed before the first lidar callback, before
+    logging. Only a strict timestamp prefix within this bound is reconcilable;
+    anything else stays missing.
+    """
+    if (type(imu_expected_count) is not int or imu_expected_count <= 0
+            or not math.isfinite(duration_seconds) or duration_seconds <= 0):
+        raise ValueError('prestart allowance needs a positive IMU count and duration')
+    return math.ceil(imu_expected_count / duration_seconds * 0.1)
+
+
+def reconcile_imu(seen: Counter, expected: Counter, allowance: int) -> dict:
+    """Split IMU gaps into explained prestart drops vs real coverage failures."""
+    missing = expected - seen
+    unexpected = seen - expected
+    row = {'prestart_drops': 0, 'missing': sum(missing.values()),
+           'unexpected': sum(unexpected.values())}
+    if not missing or unexpected or sum(missing.values()) > allowance:
+        return row
+    matched = expected & seen
+    if matched and max(missing, key=float) < min(matched, key=float):
+        row['prestart_drops'] = row['missing']
+        row['missing'] = 0
+    return row

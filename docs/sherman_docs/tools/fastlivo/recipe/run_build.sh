@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# User-run only. Ordinary container, not a BuildKit/docker-container builder.
+set -eo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")"
+command -v python3 >/dev/null
+command -v docker >/dev/null
+command -v flock >/dev/null
+command -v pgrep >/dev/null
+test -t 0 || { echo 'Run from an interactive terminal for sudo authentication.' >&2; exit 1; }
+# Cooperative lock: other tools must use this same lock to participate.
+exec 9>"$HOME/rcp-Gappler/log/software-build.lock"
+flock -n 9 || { echo 'Another cooperating build holds the lab lock.' >&2; exit 1; }
+read -r -p 'Confirm the lab box is reserved for this build and other operators agree; type IDLE: ' custody
+test "$custody" = IDLE || { echo 'Custody not confirmed; stopping.' >&2; exit 1; }
+check_host_idle() {
+    local status=0
+    pgrep -af 'Runner[.]Worker|bench/run[.]sh|(^|/|[[:space:]])colcon([[:space:]]|$)|ros2[[:space:]]+launch|rm_driver|xnode_vehicle|livox_ros_driver|realsense2_camera_node|fastlivo_mapping|docker[[:space:]]+(build|buildx[[:space:]]+build)' || status=$?
+    if [ "$status" -eq 0 ]; then
+        echo 'Potential competing robot/bench/build activity above; stop and coordinate. No process stopped.' >&2
+        return 1
+    fi
+    if [ "$status" -ne 1 ]; then
+        echo 'Process inspection failed; refusing build.' >&2
+        return 1
+    fi
+}
+check_host_idle
+sudo -v
+python3 -B test_recipe.py
+# Overrides for sanitizer/debug rebuilds only; defaults build the reviewed image.
+NAME="${T35_BUILD_NAME:-t59-fastlivo-build}"
+IMAGE="${T35_BUILD_IMAGE:-t59-fast-livo2:experimental}"
+BASE=ros:humble-perception-jammy
+if [[ "$IMAGE" != "t59-fast-livo2:experimental" && -z "${T35_CXXFLAGS_EXTRA:-}" ]]; then
+  echo 'REFUSED: an overridden build image requires T35_CXXFLAGS_EXTRA (e.g. the documented AddressSanitizer flags).' >&2
+  exit 1
+fi
+LOGDIR=$(mktemp -d "$PWD/build-logs.XXXXXX")
+echo "Logs: $LOGDIR; container and logs are retained, including on failure."
+sudo docker info --format '{{json .}}' > "$LOGDIR/daemon.json"
+python3 - "$LOGDIR/daemon.json" <<'PY'
+import json, sys
+info = json.load(open(sys.argv[1]))
+print('Daemon memory bytes:', info.get('MemTotal'), 'CPUs:', info.get('NCPU'))
+for warning in info.get('Warnings') or []:
+    print('DAEMON WARNING:', warning)
+for key in ('MemoryLimit', 'SwapLimit', 'CpuCfsQuota', 'CpuCfsPeriod', 'PidsLimit'):
+    alias = key.replace('Cpu', 'CPU')
+    if info.get(key, info.get(alias)) is not True:
+        raise SystemExit('Required cgroup capability absent/unknown: ' + key)
+if info.get('MemTotal', 0) < 8589934592 or info.get('NCPU', 0) < 2:
+    print('WARNING: daemon has less than 8 GiB RAM or 2 CPUs; build may fail or be slow.')
+PY
+
+# Inspect existing builder containers read-only; never create, start, or change them.
+sudo docker ps -a --filter name=buildx_buildkit --format '{{.ID}}' > "$LOGDIR/existing-builders.txt"
+while IFS= read -r builder; do
+    test -n "$builder" || continue
+    sudo docker inspect "$builder" > "$LOGDIR/builder-$builder.json"
+    sudo docker inspect --format 'Existing builder {{.Name}} HostConfig={{json .HostConfig}}' "$builder"
+done < "$LOGDIR/existing-builders.txt"
+
+sudo docker ps -a --format '{{.Names}}' > "$LOGDIR/container-names.txt"
+if grep -Fxq "$NAME" "$LOGDIR/container-names.txt"; then
+    echo "Refusing existing container: $NAME" >&2; exit 1
+fi
+sudo docker image ls --format '{{.Repository}}:{{.Tag}}' > "$LOGDIR/image-tags.txt"
+if grep -Fxq "$IMAGE" "$LOGDIR/image-tags.txt"; then
+    echo "Refusing existing image tag: $IMAGE" >&2; exit 1
+fi
+check_host_idle
+sudo docker pull "$BASE" 2>&1 | tee "$LOGDIR/pull.log"
+sudo docker image inspect --format '{{join .RepoDigests "\n"}}' "$BASE" | tee "$LOGDIR/base-digests.txt"
+BASE_DIGEST=$(head -n 1 "$LOGDIR/base-digests.txt")
+case "$BASE_DIGEST" in *@sha256:*) ;; *) echo 'Missing pulled base digest' >&2; exit 1;; esac
+
+echo 'Intended hard limits: Memory=8589934592 MemorySwap=8589934592 NanoCpus=2000000000 PidsLimit=512'
+echo 'Ordinary container; bridge network; no privileges, mounts, devices, or Docker socket.'
+echo "Build overrides: NAME=$NAME IMAGE=$IMAGE CXXFLAGS_EXTRA=${T35_CXXFLAGS_EXTRA:-<none>}"
+sudo docker create --name "$NAME" --memory 8g --memory-swap 8g --cpus 2 \
+    --pids-limit 512 --network bridge --entrypoint bash \
+    --env "T35_CXXFLAGS_EXTRA=${T35_CXXFLAGS_EXTRA:-}" \
+    --env "T35_LDFLAGS_EXTRA=${T35_LDFLAGS_EXTRA:-}" \
+    --env "T35_EXTRA_CMAKE_ARGS=${T35_EXTRA_CMAKE_ARGS:-}" \
+    "$BASE_DIGEST" \
+    -c 'set -eo pipefail; mkdir -p /opt/recipe; cp /build_inside.sh /patch_cmake.py /patch_vio.py /patch_sampling.h /opt/recipe/; exec bash /opt/recipe/build_inside.sh' \
+    | tee "$LOGDIR/container-id.txt"
+sudo docker cp build_inside.sh "$NAME:/build_inside.sh"
+sudo docker cp patch_cmake.py "$NAME:/patch_cmake.py"
+sudo docker cp patch_vio.py "$NAME:/patch_vio.py"
+sudo docker cp patch_sampling.h "$NAME:/patch_sampling.h"
+sudo docker inspect "$NAME" > "$LOGDIR/pre-inspect.json"
+sudo docker inspect --format '{{json .HostConfig}}' "$NAME" | tee "$LOGDIR/hostconfig.json"
+python3 -B check_container.py pre "$LOGDIR/pre-inspect.json" "$NAME"
+
+# Disable errexit only to collect the attached-client and tee status plus final state.
+check_host_idle
+set +e
+sudo docker start -a "$NAME" 2>&1 | tee "$LOGDIR/build.log"
+statuses=("${PIPESTATUS[@]}")
+set -e
+sudo docker inspect "$NAME" > "$LOGDIR/post-inspect.json"
+sudo docker inspect --format '{{json .State}}' "$NAME" | tee "$LOGDIR/state.json"
+python3 -B check_container.py post "$LOGDIR/post-inspect.json" "$NAME"
+test "${statuses[0]}" -eq 0 && test "${statuses[1]}" -eq 0
+sudo docker cp "$NAME:/opt/recipe/source-pins.txt" "$LOGDIR/source-pins.txt"
+# Recheck before committing; never intentionally replace another run's image tag.
+sudo docker image ls --format '{{.Repository}}:{{.Tag}}' > "$LOGDIR/final-image-tags.txt"
+if grep -Fxq "$IMAGE" "$LOGDIR/final-image-tags.txt"; then
+    echo "Refusing image tag that appeared during build: $IMAGE" >&2; exit 1
+fi
+sudo docker commit --change 'USER user' --change 'WORKDIR /fast_livo_ws' \
+    --change 'ENTRYPOINT []' --change 'CMD ["bash"]' "$NAME" "$IMAGE" \
+    | tee "$LOGDIR/commit.log"
+echo "Experimental image created: $IMAGE. Stopped container $NAME and logs retained in $LOGDIR."

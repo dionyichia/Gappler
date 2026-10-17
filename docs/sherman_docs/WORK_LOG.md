@@ -513,6 +513,22 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Outcome: T3.5 overall remains PROGRESS; capture characterisation stands with
   explicit limits. No physical synchronisation, calibrated fusion or Nav2 claim.
 
+## [2026-10-17] T3.5 | Phase A: tooling preserved, strict bag audit
+
+- Evidence: [freeze record](T3.5_INPUT_FREEZE_20261017.md),
+  [verification report](T3.5_VERIFICATION_20261017.md).
+- Fresh: strict `analyze_bag.py` on `t35b_proof3` — `ANALYSIS_OK`, exit 0, every
+  audit number reproduced (740/14,807/2,220/2,220; 14,799,936 points, 51.84%
+  zero-range; 106.095 ms max LiDAR gap; one calibration variant). Synthetic
+  mini-bag tests 6/6: backwards/duplicate stamps, missing CameraInfo,
+  non-finite point and `point_num` lie all fail as intended.
+- Preserved: recipe (10 files) and replay harness (16 files) copied
+  byte-identical into `docs/sherman_docs/tools/fastlivo/` with
+  `MANIFEST.sha256`; strict analyser + tests added; bag and replay-evidence
+  hashes frozen.
+- Outcome: Phase A complete; T3.5 remains PROGRESS. Phase B (consumer contract)
+  next; T3.5c stays gated on T5.5.
+
 ## Record Template
 
 
