@@ -16,12 +16,15 @@ import cv2
 import numpy as np
 import rclpy
 from geometry_msgs.msg import Point, PointStamped
-from segmentation_interfaces.msg import Detection
+from segmentation_interfaces.msg import Detection, SpokenWord
 from segmentation_interfaces.srv import Segment
 from sensor_msgs.msg import CompressedImage
-from std_msgs.msg import String
 
 from aria_segmentation_client import AriaSegmentationClient, STOP_KEYWORD, image_msg
+
+
+def stamp(header_stamp, t: float):
+    header_stamp.sec, header_stamp.nanosec = int(t), round(t % 1 * 1e9)
 
 
 class Recorder:
@@ -94,19 +97,18 @@ class AriaClientTest(unittest.TestCase):
         """A 60 x 40 glasses image taken at glasses time `taken` s, as the glasses app sends it."""
         image = CompressedImage(format="jpeg",
                                 data=cv2.imencode(".png", np.full((40, 60, 3), 90, np.uint8))[1].tobytes())
-        image.header.stamp.sec, image.header.stamp.nanosec = int(taken), round(taken % 1 * 1e9)
+        stamp(image.header.stamp, taken)
         self.node.on_image(image)
 
-    def gaze(self, x, y, taken=10.0, age=2.0):
-        """Gaze at (x, y) taken at glasses time `taken`, which arrived `age` s ago. 2 s ago is from
-        while the word was spoken (the window is 1.0 s, ending speech_latency_s 1.5 before the word)."""
+    def gaze(self, x, y, taken=10.0):
+        """Gaze at (x, y) taken at glasses time `taken`. The word is said from 9.8 to 10.0 s, so
+        the gaze from when you spoke is from 8.8 s (gaze_before_word_s 1.0) to 10.0 s."""
         msg = PointStamped(point=Point(x=float(x), y=float(y)))
-        msg.header.stamp.sec, msg.header.stamp.nanosec = int(taken), round(taken % 1 * 1e9)
+        stamp(msg.header.stamp, taken)
         self.node.on_gaze(msg)
-        self.node.gaze[-1] = (time.monotonic() - age, *self.node.gaze[-1][1:])
 
     def look(self, x, y):
-        """A glasses image and gaze at (x, y), both taken at glasses time 10 s, while you spoke."""
+        """A glasses image and gaze at (x, y), both taken at glasses time 10 s, as you spoke."""
         self.image()
         self.gaze(x, y)
 
@@ -118,8 +120,12 @@ class AriaClientTest(unittest.TestCase):
     def reply(self, *dets):
         self.node.service.futures[-1].finish(Segment.Response(success=True, detections=list(dets)))
 
-    def say(self, words):
-        self.node.on_prompt(String(data=words))
+    def say(self, words, start=9.8, end=10.0):
+        """The word, said from glasses time start to end."""
+        msg = SpokenWord(word=words)
+        stamp(msg.header.stamp, start)
+        stamp(msg.word_end, end)
+        self.node.on_prompt(msg)
         return [m.prompt for m in self.node.target_pub.sent]
 
     def requests(self):
@@ -174,18 +180,50 @@ class AriaClientTest(unittest.TestCase):
         new.finish(Segment.Response(success=True, detections=[box(25, 15, 34, 24, 0.5)]))
         self.assertEqual(self.node.target_pub.sent[-1].reference.width, 10)
 
-    def test_old_gaze_is_not_used(self):
+    def test_gaze_before_the_window_is_not_used(self):
         self.image()
-        self.gaze(30, 20, age=5)
+        self.gaze(30, 20, taken=8.5)    # more than gaze_before_word_s before the word
+        self.gaze(30, 20, taken=10.5)   # after the word: shows all gaze from then has come
+        self.say("box")
+        self.assertEqual(self.node.service.requests, [])
+        self.assertEqual(self.node.wait_until, -np.inf)
+
+    def test_gaze_after_the_word_was_spoken_is_not_used(self):
+        self.image()
+        self.gaze(30, 20, taken=10.5)
         self.say("box")
         self.assertEqual(self.node.service.requests, [])
 
-    def test_gaze_after_the_word_was_spoken_is_not_used(self):
-        # the word arrives speech_latency_s after you spoke: gaze since then does not vote
+    def test_the_window_follows_the_word_stamp_not_its_arrival(self):
+        # gaze and image taken long before the word arrives here, but while it was said
+        self.image(taken=3.0)
+        self.gaze(30, 20, taken=3.0)
+        self.gaze(30, 20, taken=12.0)
+        self.say("box", start=2.8, end=3.0)
+        self.assertEqual(self.asked_about(), [3.0])
+
+    def test_gaze_not_arrived_yet_waits_for_it(self):
+        # the eye pipeline lags: gaze up to the word's end comes after the word
         self.image()
-        self.gaze(30, 20, age=0)
+        self.gaze(30, 20, taken=9.5)
         self.say("box")
         self.assertEqual(self.node.service.requests, [])
+        self.gaze(30, 20, taken=10.1)
+        self.assertEqual(self.asked_about(), [10.0])
+
+    def test_no_gaze_at_all_sends_the_word_alone_at_once(self):
+        self.image()
+        self.say("box")
+        self.assertEqual(self.node.service.requests, [])
+        self.assertEqual(self.node.wait_until, -np.inf)
+
+    def test_past_the_wait_without_an_image_nothing_breaks(self):
+        self.gaze(30, 20)
+        self.say("box")
+        self.node.wait_until -= 10
+        self.gaze(30, 20, taken=10.1)
+        self.assertEqual(self.node.service.requests, [])
+        self.assertEqual(self.node.wait_until, -np.inf)
 
     def test_the_image_from_when_you_spoke_beats_a_newer_one(self):
         self.look(30, 20)
@@ -209,17 +247,6 @@ class AriaClientTest(unittest.TestCase):
         self.image(taken=9.0)   # still before you spoke, 1 s from the gaze: nothing votes
         self.assertEqual(self.node.service.requests, [])
         self.assertEqual(self.node.wait_until, -np.inf)
-
-    def test_after_a_wait_the_gaze_is_from_when_the_word_came(self):
-        # the image comes 2 s after the word: the gaze window still ends speech_latency_s
-        # before the word's arrival, not before the image's
-        self.image(taken=8.0)
-        self.gaze(30, 20)
-        self.say("box")
-        self.node.word_at -= 2
-        self.node.gaze[-1] = (self.node.word_at - 2.0, *self.node.gaze[-1][1:])
-        self.image(taken=10.0)
-        self.assertEqual(self.asked_about(), [10.0])
 
     def test_the_stop_word_ends_the_wait(self):
         self.image(taken=8.0)

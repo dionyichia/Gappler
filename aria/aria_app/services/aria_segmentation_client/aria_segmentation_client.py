@@ -3,17 +3,18 @@
 
 Turns what you say and what you look at into what the arm looks for.
 
-1. A word on /aria/audio/prompt becomes a Target on /grasp/target at once, which the grasp
-   segmentation client reads. The stop word clears it.
+1. A word on /aria/audio/prompt_stamped becomes a Target on /grasp/target at once, which the
+   grasp segmentation client reads. The stop word clears it.
    Each word also sends /manipulator/grasp_request, which opens the state machine's trigger gate
    (T1.25), so every time you ask is one grasp (T2.6). The stop word sends none.
 2. If the glasses image and gaze are coming in, the glasses image from when you spoke is
    segmented with the same word, and the mask you look at is picked by a vote (T2.19, T2.20):
-   a. The gaze samples that arrived in the gaze_window_s ending speech_latency_s before the
-      word came are the ones from when you spoke.
-   b. Their glasses capture times pick the image: the one taken nearest the middle of them. If
-      no image taken since the first of them has arrived yet, it waits up to
-      matching_image_wait_s for one (images arrive 1 to 3 s late on the box).
+   a. The word comes stamped with when you said it (T2.21). The gaze samples taken from
+      gaze_before_word_s before the word started to when it ended are the ones from when you
+      spoke.
+   b. They pick the image: the one taken nearest the middle of them. If the gaze up to the
+      word's end, or an image taken since the window's start, has not arrived yet, it waits up
+      to matching_image_wait_s for them (images arrive 1 to 3 s late on the box).
    c. Every gaze sample taken within gaze_to_image_max_s of that image votes for the mask under
       it, else the nearest within pick_radius_px. The mask with at least vote_min_share of the
       votes wins (gaze_pick.py). A second Target with the same word follows,
@@ -25,9 +26,8 @@ restarts, it looks for nothing until you say the word again: a restart never res
 command on its own (Dion, 2026-10-13). A reply that comes back after any newer word, even the
 same one, or the stop word is dropped, so it never brings an old target back.
 
-Gaze arrives in the pixels of the published undistorted image (et_worker, T2.9). Gaze and images
-are stamped with their capture time on the glasses clock (T2.19). Arrival times only bridge the
-word to the gaze, until T2.21 stamps the word too.
+Gaze arrives in the pixels of the published undistorted image (et_worker, T2.9). The word, the
+gaze and the images are all stamped with their capture time on the glasses clock (T2.19, T2.21).
 
     source aria/aria_env.sh && source install/local_setup.bash
     python aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py
@@ -45,7 +45,8 @@ from rclpy.node import Node
 from segmentation_interfaces.msg import Target
 from segmentation_interfaces.srv import Segment
 from sensor_msgs.msg import CompressedImage, Image
-from std_msgs.msg import Empty, String
+from segmentation_interfaces.msg import SpokenWord
+from std_msgs.msg import Empty
 
 from config import VIDEO_QOS, AudioStreamingPipelineConfig, ROS2Topics
 from gappler_common import config
@@ -87,7 +88,7 @@ class AriaSegmentationClient(Node):
     def __init__(self):
         super().__init__("aria_segmentation_client")
         self.create_subscription(
-            String, ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value, self.on_prompt, 10)
+            SpokenWord, ROS2Topics.AUDIO_PROMPT_STAMPED.value, self.on_prompt, 10)
         self.create_subscription(
             CompressedImage, ROS2Topics.RGB_CAMERA_UNDISTORTED.value, self.on_image, VIDEO_QOS)
         self.create_subscription(
@@ -98,34 +99,39 @@ class AriaSegmentationClient(Node):
         self.service = self.create_client(Segment, SERVICE_NAME)
         self.prompt = ""
         self.words = 0                              # bumped by every word: is a reply still current
-        self.word_at = -np.inf                      # when the newest word came
+        self.said = (-np.inf, -np.inf)              # glasses times the newest word started, ended
         self.wait_until = -np.inf      # waiting for an image from when you spoke, until then
         self.images = deque()          # (arrival, glasses time, CompressedImage), kept undecoded
         self.gaze = deque()            # (arrival, glasses time, x, y)
         self.get_logger().info(
-            f"Aria segmentation client ready: {ROS2Topics.AUDIO_TRANSCRIPTION_PROMPT.value} "
+            f"Aria segmentation client ready: {ROS2Topics.AUDIO_PROMPT_STAMPED.value} "
             f"-> {ROS2Topics.GRASP_TARGET.value}")
 
     def on_image(self, msg: CompressedImage):
         now = time.monotonic()
         self.images.append((now, seconds(msg.header.stamp), msg))
         drop_older(self.images, now)
-        if self.wait_until != -np.inf:
-            # past the wait, the nearest image is used even if it is from before you spoke
-            self.segment(self.prompt, last_try=now > self.wait_until)
+        self.retry(now)
 
     def on_gaze(self, msg: PointStamped):
         now = time.monotonic()
         self.gaze.append((now, seconds(msg.header.stamp), msg.point.x, msg.point.y))
         drop_older(self.gaze, now)
+        self.retry(now)
 
-    def on_prompt(self, msg: String):
-        words = msg.data.strip().lower()
+    def retry(self, now: float):
+        """While waiting, try again. Past the wait, use what has come, even if it is from before
+        you spoke."""
+        if self.wait_until != -np.inf:
+            self.segment(self.prompt, last_try=now > self.wait_until)
+
+    def on_prompt(self, msg: SpokenWord):
+        words = msg.word.strip().lower()
         if not words:
             return
         self.prompt = "" if words == STOP_KEYWORD else words
         self.words += 1
-        self.word_at = time.monotonic()
+        self.said = (seconds(msg.header.stamp), seconds(msg.word_end))
         self.wait_until = -np.inf   # a new word or the stop word replaces any wait
         target = Target(prompt=self.prompt)
         target.header.stamp = self.get_clock().now().to_msg()
@@ -139,21 +145,28 @@ class AriaSegmentationClient(Node):
 
     def segment(self, prompt: str, last_try: bool = False):
         """Ask the service about the glasses image from when you spoke (module docstring, 2).
-        Waits (on_image) while no image taken since then has arrived. Skipped, with the reason
-        logged, when no gaze from then, or near the image, has come, or the service is not up."""
-        # from the word's arrival, not now: after an image wait, now is up to the wait later
-        spoke, window = self.word_at - CFG["speech_latency_s"], CFG["gaze_window_s"]
-        taken = [t for at, t, _, _ in self.gaze if spoke - window < at <= spoke]
-        if not taken:
+        Waits (retry) while the gaze or the image from then has not arrived. Skipped, with the
+        reason logged, when no gaze from then, or near the image, has come, or the service is
+        not up."""
+        if not self.gaze:
             self.wait_until = -np.inf
-            self.get_logger().info("No gaze from when you spoke: the word alone is sent")
+            self.get_logger().info("No gaze from the glasses: the word alone is sent")
             return
-        if not last_try and not any(t >= min(taken) for _, t, _ in self.images):
+        start, end = self.said[0] - CFG["gaze_before_word_s"], self.said[1]
+        missing = [what for what, came in (
+            ("gaze", any(t >= end for _, t, _, _ in self.gaze)),
+            ("glasses image", any(t >= start for _, t, _ in self.images))) if not came]
+        if missing and not last_try:
             if self.wait_until == -np.inf:
                 self.wait_until = time.monotonic() + CFG["matching_image_wait_s"]
-                self.get_logger().info("No glasses image from when you spoke yet: waiting")
+                self.get_logger().info(f"No {' or '.join(missing)} from when you spoke yet: waiting")
             return
         self.wait_until = -np.inf
+        taken = [t for _, t, _, _ in self.gaze if start <= t <= end]
+        if not taken or not self.images:
+            self.get_logger().info(f"No {'gaze' if not taken else 'glasses image'} from when you "
+                                   "spoke: the word alone stands")
+            return
         middle = (min(taken) + max(taken)) / 2
         _, image_t, image = min(self.images, key=lambda i: abs(i[1] - middle))
         gaze = [(x, y) for _, t, x, y in self.gaze if abs(t - image_t) <= CFG["gaze_to_image_max_s"]]

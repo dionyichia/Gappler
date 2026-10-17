@@ -12,7 +12,7 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:114"
     ],
     "~/Ros2Workspaces/OpenVINS": [
-      "shared/global_config.yaml:127"
+      "shared/global_config.yaml:128"
     ]
   },
   "divergent_constants": {
@@ -89,7 +89,7 @@
     },
     "STOP_KEYWORD": {
       "AudioStreamingPipelineConfig.STOP_KEYWORD": [
-        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:54"
+        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:55"
       ],
       "_cfg[\"stop_keyword\"]": [
         "aria/aria_app/config/audio_streaming_pipeline_config.py:13"
@@ -556,7 +556,7 @@
       "arm/vendor/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "201bebb-dirty",
+  "git": "06ff518-dirty",
   "launch_includes": [
     {
       "from": "arm/arm_bringup/launch/arm_bringup.launch.py",
@@ -1448,7 +1448,7 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:4148"
     ],
     "arm_mount": [
-      "shared/global_config.yaml:110"
+      "shared/global_config.yaml:111"
     ],
     "arm_type": [
       "arm/vendor/rm_control/src/rm_control.cpp:258",
@@ -1456,10 +1456,13 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:4100"
     ],
     "aruco_pose": [
-      "aria/aria_config.yaml:36"
+      "aria/aria_config.yaml:39"
+    ],
+    "audio_prompt_stamped": [
+      "aria/aria_config.yaml:17"
     ],
     "audio_transcription_prompt": [
-      "shared/global_config.yaml:55"
+      "shared/global_config.yaml:56"
     ],
     "base_frame": [
       "nav/robot_slam/config/slam_toolbox.yaml:12",
@@ -1533,7 +1536,7 @@
       "nav/vendor/base/xpkg_comm/src/ROS_INF/ros2_interface.cpp:115"
     ],
     "combined_visualization": [
-      "aria/aria_config.yaml:30"
+      "aria/aria_config.yaml:33"
     ],
     "controller_frequency": [
       "nav/robot_navigation/config/nav2_params.yaml:13",
@@ -1564,7 +1567,7 @@
       "nav/robot_slam/config/nav2_params.yaml:156"
     ],
     "d455_bottom_screw": [
-      "shared/global_config.yaml:118"
+      "shared/global_config.yaml:119"
     ],
     "data_src": [
       "nav/vendor/livox_ros_driver2/src/livox_ros_driver2.cpp:133"
@@ -1589,7 +1592,7 @@
       "grasp/grasp_config.yaml:26"
     ],
     "default_depth_m": [
-      "aria/aria_config.yaml:101"
+      "aria/aria_config.yaml:104"
     ],
     "default_prompt": [
       "grasp/grasp_config.yaml:37"
@@ -1598,10 +1601,10 @@
       "nav/robot_slam/config/nav2_params.yaml:16"
     ],
     "depth": [
-      "aria/aria_config.yaml:52"
+      "aria/aria_config.yaml:55"
     ],
     "depth_scale_m": [
-      "shared/global_config.yaml:98"
+      "shared/global_config.yaml:99"
     ],
     "desired_linear_vel": [
       "nav/robot_slam/config/nav2_params.yaml:45"
@@ -1621,7 +1624,7 @@
       "nav/robot_slam/config/nav2_params.yaml:87"
     ],
     "end_of_speech_silence_s": [
-      "aria/aria_config.yaml:86"
+      "aria/aria_config.yaml:89"
     ],
     "execute_depth_thresh_m": [
       "grasp/grasp_config.yaml:107"
@@ -1630,13 +1633,13 @@
       "nav/robot_slam/config/nav2_params.yaml:133"
     ],
     "eye_tracking_gaze_estimate": [
-      "aria/aria_config.yaml:24"
+      "aria/aria_config.yaml:27"
     ],
     "eye_tracking_raw": [
-      "aria/aria_config.yaml:22"
+      "aria/aria_config.yaml:25"
     ],
     "feature_match_results": [
-      "aria/aria_config.yaml:32"
+      "aria/aria_config.yaml:35"
     ],
     "feedback": [
       "nav/robot_slam/config/nav2_params.yaml:195"
@@ -1669,16 +1672,16 @@
       "nav/vendor/livox_ros_driver2/src/livox_ros_driver2.cpp:136"
     ],
     "fused_pose": [
-      "shared/global_config.yaml:57"
+      "shared/global_config.yaml:58"
+    ],
+    "gaze_before_word_s": [
+      "aria/aria_config.yaml:112"
     ],
     "gaze_to_image_max_s": [
       "aria/aria_config.yaml:128"
     ],
-    "gaze_window_s": [
-      "aria/aria_config.yaml:108"
-    ],
     "glasses_marker": [
-      "aria/aria_config.yaml:42"
+      "aria/aria_config.yaml:45"
     ],
     "global_frame": [
       "nav/robot_navigation/config/nav2_params.yaml:37",
@@ -1725,10 +1728,10 @@
       "nav/robot_slam/config/nav2_params.yaml:77"
     ],
     "history": [
-      "aria/aria_config.yaml:51"
+      "aria/aria_config.yaml:54"
     ],
     "imu": [
-      "aria/aria_config.yaml:34"
+      "aria/aria_config.yaml:37"
     ],
     "inflation_radius": [
       "nav/robot_navigation/config/nav2_params.yaml:48",
@@ -1741,16 +1744,16 @@
       "nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:123"
     ],
     "is_stationary": [
-      "aria/aria_config.yaml:40"
+      "aria/aria_config.yaml:43"
     ],
     "iteration_interval_s": [
-      "aria/aria_config.yaml:77"
+      "aria/aria_config.yaml:80"
     ],
     "key_timeout": [
       "nav/simple_teleop/simple_teleop/teleop_node.py:42"
     ],
     "lidar_mount": [
-      "shared/global_config.yaml:113"
+      "shared/global_config.yaml:114"
     ],
     "link_match_minimum_response_fine": [
       "nav/robot_slam/config/slam_toolbox.yaml:29"
@@ -1762,7 +1765,7 @@
       "nav/nav_config.yaml:32"
     ],
     "llm_model": [
-      "aria/aria_config.yaml:74"
+      "aria/aria_config.yaml:77"
     ],
     "lookahead_dist": [
       "nav/robot_slam/config/nav2_params.yaml:46"
@@ -1793,22 +1796,22 @@
       "nav/vendor/livox_ros_driver2/src/livox_ros_driver2.cpp:139"
     ],
     "manipulation_done": [
-      "shared/global_config.yaml:65"
+      "shared/global_config.yaml:66"
     ],
     "manipulation_goal_pose": [
-      "shared/global_config.yaml:61"
+      "shared/global_config.yaml:62"
     ],
     "manipulation_start": [
-      "shared/global_config.yaml:63"
+      "shared/global_config.yaml:64"
     ],
     "manipulator_grasp_request": [
-      "shared/global_config.yaml:69"
+      "shared/global_config.yaml:70"
     ],
     "manipulator_release": [
-      "shared/global_config.yaml:67"
+      "shared/global_config.yaml:68"
     ],
     "manipulator_return_to_user": [
-      "shared/global_config.yaml:71"
+      "shared/global_config.yaml:72"
     ],
     "manu_enable": [
       "nav/vendor/drivers/xpkg_power/src/ROS_INF/ros2_interface.cpp:120"
@@ -1817,7 +1820,7 @@
       "nav/vendor/drivers/xpkg_power/src/ROS_INF/ros2_interface.cpp:121"
     ],
     "map_dir": [
-      "shared/global_config.yaml:130"
+      "shared/global_config.yaml:131"
     ],
     "map_frame": [
       "nav/robot_slam/config/slam_toolbox.yaml:11",
@@ -1888,7 +1891,7 @@
       "grasp/grasp_config.yaml:106"
     ],
     "max_buffer_s": [
-      "aria/aria_config.yaml:81"
+      "aria/aria_config.yaml:84"
     ],
     "max_decel": [
       "nav/robot_slam/config/nav2_params.yaml:199"
@@ -2049,7 +2052,7 @@
       "nav/robot_slam/config/nav2_params.yaml:200"
     ],
     "openvins_ws": [
-      "shared/global_config.yaml:127"
+      "shared/global_config.yaml:128"
     ],
     "origin_z": [
       "nav/robot_slam/config/nav2_params.yaml:89"
@@ -2074,7 +2077,7 @@
       "nav/robot_slam/config/nav2_params.yaml:135"
     ],
     "playback_speed": [
-      "aria/aria_config.yaml:95"
+      "aria/aria_config.yaml:98"
     ],
     "plugin": [
       "nav/robot_navigation/config/nav2_params.yaml:18",
@@ -2114,7 +2117,7 @@
       "nav/robot_slam/config/nav2_params.yaml:80"
     ],
     "pose_initialized": [
-      "aria/aria_config.yaml:44"
+      "aria/aria_config.yaml:47"
     ],
     "progress_checker_plugin": [
       "nav/robot_navigation/config/nav2_params.yaml:14"
@@ -2158,7 +2161,7 @@
       "nav/robot_slam/config/nav2_params.yaml:102"
     ],
     "realsense_init_delay_s": [
-      "aria/aria_config.yaml:57"
+      "aria/aria_config.yaml:60"
     ],
     "rec_voltage": [
       "nav/vendor/drivers/xpkg_power/src/ROS_INF/ros2_interface.cpp:124"
@@ -2170,10 +2173,10 @@
       "nav/robot_slam/config/nav2_params.yaml:60"
     ],
     "release_phrases": [
-      "aria/aria_config.yaml:90"
+      "aria/aria_config.yaml:93"
     ],
     "reliability": [
-      "aria/aria_config.yaml:50"
+      "aria/aria_config.yaml:53"
     ],
     "required_angular_velocity": [
       "nav/robot_slam/config/nav2_params.yaml:36"
@@ -2205,13 +2208,13 @@
       "nav/nav_config.yaml:21"
     ],
     "rgb_camera_raw": [
-      "aria/aria_config.yaml:16"
+      "aria/aria_config.yaml:19"
     ],
     "rgb_camera_undistorted": [
       "shared/global_config.yaml:52"
     ],
     "rgb_camera_with_object_masks": [
-      "aria/aria_config.yaml:26"
+      "aria/aria_config.yaml:29"
     ],
     "rm_driver_emergency_stop_cmd": [
       "arm/arm_config.yaml:15"
@@ -2220,10 +2223,10 @@
       "arm/arm_config.yaml:17"
     ],
     "rm_driver_set_gripper_pick_on_cmd": [
-      "shared/global_config.yaml:79"
+      "shared/global_config.yaml:80"
     ],
     "rm_driver_set_gripper_position_cmd": [
-      "shared/global_config.yaml:77"
+      "shared/global_config.yaml:78"
     ],
     "robot_base_frame": [
       "nav/robot_navigation/config/nav2_params.yaml:38",
@@ -2238,7 +2241,7 @@
       "nav/robot_navigation/config/nav2_params.yaml:8"
     ],
     "robot_pose": [
-      "shared/global_config.yaml:73"
+      "shared/global_config.yaml:74"
     ],
     "robot_radius": [
       "nav/robot_navigation/config/nav2_params.yaml:44",
@@ -2251,7 +2254,7 @@
       "nav/robot_slam/config/nav2_params.yaml:75"
     ],
     "ros_camera_with_object_masks": [
-      "aria/aria_config.yaml:28"
+      "aria/aria_config.yaml:31"
     ],
     "rotate_to_heading_angular_vel": [
       "nav/robot_slam/config/nav2_params.yaml:50"
@@ -2263,7 +2266,7 @@
       "nav/robot_slam/config/nav2_params.yaml:173"
     ],
     "sam3_weights": [
-      "shared/global_config.yaml:134"
+      "shared/global_config.yaml:135"
     ],
     "scale_velocities": [
       "nav/robot_slam/config/nav2_params.yaml:194"
@@ -2277,11 +2280,11 @@
       "grasp/grasp_config.yaml:40"
     ],
     "segmentation_segment": [
-      "shared/global_config.yaml:85"
+      "shared/global_config.yaml:86"
     ],
     "serial": [
-      "shared/global_config.yaml:101",
-      "shared/global_config.yaml:94"
+      "shared/global_config.yaml:102",
+      "shared/global_config.yaml:95"
     ],
     "show_loc": [
       "nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:124"
@@ -2296,10 +2299,10 @@
       "nav/robot_slam/config/nav2_params.yaml:170"
     ],
     "slam_left_raw": [
-      "aria/aria_config.yaml:19"
+      "aria/aria_config.yaml:22"
     ],
     "slam_right_raw": [
-      "aria/aria_config.yaml:20"
+      "aria/aria_config.yaml:23"
     ],
     "smoother_plugins": [
       "nav/robot_slam/config/nav2_params.yaml:145"
@@ -2310,9 +2313,6 @@
     "solver_plugin": [
       "nav/robot_slam/config/slam_toolbox.yaml:3",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:3"
-    ],
-    "speech_latency_s": [
-      "aria/aria_config.yaml:113"
     ],
     "speed": [
       "nav/simple_teleop/simple_teleop/teleop_node.py:40"
@@ -2337,14 +2337,14 @@
       "grasp/grasp_config.yaml:119"
     ],
     "stop_keyword": [
-      "aria/aria_config.yaml:87"
+      "aria/aria_config.yaml:90"
     ],
     "stop_on_failure": [
       "nav/robot_navigation/config/nav2_params.yaml:105",
       "nav/robot_slam/config/nav2_params.yaml:183"
     ],
     "streaming_profile_name": [
-      "aria/aria_config.yaml:62"
+      "aria/aria_config.yaml:65"
     ],
     "table_top_z_m": [
       "grasp/grasp_config.yaml:123"
@@ -2395,7 +2395,7 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:4127"
     ],
     "transcription_model": [
-      "aria/aria_config.yaml:73"
+      "aria/aria_config.yaml:76"
     ],
     "transform_publish_period": [
       "nav/robot_slam/config/slam_toolbox.yaml:18",
@@ -2467,10 +2467,10 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:4106"
     ],
     "undistorted_focal_length_px": [
-      "aria/aria_config.yaml:66"
+      "aria/aria_config.yaml:69"
     ],
     "undistorted_image_size_px": [
-      "aria/aria_config.yaml:65"
+      "aria/aria_config.yaml:68"
     ],
     "update_frequency": [
       "nav/robot_navigation/config/nav2_params.yaml:36",
@@ -2493,7 +2493,7 @@
       "nav/robot_slam/config/nav2_params.yaml:58"
     ],
     "use_ephemeral_certs": [
-      "aria/aria_config.yaml:63"
+      "aria/aria_config.yaml:66"
     ],
     "use_fixed_curvature_lookahead": [
       "nav/robot_slam/config/nav2_params.yaml:57"
@@ -2539,7 +2539,7 @@
       "nav/robot_slam/config/nav2_params.yaml:203"
     ],
     "vio_pose": [
-      "aria/aria_config.yaml:38"
+      "aria/aria_config.yaml:41"
     ],
     "vote_min_share": [
       "aria/aria_config.yaml:124"
@@ -2671,18 +2671,17 @@
         "geometry_msgs/PoseStamped"
       ],
       "yaml_refs": [
-        "aria/aria_config.yaml:36"
+        "aria/aria_config.yaml:39"
       ]
     },
     "/aria/audio/prompt": {
       "n_publishers": 1,
-      "n_subscribers": 4,
+      "n_subscribers": 3,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/aria_device/stream/audio_streaming_pipeline.py:73"
+        "aria/aria_app/services/aria_device/stream/audio_streaming_pipeline.py:94"
       ],
       "subscribers": [
-        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:89",
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:150",
         "nav/goto_glasses/goto_glasses.py:69",
         "nav/object_approach/object_approach_node.py:90"
@@ -2691,7 +2690,24 @@
         "std_msgs/String"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:55"
+        "shared/global_config.yaml:56"
+      ]
+    },
+    "/aria/audio/prompt_stamped": {
+      "n_publishers": 1,
+      "n_subscribers": 1,
+      "owned": true,
+      "publishers": [
+        "aria/aria_app/services/aria_device/stream/audio_streaming_pipeline.py:104"
+      ],
+      "subscribers": [
+        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:90"
+      ],
+      "types": [
+        "segmentation_interfaces/SpokenWord"
+      ],
+      "yaml_refs": [
+        "aria/aria_config.yaml:17"
       ]
     },
     "/aria/eye_tracking/gaze_estimate": {
@@ -2702,7 +2718,7 @@
         "aria/aria_app/services/aria_device/stream/image_streaming_pipeline.py:156"
       ],
       "subscribers": [
-        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:93",
+        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:94",
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:157",
         "aria/aria_app/services/visualizer/ros_manager.py:77"
       ],
@@ -2710,7 +2726,7 @@
         "geometry_msgs/PointStamped"
       ],
       "yaml_refs": [
-        "aria/aria_config.yaml:24"
+        "aria/aria_config.yaml:27"
       ]
     },
     "/aria/eye_tracking/raw": {
@@ -2727,7 +2743,7 @@
         "sensor_msgs/CompressedImage"
       ],
       "yaml_refs": [
-        "aria/aria_config.yaml:22"
+        "aria/aria_config.yaml:25"
       ]
     },
     "/aria/fused_pose": {
@@ -2744,7 +2760,7 @@
         "geometry_msgs/PoseStamped"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:57"
+        "shared/global_config.yaml:58"
       ]
     },
     "/aria/glasses_marker": {
@@ -2759,7 +2775,7 @@
         "visualization_msgs/Marker"
       ],
       "yaml_refs": [
-        "aria/aria_config.yaml:42"
+        "aria/aria_config.yaml:45"
       ]
     },
     "/aria/imu": {
@@ -2775,7 +2791,7 @@
       ],
       "yaml_refs": [
         "aria/aria_app/services/aria_device/calibration/kalibr_imu_chain.yaml:13",
-        "aria/aria_config.yaml:34"
+        "aria/aria_config.yaml:37"
       ]
     },
     "/aria/is_stationary": {
@@ -2788,7 +2804,7 @@
         "?"
       ],
       "yaml_refs": [
-        "aria/aria_config.yaml:40"
+        "aria/aria_config.yaml:43"
       ]
     },
     "/aria/pose_initialized": {
@@ -2803,7 +2819,7 @@
         "std_msgs/Empty"
       ],
       "yaml_refs": [
-        "aria/aria_config.yaml:44"
+        "aria/aria_config.yaml:47"
       ]
     },
     "/aria/rgb_camera/feature_match": {
@@ -2821,7 +2837,7 @@
         "std_msgs/UInt8MultiArray"
       ],
       "yaml_refs": [
-        "aria/aria_config.yaml:32"
+        "aria/aria_config.yaml:35"
       ]
     },
     "/aria/rgb_camera/object_masks": {
@@ -2838,7 +2854,7 @@
         "std_msgs/UInt8MultiArray"
       ],
       "yaml_refs": [
-        "aria/aria_config.yaml:26"
+        "aria/aria_config.yaml:29"
       ]
     },
     "/aria/rgb_camera/raw": {
@@ -2855,7 +2871,7 @@
         "sensor_msgs/CompressedImage"
       ],
       "yaml_refs": [
-        "aria/aria_config.yaml:16"
+        "aria/aria_config.yaml:19"
       ]
     },
     "/aria/rgb_camera/undistorted": {
@@ -2866,7 +2882,7 @@
         "aria/aria_app/services/aria_device/stream/image_streaming_pipeline.py:86"
       ],
       "subscribers": [
-        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:91",
+        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:92",
         "aria/aria_app/services/feature_matching.py:183",
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:133",
         "aria/aria_app/services/visualizer/ros_manager.py:71",
@@ -2907,7 +2923,7 @@
       ],
       "yaml_refs": [
         "aria/aria_app/services/aria_device/calibration/kalibr_imucam_chain.yaml:15",
-        "aria/aria_config.yaml:19"
+        "aria/aria_config.yaml:22"
       ]
     },
     "/aria/slam_right/raw": {
@@ -2923,7 +2939,7 @@
       ],
       "yaml_refs": [
         "aria/aria_app/services/aria_device/calibration/kalibr_imucam_chain.yaml:29",
-        "aria/aria_config.yaml:20"
+        "aria/aria_config.yaml:23"
       ]
     },
     "/aria/vio_pose": {
@@ -2936,7 +2952,7 @@
         "?"
       ],
       "yaml_refs": [
-        "aria/aria_config.yaml:38"
+        "aria/aria_config.yaml:41"
       ]
     },
     "/camera/camera/aligned_depth_to_color/image_raw": {
@@ -3073,7 +3089,7 @@
         "std_msgs/UInt8MultiArray"
       ],
       "yaml_refs": [
-        "aria/aria_config.yaml:30"
+        "aria/aria_config.yaml:33"
       ]
     },
     "/debug/centroid_marker": {
@@ -3190,7 +3206,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:95"
+        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:96"
       ],
       "subscribers": [
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:67"
@@ -3280,7 +3296,7 @@
         "std_msgs/Empty"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:65"
+        "shared/global_config.yaml:66"
       ]
     },
     "/manipulation/goal_pose": {
@@ -3297,7 +3313,7 @@
         "geometry_msgs/PoseStamped"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:61"
+        "shared/global_config.yaml:62"
       ]
     },
     "/manipulation/start": {
@@ -3314,7 +3330,7 @@
         "std_msgs/Bool"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:63"
+        "shared/global_config.yaml:64"
       ]
     },
     "/manipulator/grasp_request": {
@@ -3322,7 +3338,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:96"
+        "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:97"
       ],
       "subscribers": [
         "grasp/grasp_state_machine/src/grasp_state_machine.cpp:158"
@@ -3331,7 +3347,7 @@
         "std_msgs/Empty"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:69"
+        "shared/global_config.yaml:70"
       ]
     },
     "/manipulator/release": {
@@ -3339,7 +3355,7 @@
       "n_subscribers": 3,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/aria_device/stream/audio_streaming_pipeline.py:83"
+        "aria/aria_app/services/aria_device/stream/audio_streaming_pipeline.py:114"
       ],
       "subscribers": [
         "grasp/grasp_state_machine/src/grasp_state_machine.cpp:162",
@@ -3350,7 +3366,7 @@
         "std_msgs/Bool"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:67"
+        "shared/global_config.yaml:68"
       ]
     },
     "/manipulator/return_to_user": {
@@ -3367,7 +3383,7 @@
         "std_msgs/Bool"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:71"
+        "shared/global_config.yaml:72"
       ]
     },
     "/object_centroid": {
@@ -3485,7 +3501,7 @@
         "std_msgs/UInt8MultiArray"
       ],
       "yaml_refs": [
-        "aria/aria_config.yaml:28"
+        "aria/aria_config.yaml:31"
       ]
     },
     "/return_to_user/goal_reached": {
@@ -3864,7 +3880,7 @@
         "rm_ros_interfaces/Gripperpick"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:79"
+        "shared/global_config.yaml:80"
       ]
     },
     "/rm_driver/set_gripper_position_cmd": {
@@ -3880,7 +3896,7 @@
         "rm_ros_interfaces/Gripperset"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:77"
+        "shared/global_config.yaml:78"
       ]
     },
     "/rm_driver/stop_force_postion_cmd": {
@@ -3923,7 +3939,7 @@
         "geometry_msgs/PoseStamped"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:73"
+        "shared/global_config.yaml:74"
       ]
     },
     "/scan": {
@@ -3951,7 +3967,7 @@
         "?"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:85"
+        "shared/global_config.yaml:86"
       ]
     },
     "/vehicle_path": {
