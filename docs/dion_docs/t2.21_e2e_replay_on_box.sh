@@ -10,6 +10,11 @@ REC=c2cbafe8-ebc9-4279-8782-8cdaeb81b99b
 cd "$S/repo" || exit 1
 export ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=88
 source aria/aria_env.sh >/dev/null
+# segmentation_interfaces with SpokenWord, built into $S until the shared install is rebuilt:
+#   colcon build --packages-select segmentation_interfaces --base-paths
+#   shared_services/segmentation/segmentation_interfaces --build-base ../t2.21_build
+#   --install-base ../t2.21_install
+[ -f "$S/t2.21_install/local_setup.bash" ] && source "$S/t2.21_install/local_setup.bash"
 L="$S/e2e_t2.21_logs"; rm -rf $L; mkdir -p $L
 PG=()
 start() { setsid "$@" & PG+=($!); }
