@@ -805,6 +805,32 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   publishes nothing.
 - T3.5c remains PROGRESS; the 19 October pilot-gated capture is the next data step.
 
+## [2026-10-18] T3.5c | Preview dry run: rclpy CustomMsg cost found and fixed
+
+- Dry run: `t35b_proof3` replayed (`ros2 bag play --loop`) into the preview on
+  domain 174, in a new tmux session `t35preview` (the `t35c` session untouched).
+  First result: every topic throttled to ~3 Hz at 106% CPU.
+- Root cause, isolated with the new `probe_topic.py`: rclpy converts one
+  20k-point `CustomMsg` in ~127 ms, so a normal Python subscription to
+  `/livox/lidar` saturates a core at 10 Hz (4.4 Hz intake, 99% CPU) and starves
+  the node; images (30 Hz, 15%) and IMU (200 Hz, 16%) are cheap. `ros2 topic hz`
+  reads true rates only because reliable+deep CLI subscriptions keep up on their
+  own process.
+- Fixes (`8f29425`): scan subscribed raw and deserialized once per render;
+  arrival-based scan freshness (`since=`; image/IMU keep stamp `age=`); QoS depth
+  100 (the sensor preset's 5 overflowed every render); image subscribed
+  reliable+volatile as the mapper does (fragmented 921 kB images lose whole
+  samples best-effort); `write_png` gained a `level` parameter, default
+  byte-pinned by test, preview uses level 1.
+- After the fix: 10.2 / 30.7 / 205.7 Hz shown, LiDAR freshness 0.09 s, 47% of
+  one core. The overlay reproduces the old scene's known failure exactly
+  (drawn ~200, depths 0.16–0.24 m, `regions row2` only), which is the signal the
+  new recording must clear. Replay stamps make `age=` read `STALE`; that is
+  offline-only.
+- Tools and tests green on Mac and box (90 tool tests, 55 harness tests), bench
+  quick PASS. Capture plan updated with the dry-run numbers.
+- `t35preview` stays up until Sherman agrees to close it.
+
 ## Record Template
 
 
