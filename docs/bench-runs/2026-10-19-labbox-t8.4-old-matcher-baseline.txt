@@ -42,3 +42,33 @@ run_with_saver.sh): 25 pairs saved, 0 wrist masks chosen, 5 to 33 matches per pa
 Pictures: the first-run baseline pair is kept on Dion's Mac (not in git). All 25 pairs: ~/dion_t8.4/matches on the box.
 
 Logs: logs2/ for the second run, pipeline.log, replay.log, bag.log in ~/dion_t8.4/logs on the box.
+
+Crop rerun, 00:51 to 00:53 (~/dion_t8.4/run_crop.sh, logs in logs3/, pictures in matches_crop/)
+Change: _find_matching_ros_mask now cuts the gazed glasses mask and each wrist mask to its bounding
+box plus 20 px (_CROP_MARGIN_PX), matches the glasses crop against each wrist crop, and counts
+only matches that land on both masks. Same inputs as above.
+
+Result: 11 of 11 pairs chose a wrist mask, but every match is wrong.
+- Matches on both masks: 1 to 7 per pair (glasses crops 83x98 to 113x70 px, wrist crops about
+  230x137 px). [measured]
+- Pair 1 (7 matches, Dion reviewed the picture): the glasses crop is the box, but all 7 glasses
+  points sit on one spot, the right edge of the top face. Their wrist partners spread along the
+  top face and the right and front edges. No match is a true correspondence. [measured]
+- Pair 4 (6 matches): the glasses crop is not the box, it shows the background. Pairs 4 to 6 use
+  the same crop. So gaze or the glasses mask pointed at the wrong object there. [measured]
+- "Chose a wrist mask" means at least 1 match. With one box in the wrist view it always wins.
+  The count says nothing about whether the match is right.
+- The saver's ExternalShutdownException at the end is the normal Ctrl-C shutdown, not a failure.
+
+Why the matches are bad, not yet confirmed:
+- LightGlue's SuperPoint resizes every image so its longer side is 1024 px, and it upscales small
+  images too (lightglue/superpoint.py:116 "resize": 1024, applied in utils.py:143 extract). [code]
+  So the 90x90 glasses crop is blown up about 11 times and the wrist crop about 4.5 times: blurry,
+  and at two different scales. That fits SuperPoint reporting 2048 keypoints on a 90x90 crop,
+  more than such a small image can hold at its 4 px spacing. [inferred]
+- A plain box has few features, and its corners look alike, so the matcher cannot tell one
+  corner from another. [inferred]
+- Not a baseline yet: Dion wants the cause found first (T8.4).
+
+Pictures, Dion's Mac only (not in git): docs/dion_docs/local/t8.4_crop_7_matches_2026-10-19.jpg
+in the main checkout. Both picked pairs and summary.json also in Gappler-t8.4/docs/dion_docs/local/.

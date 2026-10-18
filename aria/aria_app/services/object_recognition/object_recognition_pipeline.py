@@ -82,6 +82,32 @@ class RealSenseFrame:
             return self._rgb.copy(), self._depth.copy(), self._header, self._frame_id
 
 
+# Pixels kept around each mask's bounding box. A bigger margin adds surrounding context, which may
+# help tell identical objects apart, but also adds background matches. Tune on the box.
+_CROP_MARGIN_PX = 20
+
+
+def _crop_to_mask(image: np.ndarray, mask: np.ndarray):
+    """Cut the image to the mask's bounding box plus the margin. Returns (crop, x0, y0), or None."""
+    ys, xs = np.nonzero(mask)
+    if len(ys) == 0:
+        return None
+    h, w = mask.shape
+    x0 = max(int(xs.min()) - _CROP_MARGIN_PX, 0)
+    y0 = max(int(ys.min()) - _CROP_MARGIN_PX, 0)
+    x1 = min(int(xs.max()) + _CROP_MARGIN_PX + 1, w)
+    y1 = min(int(ys.max()) + _CROP_MARGIN_PX + 1, h)
+    return image[y0:y1, x0:x1], x0, y0
+
+
+def _to_full_image(points: np.ndarray, x0: int, y0: int, shape) -> np.ndarray:
+    """Crop pixel coordinates back to whole-image ones, as ints inside the image."""
+    full = points.round().astype(int).reshape(-1, 2) + (x0, y0)
+    full[:, 0] = full[:, 0].clip(0, shape[1] - 1)
+    full[:, 1] = full[:, 1].clip(0, shape[0] - 1)
+    return full
+
+
 class ObjectRecognitionPipeline:
     def __init__(self, quit_event: Event):
         self._quit_event = quit_event
@@ -545,66 +571,51 @@ class ObjectRecognitionPipeline:
             return None, None, None
 
         aria_mask_np = aria_masks[0].squeeze(0).cpu().numpy() > 0
-        aria_h, aria_w = aria_mask_np.shape
-
-        try:
-            # Run feature matcher
-            match_result = self._feature_matcher.match_frames(aria_image, ros_image)
-            payload = pickle.dumps(match_result)
-            msg = UInt8MultiArray()
-            msg.data = payload
-            self._match_publisher.publish(msg)
-
-        except Exception as e:
-            logger.error(f"Feature matching failed: {e}", exc_info=True)
+        aria_crop = _crop_to_mask(aria_image, aria_mask_np)
+        if aria_crop is None:
             return None, None, None
+        aria_patch, aria_x0, aria_y0 = aria_crop
 
-        kp0 = match_result["keypoints0"]
-        kp1 = match_result["keypoints1"]
-        matches = match_result["matches"]
-
-        if len(matches) == 0:
-            logger.debug("No feature matches found between Aria and ROS frames")
-            return None, None, None
-
-        matched_kp0 = kp0[matches[:, 0]].round().astype(int)
-        matched_kp1 = kp1[matches[:, 1]].round().astype(int)
-
-        xs0, ys0 = matched_kp0[:, 0], matched_kp0[:, 1]
-        valid = (ys0 >= 0) & (ys0 < aria_h) & (xs0 >= 0) & (xs0 < aria_w)
-        valid[valid] = aria_mask_np[ys0[valid], xs0[valid]]
-
-        filtered_kp0 = matched_kp0[valid]
-        filtered_kp1 = matched_kp1[valid]
-
-        if len(filtered_kp1) == 0:
-            logger.debug("No feature matches fall within the Aria mask")
-            return None, None, None
-
-        logger.debug(
-            f"Feature matching: {len(filtered_kp1)}/{len(matches)} matches inside Aria mask"
-        )
-
-        best_idx = None
-        best_count = 0
-
+        # Match the gazed glasses object against every wrist mask, each cut to its own box.
+        counts = []
+        best = None  # (count, wrist mask index, glasses points, wrist points, match result)
         for i, ros_mask in enumerate(ros_masks):
             ros_mask_np = ros_mask.squeeze(0).cpu().numpy() > 0
-            ros_h, ros_w = ros_mask_np.shape
-            xs1, ys1 = filtered_kp1[:, 0], filtered_kp1[:, 1]
-            in_bounds = (ys1 >= 0) & (ys1 < ros_h) & (xs1 >= 0) & (xs1 < ros_w)
-            count = int(ros_mask_np[ys1[in_bounds], xs1[in_bounds]].sum())
-            if count > best_count:
-                best_count = count
-                best_idx = i
+            ros_crop = _crop_to_mask(ros_image, ros_mask_np)
+            if ros_crop is None:
+                counts.append(0)
+                continue
+            ros_patch, ros_x0, ros_y0 = ros_crop
+            try:
+                result = self._feature_matcher.match_frames(aria_patch, ros_patch)
+            except Exception as e:
+                logger.error(f"Feature matching failed: {e}", exc_info=True)
+                return None, None, None
 
-        if best_idx is None or best_count == 0:
+            pairs = result["matches"]
+            kp0 = _to_full_image(result["keypoints0"][pairs[:, 0]], aria_x0, aria_y0, aria_mask_np.shape)
+            kp1 = _to_full_image(result["keypoints1"][pairs[:, 1]], ros_x0, ros_y0, ros_mask_np.shape)
+            # Count only matches on both objects, not on the background in the margin.
+            on_both = aria_mask_np[kp0[:, 1], kp0[:, 0]] & ros_mask_np[kp1[:, 1], kp1[:, 0]]
+            counts.append(int(on_both.sum()))
+            if best is None or counts[-1] > best[0]:
+                best = (counts[-1], i, kp0[on_both], kp1[on_both], result)
+
+        logger.info(f"Matches on both masks, per wrist mask: {counts}")
+        if best is None:
+            return None, None, None
+        best_count, best_idx, filtered_kp0, filtered_kp1, best_result = best
+
+        # Published even when nothing matched, so a failed pair can be looked at. The visualizer
+        # draws these crop-sized frames with their crop-sized keypoints.
+        msg = UInt8MultiArray()
+        msg.data = pickle.dumps(best_result)
+        self._match_publisher.publish(msg)
+
+        if best_count == 0:
             logger.debug("No ROS mask matched the Aria mask via feature matching")
             return None, None, None
-
-        logger.info(
-            f"Matched ROS mask idx={best_idx} with {best_count}/{len(filtered_kp1)} hits"
-        )
+        logger.info(f"Matched ROS mask idx={best_idx} with {best_count} matches")
 
         filtered_state = {
             **ros_inference_state,

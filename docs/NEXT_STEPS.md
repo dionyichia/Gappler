@@ -825,6 +825,13 @@ only 8 to 19 matches per image pair, none on a wrist box `[measured]`
 (`bench-runs/2026-10-19-labbox-t8.4-old-matcher-baseline.txt`). Dion, 2026-10-18: diagnose and get a
 working baseline with the old method first. The methods below wait for it.
 
+A rerun that matches only inside each mask's crop chose a wrist mask in 11 of 11 pairs, with 1 to 7
+matches each, but the matches are wrong: all the glasses points sit on one spot of the box while
+their wrist partners spread over several edges `[measured]`. One likely cause: LightGlue's SuperPoint
+resizes every image to 1024 px on its longer side, so a 90 px glasses crop is upscaled about 11 times
+`[code]` (upscaling as the cause is `[inferred]`). A plain box's alike-looking corners are another.
+Dion wants the cause found before this counts as the baseline.
+
 **Three candidate methods, cheapest first:**
 
 | Method | Idea | Needs | Rough cost |
@@ -1514,3 +1521,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-17 | Claude Opus 5.5 + Dion | §2.2: T2.9 timing is by arrival, not capture. Plan to fix it is T2.19 to T2.21. |
 | 2026-10-17 | Claude Opus 5.5 + Dion | §2.2: T2.19 and T2.20 (PR A) built, box checks owed. |
 | 2026-10-19 | Claude Opus 5.5 + Dion | §2.13: first run of the old matcher (T8.4), 0 of 15. Old method first, the geometric methods wait. |
+| 2026-10-19 | Claude Opus 5.5 + Dion | §2.13: crop rerun (T8.4), 11 of 11 chose a mask but every match is wrong. Upscaling inside LightGlue is a likely cause. Diagnose before calling it the baseline. |
