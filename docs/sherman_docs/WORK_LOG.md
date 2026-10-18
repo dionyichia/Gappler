@@ -764,6 +764,24 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   Then public-bag regression to exercise usable visual features. No new build or
   further replay started. New scene pilot remains planned for 19 October.
 
+## [2026-10-18] T3.5c | Public regression PASS, key mismatch proven active, custody prompts removed
+
+- Cumulative image `2fa9f264` public run `20261018T092811Z-520005`: PASS, zero
+  invalid, 663 positive retrievals; counters show retrieval `key_hits` equal to
+  insertion-convention `shadow_key_hits` (1,855,269 over 2.79 M queries).
+- Buggy counters control `20261018T094059Z-520924` (image `3cd781a6`): mismatch
+  active on the public scene (1,392,458 vs 1,878,707). With the fix, accepted
+  retrieval points rise 112,980 → 128,385; the visibility guard cuts appended
+  seed points 22,016 → 5,558; verdict and retrieval-row count unchanged.
+  `mat_out` differences across all run pairs are dominated by run-to-run input
+  delivery; no byte-identity or fix-attribution claim.
+- Operator decision: typed `IDLE`/`CUSTODY AGREED` prompts removed from the
+  build/replay tools (commit `c3c7d60`); entering the command is the
+  confirmation. Programmatic lock/conflict/hold/resource checks unchanged.
+  Bundle `visual-repair.xIOr2o` re-synced, manifest 32/32, 74 tests green on Mac
+  and box, bench quick PASS. Evidence `EVIDENCE_t35c-public-20261018.sha256`.
+- T3.5c remains PROGRESS; the 19 October pilot-gated capture is the next data step.
+
 ## Record Template
 
 
