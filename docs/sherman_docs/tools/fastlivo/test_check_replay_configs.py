@@ -345,6 +345,65 @@ class TestCameraExtrinsics(unittest.TestCase):
                 self.assertEqual(len(failures), 1)
 
 
+class TestLidarImuExtrinsic(unittest.TestCase):
+    """LiDAR->IMU extrinsic: the fork's Mid-360 sign defect and its retention."""
+
+    @staticmethod
+    def _section(extrinsic_t: object, extrinsic_r: object) -> dict:
+        return {"extrin_calib.extrinsic_T": extrinsic_t, "extrin_calib.extrinsic_R": extrinsic_r}
+
+    def test_corrected_value_passes(self) -> None:
+        failures, notes = checker.check_lidar_imu_extrinsic(
+            self._section(list(checker.NOMINAL_LIDAR_IMU_T), list(checker.LIDAR_IMU_R)),
+            retained=False,
+        )
+        self.assertEqual((failures, notes), ([], []))
+
+    def test_fork_mid360_sign_fails(self) -> None:
+        """The pinned fork's staged value is the manual's position, unnegated."""
+        failures, notes = checker.check_lidar_imu_extrinsic(
+            self._section([0.011, 0.02329, -0.04412], list(checker.LIDAR_IMU_R)), retained=False
+        )
+        self.assertEqual(len(failures), 1)
+        self.assertIn("extrin_calib.extrinsic_T[0]", failures[0])
+        self.assertEqual(notes, [])
+
+    def test_rotated_extrinsic_r_fails(self) -> None:
+        rot = list(checker.LIDAR_IMU_R)
+        rot[1] = 0.1
+        failures, _ = checker.check_lidar_imu_extrinsic(
+            self._section(list(checker.NOMINAL_LIDAR_IMU_T), rot), retained=False
+        )
+        self.assertEqual(len(failures), 1)
+        self.assertIn("extrin_calib.extrinsic_R[1]", failures[0])
+
+    def test_empty_vectors_fail_per_key(self) -> None:
+        failures, _ = checker.check_lidar_imu_extrinsic(self._section([], []), retained=False)
+        self.assertEqual(len(failures), 2)
+
+    def test_retained_precorrection_pair_notes_instead_of_failing(self) -> None:
+        failures, notes = checker.check_lidar_imu_extrinsic(
+            self._section([0.011, 0.02329, -0.04412], list(checker.LIDAR_IMU_R)), retained=True
+        )
+        self.assertEqual(failures, [])
+        self.assertEqual(len(notes), 1)
+        self.assertIn("pre-correction", notes[0])
+        self.assertIn("T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md", notes[0])
+
+    def test_retained_pair_already_corrected_is_silent(self) -> None:
+        failures, notes = checker.check_lidar_imu_extrinsic(
+            self._section(list(checker.NOMINAL_LIDAR_IMU_T), list(checker.LIDAR_IMU_R)), retained=True
+        )
+        self.assertEqual((failures, notes), ([], []))
+
+    def test_nominal_is_the_negation_of_the_manual_imu_position(self) -> None:
+        """Mid-360 manual p.15: the IMU chip sits at (+11.0, +23.29, -44.12) mm in the
+        point-cloud frame; the code applies extrinsic_T verbatim, so it needs the negation."""
+        manual_position_mm = (11.0, 23.29, -44.12)
+        for got, want_mm in zip(checker.NOMINAL_LIDAR_IMU_T, manual_position_mm):
+            self.assertAlmostEqual(got, -want_mm / 1000.0, places=12)
+
+
 @unittest.skipUnless(HAVE_YAML, "PyYAML not available")
 class TestStagedPairKeys(unittest.TestCase):
     """The staged repo configs must satisfy the checker's static key checks."""
@@ -394,6 +453,19 @@ class TestStagedPairKeys(unittest.TestCase):
             diagnostic.pop(key, None)
             visual.pop(key, None)
         self.assertEqual(diagnostic, visual)
+
+    def test_staged_pairs_are_the_retained_precorrection_list(self) -> None:
+        """Both staged files predate the LiDAR->IMU defect fix and stay byte-unchanged:
+        the checker notes their known sign instead of failing them."""
+        for name in ("t35b_proof3_lio.yaml", "t35b_proof3_visual.yaml"):
+            with self.subTest(name=name):
+                self.assertIn(name, checker.PRECORRECTION_PAIRS)
+                section = checker.yaml_section(self.CONFIG / name, "laserMapping")
+                failures, notes = checker.check_lidar_imu_extrinsic(
+                    section, retained=name in checker.PRECORRECTION_PAIRS
+                )
+                self.assertEqual(failures, [])
+                self.assertEqual(len(notes), 1)
 
 
 if __name__ == "__main__":

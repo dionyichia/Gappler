@@ -22,6 +22,10 @@ Checks, against the pinned consumer contract (T3.5_CONSUMER_CONTRACT.md):
   * mode check: img_en declares the run - 0 = LiDAR-IMU diagnostic (extrinsic
     presence only), 1 = visual run whose Rcl/Pcl must equal the reviewed
     nominal composition (T5.4 chain + M2; provenance-labelled, not calibrated)
+  * LiDAR->IMU extrinsic: extrin_calib.extrinsic_T/R must equal the reviewed
+    value in every mode (the pinned fork's Mid-360 sign is wrong; pairs staged
+    before that finding are noted, not failed - see
+    T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md)
   * typo guard: every config key is a parameter the pinned consumer declares;
     known-inert keys are reported as notes, unknown keys fail
 
@@ -68,6 +72,30 @@ MAX_OFFSET_NS = 120_000_000  # same scan budget as analyze_bag.py
 # calibrated values; the projection check and T5.6 verify by image.
 NOMINAL_RCL = (0.0, -1.0, 0.0, 0.0, 0.0, -1.0, 1.0, 0.0, 0.0)
 NOMINAL_PCL = (-0.0115, 0.3425, -0.03915)
+
+# Reviewed LiDAR->IMU extrinsic (extrin_calib.extrinsic_T/R), all modes: LIO uses
+# it directly in both the diagnostic and the visual run. The pinned fork's
+# Mid-360 profile ships the Livox manual's IMU-position numbers unnegated
+# ([0.011, 0.02329, -0.04412]), but its own code applies them verbatim as
+# p_imu = extrinsic_R * p_lidar + extrinsic_T (IMU_Processing.cpp:85-92, used at
+# :528), which requires their negation. The fork is internally inconsistent on
+# this point: its Avia profile does carry the negated manual value, and so does
+# upstream FAST-LIO's mid360.yaml. Livox Mid-360 manual p.15: the IMU chip sits
+# at (+11.0, +23.29, -44.12) mm in the point-cloud coordinates with axes
+# matching that frame, and our driver publishes raw sensor-frame points
+# (MID360_config.json extrinsic_parameter all-zero, pushed to the device as its
+# install attitude), so the manual's numbers transfer unrotated. The fork has no
+# online extrinsic estimation (`extrinsic_est_en` is absent from its source), so
+# a wrong value is never corrected at runtime. Evidence and the confirming
+# in-place-rotation test: T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md.
+NOMINAL_LIDAR_IMU_T = (-0.011, -0.02329, 0.04412)
+LIDAR_IMU_R = (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+
+# Config pairs staged before that defect was found. They stay byte-unchanged as
+# the historical record of the T3.5a/T3.5c replays, so their known pre-correction
+# sign is reported as a note, never as a failure. Retire this list only when
+# those pairs are retired from the evidence record.
+PRECORRECTION_PAIRS = frozenset({"t35b_proof3_lio.yaml", "t35b_proof3_visual.yaml"})
 
 # Parameters the pinned consumer declares, generated mechanically from
 # src/*.cpp (declare_parameter) at U-AMC/FAST-LIVO2-ROS2 @ a09599a288c56b832114d7ad9e898248a4111d9e.
@@ -406,6 +434,52 @@ def check_camera_extrinsics(section: dict) -> list[str]:
     return failures
 
 
+def check_lidar_imu_extrinsic(section: dict, retained: bool) -> tuple[list[str], list[str]]:
+    """LiDAR->IMU extrinsic must equal the reviewed corrected value (all modes).
+
+    retained=True marks a pair staged before the defect was found: its known
+    pre-correction sign is reported as a note, never as a failure, so the
+    historical T3.5a/T3.5c evidence keeps re-checking green.
+    """
+    failures: list[str] = []
+    notes: list[str] = []
+    for key, expected, what in (
+        (
+            "extrin_calib.extrinsic_T",
+            NOMINAL_LIDAR_IMU_T,
+            "reviewed LiDAR->IMU translation (Mid-360 manual p.15 position, negated "
+            "for the code's p_imu = R * p_lidar + T form)",
+        ),
+        (
+            "extrin_calib.extrinsic_R",
+            LIDAR_IMU_R,
+            "identity (the manual states the IMU axes match the point-cloud axes)",
+        ),
+    ):
+        actual = section.get(key)
+        mismatch: str | None = None
+        if not isinstance(actual, (list, tuple)) or len(actual) != len(expected):
+            mismatch = f"{key}: expected {len(expected)} values, got {actual!r}"
+        else:
+            for index, (got, want) in enumerate(zip(actual, expected)):
+                if isinstance(got, bool) or not isinstance(got, (int, float)):
+                    mismatch = f"{key}[{index}]={got!r} is not a number"
+                    break
+                if abs(float(got) - want) > 1e-9:
+                    mismatch = f"{key}[{index}]={got!r} != {want!r} {what}"
+                    break
+        if mismatch is None:
+            continue
+        if retained:
+            notes.append(
+                f"{mismatch} -- retained pre-correction pair; the pinned fork's Mid-360 sign, "
+                "see T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md (contract section 7, R2)"
+            )
+        else:
+            failures.append(mismatch)
+    return failures, notes
+
+
 def check_mode(section: dict) -> tuple[str | None, list[str]]:
     """img_en declares the run mode; each mode has its own extrinsic contract.
 
@@ -606,6 +680,16 @@ def main() -> int:
             "EXTRINSICS Rcl/Pcl = reviewed nominal composition (T5.4 chain + M2); "
             "not target-calibrated"
         )
+    retained = args.lio.name in PRECORRECTION_PAIRS
+    failures, notes = check_lidar_imu_extrinsic(lio, retained=retained)
+    audit.failures.extend(failures)
+    audit.notes.extend(notes)
+    imu_rot = lio.get("extrin_calib.extrinsic_R")
+    rot_text = "identity" if isinstance(imu_rot, (list, tuple)) and tuple(imu_rot) == LIDAR_IMU_R else repr(imu_rot)
+    print(
+        f"LIDAR_IMU extrinsic_T={lio.get('extrin_calib.extrinsic_T')!r} extrinsic_R={rot_text} "
+        f"reviewed_T={list(NOMINAL_LIDAR_IMU_T)!r} retained_precorrection={retained}"
+    )
     for key in ("time_offset.img_time_offset", "time_offset.imu_time_offset", "time_offset.lidar_time_offset"):
         value = lio.get(key)
         if value != 0.0:
