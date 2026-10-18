@@ -782,6 +782,29 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   and box, bench quick PASS. Evidence `EVIDENCE_t35c-public-20261018.sha256`.
 - T3.5c remains PROGRESS; the 19 October pilot-gated capture is the next data step.
 
+## [2026-10-18] T3.5c | Read-only live preview tool, L0 coverage, box preflight baseline
+
+- New `live_preview.py` for the capture kit: read-only subscribers write the
+  newest colour frame, a LiDAR-on-camera overlay (provisional nominal Rcl/Pcl),
+  a stats block (arrival rates, stamp ages, depth bands, 3×3 region grid) and a
+  self-refreshing `preview.html`. 18 unit tests (`test_live_preview.py`).
+- A box smoke run found a real shutdown defect (SIGTERM → rclpy
+  `ExternalShutdownException` → double `rclpy.shutdown()` traceback); fixed and
+  re-smoked clean (`f528af3`, `cabd7f3`).
+- Bench L0 now covers `FAST-LIVO capture tools` (86 tests) and `FAST-LIVO replay
+  harness` (55 tests); `test_analyze_bag.py` stays box-only (`rosbag2_py`).
+  Bench quick PASS.
+- Kit `t35c-capture-kit.UTtxiL` staged and verified: manifest 32/32, box tests
+  86 + 55 green with zero skips, Mac↔box file hashes identical,
+  `preflight-baseline.txt` (box up 5 days, 44 GiB free, no ROS processes, D455 +
+  435i on USB, MID-360 absent, native CustomMsg in `install_nav`) and
+  `preview-smoke.txt` preserved.
+- Capture plan updated (`2556bed`): preview pane allowed and specified, RViz
+  stays off, viewing via the Mac browser over an `ssh -L 8099` tunnel; the
+  offline pilot audit remains the GO gate. No hardware ran; the preview
+  publishes nothing.
+- T3.5c remains PROGRESS; the 19 October pilot-gated capture is the next data step.
+
 ## Record Template
 
 
