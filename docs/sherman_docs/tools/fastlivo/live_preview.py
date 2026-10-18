@@ -424,22 +424,30 @@ class LivePreview:
 
 def run_live(args: argparse.Namespace, config: dict) -> int:
     import rclpy
+    from rclpy.executors import ExternalShutdownException
 
     rclpy.init()
     node = rclpy.create_node("t35_capture_preview")
-    LivePreview(node, args, config)
+    try:
+        LivePreview(node, args, config)
+    except (ImportError, AttributeError) as error:
+        node.destroy_node()
+        rclpy.shutdown()
+        print(f"FAIL ROS message types unavailable: {error}")
+        return 2
     print(f"LIVE {args.topic_lidar} {args.topic_image} {args.topic_info} {args.topic_imu}",
           flush=True)
     print(f"OUT {Path(args.out).resolve()} period={args.period:.1f}s window={args.window:.1f}s",
           flush=True)
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass  # Ctrl+C, or SIGTERM already shut the context down (rclpy's own handler)
     finally:
         node.destroy_node()
-        rclpy.shutdown()
-    print("DONE preview stopped by user", flush=True)
+        if rclpy.ok():
+            rclpy.shutdown()
+    print("DONE preview stopped", flush=True)
     return 0
 
 
