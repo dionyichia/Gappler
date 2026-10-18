@@ -819,6 +819,12 @@ in (`:587-596`). A keypoint on one apple can match either apple, and the backgro
 would say which one is which are discarded. M8 as planned has the same blind spot: T8.1 and T8.2
 select by an image feature of the gazed region, and two identical objects give the same feature.
 
+**First measurement, 2026-10-19 (T8.4).** Before any of this, the old step has to work at all. Its
+first run, glasses recording c2cbafe8 against the wrist bag, chose a wrist mask in 0 of 15 attempts:
+only 8 to 19 matches per image pair, none on a wrist box `[measured]`
+(`bench-runs/2026-10-19-labbox-t8.4-old-matcher-baseline.txt`). Dion, 2026-10-18: diagnose and get a
+working baseline with the old method first. The methods below wait for it.
+
 **Three candidate methods, cheapest first:**
 
 | Method | Idea | Needs | Rough cost |
@@ -1507,3 +1513,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-15 | Claude Opus 5.5 + Dion | §2.2: T2.9 e2e 4 of 4 after the readiness fix. |
 | 2026-10-17 | Claude Opus 5.5 + Dion | §2.2: T2.9 timing is by arrival, not capture. Plan to fix it is T2.19 to T2.21. |
 | 2026-10-17 | Claude Opus 5.5 + Dion | §2.2: T2.19 and T2.20 (PR A) built, box checks owed. |
+| 2026-10-19 | Claude Opus 5.5 + Dion | §2.13: first run of the old matcher (T8.4), 0 of 15. Old method first, the geometric methods wait. |

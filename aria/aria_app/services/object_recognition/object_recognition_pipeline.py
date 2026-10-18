@@ -723,6 +723,9 @@ def generate_mask(aria_streaming_started: Event, quit_event: Event) -> None:
 if __name__ == "__main__":
     import multiprocessing
 
+    import rclpy
+
+    rclpy.init()  # main.py:34 does this inside the glasses app. Run on its own, nobody else does.
     quit_event = multiprocessing.Event()
     pipeline = ObjectRecognitionPipeline(quit_event=quit_event)
     pipeline.run()

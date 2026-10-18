@@ -1,0 +1,44 @@
+T8.4: first run of the old cross-camera matcher (SuperPoint + LightGlue), glasses vs wrist camera
+Lab box, 2026-10-19 00:08 to 00:16. Branch t8.4-old-matcher-baseline (dev 66b9eae + one fix).
+Scratch copy ~/dion_t8.4/repo (.venv, install, assets linked from ~/rcp-Gappler).
+Private channel: ROS_DOMAIN_ID=84, ROS_LOCALHOST_ONLY=1, checked empty first. Nothing moves.
+
+Inputs
+- Glasses: recording c2cbafe8 replayed with aria/tools/replay_recording_to_glasses_topics.py,
+  0 to 118 s (undistorted image + gaze on the glasses clock).
+- Wrist: assets/recordings/wrist_camera/wrist_camera_box_at_home_2026-10-13_0.db3, ros2 bag play
+  --loop. Same box, same place as the glasses recording (Dion), seen from other angles.
+- Word: "box" once on /aria/audio/prompt, 00:13:58.
+- Pipeline: aria/aria_app/services/object_recognition/object_recognition_pipeline.py run on its
+  own (its __main__), Python logging at DEBUG. Its arm-facing publish stays commented out.
+
+Fix needed to run it
+- The file's __main__ never called rclpy.init(), so it could not start on its own
+  (NotInitializedException). Added the same two lines main.py:34-35 uses.
+- Not code: first run downloaded superpoint_v1.pth (5 MB) and superpoint_lightglue_v0-1_arxiv.pth
+  (45 MB) from github.com/cvg/LightGlue into ~/.cache/torch/hub/checkpoints/. Cached now.
+
+What ran
+- SAM 3, SuperPoint and LightGlue load, 5 nodes up, about 6.7 GB GPU.
+- Glasses masks picked by gaze: 14 ("Success").
+- Match attempts (both sides had at least one mask): 15.
+
+Result: 0 of 15 attempts chose a wrist mask.
+- Matches between the whole glasses image and the whole wrist image: 8 to 19 per pair
+  (of up to 2048 keypoints each). [measured]
+- Of those, inside the gazed glasses mask: 0 in 11 attempts, 1 or 2 in the other 4.
+- None of those 1 or 2 landed inside any wrist mask, so the vote never picked one.
+- "No objects detected" 11 times (SAM 3 at the wrapper's 0.5 cutoff), camera not logged.
+
+Read [inferred], not checked
+- The two views share very few keypoints at all. Likely causes: scale (glasses 1.4 to 2.4 m
+  from the box, wrist 0.4 m), viewpoint, and SuperPoint not being rotation invariant if the two
+  images are rolled differently.
+- The wrist recording shows one box, so this run cannot test choosing the right box, only
+  whether any match lands on it.
+
+Second run, 00:3x, same setup plus a saver on /aria/rgb_camera/feature_match (~/dion_t8.4/
+run_with_saver.sh): 25 pairs saved, 0 wrist masks chosen, 5 to 33 matches per pair, mean 16.
+Pictures: the first-run baseline pair is kept on Dion's Mac (not in git). All 25 pairs: ~/dion_t8.4/matches on the box.
+
+Logs: logs2/ for the second run, pipeline.log, replay.log, bag.log in ~/dion_t8.4/logs on the box.
