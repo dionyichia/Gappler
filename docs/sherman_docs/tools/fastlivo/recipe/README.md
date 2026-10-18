@@ -112,6 +112,80 @@ resource caps and is not recommended**. Bash uses `set -eo pipefail`, not `set -
 before ROS setup. The tests check constraints, inspection rejection cases and
 guarded replacements—not real Docker/cgroup behavior or C++ compilation.
 
+## T3.5c counters-only diagnostic build (2026-10-18)
+
+User-run only, from a fresh copied bundle under the box evidence/log directory:
+
+```bash
+T35_VIO_DIAGNOSTIC=1 bash run_build.sh
+```
+
+This is a separate experimental image, not a change to the accepted mapper:
+
+- Starts from exact accepted image ID
+  `sha256:d0dcfa8af10fa8d1b2f1cf42434ab1b763838d798139f266da7bcc65719de8b1`.
+  No pull, apt, fetch or dependency rebuild. Network is `none`.
+- Reuses this wrapper's interactive `IDLE` custody prompt, sudo, lock, host-idle
+  checks, 8 GiB/2 CPU/512 PID resource caps and inspect validators.
+- Uses container `t35-fastlivo-vio-diagnostic-build` and output image
+  `t35-fastlivo-vio-diagnostic:experimental`. Existing names/tags are refused;
+  all other output image names (including registry aliases) and compiler-option
+  overrides are refused in this mode.
+- `patch_diagnostics.py` accepts only exact safety-patched `vio.cpp` and pinned
+  `LIVMapper.cpp`. It adds tagged C++ lines only. Removing tagged lines must
+  recover both original files byte-for-byte (real-source test).
+- `diagnostic_inside.sh` compiles only `fast_livo`, verifies both diagnostic
+  log markers in the binary and retains source diff, source hashes and binary
+  hash under `build-logs.*/vio-diagnostic/`. This does not prove successful
+  runtime or matching; C++ compilation itself still requires this box build.
+
+Log fields (one row per completed retrieval or VIO cloud publish):
+
+- `[T35_DIAG_RETRIEVE]`: per-point `key_queries`, `key_hits` using the unchanged
+  algorithm, and `shadow_key_hits` using insertion-consistent keys **without
+  selecting them**. These are not unique-bin counts. `empty_map=1` is a separate
+  startup row with no other fields.
+- `null_reject`, `noobs_reject`, `behind_reject`, `projected`, `visible` count
+  map-point checks on the primary voxel path; the reviewed config disables
+  raycasting. `grids` counts the selected grid candidates. `depth_reject`,
+  `normal_reject`, `ncc_reject`, `photo_reject`, `accepted` locate later gates.
+  The reviewed config enables normals; the alternative close-view-observation
+  path is not separately counted. Stages have different populations, so do
+  not sum all counters into one rejection percentage.
+- `[T35_DIAG_CLOUD]`: accumulated `source_points`, `coloured_points` and
+  `pub_scan_num`. For the reviewed `pub_scan_num=1`, zero coloured points
+  indicates no points survived the camera-view/colour-cloud filters. The log
+  does not distinguish every individual cloud filter.
+
+Do not start replay automatically after the build. Review build exit, actual
+image ID, source diff/hashes and binary markers first. Then replay the unchanged
+visual config/bag with `T35_REPLAY_IMAGE` set to that diagnostic image ID through
+the existing custody-gated replay wrapper. Retain the original A PASS/B FAIL.
+Neither zero-point-cloud rules nor the positive-visual gate is relaxed.
+
+If the attached build terminal disconnects, that alone does not prove the
+container stopped. Inspect the exact build container from another attended
+terminal; if stopping is needed, use
+`sudo docker stop -t 10 t35-fastlivo-vio-diagnostic-build` and verify its state.
+Never delete the container, image or evidence, or close tmux without agreement.
+The resource caps are not a wall-clock timeout.
+
+Offline tests (no ROS/Docker/build):
+
+```bash
+python3 -B test_recipe.py
+python3 -B test_diagnostics.py
+T35_PINNED_SOURCE_DIR=<preserved-source-dir> python3 -B test_diagnostics.py
+bash -n run_build.sh
+bash -n diagnostic_inside.sh
+```
+
+Without `T35_PINNED_SOURCE_DIR`, the real-source test explicitly skips; it never
+downloads code. That directory contains unmodified pinned `vio.cpp` and
+`LIVMapper.cpp`; the test applies the existing sampling guard before diagnostics.
+The pure checks are included in `bench/run.sh` L0. No runtime diagnostic result
+is claimed until Sherman runs the separately reviewed build and replay.
+
 ## Source pins and narrowly scoped changes
 
 | Source | Commit |

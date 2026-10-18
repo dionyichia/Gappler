@@ -2,6 +2,21 @@
 # User-run only. Ordinary container, not a BuildKit/docker-container builder.
 set -eo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
+DIAGNOSTIC="${T35_VIO_DIAGNOSTIC:-0}"
+case "$DIAGNOSTIC" in 0|1) ;; *) echo 'T35_VIO_DIAGNOSTIC must be 0 or 1' >&2; exit 1;; esac
+DIAGNOSTIC_BASE=sha256:d0dcfa8af10fa8d1b2f1cf42434ab1b763838d798139f266da7bcc65719de8b1
+NETWORK=bridge
+if [ "$DIAGNOSTIC" = 1 ]; then
+  NAME="${T35_BUILD_NAME:-t35-fastlivo-vio-diagnostic-build}"
+  IMAGE="${T35_BUILD_IMAGE:-t35-fastlivo-vio-diagnostic:experimental}"
+  NETWORK=none
+  if [ "$IMAGE" != t35-fastlivo-vio-diagnostic:experimental ] || [ -n "${T35_CXXFLAGS_EXTRA:-}${T35_LDFLAGS_EXTRA:-}${T35_EXTRA_CMAKE_ARGS:-}" ]; then
+    echo 'diagnostic build must use a separate image and unchanged compiler options' >&2; exit 1
+  fi
+else
+  NAME="${T35_BUILD_NAME:-t59-fastlivo-build}"
+  IMAGE="${T35_BUILD_IMAGE:-t59-fast-livo2:experimental}"
+fi
 command -v python3 >/dev/null
 command -v docker >/dev/null
 command -v flock >/dev/null
@@ -27,11 +42,10 @@ check_host_idle() {
 check_host_idle
 sudo -v
 python3 -B test_recipe.py
+python3 -B test_diagnostics.py
 # Overrides for sanitizer/debug rebuilds only; defaults build the reviewed image.
-NAME="${T35_BUILD_NAME:-t59-fastlivo-build}"
-IMAGE="${T35_BUILD_IMAGE:-t59-fast-livo2:experimental}"
 BASE=ros:humble-perception-jammy
-if [[ "$IMAGE" != "t59-fast-livo2:experimental" && -z "${T35_CXXFLAGS_EXTRA:-}" ]]; then
+if [[ "$DIAGNOSTIC" = 0 && "$IMAGE" != "t59-fast-livo2:experimental" && -z "${T35_CXXFLAGS_EXTRA:-}" ]]; then
   echo 'REFUSED: an overridden build image requires T35_CXXFLAGS_EXTRA (e.g. the documented AddressSanitizer flags).' >&2
   exit 1
 fi
@@ -69,14 +83,29 @@ if grep -Fxq "$IMAGE" "$LOGDIR/image-tags.txt"; then
     echo "Refusing existing image tag: $IMAGE" >&2; exit 1
 fi
 check_host_idle
+if [ "$DIAGNOSTIC" = 1 ]; then
+  # No pull, package installation or dependency rebuild in diagnostic mode.
+  sudo docker image inspect "$DIAGNOSTIC_BASE" > "$LOGDIR/base-image.json"
+  BASE_DIGEST="$DIAGNOSTIC_BASE"
+else
 sudo docker pull "$BASE" 2>&1 | tee "$LOGDIR/pull.log"
 sudo docker image inspect --format '{{join .RepoDigests "\n"}}' "$BASE" | tee "$LOGDIR/base-digests.txt"
 BASE_DIGEST=$(head -n 1 "$LOGDIR/base-digests.txt")
 case "$BASE_DIGEST" in *@sha256:*) ;; *) echo 'Missing pulled base digest' >&2; exit 1;; esac
+fi
 
 echo 'Intended hard limits: Memory=8589934592 MemorySwap=8589934592 NanoCpus=2000000000 PidsLimit=512'
-echo 'Ordinary container; bridge network; no privileges, mounts, devices, or Docker socket.'
+echo "Ordinary container; network $NETWORK; no privileges, mounts, devices, or Docker socket."
 echo "Build overrides: NAME=$NAME IMAGE=$IMAGE CXXFLAGS_EXTRA=${T35_CXXFLAGS_EXTRA:-<none>}"
+if [ "$DIAGNOSTIC" = 1 ]; then
+  echo 'Diagnostic only: exact accepted image, network none, mapper-only rebuild; no acceptance claim.'
+  sudo docker create --name "$NAME" --memory 8g --memory-swap 8g --cpus 2 \
+      --pids-limit 512 --network none --user root --entrypoint bash "$BASE_DIGEST" \
+      -c 'set -eo pipefail; cp /diagnostic_inside.sh /patch_diagnostics.py /opt/recipe/; exec bash /opt/recipe/diagnostic_inside.sh' \
+      | tee "$LOGDIR/container-id.txt"
+  sudo docker cp diagnostic_inside.sh "$NAME:/diagnostic_inside.sh"
+  sudo docker cp patch_diagnostics.py "$NAME:/patch_diagnostics.py"
+else
 sudo docker create --name "$NAME" --memory 8g --memory-swap 8g --cpus 2 \
     --pids-limit 512 --network bridge --entrypoint bash \
     --env "T35_CXXFLAGS_EXTRA=${T35_CXXFLAGS_EXTRA:-}" \
@@ -89,9 +118,10 @@ sudo docker cp build_inside.sh "$NAME:/build_inside.sh"
 sudo docker cp patch_cmake.py "$NAME:/patch_cmake.py"
 sudo docker cp patch_vio.py "$NAME:/patch_vio.py"
 sudo docker cp patch_sampling.h "$NAME:/patch_sampling.h"
+fi
 sudo docker inspect "$NAME" > "$LOGDIR/pre-inspect.json"
 sudo docker inspect --format '{{json .HostConfig}}' "$NAME" | tee "$LOGDIR/hostconfig.json"
-python3 -B check_container.py pre "$LOGDIR/pre-inspect.json" "$NAME"
+python3 -B check_container.py pre "$LOGDIR/pre-inspect.json" "$NAME" "$NETWORK"
 
 # Disable errexit only to collect the attached-client and tee status plus final state.
 check_host_idle
@@ -101,9 +131,12 @@ statuses=("${PIPESTATUS[@]}")
 set -e
 sudo docker inspect "$NAME" > "$LOGDIR/post-inspect.json"
 sudo docker inspect --format '{{json .State}}' "$NAME" | tee "$LOGDIR/state.json"
-python3 -B check_container.py post "$LOGDIR/post-inspect.json" "$NAME"
+python3 -B check_container.py post "$LOGDIR/post-inspect.json" "$NAME" "$NETWORK"
 test "${statuses[0]}" -eq 0 && test "${statuses[1]}" -eq 0
 sudo docker cp "$NAME:/opt/recipe/source-pins.txt" "$LOGDIR/source-pins.txt"
+if [ "$DIAGNOSTIC" = 1 ]; then
+  sudo docker cp "$NAME:/opt/recipe/vio-diagnostic" "$LOGDIR/vio-diagnostic"
+fi
 # Recheck before committing; never intentionally replace another run's image tag.
 sudo docker image ls --format '{{.Repository}}:{{.Tag}}' > "$LOGDIR/final-image-tags.txt"
 if grep -Fxq "$IMAGE" "$LOGDIR/final-image-tags.txt"; then

@@ -692,6 +692,24 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: separately reviewed instrumentation-only build/replay, initiated by Sherman,
   to count key hits and later visual rejection stages. No PR or merge.
 
+## [2026-10-18] T3.5c | Counters-only diagnostic candidate staged
+
+- Evidence: [report §7](T3.5c_REPLAY_20261018.html), recipe README;
+  box bundle `log/t59-fastlivo/log/vio-diagnostic.VSnwsS`.
+- Implementation: SHA-gated additions-only source instrumentation, shadow key
+  queries never used for selection; incremental mapper-only build from the exact
+  accepted image into a separate fixed tag, with network none and existing
+  custody/lock/resource checks. Existing replay gates unchanged.
+- Verified: first new tests failed before implementation; 10 recipe + 5 diagnostic
+  tests pass on Mac and box, including real pinned-source byte restoration;
+  29/29 staged manifest entries checked. Separate review caught a Docker tag-alias
+  loophole; failing-first negative test added, guard restricted to fixed diagnostic
+  tag, re-review reports no remaining significant findings in that change.
+- Next: Sherman initiates the prepared pane-2 build and supplies custody/sudo;
+  review build/actual image before staging a separate replay. No build, new mapper
+  replay or hardware command has been started. Generated C++ compilation remains
+  unverified; T3.5c remains PROGRESS.
+
 ## Record Template
 
 

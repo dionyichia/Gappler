@@ -27,7 +27,9 @@ class RecipeTests(unittest.TestCase):
             self.assertIn(required, wrapper)
         self.assertLess(wrapper.index('flock -n 9'), wrapper.index('sudo docker pull'))
         self.assertLess(wrapper.index('"$custody" = IDLE'), wrapper.index('sudo docker pull'))
-        self.assertIn('check_host_idle\nsudo docker pull', wrapper)
+        self.assertIn('check_host_idle\nif [ "$DIAGNOSTIC" = 1 ]; then', wrapper)
+        self.assertLess(wrapper.index('check_host_idle\nif [ "$DIAGNOSTIC"'),
+                        wrapper.index('sudo docker pull'))
         self.assertIn('check_host_idle\nset +e', wrapper)
 
     def test_sanitizer_overrides_default_to_reviewed_build(self):
@@ -131,6 +133,13 @@ class RecipeTests(unittest.TestCase):
             module.validate({}, 'pre')
         data['State']['Status'] = 'exited'
         module.validate(data, 'post')
+        data['HostConfig']['NetworkMode'] = 'none'
+        module.validate(data, 'post', network='none')
+        with self.assertRaises(ValueError):
+            module.validate(data, 'post')
+        with self.assertRaises(ValueError):
+            module.validate(data, 'post', network='host')
+        data['HostConfig']['NetworkMode'] = 'bridge'
         for key, bad in dict(ExitCode=1, OOMKilled=True, Running=True, Error='failed').items():
             mutated = copy.deepcopy(data)
             mutated['State'][key] = bad

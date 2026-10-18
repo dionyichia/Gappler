@@ -4,16 +4,18 @@ from pathlib import Path
 import sys
 
 
-def validate(data: dict, phase: str, name: str = 't59-fastlivo-build') -> None:
+def validate(data: dict, phase: str, name: str = 't59-fastlivo-build', network: str = 'bridge') -> None:
     """Reject missing/mismatched limits, elevated access, and unsuccessful state."""
     if phase not in ('pre', 'post'):
         raise ValueError('Unknown validation phase')
+    if network not in ('bridge', 'none'):
+        raise ValueError('Unexpected build network policy')
     if data.get('Name') != '/' + name:
         raise ValueError('Unexpected container name')
     config = data.get('HostConfig', {})
     expected = dict(Memory=8589934592, MemorySwap=8589934592,
                     NanoCpus=2000000000, CpuQuota=0, CpuPeriod=0,
-                    PidsLimit=512, Privileged=False, NetworkMode='bridge')
+                    PidsLimit=512, Privileged=False, NetworkMode=network)
     for key, value in expected.items():
         if key not in config or config[key] != value:
             raise ValueError(f'HostConfig.{key}: expected {value!r}, got {config.get(key)!r}')
@@ -33,5 +35,6 @@ if __name__ == '__main__':
     records = json.loads(Path(sys.argv[2]).read_text())
     if len(records) != 1:
         raise ValueError('Expected exactly one container inspection')
-    validate(records[0], sys.argv[1], sys.argv[3] if len(sys.argv) > 3 else 't59-fastlivo-build')
+    validate(records[0], sys.argv[1], sys.argv[3] if len(sys.argv) > 3 else 't59-fastlivo-build',
+             sys.argv[4] if len(sys.argv) > 4 else 'bridge')
     print(f'{sys.argv[1]} container validation passed')
