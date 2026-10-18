@@ -16,6 +16,9 @@ class DiagnosticTests(unittest.TestCase):
             self.assertIn(required, script)
         for forbidden in ('set exec-wrapper', '--privileged', 'SYS_PTRACE', 'ros2 bag play'):
             self.assertNotIn(forbidden, script)
+        # Entering the command is the confirmation; no typed custody gate remains.
+        self.assertNotIn('read -r -p', script)
+        self.assertNotIn('CUSTODY AGREED', script)
 
     def test_snapshot_includes_unexpected_compressed_subscription(self):
         endpoint = SimpleNamespace(node_name='t59_republish', topic_type='sensor_msgs/msg/CompressedImage',

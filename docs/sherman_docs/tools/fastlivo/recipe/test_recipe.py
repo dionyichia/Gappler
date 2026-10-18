@@ -21,12 +21,13 @@ class RecipeTests(unittest.TestCase):
 
     def test_shared_host_gate_precedes_download_and_start(self):
         wrapper = (ROOT / 'run_build.sh').read_text()
-        for required in ('flock -n 9', 'Confirm the lab box is reserved',
-                         '"$custody" = IDLE', 'pgrep -af',
+        for required in ('flock -n 9', 'pgrep -af',
                          'Runner[.]Worker', 'check_host_idle'):
             self.assertIn(required, wrapper)
         self.assertLess(wrapper.index('flock -n 9'), wrapper.index('sudo docker pull'))
-        self.assertLess(wrapper.index('"$custody" = IDLE'), wrapper.index('sudo docker pull'))
+        # Entering the command is the confirmation; no typed custody gate remains.
+        self.assertNotIn('read -r -p', wrapper)
+        self.assertNotIn('IDLE', wrapper)
         self.assertIn('check_host_idle\nif [ "$DIAGNOSTIC" = 1 ]; then', wrapper)
         self.assertLess(wrapper.index('check_host_idle\nif [ "$DIAGNOSTIC"'),
                         wrapper.index('sudo docker pull'))

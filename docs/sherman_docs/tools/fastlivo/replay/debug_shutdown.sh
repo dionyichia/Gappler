@@ -10,8 +10,6 @@ flock -n 9 || { echo 'Shared build lock is held; coordinate first.' >&2; exit 1;
 [[ ! -e "$REPO/log/software-build.lock.custody-unresolved" ]] || {
   echo 'Custody is unresolved; stop and coordinate.' >&2; exit 1;
 }
-read -r -p 'Type CUSTODY AGREED after coordinating an idle window: ' answer
-[[ "$answer" == 'CUSTODY AGREED' ]] || exit 1
 status=0
 pgrep -af 'Runner[.]Worker|bench/run[.]sh|(^|/|[[:space:]])colcon([[:space:]]|$)|ros2[[:space:]]+launch|fastlivo_mapping|image_transport/republish|rm_driver|xnode_vehicle' || status=$?
 [[ "$status" == 1 ]] || { echo 'Process conflict or failed inspection; stopping.' >&2; exit 1; }

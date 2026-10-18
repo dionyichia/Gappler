@@ -329,6 +329,13 @@ class ReplayTests(unittest.TestCase):
         for code in (None, -11, -signal.SIGKILL, 1, 130):
             self.assertFalse(self.replay.intentional_returncode(code))
 
+    def test_no_interactive_custody_prompt_remains(self):
+        # Entering the command is the confirmation; programmatic checks below stay.
+        wrapper = (HERE / 'run_replay.sh').read_text()
+        self.assertNotIn('read -r -p', wrapper)
+        self.assertNotIn('CUSTODY AGREED', wrapper)
+        self.assertIn('check_conflicts', wrapper)
+
     def test_wrapper_shutdown_is_named_bounded_and_gates_final_evidence(self):
         wrapper = (HERE / "run_replay.sh").read_text()
         self.assertIn('timeout -k 5s 20s sudo -n docker wait "$C"', wrapper)

@@ -35,8 +35,6 @@ test -t 0 || { echo 'Run from an interactive terminal for sudo authentication.' 
 # Cooperative lock: other tools must use this same lock to participate.
 exec 9>"$HOME/rcp-Gappler/log/software-build.lock"
 flock -n 9 || { echo 'Another cooperating build holds the lab lock.' >&2; exit 1; }
-read -r -p 'Confirm the lab box is reserved for this build and other operators agree; type IDLE: ' custody
-test "$custody" = IDLE || { echo 'Custody not confirmed; stopping.' >&2; exit 1; }
 check_host_idle() {
     local status=0
     pgrep -af 'Runner[.]Worker|bench/run[.]sh|(^|/|[[:space:]])colcon([[:space:]]|$)|ros2[[:space:]]+launch|rm_driver|xnode_vehicle|livox_ros_driver|realsense2_camera_node|fastlivo_mapping|docker[[:space:]]+(build|buildx[[:space:]]+build)' || status=$?

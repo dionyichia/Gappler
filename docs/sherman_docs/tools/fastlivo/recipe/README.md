@@ -2,12 +2,13 @@
 
 ## Shared-host prerequisite
 
-Reserve an idle lab-box window with the other operators before running. The wrapper
-requires typing `IDLE`, checks for competing robot/bench/build processes before
-pulling and compiling, and holds `~/rcp-Gappler/log/software-build.lock` until it
-exits. This lock only coordinates tools that use the same lock; it cannot prevent
-another operator starting an unrelated job. If activity is reported or custody
-is uncertain, stop and coordinate. Never stop another operator's processes.
+Reserve an idle lab-box window with the other operators before running. Entering the
+command is the confirmation; there is no typed custody prompt. The wrapper checks
+for competing robot/bench/build processes before pulling and compiling, and holds
+`~/rcp-Gappler/log/software-build.lock` until it exits. This lock only coordinates
+tools that use the same lock; it cannot prevent another operator starting an
+unrelated job. If activity is reported or custody is uncertain, stop and
+coordinate. Never stop another operator's processes.
 
 **Preparation only: not a validated build, deployment, or robot runtime.**
 Transfer this folder's files to a scratch directory on the intended Linux Docker
@@ -125,8 +126,8 @@ This is a separate experimental image, not a change to the accepted mapper:
 - Starts from exact accepted image ID
   `sha256:d0dcfa8af10fa8d1b2f1cf42434ab1b763838d798139f266da7bcc65719de8b1`.
   No pull, apt, fetch or dependency rebuild. Network is `none`.
-- Reuses this wrapper's interactive `IDLE` custody prompt, sudo, lock, host-idle
-  checks, 8 GiB/2 CPU/512 PID resource caps and inspect validators.
+- Reuses this wrapper's sudo, lock, host-idle checks, 8 GiB/2 CPU/512 PID
+  resource caps and inspect validators. No typed custody prompt.
 - Uses container `t35-fastlivo-vio-diagnostic-build` and output image
   `t35-fastlivo-vio-diagnostic:experimental`. Existing names/tags are refused;
   all other output image names (including registry aliases) and compiler-option

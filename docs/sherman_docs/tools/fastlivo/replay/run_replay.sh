@@ -44,8 +44,6 @@ printf '%s\n' \
   'Coordinate shared-box custody with the lab team before continuing.' \
   'This reserves 2 CPUs / 8 GiB for up to 600 seconds. No other work will be stopped.' \
   'Confirm no conflicting build/replay/robot work and an agreed replay window.'
-read -r -p 'Type CUSTODY AGREED to continue: ' answer </dev/tty
-[[ "$answer" == 'CUSTODY AGREED' ]] || { echo 'Custody not confirmed.' >&2; exit 1; }
 exec 9>>"$REPO/log/software-build.lock"
 flock -n 9 || { echo 'REFUSED: software-build.lock already held; coordinate, do not stop its owner.' >&2; exit 1; }
 HOLD="$REPO/log/software-build.lock.custody-unresolved"

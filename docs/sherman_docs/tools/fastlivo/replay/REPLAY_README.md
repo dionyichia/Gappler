@@ -76,7 +76,8 @@ For this 74.0 s bag the default rate 0.25 spends about 296 s of the 600 s window
 and 0.2 also fits; 0.18 no longer does. The public 66.7 s bag fits 0.25 and 0.2
 but not 0.1.
 
-The script asks for shared-box custody confirmation and interactive sudo. It
+Entering the command is the confirmation; the script asks only for interactive
+sudo (no typed custody prompt). It
 holds `/home/rcp2026/rcp-Gappler/log/software-build.lock`, refuses detected build/ROS
 processes (including Runner.Worker, bench/run.sh, RealSense and xnode_vehicle)
 or any running container, and never stops somebody else's work. It rechecks
