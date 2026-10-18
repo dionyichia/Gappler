@@ -710,6 +710,25 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   replay or hardware command has been started. Generated C++ compilation remains
   unverified; T3.5c remains PROGRESS.
 
+## [2026-10-18] T3.5c | Diagnostic build/replay completed: negative-depth rejection
+
+- Evidence: [report §8](T3.5c_REPLAY_20261018.html),
+  `tools/fastlivo/EVIDENCE_t35c-diagnostic-20261018.sha256` (14 files).
+- Verified: user-run build `build-logs.tMfThU` exits 0, generates diagnostic
+  image `3cd781a6`; source diff/hashes and binary marker checks pass.
+  User-run replay `20261018T080001Z-515864` FAIL, normal EOF, 419 typed-empty
+  clouds, no positive retrievals, clean mapper shutdown and reconciled callbacks.
+- Counters: 75,024 current-key hits; 143,998 shadow-key hits (never selected).
+  All 3,604,174 stored-point checks reached behind-camera rejection; no candidate
+  reached pixel projection, grid selection or photometric matching. These are
+  repeated checks, not unique points. One empty-map startup call is separate.
+- Source finding: visual-map generation checks projected pixel bounds but omits
+  positive camera-depth validation; retrieval rejects negative depth. The unchecked
+  seed path can store behind-camera points. Why no usable front-facing seed survives
+  remains unproven. `mat_out.txt` byte-identical to original B.
+- Next: focused visibility regression/candidate, keeping voxel repair separate.
+  No fix, tuning or further run started. T3.5c PROGRESS; tmux/evidence retained.
+
 ## Record Template
 
 
