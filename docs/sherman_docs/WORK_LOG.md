@@ -641,11 +641,23 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   surface.
 - Fresh: D455 depth probe of the same setup (depth + aligned depth + factory
   `extrinsics/depth_to_color`; 1.73 GB, 9,419 messages): 582 raw and 582
-  aligned frames, 0.03 % of pixels valid, none at the frame centre, no coherent
-  surface anywhere — consistent with the near surface inside min-Z (0.35 m at
-  848×480). No distance measurement obtained. Side finding: the camera pair's
-  factory extrinsic (5.91 cm along the optical x, rotation within 0.2° of
-  identity) agrees with the URDF's 5.9 cm colour↔depth offset.
+  aligned frames, a value on 3.2 % of raw pixels (3.0 % aligned) — scattered
+  speckle, none at the frame centre in any frame, no coherent surface anywhere.
+  No distance measurement obtained, and this data cannot separate surfaces
+  inside the 0.35 m blind zone (848×480) from a degraded depth stream. Side
+  finding: the camera pair's factory extrinsic (5.91 cm along the optical x,
+  rotation within 0.2° of identity) agrees with the URDF's 5.9 cm
+  colour↔depth offset — a constraint on the camera pair's own geometry, not on
+  its mounting to the LiDAR.
+- Corrected 2026-10-18: this entry and the contract first reported the depth
+  probe as "0.03 % of pixels valid … consistent with the near surface inside
+  min-Z". The measured means are 0.0323 (raw) and 0.0298 (aligned), i.e. 3.2 %
+  and 3.0 %, and the min-Z attribution is withdrawn: blind-zone returns and a
+  degraded stream are indistinguishable in the probe's data.
+- Probe provenance: the reader is preserved with the bag on the box
+  (`t35c-depth-check/t35c_depth_read.py`, outputs in `analysis/`), not as repo
+  tooling — it is a one-off probe with no unit tests and depends on the box's
+  numpy/cv2/rosbag2_py.
 - Correction: §8 read the scene as an "acoustic-foam barrier ~0.2 m ahead" with
   a "61°-top-edge" argument; both were inference from the image alone and are
   withdrawn. The scene is interlocking foam mats resting on a cushioned bench
