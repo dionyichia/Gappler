@@ -52,15 +52,19 @@ visual-retrieval gate is dropped, and a PASS can only claim LiDAR-inertial smoke
 `mapper_config`, `camera_config`, `unplayed_bag_topics` and `claim`, so the mode
 of every run is visible in its own evidence.
 
-Our recording on the lab box, LiDAR-IMU control run first:
+Our recording is the T3.5b capture
+(`~/rcp-Gappler/log/t59-fastlivo/log/t35b-capture.R0fVks/t35b_proof3`, 74.0 s,
+four topics), LiDAR-IMU control run first:
 
 `playback_qos.yaml` must list that recording's own image topic, because a
 TRANSIENT_LOCAL recorded image is rejected by both the mapper's volatile
 subscription and the readiness gate. Our RealSense colour topic is already
-listed.
+listed. The staged configs also carry this bag's frozen counts and duration, so
+`check_replay_configs.py` rejects them against any other recording, including
+the standoff re-capture: a different bag needs its own checked config pair.
 
 ```bash
-export T35_REPLAY_BAG=$HOME/rcp-Gappler/log/t59-fastlivo/log/t35c-standoff-capture.la8vKh/t35c_standoff
+export T35_REPLAY_BAG=$HOME/rcp-Gappler/log/t59-fastlivo/log/t35b-capture.R0fVks/t35b_proof3
 export T35_MAPPER_CONFIG=t35b_proof3_lio.yaml
 export T35_CAMERA_CONFIG=t35b_proof3_camera.yaml
 export T35_SOURCE_COMMIT=<commit of the copied bundle's origin>
@@ -68,9 +72,9 @@ bash ./run_replay.sh
 ```
 
 The visual run repeats this with `T35_MAPPER_CONFIG=t35b_proof3_visual.yaml`.
-For the 74.7 s standoff bag the default rate 0.25 spends about 299 s of the 600 s
-window; 0.2 also fits and buys mapper headroom; 0.19 is already borderline. The
-public 66.7 s bag fits 0.25 and 0.2 but not 0.1.
+For this 74.0 s bag the default rate 0.25 spends about 296 s of the 600 s window
+and 0.2 also fits; 0.18 no longer does. The public 66.7 s bag fits 0.25 and 0.2
+but not 0.1.
 
 The script asks for shared-box custody confirmation and interactive sudo. It
 holds `/home/rcp2026/rcp-Gappler/log/software-build.lock`, refuses detected build/ROS
