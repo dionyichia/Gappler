@@ -186,6 +186,62 @@ downloads code. That directory contains unmodified pinned `vio.cpp` and
 The pure checks are included in `bench/run.sh` L0. No runtime diagnostic result
 is claimed until Sherman runs the separately reviewed build and replay.
 
+## T3.5c visual repair candidates (2026-10-18)
+
+`patch_visual_fixes.py` accepts the exact diagnostic VIO source only. It preserves
+existing memory-safety patches, diagnostic counters, calibration and acceptance
+criteria. It refuses source drift and repeated application. Two separate stages:
+
+1. `visibility`: shared finite/positive camera-depth predicate in
+   `visual_geometry.h`, checked **before projection** on both generation candidate
+   sources and before final visual point insertion. This prevents behind-camera,
+   zero-depth and nonfinite seeds; it does not create useful front-facing features.
+2. `visibility-voxel`: the same visibility fix plus retrieval/raycast bin arithmetic
+   consistent with insertion. Uses float divide, negative adjustment and integer
+   truncation, retaining the pinned insertion/plane-map convention even at exact
+   negative boundaries. It deliberately does not globally reindex the map to
+   mathematical floor. Only the retrieval array type and two floor assignments
+   change; insertion and reference-map indexing remain unchanged.
+
+User-run only, one build and replay at a time, from a new copied bundle:
+
+```bash
+# First candidate: review its build and replay before testing the cumulative fix.
+T35_VIO_DIAGNOSTIC=1 T35_VIO_REPAIR=visibility bash run_build.sh
+# Later, separately approved, after the first candidate's evidence review:
+T35_VIO_DIAGNOSTIC=1 T35_VIO_REPAIR=visibility-voxel bash run_build.sh
+```
+
+Output tags are fixed per stage, respectively `t35-fastlivo-visibility:experimental`
+and `t35-fastlivo-visibility-voxel:experimental`; aliases/other output tags and
+compiler overrides are refused. Build containers are the same names without
+`:experimental`, suffixed `-build`. Defaults remain diagnostics-only without
+`T35_VIO_REPAIR`; repair stages require explicit diagnostic mode. The original
+accepted image is unchanged. Every build starts from its exact ID, regenerates
+the reviewed counters, then applies the selected repair, mapper-only and
+network-none. This is not a rebuild on top of an unknown previous candidate.
+
+Each repair build saves `visual-fixes/` alongside `vio-diagnostic/`: stage,
+source diff, patched source/header hashes. The baseline diagnostic manifest
+describes the pre-repair source; `visual-fixes.sha256` describes the actual
+repaired source/header. Binary hash/markers remain in `vio-diagnostic/`.
+
+Offline regression:
+
+```bash
+python3 -B test_visual_fixes.py
+T35_PINNED_SOURCE_DIR=<preserved-source-dir> python3 -B test_visual_fixes.py
+```
+
+Tests compile a standalone C++ visibility check and the **actual source-extracted**
+insertion/current/raycast/reference voxel expressions. The original expressions
+must reproduce a mismatch; the cumulative candidate must agree on negative,
+boundary and float-rounding cases. Source tests verify guards precede projection
+on all three paths and visibility-only preserves retrieval code. Missing C++
+compiler or pinned source causes explicit skips, not runtime proof. Both stages
+still need user-run full mapper compilation/replay; zero visual matches or
+invalid clouds remain non-passing. No calibration parameters or smoke gates relax.
+
 ## Source pins and narrowly scoped changes
 
 | Source | Commit |

@@ -101,6 +101,8 @@ s=$(step "L0  T3.4 bench coverage" python3 bench/test_t34_bench_coverage.py)
 row L0 "T3.4 bench coverage" "$s" ""
 s=$(step "L0  FAST-LIVO diagnostic patch" python3 docs/sherman_docs/tools/fastlivo/recipe/test_diagnostics.py)
 row L0 "FAST-LIVO diagnostic patch" "$s" "source transformation additionally needs preserved pinned source"
+s=$(step "L0  FAST-LIVO visual fixes" python3 docs/sherman_docs/tools/fastlivo/recipe/test_visual_fixes.py)
+row L0 "FAST-LIVO visual fixes" "$s" "standalone C++ checks; real-source test additionally needs preserved pinned source"
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
 # xacro and realsense2_description come from ROS, which CI does not source. Source it here when present.

@@ -4,13 +4,23 @@ set -eo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 DIAGNOSTIC="${T35_VIO_DIAGNOSTIC:-0}"
 case "$DIAGNOSTIC" in 0|1) ;; *) echo 'T35_VIO_DIAGNOSTIC must be 0 or 1' >&2; exit 1;; esac
+REPAIR="${T35_VIO_REPAIR:-none}"
+case "$REPAIR" in none|visibility|visibility-voxel) ;; *) echo 'Unknown visual repair stage' >&2; exit 1;; esac
+if [ "$REPAIR" != none ] && [ "$DIAGNOSTIC" != 1 ]; then
+  echo 'Visual repair requires explicit T35_VIO_DIAGNOSTIC=1' >&2; exit 1
+fi
 DIAGNOSTIC_BASE=sha256:d0dcfa8af10fa8d1b2f1cf42434ab1b763838d798139f266da7bcc65719de8b1
 NETWORK=bridge
 if [ "$DIAGNOSTIC" = 1 ]; then
-  NAME="${T35_BUILD_NAME:-t35-fastlivo-vio-diagnostic-build}"
-  IMAGE="${T35_BUILD_IMAGE:-t35-fastlivo-vio-diagnostic:experimental}"
+  case "$REPAIR" in
+    none) DEFAULT_NAME=t35-fastlivo-vio-diagnostic-build; EXPECTED_IMAGE=t35-fastlivo-vio-diagnostic:experimental ;;
+    visibility) DEFAULT_NAME=t35-fastlivo-visibility-build; EXPECTED_IMAGE=t35-fastlivo-visibility:experimental ;;
+    visibility-voxel) DEFAULT_NAME=t35-fastlivo-visibility-voxel-build; EXPECTED_IMAGE=t35-fastlivo-visibility-voxel:experimental ;;
+  esac
+  NAME="${T35_BUILD_NAME:-$DEFAULT_NAME}"
+  IMAGE="${T35_BUILD_IMAGE:-$EXPECTED_IMAGE}"
   NETWORK=none
-  if [ "$IMAGE" != t35-fastlivo-vio-diagnostic:experimental ] || [ -n "${T35_CXXFLAGS_EXTRA:-}${T35_LDFLAGS_EXTRA:-}${T35_EXTRA_CMAKE_ARGS:-}" ]; then
+  if [ "$IMAGE" != "$EXPECTED_IMAGE" ] || [ -n "${T35_CXXFLAGS_EXTRA:-}${T35_LDFLAGS_EXTRA:-}${T35_EXTRA_CMAKE_ARGS:-}" ]; then
     echo 'diagnostic build must use a separate image and unchanged compiler options' >&2; exit 1
   fi
 else
@@ -43,6 +53,7 @@ check_host_idle
 sudo -v
 python3 -B test_recipe.py
 python3 -B test_diagnostics.py
+python3 -B test_visual_fixes.py
 # Overrides for sanitizer/debug rebuilds only; defaults build the reviewed image.
 BASE=ros:humble-perception-jammy
 if [[ "$DIAGNOSTIC" = 0 && "$IMAGE" != "t59-fast-livo2:experimental" && -z "${T35_CXXFLAGS_EXTRA:-}" ]]; then
@@ -100,11 +111,13 @@ echo "Build overrides: NAME=$NAME IMAGE=$IMAGE CXXFLAGS_EXTRA=${T35_CXXFLAGS_EXT
 if [ "$DIAGNOSTIC" = 1 ]; then
   echo 'Diagnostic only: exact accepted image, network none, mapper-only rebuild; no acceptance claim.'
   sudo docker create --name "$NAME" --memory 8g --memory-swap 8g --cpus 2 \
-      --pids-limit 512 --network none --user root --entrypoint bash "$BASE_DIGEST" \
-      -c 'set -eo pipefail; cp /diagnostic_inside.sh /patch_diagnostics.py /opt/recipe/; exec bash /opt/recipe/diagnostic_inside.sh' \
+      --pids-limit 512 --network none --user root --env "T35_VIO_REPAIR=$REPAIR" --entrypoint bash "$BASE_DIGEST" \
+      -c 'set -eo pipefail; cp /diagnostic_inside.sh /patch_diagnostics.py /patch_visual_fixes.py /visual_geometry.h /opt/recipe/; exec bash /opt/recipe/diagnostic_inside.sh' \
       | tee "$LOGDIR/container-id.txt"
   sudo docker cp diagnostic_inside.sh "$NAME:/diagnostic_inside.sh"
   sudo docker cp patch_diagnostics.py "$NAME:/patch_diagnostics.py"
+  sudo docker cp patch_visual_fixes.py "$NAME:/patch_visual_fixes.py"
+  sudo docker cp visual_geometry.h "$NAME:/visual_geometry.h"
 else
 sudo docker create --name "$NAME" --memory 8g --memory-swap 8g --cpus 2 \
     --pids-limit 512 --network bridge --entrypoint bash \
@@ -136,6 +149,9 @@ test "${statuses[0]}" -eq 0 && test "${statuses[1]}" -eq 0
 sudo docker cp "$NAME:/opt/recipe/source-pins.txt" "$LOGDIR/source-pins.txt"
 if [ "$DIAGNOSTIC" = 1 ]; then
   sudo docker cp "$NAME:/opt/recipe/vio-diagnostic" "$LOGDIR/vio-diagnostic"
+  if [ "$REPAIR" != none ]; then
+    sudo docker cp "$NAME:/opt/recipe/visual-fixes" "$LOGDIR/visual-fixes"
+  fi
 fi
 # Recheck before committing; never intentionally replace another run's image tag.
 sudo docker image ls --format '{{.Repository}}:{{.Tag}}' > "$LOGDIR/final-image-tags.txt"

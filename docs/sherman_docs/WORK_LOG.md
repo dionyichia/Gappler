@@ -729,6 +729,26 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: focused visibility regression/candidate, keeping voxel repair separate.
   No fix, tuning or further run started. T3.5c PROGRESS; tmux/evidence retained.
 
+## [2026-10-18] T3.5c | Visual source candidates and next lab recording plan
+
+- Source changes: SHA-gated `patch_visual_fixes.py` + stdlib-only C++ visibility
+  predicate. `visibility` guards all three seed paths; `visibility-voxel` adds
+  consistent current/raycast keys without reindexing insertion/reference maps.
+  Each has a fixed separate experimental image tag, opt-in only; original accepted
+  mapper, calibration and replay gates unchanged.
+- Tests: new regressions observed failing first. Original source-extracted C++
+  voxel expressions reproduce the mismatch; fixed expressions match at negative,
+  boundary and float-rounding inputs. 10 recipe + 5 diagnostic + 4 visual-fix
+  tests pass on Mac and box (real sources/compiler enabled). Separate review found
+  no significant issue; guard-order assertions strengthened from its feedback.
+- Staged: `log/t59-fastlivo/log/visual-repair.xIOr2o`, manifest 32/32 checked;
+  visibility-only build command prepared in pane 2, not executed. Full mapper
+  candidate compilation and replay remain unverified.
+- Lab plan: [19 October capture](T3.5c_CAPTURE_PLAN_20261019.html), 15 s pilot
+  with audited overlap GO before a 75 s stationary bag. No hardware started;
+  new scene/data is separate from software validation. T3.5b stays DONE,
+  T3.5c remains PROGRESS. No PR or merge.
+
 ## Record Template
 
 

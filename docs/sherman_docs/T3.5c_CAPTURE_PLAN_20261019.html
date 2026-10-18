@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T3.5c — 19 October stationary re-recording plan</title>
+<style>body{font:16px/1.65 system-ui,sans-serif;max-width:980px;margin:3rem auto;padding:0 1.2rem;color:#202831;background:#f5f4ef}h1{line-height:1.2}h2{margin-top:2rem}.gate{border-left:5px solid #ad4e26;padding:1rem;background:white}table{border-collapse:collapse;width:100%;background:white}th,td{padding:.6rem;border-bottom:1px solid #d8dde0;text-align:left;vertical-align:top}code{overflow-wrap:anywhere}pre{padding:1rem;background:#e7eae9;overflow:auto}label{display:block;margin:.5rem 0}button{padding:.6rem;cursor:pointer}a{color:#175576}@media(max-width:650px){body{margin:1rem auto}th,td{padding:.3rem}}@media print{button{display:none}body{background:white;margin:0;max-width:none}pre{white-space:pre-wrap}}</style>
+<header><small>Prepared 18 October 2026 · Lab visit: Monday, 19 October 2026 · Sherman · T3.5c</small>
+<h1>Check the scene first.<br>Then record once.</h1>
+<p class="gate"><strong>Plan only. No drivers, recorder or motion started.</strong> Goal: a new stationary recording with useful shared camera–LiDAR scene coverage. This is not a moving-map test, calibration session or authorization to drive. The software fixes and scene improvement are separate workstreams.</p></header>
+<main><nav><a href="#bring">Bring</a> · <a href="#scene">Scene</a> · <a href="#pilot">Pilot gate</a> · <a href="#full">Full bag</a> · <a href="#stop">Shutdown</a></nav>
+<h2 id="bring">1. Before the session — allow roughly 45–60 minutes</h2>
+<label><input type="checkbox"> Agree a sensor-use window with the other operators; nobody else needs the camera/LiDAR or a box bench/build/replay.</label>
+<label><input type="checkbox"> Bring a textured matte board or printed pattern, and ordinary boxes/objects. A checkerboard is optional; this is not target calibration.</label>
+<label><input type="checkbox"> Prepare a safe open view. Photograph the complete sensor mounting, both lens/scan openings, and intended scene before startup.</label>
+<label><input type="checkbox"> Keep the camera and LiDAR rigidly mounted relative to each other. Do not adjust either mount to make an overlay look better.</label>
+<p>If relocating the assembly/robot is needed, agree a safe physical procedure on site before doing it. This plan supplies no base/arm movement commands. Keep the arm, vehicle-control, teleop, SLAM, Nav2 and manipulation processes off.</p>
+<h2 id="scene">2. Build a better shared scene — 5–10 minutes</h2>
+<table><thead><tr><th>Choose</th><th>Why</th></tr></thead><tbody>
+<tr><td>Visible textured surfaces roughly 1–3 m away; for example a board/boxes, furniture and a wall corner.</td><td>A practical starting arrangement, not a sensor minimum or an acceptance guarantee. Texture gives image patches something distinguishable to match.</td></tr>
+<tr><td>At least two visible surfaces at different ranges and orientations, spread through the view.</td><td>Provides more useful geometry than one close uniform surface.</td></tr>
+<tr><td>A clear path from <em>both</em> sensor openings to those surfaces.</td><td>A good colour image does not prove the LiDAR sees the same objects. Check for a close table edge, foam surface, bracket, cable or mount blocking either view.</td></tr>
+<tr><td>Steady indoor lighting; stationary people/objects kept out of the scene.</td><td>Reduces blur, changing exposure and moving-object ambiguity. Avoid glossy glass/mirrors or relying on dark featureless surfaces.</td></tr>
+</tbody></table>
+<p class="gate"><strong>Do not just retreat from the same mats.</strong> The earlier retreat still produced only 0.16–0.24 m projected returns in a bottom band. Inspect the physical sight lines and change the shared scene. A new bag is useful only if the pilot demonstrates improvement.</p>
+<h2>3. At-lab preflight and sensor-only startup — gated, one stage at a time</h2>
+<p>Tell the agent <strong>“At the lab for the 19 October capture; prepare the sensor-only session, do not start hardware.”</strong> The agent rechecks processes/locks, disk, actual installed driver files, native CustomMsg support and an empty agreed private ROS domain. Use one tmux window with labelled LiDAR, D455, recorder and evidence panes. Commands are prepared, not executed; Sherman starts each reviewed sensor driver.</p>
+<label><input type="checkbox"> Custody and stationary hardware safety confirmed; stop/power arrangement understood. No conflicting jobs or video-device holders. Do not stop other people's processes.</label>
+<label><input type="checkbox"> Reserve about 5 GiB for attempts + final bag; require at least 10 GiB free before capture. Last observed box free space was 44 GiB, not tomorrow's guarantee.</label>
+<label><input type="checkbox"> Use D455 serial <code>146222253541</code>, <strong>not</strong> wrist D435i <code>243222074878</code>. Reconfirm USB 3 and identity.</label>
+<label><input type="checkbox"> D455 colour-only <code>640×480 @ 30 Hz</code>, raw colour + CameraInfo. Keep depth disabled: previous depth/high-bandwidth profiles overflowed, and depth is not needed for this replay.</label>
+<label><input type="checkbox"> MID-360 driver-only, <code>xfer_format=1</code>, CustomMsg at nominal 10 Hz plus IMU at nominal 200 Hz. Do not use the PointCloud2-only wrapper.</label>
+<label><input type="checkbox"> Reinspect <code>install_nav/livox_ros_driver2/share/livox_ros_driver2/launch_ROS2/msg_MID360_launch.py</code> and its MID360 config. No network changes, base or RViz actions; do not use quick-start nav/grasp/full layouts for this capture.</label>
+<label><input type="checkbox"> Camera warmed up for roughly 30 s; image is sharp, lighting settled, all four required topics have live publishers of the expected type. Retain driver logs and live parameters/QoS.</label>
+<p>Capture shell environment (only after domain 174 is confirmed available; apply the same environment to every capture pane):</p>
+<pre><code>source /opt/ros/humble/setup.bash
+source ~/rcp-Gappler/install_nav/setup.bash
+export ROS_DOMAIN_ID=174 ROS_LOCALHOST_ONLY=1
+ros2 interface show livox_ros_driver2/msg/CustomMsg</code></pre>
+<p>Expected: CustomMsg definition prints successfully. If it does not, stop: the earlier first bag lost LiDAR because the recorder lacked this overlay. These environment commands do not start sensor drivers; exact driver starts are reviewed/prepared on site before Sherman executes them.</p>
+<h2 id="pilot">4. Record a 15-second pilot, then stop and inspect — 10–15 minutes</h2>
+<p>In the recorder pane, create a unique attempt directory once. Keep this shell open so <code>CAPTURE</code> remains set; write the printed directory into the session notes.</p>
+<pre><code>CAPTURE=$(mktemp -d "$HOME/rcp-Gappler/log/t59-fastlivo/log/t35c-capture-20261019.XXXXXX")
+printf '%s\n' "$CAPTURE"
+timeout --signal=INT --kill-after=10s 15s ros2 bag record --storage sqlite3 \
+  -o "$CAPTURE/pilot01" /livox/lidar /livox/imu \
+  /camera/camera/color/image_raw /camera/camera/color/camera_info
+ros2 bag info "$CAPTURE/pilot01"</code></pre>
+<p><code>timeout</code> normally returns 124 when the timer fires; that alone is not a recorder failure <em>or</em> proof of a valid bag. Exit 137/force-kill, missing metadata, missing topics or recorder diagnostics are a stop. Verify finalization and all four streams before proceeding. Approximate pilot counts: 150 LiDAR, 3,000 IMU, 450 image and 450 CameraInfo; startup loss means exact totals are measured, not pre-assumed.</p>
+<p>The agent audits the finalized pilot offline and prepares projections using the existing nominal transform as a <em>provisional visualization</em>, not as calibrated truth. The preserved analyser/projector are under <code>log/t59-fastlivo/log/t35c-projection.zD3Wie/</code>; verify their versions/hashes before use. Keep the sensors still; pause before further recording.</p>
+<label><input type="checkbox"> All four topics decode, native headers preserved, timestamps/rates/gaps plausible, image/CameraInfo profile stable; no new USB overflow, sensor restarts or recorder errors.</label>
+<label><input type="checkbox"> Operator recognizes projected points on at least two shared scene surfaces beyond the old near-only band, spread through multiple image regions in several sampled frames.</label>
+<label><input type="checkbox"> LiDAR ranges in the forward camera wedge actually include the intended distant scene, not only a few near returns. An attractive overlay alone does not verify extrinsics.</label>
+<p class="gate"><strong>GO:</strong> useful shared scene coverage is demonstrated and stream audit is acceptable. <strong>NO-GO:</strong> still just a near bottom sliver, missing streams, drifted profile, errors or uncertain sight line. Preserve <code>pilot01</code>; change one scene obstruction/target arrangement, then use a <em>new</em> name such as <code>pilot02</code>. Do not alter extrinsics or thresholds to force a pass. Stop for investigation if a clear new scene still gives the same near-only returns.</p>
+<h2 id="full">5. Full stationary recording — only after pilot GO</h2>
+<p>Leave mount, sensor settings and scene unchanged. Record 75 seconds, matching the earlier manageable replay duration; do not drive, rotate or move the sensor head during this bag.</p>
+<pre><code>timeout --signal=INT --kill-after=10s 75s ros2 bag record --storage sqlite3 \
+  -o "$CAPTURE/stationary01" /livox/lidar /livox/imu \
+  /camera/camera/color/image_raw /camera/camera/color/camera_info
+ros2 bag info "$CAPTURE/stationary01"</code></pre>
+<p>Expect approximately 750 LiDAR / 15,000 IMU / 2,250 images / 2,250 CameraInfo and around 2–2.5 GiB. These are planning estimates, not frozen acceptance counts. Retain the photo, driver logs, exact commands/environment, serial/profile, live parameters, topic/QoS snapshots, versions and executable/configuration hashes with the new bag.</p>
+<h2 id="stop">6. Shutdown, freeze and handoff — 10–15 minutes</h2>
+<label><input type="checkbox"> Recorder finalized first. Sherman stops only this session's own sensor groups using the recorded group IDs; verify drivers/recorders are gone. Never use broad pkill.</label>
+<label><input type="checkbox"> Confirm graph/process cleanup and return custody. Stop a domain daemon only if it belongs to this session. Keep tmux until Sherman agrees to close it.</label>
+<label><input type="checkbox"> Agent audits the full bag read-only, saves projection samples across its duration, hashes original database + metadata and preserves logs. Do not rewrite timestamps, sort/rescale stored data or delete unsuccessful pilots.</label>
+<label><input type="checkbox"> Create a <strong>new checked config pair</strong> with this bag's measured identity/counts and camera parameters. Existing <code>t35b_proof3_*.yaml</code> configs are frozen to the old bag and must not be passed off as valid for this new recording.</label>
+<label><input type="checkbox"> Review the visibility/voxel candidate test/build status before choosing a replay image. Replay remains separate, A LIO then B visual, with custody gates and original invalid-output/visual-retrieval criteria intact.</label>
+<p><strong>Success tomorrow:</strong> usable, characterized, preserved stationary data with demonstrably improved shared scene coverage. Not promised: successful visual matching, calibrated extrinsics, physical time synchronization, moving-map accuracy, localization or Nav2 readiness. T5.5/T5.6 and T3.5d–f remain separate gates.</p>
+<h2>Resume prompt</h2><button id="copy" type="button">Copy as Prompt</button><p id="status" role="status"></p>
+<script>document.getElementById('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText('At the lab for the 19 October T3.5c stationary re-recording. Follow docs/sherman_docs/T3.5c_CAPTURE_PLAN_20261019.html on t3.5-launch-prep. Recheck shared-box custody/process/lock/domain/sensor identity. Stage sensor-only commands in one tmux window, do not start hardware. Sherman starts drivers/recording and stops own groups. 15-second pilot, audit/projection GO before a 75-second stationary bag. Keep rigid mounts, no motion, no calibration tuning, no reuse of old frozen bag configs. Preserve all evidence; verify software fix status before replay.');document.getElementById('status').textContent='Copied.'}catch(e){document.getElementById('status').textContent='Clipboard unavailable: '+e.message}});</script>
+<footer><small>Sources: <a href="T3.5_SENSOR_CAPTURE.md">prior capture/provenance</a>, <a href="T3.5_CONSUMER_CONTRACT.md">consumer/projection limits</a>, <a href="T3.5c_REPLAY_20261018.html">diagnostic evidence</a>, repository safety rules. Prepared 2026-10-18 from retained files and read-only installed-launch inspection; no MCP sources. Changelog: initial attended recording plan; hardware execution and scene acceptance not yet performed.</small></footer>
+</main></html>

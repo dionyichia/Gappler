@@ -8,6 +8,14 @@ cp /opt/recipe/vio-diagnostic/src/vio.cpp "$WS/src/fast_livo/src/vio.cpp"
 cp /opt/recipe/vio-diagnostic/src/LIVMapper.cpp "$WS/src/fast_livo/src/LIVMapper.cpp"
 cd "$WS/src/fast_livo"
 sha256sum -c /opt/recipe/vio-diagnostic/vio-diagnostic.sha256
+if [ "${T35_VIO_REPAIR:-none}" != none ]; then
+  python3 /opt/recipe/patch_visual_fixes.py "$WS/src/fast_livo/src/vio.cpp" \
+      "$T35_VIO_REPAIR" /opt/recipe/visual-fixes
+  cp /opt/recipe/visual-fixes/src/vio.cpp "$WS/src/fast_livo/src/vio.cpp"
+  cp /opt/recipe/visual-fixes/include/visual_geometry.h "$WS/src/fast_livo/include/visual_geometry.h"
+  sha256sum -c /opt/recipe/visual-fixes/visual-fixes.sha256
+  echo "Visual repair candidate: $T35_VIO_REPAIR (not replay acceptance)"
+fi
 source /opt/ros/humble/setup.bash
 source "$WS/install/setup.bash"
 cd "$WS"
