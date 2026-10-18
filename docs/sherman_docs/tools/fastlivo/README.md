@@ -33,7 +33,8 @@ README before running anything.
 | `analyze_bag.py` | Strict one-pass audit of T3.5 capture-profile bags. Exit code is the verdict: `ANALYSIS_OK` (0) or invariant `FAIL` lines (1). |
 | `test_analyze_bag.py` | Synthetic mini-bag tests for the analyser's pass and fail paths. |
 | `project_scan.py`, `check_replay_configs.py` | Offline LiDAR-on-camera overlay projector (provisional nominal Rcl/Pcl; by-eye pre-check) and the staged-pair config checks behind the T3.5b/c evidence, with stdlib tests (`test_*.py`; staged-pair checks need PyYAML). |
-| `live_preview.py`, `test_live_preview.py` | Live read-only capture preview (T3.5c capture kit): newest colour frame plus LiDAR-on-camera overlay, arrival rates, stamp ages, depth bands and a 3×3 region grid, written with a self-refreshing `preview.html`. Subscribers only — it cannot alter a recording. |
+| `live_preview.py`, `test_live_preview.py` | Live read-only capture preview (T3.5c capture kit): newest colour frame plus LiDAR-on-camera overlay, arrival rates, freshness, depth bands and a 3×3 region grid, written with a self-refreshing `preview.html`. Subscribers only — it cannot alter a recording. The LiDAR is subscribed raw and deserialized once per render (rclpy's 20k-point `CustomMsg` conversion costs ~127 ms/message); the image subscribes reliable+volatile as the mapper does. |
+| `probe_topic.py` | One-topic rclpy receive-cost probe: rate, total process CPU and callback CPU per topic. It found the 2026-10-18 preview bottleneck (normal `CustomMsg` subscription: 4.4 Hz at 99% CPU; images 30 Hz/15%, IMU 200 Hz/16%). |
 | `EVIDENCE_t35b-capture.sha256` | Frozen SHA-256 of the two captured bags. Verify on the box: `cd <capture dir> && sha256sum -c <repo>/docs/sherman_docs/tools/fastlivo/EVIDENCE_t35b-capture.sha256`. |
 | `EVIDENCE_t59-replay-20261016T175305Z-433728.sha256` | Frozen SHA-256 of all 24 files of the accepted T3.5a replay run (same verification method). |
 

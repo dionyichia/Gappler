@@ -66,6 +66,25 @@ class LoadConfigTests(unittest.TestCase):
                 tool.load_config(path, CAMERA_YAML)
 
 
+class DecodePointsTests(unittest.TestCase):
+    def fake(self, count):
+        class FakePoint:  # mirrors the CustomPoint x/y/z attributes
+            def __init__(self, x, y, z):
+                self.x, self.y, self.z = x, y, z
+
+        return [FakePoint(float(i), float(i) + 0.5, 10.0 + i) for i in range(count)]
+
+    def test_stride_one_decodes_everything_as_floats(self):
+        out = tool.decode_points(self.fake(3), 1)
+        self.assertEqual(out, [(0.0, 0.5, 10.0), (1.0, 1.5, 11.0), (2.0, 2.5, 12.0)])
+
+    def test_stride_subsamples_and_preserves_order(self):
+        self.assertEqual(
+            tool.decode_points(self.fake(4), 2),
+            [(0.0, 0.5, 10.0), (2.0, 2.5, 12.0)],
+        )
+
+
 class ToRgbBytesTests(unittest.TestCase):
     def test_rgb8_is_passed_through(self):
         data = bytes([1, 2, 3, 4, 5, 6])
@@ -163,10 +182,11 @@ class FormatStatsTests(unittest.TestCase):
             "scan_hz": 9.98,
             "image_hz": 29.97,
             "imu_hz": 199.7,
-            "scan_age_s": 0.041,
+            "scan_since_s": 0.041,
             "image_age_s": -0.033,
             "imu_age_s": 0.005,
             "points": 2000,
+            "scan_points": 2000,
             "drawn": 812,
             "depth": (0.42, 1.87, 9.1),
             "bands": [("<0.5", 3), ("0.5-1", 10), ("1-3", 990), ("3-8", 600), (">=8", 300)],
@@ -181,10 +201,11 @@ class FormatStatsTests(unittest.TestCase):
             "hz=9.98",
             "hz=29.97",
             "hz=199.7",
-            "age=+0.041s",
+            "since=+0.041s",
             "age=-0.033s",
             "camera_info",
             "drawn=812",
+            "of=2000",
             "IN_FOV",
             "bands",
             "regions row0",
@@ -200,9 +221,9 @@ class FormatStatsTests(unittest.TestCase):
         text = tool.format_stats(stats)
         self.assertIn("n/a", text)
 
-    def test_stale_age_is_flagged(self):
+    def test_stale_since_is_flagged(self):
         stats = self.stats()
-        stats["image_age_s"] = 3.5
+        stats["scan_since_s"] = 3.5
         self.assertIn("STALE", tool.format_stats(stats))
 
 

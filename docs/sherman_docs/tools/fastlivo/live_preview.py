@@ -14,10 +14,18 @@ frame and Livox CustomMsg scan, and every --period seconds writes into --out:
     preview.html        self-refreshing page with both images and the stats
 
 plus one stats block per render on stdout: message totals and arrival rates
-over --window seconds, per-topic stamp ages (negative = stamp ahead of this
-clock; |age| > 1 s is flagged STALE), in-FOV point count, depth summary,
-depth bands, and a 3x3 region grid so a lone bottom sliver of returns is
-obvious at a glance. preprocess.blind drops points the mapper would drop.
+over --window seconds, per-topic freshness (since= LiDAR arrival age, age=
+image/IMU stamp age; over 1 s is flagged STALE), in-FOV point count, depth
+summary, depth bands, and a 3x3 region grid so a lone bottom sliver of
+returns is obvious at a glance. preprocess.blind drops points the mapper
+would drop.
+
+Cost: rclpy's conversion of one 20k-point CustomMsg costs ~130 ms, so the
+scan is subscribed raw and deserialized once per render (a normal
+subscription saturates a core at 10 Hz and starves every topic -- measured in
+the 2026-10-18 dry run); points decode once per render and PNGs are written
+at zlib level 1. --period and --stride trade refresh rate and point coverage
+for less load.
 
 This preview is for aiming and gross checks. The pilot go/no-go remains the
 offline audit of the recorded bag (analyze_bag.py + project_scan.py).
@@ -113,6 +121,15 @@ def to_rgb_bytes(data: bytes, encoding: str, width: int, height: int) -> bytes:
     return payload
 
 
+def decode_points(points, stride: int) -> list:
+    """CustomMsg points -> (x, y, z) tuples, subsampled by stride.
+
+    Called once per render, not once per message: decoding all 20k points of
+    every scan in the callback costs a full core at 10 Hz.
+    """
+    return [(float(p.x), float(p.y), float(p.z)) for p in points[::stride]]
+
+
 def overlay_rgb(rgb: bytes, width: int, height: int, projected: list) -> bytes:
     """Dim the frame 50% and paint (u, v, depth) points bright, near=blue -> far=red."""
     pixels = bytearray(bytes(rgb).translate(_DARKEN))
@@ -155,7 +172,7 @@ def _percentile(ordered: list, fraction: float) -> float:
 
 
 def format_stats(stats: dict) -> str:
-    """Render one human-readable stats block."""
+    """Render one human-readable stats block. `since` = arrival-based (LiDAR)."""
     def rate(key: str) -> str:
         value = stats.get(key)
         return "n/a" if value is None else f"{value:.2f}"
@@ -167,6 +184,13 @@ def format_stats(stats: dict) -> str:
         flag = " STALE" if abs(value) > STALE_S else ""
         return f"{value:+.3f}s{flag}"
 
+    def since(key: str) -> str:
+        value = stats.get(key)
+        if value is None:
+            return "n/a"
+        flag = " STALE" if value > STALE_S else ""
+        return f"{value:+.3f}s{flag}"
+
     depth = stats.get("depth")
     depth_text = (
         "n/a" if depth is None else f"min={depth[0]:.2f} p50={depth[1]:.2f} max={depth[2]:.2f}"
@@ -175,11 +199,12 @@ def format_stats(stats: dict) -> str:
         f"RENDER {stats['seq']} t=+{stats['elapsed_s']:.1f}s "
         f"{stats['width']}x{stats['height']} stride={stats['stride']} "
         f"blind={stats['blind']:.2f}m",
-        f"  scan  hz={rate('scan_hz')} age={age('scan_age_s')} total={stats['scans']}",
+        f"  scan  hz={rate('scan_hz')} since={since('scan_since_s')} total={stats['scans']}",
         f"  image hz={rate('image_hz')} age={age('image_age_s')} total={stats['images']} "
         f"(intrinsics: {stats['intrinsics_from']})",
         f"  imu   hz={rate('imu_hz')} age={age('imu_age_s')} total={stats['imus']}",
-        f"  IN_FOV points={stats['points']} drawn={stats['drawn']} depth_m {depth_text}",
+        f"  IN_FOV points={stats['points']} of={stats['scan_points']} "
+        f"drawn={stats['drawn']} depth_m {depth_text}",
         "  bands " + " ".join(f"{label}={count}" for label, count in stats["bands"]),
     ]
     regions = stats["regions"]
@@ -266,7 +291,13 @@ class LivePreview:
     """Read-only rclpy node: newest frame + scan -> PNGs, stats, self-refreshing HTML."""
 
     def __init__(self, node, args, config: dict):
-        from rclpy.qos import qos_profile_sensor_data
+        from rclpy.qos import (
+            DurabilityPolicy,
+            HistoryPolicy,
+            QoSProfile,
+            ReliabilityPolicy,
+        )
+        from rclpy.serialization import deserialize_message
         from sensor_msgs.msg import CameraInfo, Image, Imu
         from livox_ros_driver2.msg import CustomMsg
 
@@ -282,14 +313,35 @@ class LivePreview:
         self.scan = None
         self.image = None
         self.info = None
+        self.imu_stamp_ns = None
         self.intrinsics = None
         self.distortion = None
         self.intrinsics_from = "config"
         self.step_warned = False
+        self._deserialize = deserialize_message
+        self._scan_type = CustomMsg
 
-        qos = qos_profile_sensor_data  # best effort: connects to reliable and best-effort publishers
-        node.create_subscription(CustomMsg, args.topic_lidar, self.on_scan, qos)
-        node.create_subscription(Image, args.topic_image, self.on_image, qos)
+        qos = QoSProfile(
+            history=HistoryPolicy.KEEP_LAST,
+            depth=100,  # not the sensor preset's 5: a ~0.3 s render stalls the single
+            reliability=ReliabilityPolicy.BEST_EFFORT,  # executor, and depth 5 then
+            durability=DurabilityPolicy.VOLATILE,  # drops camera/IMU samples every render
+        )
+        # 921 kB images fragment, and under a render stall best-effort loses whole
+        # samples at the socket level (depth cannot help); reliable retransmits.
+        # Reliable + volatile is the mapper's own convention (playback_qos.yaml).
+        qos_image = QoSProfile(
+            history=HistoryPolicy.KEEP_LAST,
+            depth=100,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.VOLATILE,
+        )
+        # Raw scan subscription: rclpy's conversion of one 20k-point CustomMsg
+        # costs ~130 ms, so a normal subscription saturates a core at 10 Hz and
+        # silently throttles every topic. Raw mode copies the payload cheaply;
+        # the render deserializes the newest one (0.5 Hz).
+        node.create_subscription(CustomMsg, args.topic_lidar, self.on_scan, qos, raw=True)
+        node.create_subscription(Image, args.topic_image, self.on_image, qos_image)
         node.create_subscription(CameraInfo, args.topic_info, self.on_info, qos)
         node.create_subscription(Imu, args.topic_imu, self.on_imu, qos)
         node.create_timer(args.period, self.on_timer)
@@ -298,17 +350,16 @@ class LivePreview:
     def _stamp_ns(stamp) -> int:
         return int(stamp.sec) * 1_000_000_000 + int(stamp.nanosec)
 
-    def on_scan(self, msg) -> None:
-        self.scan = {
-            "points": [(float(p.x), float(p.y), float(p.z)) for p in msg.points],
-            "stamp_ns": self._stamp_ns(msg.header.stamp),
-        }
+    def on_scan(self, payload: bytes) -> None:
+        # Raw subscription: keep the serialized payload and its arrival time.
+        # Decoding it here would cost a full core at 10 Hz (rclpy conversion).
+        self.scan = {"payload": payload, "arrival": time.monotonic()}
         self.got["scan"] += 1
         self.rates.tick("scan", time.monotonic())
 
     def on_image(self, msg) -> None:
         self.image = {
-            "data": bytes(msg.data),
+            "data": msg.data,  # keep the sequence as delivered; no extra copy
             "width": int(msg.width),
             "height": int(msg.height),
             "step": int(msg.step),
@@ -322,6 +373,7 @@ class LivePreview:
         self.info = {"k": [float(value) for value in msg.k], "d": [float(value) for value in msg.d]}
 
     def on_imu(self, msg) -> None:
+        self.imu_stamp_ns = self._stamp_ns(msg.header.stamp)
         self.got["imu"] += 1
         self.rates.tick("imu", time.monotonic())
 
@@ -371,7 +423,13 @@ class LivePreview:
             print(f"FAIL {error}", flush=True)
             return
 
-        points = self.scan["points"][:: self.args.stride]
+        try:
+            scan_msg = self._deserialize(self.scan["payload"], self._scan_type)
+        except (ValueError, TypeError, IndexError) as error:
+            print(f"FAIL scan decode: {error}", flush=True)
+            return
+
+        points = decode_points(scan_msg.points, self.args.stride)
         projected = project_points(
             points,
             self.config["rcl"],
@@ -399,10 +457,11 @@ class LivePreview:
             "scan_hz": self.rates.hz("scan", now_s),
             "image_hz": self.rates.hz("image", now_s),
             "imu_hz": self.rates.hz("imu", now_s),
-            "scan_age_s": self._age_s(self.scan["stamp_ns"]),
+            "scan_since_s": now_s - self.scan["arrival"],
             "image_age_s": self._age_s(image["stamp_ns"]),
-            "imu_age_s": None,
+            "imu_age_s": self._age_s(self.imu_stamp_ns),
             "points": len(points),
+            "scan_points": int(scan_msg.point_num),
             "drawn": len(projected),
             "depth": (
                 None if not depths
@@ -414,9 +473,9 @@ class LivePreview:
         }
         text = format_stats(stats)
 
-        write_png(self.out / "latest_frame.png", width, height, rgb)
+        write_png(self.out / "latest_frame.png", width, height, rgb, level=1)
         write_png(self.out / "latest_overlay.png", width, height,
-                  overlay_rgb(rgb, width, height, projected))
+                  overlay_rgb(rgb, width, height, projected), level=1)
         (self.out / "stats.txt").write_text(text + "\n")
         (self.out / "preview.html").write_text(render_html(self.seq, self.args.period, text))
         print(text, flush=True)

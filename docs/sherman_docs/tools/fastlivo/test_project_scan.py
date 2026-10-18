@@ -10,6 +10,7 @@ tests run anywhere:
 """
 from __future__ import annotations
 
+import hashlib
 import struct
 import sys
 import tempfile
@@ -266,6 +267,37 @@ class PngWriterTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(ValueError):
                 tool.write_png(Path(tmp) / "bad.png", 2, 2, bytes(11))
+
+    def test_default_level_bytes_are_pinned(self):
+        # Evidence overlays were produced at the default compression level;
+        # keep the default byte-for-byte reproducible.
+        pixels = bytes([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255])
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "tiny.png"
+            tool.write_png(path, 2, 2, pixels)
+            self.assertEqual(
+                hashlib.sha256(path.read_bytes()).hexdigest(),
+                "e6d66889131220f931fddfb05730d647a0992456c63ae0a8154b4ae32ff219ef",
+            )
+
+    def test_faster_level_writes_same_pixels(self):
+        # live_preview.py passes level=1 to keep its render cheap.
+        pixels = bytes([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255])
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "fast.png"
+            tool.write_png(path, 2, 2, pixels, level=1)
+            data = path.read_bytes()
+        self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n")
+        header_length = struct.unpack(">I", data[8:12])[0]
+        self.assertEqual(data[12:16], b"IHDR")
+        idat_start = 8 + 12 + header_length
+        idat_length = struct.unpack(">I", data[idat_start : idat_start + 4])[0]
+        self.assertEqual(data[idat_start + 4 : idat_start + 8], b"IDAT")
+        raw = zlib.decompress(data[idat_start + 8 : idat_start + 8 + idat_length])
+        self.assertEqual(
+            raw,
+            bytes([0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 255, 255, 255, 255]),
+        )
 
 
 class StampTests(unittest.TestCase):

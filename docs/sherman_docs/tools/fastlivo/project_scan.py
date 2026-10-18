@@ -152,8 +152,12 @@ def depth_color(normalized: float) -> tuple[int, int, int]:
     )
 
 
-def write_png(path: Path, width: int, height: int, rgb) -> None:
-    """Write an 8-bit RGB PNG (stdlib only: zlib + struct)."""
+def write_png(path: Path, width: int, height: int, rgb, level: int = 6) -> None:
+    """Write an 8-bit RGB PNG (stdlib only: zlib + struct). `level` is zlib's.
+
+    The default level keeps evidence overlays byte-for-byte reproducible;
+    live_preview.py passes level=1 to keep its periodic render cheap.
+    """
     if len(rgb) != width * height * 3:
         raise ValueError(f"pixel payload {len(rgb)} != {width}x{height}x3 bytes")
     raw = bytearray()
@@ -173,7 +177,7 @@ def write_png(path: Path, width: int, height: int, rgb) -> None:
     path.write_bytes(
         b"\x89PNG\r\n\x1a\n"
         + chunk(b"IHDR", header)
-        + chunk(b"IDAT", zlib.compress(bytes(raw), 6))
+        + chunk(b"IDAT", zlib.compress(bytes(raw), level))
         + chunk(b"IEND", b"")
     )
 
