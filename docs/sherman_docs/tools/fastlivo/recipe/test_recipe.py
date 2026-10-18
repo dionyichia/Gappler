@@ -28,9 +28,9 @@ class RecipeTests(unittest.TestCase):
         # Entering the command is the confirmation; no typed custody gate remains.
         self.assertNotIn('read -r -p', wrapper)
         self.assertNotIn('IDLE', wrapper)
-        self.assertIn('check_host_idle\nif [ "$DIAGNOSTIC" = 1 ]; then', wrapper)
-        self.assertLess(wrapper.index('check_host_idle\nif [ "$DIAGNOSTIC"'),
-                        wrapper.index('sudo docker pull'))
+        accepted_image_branch = 'check_host_idle\nif [ "$DIAGNOSTIC" = 1 ] || [ "$BLIND_SQR" = 1 ]; then'
+        self.assertIn(accepted_image_branch, wrapper)
+        self.assertLess(wrapper.index(accepted_image_branch), wrapper.index('sudo docker pull'))
         self.assertIn('check_host_idle\nset +e', wrapper)
 
     def test_sanitizer_overrides_default_to_reviewed_build(self):

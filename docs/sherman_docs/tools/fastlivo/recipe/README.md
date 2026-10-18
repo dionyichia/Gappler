@@ -243,6 +243,60 @@ compiler or pinned source causes explicit skips, not runtime proof. Both stages
 still need user-run full mapper compilation/replay; zero visual matches or
 invalid clouds remain non-passing. No calibration parameters or smoke gates relax.
 
+## F2 `blind_sqr` repair (2026-10-19)
+
+Finding F2 (`T3.5_CONFIG_SWEEP_20261019.md`): `preprocess.blind` cannot act on the
+AVIA/CustomMsg path, because the ROS 2 port dropped upstream's
+`p_pre->blind_sqr = p_pre->blind * p_pre->blind`, so the range gate at
+`preprocess.cpp:194` compared against a never-assigned member. `patch_blind_sqr.py`
+restores that one line where upstream has it (end of the constructor's parameter
+block) plus one tagged stdout line reporting the threshold in force. No other source
+text changes; the accepted image is untouched.
+
+User-run only, one build and replay at a time, from a new copied bundle:
+
+```bash
+T35_BLIND_SQR=1 bash run_build.sh
+```
+
+This is its own mode, not a visual-repair stage: it refuses to combine with
+`T35_VIO_DIAGNOSTIC=1` and refuses any rebuild that also carries that mode's flags.
+
+- Starts from exact accepted image ID
+  `sha256:d0dcfa8af10fa8d1b2f1cf42434ab1b763838d798139f266da7bcc65719de8b1`.
+  No pull, apt, fetch or dependency rebuild. Network is `none`.
+- Container `t35-fastlivo-blind-sqr-build`, output image
+  `t35-fastlivo-blind-sqr:experimental`. Existing names/tags and registry aliases
+  are refused, as are compiler-option overrides.
+- `patch_blind_sqr.py` accepts only the byte-identical pinned `LIVMapper.cpp`
+  (`815b5f89…`) and adds tagged `/* T35_BLIND_SQR */` lines only; removing the tagged
+  lines must recover the original file byte-for-byte. The output source no longer
+  matches the pinned hash, so a second application is refused.
+- `blind_sqr_inside.sh` compiles `fast_livo` only, verifies the patched source hash
+  before building, checks the `[T35_BLIND_SQR]` marker in the binary, and retains
+  `blind-sqr/` (source diff, patched source hash, binary hash, binary strings) under
+  `build-logs.*/`.
+
+The built image is a measurement and repair candidate, not an acceptance image. It
+changes one behaviour: the 0.1 m blind zone now drops zero-range returns. Whether the
+pinned build was keeping them is read from the preprocessed point-count line the
+pinned binary already prints — procedure, prediction and falsification in
+[`T3.5_F2_BLIND_SQR_PATCH.md`](../../T3.5_F2_BLIND_SQR_PATCH.md). Replay it with
+`T35_REPLAY_IMAGE=t35-fastlivo-blind-sqr:experimental bash run_replay.sh` and read
+`evidence/mapper.stdout.log`.
+
+Offline tests (no ROS/Docker/build), also an L0 bench step:
+
+```bash
+python3 -B test_blind_sqr.py
+T35_PINNED_SOURCE_DIR=<preserved-source-dir> python3 -B test_blind_sqr.py
+bash -n run_build.sh
+bash -n blind_sqr_inside.sh
+```
+
+Without `T35_PINNED_SOURCE_DIR` the real-source test explicitly skips; it never
+downloads code.
+
 ## Source pins and narrowly scoped changes
 
 | Source | Commit |
