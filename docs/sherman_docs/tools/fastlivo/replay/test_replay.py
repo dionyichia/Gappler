@@ -2,6 +2,7 @@
 import copy
 import importlib.util
 import math
+import re
 import signal
 import struct
 from pathlib import Path
@@ -22,7 +23,8 @@ def load(name):
 class ReplayTests(unittest.TestCase):
     def test_raw_images_come_from_offline_bag_without_republish(self):
         supervisor = (HERE / 'replay.py').read_text()
-        self.assertIn('"/left_camera/image": "sensor_msgs/msg/Image"', supervisor)
+        self.assertIn('"image": "sensor_msgs/msg/Image"', supervisor)
+        self.assertIn('params["common.img_topic"]', supervisor)
         self.assertNotIn('image_transport", "republish"', supervisor)
         self.assertNotIn('t59_republish', supervisor)
         self.assertNotIn('CompressedImage', supervisor)
@@ -46,9 +48,117 @@ class ReplayTests(unittest.TestCase):
         supervisor = (HERE / 'replay.py').read_text()
         for name in ('bright_screen_wall.yaml', 'camera_pinhole.yaml'):
             self.assertTrue((HERE / 'config' / name).is_file())
-            self.assertIn('config/' + name, wrapper)
-            self.assertIn(name, supervisor)
+            self.assertIn(name, wrapper + supervisor)
         self.assertNotIn('bright_screen_wall_camera.yaml', wrapper + supervisor)
+        for name in ('t35b_proof3_visual.yaml', 't35b_proof3_lio.yaml', 't35b_proof3_camera.yaml'):
+            self.assertTrue((HERE / 'config' / name).is_file())
+
+    def test_bag_configs_and_provenance_are_parameterised_end_to_end(self):
+        wrapper = (HERE / 'run_replay.sh').read_text()
+        self.assertIn('BAG="${T35_REPLAY_BAG:-', wrapper)
+        self.assertIn('MAPPER_CONFIG="${T35_MAPPER_CONFIG:-bright_screen_wall.yaml}"', wrapper)
+        self.assertIn('CAMERA_CONFIG="${T35_CAMERA_CONFIG:-camera_pinhole.yaml}"', wrapper)
+        self.assertIn('SOURCE_COMMIT="${T35_SOURCE_COMMIT:-', wrapper)
+        self.assertIn('--env "T35_MAPPER_CONFIG=$MAPPER_CONFIG"', wrapper)
+        self.assertIn('--env "T35_CAMERA_CONFIG=$CAMERA_CONFIG"', wrapper)
+        self.assertIn('config/$MAPPER_CONFIG', wrapper)
+        self.assertIn('config/$CAMERA_CONFIG', wrapper)
+        # No leftover hardcoded list entry can stage a different config than the run reads.
+        self.assertNotIn('config/bright_screen_wall.yaml', wrapper)
+        self.assertNotIn('config/camera_pinhole.yaml', wrapper)
+
+    def test_public_config_still_derives_the_original_reviewed_inputs(self):
+        text = (HERE / 'config' / 'bright_screen_wall.yaml').read_text()
+
+        def value(key):
+            return re.search(key + r':\s*"?([^"\n]+)"?', text).group(1).strip().strip('"')
+
+        params = {'common.lid_topic': value('common.lid_topic'),
+                  'common.imu_topic': value('common.imu_topic'),
+                  'common.img_topic': value('common.img_topic'),
+                  'common.img_en': int(value('common.img_en'))}
+        self.assertEqual(self.replay.inputs_from_params(params),
+                         {'/livox/lidar': 'livox_ros_driver2/msg/CustomMsg',
+                          '/livox/imu': 'sensor_msgs/msg/Imu',
+                          '/left_camera/image': 'sensor_msgs/msg/Image'})
+        self.assertEqual(set(self.replay.outputs_from_params(params)), {'odom', 'cloud', 'rgb'})
+
+    def test_qos_override_covers_every_staged_image_topic(self):
+        text = (HERE / 'playback_qos.yaml').read_text()
+        blocks = {}
+        current = None
+        for line in text.splitlines():
+            top = re.match(r'^(/[^\s:]+):\s*$', line)
+            if top:
+                current = top.group(1)
+                blocks[current] = []
+            elif current is not None and line.strip():
+                blocks[current].append(line.strip())
+        for name in ('bright_screen_wall.yaml', 't35b_proof3_visual.yaml'):
+            config = (HERE / 'config' / name).read_text()
+            topic = re.search(r'common\.img_topic:\s*"([^"]+)"', config).group(1)
+            with self.subTest(config=name, topic=topic):
+                self.assertIn(topic, blocks, 'image topic needs a playback QoS override')
+        for topic in ('/livox/lidar', '/livox/imu'):
+            self.assertIn(topic, blocks)
+        for topic, lines in blocks.items():
+            with self.subTest(topic=topic):
+                self.assertIn('reliability: reliable', lines)
+                self.assertIn('durability: volatile', lines)
+
+    def test_mapper_config_selects_inputs_outputs_and_visual_mode(self):
+        ours = {'common.lid_topic': '/livox/lidar', 'common.imu_topic': '/livox/imu',
+                'common.img_topic': '/camera/camera/color/image_raw', 'common.img_en': 1}
+        self.assertEqual(self.replay.inputs_from_params(ours),
+                         {'/livox/lidar': 'livox_ros_driver2/msg/CustomMsg',
+                          '/livox/imu': 'sensor_msgs/msg/Imu',
+                          '/camera/camera/color/image_raw': 'sensor_msgs/msg/Image'})
+        self.assertEqual(set(self.replay.outputs_from_params(ours)), {'odom', 'cloud', 'rgb'})
+        lio = dict(ours, **{'common.img_en': 0})
+        self.assertEqual(set(self.replay.inputs_from_params(lio)), {'/livox/lidar', '/livox/imu'})
+        self.assertEqual(set(self.replay.outputs_from_params(lio)), {'odom', 'cloud'})
+
+    def test_lio_mode_drops_the_visual_gate_but_keeps_both_streams(self):
+        streams = {key: {'count': 12, 'first': 1.0, 'last': 7.0, 'invalid': 0}
+                   for key in ('odom', 'cloud')}
+        lio = {'odom': 'nav_msgs/msg/Odometry', 'cloud': 'sensor_msgs/msg/PointCloud2'}
+        self.assertEqual(self.replay.verdict(streams, 0, True, [], outputs=lio,
+                                             require_visual=False), 'PASS')
+        self.assertEqual(self.replay.verdict(streams, 0, True, [], outputs=lio,
+                                             require_visual=True), 'INCONCLUSIVE')
+        self.assertEqual(self.replay.verdict(streams, 0, True, [], outputs=None,
+                                             require_visual=True), 'FAIL')
+        short = {'odom': streams['odom'], 'cloud': dict(streams['cloud'], count=3)}
+        self.assertEqual(self.replay.verdict(short, 0, True, [], outputs=lio,
+                                             require_visual=False), 'INCONCLUSIVE')
+
+    def test_config_names_are_overridable_basenames_only(self):
+        self.assertEqual(self.replay.reviewed_configs({}),
+                         ('bright_screen_wall.yaml', 'camera_pinhole.yaml'))
+        self.assertEqual(self.replay.reviewed_configs(
+            {'T35_MAPPER_CONFIG': 't35b_proof3_visual.yaml',
+             'T35_CAMERA_CONFIG': 't35b_proof3_camera.yaml'}),
+            ('t35b_proof3_visual.yaml', 't35b_proof3_camera.yaml'))
+        for bad in ('../config/x.yaml', 'config/x.yaml', '/tmp/x.yaml', 'x.txt', '', 'x.yaml.gz'):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ValueError):
+                    self.replay.reviewed_configs({'T35_MAPPER_CONFIG': bad})
+
+    def test_bag_metadata_topics_must_sum_to_the_message_count(self):
+        info = {'starting_time': {'nanoseconds_since_epoch': 10**9},
+                'duration': {'nanoseconds': 2 * 10**9}, 'message_count': 3,
+                'topics_with_message_count': [
+                    {'topic_metadata': {'name': '/livox/lidar',
+                                        'type': 'livox_ros_driver2/msg/CustomMsg'},
+                     'message_count': 1},
+                    {'topic_metadata': {'name': '/camera/camera/color/image_raw',
+                                        'type': 'sensor_msgs/msg/Image'}, 'message_count': 2}]}
+        expected = self.replay.bag_expectation({'rosbag2_bagfile_information': info})
+        self.assertEqual(expected['topics'], {'/livox/lidar': 1,
+                                              '/camera/camera/color/image_raw': 2})
+        info['message_count'] = 4
+        with self.assertRaises(ValueError):
+            self.replay.bag_expectation({'rosbag2_bagfile_information': info})
 
     def setUp(self):
         self.replay = load("replay")
@@ -120,7 +230,11 @@ class ReplayTests(unittest.TestCase):
     def test_clock_must_cover_metadata_start_and_end(self):
         expected = self.replay.bag_expectation({"rosbag2_bagfile_information": {
             "starting_time": {"nanoseconds_since_epoch": 100000000000},
-            "duration": {"nanoseconds": 66700000000}, "message_count": 123}})
+            "duration": {"nanoseconds": 66700000000}, "message_count": 123,
+            "topics_with_message_count": [
+                {"topic_metadata": {"name": "/livox/lidar",
+                                    "type": "livox_ros_driver2/msg/CustomMsg"},
+                 "message_count": 123}]}})
         self.assertEqual(expected["message_count"], 123)
         clock = {"first": 100.0, "last": 166.5, "backward": False}
         self.assertTrue(self.replay.clock_complete(clock, expected))

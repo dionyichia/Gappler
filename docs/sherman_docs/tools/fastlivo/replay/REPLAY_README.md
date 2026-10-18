@@ -8,7 +8,8 @@ upstream republisher binary segfaults on shutdown (GDB backtrace:
 `rclcpp::CallbackGroup::~CallbackGroup`), so no republish process runs.
 
 Run `bash run_replay.sh --diagnostic` after coordinating custody to verify the
-mapper subscribes directly to `/left_camera/image`. It never resumes playback.
+mapper subscribes directly to the staged config's own `common.img_topic`
+(`/left_camera/image` for the public bag). It never resumes playback.
 `DIAGNOSTIC_CAPTURED` is not localization acceptance.
 
 Run only on the lab host, as ordinary `rcp2026`, from the copied bundle directory:
@@ -22,6 +23,54 @@ bash ./run_replay.sh
 The config agent supplies `config/bright_screen_wall.yaml` and
 `config/camera_pinhole.yaml`; this runner does not modify them.
 Run its independent `test_replay_config.py` as well, using that agent's instructions.
+
+## Running our own reviewed recording (T3.5c)
+
+Defaults are the public raw bag and configs, so ordinary use is unchanged. The
+bag and the two staged configs come from the environment:
+
+| Variable | Meaning |
+|---|---|
+| `T35_REPLAY_BAG` | bag directory containing `metadata.yaml` |
+| `T35_MAPPER_CONFIG` | staged mapper YAML in `config/`; plain basename, must end `.yaml` |
+| `T35_CAMERA_CONFIG` | staged camera YAML in `config/`; plain basename |
+| `T35_SOURCE_COMMIT` | recorded in `inputs.json` as expected provenance, not proof |
+
+The played input topics are read from the staged mapper config itself
+(`common.lid_topic`, `common.imu_topic`, and `common.img_topic` when
+`common.img_en: 1`), so the config the container loads is the config that decides
+the required graph edges and the callback accountant. A bag topic the mapper does
+not play is recorded under `unplayed_bag_topics` in `evidence/result.json` and
+never parsed; every played topic must still exist in the bag with its exact type,
+be nonempty, and be CDR-serialized. The staged configs are independently checked
+against the bag metadata by `check_replay_configs.py`.
+
+`common.img_en: 0` selects the pinned fork's ONLY_LIO path (`LIVMapper.cpp:255`).
+Then the camera topic is not an input, `/rgb_img` is not a required output, the
+visual-retrieval gate is dropped, and a PASS can only claim LiDAR-inertial smoke.
+`result.json` records `inputs`, `expected_outputs`, `require_visual`,
+`mapper_config`, `camera_config`, `unplayed_bag_topics` and `claim`, so the mode
+of every run is visible in its own evidence.
+
+Our recording on the lab box, LiDAR-IMU control run first:
+
+`playback_qos.yaml` must list that recording's own image topic, because a
+TRANSIENT_LOCAL recorded image is rejected by both the mapper's volatile
+subscription and the readiness gate. Our RealSense colour topic is already
+listed.
+
+```bash
+export T35_REPLAY_BAG=$HOME/rcp-Gappler/log/t59-fastlivo/log/t35c-standoff-capture.la8vKh/t35c_standoff
+export T35_MAPPER_CONFIG=t35b_proof3_lio.yaml
+export T35_CAMERA_CONFIG=t35b_proof3_camera.yaml
+export T35_SOURCE_COMMIT=<commit of the copied bundle's origin>
+bash ./run_replay.sh
+```
+
+The visual run repeats this with `T35_MAPPER_CONFIG=t35b_proof3_visual.yaml`.
+For the 74.7 s standoff bag the default rate 0.25 spends about 299 s of the 600 s
+window; 0.2 also fits and buys mapper headroom; 0.19 is already borderline. The
+public 66.7 s bag fits 0.25 and 0.2 but not 0.1.
 
 The script asks for shared-box custody confirmation and interactive sudo. It
 holds `/home/rcp2026/rcp-Gappler/log/software-build.lock`, refuses detected build/ROS
@@ -47,13 +96,15 @@ The stopped container is retained too; nothing is deleted. Inspect:
   provenance, not proof of a rebuild in this procedure.
 - `image.inspect.json`, `container.prestart.inspect.json`: image and isolation.
 - `evidence/result.json`: PASS/FAIL/INCONCLUSIVE, counts, spans, visual retrievals,
+  staged config names, played inputs and expected outputs, unplayed bag topics,
   exact child commands, return codes, intentional-cleanup flags, QoS matches.
 - `evidence/*.stdout.log` / `*.stderr.log`: individual process output.
 - `container.exit.inspect.json`, `host-runner.exit-code`: outer exit status.
 - `source-Log/Log/`: mapper's source-tree logs.
 
-PASS also requires exact callback log stamp/count coverage of all three sensor
-inputs, with one source-explained exception. The stdlib accountant reads only
+PASS also requires exact callback log stamp/count coverage of every played sensor
+input (two of them when `img_en=0`), with one source-explained exception. The
+stdlib accountant reads only
 CDR1 Header prefixes from the reviewed single SQLite database, checks
 topics/types, and applies the configured image offset to match the pinned
 source's six-decimal logs. This is microsecond-resolution callback evidence,
@@ -132,8 +183,10 @@ warning states that lock retention is unconfirmed and needs immediate attention.
 - It assumes installed Humble executables, bag player resume service, rclpy,
   image compressed transport and PyYAML already exist in the image. Missing
   dependencies are failures, not installation requests.
-- Input types/topics are fixed to the reviewed raw bag: Livox driver2
-  CustomMsg, IMU and pre-decoded raw bgr8 left image. Mismatch fails readiness.
+- Played input topics/types come from the staged mapper config: Livox driver2
+  CustomMsg, IMU, and a plain `Image` (pre-decoded bgr8 in the public bag). Bag
+  topics the mapper does not play are recorded as unplayed, never parsed. A
+  missing or mistyped played topic fails readiness.
 - Only the reviewed Pinhole remote-parameter path is accepted. The mapper's
   short Vikit discovery wait can still fail; there is deliberately no retry.
 - Output stamps reflect mapper ROS time, not original sensor measurement time.

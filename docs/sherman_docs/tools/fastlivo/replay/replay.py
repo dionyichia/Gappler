@@ -10,16 +10,48 @@ import struct
 import subprocess
 import time
 import traceback
-from replay_progress import (CallbackTracker, drain_state, expected_callbacks,
-                               playback_rate, prestart_allowance, reconcile_imu)
+from replay_progress import (CallbackTracker, callback_patterns, drain_state,
+                               expected_callbacks, playback_rate, prestart_allowance,
+                               reconcile_imu)
 
 ROOT = Path("/tmp/t59")
+DEFAULT_MAPPER_CONFIG = "bright_screen_wall.yaml"
+DEFAULT_CAMERA_CONFIG = "camera_pinhole.yaml"
 OUTPUTS = {"odom": ("/aft_mapped_to_init", "nav_msgs/msg/Odometry"),
            "cloud": ("/cloud_registered", "sensor_msgs/msg/PointCloud2"),
            "rgb": ("/rgb_img", "sensor_msgs/msg/Image")}
-INPUTS = {"/livox/lidar": "livox_ros_driver2/msg/CustomMsg",
-          "/livox/imu": "sensor_msgs/msg/Imu",
-          "/left_camera/image": "sensor_msgs/msg/Image"}
+INPUT_TYPES = {"lidar": "livox_ros_driver2/msg/CustomMsg",
+               "imu": "sensor_msgs/msg/Imu",
+               "image": "sensor_msgs/msg/Image"}
+VIO_OUTPUT = "rgb"
+
+
+def reviewed_configs(environ: dict) -> tuple:
+    """Staged config basenames: the wrapper copies both into /tmp/t59 unchanged."""
+    names = []
+    for key, default in (("T35_MAPPER_CONFIG", DEFAULT_MAPPER_CONFIG),
+                         ("T35_CAMERA_CONFIG", DEFAULT_CAMERA_CONFIG)):
+        name = environ.get(key, default)
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*\.yaml", name or ""):
+            raise ValueError("config name must be a plain staged YAML basename: " + key)
+        names.append(name)
+    return tuple(names)
+
+
+def inputs_from_params(params: dict) -> dict:
+    """Played topics are the mapper's own config values, so a staged mismatch shows."""
+    inputs = {params["common.lid_topic"]: INPUT_TYPES["lidar"],
+              params["common.imu_topic"]: INPUT_TYPES["imu"]}
+    if params["common.img_en"]:
+        inputs[params["common.img_topic"]] = INPUT_TYPES["image"]
+    return inputs
+
+
+def outputs_from_params(params: dict) -> dict:
+    """img_en=0 selects ONLY_LIO: no /rgb_img output exists to require."""
+    if params["common.img_en"]:
+        return dict(OUTPUTS)
+    return {key: value for key, value in OUTPUTS.items() if key != VIO_OUTPUT}
 
 
 def valid_pose(position: list, quaternion: list) -> bool:
@@ -90,7 +122,7 @@ def player_log_failures(lines) -> list:
 
 
 def bag_expectation(metadata: dict) -> dict:
-    """Read ROS 2 metadata timing/counts without importing YAML outside the runtime."""
+    """Read ROS 2 metadata timing/counts/topics without importing YAML outside the runtime."""
     info = metadata["rosbag2_bagfile_information"]
     start = info["starting_time"]["nanoseconds_since_epoch"]
     duration = info["duration"]["nanoseconds"]
@@ -99,8 +131,18 @@ def bag_expectation(metadata: dict) -> dict:
         raise ValueError("bag metadata timing/counts must be integers")
     if start < 0 or duration <= 0 or count <= 0:
         raise ValueError("bag metadata must describe a nonempty positive-duration recording")
+    topics = {}
+    for entry in info["topics_with_message_count"]:
+        name = entry["topic_metadata"]["name"]
+        number = entry["message_count"]
+        if not isinstance(name, str) or type(number) is not int or number < 0 or name in topics:
+            raise ValueError("bag metadata must describe each topic once with a nonnegative count")
+        topics[name] = number
+    if sum(topics.values()) != count:
+        raise ValueError("bag metadata topic counts do not sum to the message count")
     return {"start": start / 1e9, "end": (start + duration) / 1e9,
-            "duration": duration / 1e9, "message_count": count, "tolerance": 0.25}
+            "duration": duration / 1e9, "message_count": count, "topics": topics,
+            "tolerance": 0.25}
 
 
 def clock_complete(clock: dict, expected: dict) -> bool:
@@ -180,13 +222,16 @@ def observe(stream: dict, stamp: float, valid: bool) -> None:
         stream["count"] += 1
 
 
-def verdict(streams: dict, visual_count: int, eof: bool, errors: list) -> str:
+def verdict(streams: dict, visual_count: int, eof: bool, errors: list, outputs=None,
+            require_visual: bool = True) -> str:
     """A passing smoke test is not quantitative trajectory/visual accuracy proof."""
-    if errors or set(streams) != set(OUTPUTS) or any(s["invalid"] for s in streams.values()):
+    if (errors or set(streams) != set(OUTPUTS if outputs is None else outputs)
+            or any(s["invalid"] for s in streams.values())):
         return "FAIL"
     sufficient = all(s["count"] >= 10 and s["first"] is not None
                      and s["last"] - s["first"] >= 5 for s in streams.values())
-    return "PASS" if eof and sufficient and visual_count >= 2 else "INCONCLUSIVE"
+    visual = visual_count >= 2 or not require_visual
+    return "PASS" if eof and sufficient and visual else "INCONCLUSIVE"
 
 
 def collect_graph(node, edges: list) -> list:
@@ -231,9 +276,14 @@ def finalize_report(report: dict, started: float, diagnostic_captured: bool) -> 
     else:
         if not report.get('input_callbacks'):
             errors.append('input callback coverage unavailable')
-        report['verdict'] = verdict(report['streams'], report['positive_visual_retrievals'], report['eof'], errors)
+        report['verdict'] = verdict(report['streams'], report['positive_visual_retrievals'],
+                                    report['eof'], errors,
+                                    outputs=report.get('expected_outputs'),
+                                    require_visual=report.get('require_visual', True))
     if report['verdict'] == 'INCONCLUSIVE':
-        report['reason'] = 'normal EOF/output counts/span/positive visual retrieval gate not satisfied'
+        report['reason'] = ('normal EOF/output counts/span and positive visual retrieval gate not satisfied'
+                            if report.get('require_visual', True) else
+                            'normal EOF/output counts/span gate not satisfied (img_en=0: no visual gate)')
 
 
 def main() -> int:
@@ -243,7 +293,7 @@ def main() -> int:
     started = time.monotonic()
     deadline = started + 590  # Reserve existing 5s/3s/2s cleanup inside 600s total.
     children, handles, errors = {}, [], []
-    streams = {key: new_stream() for key in OUTPUTS}
+    streams = {}  # Filled from the staged mapper config once its values are read.
     report = {"streams": streams, "errors": errors, "processes": {},
               "image_id": os.environ.get("T59_IMAGE_ID"), "sha256": {},
               "limits": {"total_wall_seconds": 600, "operational_wall_seconds": 590,
@@ -318,7 +368,9 @@ def main() -> int:
     try:
         if os.getuid() != 10001 or os.getgid() != 10001:
             raise RuntimeError("runtime must be UID:GID 10001:10001")
-        for filename in ("bright_screen_wall.yaml", "camera_pinhole.yaml",
+        mapper_config, camera_config = reviewed_configs(os.environ)
+        report["mapper_config"], report["camera_config"] = mapper_config, camera_config
+        for filename in (mapper_config, camera_config,
                          "playback_qos.yaml", "replay.py", "replay_progress.py"):
             report["sha256"][filename] = hashlib.sha256((ROOT / filename).read_bytes()).hexdigest()
         with Path("/fast_livo_ws/src/fast_livo/Log/.t59-write-check").open("w") as probe:
@@ -342,19 +394,37 @@ def main() -> int:
         report["expected_bag"] = expected_bag
         rate = playback_rate(os.environ.get('T35_REPLAY_RATE', '0.25'), expected_bag['duration'])
         report['playback_rate'] = rate
+        params = yaml.safe_load((ROOT / mapper_config).read_text())['laserMapping']['ros__parameters']
+        inputs = inputs_from_params(params)
+        outputs = outputs_from_params(params)
+        for key in outputs:
+            streams[key] = new_stream()
+        report['inputs'] = sorted(inputs)
+        report['expected_outputs'] = sorted(outputs)
+        report['require_visual'] = bool(params['common.img_en'])
+        if not params['common.img_en']:
+            report['claim'] += '; img_en=0 selects ONLY_LIO: no camera input or visual-fusion claim'
         if not diagnostic:
             databases = list((ROOT / 'bag').glob('*.db3'))
             if len(databases) != 1:
                 raise ValueError('callback accounting requires the reviewed single-file SQLite bag')
-            params = yaml.safe_load((ROOT / 'bright_screen_wall.yaml').read_text())['laserMapping']['ros__parameters']
-            tracker = CallbackTracker(expected_callbacks(databases[0], INPUTS, params['time_offset.img_time_offset']))
-            if sum(sum(counts.values()) for counts in tracker.expected.values()) != expected_bag['message_count']:
-                raise ValueError('SQLite callback expectations differ from metadata message count')
+            tracker = CallbackTracker(expected_callbacks(
+                databases[0], inputs, params['time_offset.img_time_offset'],
+                image_topic=params['common.img_topic']), callback_patterns(params))
+            inventory = expected_bag['topics']
+            if set(inputs) - set(inventory):
+                raise ValueError('mapper input topics are absent from the bag metadata')
+            unplayed = {name: inventory[name] for name in inventory if name not in inputs}
+            report['unplayed_bag_topics'] = unplayed
+            accounted = (sum(sum(counts.values()) for counts in tracker.expected.values())
+                         + sum(unplayed.values()))
+            if accounted != expected_bag['message_count']:
+                raise ValueError('SQLite callback expectations plus unplayed topics differ from metadata message count')
         print('Startup: initializing ROS context and monitor node.', flush=True)
         ros.init()
         node = ros.create_node("t59_monitor", parameter_overrides=[Parameter("use_sim_time", value=True)])
-        camera_config = yaml.safe_load((ROOT / "camera_pinhole.yaml").read_text())
-        expected = camera_config.get("parameter_blackboard", camera_config.get("/**", {}))["ros__parameters"]
+        camera_yaml = yaml.safe_load((ROOT / camera_config).read_text())
+        expected = camera_yaml.get("parameter_blackboard", camera_yaml.get("/**", {}))["ros__parameters"]
         required = ["cam_model", "cam_width", "cam_height", "scale", "cam_fx", "cam_fy",
                     "cam_cx", "cam_cy", "cam_d0", "cam_d1", "cam_d2", "cam_d3"]
         if expected["cam_model"] != "Pinhole":
@@ -372,7 +442,7 @@ def main() -> int:
 
         launch("camera", [executable("demo_nodes_cpp", "parameter_blackboard"), "--ros-args",
                           "-r", "__node:=parameter_blackboard", "--params-file",
-                           str(ROOT / "camera_pinhole.yaml"), "-p", "use_sim_time:=true"])
+                           str(ROOT / camera_config), "-p", "use_sim_time:=true"])
         camera = node.create_client(GetParameters, "/parameter_blackboard/get_parameters")
         wait_until(camera.service_is_ready, "camera parameter service")
         request = GetParameters.Request()
@@ -389,7 +459,7 @@ def main() -> int:
         # process, whose upstream shutdown segfaults (T3.5 GDB evidence).
         launch("mapper", [executable("fast_livo", "fastlivo_mapping"), "--ros-args",
                           "-r", "__node:=laserMapping", "--params-file",
-                          str(ROOT / "bright_screen_wall.yaml"), "-p", "use_sim_time:=true"])
+                          str(ROOT / mapper_config), "-p", "use_sim_time:=true"])
 
         def stamp(message):
             return message.header.stamp.sec + message.header.stamp.nanosec * 1e-9
@@ -447,17 +517,18 @@ def main() -> int:
 
         subscriptions = [node.create_subscription(Clock, "/clock", clock_cb, qos_profile_sensor_data)]
         for key, cls in (("odom", Odometry), ("cloud", PointCloud2), ("rgb", Image)):
-            subscriptions.append(node.create_subscription(
-                cls, OUTPUTS[key][0], lambda message, kind=key: receive(kind, message),
-                qos_profile_sensor_data))
+            if key in outputs:
+                subscriptions.append(node.create_subscription(
+                    cls, OUTPUTS[key][0], lambda message, kind=key: receive(kind, message),
+                    qos_profile_sensor_data))
 
         launch("player", ["ros2", "bag", "play", str(ROOT / "bag"), "--clock", "100",
                           "--rate", str(rate), "--start-paused", "--disable-keyboard-controls",
                           "--qos-profile-overrides-path", str(ROOT / "playback_qos.yaml")])
 
         edges = [(topic, typ, "rosbag2_player", "laserMapping")
-                 for topic, typ in INPUTS.items()]
-        edges += [(topic, typ, "laserMapping", "t59_monitor") for topic, typ in OUTPUTS.values()]
+                 for topic, typ in inputs.items()]
+        edges += [(topic, typ, "laserMapping", "t59_monitor") for topic, typ in outputs.values()]
         edges += [("/clock", "rosgraph_msgs/msg/Clock", "rosbag2_player", "t59_monitor")]
 
         def graph_ready():
@@ -470,7 +541,7 @@ def main() -> int:
                 if not pubs or not subs:
                     return False
                 for pub in pubs:
-                    if topic in INPUTS and (pub.qos_profile.reliability != ReliabilityPolicy.RELIABLE
+                    if topic in inputs and (pub.qos_profile.reliability != ReliabilityPolicy.RELIABLE
                                             or pub.qos_profile.durability != DurabilityPolicy.VOLATILE):
                         return False
                     for sub in subs:
@@ -582,10 +653,11 @@ def main() -> int:
             # Pinned imu_cbk silently drops IMU before the first lidar
             # callback; reconcile a bounded strict startup prefix separately.
             # Anything else stays missing and fails the run.
-            imu_expected = tracker.expected['/livox/imu']
-            imu_row = report['input_callbacks']['/livox/imu']
+            imu_topic = params['common.imu_topic']
+            imu_expected = tracker.expected[imu_topic]
+            imu_row = report['input_callbacks'][imu_topic]
             allowance = prestart_allowance(sum(imu_expected.values()), expected_bag['duration'])
-            reconciled = reconcile_imu(tracker.observed['/livox/imu'], imu_expected, allowance)
+            reconciled = reconcile_imu(tracker.observed[imu_topic], imu_expected, allowance)
             imu_row.update(prestart_allowance=allowance, **reconciled)
             if reconciled['prestart_drops'] and not reconciled['missing']:
                 imu_row['missing_stamp_examples'] = []

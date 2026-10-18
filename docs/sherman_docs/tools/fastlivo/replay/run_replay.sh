@@ -3,7 +3,13 @@
 set -Eeuo pipefail
 HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 REPO=/home/rcp2026/rcp-Gappler
-BAG="$REPO/log/t59-fastlivo/log/datasets/bright-screen-wall/Bright_Screen_Wall_raw"
+# Defaults are the reviewed public raw bag and its configs. Override the three
+# for another reviewed recording (T3.5c used the staged t35b/t35c set). The bag
+# and configs are staged bytes: this wrapper never writes or converts them.
+BAG="${T35_REPLAY_BAG:-$REPO/log/t59-fastlivo/log/datasets/bright-screen-wall/Bright_Screen_Wall_raw}"
+MAPPER_CONFIG="${T35_MAPPER_CONFIG:-bright_screen_wall.yaml}"
+CAMERA_CONFIG="${T35_CAMERA_CONFIG:-camera_pinhole.yaml}"
+SOURCE_COMMIT="${T35_SOURCE_COMMIT:-a09599a288c56b832114d7ad9e898248a4111d9e}"
 # Override for sanitizer/debug images only; default is the reviewed build.
 IMAGE="${T35_REPLAY_IMAGE:-t59-fast-livo2:experimental}"
 # Passed into the container; ignored by non-instrumented binaries.
@@ -13,6 +19,10 @@ ASAN_OPTIONS_VALUE="${T35_ASAN_OPTIONS:-detect_leaks=0:halt_on_error=1:abort_on_
 LD_PRELOAD_VALUE="${T35_LD_PRELOAD:-}"
 RATE="${T35_REPLAY_RATE:-0.25}"
 DIAGNOSTIC=0
+for name in "$MAPPER_CONFIG" "$CAMERA_CONFIG"; do
+  [[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*\.yaml$ ]] \
+    || { echo "REFUSED: config name must be a plain basename: $name" >&2; exit 1; }
+done
 if [[ "$#" -eq 1 && "$1" == '--diagnostic' ]]; then
   DIAGNOSTIC=1
 elif [[ "$#" -ne 0 ]]; then
@@ -26,7 +36,7 @@ fi
 }
 for tool in python3 flock timeout sudo; do command -v "$tool" >/dev/null; done
 for file in replay.py replay_progress.py playback_qos.yaml verify_replay_container.py \
-  config/bright_screen_wall.yaml config/camera_pinhole.yaml; do
+  config/$MAPPER_CONFIG config/$CAMERA_CONFIG; do
   [[ -r "$HERE/$file" ]] || { echo "Missing reviewed input: $HERE/$file" >&2; exit 1; }
 done
 [[ -r "$BAG/metadata.yaml" ]] || { echo "Missing converted bag: $BAG" >&2; exit 1; }
@@ -193,13 +203,14 @@ assert len(docs) == 1 and docs[0]["Id"].startswith("sha256:")
 print(docs[0]["Id"])
 PY
 )
-python3 - "$HERE" "$IMAGE_ID" >"$OUT/inputs.json" <<'PY'
+python3 - "$HERE" "$IMAGE_ID" "$MAPPER_CONFIG" "$CAMERA_CONFIG" "$SOURCE_COMMIT" "$BAG" >"$OUT/inputs.json" <<'PY'
 import hashlib, json, pathlib, sys
 root = pathlib.Path(sys.argv[1])
 files = ["run_replay.sh", "replay.py", "replay_progress.py", "verify_replay_container.py", "playback_qos.yaml",
-         "config/bright_screen_wall.yaml", "config/camera_pinhole.yaml"]
-print(json.dumps({"image_id": sys.argv[2], "source_commit": "a09599a288c56b832114d7ad9e898248a4111d9e",
+         "config/" + sys.argv[3], "config/" + sys.argv[4]]
+print(json.dumps({"image_id": sys.argv[2], "source_commit": sys.argv[5],
                   "source_commit_status": "expected provenance; not independently rebuilt here",
+                  "bag": sys.argv[6],
                   "sha256": {name: hashlib.sha256((root/name).read_bytes()).hexdigest() for name in files}}, indent=2))
 PY
 COMMAND=$(python3 -B - "$HERE" <<'PY'
@@ -221,11 +232,13 @@ sudo -n docker create --name "$C" \
   --env "ASAN_OPTIONS=$ASAN_OPTIONS_VALUE" \
   --env "LD_PRELOAD=$LD_PRELOAD_VALUE" \
   --env "T35_REPLAY_RATE=$RATE" \
+  --env "T35_MAPPER_CONFIG=$MAPPER_CONFIG" \
+  --env "T35_CAMERA_CONFIG=$CAMERA_CONFIG" \
   "$IMAGE" -c "$COMMAND" >"$OUT/container.id"
 created=1
 
 # Daemon extraction creates writable directory ownership without runtime root.
-python3 - "$HERE" <<'PY' | sudo -n docker cp -a - "$C":/
+python3 - "$HERE" "$MAPPER_CONFIG" "$CAMERA_CONFIG" <<'PY' | sudo -n docker cp -a - "$C":/
 import pathlib, sys, tarfile
 root = pathlib.Path(sys.argv[1])
 with tarfile.open(fileobj=sys.stdout.buffer, mode="w|") as archive:
@@ -236,8 +249,8 @@ with tarfile.open(fileobj=sys.stdout.buffer, mode="w|") as archive:
         info = tarfile.TarInfo(path)
         info.type, info.uid, info.gid, info.mode = tarfile.DIRTYPE, 10001, 10001, 0o750
         archive.addfile(info)
-    for name in ["replay.py", "replay_progress.py", "playback_qos.yaml", "config/bright_screen_wall.yaml",
-                 "config/camera_pinhole.yaml"]:
+    for name in ["replay.py", "replay_progress.py", "playback_qos.yaml",
+                 "config/" + sys.argv[2], "config/" + sys.argv[3]]:
         source = root / name
         if not source.is_file() or source.is_symlink():
             raise ValueError("only regular staged files accepted: " + name)

@@ -12,6 +12,13 @@ cd docs/sherman_docs/tools/fastlivo
 sha256sum -c MANIFEST.sha256
 ```
 
+`replay/` is the exception to the frozen-copy reading: it is live reviewed
+tooling that evolves (the T3.5c parameterisation changed five of its files and
+`playback_qos.yaml`). Its manifest rows are regenerated with each change, and a
+fresh bundle is staged to the box before a run, so a re-verification against an
+older box bundle will differ exactly where the bundle predates the change.
+Everything outside `replay/` is still the frozen preservation set.
+
 Nothing here is shared runtime code: no robot-stack module imports it and
 nothing commands arm or base hardware. It runs on the lab Docker host / lab
 box as `rcp2026`, coordinated with the other operators. Read each bundle's own

@@ -7,11 +7,28 @@ import re
 import sqlite3
 import struct
 
-PATTERNS = {
-    '/livox/lidar': re.compile(r'Get LiDAR, its header time: ([0-9]+\.[0-9]{6})'),
-    '/livox/imu': re.compile(r'get imu at time: ([0-9]+\.[0-9]{6})'),
-    '/left_camera/image': re.compile(r'Get image, its header time: ([0-9]+\.[0-9]{6})'),
+ROLE_PATTERNS = {
+    'lidar': re.compile(r'Get LiDAR, its header time: ([0-9]+\.[0-9]{6})'),
+    'imu': re.compile(r'get imu at time: ([0-9]+\.[0-9]{6})'),
+    'image': re.compile(r'Get image, its header time: ([0-9]+\.[0-9]{6})'),
 }
+# The reviewed public raw bag's topic names; unchanged as the default mapping.
+PATTERNS = {'/livox/lidar': ROLE_PATTERNS['lidar'],
+            '/livox/imu': ROLE_PATTERNS['imu'],
+            '/left_camera/image': ROLE_PATTERNS['image']}
+
+
+def callback_patterns(params: dict) -> dict:
+    """Role-driven log patterns for the staged config's own topic names.
+
+    img_en=0 selects ONLY_LIO: no camera callback is expected, so an image line
+    in the log stays an unmatched source event instead of expected coverage.
+    """
+    patterns = {params['common.lid_topic']: ROLE_PATTERNS['lidar'],
+                params['common.imu_topic']: ROLE_PATTERNS['imu']}
+    if params['common.img_en']:
+        patterns[params['common.img_topic']] = ROLE_PATTERNS['image']
+    return patterns
 
 
 def playback_rate(value: str, duration: float) -> float:
@@ -24,23 +41,30 @@ def playback_rate(value: str, duration: float) -> float:
     return rate
 
 
-def expected_callbacks(database: Path, topics: dict, image_offset: float) -> dict:
-    """Read only CDR1 Header prefixes; all three reviewed types start with Header.
+def expected_callbacks(database: Path, topics: dict, image_offset: float,
+                       image_topic: str = '/left_camera/image') -> dict:
+    """Read only CDR1 Header prefixes; every played type starts with Header.
 
-    Match the source's %.6f logs, including its configured image offset. This is
-    microsecond-resolution callback evidence, not full serialized-message proof.
+    Every played topic must exist in the bag with its exact type; topics the
+    mapper does not play are skipped here and accounted separately from bag
+    metadata. Match the source's %.6f logs, including its configured image
+    offset. This is microsecond-resolution callback evidence, not full
+    serialized-message proof.
     """
     if not math.isfinite(image_offset):
         raise ValueError('nonfinite image offset')
     expected = {name: Counter() for name in topics}
     with closing(sqlite3.connect(database.resolve().as_uri() + '?mode=ro', uri=True)) as db:
         rows = db.execute('SELECT id,name,type,serialization_format FROM topics').fetchall()
-        if {name: typ for _, name, typ, _ in rows} != topics:
-            raise ValueError('bag topics/types differ from reviewed raw inputs')
+        present = {name: typ for _, name, typ, _ in rows}
+        if {name: present.get(name) for name in topics} != topics:
+            raise ValueError('bag is missing a reviewed input topic or its exact type')
         for topic_id, name, _, encoding in rows:
+            if name not in expected:
+                continue
             if encoding != 'cdr':
                 raise ValueError('expected CDR serialization')
-            offset = image_offset if name == '/left_camera/image' else 0.0
+            offset = image_offset if name == image_topic else 0.0
             for (header,) in db.execute('SELECT substr(data,1,12) FROM messages WHERE topic_id=?', (topic_id,)):
                 if len(header) != 12 or header[:4] not in (b'\x00\x01\x00\x00', b'\x00\x00\x00\x00'):
                     raise ValueError('unsupported or truncated CDR1 header')
@@ -61,8 +85,9 @@ def expected_callbacks(database: Path, topics: dict, image_offset: float) -> dic
 class CallbackTracker:
     """Incrementally reconcile pinned callback log stamps with bag header stamps."""
 
-    def __init__(self, expected: dict):
+    def __init__(self, expected: dict, patterns: dict = None):
         self.expected = expected
+        self.patterns = PATTERNS if patterns is None else patterns
         self.observed = {name: Counter() for name in expected}
         self.last = {name: None for name in expected}
         self.offset = 0
@@ -81,7 +106,8 @@ class CallbackTracker:
         for raw in lines:
             line = raw.decode(errors='replace')
             for name, counts in self.observed.items():
-                match = PATTERNS[name].search(line)
+                pattern = self.patterns.get(name)
+                match = pattern.search(line) if pattern is not None else None
                 if match:
                     stamp = match.group(1)
                     counts[stamp] += 1

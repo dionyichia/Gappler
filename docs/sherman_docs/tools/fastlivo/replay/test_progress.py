@@ -10,6 +10,14 @@ import unittest
 
 import replay
 
+# The reviewed public raw bag's inputs, kept explicit here so the accountant is
+# never tested against its own derivation (T3.5c parameterisation).
+PUBLIC_INPUTS = {'/livox/lidar': 'livox_ros_driver2/msg/CustomMsg',
+                 '/livox/imu': 'sensor_msgs/msg/Imu',
+                 '/left_camera/image': 'sensor_msgs/msg/Image'}
+OUR_PARAMS = {'common.lid_topic': '/livox/lidar', 'common.imu_topic': '/livox/imu',
+              'common.img_topic': '/camera/camera/color/image_raw', 'common.img_en': 1}
+
 
 class ProgressTests(unittest.TestCase):
     def setUp(self):
@@ -24,12 +32,12 @@ class ProgressTests(unittest.TestCase):
         import replay_progress
         return replay_progress
 
-    def bag(self):
+    def bag(self, topics=None, extra=()):
         path = self.root / 'bag.db3'
         with closing(sqlite3.connect(path)) as db, db:
             db.executescript('CREATE TABLE topics(id INTEGER,name TEXT,type TEXT,serialization_format TEXT);'
                              'CREATE TABLE messages(id INTEGER,topic_id INTEGER,timestamp INTEGER,data BLOB);')
-            for topic_id, (name, typ) in enumerate(replay.INPUTS.items(), 1):
+            for topic_id, (name, typ) in enumerate(list((topics or PUBLIC_INPUTS).items()) + list(extra), 1):
                 db.execute('INSERT INTO topics VALUES(?,?,?,?)', (topic_id, name, typ, 'cdr'))
                 for sec in (100, 101):
                     data = b'\x00\x01\x00\x00' + struct.pack('<iI', sec, 500000000) + b'payload'
@@ -40,10 +48,42 @@ class ProgressTests(unittest.TestCase):
         module = self.progress()
         bag = self.bag()
         before = bag.read_bytes()
-        expected = module.expected_callbacks(bag, replay.INPUTS, image_offset=0.1)
+        expected = module.expected_callbacks(bag, PUBLIC_INPUTS, image_offset=0.1)
         self.assertEqual(expected['/left_camera/image'], Counter({'100.600000': 1, '101.600000': 1}))
         self.assertEqual(expected['/livox/imu'], Counter({'100.500000': 1, '101.500000': 1}))
         self.assertEqual(before, bag.read_bytes())
+
+    def test_unplayed_bag_topics_are_recorded_not_parsed_or_rejected(self):
+        module = self.progress()
+        bag = self.bag(extra=[('/camera/camera/color/camera_info', 'sensor_msgs/msg/CameraInfo')])
+        expected = module.expected_callbacks(bag, PUBLIC_INPUTS, image_offset=0.0)
+        self.assertEqual(set(expected), set(PUBLIC_INPUTS))
+        with self.assertRaises(ValueError):
+            module.expected_callbacks(bag, dict(PUBLIC_INPUTS, **{'/absent': 'sensor_msgs/msg/Image'}), 0.0)
+        with self.assertRaises(ValueError):
+            module.expected_callbacks(bag, dict(PUBLIC_INPUTS, **{'/livox/imu': 'sensor_msgs/msg/Image'}), 0.0)
+
+    def test_callback_patterns_follow_the_staged_config_topics(self):
+        module = self.progress()
+        patterns = module.callback_patterns(OUR_PARAMS)
+        self.assertEqual(set(patterns), {'/livox/lidar', '/livox/imu',
+                                         '/camera/camera/color/image_raw'})
+        self.assertEqual(set(module.callback_patterns(dict(OUR_PARAMS, **{'common.img_en': 0}))),
+                         {'/livox/lidar', '/livox/imu'})
+        tracker = module.CallbackTracker({name: Counter() for name in patterns}, patterns)
+        log = self.root / 'mapper.stdout.log'
+        log.write_text('Get image, its header time: 123.456789\n'
+                       'Get LiDAR, its header time: 123.466666\n'
+                       'get imu at time: 123.466700\n')
+        tracker.update(log)
+        self.assertEqual(tracker.observed['/camera/camera/color/image_raw'],
+                         Counter({'123.456789': 1}))
+        self.assertNotIn('/left_camera/image', tracker.observed)
+        lio = module.CallbackTracker(
+            {name: Counter() for name in module.callback_patterns(dict(OUR_PARAMS, **{'common.img_en': 0}))},
+            module.callback_patterns(dict(OUR_PARAMS, **{'common.img_en': 0})))
+        lio.update(log)
+        self.assertEqual(sum(sum(counts.values()) for counts in lio.observed.values()), 2)
 
     def test_wrong_type_or_cdr_header_is_rejected(self):
         module = self.progress()
@@ -51,12 +91,12 @@ class ProgressTests(unittest.TestCase):
         with closing(sqlite3.connect(path)) as db, db:
             db.execute("UPDATE topics SET type='wrong' WHERE name='/livox/imu'")
         with self.assertRaises(ValueError):
-            module.expected_callbacks(path, replay.INPUTS, 0.1)
+            module.expected_callbacks(path, PUBLIC_INPUTS, 0.1)
         with closing(sqlite3.connect(path)) as db, db:
-            db.execute('UPDATE topics SET type=? WHERE name=?', (replay.INPUTS['/livox/imu'], '/livox/imu'))
+            db.execute('UPDATE topics SET type=? WHERE name=?', (PUBLIC_INPUTS['/livox/imu'], '/livox/imu'))
             db.execute("UPDATE messages SET data=x'00010000'")
         with self.assertRaises(ValueError):
-            module.expected_callbacks(path, replay.INPUTS, 0.1)
+            module.expected_callbacks(path, PUBLIC_INPUTS, 0.1)
 
     def test_epoch_stamp_rounding_matches_humble_chrono_conversion(self):
         module = self.progress()
@@ -66,7 +106,7 @@ class ProgressTests(unittest.TestCase):
             topic_id = db.execute("SELECT id FROM topics WHERE name='/livox/imu'").fetchone()[0]
             data = b'\x00\x01\x00\x00' + struct.pack('<iI', 1661405852, 103121281)
             db.execute('UPDATE messages SET data=? WHERE topic_id=?', (data, topic_id))
-        expected = module.expected_callbacks(path, replay.INPUTS, 0.1)
+        expected = module.expected_callbacks(path, PUBLIC_INPUTS, 0.1)
         self.assertEqual(expected['/livox/imu'], Counter({'1661405852.103122': 2}))
 
     def test_incremental_logs_preserve_partial_lines_and_detect_gaps(self):
