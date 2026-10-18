@@ -749,6 +749,21 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   new scene/data is separate from software validation. T3.5b stays DONE,
   T3.5c remains PROGRESS. No PR or merge.
 
+## [2026-10-18] T3.5c | Visibility-only replay reviewed; no visual seeds survive
+
+- Build `build-logs.LQAloY` exit 0, exact image `ba66a419`; source/header hashes,
+  reviewed diff, accepted base and container policy verified.
+- Replay `20261018T090909Z-518313`: FAIL, normal EOF/quiet drain, reconciled
+  callbacks and clean mapper exit. Zero visual points appended, visual map empty
+  on all 1,470 retrieval calls; 419 typed-empty clouds persist. Numerical
+  `mat_out.txt` byte-identical to original B and counters-only diagnostic.
+- Outcome: old invalid seed population prevented, but this data/configuration
+  supplies no seed surviving the corrected path. Not a passing visual result.
+- Evidence: [report §10](T3.5c_REPLAY_20261018.html), 13-file visibility manifest.
+- Next: cumulative visibility/voxel build prepared in pane 2; user executes.
+  Then public-bag regression to exercise usable visual features. No new build or
+  further replay started. New scene pilot remains planned for 19 October.
+
 ## Record Template
 
 
