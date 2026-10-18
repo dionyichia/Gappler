@@ -675,6 +675,23 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   `t35c-depth`, `t35c-rec`) closed; both bags and the repo working tree
   untouched.
 
+## [2026-10-18] T3.5c | Own-data replay: LIO PASS, visual FAIL
+
+- Evidence: [two-round report](T3.5c_REPLAY_20261018.html),
+  `tools/fastlivo/EVIDENCE_t35c-replay-20261018.sha256` (14 files).
+- Verified: Sherman ran frozen `t35b_proof3` in both modes from staged bundle
+  `bfdd444`. A `20261018T062144Z-511887` PASS; B `20261018T064017Z-512716`
+  FAIL (419 typed-empty clouds, no positive retrievals in 1,469 attempts).
+  Both EOF, reconciled input callbacks, clean mapper exit. No new replay started
+  during the read-only investigation; tmux retained.
+- Source finding: inconsistent negative-coordinate visual voxel keys at pinned
+  `vio.cpp:228–238` vs `380–398`. Arithmetic mismatch reproduced; actual rejecting
+  stage still unknown. Geometry-only raw-scan proxy retains some reachable bins,
+  so this is not a proven complete explanation for zero matches.
+- Outcome: T3.5c stays PROGRESS; no calibration tuning or gate relaxation.
+- Next: separately reviewed instrumentation-only build/replay, initiated by Sherman,
+  to count key hits and later visual rejection stages. No PR or merge.
+
 ## Record Template
 
 
