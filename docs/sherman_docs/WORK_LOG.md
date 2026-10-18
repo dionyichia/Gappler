@@ -854,6 +854,12 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Five decisions listed for Sherman (live run form, localizer ownership, `/map`
   source, 10 Hz tolerance, body offset ownership). Nothing implemented; T3.5f
   still sits behind T3.5c → T3.5d → T3.5e.
+- **Revision 2026-10-18 (same day):** the body constant this entry quotes from
+  the fork's Mid-360 profile was wrong by a sign — corrected to
+  (0.191, 0.023, 0.156) m, identity rotation, per the entry below and
+  [`T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md`](T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md).
+  Decision 5 is settled for the pinned sensor class; the revised review doc
+  carries the correction in its header, §4, the file-change table and the ledger.
 - Next: pilot-gated capture on 19 October per `T3.5c_CAPTURE_PLAN_20261019.html`.
 
 ## [2026-10-18] T3.5f | LiDAR→IMU extrinsic: pinned fork's Mid-360 profile has the sign inverted
