@@ -29,11 +29,17 @@ README before running anything.
 | Path | What it is |
 |---|---|
 | `recipe/` | FAST-LIVO2 experimental compile recipe: pinned `U-AMC/FAST-LIVO2-ROS2` build with the `-march=native` CMake patch, the VIO sampling guard, and a bounded Docker wrapper. 10 offline unit tests. |
-| `replay/` | Isolated offline replay harness for the public `Bright_Screen_Wall_raw` bag (raw bgr8 images, no republisher), with progress and container-verification scripts, configs and 45 unit tests. `AUDIT_20261016.md` / `HARNESS_PLAN.md` are the harness trail. |
+| `replay/` | Isolated offline replay harness for the public `Bright_Screen_Wall_raw` bag (raw bgr8 images, no republisher), with progress and container-verification scripts, configs and 55 unit tests. `AUDIT_20261016.md` / `HARNESS_PLAN.md` are the harness trail. |
 | `analyze_bag.py` | Strict one-pass audit of T3.5 capture-profile bags. Exit code is the verdict: `ANALYSIS_OK` (0) or invariant `FAIL` lines (1). |
 | `test_analyze_bag.py` | Synthetic mini-bag tests for the analyser's pass and fail paths. |
+| `project_scan.py`, `check_replay_configs.py` | Offline LiDAR-on-camera overlay projector (provisional nominal Rcl/Pcl; by-eye pre-check) and the staged-pair config checks behind the T3.5b/c evidence, with stdlib tests (`test_*.py`; staged-pair checks need PyYAML). |
+| `live_preview.py`, `test_live_preview.py` | Live read-only capture preview (T3.5c capture kit): newest colour frame plus LiDAR-on-camera overlay, arrival rates, stamp ages, depth bands and a 3×3 region grid, written with a self-refreshing `preview.html`. Subscribers only — it cannot alter a recording. |
 | `EVIDENCE_t35b-capture.sha256` | Frozen SHA-256 of the two captured bags. Verify on the box: `cd <capture dir> && sha256sum -c <repo>/docs/sherman_docs/tools/fastlivo/EVIDENCE_t35b-capture.sha256`. |
 | `EVIDENCE_t59-replay-20261016T175305Z-433728.sha256` | Frozen SHA-256 of all 24 files of the accepted T3.5a replay run (same verification method). |
+
+Bench L0 runs the Mac/CI-safe subsets as `FAST-LIVO capture tools` and
+`FAST-LIVO replay harness`; `test_analyze_bag.py` needs the lab ROS stack
+(`rosbag2_py`) and stays box-only.
 
 ## Running the analyser (lab box)
 

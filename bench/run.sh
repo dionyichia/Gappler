@@ -103,6 +103,15 @@ s=$(step "L0  FAST-LIVO diagnostic patch" python3 docs/sherman_docs/tools/fastli
 row L0 "FAST-LIVO diagnostic patch" "$s" "source transformation additionally needs preserved pinned source"
 s=$(step "L0  FAST-LIVO visual fixes" python3 docs/sherman_docs/tools/fastlivo/recipe/test_visual_fixes.py)
 row L0 "FAST-LIVO visual fixes" "$s" "standalone C++ checks; real-source test additionally needs preserved pinned source"
+# The tool tests that need no ROS: audit logic, projection math, live-preview rendering, config
+# checks. test_analyze_bag.py needs rosbag2_py, so it stays box-only.
+s=$(step "L0  FAST-LIVO capture tools" bash -c 'cd docs/sherman_docs/tools/fastlivo &&
+  exec python3 -B -m unittest test_project_scan test_check_replay_configs test_live_preview')
+row L0 "FAST-LIVO capture tools" "$s" "staged-pair checks additionally need PyYAML"
+# The user-run wrappers' tests (run_replay/run_build/debug_shutdown argument and lock logic).
+s=$(step "L0  FAST-LIVO replay harness" bash -c 'cd docs/sherman_docs/tools/fastlivo/replay &&
+  exec python3 -B -m unittest discover -p "test_*.py"')
+row L0 "FAST-LIVO replay harness" "$s" "wrapper-runtime tests additionally need GNU timeout and flock"
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
 # xacro and realsense2_description come from ROS, which CI does not source. Source it here when present.
