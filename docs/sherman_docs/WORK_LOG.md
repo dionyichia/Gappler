@@ -831,6 +831,75 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   quick PASS. Capture plan updated with the dry-run numbers.
 - `t35preview` stays up until Sherman agrees to close it.
 
+## [2026-10-18] T3.5f | Read-only integration review: FAST-LIVO2 → the current stack
+
+- Evidence: [`T3.5f_INTEGRATION_REVIEW_20261018.html`](T3.5f_INTEGRATION_REVIEW_20261018.html)
+- Reviewed read-only (no box, no hardware, no file changed outside this doc):
+  mapper output contract, current TF ownership, Nav2's inputs, bench assertions.
+- New facts, previously unrecorded: the mapper's output frames are
+  `camera_init` (world) → `aft_mapped` (body) at pinned `LIVMapper.cpp:1555–1576`
+  — not `map`/`body` as assumed; its TF cannot be switched off (remap `-r
+  /tf:=...` is the way); odometry is ≈10 Hz, not 50 Hz; and the pinned fork has
+  no map-load or relocalisation path at all (pcd save only), which is what
+  T3.5e must actually solve.
+- Proposed wiring: one new bridge node owns `map → odom` (the edge SLAM Toolbox
+  owns today), base driver keeps `odom → robot_base_link`, every consumer keeps
+  its hardcoded frames, Nav2 params unchanged. Rejected: bridge on the
+  `odom → robot_base_link` edge (would move the local costmap into `map`), and
+  renaming consumers to `camera_init`.
+- Identified gap: Nav2's global costmap needs `/map` (OccupancyGrid); FAST-LIVO2
+  produces point clouds only. Recommended: offline SLAM Toolbox map build reused
+  by `nav2_map_server`. Local obstacles need no change (`/scan` from the raw
+  cloud stays in `livox_frame`, local costmap stays in `odom`).
+- Five decisions listed for Sherman (live run form, localizer ownership, `/map`
+  source, 10 Hz tolerance, body offset ownership). Nothing implemented; T3.5f
+  still sits behind T3.5c → T3.5d → T3.5e.
+- Next: pilot-gated capture on 19 October per `T3.5c_CAPTURE_PLAN_20261019.html`.
+
+## [2026-10-18] T3.5f | LiDAR→IMU extrinsic: pinned fork's Mid-360 profile has the sign inverted
+
+- Evidence: [`T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md`](T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md)
+- Found while answering "do we have every transform the bridge needs?": the pinned
+  fork's Mid-360 `extrin_calib.extrinsic_T` is the Livox manual's IMU-position
+  numbers **unnegated**, while its own code applies them verbatim as
+  `p_imu = extrinsic_R·p_lidar + extrinsic_T` (`IMU_Processing.cpp:85–92`, used at
+  `:528`), which needs the negation.
+- Four independent lines agree: the code rule; the Livox Mid-360 manual ("IMU Data",
+  p.15, read from the operator's copy with `pdftotext`) placing the IMU chip at
+  (+11.0, +23.29, −44.12) mm in the point-cloud coordinates with axes parallel to
+  that frame; the fork's **own** Avia entry using the negated manual value (same
+  file, same code path — so one of the two is a slip); and upstream FAST-LIO's
+  `mid360.yaml`. The fork's README says Mid-360 support was added later, and its
+  git history is two commits, so the newer entry is the suspect.
+- Verified our `livox_frame` really is the manual's frame: driver copies point
+  x/y/z through unchanged (`lddc.cpp:322–324`), its only transform path is the
+  config's `extrinsic_parameter`, which is all-zero in the vendored
+  `MID360_config.json` and is pushed to the device as its install attitude
+  (`livox_lidar_callback.cpp:93–101`); SDK2 has no axis remap on the point path.
+- Consequences recorded: the fork has **no online extrinsic estimation**
+  (`extrinsic_est_en` absent from its source), so the wrong sign is never corrected
+  at runtime — ~10.2 cm of geometric inconsistency inside every replay so far,
+  which bounds the T3.5a/T3.5c evidence against absolute-geometry claims (their
+  qualitative verdicts are unaffected). The integration bridge's body constant
+  becomes (0.191, 0.023, 0.156) m instead of (0.169, −0.023, 0.244) m.
+- Actions: reviewed value `[-0.011, -0.02329, 0.04412]`/identity goes into the new
+  checked config pair for the 19 October recording; both frozen t35b pairs stay
+  byte-unchanged and `check_replay_configs.py` now enforces the corrected value in
+  every mode while `PRECORRECTION_PAIRS` reports their known sign as a note.
+  Tests: `test_check_replay_configs.py` 42 → 50 (TDD, red first); Mac run 50 OK
+  (6 staged-pair tests skip without PyYAML, as before). Contract §7/R2/changelog
+  and the 19 October capture plan updated.
+- Owed: a box round for the checker revision (50/50, both modes `CONFIG_OK`, one
+  retained-sign `NOTE` per pair, one sign-mutation negative control), and the
+  T3.5d in-place rotation test that decides the sign empirically — a wrong body
+  constant makes the reconstructed base position walk a 10.2 cm circle at the
+  rotation frequency, while a correct one leaves it stationary.
+- Correction to an earlier statement of mine this session: a constant body
+  translation does **not** cancel in pose deltas in general — it cancels only while
+  the orientation is unchanged. Rotating is therefore the discriminating motion.
+- Next: with Sherman's word, commit the t3.5-launch-prep documentation and checker
+  changes; capture day follows the plan unchanged.
+
 ## Record Template
 
 

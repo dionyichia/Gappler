@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T3.5f — connecting FAST-LIVO2 to the current robot</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#202831;background:#f5f4ef;line-height:1.6}body{max-width:980px;margin:3rem auto;padding:0 1.3rem}h1{line-height:1.15}h2{margin-top:2.5rem}a{color:#175576}table{border-collapse:collapse;width:100%;background:white}th,td{padding:.65rem;text-align:left;border-bottom:1px solid #d8dde0;vertical-align:top}code{overflow-wrap:anywhere}pre{overflow:auto;padding:1rem;background:#e9eceb}.status{border-left:5px solid #ad4e26;padding:1rem;background:#fff}small{color:#4d5962}button{padding:.6rem;cursor:pointer}.diagram{overflow-x:auto;background:white;border-bottom:1px solid #d8dde0}.diagram svg{min-width:900px;display:block}.ok{color:#1c6b3c;font-weight:600}.no{color:#a3361f;font-weight:600}@media(max-width:650px){body{margin:1rem auto}th,td{padding:.35rem;font-size:.9rem}}@media print{button{display:none}body{max-width:none;margin:0;background:white}a{color:inherit}}
+</style>
+<header><small>2026-10-18 · read-only design review, no code changed, no box and no hardware used · branch <code>t3.5-launch-prep</code></small>
+<h1>Connecting FAST-LIVO2 to the current robot</h1>
+<p class="status"><strong>What this is:</strong> the wiring review requested while T3.5c waits for the 19 October recording. <strong>What it is not:</strong> an implementation, a claim that FAST-LIVO2 can drive Nav2, or a task-tree change. T3.5f still sits behind T3.5c → T3.5d → T3.5e. Two facts are new and were previously unrecorded: the mapper's real frame names (read from the pinned source, §2), and the one Nav2 input FAST-LIVO2 cannot supply at all (§6).</p></header>
+<nav aria-label="Sections"><a href="#verdict">Verdict</a> · <a href="#contract">Mapper output</a> · <a href="#today">TF today</a> · <a href="#proposed">Proposed wiring</a> · <a href="#files">Files to change</a> · <a href="#gap">The missing map</a> · <a href="#bench">Bench impact</a> · <a href="#decisions">Decisions</a> · <a href="#ledger">Ledger</a></nav>
+<main>
+<h2 id="verdict">1. Verdict in four lines</h2>
+<ol>
+<li><strong>Do not touch the TF tree.</strong> The mapper's world frame is <code>camera_init</code> and its body frame is <code>aft_mapped</code> — not <code>map</code> and not <code>body</code>. One small new node translates; every existing consumer keeps the frame names it already hardcodes (<code>map</code>, <code>odom</code>, <code>robot_base_link</code>).</li>
+<li><strong>The bridge should own <code>map → odom</code>, the edge SLAM Toolbox owns today</strong> — and only one of them may ever run. The base driver keeps <code>odom → robot_base_link</code>; the local costmap stays in <code>odom</code> and keeps eating <code>/scan</code> from the raw cloud, unchanged.</li>
+<li><strong>Nav2 needs a 2D occupancy grid (<code>/map</code>) that FAST-LIVO2 does not produce.</strong> It saves a 3D point cloud. That is the one genuine hole in this integration (§6).</li>
+<li><strong>The mapper also has no map load, so T3.5e's restart-localisation premise is real</strong>: the pinned fork only <em>saves</em> a pcd (<code>pcd_save.pcd_save_en</code>); nothing reads one back. [code]</li>
+</ol>
+
+<h2 id="contract">2. The mapper's output interface — now read from source, not guessed</h2>
+<p><strong>[code]</strong> Read at the pin we build: <code>U-AMC/FAST-LIVO2-ROS2@a09599a</code>, <code>src/LIVMapper.cpp:312–328</code> (publishers), <code>:1555–1576</code> (odometry + TF). These are the strings the robot will actually see.</p>
+<table><thead><tr><th>Topic</th><th>Type</th><th><code>frame_id</code></th><th>Use in the design</th></tr></thead><tbody>
+<tr><td><code>/aft_mapped_to_init</code></td><td><code>nav_msgs/Odometry</code></td><td><code>camera_init</code> → child <code>aft_mapped</code></td><td><strong>the pose source</strong> (<code>:1559–1560</code>)</td></tr>
+<tr><td><code>/cloud_registered</code></td><td><code>sensor_msgs/PointCloud2</code></td><td><code>camera_init</code></td><td>optional obstacle/QA input (<code>:1409</code>)</td></tr>
+<tr><td><code>/rgb_img</code></td><td><code>sensor_msgs/Image</code></td><td>—</td><td>visual debugging only (<code>:325</code>)</td></tr>
+<tr><td><code>/Laser_map</code></td><td><code>PointCloud2</code></td><td><code>camera_init</code></td><td>accumulated map (<code>:316</code>)</td></tr>
+<tr><td><code>/path</code></td><td><code>nav_msgs/Path</code></td><td><code>camera_init</code></td><td>trajectory QA (<code>:318</code>, <code>:48</code>)</td></tr>
+<tr><td><code>/LIVO2/imu_propagate</code></td><td><code>nav_msgs/Odometry</code></td><td><code>world</code></td><td>high-rate but drifts; <span class="no">a second, inconsistent world-frame name</span> (<code>:800</code>) — do not wire it</td></tr>
+<tr><td><code>/mavros/vision_pose/pose</code>, <code>/cloud_effected</code>, <code>/cloud_visual_sub_map_before</code>, <code>/dyn_obj*</code>, <code>/planes</code>, <code>/voxels</code></td><td>mixed</td><td><code>camera_init</code></td><td>not needed</td></tr>
+</tbody></table>
+<p><strong>TF: yes, and it cannot be switched off.</strong> [code] Every odometry publication constructs a broadcaster and sends <code>camera_init → aft_mapped</code> (<code>:1564–1574</code>). There is no <code>publish_tf</code> parameter. The way to keep that edge out of the shared tree is a ROS 2 remap on the mapper node (<code>-r /tf:=/fastlivo/tf -r /tf_static:=/fastlivo/tf_static</code>) — a launch-only change, no source patch. [inferred: remap semantics are standard ROS 2; not yet run]</p>
+<p><strong>Rate:</strong> <code>/aft_mapped_to_init</code> is published per LiDAR frame, so ≈ 10 Hz — against SLAM Toolbox's <code>transform_publish_period: 0.02</code> (50 Hz). Measured rate on our bag: 665–736 odometry outputs over ~73.5 s ≈ 10 Hz. [observed]</p>
+
+<h2 id="today">3. TF ownership today (one publisher per edge)</h2>
+<table><thead><tr><th>Edge</th><th>Publisher</th><th>Source</th></tr></thead><tbody>
+<tr><td><code>map → odom</code></td><td>SLAM Toolbox (<code>localization_slam_toolbox_node</code>)</td><td><code>nav/robot_slam/launch/slam_localization.launch.py:137–152</code></td></tr>
+<tr><td><code>odom → robot_base_link</code></td><td>base driver <code>xnode_vehicle</code> (param <code>pub_tf</code>, default true)</td><td><code>nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:206–217</code></td></tr>
+<tr><td><code>robot_base_link → livox_frame</code></td><td>static, from <code>geometry.lidar_mount</code> (0.18, 0, 0.2)</td><td><code>slam_localization.launch.py:91–96</code>; <code>shared/global_config.yaml:113</code></td></tr>
+<tr><td><code>robot_base_link → base_link</code> (arm)</td><td>static, 0.18/0/0.48 yaw π</td><td><code>slam_localization.launch.py:103–108</code>; <code>global_config.yaml:110</code></td></tr>
+<tr><td><code>robot_base_link → aria_glasses</code></td><td><code>pose_fusion_node</code></td><td><code>aria/.../pose_fusion_node.py:217–229</code></td></tr>
+</tbody></table>
+<p>Written ownership is <code>docs/CHANNEL_CONTRACT.md:319–329</code> ("one publisher per edge"), which still names SLAM Toolbox for <code>map → odom</code> (<code>:323</code>). That table is the document T3.5f has to update, not a config file.</p>
+
+<h2 id="proposed">4. Proposed wiring</h2>
+<div class="diagram">
+<svg viewBox="0 0 960 430" role="img" aria-label="Today versus proposed wiring">
+  <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#175576"/></marker>
+  <marker id="ad" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#9aa4ac"/></marker></defs>
+  <text x="0" y="16" font-size="14" font-weight="600" fill="#202831">A · Today</text>
+  <g font-size="12" fill="#202831">
+    <rect x="0" y="30" width="150" height="46" rx="6" fill="#eef2f4" stroke="#c8d2d8"/><text x="12" y="50">Livox MID-360</text><text x="12" y="66" font-size="11">/livox/lidar</text>
+    <rect x="200" y="30" width="120" height="46" rx="6" fill="#eef2f4" stroke="#c8d2d8"/><text x="212" y="50">qos_relay</text><text x="212" y="66" font-size="11">/cloud_relay</text>
+    <rect x="370" y="30" width="170" height="46" rx="6" fill="#eef2f4" stroke="#c8d2d8"/><text x="382" y="50">pointcloud_to_laserscan</text><text x="382" y="66" font-size="11">/scan</text>
+    <rect x="590" y="30" width="180" height="46" rx="6" fill="#dfeaf0" stroke="#175576"/><text x="602" y="50" font-weight="600">slam_toolbox</text><text x="602" y="66" font-size="11">map → odom</text>
+    <rect x="800" y="30" width="150" height="46" rx="6" fill="#eef2f4" stroke="#c8d2d8"/><text x="812" y="50">Nav2 servers</text><text x="812" y="66" font-size="11">/scan /odom /map + TF</text>
+    <rect x="590" y="120" width="180" height="46" rx="6" fill="#eef2f4" stroke="#c8d2d8"/><text x="602" y="140">base driver</text><text x="602" y="156" font-size="11">odom → robot_base_link</text>
+    <line x1="150" y1="53" x2="196" y2="53" stroke="#175576" marker-end="url(#a)"/><line x1="320" y1="53" x2="366" y2="53" stroke="#175576" marker-end="url(#a)"/>
+    <line x1="540" y1="53" x2="586" y2="53" stroke="#175576" marker-end="url(#a)"/><line x1="770" y1="53" x2="796" y2="53" stroke="#175576" marker-end="url(#a)"/>
+    <line x1="680" y1="120" x2="680" y2="80" stroke="#175576" marker-end="url(#a)"/>
+    <text x="0" y="200" font-size="14" font-weight="600" fill="#202831">B · Proposed</text>
+    <rect x="0" y="214" width="150" height="60" rx="6" fill="#eef2f4" stroke="#c8d2d8"/><text x="12" y="234">MID-360 + IMU</text><text x="12" y="250" font-size="11">D455 colour</text><text x="12" y="266" font-size="11">(same topics as the bag)</text>
+    <rect x="200" y="214" width="150" height="60" rx="6" fill="#dfeaf0" stroke="#175576"/><text x="212" y="234" font-weight="600">FAST-LIVO2</text><text x="212" y="250" font-size="11">/aft_mapped_to_init</text><text x="212" y="266" font-size="11">camera_init → aft_mapped</text>
+    <rect x="400" y="214" width="160" height="60" rx="6" fill="#dfeaf0" stroke="#175576"/><text x="412" y="234" font-weight="600">fastlivo_tf_bridge</text><text x="412" y="250" font-size="11">map → odom</text><text x="412" y="266" font-size="11">+ stale gate</text>
+    <rect x="610" y="214" width="150" height="60" rx="6" fill="#eef2f4" stroke="#c8d2d8"/><text x="622" y="234">base driver</text><text x="622" y="250" font-size="11">odom → robot_base_link</text><text x="622" y="266" font-size="11">(unchanged)</text>
+    <rect x="800" y="214" width="150" height="60" rx="6" fill="#eef2f4" stroke="#c8d2d8"/><text x="812" y="234">Nav2 servers</text><text x="812" y="250" font-size="11">unchanged params</text><text x="812" y="266" font-size="11">same 3 frames</text>
+    <line x1="150" y1="244" x2="196" y2="244" stroke="#175576" marker-end="url(#a)"/><line x1="350" y1="244" x2="396" y2="244" stroke="#175576" marker-end="url(#a)"/>
+    <line x1="560" y1="244" x2="606" y2="244" stroke="#175576" marker-end="url(#a)"/><line x1="560" y1="258" x2="796" y2="258" stroke="#175576" marker-end="url(#a)"/>
+    <path d="M275,214 C275,180 330,180 340,196" fill="none" stroke="#9aa4ac" stroke-dasharray="4 3" marker-end="url(#ad)"/>
+    <text x="200" y="180" font-size="11" fill="#4d5962">mapper's own TF remapped to /fastlivo/tf — stays off the shared tree</text>
+    <rect x="0" y="310" width="950" height="100" rx="6" fill="#fbfaf6" stroke="#e2dccd"/>
+    <text x="14" y="332" font-weight="600">What the bridge does, in order</text>
+    <text x="14" y="352" font-size="11">1 subscribe /aft_mapped_to_init; refuse (loudly) unless frame_id == camera_init and child == aft_mapped</text>
+    <text x="14" y="368" font-size="11">2 look up wheel odom: T(odom → robot_base_link) at the mapper stamp, tolerance ≈ 0.1 s</text>
+    <text x="14" y="384" font-size="11">3 T(map→odom) = T(camera_init→aft_mapped) · T(aft_mapped→robot_base_link) · T(robot_base_link→odom)</text>
+    <text x="14" y="400" font-size="11">4 publish map → odom on receipt (~10 Hz); stop publishing and warn if the newest odometry is older than the freshness window</text>
+  </g>
+</svg>
+</div>
+<p><strong>Why <code>map → odom</code> and not the alternatives:</strong></p>
+<table><thead><tr><th>Option</th><th>What changes</th><th>Verdict</th></tr></thead><tbody>
+<tr><td><strong>Bridge owns <code>map → odom</code></strong></td><td>one new node, one launch argument, <code>CHANNEL_CONTRACT</code> row</td><td class="ok">recommended — Nav2 params, costmap frames, goal frames and every consumer are untouched</td></tr>
+<tr><td>Bridge owns <code>odom → robot_base_link</code>, mapper owns <code>map → odom</code></td><td>driver <code>pub_tf:=false</code>, Nav2 local costmap moved to <code>map</code>, <code>/odom</code> disagrees with TF</td><td class="no">rejected — the local costmap would jump whenever the correction updates, and two topics would carry different poses</td></tr>
+<tr><td>Make <code>camera_init</code> the <code>map</code> frame by renaming consumers</td><td>object_approach, goto_glasses, pose_publisher, Nav2 params, contracts baseline</td><td class="no">rejected — churn with no gain; the rename is done once, inside the bridge</td></tr>
+<tr><td>Keep SLAM Toolbox for pose, mapper only for the cloud</td><td>nothing</td><td class="no">that is today; it does not test FAST-LIVO2 pose at all</td></tr>
+</tbody></table>
+<p><strong>One offset the bridge needs — corrected 2026-10-18.</strong> The mapper's pose is the IMU body pose, so <code>aft_mapped ≈ livox_frame</code> plus the sensor's internal LiDAR→IMU offset: the <code>robot_base_link → livox_frame</code> mount (0.18, 0, 0.2) composed with the mapper's LiDAR→IMU extrinsic. The pin's Mid-360 value <code>[0.011, 0.02329, −0.04412]</code> is the Livox manual's IMU-position numbers <em>unnegated</em>, and the fork's own code needs the negation — so the bridge constant is <strong>(0.191, 0.023, 0.156) m</strong>, rotation identity, |·| ≈ 0.248 m, not the earlier (0.169, −0.023, 0.244) m. The sensor's axes are documented as parallel to its point-cloud frame, so identity rotation is a vendor fact rather than an assumption; the fork has no online extrinsic estimation, so a wrong sign is never corrected at runtime. Full evidence, and the in-place spin test that decides the sign empirically: <a href="T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md">T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md</a>. Recommendation unchanged: add one <code>geometry</code> entry (a static <code>livox_frame → aft_mapped</code>) so the number is single-sourced, and check it with the same overlay that gates the T3.5c recording.</p>
+
+<h2 id="files">5. Exact files that would change</h2>
+<table><thead><tr><th>File</th><th>Change</th><th>Size</th></tr></thead><tbody>
+<tr><td><code>nav/robot_slam/scripts/fastlivo_tf_bridge.py</code></td><td><strong>new node</strong>: §4 steps 1–4. Install via <code>nav/robot_slam/CMakeLists.txt:7</code> beside <code>save_slam_map.py</code></td><td>~120 lines</td></tr>
+<tr><td><code>nav/robot_slam/config/fastlivo_bridge.yaml</code></td><td><strong>new</strong>: mapper topic, frame literals, odom lookup tolerance, freshness window, body offset</td><td>~25 lines</td></tr>
+<tr><td><code>nav/robot_slam/launch/slam_localization.launch.py</code></td><td>launch argument <code>localizer:=slam_toolbox|fastlivo</code> (default unchanged): start the mapper + bridge instead of the SLAM Toolbox node (<code>:137–152</code>); remap the mapper's <code>/tf</code>; keep every gate, static TF and Nav2 include as is</td><td>~30 lines</td></tr>
+<tr><td><code>shared/global_config.yaml</code></td><td>new <code>geometry.livox_to_body</code> entry; mapper topic names if they go in config rather than the node yaml</td><td>~6 lines</td></tr>
+<tr><td><code>nav/robot_slam/config/nav2_params.yaml</code></td><td><strong>only if measurement says so</strong>: <code>transform_tolerance</code> for a 10 Hz <code>map → odom</code> (<code>:168</code>; costmap defaults not yet measured) — no frame renames needed</td><td>0–2 lines</td></tr>
+<tr><td><code>docs/CHANNEL_CONTRACT.md</code></td><td>TF table <code>:319–329</code>: new <code>map → odom</code> owner row; note "the two localizers are mutually exclusive"</td><td>~4 lines</td></tr>
+<tr><td><code>bench/static.py</code> <code>KNOWN_EXTERNAL</code> (<code>:48–81</code>)</td><td>add the mapper's package name <strong>if</strong> the launch names it as a package (container-based launch may avoid this)</td><td>1 line</td></tr>
+<tr><td><code>bench/golden/contracts.json</code></td><td>re-snapshot (<code>python3 bench/contracts.py snapshot</code>) after the new topic/frame set is final; the baseline is already <code>14ed42a-dirty</code></td><td>generated</td></tr>
+<tr><td><code>bench/test_navigation_launches.py</code> <code>LAUNCHES</code> (<code>:12–16</code>), <code>bench/test_cloud_scan.py</code>, <code>bench/test_slam_maps.py:110–136</code></td><td>add the new route to the hardcoded tuples; <strong>keep</strong> the existing three assertions intact (a launch argument leaves them passing)</td><td>~30 lines</td></tr>
+<tr><td><code>nav/object_approach/object_approach_node.py</code>, <code>nav/goto_glasses/goto_glasses.py</code>, <code>nav/pose_publisher/pose_publisher.py</code>, <code>nav/slam.rviz</code></td><td class="ok">no change — they stay on <code>map</code>/<code>robot_base_link</code></td><td>0</td></tr>
+</tbody></table>
+<p><strong>Two things this design deliberately does not do:</strong> it does not disable the base driver's <code>pub_tf</code>, and it does not hand the mapper the <code>/cmd_vel</code> side of anything. Command ownership (<code>CHANNEL_CONTRACT.md:307</code>, one writer) is untouched.</p>
+
+<h2 id="gap">6. The input Nav2 needs and FAST-LIVO2 does not have</h2>
+<p><strong>[code]</strong> <code>nav/robot_slam/config/nav2_params.yaml:121–124</code> gives <code>global_costmap</code> a <code>static_layer</code> that subscribes to <code>/map</code> (<code>nav_msgs/OccupancyGrid</code>, transient-local). FAST-LIVO2 publishes 3D point clouds and saves a <code>.pcd</code>; it never produces a 2D occupancy grid. So the global plan has no map to plan on unless something makes one.</p>
+<table><thead><tr><th>Option</th><th>How</th><th>Cost / risk</th></tr></thead><tbody>
+<tr><td><strong>(a) Offline 2D map build, reused live</strong></td><td>during T3.5d, or on the recorded bag, run SLAM Toolbox <em>mapping</em> offline (it already autosaves every 30 s, <code>slam_mapping.launch.py:26–35</code>) and feed the resulting <code>.pgm/.yaml</code> to <code>nav2_map_server</code> live</td><td class="ok">lowest risk — no new runtime node, one offline step, map is a frozen artifact</td></tr>
+<tr><td>(b) Cloud → grid projection node</td><td>new node: project <code>/cloud_registered</code> into 2D and publish <code>/map</code></td><td>medium — new runtime code, occupancy semantics (free/unknown) are ours to get wrong</td></tr>
+<tr><td>(c) Voxel/STVL plugin over the registered cloud</td><td>swap <code>static_layer</code> for a 3D-layer plugin</td><td class="no">replaces the global planner's world model; far beyond T3.5f</td></tr>
+</tbody></table>
+<p><strong>Obstacles, in contrast, need nothing.</strong> The local costmap keeps <code>/scan</code> from the raw Livox cloud via <code>qos_relay</code> → <code>pointcloud_to_laserscan</code> (<code>nav2_params.yaml:94–104</code>), all in <code>livox_frame</code>. That is correct here: the local costmap lives in <code>odom</code>, and <code>/cloud_registered</code> is in <code>camera_init</code>, so feeding the registered cloud in would mix a corrected world frame into a local frame — a real bug, avoided by leaving it alone.</p>
+
+<h2 id="bench">7. What the bench will say</h2>
+<ul>
+<li><strong>Breaks if we restructure instead of parameterise:</strong> <code>bench/test_slam_maps.py:110–136</code> asserts the localisation launch's first statement is <code>require_serialized_map</code>, that the pose/manifest gates are called, and that there is exactly one <code>map_start_pose</code>. A launch argument keeps all three; a rewritten file does not.</li>
+<li><strong>Will flag new wiring:</strong> L1 <code>bench/contracts.py</code> errors <code>ORPHAN ADDED</code> on any half-wired topic — so the bridge must really subscribe to <code>/aft_mapped_to_init</code> and really publish the TF, not describe it in config.</li>
+<li><strong>L0 <code>launch-packages</code>/<code>launch-executables</code></strong> (<code>bench/static.py</code>): any package or executable named in a launch must exist in-repo or be in <code>KNOWN_EXTERNAL</code>. If the mapper runs from a container, the launch names no mapper package — one less line to edit.</li>
+<li><strong>Must be added for T3.5f to be covered at all:</strong> an L4-style case that stands up a mapper-shaped TF (<code>camera_init → aft_mapped</code> at 10 Hz) and asserts the bridge produces <code>map → robot_base_link</code> within tolerance, and that it <em>refuses</em> to publish when odometry goes stale. The template is the existing <code>robot pose</code> case, <code>bench/nodes/test_nav_nodes.py:512–526</code>.</li>
+</ul>
+
+<h2 id="decisions">8. Decisions needed — and what can be done before the lab day</h2>
+<table><thead><tr><th>#</th><th>Decision</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td>1</td><td>How does the mapper run <em>live</em>? Today it exists only as a Docker image run per replay (<code>recipe/run_build.sh</code>), never as a long-lived ROS node.</td><td>Container joined to the host ROS 2 network and domain, launched by our launch file; keeps the pin reproducible and keeps the fork out of our colcon workspace</td></tr>
+<tr><td>2</td><td>Which localizer owns <code>map → odom</code> in each session?</td><td>A launch argument with <code>slam_toolbox</code> as the default; the bridge and SLAM Toolbox must never both be started</td></tr>
+<tr><td>3</td><td>Where does the 2D <code>/map</code> come from (§6)?</td><td>Option (a): offline SLAM Toolbox map build, frozen artifact, served by <code>nav2_map_server</code></td></tr>
+<tr><td>4</td><td>Is the 10 Hz <code>map → odom</code> rate enough for the planners?</td><td>Measure on the box before touching <code>transform_tolerance</code>; a repeat-timer or interpolation is the fallback, not the default</td></tr>
+<tr><td>5</td><td>Who owns the body offset (<code>livox_frame → aft_mapped</code>)?</td><td>Settled 2026-10-18 for the pinned sensor class: the translation is the Livox-documented internal offset, negated for the mapper's own convention, giving the constant (0.191, 0.023, 0.156) m with identity rotation (<a href="T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md">finding</a>). T5.5 owns any measured replacement of <em>our</em> numbers, of which the mount rotation (eye-estimated zeros) is the remaining unverified term; the T3.5d in-place spin is the acceptance test for the correction</td></tr>
+</tbody></table>
+<p><strong>Possible now, without the lab:</strong> (i) read back the mapper's real <code>header.frame_id</code> values from an existing box replay's recorded output — no new run, only evidence already on disk; (ii) write the bridge's refusal/stale logic and its unit tests with synthetic odometry, no ROS graph needed; (iii) settle decisions 1–3. <strong>Not possible now:</strong> anything about pose quality, live sensor timing, TF rates under load, or accuracy — all of that needs T3.5c's recording and T3.5d's attended session.</p>
+
+<h2 id="ledger">9. Verification ledger</h2>
+<table><thead><tr><th>Claim</th><th>Basis</th></tr></thead><tbody>
+<tr><td>Mapper topics, frame names <code>camera_init</code>/<code>aft_mapped</code>, TF always on, ~10 Hz odom</td><td>[code] pinned source <code>LIVMapper.cpp:312–328, 1555–1576</code>, read this session; ~10 Hz from the accepted replay counts in <code>T3.5_FASTLIVO_REPLAY.md</code></td></tr>
+<tr><td>No map load / relocalisation in the pinned fork</td><td>[code] <code>grep</code> over the pin: only <code>pcd_save*</code>; no load path exists</td></tr>
+<tr><td>TF ownership today, base-driver <code>pub_tf</code> gate, <code>navigation_launch.py</code> expects an external localizer</td><td>[code] launch/config/vendor files, file:line as cited above; <code>navigation_launch.py</code> composition is [unverified] external to this repo</td></tr>
+<tr><td><code>/map</code> is required by the global costmap and has no FAST-LIVO2 provider</td><td>[code] <code>nav2_params.yaml:121–124</code> + [code] mapper publisher list</td></tr>
+<tr><td>Bench assertions that constrain the change</td><td>[code] the four bench files cited, read this session; not run</td></tr>
+<tr><td>Remap of the mapper's <code>/tf</code> keeps its TF off the shared tree</td><td>[inferred] standard ROS 2 remapping; verified only by running it</td></tr>
+<tr><td>LiDAR→IMU extrinsic for our Mid-360: the pinned value <code>[0.011, 0.02329, −0.04412]</code> is the Livox manual's IMU-position numbers unnegated, and the fork's code needs the negation (reviewed value <code>[−0.011, −0.02329, 0.04412]</code>, identity rotation)</td><td>[code] fork <code>IMU_Processing.cpp:85–92, 528</code> + [doc] Livox Mid-360 manual p.15, read locally + [code] vendored driver publishes unrotated sensor-frame points; <strong>our unit is not measured</strong> — T5.5 owns that, and the T3.5d spin test decides the sign</td></tr>
+</tbody></table>
+<p><small>Read-only review. No file outside this document was modified; no command was run on the lab box; no hardware was started. Sources: repo files at <code>t3.5-launch-prep</code> and a read-only clone of <code>U-AMC/FAST-LIVO2-ROS2@a09599a</code> in the session temp directory. <strong>Revision 2026-10-18:</strong> the LiDAR→IMU extrinsic was re-checked against the vendor manual and the fork's own source, which found the fork's Mid-360 sign inverted; §4's body constant, decision 5 and the ledger row above were corrected, and the evidence moved into <a href="T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md">T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md</a>. Everything else is unchanged.</small></p>
+</main>
+</html>
