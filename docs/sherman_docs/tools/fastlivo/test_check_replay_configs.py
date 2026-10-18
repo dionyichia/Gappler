@@ -10,10 +10,12 @@ documented in T3.5_CONSUMER_CONTRACT.md.
 """
 from __future__ import annotations
 
+import json
 import math
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -256,6 +258,432 @@ class TestBagIdentity(unittest.TestCase):
         failures, _ = checker.check_bag_identity(counts, types, duration, message_count)
         self.assertEqual(len(failures), 1)
         self.assertIn("type", failures[0])
+
+    def test_frozen_identity_matches_the_frozen_constants(self) -> None:
+        frozen = checker.FROZEN_T35B_IDENTITY
+        self.assertEqual(
+            {name: entry["count"] for name, entry in frozen["topics"].items()},
+            {name: spec[1] for name, spec in checker.EXPECTED_TOPICS.items()},
+        )
+        self.assertEqual(frozen["duration_ns"], checker.EXPECTED_DURATION_NS)
+        self.assertEqual(frozen["message_count"], checker.EXPECTED_MESSAGE_COUNT)
+
+
+class TestBagIdentitySnapshot(unittest.TestCase):
+    """The new-bag path: a reviewed snapshot replaces the frozen t35b constants."""
+
+    COUNTS = {
+        checker.LIDAR: 900,
+        checker.IMU: 18000,
+        checker.IMAGE: 2700,
+        checker.CAMINFO: 2700,
+    }
+    TYPES = {
+        checker.LIDAR: "livox_ros_driver2/msg/CustomMsg",
+        checker.IMU: "sensor_msgs/msg/Imu",
+        checker.IMAGE: "sensor_msgs/msg/Image",
+        checker.CAMINFO: "sensor_msgs/msg/CameraInfo",
+    }
+    DURATION_NS = 75_000_000_000
+    MESSAGE_COUNT = 24_300
+
+    def _snapshot(self) -> dict:
+        return checker.identity_from_bag(self.COUNTS, self.TYPES, self.DURATION_NS, self.MESSAGE_COUNT)
+
+    def test_identity_from_bag_is_canonical(self) -> None:
+        identity = self._snapshot()
+        self.assertEqual(set(identity), {"schema", "topics", "duration_ns", "message_count"})
+        self.assertEqual(identity["schema"], checker.IDENTITY_SCHEMA)
+        self.assertEqual(identity["duration_ns"], self.DURATION_NS)
+        self.assertEqual(identity["message_count"], self.MESSAGE_COUNT)
+        self.assertEqual(
+            identity["topics"][checker.LIDAR],
+            {"type": "livox_ros_driver2/msg/CustomMsg", "count": 900},
+        )
+        self.assertEqual(list(identity["topics"]), sorted(identity["topics"]))
+
+    def test_snapshot_matches_the_bag_it_was_made_from(self) -> None:
+        failures, _ = checker.check_bag_identity(
+            self.COUNTS, self.TYPES, self.DURATION_NS, self.MESSAGE_COUNT, expected=self._snapshot()
+        )
+        self.assertEqual(failures, [])
+
+    def test_snapshot_count_drift_names_topic_and_both_numbers(self) -> None:
+        counts = dict(self.COUNTS)
+        counts[checker.LIDAR] += 3
+        failures, _ = checker.check_bag_identity(
+            counts, self.TYPES, self.DURATION_NS, self.MESSAGE_COUNT, expected=self._snapshot()
+        )
+        self.assertEqual(len(failures), 1)
+        self.assertIn(checker.LIDAR, failures[0])
+        self.assertIn("900", failures[0])
+        self.assertIn("903", failures[0])
+
+    def test_snapshot_extra_topic_fails(self) -> None:
+        counts = dict(self.COUNTS)
+        types = dict(self.TYPES)
+        counts["/rosout"] = 12
+        types["/rosout"] = "rcl_interfaces/msg/Log"
+        failures, _ = checker.check_bag_identity(
+            counts, types, self.DURATION_NS, self.MESSAGE_COUNT, expected=self._snapshot()
+        )
+        self.assertEqual(len(failures), 1)
+        self.assertIn("unexpected topic /rosout", failures[0])
+
+    def test_snapshot_missing_topic_fails(self) -> None:
+        counts = dict(self.COUNTS)
+        types = dict(self.TYPES)
+        del counts[checker.CAMINFO]
+        del types[checker.CAMINFO]
+        failures, _ = checker.check_bag_identity(
+            counts, types, self.DURATION_NS, self.MESSAGE_COUNT, expected=self._snapshot()
+        )
+        self.assertEqual(len(failures), 1)
+        self.assertIn("missing expected topic", failures[0])
+
+    def test_snapshot_type_drift_fails(self) -> None:
+        types = dict(self.TYPES)
+        types[checker.LIDAR] = "sensor_msgs/msg/PointCloud2"
+        failures, _ = checker.check_bag_identity(
+            self.COUNTS, types, self.DURATION_NS, self.MESSAGE_COUNT, expected=self._snapshot()
+        )
+        self.assertEqual(len(failures), 1)
+        self.assertIn("CustomMsg", failures[0])
+
+    def test_snapshot_duration_drift_fails(self) -> None:
+        failures, _ = checker.check_bag_identity(
+            self.COUNTS, self.TYPES, self.DURATION_NS + 1, self.MESSAGE_COUNT, expected=self._snapshot()
+        )
+        self.assertEqual(len(failures), 1)
+        self.assertIn("duration", failures[0])
+
+    def test_snapshot_message_count_drift_fails(self) -> None:
+        failures, _ = checker.check_bag_identity(
+            self.COUNTS, self.TYPES, self.DURATION_NS, self.MESSAGE_COUNT - 1, expected=self._snapshot()
+        )
+        self.assertEqual(len(failures), 1)
+        self.assertIn("message_count", failures[0])
+
+    def test_snapshot_note_says_it_was_declared_not_frozen(self) -> None:
+        _, notes = checker.check_bag_identity(
+            self.COUNTS, self.TYPES, self.DURATION_NS, self.MESSAGE_COUNT, expected=self._snapshot()
+        )
+        self.assertTrue(any("declared snapshot" in note for note in notes), notes)
+
+
+class TestIdentitySnapshotFile(unittest.TestCase):
+    BAG_NAME = "t35c_capture_20261019"
+
+    def _identity(self) -> dict:
+        identity = checker.identity_from_bag(
+            TestBagIdentitySnapshot.COUNTS,
+            TestBagIdentitySnapshot.TYPES,
+            TestBagIdentitySnapshot.DURATION_NS,
+            TestBagIdentitySnapshot.MESSAGE_COUNT,
+        )
+        identity["bag"] = self.BAG_NAME
+        return identity
+
+    def test_render_is_sorted_json_with_trailing_newline(self) -> None:
+        identity = self._identity()
+        text = checker.render_identity(identity)
+        self.assertTrue(text.endswith("\n"))
+        self.assertEqual(json.loads(text), identity)
+        self.assertLess(text.index("duration_ns"), text.index("topics"))
+
+    def test_write_then_load_round_trips(self) -> None:
+        identity = self._identity()
+        path = Path(self._tmp()) / "identity.json"
+        checker.write_identity(path, identity)
+        self.assertEqual(checker.load_identity(path), identity)
+
+    def _tmp(self) -> str:
+        import tempfile
+
+        return tempfile.mkdtemp(prefix="fastlivo-identity-")
+
+    def test_write_refuses_to_overwrite_an_existing_snapshot(self) -> None:
+        path = Path(self._tmp()) / "identity.json"
+        path.write_text(checker.render_identity(self._identity()))
+        with self.assertRaises(FileExistsError):
+            checker.write_identity(path, self._identity())
+        self.assertEqual(checker.load_identity(path), self._identity())
+
+    def test_write_with_force_replaces_it(self) -> None:
+        path = Path(self._tmp()) / "identity.json"
+        path.write_text("{}\n")
+        checker.write_identity(path, self._identity(), force=True)
+        self.assertEqual(checker.load_identity(path), self._identity())
+
+    def test_load_rejects_bad_shapes(self) -> None:
+        good = self._identity()
+        cases = {
+            "not json": "{",
+            "not an object": "[1, 2]",
+            "unknown top-level key": json.dumps({**good, "topcis": {}}),
+            "schema missing": json.dumps({key: value for key, value in good.items() if key != "schema"}),
+            "wrong schema": json.dumps({**good, "schema": checker.IDENTITY_SCHEMA + 1}),
+            "topics missing": json.dumps({key: value for key, value in good.items() if key != "topics"}),
+            "topics empty": json.dumps({**good, "topics": {}}),
+            "topic entry missing count": json.dumps(
+                {**good, "topics": {checker.LIDAR: {"type": "livox_ros_driver2/msg/CustomMsg"}}}
+            ),
+            "topic count is a string": json.dumps(
+                {**good, "topics": {checker.LIDAR: {"type": "livox_ros_driver2/msg/CustomMsg", "count": "900"}}}
+            ),
+            "topic count negative": json.dumps(
+                {**good, "topics": {checker.LIDAR: {"type": "livox_ros_driver2/msg/CustomMsg", "count": -1}}}
+            ),
+            "topic type empty": json.dumps({**good, "topics": {checker.LIDAR: {"type": "", "count": 900}}}),
+            "duration float": json.dumps({**good, "duration_ns": 1.5}),
+            "message_count zero": json.dumps({**good, "message_count": 0}),
+        }
+        for label, text in cases.items():
+            with self.subTest(label):
+                path = Path(self._tmp()) / f"{label.replace(' ', '_')}.json"
+                path.write_text(text)
+                with self.assertRaises(ValueError):
+                    checker.load_identity(path)
+
+    def test_blank_text_cannot_be_parsed_as_an_identity(self) -> None:
+        import tempfile
+
+        path = Path(tempfile.mkdtemp(prefix="fastlivo-identity-")) / "blank.json"
+        path.write_text("")
+        with self.assertRaises(ValueError):
+            checker.load_identity(path)
+
+
+class TestCheckerCliGuards(unittest.TestCase):
+    def _main(self, argv: list[str]) -> tuple[int, str]:
+        import io
+        from contextlib import redirect_stdout
+
+        buffer = io.StringIO()
+        with mock.patch.object(sys, "argv", ["check_replay_configs.py", *argv]), redirect_stdout(buffer):
+            code = checker.main()
+        return code, buffer.getvalue()
+
+    def test_configs_are_required_without_emit_mode(self) -> None:
+        import tempfile
+
+        bag = tempfile.mkdtemp(prefix="fastlivo-bag-")
+        code, output = self._main(["--bag-dir", bag])
+        self.assertEqual(code, 2)
+        self.assertIn("--lio", output)
+        self.assertIn("--camera", output)
+
+    def test_emit_and_identity_are_mutually_exclusive(self) -> None:
+        import tempfile
+
+        bag = tempfile.mkdtemp(prefix="fastlivo-bag-")
+        code, output = self._main(
+            ["--bag-dir", bag, "--emit-identity", f"{bag}/out.json", "--identity", f"{bag}/in.json"]
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("mutually exclusive", output)
+
+
+class TestBlindIsInert(unittest.TestCase):
+    """preprocess.blind is carried but the pinned port never sets its threshold."""
+
+    def test_present_blind_produces_one_note(self) -> None:
+        notes = checker.check_blind_is_inert({"preprocess.blind": 0.1})
+        self.assertEqual(len(notes), 1)
+
+    def test_note_names_the_unassigned_threshold_and_the_finding(self) -> None:
+        (note,) = checker.check_blind_is_inert({"preprocess.blind": 0.1})
+        self.assertIn("blind_sqr", note)
+        self.assertIn("F2", note)
+        self.assertIn("T3.5_CONFIG_SWEEP_20261019.md", note)
+
+    def test_absent_blind_produces_no_note(self) -> None:
+        self.assertEqual(checker.check_blind_is_inert({"preprocess.voxel_size": 0.5}), [])
+
+
+class TestCheckerIdentityFlow(unittest.TestCase):
+    """main()'s identity wiring. read_bag is stubbed: the Mac has no ROS."""
+
+    BAG_DIR = "/bags/t35c_capture_20261019"
+
+    def _bag(self) -> dict:
+        return {
+            "counts": dict(TestBagIdentitySnapshot.COUNTS),
+            "meta_types": dict(TestBagIdentitySnapshot.TYPES),
+            "duration_ns": TestBagIdentitySnapshot.DURATION_NS,
+            "message_count": TestBagIdentitySnapshot.MESSAGE_COUNT,
+            "topics": dict(TestBagIdentitySnapshot.TYPES),
+            "caminfo": {
+                "width": 640,
+                "height": 480,
+                "model": "Pinhole",
+                "frame": "camera_color_optical_frame",
+                "k": [385.0851135253906, 0.0, 320.0, 0.0, 385.0851135253906, 240.0, 0.0, 0.0, 1.0],
+                "d": [0.0] * 5,
+            },
+            "image": {
+                "width": 640,
+                "height": 480,
+                "encoding": "rgb8",
+                "step": 1920,
+                "frame": "camera_color_optical_frame",
+            },
+            "scan": {
+                "scans": 2,
+                "points": 10,
+                "min_line": 0,
+                "max_line": 3,
+                "min_offset_ns": 0,
+                "max_offset_ns": 100_000_000,
+            },
+        }
+
+    def _run(
+        self, argv: list[str], stub_configs: bool = False, lio_stub: dict | None = None
+    ) -> tuple[int, str, mock.Mock]:
+        import io
+        from contextlib import ExitStack, redirect_stdout
+
+        buffer = io.StringIO()
+        with ExitStack() as stack:
+            stack.enter_context(mock.patch.object(sys, "argv", ["check_replay_configs.py", *argv]))
+            read_bag = stack.enter_context(
+                mock.patch.object(checker, "read_bag", return_value=self._bag())
+            )
+            if stub_configs:
+                stack.enter_context(
+                    mock.patch.object(
+                        checker,
+                        "yaml_section",
+                        side_effect=lambda path, root: dict(lio_stub or {})
+                        if root == "laserMapping"
+                        else {},
+                    )
+                )
+            stack.enter_context(redirect_stdout(buffer))
+            code = checker.main()
+        return code, buffer.getvalue(), read_bag
+
+    def test_emit_writes_a_candidate_snapshot_and_checks_nothing(self) -> None:
+        import tempfile
+
+        out = Path(tempfile.mkdtemp(prefix="fastlivo-emit-")) / "identity.json"
+        code, output, _ = self._run(["--bag-dir", self.BAG_DIR, "--emit-identity", str(out)])
+        self.assertEqual(code, 0)
+        self.assertIn("IDENTITY_EMITTED", output)
+        self.assertNotIn("CONFIG_OK", output)
+        identity = checker.load_identity(out)
+        self.assertEqual(identity["bag"], "t35c_capture_20261019")
+        self.assertEqual(identity["topics"][checker.LIDAR]["count"], 900)
+
+    def test_emit_refuses_to_overwrite_a_reviewed_snapshot(self) -> None:
+        import tempfile
+
+        out = Path(tempfile.mkdtemp(prefix="fastlivo-emit-")) / "identity.json"
+        existing = {"schema": checker.IDENTITY_SCHEMA, "topics": {"keep": {"type": "t", "count": 1}}}
+        out.write_text(checker.render_identity(existing))
+        code, output, _ = self._run(["--bag-dir", self.BAG_DIR, "--emit-identity", str(out)])
+        self.assertEqual(code, 2)
+        self.assertIn("exists", output)
+        self.assertEqual(out.read_text(), checker.render_identity(existing))
+
+    def test_unreadable_snapshot_fails_before_the_bag_or_the_configs(self) -> None:
+        import tempfile
+
+        bad = Path(tempfile.mkdtemp(prefix="fastlivo-bad-")) / "identity.json"
+        bad.write_text("{")
+        code, output, read_bag = self._run(
+            ["--bag-dir", self.BAG_DIR, "--identity", str(bad), "--lio", "l.yaml", "--camera", "c.yaml"]
+        )
+        self.assertEqual(code, 1)
+        self.assertIn("not JSON", output)
+        read_bag.assert_not_called()
+
+    def test_identity_source_is_reported_exactly_once(self) -> None:
+        """Both branches print one IDENTITY line: a duplicated block must fail here."""
+        import tempfile
+
+        workdir = Path(tempfile.mkdtemp(prefix="fastlivo-once-"))
+        lio, camera = workdir / "l.yaml", workdir / "c.yaml"
+        for config in (lio, camera):
+            config.write_text("# content is irrelevant: yaml_section is stubbed\n")
+        snapshot = workdir / "identity.json"
+        checker.write_identity(
+            snapshot,
+            checker.identity_from_bag(
+                TestBagIdentitySnapshot.COUNTS,
+                TestBagIdentitySnapshot.TYPES,
+                TestBagIdentitySnapshot.DURATION_NS,
+                TestBagIdentitySnapshot.MESSAGE_COUNT,
+            ),
+        )
+        runs = {
+            "frozen": ["--bag-dir", self.BAG_DIR, "--lio", str(lio), "--camera", str(camera)],
+            "declared": [
+                "--bag-dir",
+                self.BAG_DIR,
+                "--identity",
+                str(snapshot),
+                "--lio",
+                str(lio),
+                "--camera",
+                str(camera),
+            ],
+        }
+        for label, argv in runs.items():
+            with self.subTest(label):
+                _, output, _ = self._run(argv, stub_configs=True)
+                self.assertEqual(output.count("IDENTITY source="), 1, output)
+                self.assertEqual(output.count("NOTE identity is"), 1, output)
+
+    def test_blind_note_is_reported_once_and_is_not_a_failure(self) -> None:
+        import tempfile
+
+        workdir = Path(tempfile.mkdtemp(prefix="fastlivo-blind-"))
+        lio, camera = workdir / "l.yaml", workdir / "c.yaml"
+        for config in (lio, camera):
+            config.write_text("# content is irrelevant: yaml_section is stubbed\n")
+        _, output, _ = self._run(
+            ["--bag-dir", self.BAG_DIR, "--lio", str(lio), "--camera", str(camera)],
+            stub_configs=True,
+            lio_stub={"preprocess.blind": 0.1},
+        )
+        self.assertEqual(output.count("NOTE preprocess.blind"), 1, output)
+        self.assertNotIn("FAIL preprocess.blind", output)
+
+    def test_declared_snapshot_drift_fails_naming_the_numbers(self) -> None:
+        import tempfile
+
+        workdir = Path(tempfile.mkdtemp(prefix="fastlivo-drift-"))
+        path = workdir / "identity.json"
+        identity = checker.identity_from_bag(
+            TestBagIdentitySnapshot.COUNTS,
+            TestBagIdentitySnapshot.TYPES,
+            TestBagIdentitySnapshot.DURATION_NS,
+            TestBagIdentitySnapshot.MESSAGE_COUNT,
+        )
+        identity["topics"][checker.LIDAR]["count"] += 1
+        checker.write_identity(path, identity)
+        lio = workdir / "pair_lio.yaml"
+        camera = workdir / "pair_camera.yaml"
+        for config in (lio, camera):
+            config.write_text("# content is irrelevant: yaml_section is stubbed\n")
+        code, output, _ = self._run(
+            [
+                "--bag-dir",
+                self.BAG_DIR,
+                "--identity",
+                str(path),
+                "--lio",
+                str(lio),
+                "--camera",
+                str(camera),
+            ],
+            stub_configs=True,
+        )
+        self.assertEqual(code, 1)
+        self.assertIn(f"{checker.LIDAR} count 900 != expected 901", output)
+        self.assertIn("declared snapshot", output)
 
 
 class TestCameraExtrinsics(unittest.TestCase):
