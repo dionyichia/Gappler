@@ -906,6 +906,186 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Next: with Sherman's word, commit the t3.5-launch-prep documentation and checker
   changes; capture day follows the plan unchanged.
 
+## [2026-10-19] T3.5c | Read-only box re-verify before the capture session
+
+- Evidence: this entry (read-only probe; nothing written on the box).
+- Verified (route): the jump route works — `ssh -J nvidia@100.118.250.28 rcp2026@192.168.1.100`
+  reached `iot22-Computer`, up 5 days, 1-min load 0.21; the campus direct route `10.91.242.76` timed
+  out from this Mac (the box itself still holds `wlo1 10.91.242.76`), so this is this Mac's path to
+  the campus network, not the box.
+- Verified (clean slate): no ROS/sensor processes running; `t35c` (window `replay`, 3 panes) and
+  `gh-runner` alive; 43 GiB free — a 74.03 s bag measured 2.0–2.3 GiB, so pilot + final is ~2.7 GiB;
+  D455 + D435i on USB with 12 video nodes; no OAK/Movidius device; xrdp virtual display `:10` alive.
+- **Found (today's blocker):** the MID-360 at `192.168.1.12` answered neither ICMP nor ARP. It
+  recorded fine on 17 October, and a Livox can ignore ICMP but it also failed to answer ARP — power
+  and cable need eyes before the session; a capture without `/livox/lidar` is a wasted slot.
+- **Found:** `ROS_DOMAIN_ID` is pinned nowhere on the box — not `~/.bashrc`, not `/etc/environment`,
+  not `global_env.sh`, not any live tmux pane — so a fresh pane silently runs on domain 0 and sees an
+  empty graph. The plan already exports it per pane; both the capture plan and the runbook now make
+  it an explicit gate.
+- **Found:** `~/rcp-Gappler` is on `dev` at `ca0604b` with someone else's uncommitted `grasp/` edits
+  and **no** `docs/sherman_docs/tools/fastlivo/`; the session's tooling is the kit's scratch copy
+  under `log/`. Do not check out the branch into that shared worktree.
+- **Found (kit staleness):** three kit files predate the branch — `check_replay_configs.py` and
+  `test_check_replay_configs.py` (both older than the LiDAR→IMU revision) and the kit `README.md`.
+  `MANIFEST.sha256` covers only `recipe/` + `replay/`, so `sha256sum -c` passes while a tool script
+  is stale; re-staging is owed before the session's post-capture step.
+- Outcome: capture plan §1/§3/§5/§6 and the new T3.5d runbook updated with all four findings; the
+  LiDAR power check and the per-pane domain export are now explicit gates.
+- Next: re-stage the kit with the revised checker, then run the session.
+
+## [2026-10-19] T3.5c | Bag identity for a later bag: `--emit-identity` / `--identity`
+
+- Evidence: [`T3.5_CONSUMER_CONTRACT.md`](T3.5_CONSUMER_CONTRACT.md) §8;
+  `tools/fastlivo/check_replay_configs.py` and `test_check_replay_configs.py`.
+- Verified: the checker's four frozen topics, counts and duration were hard-wired to `t35b_proof3`,
+  so a new bag had no machine-checked identity — the capture plan's "create a new checked config
+  pair" step would have been hand-verified. `--emit-identity FILE` now writes a *candidate* snapshot
+  (schema, topic → type + count, duration, message count, bag name) from a bag and exits without
+  checking anything; a human reviews and commits that JSON; `--identity FILE` then makes it the
+  declared expectation. The frozen record stays the default, so the T3.5a/T3.5c re-runs are
+  untouched. Emission refuses to overwrite an existing snapshot; `--lio`/`--camera` are required only
+  outside emit mode; exit 2 means the invocation was refused or the snapshot unreadable.
+- Verified locally: `test_check_replay_configs.py` 50 → 73 tests, all green (6 staged-pair tests still
+  skip without PyYAML); `./bench/run.sh quick` PASS. Ran the CLI end to end against a stubbed bag to
+  read the real output: frozen mode, declared mode, a snapshot checked against a bag missing one topic
+  (exactly one failure naming it), and emission (candidate JSON, sorted keys, `bag` recorded).
+- Found while reading that output: my own first edit had duplicated the identity block, printing the
+  `IDENTITY` line twice. Fixed, and a regression test now asserts both branches print it exactly once;
+  re-introducing the duplicate makes that test fail (negative control run), so the test has the power
+  it claims.
+- Outcome: the post-capture pair is checked by the machine, and its identity is a reviewed artifact
+  instead of a constant edited inside the checker.
+- Owed box round: emit against the new bag, review, then both modes `CONFIG_OK` with `--identity`,
+  plus one negative control — a snapshot count nudged by one must fail naming that topic and both
+  numbers.
+
+## [2026-10-19] T3.5d | Attended-session runbook (protocol; nothing started)
+
+- Evidence: [`T3.5d_ATTENDED_RUNBOOK.html`](T3.5d_ATTENDED_RUNBOOK.html).
+- Verified: written from the settled integration review, the LiDAR→IMU finding and the pinned fork's
+  source rather than from memory — the mapper's topic names (`/aft_mapped_to_init`,
+  `/cloud_registered`, `/Laser_map`, `/path`, `/rgb_img`) and the camera load path
+  (`LIVMapper.cpp:212`) were read from the pinned source, and the mapper teardown crash plus the
+  empty-diagnostic-cloud behaviour from [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md).
+- Covered: preconditions; one-build/one-launch staging with the mapper in its own native colcon
+  workspace sourced alongside Gappler; per-stage evidence; stationary-then-hand-driven acceptance
+  with the rule that offline or stationary success does not prove moving-map quality; the in-place
+  spin test as the empirical discriminator for the LiDAR→IMU sign and what each outcome means; the
+  ~10 Hz pose-rate measurement for Nav2; stop-and-investigate conditions; the corrected bridge
+  constant with its residual eye-estimated mount rotation; evidence to preserve and what to write up.
+- Corrections made on review before acceptance: the fork's code applies the Mid-360 value *verbatim*
+  (a first draft said it applies the negation — backwards); an unverified "100 ms" parameter-wait
+  detail was replaced by the source-read throw; and the acceptance/stop wording now separates a
+  diagnostic run (empty registered clouds are the source-observed heartbeat) from a visual run
+  (point-less clouds are invalid), so the runbook cannot trigger a false stop.
+- Outcome: T3.5d has a written protocol; the task itself is not started and no measurement is
+  claimed.
+- Next: T3.5c close-out first; the runbook then runs at the attended session.
+
+## [2026-10-19] T3.5c/T3.5f | Config sweep of the pinned fork: 42 parameters, five findings
+
+- Evidence: [`T3.5_CONFIG_SWEEP_20261019.md`](T3.5_CONFIG_SWEEP_20261019.md);
+  [`T3.5_CONSUMER_CONTRACT.md`](T3.5_CONSUMER_CONTRACT.md) §2 item 6, §8.
+- Verified: a read-only sweep of all twelve `config/*.yaml` in the pinned fork against the Mid-360
+  manual, the parent project, the vendored driver and the fork's own source. Method as for the
+  extrinsic defect: no finding is accepted on one evidence line. **None of the findings changes a
+  number in our staged pair.**
+- **F1** `lio.max_iterations` is read by nothing: the code declares and reads `lio.min_iterations`
+  (`voxel_map.cpp:50, 65`) and stores it into the field `max_iterations_`; `grep lio.max_iterations`
+  in the source returns zero hits, and upstream reads `lio/max_iterations` into that same field, so the
+  ROS 2 port renamed the key in code and left the configs behind. Our pair already writes
+  `lio.min_iterations` (with a comment naming the trap). No numeric change today (both defaults are 5),
+  but raising `lio.max_iterations` in a live config would silently do nothing.
+- **F2** `preprocess.blind` cannot act, and this is the one that changed a document. Verified here:
+  `blind_sqr` is declared with no initializer (`preprocess.h:185`), is never assigned anywhere in the
+  fork, and is what the very gate our path uses compares against (`preprocess.cpp:194`, reached via
+  `avia_handler`); upstream sets it one line after its parameter block
+  (`p_pre->blind_sqr = p_pre->blind * p_pre->blind`, `hku-mars/FAST-LIVO2` `LIVMapper.cpp:116`, fetched
+  and read for this check). So the port dropped that line, and the threshold is an uninitialised
+  member — an arbitrary-value read, not a 0.1 m gate. Consequence: the contract's §2 item 6 claim that
+  the bag's 51.84% zero-range returns "are dropped by any positive `blind`" is **withdrawn** (item 6
+  rewritten), the frozen pair's comment repeating it is superseded — the frozen files themselves stay
+  byte-unchanged — and `check_replay_configs.py` now emits a note on every run of a config carrying
+  `preprocess.blind`. The magnitude is deliberately left unmeasured: which way the uninitialised value
+  falls is not established from the source.
+- **F3** the LiDAR→IMU sign finding, re-confirmed rather than repeated. **F4** the unused
+  `camera_pinhole.yaml` holds the rational model's coefficients in `cam_d0..d3` (no launch loads it, so
+  no current impact). **F5** `common.livox_msg_type` is dead on `lidar_type: 8` — it is read only on
+  the AVIA branch — so the mid360 profile's PointCloud2 expectation contradicts the vendored driver's
+  CustomMsg default; our pair uses `lidar_type: 1`, so this is inert for us.
+- Also positively verified, so it can be cited rather than re-derived: the pair rule (`img_en` the only
+  difference between a pair) holds for both LiDAR families, and `scan_line: 4`, `blind: 0.1`,
+  `imu_int_frame: 50`, `anchor_factor: 0.5`, `td_step_cap: 0.0005` and the Mid-360 point layout/timestamp
+  unit all check out. Items with no ground truth to check (for example `img_time_offset: 1200.252661`,
+  `tr_readout: 0.01101`, the camera `scale` values, `Rcl/Pcl`) are listed as unverifiable rather than
+  quietly passed.
+- Outcome: the checker carries one more note; the contract's point-path section is corrected; the
+  capture plan's new-pair step says not to describe the new bag as near-range-filtered. No source patch
+  — fixing F2 is a one-line change with its own experimental image tag, compared against the accepted
+  image, and is **not** done here.
+- Next: decide whether an F2 patched image is worth building (it would make the gate deliberate and the
+  point counts reproducible) or whether to leave the pinned source alone while T3.5c is open. The cheap
+  empirical reading is the same bag twice, pinned build vs patched build, comparing retained zero-range
+  fraction.
+
+## [2026-10-19] T3.5 | F2 patch prepared (blind_sqr)
+
+- Evidence: [`T3.5_F2_BLIND_SQR_PATCH.md`](T3.5_F2_BLIND_SQR_PATCH.md); recipe section 2026-10-19 in
+  [`tools/fastlivo/recipe/README.md`](tools/fastlivo/recipe/README.md); MANIFEST re-verified 35/35.
+- Verified: Decision taken — patch, as a separate experimental image with the pinned image kept as the
+  control. `patch_blind_sqr.py` restores upstream's `p_pre->blind_sqr = p_pre->blind * p_pre->blind`
+  where upstream has it, plus one tagged print of the threshold in force; it accepts only the pinned
+  `LIVMapper.cpp` (`815b5f89…`), fails closed on an absent or ambiguous anchor, refuses a second
+  application, and strips back to the original byte-for-byte. Build mode `T35_BLIND_SQR=1` starts from
+  the exact accepted image ID, network `none`, mapper-only, output `t35-fastlivo-blind-sqr:experimental`
+  in container `t35-fastlivo-blind-sqr-build`, and refuses other image names, compiler overrides and
+  combination with `T35_VIO_DIAGNOSTIC`. `test_blind_sqr.py` (5 tests, including the real-source
+  reversibility check) passes; `test_recipe.py` 10/10 after its shared-host-gate assertion moved to the
+  new branch text; `bench/run.sh quick` PASS with a new L0 step.
+- Outcome: The patch, its build mode and the measurement are prepared and tested; **no image is built
+  and no replay has run**, so the pinned binary remains the consumer of record and F2's magnitude stays
+  unmeasured. The measurement needs no new instrumentation: the pinned binary already prints the
+  post-gate point count (`[ Preprocess ] Output point number:`), and the T3.5b bag's 51.84 %
+  zero-range fraction separates "gate off" from "gate on" by a factor 2.08, so the control is the
+  already-built accepted image (one build + one replay). Declined with reasons: initialising the member
+  in `preprocess.h` (picks a fate instead of restoring the threshold), reusing `T35_VIO_REPAIR` as a
+  third stage (mislabels a LiDAR-path fix — F1's defect class), and instrumented counters (the
+  observable already exists).
+- Next: Sherman runs `T35_BLIND_SQR=1 bash run_build.sh` from a fresh copied bundle, then one replay
+  with `T35_REPLAY_IMAGE=t35-fastlivo-blind-sqr:experimental`; compare the median preprocessed point
+  count against a pinned-image run of the same bag and pair.
+
+## [2026-10-19] T3.5 | Checker box round closed (LiDAR→IMU + identity + blind note)
+
+- Evidence: [`tools/fastlivo/EVIDENCE_t35c-config-check-20261019.sha256`](tools/fastlivo/EVIDENCE_t35c-config-check-20261019.sha256)
+  (21 files); box dir `~/rcp-Gappler/log/t59-fastlivo/log/t35c-config-check-20261019.3rig5x`.
+- Verified: The two long-owed box rounds are closed on bytes the box now has, run read-only over the
+  Orin jump route. Checks: 77/77 unit tests OK on the box (the round owed 50 when it was written; the
+  identity and blind-note revisions landed in between, so the same file was re-run at 77); both staged
+  pairs `CONFIG_OK` with the `LIDAR_IMU` line, `retained_precorrection=True`, one retained-sign `NOTE`
+  each, and the F2 blind `NOTE` present; a copy of the diagnostic pair under a **non-exempt filename**
+  with the *corrected* `extrin_calib.extrinsic_T=[-0.011,-0.02329,0.04412]` gives `CONFIG_OK` with
+  `retained_precorrection=False` — the path a new pair must take, exercised before the new bag exists;
+  the negative control (that corrected pair with `extrinsic_T[0]` sign mutated back) gives
+  `CONFIG_FAILED failures=1`, exactly one failure naming
+  `extrin_calib.extrinsic_T[0]=0.011 != -0.011`. Identity mechanism round on `t35b_proof3`:
+  `--emit-identity` exit 0 (`IDENTITY_EMITTED … topics=4 sha256=fbbdad9c…`); re-emitting refused,
+  exit 2, naming the file as evidence; `--identity <candidate>` → `IDENTITY source=… list=` + `CONFIG_OK`;
+  nudged-count copy → `CONFIG_FAILED failures=1` naming the topic and both numbers
+  (`/camera/camera/color/camera_info count 2220 != expected 2221`). The five staged files
+  (`check_replay_configs.py` `c5aa1c45…`, `test_check_replay_configs.py` `163e99d4…`, both pairs, the
+  camera config) hash-match the repo copies byte-for-byte.
+- Outcome: Contract §8's "box round owed" for the 2026-10-18 LiDAR→IMU revision and the identity
+  revision's mechanism round are now closed with a manifest. Two honest limits: the box's own checkout
+  is `dev` `ca0604b` carrying Dion's uncommitted work — I read it and wrote only inside the new evidence
+  dir; and `unit.stdout.log` is empty in the manifest because Python's `unittest` writes to **stderr**,
+  so the run is in `unit.stderr.log` and `unit.summary.txt` (the empty file is kept as evidence of the
+  invocation, not tidied away).
+- Next: The identity round's *new-bag* half stays owed (emit against the new lab recording, review,
+  commit the snapshot beside the pair). The candidate snapshot in this box dir is `t35b_proof3`'s — a
+  mechanism artifact that must **not** be committed as the new bag's identity.
+
 ## Record Template
 
 
