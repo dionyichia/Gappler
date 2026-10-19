@@ -37,6 +37,33 @@ class ConfigTest(unittest.TestCase):
             MemoryGraphConfig(phys_bias=1.5)
 
 
+class BaseVocabularyTest(unittest.TestCase):
+    def test_the_tentative_list(self):
+        self.assertEqual(len(CFG.base_vocabulary), 30)
+        self.assertIn("chair", CFG.base_vocabulary)
+        self.assertNotIn("furniture", CFG.base_vocabulary)          # fires on everything
+
+    def test_no_repeats_and_no_background(self):
+        self.assertEqual(len(set(CFG.base_vocabulary)), len(CFG.base_vocabulary))
+        self.assertFalse(set(CFG.base_vocabulary) & set(CFG.bg_classes))
+
+    def test_override_from_a_list(self):
+        cfg = MemoryGraphConfig.from_dict({"base_vocabulary": ["cup", "box"]})
+        self.assertEqual(cfg.base_vocabulary, ("cup", "box"))
+
+    def test_a_repeat_is_an_error_whatever_its_case_or_spaces(self):
+        with self.assertRaises(ValueError):
+            MemoryGraphConfig(base_vocabulary=("cup", " Cup"))
+
+    def test_a_background_class_is_an_error(self):
+        with self.assertRaises(ValueError):
+            MemoryGraphConfig(base_vocabulary=("cup", "floor"))
+
+    def test_an_empty_phrase_is_an_error(self):
+        with self.assertRaises(ValueError):
+            MemoryGraphConfig(base_vocabulary=("cup", " "))
+
+
 class DetectionFilterTest(unittest.TestCase):
     BOXES = [[0, 0, 100, 100], [10, 10, 200, 200], [50, 50, 150, 120],
              [0, 0, 640, 480], [5, 5, 6, 6], [300, 300, 400, 400]]
