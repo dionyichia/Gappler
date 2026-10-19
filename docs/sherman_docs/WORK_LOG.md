@@ -1553,6 +1553,44 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Evidence `EVIDENCE_t35c-stationary02-B-run-20261019.sha256` (28 files, SHA
   `5b623152…`). No commit, push, PR or merge since `9d87e54`. T3.5c PROGRESS.
 
+## [2026-10-19] T3.5c | stationary02 B2 PASSES with 118 zero-point coloured clouds recorded
+
+- Cause of the B failure, read from the pinned source (`publish_frame_world`,
+  `[code]`): on a VIO frame where no source point projects into the image the
+  function still publishes the coloured cloud, so it emits a fielded zero-point
+  message. It guards only against an empty source. Stock behaviour, not a T35
+  patch. The mapper's own `[T35_DIAG_CLOUD]` line shows exactly 118 frames with
+  `coloured_points=0` of 1,482 VIO publishes, every one with `source_points` 1 to
+  4,215. A second B run (`t59-replay-20261019T160819Z-23978`) gave the same 118,
+  so it is deterministic. `[inferred]` The scans have nothing in the camera view,
+  likely the Livox pattern against the camera field of view. `[unverified]`
+- Harness change (Sherman authorised the rule, test first), commit `e5ad913`:
+  a fielded zero-point cloud is recorded, not failed, only when the harness count
+  equals the mapper's `coloured_points=0` count, every such frame had source
+  points, and the run is in visual mode. Anything else fails. `result.json` gains
+  `coloured_empty_clouds`. Bytes `replay.py` `4a345a00`, `replay_progress.py`
+  `919f8cab`, `test_progress.py` `56a33b13`. 54 local and 63 box tests green.
+  Dry run over both failed B results gave PASS, and a mapper count of 117 gave FAIL.
+- B2 run `t59-replay-20261019T164028Z-25771`, staged `t35c-stationary02-B2.w5m73E`
+  from committed bytes, image `ac276ad7`, visual config `397a75a4`: **PASS**,
+  exit 0, 306.2 s, `errors` empty, `eof` true, drain `callbacks_quiet`. LiDAR
+  747/747, IMU 14,923/14,931 (8 prestart drops inside 21), camera 2,179/2,179,
+  visual retrievals 1,303, odom 1,451, cloud 1,363, rgb 1,264, all 0 invalid.
+  `coloured_empty_clouds` count 118, `mapper_logged` 118, source points 1 to 4,215.
+  1,364 ok clouds, 1,861,022 points, 1,483 default LIO heartbeats.
+- A/B: the lio and visual configs differ only in `common.img_en` (`diff` shows
+  the line itself and two comment lines). A ran `img_en: 0` (PASS, 304.7 s, 743
+  odom, 432 clouds, 5,530,694 points), B2 ran `img_en: 1`, same image, same bag,
+  same camera config.
+- Not proven: why those 118 scans have nothing in view; map quality; calibrated
+  geometry; the mount rotation is eye-estimated zeros and the extrinsic sign is
+  unproven in the field. A 74.6 s stationary recording shows estimator and visual
+  continuity only. odom and rgb counts vary run to run because the monitor
+  subscribes best-effort; they are not criteria.
+- Evidence `EVIDENCE_t35c-stationary02-B2-stage-20261019.sha256` (24 files, SHA
+  `2c30b5fd...`) and `EVIDENCE_t35c-stationary02-B2-run-20261019.sha256` (28
+  files, SHA `298659a8...`). Not pushed. T3.5c PROGRESS.
+
 ## Record Template
 
 
