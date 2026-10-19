@@ -13,7 +13,7 @@ import traceback
 from replay_progress import (CallbackTracker, callback_patterns, coloured_empty_allowance,
                                drain_state, expected_callbacks, parse_cloud_diag,
                                playback_rate, prestart_allowance, reconcile_imu,
-                               reconcile_rows, terminal_message_gap)
+                               reconcile_rows, rgb_bound_error, terminal_message_gap)
 
 ROOT = Path("/tmp/t59")
 DEFAULT_MAPPER_CONFIG = "bright_screen_wall.yaml"
@@ -282,6 +282,10 @@ def finalize_report(report: dict, started: float, diagnostic_captured: bool) -> 
         report.get('mapper_cloud_diag'), report.get('require_visual', True))
     if record:
         report['coloured_empty_clouds'] = record
+    if error:
+        errors.append(error)
+    rgb = report.get('streams', {}).get('rgb')
+    error = rgb_bound_error(rgb['count'], report.get('mapper_cloud_diag')) if rgb else None
     if error:
         errors.append(error)
     for topic, row in report.get('input_callbacks', {}).items():

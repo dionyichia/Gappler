@@ -266,3 +266,13 @@ def coloured_empty_allowance(harness_count: int, diag, require_visual: bool) -> 
     return ({'count': harness_count, 'mapper_logged': diag['zero_coloured'],
              'source_points_min': diag['zero_source_min'],
              'source_points_max': diag['zero_source_max']}, None)
+
+
+def rgb_bound_error(rgb_count: int, diag):
+    """The best-effort monitor may miss RGB frames but can never see more than the mapper published."""
+    if not diag or not diag.get('frames'):
+        return None
+    if rgb_count > diag['frames']:
+        return (f"rgb count {rgb_count} exceeds the {diag['frames']} publishes "
+                "the mapper logged")
+    return None

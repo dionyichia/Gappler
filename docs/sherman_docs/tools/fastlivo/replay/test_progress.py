@@ -396,6 +396,37 @@ class ProgressTests(unittest.TestCase):
         self.assertIn('parse_cloud_diag(', text)
         self.assertIn('mapper_cloud_diag', text)
 
+    def test_rgb_count_is_bounded_by_mapper_publishes_not_matched_to_a_target(self):
+        module = self.progress()
+        diag = {'frames': 1482, 'zero_coloured': 118, 'zero_source_min': 1, 'zero_source_max': 9}
+        # Any count up to the mapper's own publishes is fine: the monitor is best-effort.
+        for seen in (10, 384, 606, 1264, 1482):
+            with self.subTest(seen=seen):
+                self.assertIsNone(module.rgb_bound_error(seen, diag))
+        self.assertIn('exceeds', module.rgb_bound_error(1483, diag))
+        # Without mapper evidence (unpatched binary, img_en 0) there is nothing to bound against.
+        self.assertIsNone(module.rgb_bound_error(5000, None))
+        self.assertIsNone(module.rgb_bound_error(5000, dict(diag, frames=0)))
+
+    def test_supervisor_fails_an_rgb_count_above_what_the_mapper_published(self):
+        def run(rgb_count):
+            streams = {key: {'count': 10, 'first': 1, 'last': 6, 'invalid': 0}
+                       for key in replay.OUTPUTS}
+            streams['rgb']['count'] = rgb_count
+            report = {'mode': 'replay', 'errors': [], 'eof': True,
+                      'positive_visual_retrievals': 2, 'streams': streams,
+                      'input_lidar_topic': '/livox/lidar',
+                      'input_callbacks': coverage_rows(),
+                      'mapper_cloud_diag': {'frames': 20, 'zero_coloured': 0,
+                                            'zero_source_min': None, 'zero_source_max': None}}
+            with patch.object(replay.time, 'monotonic', return_value=0):
+                replay.finalize_report(report, started=0, diagnostic_captured=False)
+            return report
+        self.assertEqual(run(20)['verdict'], 'PASS')
+        over = run(21)
+        self.assertEqual(over['verdict'], 'FAIL')
+        self.assertTrue(any('exceeds' in e for e in over['errors']))
+
 
 if __name__ == '__main__':
     unittest.main()

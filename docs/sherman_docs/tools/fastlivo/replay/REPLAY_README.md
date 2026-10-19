@@ -132,7 +132,11 @@ no ERROR/FATAL, `Failed to play:` or `Failed to publish message` diagnostics.
 First and last observed `/clock` must be within **0.25 simulated seconds** of
 the metadata start and start+duration respectively, and span at least duration
 minus 0.5 seconds. Expected timing/counts and observed clock bounds are recorded.
-Premature exit 0 is FAIL; there is no restart/seek/loop.
+Output counts are never targets: the monitor subscribes best-effort, so the same
+mapper publishes different numbers of `/rgb_img` messages to it from run to run (606, 389, 384 on
+one image). RGB is judged on validity (every message valid, ten advancing over five
+seconds) plus one bound: the monitor cannot have seen more RGB messages than the
+mapper's own `[T35_DIAG_CLOUD]` rows. Premature exit 0 is FAIL; there is no restart/seek/loop.
 Missing/inadequate outputs at otherwise proven EOF are INCONCLUSIVE (nonzero exit).
 Startup errors, crashes, deadline failures, invalid outputs and backward time
 are FAIL. Total supervisor acceptance budget is 600 seconds including cleanup;
