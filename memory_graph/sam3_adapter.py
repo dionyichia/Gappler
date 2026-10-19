@@ -115,18 +115,20 @@ def detect(
     vocabulary = list(vocabulary)
     if batched is None:
         batched = hasattr(segmenter, "process_text_prompts")
-    if not vocabulary:
-        states: List[Mapping[str, Any]] = []
-    elif batched:
+    parts: List[Detections] = []
+    if batched and vocabulary:
         states = list(segmenter.process_text_prompts(rgb, vocabulary))
         if len(states) != len(vocabulary):
             raise ValueError(f"asked for {len(vocabulary)} phrases, got {len(states)} results")
-    else:
-        states = [segmenter.process_text_prompt(rgb, phrase) for phrase in vocabulary]
-    parts: List[Detections] = [
-        detections_from_state(state, phrase, class_id, image_shape)
-        for class_id, (phrase, state) in enumerate(zip(vocabulary, states))
-    ]
+        for class_id, (phrase, state) in enumerate(zip(vocabulary, states)):
+            parts.append(detections_from_state(state, phrase, class_id, image_shape))
+    elif not batched:
+        # Convert each result before the next call: a one-phrase result is SAM 3's whole
+        # state, image features included, so keeping them all fills the GPU (163 phrases
+        # ran out of 16 GB on the lab box, 2026-10-20).
+        for class_id, phrase in enumerate(vocabulary):
+            state = segmenter.process_text_prompt(rgb, phrase)
+            parts.append(detections_from_state(state, phrase, class_id, image_shape))
     parts = [p for p in parts if len(p)]
     if not parts:
         return Detections.empty(image_shape)
