@@ -10,7 +10,7 @@ import rclpy.duration
 import tf2_geometry_msgs
 import tf2_ros
 import torch
-from geometry_msgs.msg import Point, PointStamped, PoseStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
@@ -155,7 +155,7 @@ class ObjectRecognitionPipeline:
             callback_group=state_cb_group,
         )
         self._object_recognition_node.create_subscription(
-            Point,
+            PointStamped,
             ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value,
             self._on_gaze,
             VIDEO_QOS,
@@ -245,9 +245,9 @@ class ObjectRecognitionPipeline:
         )
         self._ros_feed.update(rgb, depth, rgb_msg.header)
 
-    def _on_gaze(self, msg: Point) -> None:
+    def _on_gaze(self, msg: PointStamped) -> None:
         with self._state_lock:
-            self._gaze_point = (msg.x, msg.y)
+            self._gaze_point = (msg.point.x, msg.point.y)
 
     def _on_prompt(self, msg: String) -> None:
         command = msg.data.strip().lower()
@@ -667,13 +667,15 @@ class ObjectRecognitionPipeline:
                 if k not in ("backbone_out", "masks_logits")
             }
 
-            # Rotate the raw gaze point (original camera space) to match the
-            # aria_locked_image which has already been rotated 90° CW.
-            rotated_gaze = None
-            if gaze_point is not None:
-                h = reference_image.shape[0]
-                gx, gy = gaze_point
-                rotated_gaze = (h - gy, gx)
+            # Gaze now arrives in the undistorted image's pixels, already rotated (T2.9), so it is
+            # passed on as is. The old rotation is commented out, not deleted (Dion, 2026-10-14).
+            # Delete once T2.9 passes end to end on the live glasses.
+            rotated_gaze = gaze_point
+            # rotated_gaze = None
+            # if gaze_point is not None:
+            #     h = reference_image.shape[0]
+            #     gx, gy = gaze_point
+            #     rotated_gaze = (h - gy, gx)
 
             payload = pickle.dumps(
                 {

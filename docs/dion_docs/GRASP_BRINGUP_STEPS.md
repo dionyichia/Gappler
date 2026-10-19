@@ -12,28 +12,63 @@ authoritative for status. This file holds the reasoning, the commands and the pa
 [`T1.7_FIRST_COMMANDED_MOTION.md`](T1.7_FIRST_COMMANDED_MOTION.md) for how the first motion was
 sent. This file does not repeat them.
 
-## Start here, 2026-10-14 evening (step 7 next)
+## Start here, cold start after 2026-10-14 (step 7, then step 8 = T1.35)
 
-**Where we are.** Steps 1 to 6 pass on the real arm
-([`../bench-runs/2026-10-14-labbox-t1.12-t1.14-real-arm.txt`](../bench-runs/2026-10-14-labbox-t1.12-t1.14-real-arm.txt)).
-- **Step 5 (T1.12):** 8 voice-started attempts, 5 grasped. 5 of 6 within reach. The front face must be
-  under about 50 cm from the arm's black base: at 54.5 cm the final step is out of reach.
-- **Step 6 (T1.14):** one launch grasped, held at HOME, let go on "release", went back to IDLE, and
-  grasped again. On `dev` once PR #75 merges.
-- `~/rcp-Gappler` is back on `dev` (8b2e8ea at the end of the session).
+**Where we are.** Steps 1 to 6 pass on the real arm. Step 7 (T1.17, the AnyGrasp path) has every
+fix in `dev` but no finished grasp yet:
+- **7a to 7c:** AnyGrasp's settings (0.10 m, 30 degrees), its axes turned into `grasp_frame`'s
+  (PR #82), and its point moved to where its fingertips go (PR #83). 7c is checked on live
+  candidates only, not on a finished grasp.
+- **7d, the first AnyGrasp grasp, FAIL:** the wrist turned about 180 degrees just before closing.
+  Fixed in PR #84 (T1.33, merged): the AnyGrasp node keeps the grasp twin that turns the wrist least.
+  Sim: joint6 turns 0.0 deg with the fix, 180.0 deg without. Not yet tried on the real arm.
+- **Even when 7d and T1.17 pass, the claim is weak (Dion, 2026-10-14).** Every grasp so far had the
+  box in an ideal spot: 44.5 cm away, the 6 cm face square to the arm. "AnyGrasp grasps work" needs
+  the box at random positions and angles. That is step 8, T1.35.
+- Records: [`../bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt`](../bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt)
+  (steps 7a to 7d), pane logs on the box in `~/dion_logs/2026-10-14_t1.17_anygrasp/`.
 
-**Next: step 7 (T1.17), the AnyGrasp path.** Prep on branch `t1.8-t1.10-anygrasp-gate-and-pane`
-(PR #79, draft). **Step 7a done 2026-10-14:** the impossible grasps came from the node telling AnyGrasp
-the gripper opens 0.07 m, which left no room around the box's 6 cm face. Now 0.10 m plus a 30 degree
-approach limit, both in `grasp/grasp_config.yaml`
-([`../bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt`](../bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt)).
-**Step 7b done 2026-10-14 (arm still): the arm would have come in 90 degrees off.** AnyGrasp and
-`grasp_frame` name the grasp's axes differently, and the node passed AnyGrasp's straight through.
-Fix on branch `t1.17-anygrasp-to-grasp-frame`: every grasp is turned into `grasp_frame`'s axes
-before it is published (step 7 below). Simulated arm check PASS, 22 of 22, the gripper 0.0 degrees off AnyGrasp's approach.
+**Next session at the box, in order:**
+1. **Update the box.** `cd ~/rcp-Gappler && git checkout dev && git pull && ./build.sh`. Keep the
+   local edit `use_simple_execute: false` in `grasp/grasp_config.yaml`.
+2. **T1.34 first (Dion, key).** The RViz gripper drawing (grasp_viz) is wrong since #82 and #83:
+   fingers 90 degrees off, approach arrow reversed, palm on the tips. Fix it and check it against a
+   live candidate before trusting RViz. Until then judge by eye and numbers.
+3. **Camera mount check (part of T1.35, arm still, about 10 min).** Where the URDF says the wrist
+   camera sits (`rm_65_w_gripper.urdf.xacro:24`) was typed in by the earlier developers and never
+   measured. Box at a taped spot, read where the system puts the box face in `base_link`, measure it
+   from the arm base with a ruler. Within about 1 cm is fine. If not, every grasp is off by that much.
+4. **Step 7d again.** `./quickstart_terminals.sh grasp --anygrasp`, start the state machine, box at
+   44.5 cm with the 6 cm face to the arm, hand on the e-stop pane (row 1, column 1), one
+   `/manipulator/grasp_request`. Pass: the wrist stays within 90 degrees and the tips end past the face.
+5. **T1.17.** 5 attempts through AnyGrasp at the ideal spot, compared with the simple path's 5 of 8.
+6. **T1.32 and T1.37.** Merge T1.32, check a 7.5 cm face is dropped live, and settle the retry
+   question (T1.37) before random poses make it common.
+7. **Step 8, T1.35: random positions and angles.** Design with Dion first (below), then run it.
 
-**Next, arm still:** merge the fix, rebuild, then measure where AnyGrasp puts the grasp point along
-the approach compared with `grasp_frame` `[unverified]`. Only then let the arm move to one.
+### Step 8 (T1.35): the box anywhere, at any angle
+
+**Why.** Steps 5 to 7 put the box in one ideal spot. A grasp system that only works there is not
+working. This step is the real test of "AnyGrasp grasps work".
+
+**Proposed design, settle with Dion before running:**
+- **Positions:** front face 35, 42 and 50 cm from the black base (50 cm is near the reach limit:
+  54.5 cm failed in step 5), and left, centre and right of the arm (about -10, 0, +10 cm).
+- **Angles:** the box turned 0, 30, 60 and 90 degrees about the vertical.
+- **Random, not chosen:** draw about 12 (position, angle) pairs before the session, for example with
+  `python3 -c "import random; random.seed(35); ..."`, write them in the bench-run record, and run them
+  in that order. No skipping the hard ones.
+- **Pass bar:** set before the run, for example 9 of 12. Dion decides.
+- **Record per attempt:** grasped, lifted and brought to the return pose, or the failure: no
+  candidate, wrist turn, base of the U pushed the box, missed, out of reach, other. Also the approach
+  angle and how far the tips went past the face.
+- **T1.32 first.** Built 2026-10-14 on branch `t1.32-grasp-fits-gripper` (its own PR): the node
+  drops grasps where the object is over 0.068 m wide between the pads or the tips go over 0.045 m
+  past its near face. Merge it, and check on the live camera that a too-big face (7.5 cm) is dropped.
+- **Open question before T1.35 (T1.37, discuss with Dion):** when every grasp is too big, nothing
+  is published and the state machine gives up after 3 s (`grasp_state_machine.cpp:570-578`). Is a
+  retry needed, and how? `max_approach_deg` is 30 (a first-run limit): note attempts with no
+  candidate inside it.
 
 **Known from steps 5 and 6, all parked:**
 - The grip closes a few cm short and always at the same angle, so the box must face the arm. Most
@@ -650,8 +685,18 @@ it before publishing. Its self-check passes on the box. `./bench/state_machine_s
 builds its fake grasp in AnyGrasp's axes from where the gripper's links are, runs it through the same
 conversion, and checks the simulated gripper points within 5 degrees of it. PASS 2026-10-14, 22 of 22, gripper 0.0 deg off AnyGrasp's approach and finger line (box log/bench_state_machine_2026-10-14_1901.txt).
 
-Left `[unverified]`: where AnyGrasp puts the grasp point along the approach, compared with
-`grasp_frame`. If they differ, the gripper stops short or pushes into the box.
+Measured next (step 7c): `grasp_frame` is at the fingertips, AnyGrasp's point is `depth` short of
+them. Fixed on `t1.17-grasp-depth-offset`, see the bench-run record.
+Gripper inside (Dion, 2026-10-14): a U 50 mm deep and 71 mm wide, like a tuning fork on the
+flange (147.5 mm to the tips). Rubber pads 16 mm long from each tip, their middles 42 mm from its base. Tips more than about 50 mm past the near face push the box with the base of the U. Live, the
+median was 38 mm but the max 133 mm, so T1.32 also checks depth.
+
+### Result, 2026-10-14: step 7d, first AnyGrasp grasp FAIL (wrist turned 180 degrees)
+
+One grasp request, box at 44.5 cm. SELECTING to 0.209 m, EXECUTING, pose locked, a planned move
+to the grasp (9 s), gripper closed. Just before closing the wrist turned about 180 degrees and the
+jaws knocked the box off. The approach itself looked right. Cause `[inferred]` and the proposed
+fix are in T1.33 and the bench-run record. Pane logs: `~/dion_logs/2026-10-14_t1.17_anygrasp/` on the box.
 
 ### Result, 2026-10-14: step 5 PASS, 5 of 8
 
@@ -742,3 +787,7 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-14 | Claude Opus 5.5 + Dion | Steps 5 (T1.12) and 6 (T1.14) PASS on the real arm, result tables. Start here moved on to step 7. |
 | 2026-10-14 | Claude Opus 5.5 + Dion | Step 7a (T1.17) on the live camera, arm still: cause of AnyGrasp's impossible grasps found (gripper model 0.07 m), now 0.10 m plus a 30 degree approach limit. T1.32 added. |
 | 2026-10-14 | Claude Opus 5.5 + Dion | Step 7b (T1.17), arm still: AnyGrasp's grasp axes differ from `grasp_frame`'s, the arm would have come in 90 degrees off. Fix and sim check on `t1.17-anygrasp-to-grasp-frame`. Start here updated. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Steps 7c (depth offset) and 7d (first AnyGrasp grasp, wrist turned 180 degrees, FAIL). Start here points at T1.33. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Start here rewritten as a cold start: #83, T1.33 design choices, sim, step 7d again. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Start here rewritten after #84 merged: box update, T1.34, camera mount check, 7d, T1.17, then step 8 (T1.35, random box positions and angles, Dion: the ideal-spot claim is weak). |
+| 2026-10-15 | Claude Opus 5.5 + Dion | Step 8 notes T1.32 built and the retry question (T1.37). |

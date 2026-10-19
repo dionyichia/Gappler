@@ -574,7 +574,7 @@ private:
         return true;
       if (!got || candidate_queue_.empty())
       {
-        RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidates received — aborting");
+        RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidates in 3 s, back to IDLE. The AnyGrasp node log says why (T1.37)");
         return true; // signal done, return to IDLE
       }
       // Drain stale candidates, keep latest

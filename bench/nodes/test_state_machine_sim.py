@@ -48,7 +48,7 @@ except ImportError as e:
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "grasp/anygrasp_node"))
-from anygrasp_to_grasp_frame import to_grasp_frame  # noqa: E402
+from anygrasp_to_grasp_frame import nearer_twin, to_grasp_frame  # noqa: E402
 LOG = REPO / os.environ.get("BENCH_SM_LOG", "log/bench_state_machine.txt")
 JOINTS = [f"joint{i}" for i in range(1, 7)]
 HOME_MAIN = [0.0, 0.0, 0.7854, 0.0, 1.5708, 1.5708]      # mtc_planner.hpp HOME_JOINTS on main (CODE_AUDIT B4)
@@ -75,6 +75,8 @@ class Actors(Node):
                                  lambda m: self.grip.append((now(), "set_position", f"position={m.position}")), 10)
         self.create_subscription(Gripperpick, "/rm_driver/set_gripper_pick_on_cmd", self._pick_on, 10)
         self.axes_at_close = None  # gripper approach and closing directions when told to close
+        self.tip_at_close = None   # grasp_frame (the fingertips) in base_link when told to close
+        self.wrist_at_close = None  # joint6 when told to close
         self.create_subscription(Bool, "/manipulator/return_to_user", lambda m: self.returned.append((now(), m.data)), 10)
         self.create_subscription(Empty, "/manipulation/done", lambda m: self.done.append(now()), 10)
         self.cam_pub = self.create_publisher(CameraInfo, "/camera/camera/color/camera_info", 1)
@@ -95,18 +97,21 @@ class Actors(Node):
         self.grip.append((time.time(), "pick_on", f"speed={m.speed} force={m.force}"))
         try:
             self.axes_at_close = self.gripper_axes()
+            self.tip_at_close = self._at("grasp_frame")
+            self.wrist_at_close = self.js.get("joint6")
         except Exception:
             pass
+
+    def _at(self, frame):
+        t = self.tf.lookup_transform("base_link", frame, Time()).transform.translation
+        return np.array([t.x, t.y, t.z])
 
     def gripper_axes(self):
         """The gripper's approach and closing directions in base_link, from where its links are.
         Approach: Link6 towards grasp_frame. Closing: the line between the fingers."""
-        def at(frame):
-            t = self.tf.lookup_transform("base_link", frame, Time()).transform.translation
-            return np.array([t.x, t.y, t.z])
-        a = at("grasp_frame") - at("Link6")
+        a = self._at("grasp_frame") - self._at("Link6")
         a /= np.linalg.norm(a)
-        c = at("gripper_Link1") - at("gripper_Link3")
+        c = self._at("gripper_Link1") - self._at("gripper_Link3")
         c -= c.dot(a) * a
         return a, c / np.linalg.norm(c)
 
@@ -335,11 +340,18 @@ def main():
             n.cand_base = Pose()
             n.cand_base.position.x, n.cand_base.position.y = eef.translation.x, eef.translation.y
             n.cand_base.position.z = eef.translation.z + 0.01
-            # The grasp in AnyGrasp's axes (x approach, y closing), then the node's conversion
+            # The grasp in AnyGrasp's axes (x approach, y closing), then the node's conversion.
+            # Closing is the gripper's own line turned 180 degrees, the twin that made the wrist
+            # flip in step 7d (T1.33). nearer_twin gets the gripper's live y, as the node's camera
+            # frame constant stands for it on the robot
             a, c = n.gripper_axes()
-            want = np.column_stack([a, c, np.cross(a, c)])
+            want = np.column_stack([a, -c, np.cross(a, -c)])
+            r = eef.rotation
+            gripper_y = Rotation.from_quat([r.x, r.y, r.z, r.w]).as_matrix()[:, 1]
+            wrist_start = n.js.get("joint6")
             q = n.cand_base.orientation
-            q.x, q.y, q.z, q.w = (float(v) for v in Rotation.from_matrix(to_grasp_frame(want)).as_quat())
+            q.x, q.y, q.z, q.w = (float(v) for v in
+                                  Rotation.from_matrix(nearer_twin(to_grasp_frame(want), gripper_y)).as_quat())
             angle = math.degrees(math.asin(min(1.0, abs(1 - 2 * (q.x * q.x + q.y * q.y)))))  # approachAngleDeg()
             locked = n.spin_until(lambda: log_has(r"EXECUTING: pose stable") or log_has(r"no candidate"), 30)
             check("candidates -> stability lock", locked and log_has(r"EXECUTING: pose stable"),
@@ -350,6 +362,9 @@ def main():
         fail_re = (r"EXECUTING: (Cartesian move failed|no candidates received)" if CANDIDATES
                    else r"EXECUTING: final Cartesian step failed")
         closed = n.spin_until(lambda: any(k == "pick_on" for t, k, _ in n.grip) or log_has(fail_re), 90)
+        if CANDIDATES:
+            p = n.cand_base.position
+            tip_target = np.array([p.x, p.y, p.z])  # the fingertip target the node publishes
         n.cand_base = None
         final_fail = log_has(fail_re)
         check("final approach, then gripper told to close", closed and not final_fail,
@@ -365,6 +380,14 @@ def main():
             app, clo = deg(n.axes_at_close[0], want[:, 0]), deg(n.axes_at_close[1], want[:, 1])
             if not check("gripper points the way AnyGrasp asked", app < 5 and clo < 5,
                          f"approach off by {app:.1f} deg, closing line off by {clo:.1f} deg (limit 5)"):
+                return
+            off = float(np.linalg.norm(n.tip_at_close - tip_target)) * 1000
+            if not check("fingertips reach the published grasp point", off < 5,
+                         f"grasp_frame {off:.1f} mm from it (limit 5)"):
+                return
+            turn = abs(math.degrees(n.wrist_at_close - wrist_start))
+            if not check("given the 180 degree twin, the wrist turns 90 or less (T1.33)", turn <= 90,
+                         f"joint6 turned {turn:.1f} deg"):
                 return
         n.depth = None
         ret = n.spin_until(lambda: any(v for _, v in n.returned), 120)

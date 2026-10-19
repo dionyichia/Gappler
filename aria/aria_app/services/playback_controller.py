@@ -93,9 +93,9 @@ class PlaybackController:
             return
 
         if stream_id == self.rgb_stream_id:
-            image = np.rot90(image, -1)
-            self._publish_image(image, ROS2Topics.RGB_CAMERA_RAW)
-            undistorted_image = self._undistort_image(image.copy())
+            self._publish_image(np.rot90(image, -1), ROS2Topics.RGB_CAMERA_RAW)
+            # Undistort, then rotate, as image_streaming_pipeline.rgb_worker (T2.13)
+            undistorted_image = np.rot90(self._undistort_image(image.copy()), -1)
             self._publish_image(undistorted_image, ROS2Topics.RGB_CAMERA_UNDISTORTED)
 
         elif stream_id == self.eye_stream_id:

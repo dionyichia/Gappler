@@ -224,11 +224,31 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
 - **Left alone for now.** `object_recognition_pipeline.py` keeps its own SAM 3 and its publishing
   line stays commented out. `dummy_mask_publisher.py` is kept (§2.3). `T2.4` (trigger, age limit,
   freeing the GPU) is paused.
-- **Found while designing, matters after `T2.2`.** The gaze pixel is in the raw glasses camera
-  image (`eye_tracking.py:147`, published by `image_streaming_pipeline.py:186`), but the published
-  glasses image is rotated 90° (`:132`) and undistorted (`:135`). The aria client must put the gaze
-  pixel through both before comparing it with masks. Today's code only handles the rotation
-  (`object_recognition_pipeline.py:675`) `[code]`.
+- **Gaze pixel, resolved 2026-10-14 (`T2.9`, PR #76).** The gaze was in the raw glasses camera's
+  pixels, but the published glasses image is undistorted and rotated 90°. `et_worker` now
+  publishes gaze in the published image's pixels (`undistortion_helper.to_published_pixel`), so
+  every reader compares it with masks directly. The old rotations in the visualizer and
+  `object_recognition_pipeline.py` are commented out. The image was also undistorted in the wrong
+  order, about 12.5 px off (`T2.13`, fixed in the same PR) `[code]`. The aria client now picks the
+  mask under the gaze and sends it as the Target's reference. End to end on a recording replayed
+  on the box: 4 of 4 words sent a reference once, 3 of 4 in two later runs (the replay started
+  before its workers were ready, fixed in the review), then 4 of 4 again with the fix
+  (`bench-runs/2026-10-15-labbox-t2.9-review-fixes.txt`). The grasp side does not use the reference
+  yet (`T8.5`), so which object the arm takes is unchanged. Write-up:
+  `dion_docs/T2.9_GAZE_PICK_ON_RECORDING.md`.
+- **Timing, open 2026-10-17 (`T2.19` to `T2.21`).** The aria client times the word, the gaze and
+  the image by when each reaches it, not when the glasses captured it, and guesses the gaps with
+  `speech_latency_s` (1.5 s, measured) and `image_wait_s` `[code]`. Those knobs measure how fast the
+  box is, so they need retuning whenever the box changes. The fix is the standard one: stamp each
+  glasses message with its capture time (glasses clock), keep a short history, look up the image
+  and gaze from when the word was said, and vote by gaze dwell. Plan and an independent review:
+  `dion_docs/T2.9_TIMING_REVIEW.md` sections 9.1 to 9.10.
+  **PR A built 2026-10-17 (`T2.19`, `T2.20`, branch `t2.19-glasses-capture-timestamps`):** images
+  and gaze carry the glasses capture time (gaze is `PointStamped`). The client keeps 20 s of both,
+  and the gaze from when you spoke picks the image taken then. Gaze near that image votes on the
+  mask, replacing the 1 s mean. `image_wait_s` is now `matching_image_wait_s`. Still by arrival
+  time: the word to the gaze, through `speech_latency_s`, until `T2.21` `[code]`. On the box: e2e
+  replay 4 of 4, stamps on the glasses clock (`bench-runs/2026-10-17-labbox-t2.19-t2.20-capture-timestamps.txt`).
 
 #### `[decided 2026-09-20]` Decision: retire `sam3_ros_node.py` (Option 2)
 
@@ -1482,3 +1502,8 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: `T2.1` built (all six steps), start-once rule and its guard, results recorded. |
 | 2026-10-09 | Claude Opus 5.5 + Dion | §2.2: the service imports nothing from a subsystem. §2.8: SAM 3 weights moved to `assets/models/` (T2.1). The segmentation service builds SAM 3 itself, so `shared_services/` no longer imports aria. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | §2.2: start-once guard now looks for the node name, which appears before SAM 3 loads. It looked for the service, which appears only after, so a second start during the ~20 s load was not refused (found in the T2.1 review). |
+| 2026-10-14 | Claude Opus 5.5 + Dion | §2.2: gaze pixel finding resolved by T2.9 (PR #76): gaze published in the published image's pixels, undistort order fixed (T2.13). |
+| 2026-10-15 | Claude Opus 5.5 + Dion | §2.2: T2.9 result stated as all three runs, and that the grasp side does not use the reference yet (T8.5). |
+| 2026-10-15 | Claude Opus 5.5 + Dion | §2.2: T2.9 e2e 4 of 4 after the readiness fix. |
+| 2026-10-17 | Claude Opus 5.5 + Dion | §2.2: T2.9 timing is by arrival, not capture. Plan to fix it is T2.19 to T2.21. |
+| 2026-10-17 | Claude Opus 5.5 + Dion | §2.2: T2.19 and T2.20 (PR A) built, box checks owed. |

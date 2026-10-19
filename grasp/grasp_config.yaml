@@ -38,6 +38,10 @@ grasp_segmentation_client:
     # Give up on a request with no reply after this long, so a service that dies mid-call does not
     # stall the client for good. A normal call takes about 0.25 s.
     segment_timeout_s: 5.0
+    # Sent with every request. The service's defaults are looser, for the glasses (T2.9). The grasp
+    # client takes the best score, so it keeps the values it was tested with.
+    min_score: 0.5
+    max_detections: 5
 
 # grasp/anygrasp_node/anygrasp_detection_node.py
 anygrasp_detection_node:
@@ -56,6 +60,24 @@ anygrasp_detection_node:
     # the grasp's full pose, so larger angles may work. Raise it once RViz and a few real grasps
     # show they do. Without it, most grasps came from the side or across the top face.
     max_approach_deg: 30
+    # T1.32: does the object fit the REAL gripper? AnyGrasp cannot tell (it is told 0.10 m above),
+    # so the node measures each grasp from the masked points and drops it if any limit fails.
+    # Gripper (Dion, 2026-10-14): a U 50 mm deep inside, opens 71 mm, rubber pads 16 mm long.
+    # Widest the object may be where the pads close, metres. 71 mm opening minus 3 mm for depth
+    # noise. A 6 cm box measures about 63 mm in the point cloud (step 7a). Raise toward 0.071 if
+    # good grasps are dropped, lower if grasps close on objects that do not fit.
+    # [unverified] whether 71 mm is between the pads or outside them (pads about 2 mm a side).
+    max_object_width_m: 0.068
+    # Furthest the fingertips may go past the object's near face, metres. Past 0.050 the base of
+    # the U pushes the object. 5 mm kept as margin. In step 7c tips went up to 0.133 m in.
+    max_grasp_depth_m: 0.045
+    # Height of the slice measured, across the finger, metres. Roughly the pad width. [unverified]
+    # Larger counts more of the object (safer for boxes, drops grasps on narrow necks).
+    finger_height_m: 0.02
+    # Ignore this percent of points at each edge of the slice. They are often flying pixels: the
+    # camera mixes near and far depth at an edge. 0 uses the extreme points (strays then make
+    # objects look wider). Raise if stray points still widen objects.
+    fit_percentile: 2
 
 # grasp/grasp_viz/grasp_viz.py. Size of the gripper drawn in RViz, metres.
 grasp_visualizer:

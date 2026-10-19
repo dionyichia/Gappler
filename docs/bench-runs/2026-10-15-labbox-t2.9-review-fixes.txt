@@ -1,0 +1,44 @@
+T2.9 review fixes on the lab box, 2026-10-15 (PR #76, commit 91a9006 plus merge dcda684)
+Copy of the branch's aria/, shared/, shared_services/, grasp/ in ~/dion_t2.9/repo (.venv and
+install linked from ~/rcp-Gappler). Box idle before each run: no ROS processes, GPU free.
+
+1. Aria client unit tests, domain 87, localhost only
+   python -m unittest discover -s aria/aria_app/services/aria_segmentation_client -p "test_*.py"
+   Ran 21 tests, OK (15 client, among them the new same-word stale reply test, plus 6 gaze pick)
+
+2. End to end on recording c2cbafe8, domain 88 (docs/dion_docs/t2.9_e2e_replay_on_box.sh)
+   replay.log: "Both workers took their first frame after 67 s", then "Playing from 0 s",
+               "Done at 118 s"
+   "box" said at 22, 46, 70 and 95 s. 4 of 4 picked a box and sent a reference:
+     22 s  image recent             #6 of 13, score 0.46,  1 px from the gaze
+     46 s  2.0 s old, waited        #1 of 8,  score 0.64,  0 px
+     70 s  image recent             #3 of 11, score 0.57, 17 px
+     95 s  image recent             #3 of 5,  score 0.40,  8 px
+   No "No glasses image" at 22 s (it appeared in 3 of 4 earlier runs).
+   /grasp/target: 8 messages (4 words, 4 references).
+   Rates over the run: image 0.49 a second (gap 1.2 to 3.1 s), gaze 4.5 a second.
+   Total time 3 min 27 s. Workers' start-up of 67 s is T2.15.
+
+3. Speech-to-text latency (review guide section 7 item 1), domain 89
+   Scratch script ~/dion_t2.9/stt_latency.py: plays pick_up_box_command.wav into the real
+   audio_worker (Whisper + LLM on the GPU), each 0.25 s chunk handed over at its real time, as
+   the live AudioObserver does. Times the word's arrival on /aria/audio/prompt from the end of
+   speech. The voice detector finds speech from 1.63 s to the file's end at 4.29 s, so the
+   recording stops right at the last word: the true end of speech is at or before 4.29 s, and
+   the true latency at least what is shown.
+   5 plays: 1.32 s (first, warm-up), 0.62, 0.65, 0.65, 0.65 s. Median 0.65 s. Word 'box' each time.
+   Not measured: the glasses' own audio streaming delay, which happens before audio_worker.
+   CORRECTION (same evening): the recording is noisy (loudness floor about 0.05 of peak), so the
+   voice detector ran its span to the file's end. Loudness in 0.1 s steps shows the last speech
+   peak at about 3.3 s, so speech ends near 3.4 s [inferred], and the latency is about
+   0.65 + 0.9 = 1.5 s. That fits CHANNEL_CONTRACT A-5: 1.1 s by design (0.7 s quiet, 0.4 s
+   padding) plus Whisper and the LLM. 0.65 s is a lower bound only.
+   Result: Dion chose the knob, speech_latency_s 0.65 in aria_config.yaml, before the correction. Client tests after
+   it: 22 pass (16 client plus 6 gaze pick).
+
+4. End to end again with speech_latency_s 0.65, domain 88, same script
+   Workers took their first frame after 54 s. 4 of 4 picked a box and sent a reference:
+     22 s  #6 of 13, score 0.46,  0 px      70 s  #5 of 11, score 0.36, 15 px
+     46 s  #1 of 9,  score 0.58,  1 px      95 s  #5 of 5,  score 0.33,  6 px
+   /grasp/target: 8 messages. At 70 and 95 s the picked mask differs from run 2 (the window
+   moved 0.65 s back). Whether it is the same box was not checked on the image [unverified].

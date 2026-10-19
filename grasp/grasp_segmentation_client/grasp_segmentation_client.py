@@ -117,7 +117,8 @@ class GraspSegmentationClient(Node):
         rgb, depth = self.waiting
         self.waiting = None
         request = Segment.Request(image=rgb, depth=depth, camera_info=self.camera_info,
-                                  prompt=self.prompt)
+                                  prompt=self.prompt, min_score=CFG["min_score"],
+                                  max_detections=CFG["max_detections"])
         self.sent_at = time.monotonic()
         self.future = self.service.call_async(request)
         self.future.add_done_callback(lambda f, prompt=self.prompt: self.on_reply(f, prompt))
