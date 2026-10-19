@@ -221,6 +221,19 @@ class EdgeAttributes(unittest.TestCase):
     def test_best_anchor_of_unknown_object_is_none(self):
         self.assertIsNone(AnchorObjectGraph().best_anchor_for(999))
 
+    def test_equal_views_go_to_the_newest_anchor(self):
+        g = AnchorObjectGraph()
+        for anchor in (3, 1, 2):
+            g.observe(anchor, 100, Sighting(mask_pixels=100, confidence=0.5))
+        self.assertEqual(g.best_anchor_for(100), 3)
+
+    def test_among_limits_the_choice(self):
+        g = AnchorObjectGraph()
+        g.observe(1, 100, Sighting(mask_pixels=100, confidence=0.9))
+        g.observe(2, 100, Sighting(mask_pixels=900, confidence=0.9))
+        self.assertEqual(g.best_anchor_for(100, among={1}), 1)
+        self.assertIsNone(g.best_anchor_for(100, among=set()))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
