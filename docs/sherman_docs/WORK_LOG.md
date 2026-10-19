@@ -1503,6 +1503,31 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   the declared allowance, no commit, push, PR or merge. T3.5c public regression CLOSED; T3.5c
   overall PROGRESS.
 
+## [2026-10-19] T3.5c | stationary02 A PASSES; B staged
+
+- Run `t59-replay-20261019T151612Z-21456`, combined image `ac276ad7…`, mapper-only
+  `t35c_stationary02_20261019_lio.yaml`: **PASS**, exit 0, 304.7 s, drain
+  `callbacks_quiet`, no errors, no terminal allowance needed.
+- Coverage: LiDAR **747/747**, IMU 14,923/14,931 with **8** prestart drops inside the
+  21-message allowance, EOF true. `require_visual` false, so 0 retrievals is
+  correct by design, not a gap.
+- Outputs: odom **743** valid over **74.21 s**, cloud **432** valid over **74.01 s**,
+  **0 invalid**; cloud validation `ok` on every cloud (5,530,694 points), 0
+  heartbeats. Runtime banner `[T35_BLIND_SQR] blind=0.1 blind_sqr=0.01` proves the
+  combined image ran on this bag; camera parameter service returned the exact
+  staged Pinhole values.
+- Note for the A/B reading: `[T35_DIAG_CLOUD]` rows exist only with `img_en=1`, so
+  A and B point counts are not comparable through that route; A's evidence is
+  coverage, validity and continuity.
+- Evidence `EVIDENCE_t35c-stationary02-A-stage-20261019.sha256` (25 files, SHA
+  `59d5945c…`) and `EVIDENCE_t35c-stationary02-A-run-20261019.sha256` (28 files,
+  SHA `f2ff8439…`).
+- **B staged** at `~/rcp-Gappler/log/t59-fastlivo/log/t35c-stationary02-B.xcP0nT/`
+  (visual `397a75a4`, camera `38b0be43`, identity `5485bca4`, harness
+  `b7de050b`/`e13c0275`), stage evidence `d9b8bd6c…` (25 files), command typed and
+  unexecuted. No tuning; no commit, push, PR or merge since `0d8a93e`. T3.5c
+  PROGRESS.
+
 ## Record Template
 
 
