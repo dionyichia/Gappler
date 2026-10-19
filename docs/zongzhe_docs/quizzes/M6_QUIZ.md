@@ -164,6 +164,7 @@ These are for review. None has been changed.
    `Observation` says it is "never reset" (`stage_types.py:26`). Loading two recordings into one
    graph would give repeated ids, and `AnchorStore.add` refuses a repeat. Harmless with one
    recording. A `frame_id_offset` argument on `TumSequence` would fix it if it is ever needed.
+   **Fixed 2026-10-14 (T6.9):** `TumSequence(..., first_frame_id=n)` starts the ids at n.
 
 ---
 
@@ -507,12 +508,16 @@ None changed.
    the old photo's edges. The duplicate check should happen before `integrate`, or `integrate`
    should refuse an anchor id the graph already holds. This links to round 1 issue 4:
    `TumSequence` restarts frame ids at 0, which is exactly how a repeat would arrive.
+   **Fixed 2026-10-14 (T6.9):** `ObjectStore.apply` refuses an anchor the graph already holds,
+   before it changes anything.
 2. **Two "best photo" functions that answer differently.**
    `AnchorObjectGraph.best_anchor_for` (`anchor_object_graph.py:156`) and
    `TargetFinder.best_anchor` (`target_finder.py:105`) both pick an object's best photo. The
    graph's version has no tie rule and does not check that the photo still has a record. Nothing
    calls the graph's version now, so it is a trap for the next caller. Remove it, or have
    `best_anchor` call it with a filter.
+   **Fixed 2026-10-14 (T6.9):** the second option. `best_anchor_for` takes `among` and breaks ties
+   by the newest anchor, and `best_anchor` calls it with the stored photos.
 3. **The rejected list is tied to the instruction's text** (`target_finder.py:144`). The same
    sentence given again as a new task, for example "find a chair" after the chairs were moved,
    keeps the old rejections. Minor. A task id on `TaskContext` would separate the two.
@@ -586,16 +591,16 @@ Every point I missed or got wrong, to tick off when I can explain it without loo
 
 ### All code issues, ranked
 
-| # | Issue | Where | Kind |
-|---|---|---|---|
-| 1 | A repeated frame id corrupts the store before `add` refuses it | `anchor_store.py:210` | Correctness |
-| 2 | A small object can merge into its container on geometry alone [inferred] | `association.py:61` | Correctness, test in T6.4 |
-| 3 | The gate runs after SAM 3 has already made masks | `anchor_gate.py:3` | Docstring now, design in T6.5b |
-| 4 | SAM 3's 0.5 threshold makes the target-at-any-confidence rule a no-op | `sam3_adapter.py:28` | Settle in T6.3d |
-| 5 | `TumSequence` restarts frame ids at 0 | `replay_loader.py:226` | Correctness with more than one recording |
-| 6 | Two best-photo functions that disagree | `anchor_object_graph.py:156` | Cleanup |
-| 7 | One SAM 3 image encoding per vocabulary phrase | `sam3_adapter.py:97` | Speed, measure in T6.5b |
-| 8 | Prefilter radius set by the largest object | `association.py:74` | Speed |
-| 9 | DBSCAN runs before the range check | `geometry.py:198` | Speed, minor |
-| 10 | `appearance_matrix` double loop | `association.py:94` | Speed, minor |
-| 11 | Rejected list keyed on instruction text | `target_finder.py:144` | Minor |
+| # | Issue | Where | Kind | Status |
+|---|---|---|---|---|
+| 1 | A repeated frame id corrupts the store before `add` refuses it | `anchor_store.py:210` | Correctness | Fixed 2026-10-14, T6.9 |
+| 2 | A small object can merge into its container on geometry alone [inferred] | `association.py:61` | Correctness, test in T6.4 | Open |
+| 3 | The gate runs after SAM 3 has already made masks | `anchor_gate.py:3` | Docstring now, design in T6.5b | Open |
+| 4 | SAM 3's 0.5 threshold makes the target-at-any-confidence rule a no-op | `sam3_adapter.py:28` | Settle in T6.3d | Open |
+| 5 | `TumSequence` restarts frame ids at 0 | `replay_loader.py:226` | Correctness with more than one recording | Fixed 2026-10-14, T6.9 |
+| 6 | Two best-photo functions that disagree | `anchor_object_graph.py:156` | Cleanup | Fixed 2026-10-14, T6.9 |
+| 7 | One SAM 3 image encoding per vocabulary phrase | `sam3_adapter.py:97` | Speed, measure in T6.5b | Open |
+| 8 | Prefilter radius set by the largest object | `association.py:74` | Speed | Open |
+| 9 | DBSCAN runs before the range check | `geometry.py:198` | Speed, minor | Open |
+| 10 | `appearance_matrix` double loop | `association.py:94` | Speed, minor | Open |
+| 11 | Rejected list keyed on instruction text | `target_finder.py:144` | Minor | Open |

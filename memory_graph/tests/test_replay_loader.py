@@ -209,6 +209,15 @@ class TumLayoutTest(unittest.TestCase):
         self.assertEqual([o.frame_id for o in self.seq], [0, 1])
         self.assertEqual([o.timestamp for o in self.seq], [100.0, 101.0])
 
+    def test_first_frame_id_shifts_the_ids(self):
+        # M6 quiz issue 5: a second recording loaded into the same graph must not repeat ids
+        second = TumSequence(self.root, K=K, first_frame_id=len(self.seq))
+        self.assertEqual([o.frame_id for o in second], [2, 3])
+
+    def test_first_frame_id_cannot_be_negative(self):
+        with self.assertRaises(ValueError):
+            TumSequence(self.root, K=K, first_frame_id=-1)
+
     def test_max_dt_is_respected(self):
         self.assertEqual(len(TumSequence(self.root, K=K, max_dt=0.001)), 0)
 

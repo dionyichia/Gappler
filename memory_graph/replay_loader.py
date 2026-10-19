@@ -170,7 +170,9 @@ class TumSequence:
     A colour image is used only if a depth image and a pose both exist within
     max_dt seconds of it. The cameras and the pose tracker are not synchronised,
     so the three never share a timestamp. frame_id is the frame's position among
-    the frames kept, starting at 0.
+    the frames kept, plus first_frame_id. Observation.frame_id must never repeat
+    within one graph, so to load a second recording after this one, start it at
+    first_frame_id=len(first) (or higher).
 
     Reading the images needs OpenCV, which is imported on first use.
     """
@@ -182,8 +184,12 @@ class TumSequence:
         depth_units_per_metre: float = TUM_DEPTH_UNITS_PER_METRE,
         max_dt: float = 0.02,
         T_base_cam: Optional[np.ndarray] = None,
+        first_frame_id: int = 0,
     ) -> None:
+        if first_frame_id < 0:
+            raise ValueError(f"first_frame_id must be 0 or more, got {first_frame_id}")
         self.root = Path(root)
+        self.first_frame_id = int(first_frame_id)
         self.K = np.asarray(K, dtype=np.float64)
         self.depth_units_per_metre = depth_units_per_metre
         self.T_base_cam = T_base_cam
@@ -223,6 +229,6 @@ class TumSequence:
             missing = frame.rgb_path if image is None else frame.depth_path
             raise FileNotFoundError(f"cannot read {missing}")
         return to_observation(
-            image, depth, self.K, frame.T_world_cam, frame_id=index, timestamp=frame.timestamp,
+            image, depth, self.K, frame.T_world_cam, frame_id=self.first_frame_id + index, timestamp=frame.timestamp,
             depth_units_per_metre=self.depth_units_per_metre, bgr=True, T_base_cam=self.T_base_cam,
         )
