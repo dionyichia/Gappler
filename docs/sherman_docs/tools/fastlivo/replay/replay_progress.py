@@ -224,3 +224,45 @@ def terminal_message_gap(rows: dict, lidar_topic: str) -> dict:
         gap = {'topic': name, 'stamp': row['expected_last_stamp'],
                'seconds_after_last_lidar': round(after, 6)}
     return gap
+
+
+CLOUD_DIAG = re.compile(r'\[T35_DIAG_CLOUD\] source_points=(\d+) coloured_points=(\d+)')
+
+
+def parse_cloud_diag(lines) -> dict:
+    """Summarise the mapper's own per-VIO-frame coloured-cloud log lines."""
+    frames, zero_sources = 0, []
+    for line in lines:
+        match = CLOUD_DIAG.search(line)
+        if match:
+            frames += 1
+            if int(match.group(2)) == 0:
+                zero_sources.append(int(match.group(1)))
+    return {'frames': frames, 'zero_coloured': len(zero_sources),
+            'zero_source_min': min(zero_sources, default=None),
+            'zero_source_max': max(zero_sources, default=None)}
+
+
+def coloured_empty_allowance(harness_count: int, diag, require_visual: bool) -> tuple:
+    """Record zero-point coloured clouds only when the mapper's log accounts for each.
+
+    Stock publish_frame_world publishes a fielded, zero-point cloud on a VIO frame
+    where no source point projects into the image. That is a legitimate "nothing
+    in view" frame, not corruption, but only when the mapper itself logged exactly
+    the same number of such frames and every one had source points. Returns
+    (record, error); (None, None) when the monitor saw none.
+    """
+    if not harness_count:
+        return None, None
+    if not require_visual:
+        return None, 'coloured empty cloud seen without visual mode'
+    if not diag or not diag.get('frames'):
+        return None, 'coloured empty cloud without mapper cloud diagnostic evidence'
+    if diag['zero_coloured'] != harness_count:
+        return None, (f"coloured empty cloud count {harness_count} does not match "
+                      f"mapper log {diag['zero_coloured']}")
+    if not diag['zero_source_min'] or diag['zero_source_min'] <= 0:
+        return None, 'coloured empty cloud from a frame with no source points'
+    return ({'count': harness_count, 'mapper_logged': diag['zero_coloured'],
+             'source_points_min': diag['zero_source_min'],
+             'source_points_max': diag['zero_source_max']}, None)

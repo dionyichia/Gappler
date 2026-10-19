@@ -10,9 +10,10 @@ import struct
 import subprocess
 import time
 import traceback
-from replay_progress import (CallbackTracker, callback_patterns, drain_state,
-                               expected_callbacks, playback_rate, prestart_allowance,
-                               reconcile_imu, reconcile_rows, terminal_message_gap)
+from replay_progress import (CallbackTracker, callback_patterns, coloured_empty_allowance,
+                               drain_state, expected_callbacks, parse_cloud_diag,
+                               playback_rate, prestart_allowance, reconcile_imu,
+                               reconcile_rows, terminal_message_gap)
 
 ROOT = Path("/tmp/t59")
 DEFAULT_MAPPER_CONFIG = "bright_screen_wall.yaml"
@@ -274,6 +275,15 @@ def finalize_report(report: dict, started: float, diagnostic_captured: bool) -> 
                if lidar_topic else None)
     if allowed:
         report['terminal_message_lost'] = allowed
+    # Stock publish_frame_world emits a fielded zero-point cloud on a VIO frame with
+    # nothing in view. Record it only when the mapper's own log matches exactly.
+    record, error = coloured_empty_allowance(
+        report.get('monitor', {}).get('cloud_coloured_empty', 0),
+        report.get('mapper_cloud_diag'), report.get('require_visual', True))
+    if record:
+        report['coloured_empty_clouds'] = record
+    if error:
+        errors.append(error)
     for topic, row in report.get('input_callbacks', {}).items():
         if allowed and topic == allowed['topic']:
             continue
@@ -507,6 +517,13 @@ def main() -> int:
                     heartbeats = report["monitor"].setdefault("cloud_heartbeats", 0)
                     report["monitor"]["cloud_heartbeats"] = heartbeats + 1
                     return
+                elif (reason == "empty_or_nonpositive_dimensions" and total == 0
+                        and len(message.data) == 0 and len(message.fields) > 0):
+                    # Coloured branch, nothing projected into the image. Counted
+                    # here; finalize_report accepts it only against the mapper log.
+                    monitor = report["monitor"]
+                    monitor["cloud_coloured_empty"] = monitor.get("cloud_coloured_empty", 0) + 1
+                    return
                 if reason != "ok":
                     first_bad = report["monitor"].setdefault("cloud_first_bad", [])
                     if len(first_bad) < 5:
@@ -703,12 +720,16 @@ def main() -> int:
             errors.append(f"ROS cleanup: {error}")
         visual_count = 0
         logfile = evidence / "mapper.stdout.log"
+        diag_lines = []
         if logfile.exists():
             with logfile.open(errors="replace") as source:
                 for line in source:
                     match = re.search(r"\[ VIO \] Retrieve (\d+) points from visual sparse map", line)
                     visual_count += bool(match and int(match.group(1)) > 0)
-        report.update(eof=eof, positive_visual_retrievals=visual_count)
+                    if "[T35_DIAG_CLOUD]" in line:
+                        diag_lines.append(line)
+        report.update(eof=eof, positive_visual_retrievals=visual_count,
+                      mapper_cloud_diag=parse_cloud_diag(diag_lines))
         finalize_report(report, started, diagnostic_captured)
         (evidence / "result.json").write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
         print(json.dumps(report, allow_nan=False), flush=True)

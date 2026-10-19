@@ -321,6 +321,81 @@ class ProgressTests(unittest.TestCase):
         self.assertIn("input_lidar_topic", text)
         self.assertIn('terminal_message_lost', text)
 
+    def test_mapper_cloud_diagnostic_lines_are_summarised(self):
+        module = self.progress()
+        lines = ['noise',
+                 '[T35_DIAG_CLOUD] source_points=208 coloured_points=0 pub_scan_num=1',
+                 '[T35_DIAG_CLOUD] source_points=900 coloured_points=500 pub_scan_num=1',
+                 '[T35_DIAG_CLOUD] source_points=12 coloured_points=0 pub_scan_num=1']
+        self.assertEqual(module.parse_cloud_diag(lines),
+                         {'frames': 3, 'zero_coloured': 2,
+                          'zero_source_min': 12, 'zero_source_max': 208})
+        self.assertEqual(module.parse_cloud_diag(['noise']),
+                         {'frames': 0, 'zero_coloured': 0,
+                          'zero_source_min': None, 'zero_source_max': None})
+
+    def test_coloured_empty_clouds_are_allowed_only_with_matching_mapper_evidence(self):
+        module = self.progress()
+        diag = {'frames': 10, 'zero_coloured': 3, 'zero_source_min': 5, 'zero_source_max': 90}
+        record, error = module.coloured_empty_allowance(3, diag, True)
+        self.assertIsNone(error)
+        self.assertEqual(record, {'count': 3, 'mapper_logged': 3,
+                                  'source_points_min': 5, 'source_points_max': 90})
+        # Nothing observed means nothing to allow and nothing to report.
+        self.assertEqual(module.coloured_empty_allowance(0, diag, True), (None, None))
+        rejected = {
+            'harness saw more': (4, diag, True),
+            'harness saw fewer': (2, diag, True),
+            'no mapper evidence': (3, None, True),
+            'no diagnostic frames': (3, dict(diag, frames=0, zero_coloured=0,
+                                             zero_source_min=None, zero_source_max=None), True),
+            'empty source': (3, dict(diag, zero_source_min=0), True),
+            'not visual mode': (3, diag, False),
+        }
+        for label, (count, evidence, visual) in rejected.items():
+            with self.subTest(label=label):
+                record, error = module.coloured_empty_allowance(count, evidence, visual)
+                self.assertIsNone(record)
+                self.assertIn('coloured empty cloud', error)
+
+    def test_supervisor_records_matching_coloured_empty_clouds_instead_of_failing(self):
+        streams = {key: {'count': 10, 'first': 1, 'last': 6, 'invalid': 0}
+                   for key in replay.OUTPUTS}
+
+        def run(empties, diag):
+            report = {'mode': 'replay', 'errors': [], 'eof': True,
+                      'positive_visual_retrievals': 2, 'streams': streams,
+                      'input_lidar_topic': '/livox/lidar',
+                      'input_callbacks': coverage_rows(),
+                      'monitor': {'cloud_coloured_empty': empties},
+                      'mapper_cloud_diag': diag}
+            with patch.object(replay.time, 'monotonic', return_value=0):
+                replay.finalize_report(report, started=0, diagnostic_captured=False)
+            return report
+
+        diag = {'frames': 10, 'zero_coloured': 3, 'zero_source_min': 5, 'zero_source_max': 90}
+        report = run(3, diag)
+        self.assertEqual((report['verdict'], report['errors']), ('PASS', []))
+        self.assertEqual(report['coloured_empty_clouds']['count'], 3)
+        for label, empties, evidence in (('count mismatch', 4, diag),
+                                         ('no evidence', 3, None),
+                                         ('empty source', 3, dict(diag, zero_source_min=0))):
+            with self.subTest(label=label):
+                failed = run(empties, evidence)
+                self.assertEqual(failed['verdict'], 'FAIL')
+                self.assertTrue(any('coloured empty cloud' in e for e in failed['errors']))
+                self.assertNotIn('coloured_empty_clouds', failed)
+        clean = run(0, None)
+        self.assertEqual(clean['verdict'], 'PASS')
+        self.assertNotIn('coloured_empty_clouds', clean)
+
+    def test_supervisor_counts_fielded_empty_clouds_and_reads_mapper_evidence(self):
+        text = Path(replay.__file__).read_text()
+        self.assertIn('cloud_coloured_empty', text)
+        self.assertIn('len(message.fields) > 0', text)
+        self.assertIn('parse_cloud_diag(', text)
+        self.assertIn('mapper_cloud_diag', text)
+
 
 if __name__ == '__main__':
     unittest.main()
