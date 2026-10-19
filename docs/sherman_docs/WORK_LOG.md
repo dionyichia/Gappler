@@ -1528,6 +1528,31 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   unexecuted. No tuning; no commit, push, PR or merge since `0d8a93e`. T3.5c
   PROGRESS.
 
+## [2026-10-19] T3.5c | stationary02 B FAILS on cloud validity (118 constructed-empty clouds)
+
+- Run `t59-replay-20261019T155550Z-22605`, combined image `ac276ad7…`, visual
+  config `397a75a4…`: verdict **FAIL**, host exit 1, 306.2 s, `errors` empty,
+  `eof` true, drain `callbacks_quiet`, no terminal allowance needed.
+- Exact everywhere else: LiDAR 747/747, IMU 14,923/14,931 (8 prestart drops
+  inside 21), camera **2,179/2,179** (`img_time_offset 0.0`), visual retrievals
+  **1,303** (gate 2), odom 1,445 valid and rgb 1,292 valid, both 0 invalid.
+- Failure: cloud `invalid` **118** of 1,481 observed. With `img_en: 1` the mapper
+  publishes the coloured surface cloud, so the 118 frames whose retrieval
+  accepted zero points (`accepted=0`, all 118 coincide) publish a constructed
+  zero-point message (`width 0, height 1, point_step 32, row_step 0, data 0`,
+  fields present). The neutral-heartbeat rule excuses only fully default
+  messages, so these count invalid. `bad_points` is 0 in every bucket: no
+  non-finite coordinate and no malformed layout, the payload is empty by
+  construction, not corrupt.
+- Monitor: 1,364 ok clouds / 1,861,022 points, 1,483 fully-default heartbeats,
+  coloured median 1,502.5 (1…2,605) against `source_points` median 8,585, one
+  `empty_map=1` frame early. Zeros are spread across the whole run (rows 16…
+  1,472), not a startup prefix.
+- No gate change, no tuning, no retry. A relaxation would be a declared bounded
+  allowance like the terminal-message one and needs authorisation.
+- Evidence `EVIDENCE_t35c-stationary02-B-run-20261019.sha256` (28 files, SHA
+  `5b623152…`). No commit, push, PR or merge since `9d87e54`. T3.5c PROGRESS.
+
 ## Record Template
 
 
