@@ -19,6 +19,19 @@ OUR_PARAMS = {'common.lid_topic': '/livox/lidar', 'common.imu_topic': '/livox/im
               'common.img_topic': '/camera/camera/color/image_raw', 'common.img_en': 1}
 
 
+def coverage_rows(camera=(0, 0, '100.600000'), imu=(0, 0, '101.500000'),
+                  lidar=(0, 0, '101.500000')):
+    """Summary rows for the reviewed topics as (missing, unexpected, last stamp)."""
+    def row(expected_last, spec):
+        missing, unexpected, last = spec
+        return {'expected_last_stamp': expected_last, 'last_callback_stamp': last,
+                'missing': missing, 'unexpected': unexpected,
+                'missing_stamp_examples': [expected_last] if missing == 1 else []}
+    return {'/livox/lidar': row('101.500000', lidar),
+            '/livox/imu': row('101.500000', imu),
+            '/left_camera/image': row('101.600000', camera)}
+
+
 class ProgressTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -178,9 +191,10 @@ class ProgressTests(unittest.TestCase):
         self.assertNotIn('time.monotonic() + 2)', text)
         self.assertIn('"--rate", str(rate)', text)
         self.assertIn('flush=True', text)
-        self.assertIn('reconcile_imu(', text)
-        self.assertIn('prestart_allowance=', text)
-        self.assertIn("missing_stamp_examples'] = []", text)
+        self.assertIn('reconcile_rows(', text)
+        self.assertIn('prestart_allowance(', text)
+        self.assertIn("missing_stamp_examples'] = []",
+                      Path(replay.__file__).with_name('replay_progress.py').read_text())
 
     def test_wrapper_stages_accountant_streams_progress_and_avoids_sudo_prompts(self):
         text = Path(replay.__file__).with_name('run_replay.sh').read_text()
@@ -214,6 +228,98 @@ class ProgressTests(unittest.TestCase):
                                 (200, float('nan')), (200, float('inf'))):
             with self.subTest(count=count, duration=duration), self.assertRaises(ValueError):
                 module.prestart_allowance(count, duration)
+
+
+    def test_terminal_message_loss_is_allowed_only_when_single_and_inert(self):
+        module = self.progress()
+        allowed = module.terminal_message_gap(coverage_rows(camera=(1, 0, '100.600000')),
+                                              '/livox/lidar')
+        # The bag's own last image is the only stamp this may excuse: it comes
+        # 0.1 s after the final LiDAR callback, so no VIO frame can consume it.
+        self.assertEqual(allowed, {'topic': '/left_camera/image', 'stamp': '101.600000',
+                                   'seconds_after_last_lidar': 0.1})
+        # A terminal IMU sample is equally inert when it postdates the last scan.
+        imu_rows = coverage_rows(imu=(1, 0, '101.400000'))
+        imu_rows['/livox/imu'].update(expected_last_stamp='101.550000',
+                                      missing_stamp_examples=['101.550000'])
+        self.assertEqual(module.terminal_message_gap(imu_rows, '/livox/lidar')['topic'],
+                         '/livox/imu')
+        # A stamp at exactly the last LiDAR time could still join that scan.
+        self.assertIsNone(module.terminal_message_gap(coverage_rows(imu=(1, 0, '101.400000')),
+                                                      '/livox/lidar'))
+        rejected = {}
+        rejected['earlier stamp'] = coverage_rows(camera=(1, 0, '101.600000'))
+        rejected['earlier stamp']['/left_camera/image']['missing_stamp_examples'] = ['100.600000']
+        rejected['two missing'] = coverage_rows(camera=(2, 0, '100.600000'))
+        rejected['duplicate'] = coverage_rows(camera=(1, 1, '100.600000'))
+        rejected['lidar gap'] = coverage_rows(lidar=(1, 0, '100.500000'))
+        rejected['two topics'] = coverage_rows(camera=(1, 0, '100.600000'),
+                                               imu=(1, 0, '101.400000'))
+        rejected['not after lidar'] = coverage_rows(camera=(1, 0, '100.600000'))
+        rejected['not after lidar']['/left_camera/image']['expected_last_stamp'] = '101.500000'
+        rejected['not after lidar']['/left_camera/image']['missing_stamp_examples'] = ['101.500000']
+        rejected['no lidar row'] = {name: row for name, row in coverage_rows().items()
+                                    if name != '/livox/lidar'}
+        rejected['malformed row'] = coverage_rows(camera=(1, 0, '100.600000'))
+        del rejected['malformed row']['/livox/imu']['missing']
+        for label, rows in rejected.items():
+            with self.subTest(label=label):
+                self.assertIsNone(module.terminal_message_gap(rows, '/livox/lidar'))
+
+    def test_reconciled_rows_apply_the_imu_prestart_allowance_once(self):
+        module = self.progress()
+        tracker = module.CallbackTracker({'/livox/lidar': Counter({'1.000000': 1}),
+                                          '/livox/imu': Counter({'1.000000': 1,
+                                                                 '1.100000': 1})})
+        tracker.observed['/livox/lidar'].update({'1.000000': 1})
+        tracker.observed['/livox/imu'].update({'1.100000': 1})
+        rows = module.reconcile_rows(tracker, '/livox/imu', 2)
+        self.assertEqual((rows['/livox/imu']['prestart_drops'], rows['/livox/imu']['missing']),
+                         (1, 0))
+        self.assertEqual(rows['/livox/imu']['missing_stamp_examples'], [])
+        self.assertEqual(sum(sum(seen.values()) for seen in tracker.observed.values()), 2)
+
+    def test_supervisor_records_the_inert_terminal_gap_instead_of_failing(self):
+        self.assertTrue(hasattr(replay, 'finalize_report'))
+        streams = {key: {'count': 10, 'first': 1, 'last': 6, 'invalid': 0}
+                   for key in replay.OUTPUTS}
+        report = {'mode': 'replay', 'errors': [], 'eof': True,
+                  'positive_visual_retrievals': 2, 'streams': streams,
+                  'input_lidar_topic': '/livox/lidar',
+                  'input_callbacks': coverage_rows(camera=(1, 0, '100.600000'))}
+        with patch.object(replay.time, 'monotonic', return_value=0):
+            replay.finalize_report(report, started=0, diagnostic_captured=False)
+        self.assertEqual(report['verdict'], 'PASS')
+        self.assertEqual(report['errors'], [])
+        self.assertEqual(report['terminal_message_lost']['stamp'], '101.600000')
+        for label, rows in (('earlier stamp', coverage_rows(camera=(1, 0, '101.600000'))),
+                            ('lidar gap', coverage_rows(lidar=(1, 0, '100.500000'))),
+                            ('duplicate', coverage_rows(camera=(0, 1, '100.600000')))):
+            if label == 'earlier stamp':
+                rows['/left_camera/image']['missing_stamp_examples'] = ['100.600000']
+            with self.subTest(label=label):
+                failed = {'mode': 'replay', 'errors': [], 'eof': True,
+                          'positive_visual_retrievals': 2, 'streams': streams,
+                          'input_lidar_topic': '/livox/lidar', 'input_callbacks': rows}
+                with patch.object(replay.time, 'monotonic', return_value=0):
+                    replay.finalize_report(failed, started=0, diagnostic_captured=False)
+                self.assertEqual(failed['verdict'], 'FAIL')
+                self.assertTrue(any('input callback coverage' in e for e in failed['errors']))
+                self.assertNotIn('terminal_message_lost', failed)
+        # Without a declared lidar topic the allowance stays closed.
+        strict = {'mode': 'replay', 'errors': [], 'eof': True,
+                  'positive_visual_retrievals': 2, 'streams': streams,
+                  'input_callbacks': coverage_rows(camera=(1, 0, '100.600000'))}
+        with patch.object(replay.time, 'monotonic', return_value=0):
+            replay.finalize_report(strict, started=0, diagnostic_captured=False)
+        self.assertEqual(strict['verdict'], 'FAIL')
+
+    def test_supervisor_uses_the_allowance_for_drain_and_coverage(self):
+        text = Path(replay.__file__).read_text()
+        self.assertIn('terminal_message_gap(', text)
+        self.assertIn('reconcile_rows(', text)
+        self.assertIn("input_lidar_topic", text)
+        self.assertIn('terminal_message_lost', text)
 
 
 if __name__ == '__main__':

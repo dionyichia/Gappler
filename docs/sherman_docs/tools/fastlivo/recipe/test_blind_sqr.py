@@ -1,6 +1,7 @@
 """Offline F2 blind_sqr-patch checks; never starts Docker, ROS or a build."""
 import hashlib
 import importlib.util
+import inspect
 import os
 from pathlib import Path
 import subprocess
@@ -32,6 +33,19 @@ class BlindSqrTests(unittest.TestCase):
             module.insert_after('anchor\nanchor\n', 'anchor', 'counter;')
         self.assertEqual(module.insert_after('anchor\nrest\n', 'anchor', 'added;'),
                          'anchor\n/* T35_BLIND_SQR */ added;\nrest\n')
+
+    def test_combined_baseline_is_explicit_and_hash_gated(self):
+        module = self.module()
+        self.assertIn('baseline', inspect.signature(module.transform).parameters,
+                      'combined baseline selection is not implemented')
+        self.assertEqual(module.BASELINES, {
+            'pinned': module.MAPPER_SHA256,
+            'visibility-voxel': 'ae4d3072bdd18bcb00269ddc42751533165282fa0bdce9bb11a31de138459fdd',
+        })
+        with self.assertRaises(ValueError):
+            module.transform('unreviewed source', baseline='visibility-voxel')
+        with self.assertRaises(ValueError):
+            module.transform('unreviewed source', baseline='unknown')
 
     def test_build_is_opt_in_and_cannot_replace_acceptance_image(self):
         self.module()
@@ -89,6 +103,34 @@ class BlindSqrTests(unittest.TestCase):
             module.transform(patched)
         with self.assertRaises(ValueError):
             module.transform(mapper + ' ')
+
+    @unittest.skipUnless(os.environ.get('T35_PINNED_SOURCE_DIR'), 'needs preserved pinned source, no download')
+    def test_real_combined_source_restores_its_own_base(self):
+        module = self.module()
+        self.assertIn('baseline', inspect.signature(module.transform).parameters,
+                      'combined baseline selection is not implemented')
+        source = Path(os.environ['T35_PINNED_SOURCE_DIR'])
+        def load(name):
+            spec = importlib.util.spec_from_file_location(name, HERE / (name + '.py'))
+            loaded = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(loaded)
+            return loaded
+        vio = load('patch_vio').transform_vio((source / 'vio.cpp').read_text())
+        _, base = load('patch_diagnostics').transform(vio, (source / 'LIVMapper.cpp').read_text())
+        self.assertEqual(hashlib.sha256(base.encode()).hexdigest(), module.BASELINES['visibility-voxel'])
+        patched = module.transform(base, baseline='visibility-voxel')
+        restored = ''.join(line for line in patched.splitlines(keepends=True)
+                           if module.MARKER not in line)
+        self.assertEqual(restored, base)
+        self.assertEqual(sum(module.MARKER in line for line in patched.splitlines()), 4)
+        self.assertEqual(patched.count(module.MARKER + ' ' + UPSTREAM_LINE), 1)
+        self.assertEqual(patched.count('[T35_DIAG_CLOUD]'), base.count('[T35_DIAG_CLOUD]'))
+        for changed in (patched, base + ' ', (source / 'LIVMapper.cpp').read_text()):
+            with self.subTest(changed_sha=hashlib.sha256(changed.encode()).hexdigest()):
+                with self.assertRaises(ValueError):
+                    module.transform(changed, baseline='visibility-voxel')
+        with self.assertRaises(ValueError):
+            module.transform(base)
 
 
 if __name__ == '__main__':

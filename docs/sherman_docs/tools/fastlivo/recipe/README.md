@@ -268,7 +268,7 @@ This is its own mode, not a visual-repair stage: it refuses to combine with
 - Container `t35-fastlivo-blind-sqr-build`, output image
   `t35-fastlivo-blind-sqr:experimental`. Existing names/tags and registry aliases
   are refused, as are compiler-option overrides.
-- `patch_blind_sqr.py` accepts only the byte-identical pinned `LIVMapper.cpp`
+- By default, `patch_blind_sqr.py` accepts only the byte-identical pinned `LIVMapper.cpp`
   (`815b5f89…`) and adds tagged `/* T35_BLIND_SQR */` lines only; removing the tagged
   lines must recover the original file byte-for-byte. The output source no longer
   matches the pinned hash, so a second application is refused.
@@ -296,6 +296,63 @@ bash -n blind_sqr_inside.sh
 
 Without `T35_PINNED_SOURCE_DIR` the real-source test explicitly skips; it never
 downloads code.
+
+## Combined visibility/voxel + F2 candidate (2026-10-19)
+
+Sherman selected the corrected-image path for T3.5c. This is a new independent
+mode, not a third VIO repair stage and not permission to combine old selectors:
+
+```bash
+T35_COMBINED_REPAIR=1 bash run_build.sh
+```
+
+It starts from the **exact already-tested visibility+voxel image ID**
+`sha256:2fa9f264ab48a01942b706f1a93a29d798f09d64e2ca7e0c314cf3cc32df81a2`,
+not a tag that may have moved. The output is a separate fixed tag
+`t35-fastlivo-visibility-voxel-blind-sqr:experimental`; default container
+`t35-fastlivo-visibility-voxel-blind-sqr-build`. The accepted image, old visual
+images and F2-only image are neither replaced nor retagged. Nonzero old selectors,
+compiler overrides and alternate output tags/registry aliases are refused before
+Docker/sudo discovery. Existing lock, idle checks, interactive sudo, caps and
+collision refusals are unchanged.
+
+This mode reuses `blind_sqr_inside.sh` with the explicit `visibility-voxel`
+baseline. The generator allows exactly two reviewed mapper hashes: original
+pinned by default (`815b5f89…`), or instrumented visual-base mapper (`ae4d3072…`)
+under `--baseline visibility-voxel`. No arbitrary expected hash is accepted.
+Both paths add exactly the same four tagged F2 lines; removing them restores
+that path's own base byte-for-byte. Reapplication or source drift fails closed.
+
+Before patching and after compiling, the inherited `src/vio.cpp` (`60f3c99b…`)
+and `include/visual_geometry.h` (`9e3e66ed…`) must match the exact visual-repair
+sources. Mapper-only compilation uses the existing flags/vikit path, 2 CPUs,
+8 GiB memory/swap limit, 512 PIDs, network none, no pull/package install/fetch.
+The copied `blind-sqr/` evidence adds `inherited-visual.sha256`; source diff,
+patched-source hash, binary hash/strings remain recorded there. The binary must
+contain `[T35_BLIND_SQR]` and both inherited diagnostic markers. Markers and
+successful compilation are not runtime acceptance.
+
+All five recipe suites now run in wrapper preflight, including the previously
+omitted F2 suite. Offline verification:
+
+```bash
+python3 -B -m unittest -v test_recipe test_diagnostics test_visual_fixes test_blind_sqr test_combined
+T35_PINNED_SOURCE_DIR=<preserved-source-dir> python3 -B -m unittest -v test_recipe test_diagnostics test_visual_fixes test_blind_sqr test_combined
+bash -n run_build.sh
+bash -n blind_sqr_inside.sh
+```
+
+Missing preserved source, standalone C++ compiler or repository bench is reported
+as an explicit test skip. In a staged bundle containing `../pinned-src/`, set
+`T35_PINNED_SOURCE_DIR=../pinned-src` on the build command to exercise real-source
+tests in preflight. The new combined suite is also in `bench/run.sh` L0.
+
+The operator sequence is one incremental build, old-bag F2 control comparison,
+retained public visual regression, then stationary02 A followed by B on the same
+new image. The old bag's expected ~0.48 retained fraction must not be applied to
+stationary02, whose raw zero-range fraction is 35.92%. No calibration tuning,
+acceptance relaxation or native-driver repair is part of this mode. No combined
+image or runtime PASS is claimed until the operator runs the corresponding gates.
 
 ## Source pins and narrowly scoped changes
 

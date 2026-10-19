@@ -138,11 +138,11 @@ class CallbackTracker:
         return result
 
 
-def drain_state(now: float, deadline: float, last_activity: float, tails_seen: bool) -> str:
+def drain_state(now: float, deadline: float, last_activity: float, satisfied: bool) -> str:
     """Never extend custody; five quiet log seconds do not prove estimator idle."""
     if now >= deadline:
         return 'timeout'
-    if tails_seen and now - last_activity >= 5:
+    if satisfied and now - last_activity >= 5:
         return 'callbacks_quiet'
     return 'waiting'
 
@@ -173,3 +173,54 @@ def reconcile_imu(seen: Counter, expected: Counter, allowance: int) -> dict:
         row['prestart_drops'] = row['missing']
         row['missing'] = 0
     return row
+
+
+def reconcile_rows(tracker: 'CallbackTracker', imu_topic: str, allowance: int) -> dict:
+    """Summary rows with the bounded IMU-prestart reconciliation applied once."""
+    rows = tracker.summary()
+    imu_row = rows[imu_topic]
+    reconciled = reconcile_imu(tracker.observed[imu_topic], tracker.expected[imu_topic],
+                               allowance)
+    imu_row.update(prestart_allowance=allowance, **reconciled)
+    if reconciled['prestart_drops'] and not reconciled['missing']:
+        imu_row['missing_stamp_examples'] = []
+    return rows
+
+
+def terminal_message_gap(rows: dict, lidar_topic: str) -> dict:
+    """Return the one end-of-bag loss that provably cannot reach any VIO frame.
+
+    The player exits at EOF and can leave the bag's final sample unacknowledged.
+    Only that sample is inert: it postdates the last LiDAR callback, and VIO runs
+    per scan, so no frame can consume it. Every other shape -- an earlier gap, a
+    second missing message, any duplicate, or an incomplete LiDAR stream -- stays
+    a coverage failure. Returns the recorded allowance, or None when not met.
+    """
+    if not isinstance(rows, dict) or lidar_topic not in rows:
+        return None
+    lidar = rows[lidar_topic]
+    if not isinstance(lidar, dict) or any(key not in lidar
+                                          for key in ('missing', 'unexpected',
+                                                      'last_callback_stamp')):
+        return None
+    if lidar['missing'] or lidar['unexpected'] or lidar['last_callback_stamp'] is None:
+        return None
+    gap = None
+    for name, row in rows.items():
+        if not isinstance(row, dict) or any(key not in row
+                                            for key in ('missing', 'unexpected',
+                                                        'expected_last_stamp')):
+            return None
+        if row['unexpected']:
+            return None
+        if name == lidar_topic or not row['missing']:
+            continue
+        if (gap is not None or row['missing'] != 1 or row['expected_last_stamp'] is None
+                or row.get('missing_stamp_examples') != [row['expected_last_stamp']]):
+            return None
+        after = float(row['expected_last_stamp']) - float(lidar['last_callback_stamp'])
+        if not after > 0:
+            return None
+        gap = {'topic': name, 'stamp': row['expected_last_stamp'],
+               'seconds_after_last_lidar': round(after, 6)}
+    return gap

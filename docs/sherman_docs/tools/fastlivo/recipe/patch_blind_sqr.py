@@ -6,12 +6,16 @@ gate compared against an never-assigned member. This generator adds that line
 back, plus one tagged stdout line that reports the threshold actually in force,
 and nothing else.
 """
+import argparse
 import difflib
 import hashlib
 from pathlib import Path
-import sys
 
 MAPPER_SHA256 = '815b5f8996f245e0d4a3ec79ca42861610e94d5057f8295a17ad1ae5731cc559'
+BASELINES = {
+    'pinned': MAPPER_SHA256,
+    'visibility-voxel': 'ae4d3072bdd18bcb00269ddc42751533165282fa0bdce9bb11a31de138459fdd',
+}
 MARKER = '/* T35_BLIND_SQR */'
 # Unique in the pinned file: the last read of the constructor's parameter block,
 # which is exactly where upstream computes blind_sqr.
@@ -30,18 +34,20 @@ def insert_after(source: str, anchor: str, addition: str) -> str:
     return source.replace(anchor + '\n', anchor + '\n' + tagged, 1)
 
 
-def transform(mapper: str) -> str:
-    """Accept only byte-identical pinned mapper source; additions only."""
-    if hashlib.sha256(mapper.encode()).hexdigest() != MAPPER_SHA256:
-        raise ValueError('mapper source differs from the pinned baseline')
+def transform(mapper: str, baseline: str = 'pinned') -> str:
+    """Accept only the explicitly selected, byte-identical reviewed baseline."""
+    if baseline not in BASELINES:
+        raise ValueError('unknown mapper baseline: ' + repr(baseline))
+    if hashlib.sha256(mapper.encode()).hexdigest() != BASELINES[baseline]:
+        raise ValueError('mapper source differs from the ' + baseline + ' baseline')
     return insert_after(mapper, ANCHOR, ADDITION)
 
 
-def write_candidate(source_dir: Path, output: Path) -> None:
+def write_candidate(source_dir: Path, output: Path, baseline: str = 'pinned') -> None:
     """Write the patched source, its diff and its hash; never overwrite a directory."""
     name = 'LIVMapper.cpp'
     original = (source_dir / name).read_bytes().decode()
-    patched = transform(original)
+    patched = transform(original, baseline)
     output.mkdir()
     (output / 'src').mkdir()
     (output / 'src' / name).write_text(patched)
@@ -53,6 +59,9 @@ def write_candidate(source_dir: Path, output: Path) -> None:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        raise SystemExit('Usage: patch_blind_sqr.py PINNED_SOURCE_DIR NEW_OUTPUT_DIR')
-    write_candidate(Path(sys.argv[1]), Path(sys.argv[2]))
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument('source_dir', type=Path)
+    parser.add_argument('output', type=Path)
+    parser.add_argument('--baseline', choices=tuple(BASELINES), default='pinned')
+    args = parser.parse_args()
+    write_candidate(args.source_dir, args.output, args.baseline)

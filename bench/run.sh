@@ -105,6 +105,8 @@ s=$(step "L0  FAST-LIVO visual fixes" python3 docs/sherman_docs/tools/fastlivo/r
 row L0 "FAST-LIVO visual fixes" "$s" "standalone C++ checks; real-source test additionally needs preserved pinned source"
 s=$(step "L0  FAST-LIVO blind_sqr patch" python3 docs/sherman_docs/tools/fastlivo/recipe/test_blind_sqr.py)
 row L0 "FAST-LIVO blind_sqr patch" "$s" "real-source test additionally needs preserved pinned source"
+s=$(step "L0  FAST-LIVO combined mode" python3 docs/sherman_docs/tools/fastlivo/recipe/test_combined.py)
+row L0 "FAST-LIVO combined mode" "$s" "real-source gate additionally needs preserved pinned source"
 # The tool tests that need no ROS: audit logic, projection math, live-preview rendering, config
 # checks. test_analyze_bag.py needs rosbag2_py, so it stays box-only.
 s=$(step "L0  FAST-LIVO capture tools" bash -c 'cd docs/sherman_docs/tools/fastlivo &&

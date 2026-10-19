@@ -12,7 +12,7 @@ import time
 import traceback
 from replay_progress import (CallbackTracker, callback_patterns, drain_state,
                                expected_callbacks, playback_rate, prestart_allowance,
-                               reconcile_imu)
+                               reconcile_imu, reconcile_rows, terminal_message_gap)
 
 ROOT = Path("/tmp/t59")
 DEFAULT_MAPPER_CONFIG = "bright_screen_wall.yaml"
@@ -266,7 +266,17 @@ def finalize_report(report: dict, started: float, diagnostic_captured: bool) -> 
     errors = report['errors']
     if report['elapsed_wall_seconds'] > 600:
         errors.append('total supervisor time including cleanup exceeded 600 seconds')
+    # The player can leave the bag's final sample unacknowledged at EOF. Allow
+    # exactly that stamp, only when it postdates the last LiDAR callback, and
+    # record it; every other gap keeps failing coverage.
+    lidar_topic = report.get('input_lidar_topic')
+    allowed = (terminal_message_gap(report.get('input_callbacks') or {}, lidar_topic)
+               if lidar_topic else None)
+    if allowed:
+        report['terminal_message_lost'] = allowed
     for topic, row in report.get('input_callbacks', {}).items():
+        if allowed and topic == allowed['topic']:
+            continue
         if row['missing'] or row['unexpected']:
             errors.append(f"input callback coverage {topic}: missing={row['missing']} unexpected={row['unexpected']}")
     if report['mode'] == 'paused_diagnostic':
@@ -395,6 +405,7 @@ def main() -> int:
         rate = playback_rate(os.environ.get('T35_REPLAY_RATE', '0.25'), expected_bag['duration'])
         report['playback_rate'] = rate
         params = yaml.safe_load((ROOT / mapper_config).read_text())['laserMapping']['ros__parameters']
+        report['input_lidar_topic'] = params['common.lid_topic']
         inputs = inputs_from_params(params)
         outputs = outputs_from_params(params)
         for key in outputs:
@@ -601,6 +612,10 @@ def main() -> int:
             drain = min(deadline, time.monotonic() + 120)
             last_activity = time.monotonic()
             signature = None
+            imu_allowance = prestart_allowance(
+                sum(tracker.expected[params['common.imu_topic']].values()),
+                expected_bag['duration'])
+            gap_checked, terminal_gap = 0.0, None
             while True:
                 health(allow_eof=True)
                 ros.spin_once(node, timeout_sec=0.1)
@@ -609,10 +624,18 @@ def main() -> int:
                 now = time.monotonic()
                 if current != signature:
                     signature, last_activity = current, now
-                state = drain_state(now, drain, last_activity, tracker.tails_seen())
+                if now - gap_checked >= 1:
+                    terminal_gap = terminal_message_gap(
+                        reconcile_rows(tracker, params['common.imu_topic'], imu_allowance),
+                        params['common.lid_topic'])
+                    gap_checked = now
+                state = drain_state(now, drain, last_activity,
+                                    tracker.tails_seen() or terminal_gap is not None)
                 if state != 'waiting':
                     report['callback_drain'] = {'state': state, 'max_seconds': 120,
                                                 'quiet_seconds': 5, 'estimator_completion_proven': False}
+                    if terminal_gap:
+                        report['callback_drain']['terminal_message_gap'] = terminal_gap
                     if state == 'timeout':
                         errors.append('callback drain timed out; terminal callbacks/log inactivity not established')
                     break
@@ -649,18 +672,16 @@ def main() -> int:
             handle.close()
         if tracker is not None:
             tracker.update(evidence / 'mapper.stderr.log')
-            report['input_callbacks'] = tracker.summary()
-            # Pinned imu_cbk silently drops IMU before the first lidar
-            # callback; reconcile a bounded strict startup prefix separately.
-            # Anything else stays missing and fails the run.
-            imu_topic = params['common.imu_topic']
-            imu_expected = tracker.expected[imu_topic]
-            imu_row = report['input_callbacks'][imu_topic]
-            allowance = prestart_allowance(sum(imu_expected.values()), expected_bag['duration'])
-            reconciled = reconcile_imu(tracker.observed[imu_topic], imu_expected, allowance)
-            imu_row.update(prestart_allowance=allowance, **reconciled)
-            if reconciled['prestart_drops'] and not reconciled['missing']:
-                imu_row['missing_stamp_examples'] = []
+            # Pinned imu_cbk silently drops IMU before the first lidar callback;
+            # a bounded strict startup prefix is reconciled separately in
+            # reconcile_rows. Anything else stays missing and fails the run.
+            if expected_bag is None:
+                report['input_callbacks'] = tracker.summary()
+            else:
+                imu_topic = params['common.imu_topic']
+                allowance = prestart_allowance(
+                    sum(tracker.expected[imu_topic].values()), expected_bag['duration'])
+                report['input_callbacks'] = reconcile_rows(tracker, imu_topic, allowance)
         # Inspect only finalized regular files, never a PIPE or still-running player.
         diagnostics = []
         for suffix in ("stdout", "stderr"):
