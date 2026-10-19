@@ -1591,6 +1591,20 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   `2c30b5fd...`) and `EVIDENCE_t35c-stationary02-B2-run-20261019.sha256` (28
   files, SHA `298659a8...`). Not pushed. T3.5c PROGRESS.
 
+## [2026-10-19] T3.5c | DONE with residuals; RGB criterion restated
+
+- Sherman approved closing T3.5c. `task-tree.html` T3.5c now starts `DONE 2026-10-19.`
+  with the residuals in the task text and a changelog line.
+- RGB restated (commit `da97ba3`): validity plus a bound that the monitor cannot see
+  more `/rgb_img` messages than the mapper's `[T35_DIAG_CLOUD]` rows; no count is a
+  target. Harness bytes `replay.py` `06ff7b29`, `replay_progress.py` `2963f102`,
+  `test_progress.py` `1c17e427`. The B2 PASS ran on the earlier bytes (`4a345a00` /
+  `919f8cab`); the added check is not yet exercised in a live replay.
+- Residuals: offline smoke on a 74.6 s stationary recording; 118 out-of-view scans
+  unexplained; mount rotation eye-estimated and extrinsic sign unproven in the field.
+- Not pushed. Sherman: no PR until all of T3.5 (a to f) is finished. Next: T3.5d
+  attended live mapping in the lab. T3.5 PROGRESS.
+
 ## Record Template
 
 
