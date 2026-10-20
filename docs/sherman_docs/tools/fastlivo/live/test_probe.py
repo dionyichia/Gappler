@@ -29,6 +29,14 @@ class ProbeTests(unittest.TestCase):
         self.assertTrue(writable and all(h == '$OUT' or h.startswith('$OUT/') for h in writable),
                         writable)
 
+    def test_mapper_starts_only_after_the_camera_service_answers(self):
+        # The runbook requires the parameter server to be serving before the mapper
+        # loads its camera; a fixed sleep raced and the mapper aborted.
+        self.assertIn('ros2 param get /parameter_blackboard cam_model', CONTAINER)
+        self.assertNotIn('sleep 4', CONTAINER)
+        self.assertLess(CONTAINER.index('ros2 param get /parameter_blackboard cam_model'),
+                        CONTAINER.index('fastlivo_mapping --ros-args'))
+
     def test_player_is_bag_only_and_uses_the_same_private_domain(self):
         self.assertIn('ROS_DOMAIN_ID=174', PLAYER)
         self.assertIn('ROS_LOCALHOST_ONLY=1', PLAYER)

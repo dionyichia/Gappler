@@ -24,7 +24,11 @@ source /opt/ros/humble/setup.bash && source /fast_livo_ws/install/setup.bash
 /opt/ros/humble/lib/demo_nodes_cpp/parameter_blackboard --ros-args -r __node:=parameter_blackboard \
   --params-file "/cfg/$CAMERA_CONFIG" -p use_sim_time:=$SIM_TIME >/out/camera.stdout.log 2>/out/camera.stderr.log &
 BB=$!
-sleep 4
+for _ in $(seq 1 30); do
+  ros2 param get /parameter_blackboard cam_model >/out/camera.ready.log 2>&1 && break
+  sleep 1
+done
+grep -q Pinhole /out/camera.ready.log || { echo "camera service never answered; see /out/camera.ready.log" >&2; kill -INT $BB; exit 1; }
 /fast_livo_ws/install/fast_livo/lib/fast_livo/fastlivo_mapping --ros-args -r __node:=laserMapping \
   --params-file "/cfg/$MAPPER_CONFIG" -p use_sim_time:=$SIM_TIME >/out/mapper.stdout.log 2>/out/mapper.stderr.log &
 MAP=$!
