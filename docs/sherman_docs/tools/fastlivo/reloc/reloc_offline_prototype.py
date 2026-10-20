@@ -1,11 +1,13 @@
 """T3.5e offline feasibility: register a fresh session's first seconds against a saved-style map.
 Map and query are built from recorded LiDAR + mapper odometry (no robot, no mapper rerun).
 usage: reloc_offline_prototype.py MAP_BAG QUERY_BAG [query_seconds]
-env knobs (all default to the previous behaviour except FLAT_MAX):
+env knobs:
   RMAX      max LiDAR range kept, m (40)
   MAP_T     build the map from only the first MAP_T seconds of MAP_BAG (unset = whole bag)
   GRAV4     1 = 4-DOF solve (yaw + x,y,z; roll/pitch fixed at the initial guess's 0)
-  FLAT_MAX  drop map points whose normal is not planar: smallest/middle eigenvalue > FLAT_MAX (0.1; 1e9 = off)
+  FLAT_MAX  drop map points whose normal is not planar: smallest/middle eigenvalue > FLAT_MAX (default 0.5, keeps 69% of
+            voxels, 36% of them wall normals, self-test error 0.1 cm. 0.1 kept 17% (mostly floor) and made x ill-conditioned;
+            1e9 = off keeps noisy edge normals and gives a 8 cm / 2.8 deg self-test error. See the T3.5e write-up.)
   TOL_POS / TOL_YAW  'same answer' tolerance for the basin test, m / deg (0.10 / 4)
 Only extrinsic_T is applied; extrinsic_R is identity in the mapper config."""
 import math, os, sys
@@ -20,7 +22,7 @@ VOX = 0.10
 RMAX = float(os.environ.get('RMAX', '40'))
 MAP_T = float(os.environ['MAP_T']) if os.environ.get('MAP_T') else None
 GRAV4 = os.environ.get('GRAV4') == '1'
-FLAT_MAX = float(os.environ.get('FLAT_MAX', '0.1'))
+FLAT_MAX = float(os.environ.get('FLAT_MAX', '0.5'))
 TOL_POS = float(os.environ.get('TOL_POS', '0.10'))
 TOL_YAW = float(os.environ.get('TOL_YAW', '4'))
 LEVEL = int(os.environ.get('LEVEL', '0'))  # +1/-1: tilt-correct each session by its first pose's roll/pitch (sign unverified)
