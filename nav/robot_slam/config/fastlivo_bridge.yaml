@@ -1,0 +1,22 @@
+# fastlivo_odom_bridge parameters (option 2: FAST-LIVO2 supplies odom -> robot_base_link, SLAM Toolbox keeps map -> odom and /map).
+# Read by nav/robot_slam/scripts/fastlivo_odom_bridge.py. Passed by the launch files when odom_source:=fastlivo.
+fastlivo_odom_bridge:
+  ros__parameters:
+    # Body (IMU) origin in robot_base_link, metres, identity rotation. Derivation: shared/global_config.yaml geometry.lidar_mount
+    # (0.18, 0, 0.2) minus the mapper's corrected LiDAR->IMU extrinsic_T (-0.011, -0.02329, 0.04412); see
+    # docs/sherman_docs/T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md. Kept here for now: move to geometry in global_config after Dion approves.
+    body_in_base_m: [0.191, 0.02329, 0.15588]
+    mapper_topic: "/aft_mapped_to_init"
+    mapper_frame: "camera_init"
+    mapper_child_frame: "aft_mapped"
+    odom_frame: "odom"
+    base_frame: "robot_base_link"
+    # Stop publishing and warn when no mapper pose arrived for this long (s).
+    freshness_window_s: 0.5
+    # Refuse to start if the first pose's roll or pitch is above this (deg). Measured at T3.5d startups: 0.73. Provisional.
+    max_startup_tilt_deg: 2.0
+    # A step between consecutive mapper poses above this (m) means the mapper restarted: refuse, restart the bridge to accept.
+    max_jump_m: 0.5
+    # /odom stays on the wheels (the mapper's twist is all zero). Turn on only to publish a pose-differenced /odom instead.
+    publish_odom: false
+    odom_topic: "/odom"

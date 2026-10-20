@@ -4,8 +4,10 @@ The mapper reports the IMU body pose in camera_init. The bridge must turn that i
 pose in an odom frame that equals robot_base_link at startup, whatever tilt camera_init has.
 """
 import importlib.util
+import json
 import math
 from pathlib import Path
+import re
 import unittest
 
 REPO = Path(__file__).resolve().parents[1]
@@ -13,7 +15,15 @@ spec = importlib.util.spec_from_file_location("fastlivo_odom_bridge", REPO / "na
 bridge = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bridge)
 
-OFFSET = bridge.BODY_IN_BASE  # IMU body origin in robot_base_link, identity rotation
+CONFIG = (REPO / "nav/robot_slam/config/fastlivo_bridge.yaml").read_text()
+
+
+def config_value(key):
+    """One flow-style value from the parameter file (stdlib, no PyYAML)."""
+    return json.loads(re.search(r"^\s*%s:\s*(.+?)\s*(?:#.*)?$" % re.escape(key), CONFIG, re.M).group(1).replace("'", '"'))
+
+
+OFFSET = tuple(config_value("body_in_base_m"))  # IMU body origin in robot_base_link, identity rotation, from the config file
 
 
 def rz(a):
@@ -89,14 +99,14 @@ class BridgeTransformTests(unittest.TestCase):
             self.assertAlmostEqual(got, rounded, delta=1e-3)
 
     def test_first_sample_is_the_identity(self):
-        odom = bridge.OdomFromMapper()
+        odom = bridge.OdomFromMapper(OFFSET)
         pos, q = odom.update(*body_pose(mm(rz(0.5), mm(ry(0.02), rx(-0.01))), (3.0, -2.0, 0.4)))
         for v in pos:
             self.assertAlmostEqual(v, 0.0, places=9)
         self.assertAlmostEqual(abs(q[3]), 1.0, places=9)
 
     def test_straight_drive_moves_the_base_along_its_own_forward(self):
-        odom = bridge.OdomFromMapper()
+        odom = bridge.OdomFromMapper(OFFSET)
         start_yaw = math.radians(30)  # robot starts facing 30 degrees in camera_init
         odom.update(*body_pose(rz(start_yaw), (1.0, 2.0, 0.0)))
         d = 0.8
@@ -106,7 +116,7 @@ class BridgeTransformTests(unittest.TestCase):
         self.assertAlmostEqual(yaw_pitch_roll(q)[0], 0.0, places=9)
 
     def test_turning_in_place_about_the_base_centre_does_not_move_the_base(self):
-        odom = bridge.OdomFromMapper()
+        odom = bridge.OdomFromMapper(OFFSET)
         odom.update(*body_pose(rz(0.0), (0.0, 0.0, 0.0)))
         for deg in (10, 90, 179, -120, 360):
             pos, q = odom.update(*body_pose(rz(math.radians(deg)), (0.0, 0.0, 0.0)))
@@ -117,7 +127,7 @@ class BridgeTransformTests(unittest.TestCase):
 
     def test_startup_tilt_of_camera_init_cancels_and_a_level_drive_stays_level(self):
         tilt = mm(ry(math.radians(-0.4)), rx(math.radians(0.73)))  # the 0.7 degree start tilt seen in the T3.5d bags
-        odom = bridge.OdomFromMapper()
+        odom = bridge.OdomFromMapper(OFFSET)
         radius, start = 1.5, math.radians(20)
         odom.update(*body_pose(rz(start + math.pi / 2), (radius * math.cos(start), radius * math.sin(start), 0.0), tilt))
         for step in range(1, 40):
@@ -131,6 +141,53 @@ class BridgeTransformTests(unittest.TestCase):
             swept = step * math.radians(9)
             self.assertAlmostEqual(math.hypot(pos[0], pos[1]), 2 * radius * math.sin(swept / 2), places=9)
             self.assertAlmostEqual(yaw, math.atan2(math.sin(swept), math.cos(swept)), places=9)
+
+    def test_config_notes_the_move_to_global_config_after_approval(self):
+        self.assertIn("global_config", CONFIG)
+        self.assertIn("Dion", CONFIG)
+        self.assertNotIn("BODY_IN_BASE =", (REPO / "nav/robot_slam/scripts/fastlivo_odom_bridge.py").read_text())
+
+    def test_startup_tilt_guard_refuses_a_robot_that_did_not_start_level(self):
+        ok = bridge.OdomFromMapper(OFFSET, max_startup_tilt_deg=2.0)
+        ok.update(*body_pose(mm(ry(math.radians(0.4)), rx(math.radians(0.73))), (0.0, 0.0, 0.0)))  # the 0.73 deg seen in T3.5d
+        tilted = bridge.OdomFromMapper(OFFSET, max_startup_tilt_deg=2.0)
+        for rot in (rx(math.radians(2.5)), ry(math.radians(-3.0))):
+            with self.assertRaises(bridge.StartupTiltError):
+                tilted.update(*body_pose(rot, (0.0, 0.0, 0.0)))
+            self.assertIsNone(tilted._r0, "a refused startup must not become the reference")
+
+    def test_a_jump_between_samples_is_a_mapper_restart_and_is_refused(self):
+        odom = bridge.OdomFromMapper(OFFSET, max_jump_m=0.5)
+        odom.update(*body_pose(rz(0.0), (0.0, 0.0, 0.0)))
+        odom.update(*body_pose(rz(0.0), (0.04, 0.0, 0.0)))  # 0.04 m between 20 Hz samples is fine
+        with self.assertRaises(bridge.MapperJumpError):
+            odom.update(*body_pose(rz(0.0), (3.0, 0.0, 0.0)))
+        odom.reset()  # an operator restart accepts the new origin
+        odom.update(*body_pose(rz(0.0), (3.0, 0.0, 0.0)))
+
+    def test_stale_gate_stops_publishing_when_the_mapper_goes_quiet(self):
+        gate = bridge.FreshnessGate(window_s=0.5)
+        self.assertFalse(gate.fresh(now=10.0), "nothing received yet is stale")
+        gate.received(10.0)
+        self.assertTrue(gate.fresh(now=10.4))
+        self.assertFalse(gate.fresh(now=10.6))
+        gate.received(10.7)
+        self.assertTrue(gate.fresh(now=10.8))
+
+    def test_twist_is_in_the_base_frame_and_zero_when_still(self):
+        pose = lambda yaw, x, y: (rz(yaw), [x, y, 0.0])
+        dt, yaw = 0.05, math.radians(30)
+        a = pose(yaw, 1.0, 2.0)
+        b = pose(yaw, 1.0 + 0.5 * dt * math.cos(yaw), 2.0 + 0.5 * dt * math.sin(yaw))  # 0.5 m/s along its own forward
+        v, w = bridge.twist_between(a, b, dt)
+        self.assertAlmostEqual(v[0], 0.5, places=9)
+        self.assertAlmostEqual(v[1], 0.0, places=9)
+        c = pose(yaw + 0.3 * dt, 1.0, 2.0)  # turning 0.3 rad/s in place
+        v, w = bridge.twist_between(a, c, dt)
+        self.assertAlmostEqual(w[2], 0.3, places=9)
+        self.assertAlmostEqual(math.hypot(*v), 0.0, places=9)
+        v, w = bridge.twist_between(a, a, dt)
+        self.assertEqual((v, w), ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
 
     def test_wrong_frame_names_are_refused(self):
         bridge.check_frames("camera_init", "aft_mapped")
