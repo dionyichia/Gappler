@@ -62,7 +62,8 @@ class HarnessPlaybackTests(unittest.TestCase):
         gate = runner.index("PRECHECK")
         self.assertIn("|| { echo", runner[gate:gate + 300])
         self.assertLess(gate, runner.index("\nrun map"))
-        self.assertIn('run() { echo "=== $*"; bash "$PRECHECK"', runner, "re-checked before every session")
+        self.assertIn('bash "$PRECHECK" > /dev/null 2>&1 || { echo "BLOCKED mid-run; stopping"', runner, "re-checked before every session")
+        self.assertIn('skip, already done', runner, "a stopped run can be resumed")
         self.assertIn("set +u", runner)
 
     def test_slam_parameter_overrides_are_recorded_in_the_result(self):
