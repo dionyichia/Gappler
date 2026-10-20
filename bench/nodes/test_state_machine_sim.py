@@ -9,6 +9,8 @@ private, no rm_driver exists and the real arm is unreachable. This test plays ev
   operator    /manipulator/grasp_request: centroids only count after one (T1.25)
               /manipulator/release: lets go of the held object (T1.14)
   gripper     records /rm_driver/set_gripper_{position,pick_on}_cmd -- nothing acts on them
+  e-stop pane /rm_driver/emergency_stop_cmd (E, R) and /rm_driver/move_stop_cmd (S), at the end:
+              the state machine must stop until R (T1.38). No driver listens on this channel
   AnyGrasp    in candidates mode only: /grasp_candidates, one fixed grasp at the gripper's pose
               1 cm up, sent in the camera frame as anygrasp_detection_node does. It is built in
               AnyGrasp's axes from where the gripper's links are, then turned into grasp_frame's
@@ -39,7 +41,7 @@ try:
     from tf2_ros import Buffer, StaticTransformBroadcaster, TransformListener
     from tf2_geometry_msgs import do_transform_pose
     from grasp_interfaces.msg import GraspCandidate, GraspCandidateArray
-    from rm_ros_interfaces.msg import Gripperpick, Gripperset
+    from rm_ros_interfaces.msg import Gripperpick, Gripperset, Stop
     import numpy as np
     from scipy.spatial.transform import Rotation
 except ImportError as e:
@@ -84,6 +86,8 @@ class Actors(Node):
         self.req_pub = self.create_publisher(Empty, "/manipulator/grasp_request", 10)
         self.rel_pub = self.create_publisher(Bool, "/manipulator/release", 10)
         self.cand_pub = self.create_publisher(GraspCandidateArray, "/grasp_candidates", 10)
+        self.estop_pub = self.create_publisher(Stop, "/rm_driver/emergency_stop_cmd", 1)
+        self.soft_pub = self.create_publisher(Empty, "/rm_driver/move_stop_cmd", 1)
         self.cand_base = None  # Pose in base_link; published in the camera frame while set
         self.depth = None
         self.create_timer(0.2, self._camera)
@@ -147,6 +151,18 @@ class Actors(Node):
 
     def release(self):
         self.rel_pub.publish(Bool(data=True))
+
+    def estop(self, state):
+        self.estop_pub.publish(Stop(state=state))  # True = E, False = R
+
+    def soft_stop(self):
+        self.soft_pub.publish(Empty())
+
+    def still(self, sec):
+        """Largest joint change over sec seconds."""
+        before = self.joints()
+        self.spin_until(lambda: False, sec)
+        return max(abs(a - b) for a, b in zip(self.joints(), before))
 
     def spin_until(self, pred, sec):
         end = time.time() + sec
@@ -439,6 +455,45 @@ def main():
         again = n.spin_until(lambda: n.seen("SELECTING", t4), 120)
         check("second request in the same launch -> SELECTING", again,
               "seen" if again else "no SELECTING within 120 s")
+        if not again:
+            return
+
+        # ---- e-stop (T1.38): E mid-move stops the node until R. Nothing moves, requests refused
+        before = n.joints()
+        n.spin_until(lambda: max(abs(a - b) for a, b in zip(n.joints(), before)) > 0.002, 60)
+        t_e, grips = time.time(), len(n.grip)
+        n.estop(True)
+        stopped = n.spin_until(lambda: n.seen("STOPPED", t_e), 15)
+        took = time.time() - t_e
+        drift = n.still(2)
+        refused_before = log_count(r"Grasp request ignored: stopped")
+        n.request()
+        refused = n.spin_until(lambda: log_count(r"Grasp request ignored: stopped") > refused_before, 5)
+        drift = max(drift, n.still(3))
+        if not check("E mid-approach: STOPPED, arm still, request refused, gripper untouched",
+                     stopped and drift < 0.002 and refused and len(n.grip) == grips,
+                     f"STOPPED {'after %.1f s' % took if stopped else 'not seen in 15 s'}; joints moved "
+                     f"{drift:.4f} rad over 5 s; request {'refused' if refused else 'not refused'}; "
+                     f"{len(n.grip) - grips} gripper commands"):
+            return
+        t_r = time.time()
+        n.estop(False)
+        idle = n.spin_until(lambda: n.seen("IDLE", t_r), 10)
+        drift = n.still(3)
+        if not check("R: back to IDLE, no motion, old request dropped", idle and drift < 0.002
+                     and not n.seen("SELECTING", t_r),
+                     f"IDLE {'seen' if idle else 'not seen'}; joints moved {drift:.4f} rad over 3 s"):
+            return
+        t_s = time.time()
+        n.request()
+        if not n.spin_until(lambda: n.seen("SELECTING", t_s), 120):
+            return check("request after R -> SELECTING", False, "no SELECTING within 120 s")
+        n.soft_stop()
+        s_stop = n.spin_until(lambda: n.seen("STOPPED", t_s), 15)
+        drift = n.still(3)
+        check("S mid-approach stops it the same way", s_stop and drift < 0.002,
+              f"STOPPED {'seen' if s_stop else 'not seen in 15 s'}; joints moved {drift:.4f} rad over 3 s")
+        n.estop(False)
 
     try:
         run()

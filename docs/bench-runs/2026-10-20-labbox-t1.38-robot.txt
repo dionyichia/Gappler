@@ -1,0 +1,24 @@
+T1.38 e-stop on the real arm. Lab box, 2026-10-20 17:20-17:30, branch t1.38-estop-state-machine
+(68e2b13, box config use_simple_execute: false). Dion at the robot, hand on the power switch.
+Logs: ~/.ros/log/grasp_state_machine_63934_1792488366749.log, move_group_63458_1792488343057.log
+
+Test 1, E during the approach (SELECTING). PASS.
+  1792488127.817 E. State machine: "STOP (emergency stop, E)". The next step was refused
+  ("moveCartesianStep: not sent, stopped"), State -> STOPPED at .016 s later. Arm stopped (Dion).
+  E landed between two steps, so no trajectory was in flight. R at 154.45 -> IDLE, no motion.
+
+Test 2, E during the final grasp move (EXECUTING, AnyGrasp path). PASS.
+  1792488461.060 "moveToPose: executing" (target x=-0.558 y=-0.020 z=0.234).
+  1792488462.408 E, 1.35 s into the move. move_group: "Received event 'stop'", "Cancelling
+  execution for rm_group_controller", PREEMPTED, all within 1 ms. State -> STOPPED at .454.
+  No gripper close sent. The arm paused mid-move (Dion: "paused nicely"). The grasp was on
+  track to succeed. R at 478.70 -> IDLE, the arm stayed where it stopped (as designed).
+
+Finding: the controller rejects the e-stop. rm_driver logged "Emergency stop error code is -4"
+for E and for R in test 1, and /rm_driver/emergency_stop_result was data: false both times.
+So rm_set_arm_emergency_stop does not reach or is refused by the controller [code: the driver
+logs the API's return value, arm/vendor/rm_driver/src/rm_driver.cpp:572-586]. The arm stops
+only because the state machine stops sending and MoveIt cancels the trajectory. Meaning of -4
+not looked up yet [unverified]. Logged as T1.42.
+
+Not tested: a request during STOPPED on the real arm (the sim covers it), S on the real arm.

@@ -446,11 +446,11 @@ pixel-registered to colour.
 | Topic | Type | Producer | Consumer |
 |---|---|---|---|
 | `/grasp_candidates` | `GraspCandidateArray` (score, width, depth, pose ×5) | `anygrasp_detection_node.py:81` | `grasp_state_machine.cpp:142` |
-| `/pipeline_state` | `String` — `IDLE`/`SELECTING`/`EXECUTING` | `grasp_state_machine.cpp:156` | `anygrasp_detection_node.py:65`, `grasp_viz.py:61` |
+| `/pipeline_state` | `String` — `IDLE`/`SELECTING`/`EXECUTING`/`STOPPED` (T1.38) | `grasp_state_machine.cpp:156` | `anygrasp_detection_node.py:65`, `grasp_viz.py:61` |
 | `/rm_driver/set_gripper_position_cmd` | `Gripperset` | state machine + orchestrator | arm driver |
 | `/rm_driver/set_gripper_pick_on_cmd` | `Gripperpick` | `grasp_state_machine.cpp:153` | arm driver |
-| `/rm_driver/emergency_stop_cmd` | `Stop` | `estop.py` | arm driver |
-| `/rm_driver/move_stop_cmd` | `Empty` | `estop.py` | arm driver |
+| `/rm_driver/emergency_stop_cmd` | `Stop` | `estop.py` | arm driver, `grasp_state_machine` (T1.38) |
+| `/rm_driver/move_stop_cmd` | `Empty` | `estop.py` | arm driver, `grasp_state_machine` (T1.38) |
 
 ### The nav ↔ manipulation contract ★
 
@@ -1276,3 +1276,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-26 | OpenCode + Sherman | §5: T3.3 DONE — both SLAM launches publish `robot_base_to_arm` (mapping `:117-122`, localization `:107-112`). Full mapping-launch tree untested; values duplicated until T5.4. |
 | 2026-10-06 | Claude (Opus 5.5) + Dion | T0.14: §2 rows for `global_config.yaml` and `gappler_common.py`, the aria `config/` line and reading-order row 1 now describe the two config levels. §8.17 marked resolved. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | §8.8: the centroid staleness check is back (`T1.24`, PR #57). |
+| 2026-10-20 | Claude Opus 5.5 + Dion | Topic table: the state machine now listens to both stop topics and publishes `STOPPED` (T1.38, branch `t1.38-estop-state-machine`). |
