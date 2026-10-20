@@ -814,7 +814,7 @@ wheels = [
 [[package]]
 name = "projectaria-eyetracking"
 version = "0.1.0"
-source = { git = "https://github.com/Axemortal/rcp-projectaria_eyetracking.git?branch=main#253911e187c17a552377d7473691e20bb60bddd2" }
+source = { git = "https://github.com/Axemortal/rcp-projectaria_eyetracking.git?branch=main#6e0b1e367d74bc350b1cf9d4b1c83c06d6487f5f" }
 dependencies = [
     { name = "easydict" },
     { name = "projectaria-tools" },

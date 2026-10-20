@@ -6,8 +6,11 @@
 # shared_services/segmentation/segmentation_service.py
 segmentation_service:
   ros__parameters:
-    min_score: 0.5        # SAM 3 score below this is not a detection, when the request sends 0
-    max_detections: 5     # most detections per reply, when the request sends 0
+    # SAM 3 is loaded at min_score and drops anything below it, so a request can only raise it.
+    # 0.3 and 20 serve the glasses, which pick by gaze among many weak boxes (T2.9). The grasp
+    # client asks for its own stricter values (grasp_config.yaml).
+    min_score: 0.3        # SAM 3 score below this is not a detection, when the request sends 0
+    max_detections: 20    # most detections per reply, when the request sends 0
     # No depth for a mask unless at least this share of its pixels has a reading. Too close to
     # the camera, the few readings left are background: a box at 0.15 m read 1.26 m (T1.24 3b).
     min_valid_depth_fraction: 0.5

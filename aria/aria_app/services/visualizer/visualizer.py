@@ -14,7 +14,7 @@ from typing import Dict, Optional, Tuple
 
 import cv2
 import numpy as np
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import CompressedImage
 
 from config import ROS2Topics, VisualizerConfig
@@ -167,27 +167,20 @@ class Visualizer:
     # ---- ROS callbacks ------------------------------------------------
 
     def _on_raw_image(self, msg: CompressedImage) -> None:
-        if self.current_topic in [
-            ROS2Topics.RGB_CAMERA_RAW,
-            ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE,
-        ]:
-            frame = self._ingest_compressed_image(msg)
-            if self.current_topic == ROS2Topics.RGB_CAMERA_RAW:
-                self._set_display_frame(frame)
-            elif self.current_topic == ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE:
-                self._reference_frame = frame
+        if self.current_topic == ROS2Topics.RGB_CAMERA_RAW:
+            self._set_display_frame(self._ingest_compressed_image(msg))
 
     def _on_undistorted_image(self, msg: CompressedImage) -> None:
         if self.current_topic == ROS2Topics.RGB_CAMERA_UNDISTORTED:
             self._set_display_frame(self._ingest_compressed_image(msg))
+        elif self.current_topic == ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE:
+            # gaze arrives in this image's pixels (T2.9)
+            self._reference_frame = self._ingest_compressed_image(msg)
 
-    def _on_gaze_position(self, msg: Point) -> None:
+    def _on_gaze_position(self, msg: PointStamped) -> None:
         if self.current_topic == ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE:
             if self._reference_frame is not None:
-                gaze_point = self._rotate_gaze_point_90_cw(
-                    (msg.x, msg.y), self._reference_frame.shape
-                )
-                annotated = self._gaze_viz.visualize(self._reference_frame, gaze_point)
+                annotated = self._gaze_viz.visualize(self._reference_frame, (msg.point.x, msg.point.y))
                 if annotated is not None:
                     self._set_display_frame(annotated)
                     frame = annotated
@@ -196,20 +189,22 @@ class Visualizer:
             self._write_synced_frame(frame, self._et_raw_frame)
 
         # Just keep the latest raw gaze point; the Aria mask bundle is the draw trigger.
-        # self._gaze_point_raw = (msg.x, msg.y)
+        # self._gaze_point_raw = (msg.point.x, msg.point.y)
 
     def _on_et_raw_image(self, msg: CompressedImage) -> None:
         frame = self._ingest_compressed_image(msg)
         if frame is not None:
             self._et_raw_frame = frame
 
-    def _rotate_gaze_point_90_cw(
-        self, point: Tuple[float, float], image_shape: Tuple[int, ...]
-    ) -> Tuple[float, float]:
-        """Transform a gaze point to match a 90° clockwise rotated image."""
-        x, y = point
-        h, w = image_shape[:2]
-        return (h - y, x)
+    # Unused since T2.9: gaze now arrives in the published image's pixels, already rotated.
+    # Commented out, not deleted (Dion, 2026-10-13). Delete once T2.9 passes end to end.
+    # def _rotate_gaze_point_90_cw(
+    #     self, point: Tuple[float, float], image_shape: Tuple[int, ...]
+    # ) -> Tuple[float, float]:
+    #     """Transform a gaze point to match a 90° clockwise rotated image."""
+    #     x, y = point
+    #     h, w = image_shape[:2]
+    #     return (h - y, x)
 
     # ------------------------------------------------------------------
     # Synced recording
