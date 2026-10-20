@@ -55,6 +55,7 @@ LIMS = CFG["workspace_limits_m"]
 cfgs.max_gripper_width = CFG["max_gripper_width_m"]
 # A grasp's approach is its rotation's x column. Kept if within max_approach_deg of the camera's z.
 MIN_APPROACH_COS = float(np.cos(np.radians(CFG["max_approach_deg"])))
+MIN_SCORE = CFG["min_grasp_score"]  # T1.44: low scores were edge and corner guesses
 # Does the object fit the real gripper (T1.32, anygrasp_to_grasp_frame.py fits_gripper)
 FIT = dict(max_width=CFG["max_object_width_m"], max_depth=CFG["max_grasp_depth_m"],
            finger_height=CFG["finger_height_m"], percentile=CFG["fit_percentile"])
@@ -245,6 +246,12 @@ class AnyGraspDetectionNode(Node):
             return
 
         gg = gg.nms().sort_by_score()
+        best = float(gg.scores[0])
+        gg = gg[gg.scores >= MIN_SCORE]
+        if len(gg) == 0:
+            self.get_logger().warn(f"No confident grasp: best score {best:.3f} (limit {MIN_SCORE}, T1.44)",
+                                   throttle_duration_sec=5.0)
+            return
         gg = gg[gg.rotation_matrices[:, 2, 0] >= MIN_APPROACH_COS]
         if len(gg) == 0:
             self.get_logger().warn("No grasp along the camera's view", throttle_duration_sec=5.0)

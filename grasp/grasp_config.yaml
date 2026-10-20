@@ -62,6 +62,10 @@ anygrasp_detection_node:
     # the grasp's full pose, so larger angles may work. Raise it once RViz and a few real grasps
     # show they do. Without it, most grasps came from the side or across the top face.
     max_approach_deg: 30
+    # T1.44: drop grasps AnyGrasp scores below this. On the 75 mm box face (2026-10-20 offline
+    # checks) 95% of published grasps scored under 0.3: edge and corner guesses. Good grasps on a
+    # 6 cm face scored 0.34 to 0.5 (T1.17). Lower if good grasps are dropped.
+    min_grasp_score: 0.3
     # T1.32: does the object fit the REAL gripper? AnyGrasp cannot tell (it is told 0.10 m above),
     # so the node measures each grasp from the masked points and drops it if any limit fails.
     # Gripper (Dion, 2026-10-14): a U 50 mm deep inside, opens 71 mm, rubber pads 16 mm long.
@@ -111,7 +115,7 @@ grasp_state_machine:
     # End the approach if the newest centroid is older than this. Age counts from the camera
     # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
     # frame (measured 2026-10-12, T1.24 3b)
-    centroid_max_age_s: 2.0
+    centroid_max_age_s: 3.0         # was 2.0, T1.35 trial 1 stopped at 2.04 s (2026-10-20)
     # After a /manipulator/grasp_request, the first centroid must arrive within this time or the
     # request lapses (T1.25). SAM 3 gives the first one in about 1 s when the object is in view
     # (0.27 to 0.53 s per frame, 0.5 s warm-up, measured 2026-10-08 and 2026-10-12)

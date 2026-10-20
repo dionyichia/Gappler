@@ -14,6 +14,8 @@ sent. This file does not repeat them.
 
 ## Start here, cold start after 2026-10-14 (step 7, then step 8 = T1.35)
 
+**Update 2026-10-20 evening: paused on the fit check (T1.44).** T1.38 is merged and robot-tested. T1.35 trial 1 ran three times, none counted. At 46 cm (Dion swapped every 50 cm pose to 46 cm) it planned and ran, but the open gripper pushed the box's 75 mm face: the T1.32 width check passes grasps on a too-wide face [bag replay]. Next: T1.44, then trial 1 again. Record: `docs/bench-runs/2026-10-20-labbox-t1.35-trial1-t1.44-fit.txt`.
+
 **Update 2026-10-20: paused on safety.** Step 7d PASS, T1.17 2 of 3, RViz works live. T1.35 is
 designed but 0 of 12 run: the E key did not stop the arm (T1.38). Next: fix T1.38 at the desk and
 test it at the robot, then run the 12 T1.35 trials. See "Result, 2026-10-20: real arm" below. Items
@@ -915,3 +917,4 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-15 | Claude Opus 5.5 + Dion | T1.34 box attempt, not finished. RViz blank (no robot display, point cloud topic not published). Decided: fix RViz before shipping T1.34. All on branch `t1.34-grasp-viz-drawing`. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | T1.34 RViz works on the replay bag and the simulated arm (PASS by eye, commit 940ba0f): result section with the missing optical frame and old-stamp findings. Start here: T1.34 done, next is the real-arm run (home, RViz live check, 7d, T1.17, T1.32, T1.35). 2026-10-15 result points at the fix. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | Real-arm session: step 7d PASS, T1.17 2 of 3, RViz live works, T1.35 design settled and paused because the E key did not stop the arm (T1.38). New tasks T1.39 to T1.41. Start here update. |
+| 2026-10-20 | Claude Sonnet 5.5 + Dion | "Start here": T1.35 paused on T1.44 (fit check passes too-wide grasps), 50 cm swapped to 46 cm. |
