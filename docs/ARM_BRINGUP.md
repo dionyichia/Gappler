@@ -124,6 +124,8 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    (`bench-runs/2026-10-20-labbox-t1.17-t1.35-live.txt`). The state machine has no stop subscriber
    `[code]`, and whether the controller keeps the stop in force is not known `[unverified]`. Until
    T1.38 is done, the physical stop (power) is the only stop during any state machine run.
+   The state machine side is written on branch `t1.38-estop-state-machine`: it now listens to E, S
+   and R `[code]`. Not yet tested on the simulated arm or the robot.
 
 ## Controller, driver, and feedback
 
@@ -187,7 +189,8 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    ros2 topic info -v /rm_driver/emergency_stop_cmd
    ```
 
-   Expect one publisher (`estop`) and one subscriber (`rm_driver`). If either is absent, end the
+   Expect one publisher (`estop`) and the subscriber `rm_driver`, plus `grasp_state_machine` if it
+   runs (T1.38). If `estop` or `rm_driver` is absent, end the
    session: software `E` cannot be relied on. This check does not test the physical stop.
 8. **ROS feedback and packet arrival, T-INSPECT and T-NET.** While the filtered capture runs,
    inspect the arm's ROS feedback in T-INSPECT:
@@ -277,3 +280,4 @@ T1.5 done or treating it as an independently validated shared runbook.
 | 2026-09-23 | OpenCode + Sherman | Added a checkout/overlay provenance gate after a read-only lab-box check found an older branch with local changes; do not change that checkout during first-power verification. |
 | 2026-10-13 | OpenCode + Sherman | Validated: the required independent UDP capture overlapping ROS feedback was observed (23,043 wire packets spanning the joint observation); T1.5 DONE. Title/banner updated, observed rate note added. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | Step on T-ESTOP: the E key did not stop the arm during a state machine run (T1.38). Physical stop only until fixed. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | T-ESTOP and T-INSPECT: state machine stop subscriber written (T1.38), untested. |

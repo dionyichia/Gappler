@@ -77,6 +77,11 @@
       rm_driver_set_gripper_position_cmd: "/rm_driver/set_gripper_position_cmd"
       # grasp: grasp_state_machine -> arm: rm_driver
       rm_driver_set_gripper_pick_on_cmd: "/rm_driver/set_gripper_pick_on_cmd"
+      # arm: estop -> arm: rm_driver, grasp: grasp_state_machine (stops until resume, T1.38).
+      # Stop message: state true = emergency stop (E), false = resume (R)
+      rm_driver_emergency_stop_cmd: "/rm_driver/emergency_stop_cmd"
+      # arm: estop -> arm: rm_driver, grasp: grasp_state_machine (S, treated like E, T1.38)
+      rm_driver_move_stop_cmd: "/rm_driver/move_stop_cmd"
 
     # ---- ROS request/reply services that more than one subsystem calls. Server -> callers.
     services:
