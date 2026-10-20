@@ -24,6 +24,8 @@
       debug_sam_mask: "/debug/sam_mask"
       debug_centroid_marker: "/debug/centroid_marker"
       debug_state_marker: "/debug/state_marker"
+      # anygrasp_detection_node -> RViz (debug): the masked points AnyGrasp was given (T1.34)
+      debug_anygrasp_points: "/debug/anygrasp_points"
     # How many grasp candidates AnyGrasp publishes per frame.
     # read by: anygrasp_node, anygrasp_detection_node
     num_grasp_candidates: 5

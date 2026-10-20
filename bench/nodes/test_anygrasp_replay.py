@@ -97,6 +97,12 @@ def main():
                                f"client exit {client.poll()}, anygrasp exit {ag.poll()}) "
                                f"-- see {LOG.name}")
         start(["ros2", "bag", "play", "--loop", BAG])
+        # The bag has no TF. Live, the camera driver publishes this frame. Without it RViz and
+        # grasp_viz cannot place the points or candidates (T1.34). D435 nominal values
+        # (realsense2_description _d435.urdf.xacro, color joint and color optical joint).
+        start(["ros2", "run", "tf2_ros", "static_transform_publisher", "--y", "0.015",
+               "--roll", "-1.5708", "--yaw", "-1.5708",
+               "--frame-id", "camera_link", "--child-frame-id", "camera_color_optical_frame"])
 
         t0 = time.time()
         hold("EXECUTING", PHASE_SEC)
