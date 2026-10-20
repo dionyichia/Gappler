@@ -1,0 +1,56 @@
+[INFO] [1792481236.769055206] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3' for READ_ONLY.
+[INFO] [1792481318.135354519] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/spin-corrected/bag/bag_0.db3' for READ_ONLY.
+q15s: map 88237 voxels (14808 planar); query 150 scans in 15 s -> 29498 voxels; LEVEL 1 GRAV4 True
+GLOBAL sweep: 84 starts, 38 distinct solutions; top 5 (inliers, plane rms):
+  inl 0.660 rms_pl 0.041 | x 0.265 y 1.612 z -0.061 m | yaw 9.17 pitch -0.00 roll 0.00 deg
+  inl 0.656 rms_pl 0.041 | x 0.166 y 1.170 z -0.070 m | yaw 0.42 pitch -0.00 roll 0.00 deg
+  inl 0.595 rms_pl 0.040 | x -0.141 y 1.878 z -0.055 m | yaw 23.65 pitch -0.00 roll 0.00 deg
+  inl 0.562 rms_pl 0.041 | x -0.387 y 3.144 z -0.045 m | yaw 16.91 pitch -0.00 roll 0.00 deg
+  inl 0.560 rms_pl 0.042 | x 0.380 y 1.195 z -0.071 m | yaw -12.58 pitch -0.00 roll 0.00 deg
+A^T A 6-DOF at best (N=6593 planar inliers): eigenvalues [9.3181e-03 1.6939e-02 3.5420e-01 9.6326e-01 9.3344e+00 1.7569e+01]  condition 1885.5
+  weakest direction: tx -0.90, ty +0.40, rotZ(yaw) -0.17
+A^T A 4-DOF yaw+xyz at best (N=6593 planar inliers): eigenvalues [0.0093 0.017  0.3602 0.9637]  condition 103.1
+  weakest direction: tx +0.90, ty -0.40, rotZ(yaw) +0.17
+normal axes among planar inliers: |nx|>0.7 1%  |ny|>0.7 1%  |nz|>0.7 97%
+  y -1.00: x 1.191 yaw -0.92 cost 0.01182 inliers 0.619 rms_pl 0.041
+  y -0.90: x -0.362 yaw 10.20 cost 0.01185 inliers 0.574 rms_pl 0.042
+  y -0.80: x -0.393 yaw 10.87 cost 0.01201 inliers 0.562 rms_pl 0.042
+  y -0.70: x -0.433 yaw 10.99 cost 0.01202 inliers 0.553 rms_pl 0.042
+  y -0.60: x -0.555 yaw 12.57 cost 0.01201 inliers 0.549 rms_pl 0.042
+  y -0.50: x -0.469 yaw 13.42 cost 0.01202 inliers 0.552 rms_pl 0.042
+  y -0.40: x -0.450 yaw 9.72 cost 0.01203 inliers 0.556 rms_pl 0.043
+  y -0.30: x 1.256 yaw -0.82 cost 0.01229 inliers 0.598 rms_pl 0.045
+  y -0.20: x 1.201 yaw -0.80 cost 0.01223 inliers 0.605 rms_pl 0.046
+  y -0.10: x 1.147 yaw -0.88 cost 0.01223 inliers 0.608 rms_pl 0.046
+  y -0.00: x -0.541 yaw 12.07 cost 0.01234 inliers 0.555 rms_pl 0.043
+  y 0.10: x -0.628 yaw 11.30 cost 0.01246 inliers 0.549 rms_pl 0.043
+  y 0.20: x -0.531 yaw 11.20 cost 0.01266 inliers 0.547 rms_pl 0.044
+  y 0.30: x -0.466 yaw 11.26 cost 0.01273 inliers 0.543 rms_pl 0.044
+  y 0.40: x -0.966 yaw 5.75 cost 0.01287 inliers 0.547 rms_pl 0.045
+  y 0.50: x 1.068 yaw -1.85 cost 0.01304 inliers 0.544 rms_pl 0.048
+  y 0.60: x -0.947 yaw 9.79 cost 0.01305 inliers 0.527 rms_pl 0.045
+  y 0.70: x -0.963 yaw 8.64 cost 0.01318 inliers 0.524 rms_pl 0.046
+  y 0.80: x -0.824 yaw 9.42 cost 0.01342 inliers 0.517 rms_pl 0.046
+  y 0.90: x -0.825 yaw 10.49 cost 0.01361 inliers 0.510 rms_pl 0.046
+  y 1.00: x -0.916 yaw 9.93 cost 0.01367 inliers 0.503 rms_pl 0.046
+  y 1.10: x -0.901 yaw 9.18 cost 0.01378 inliers 0.494 rms_pl 0.047
+  y 1.20: x -0.904 yaw 8.69 cost 0.01399 inliers 0.484 rms_pl 0.047
+  y 1.30: x -1.006 yaw 6.12 cost 0.01416 inliers 0.473 rms_pl 0.047
+  y 1.40: x -0.845 yaw -0.84 cost 0.01442 inliers 0.456 rms_pl 0.049
+  y 1.50: x -0.899 yaw -0.89 cost 0.01455 inliers 0.448 rms_pl 0.049
+  y 1.60: x -0.972 yaw 8.36 cost 0.01468 inliers 0.448 rms_pl 0.048
+  y 1.70: x -1.114 yaw 6.68 cost 0.01467 inliers 0.442 rms_pl 0.048
+  y 1.80: x -0.267 yaw 15.30 cost 0.01483 inliers 0.462 rms_pl 0.050
+  y 1.90: x -0.355 yaw 13.36 cost 0.01499 inliers 0.449 rms_pl 0.050
+  y 2.00: x -0.359 yaw 9.35 cost 0.01512 inliers 0.433 rms_pl 0.050
+  y 2.10: x -1.001 yaw 6.44 cost 0.01526 inliers 0.414 rms_pl 0.050
+  y 2.20: x -0.334 yaw 7.74 cost 0.01539 inliers 0.432 rms_pl 0.052
+  y 2.30: x -0.152 yaw 1.37 cost 0.01544 inliers 0.435 rms_pl 0.053
+  y 2.40: x -0.175 yaw 3.10 cost 0.01555 inliers 0.436 rms_pl 0.053
+  y 2.50: x -0.398 yaw 8.48 cost 0.01568 inliers 0.419 rms_pl 0.052
+  y 2.60: x 0.137 yaw -2.76 cost 0.01575 inliers 0.423 rms_pl 0.055
+  y 2.70: x -0.485 yaw 6.80 cost 0.01599 inliers 0.400 rms_pl 0.054
+  y 2.80: x 0.148 yaw -0.83 cost 0.01603 inliers 0.423 rms_pl 0.055
+  y 2.90: x 0.140 yaw -0.85 cost 0.01610 inliers 0.419 rms_pl 0.055
+  y 3.00: x 0.180 yaw 14.37 cost 0.01623 inliers 0.398 rms_pl 0.055
+local minima of cost at y = [-0.6, -0.2, 1.7] | global min y -1.00 inliers 0.619; best inliers anywhere 0.619 at y -1.00
