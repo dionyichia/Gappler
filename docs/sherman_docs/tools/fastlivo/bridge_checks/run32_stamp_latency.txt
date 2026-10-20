@@ -1,0 +1,6 @@
+odom stamp - source scan header stamp (start)    p50  124.0 ms  p95  191.7 ms  p99  199.0 ms  max  202.0 ms
+odom stamp - source scan end (start+0.1 s)       p50   24.0 ms  p95   91.7 ms  p99   99.0 ms  max  102.0 ms
+odom stamp - source scan arrival (bag record)    p50   22.6 ms  p95   90.1 ms  p99   97.3 ms  max  100.4 ms
+  first odom after each scan     n=1179: stamp - scan end p50 17.2 ms p95 26.1 ms
+  second odom after each scan    n=1177: stamp - scan end p50 32.4 ms p95 96.1 ms
+odom stamp minus latest ARRIVED image's header stamp: p50 49.5 ms p95 64.0 ms (image arrival lag: record-stamp p50 30.5 ms)
