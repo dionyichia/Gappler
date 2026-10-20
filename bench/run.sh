@@ -99,6 +99,8 @@ s=$(step "L0  Map snapshot saver" python3 bench/test_map_saver.py)
 row L0 "Map snapshot saver" "$s" ""
 s=$(step "L0  FAST-LIVO2 odom bridge transform" python3 bench/test_fastlivo_odom_bridge.py)
 row L0 "FAST-LIVO2 odom bridge transform" "$s" ""
+s=$(step "L0  Livox CustomMsg to PointCloud2 converter" python3 bench/test_livox_custom_to_cloud.py)
+row L0 "Livox CustomMsg to PointCloud2 converter" "$s" "numpy fast-path check skipped where numpy is missing"
 s=$(step "L0  T3.4 bench coverage" python3 bench/test_t34_bench_coverage.py)
 row L0 "T3.4 bench coverage" "$s" ""
 s=$(step "L0  FAST-LIVO diagnostic patch" python3 docs/sherman_docs/tools/fastlivo/recipe/test_diagnostics.py)
