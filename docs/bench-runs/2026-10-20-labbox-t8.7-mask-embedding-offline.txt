@@ -1,0 +1,67 @@
+T8.7: mask embedding (cosine similarity) instead of LightGlue, offline tests and agreed design
+2026-10-20, Mac + lab box (GPU, /tmp/dion_t8.7, nothing moved, no ROS). Branch t8.7-mask-embedding-matcher.
+No pipeline code yet. Scripts, results.json and pictures: Dion's Mac only (not in git), main checkout
+docs/dion_docs/local/t8.7_clip_crops_2026-10-20/ and t8.7_sam3_embed_2026-10-20/.
+
+Inputs (all from T8.4, same recordings: glasses c2cbafe8, wrist bag box_at_home_2026-10-13)
+- 11 saved crop pairs (T8.4 crop rerun): gazed glasses crop + the one wrist box crop.
+- 25 saved full-frame pairs (T8.4 first run): glasses 1408x1408, wrist 640x480. 10 unique glasses
+  frames, each with 2 to 12 SAM 3 masks (the brown box plus other cardboard boxes, a white box, a
+  blue crate, a yellow box). The wrist frames hold one mask, the brown box.
+- The saved T8.4 pictures have red and blue swapped on disk (the saver wrote RGB as if BGR). Both
+  tests undo that. Colour matters for embeddings, it did not for LightGlue (grey). [measured]
+
+Test 1, Mac, CLIP (memory_graph OpenClipEncoder, ViT-B-32 laion2b), 11 crop pairs
+- Box glasses crops (pairs 1-3) vs wrist box: cosine 0.60 to 0.64. Background crops (0, 4-10):
+  0.45 to 0.52. A cutoff near 0.56 gets 11 of 11 accept/reject calls right. LightGlue accepted all
+  11, 3 right. Only 5 distinct glasses images among the 11. [measured]
+
+Test 2, box, four vectors per SAM 3 mask, every glasses mask vs the wrist mask, 25 pairs
+- Methods: (a) SAM 3 image features (backbone_out, 256 x 72 x 72) averaged inside the mask;
+  (b) SAM 3 decoder vector of the query that made the mask; CLIP on the mask's box + 20 px;
+  CLIP with the background greyed. Prompts "box" and "small brown box", SAM 3 cutoff 0.3.
+- Brown box labelled by eye per glasses frame (mask_sheet.jpg). "Ranked first" = the brown glasses
+  mask has the highest cosine to the wrist box, same method on both sides. [measured]
+
+                     prompt "box"                       prompt "small brown box"
+  method        first   missed by       median margin   first   median margin
+  CLIP          25/25   -               +0.07           25/25   +0.08
+  CLIP greyed   20/25   0.007 to 0.044  +0.04           24/25   +0.10
+  SAM 3 (a)     15/25   0.007 to 0.036  +0.03           25/25   +0.30
+  SAM 3 (b)      7/25   0.04 to 0.28    -0.16           25/25   +0.34
+
+- CLIP's smallest margin with "box" is +0.02, so the tie zone must stay small. [measured]
+- SAM 3 scores the brown box 0.31 to 0.57 with "box", below 0.5 in 7 of 10 frames: the live
+  pipeline (cutoff 0.5) never had it as a candidate. Likely why 8 of 11 T8.4 glasses crops were
+  background. [measured; cause inferred]
+- With "small brown box" SAM 3's own top score is the brown box in 10 of 10 frames (0.73 to 0.90,
+  decoys 0.70 or lower). [measured]
+- Why (a) loses: the box is 20 to 37 px wide in the glasses frame, 1x2 to 2x4 cells of SAM 3's
+  72x72 grid, edge cells mixed with background. CLIP sees the crop at 224 px. [size measured, cause
+  inferred]
+
+Limit: the wrist view has one box, so this tests choosing among glasses masks, not wrist masks.
+A wrist recording with 2+ different boxes is still owed (later, Dion).
+
+Design agreed with Dion, 2026-10-20 (build in a later session)
+1. Embedding: CLIP, reusing memory_graph.clip_encoder.OpenClipEncoder (+ image_feature.l2_normalise).
+   The aria app's PYTHONPATH lacks the repo root (the box test added it): fix in the build.
+   GPU memory about 0.3 to 0.6 GB [inferred], measure on the box.
+2. Crop: the existing _crop_to_mask (box + 20 px), no greying (context helped, 25 vs 20).
+3. Rule, in _find_matching_ros_mask:
+   a. cosine of every glasses mask vs every wrist mask;
+   b. drop pairs below tau (start 0.56, from test 1);
+   c. keep pairs within delta of the best (start 0.01);
+   d. among those, gaze picks the glasses mask (existing _find_closest_mask);
+   e. one wrist mask left: pick it. More than one (identical wrist objects): return None and log
+      "wrist tie". Disambiguation by geometry is later (NEXT_STEPS 2.13).
+4. _process_aria_frame keeps all glasses masks (today it cuts to the gazed one before storing).
+5. SAM 3 cutoff 0.5 -> 0.3 (T2.9 found the same for the glasses box).
+6. LightGlue: stop calling it, leave FeatureMatcher in place (may come back). Keypoint outputs
+   become empty arrays. Log the score matrix each match.
+7. Check both camera feeds reach the matcher in RGB before embedding.
+8. Later, not now: SAM 3 (b) for descriptive prompts.
+
+Build checks: one assert-based check of the rule (3a-e) on small made-up score matrices; then a box
+replay of the T8.4 setup (glasses c2cbafe8 + wrist bag, "box") against the T8.4 numbers (0 of 15,
+crop rerun 11 of 11 with every match wrong).

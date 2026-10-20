@@ -839,6 +839,14 @@ limit is the input: a featureless box, seen far and front-on by the glasses and 
 by the wrist `[inferred]`. Further diagnostics (a textured object, masking out the floor) are parked
 as `T8.6`. Details: the run record above.
 
+**Mask embeddings instead, 2026-10-20 (T8.7, offline, design agreed, not built).** One CLIP vector per
+SAM 3 mask (the memory graph's encoder), cosine between glasses and wrist masks. On the T8.4 frames
+CLIP ranked the brown box first in 25 of 25 glasses-vs-wrist pairs against 2 to 12 decoy masks (other
+boxes, a crate). SAM 3's own image features managed 15 of 25 and its decoder vectors 7 of 25
+`[measured]`. SAM 3's 0.5 cutoff hid the box in 7 of 10 glasses frames `[measured]`. The wrist view
+still holds one box, so choosing among wrist objects is untested. Identical objects still need
+geometry (this section). Record: `bench-runs/2026-10-20-labbox-t8.7-mask-embedding-offline.txt`.
+
 **Three candidate methods, cheapest first:**
 
 | Method | Idea | Needs | Rough cost |
@@ -1530,3 +1538,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-19 | Claude Opus 5.5 + Dion | §2.13: first run of the old matcher (T8.4), 0 of 15. Old method first, the geometric methods wait. |
 | 2026-10-19 | Claude Opus 5.5 + Dion | §2.13: crop rerun (T8.4), 11 of 11 chose a mask but every match is wrong. Upscaling inside LightGlue is a likely cause. Diagnose before calling it the baseline. |
 | 2026-10-19 | Claude Opus 5.5 + Dion | §2.13: baseline recorded (T8.4). Four offline checks: LightGlue works, upscaling turns JPEG noise into fake points, the plain box has too few features, LoFTR fails too. Further diagnostics parked as T8.6. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | §2.13: mask embeddings (T8.7) tested offline. CLIP picks the gazed box 25 of 25 against decoys, SAM 3 features weaker. Design agreed, build next. |
