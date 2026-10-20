@@ -80,3 +80,10 @@ Dion's local folder, anygrasp_offline_checks.py / _45cm.log. Bag fitdebug_table_
  Reading: the node starts, loads the branch config, and publishes only confident grasps. This bag
  is the 75 mm face pose the gripper cannot take, so few grasps is the expected answer. Live test
  at the arm still owed (T1.44 stays open until it passes).
+
+== Bags moved, 2026-10-20 night ==
+ The two image bags now live outside the repo on the box, in ~/grasp_replay_bags/ (T1.46 test bags):
+   fitdebug_table_45cm      -> ~/grasp_replay_bags/box_75mm_face_45cm_not_graspable
+   fitdebug_table_6cm_face  -> ~/grasp_replay_bags/box_60mm_face_graspable
+ The trial_01, trial_01_46cm and trial_01b bags (joints and candidates only, no images) were deleted
+ (Dion). Their results are recorded above.
