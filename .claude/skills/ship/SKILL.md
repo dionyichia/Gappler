@@ -1,6 +1,8 @@
 ---
 name: ship
-description: Ship one Gappler task. Reviews the changes (a senior lead engineer review plus a background ponytail bloat review) and stops on major findings, updates the task tree, runs the quick bench, commits, merges the latest dev in, opens or updates the PR into dev, watches CI until green, and merges once the user says yes. Use when someone types /ship, or says "ship it", "open the PR", "commit and PR this", or "get this merged". Run it per task, whenever a task is ready. It does not write the session handoff (Dion's /cold-start does that).
+description: Ship one Gappler task. Reviews the changes (a senior lead engineer review plus a background ponytail bloat review) and stops on major findings, updates the task tree, runs the quick bench, commits, merges the latest dev in, opens or updates the PR into dev, watches CI until green, and merges once the user says yes. Use when someone types /ship, or says "ship it", "open the PR", "commit and PR this", or "get this merged". Run it per task, whenever a task is ready. It does not write the session handoff (Dion's /cold-start does that). Flags in the arguments: "no merge" stops at green CI, "no pony" skips the ponytail review, "no pub" skips republishing HTML pages. Flags chain.
+model: claude-sonnet-5-5
+effort: medium
 ---
 
 # Ship a task
@@ -8,7 +10,18 @@ description: Ship one Gappler task. Reviews the changes (a senior lead engineer 
 Takes the work on the current branch from "done locally" to "merged into `dev`". It follows the
 git rules in `CLAUDE.md`. Stop and ask whenever a step below says so, or when something is unclear.
 
-`$ARGUMENTS` may name the task ID or say "no merge" (stop once CI is green).
+`$ARGUMENTS` may name the task ID and carry flags. Flags chain in any order (`/ship no pony no pub`),
+and the spelling is loose: dashes, spaces and "skip" for "no" all count.
+
+- **no merge**: stop once CI is green.
+- **no pony** (also `no ponytail`, `skip pony`, `skip-pony`, `no-pony`): skip the ponytail review
+  in step 3. The lead review still runs.
+- **no pub** (also `no publish`, `skip pub`, `skip-pub`, `no-pub`): do not republish HTML pages in
+  step 4 or step 10. Write "republish owed" in each edited page's changelog instead.
+
+**Model and effort.** Run this skill, and every background agent it starts, on Sonnet 5.5 at
+medium effort (`model: "sonnet"`, `effort: "medium"` on each Agent call). A fork ignores the model
+setting, so background work uses a fresh `general-purpose` agent with a self-contained brief.
 
 ## 1. Check where you are
 
@@ -39,8 +52,10 @@ Skip both reviews, say why in one line, and go on to step 4 when the change is m
 Always review a change that touches arm, gripper or base motion, safety checks, or ROS topics,
 however small.
 
-**Ponytail review (background).** Start it first so it runs while you do the lead review. Use the
-Agent tool with `subagent_type: "fork"` and this brief, filled in:
+**Ponytail review (background).** Skip it on "no pony". Start it first so it runs while you do the
+lead review. Use the Agent tool with `subagent_type: "general-purpose"`, `model: "sonnet"`,
+`effort: "medium"`, `run_in_background` and this brief, filled in (it starts cold, so include the
+repo path):
 
 > Ponytail review of branch <branch> against `origin/dev`, files: <file list>. Review it the way
 > the `ponytail:ponytail-review` skill does: reinvented stdlib, speculative abstractions, dead
@@ -66,7 +81,7 @@ robotics, computer vision and complex systems. Read the whole diff and check:
 Write each finding as one line: file:line, the problem, the fix, and major or minor. Major means a
 bug, a safety risk, or a design problem that should not merge.
 
-**Gate.** Before step 5 (commit), wait for the ponytail result, then show the user both reviews.
+**Gate.** Before step 5 (commit), wait for the ponytail result (if it ran), then show the user the reviews.
 If neither has a major finding, say so in one line and continue. If either has one, stop and ask
 the user whether to fix it now or ship anyway. Minor findings go in the PR body under "Review
 notes".
@@ -77,8 +92,11 @@ notes".
   of evidence (bench run, PR, log file). If it is not finished, update its progress note.
 - Any global doc the work made wrong (see `CLAUDE.md` "Keep the global docs current"), with a
   changelog row.
-- If you edited an HTML page and have the `Artifact` tool, republish it after the merge. If not, add
-  "republish owed" to its changelog.
+- If you edited an HTML page and have the `Artifact` tool, republish it after the merge. If not, or
+  on "no pub", add "republish owed" to its changelog.
+- The edits where you already know the exact text (a `DONE` prefix, a changelog row) and the
+  republish in step 10 can go to a background agent (`general-purpose`, `model: "sonnet"`,
+  `effort: "medium"`) with the file paths and exact text. Judgment edits stay inline.
 
 ## 5. Check, then commit
 
@@ -120,7 +138,7 @@ notes".
 ## 10. After the merge
 
 - `git switch dev && git pull`, or, in a worktree, ask before removing it.
-- Republish any HTML page you edited (step 4).
+- Republish any HTML page you edited (step 4), unless "no pub". A background agent can do it.
 - Don't pull on the lab box (`~/rcp-Gappler`) unless the user asks: someone may be in the middle
   of a robot session there.
 - Report in a few lines: PR link, merged or waiting, bench result, docs updated, anything left open
