@@ -20,3 +20,8 @@ fastlivo_odom_bridge:
     # /odom stays on the wheels (the mapper's twist is all zero). Turn on only to publish a pose-differenced /odom instead.
     publish_odom: false
     odom_topic: "/odom"
+    # Visual mode publishes two poses per scan (partial LIO, then final). Publish only the final one. Set false for a LiDAR-only config.
+    select_final_pose: true
+    # Poses arriving within this many seconds of the previous one belong to the same scan. Measured gaps: within a scan 0 to 50 ms,
+    # between scans 55 to 100 ms. Arrival time, so this assumes real-time playback.
+    pair_window_s: 0.05

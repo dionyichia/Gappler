@@ -1,8 +1,8 @@
 """Option 2 runtime check: the real bridge and converter fed the recorded handdriven1 odometry and LiDAR.
 
 No hardware, no mapper, no Docker, no robot command. Domain 127, localhost only (bench/t34_guard.py checks it is empty).
-Passes when: exactly one node publishes /tf and it is fastlivo_odom_bridge; the only edge is odom -> robot_base_link at about the
-recorded 20 Hz; /cloud_relay arrives at about 10 Hz with the full cloud; the bridge stops publishing when the player stops; and a
+Passes when: exactly one node publishes /tf and it is fastlivo_odom_bridge; the only edge is odom -> robot_base_link at at one
+final pose per scan (about 10.6 Hz from the recorded 20 Hz, two poses per scan); /cloud_relay arrives at about 10 Hz with the full cloud; the bridge stops publishing when the player stops; and a
 second, deliberately added TF publisher (negative control) IS caught by the same ownership check.
 Exit 0 pass, 1 fail, 3 skipped (no ROS, numpy or bag).
 """
@@ -16,7 +16,8 @@ import time
 
 REPO = Path(__file__).resolve().parents[2]
 BAG = os.environ.get("BENCH_FASTLIVO_BAG", "/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1")
-EXPECTED_ODOM_HZ, EXPECTED_CLOUD_HZ = 20.0, 10.0
+# the bag has 2 poses per scan at 20 Hz; the bridge publishes the final one per scan: 10 Hz plus about 6% extra (scans with 3 poses)
+EXPECTED_ODOM_HZ, EXPECTED_CLOUD_HZ = 10.6, 10.0
 STUB_TF_PUBLISHER = """
 import rclpy
 from geometry_msgs.msg import TransformStamped
@@ -113,7 +114,7 @@ def main():
             failures.append("TF edges should be exactly odom -> robot_base_link, got %s" % sorted(edges))
         odom_hz = len(edges.get(("odom", "robot_base_link"), [])) / window
         cloud_hz = len(clouds) / window
-        if abs(odom_hz - EXPECTED_ODOM_HZ) > 2.5:
+        if abs(odom_hz - EXPECTED_ODOM_HZ) > 1.3:
             failures.append("odom -> robot_base_link rate %.1f Hz, expected about %.0f" % (odom_hz, EXPECTED_ODOM_HZ))
         if abs(cloud_hz - EXPECTED_CLOUD_HZ) > 1.5:
             failures.append("/cloud_relay rate %.1f Hz, expected about %.0f" % (cloud_hz, EXPECTED_CLOUD_HZ))

@@ -90,6 +90,40 @@ class MapperJumpError(ValueError):
     """Consecutive mapper poses are too far apart: the mapper restarted or lost its origin."""
 
 
+class ScanPairSelector:
+    """Keep only the final pose of each scan.
+
+    In visual mode the mapper publishes twice per scan: after the partial LIO update at the image time (before the visual
+    correction) and after the final one. A message arriving within window_s of the previous one is a later pose of the same
+    scan and goes out at once. A message with no earlier one in the window is held, and goes out only if no later one arrives
+    (a scan with a single pose) once window_s has passed. Arrival time, not message stamp, because the stamps' meaning changes
+    if the mapper is patched to stamp measurement time. Measured on handdriven1: gaps within a scan 0 to 50 ms, between scans
+    55 to 100 ms, so 0.05 s separates them except in a few percent of scans (three poses in a window publish the later two).
+    Use select_final_pose: false for a LiDAR-only mapper config (one pose per scan), where nothing needs holding."""
+
+    def __init__(self, window_s):
+        self.window_s = window_s
+        self._last = None
+        self._held = None
+
+    def offer(self, now, item):
+        """A pose arrived. Returns the poses to publish now."""
+        if self._last is not None and now - self._last <= self.window_s:
+            self._held = None  # the held one was the partial pose of this scan
+            self._last = now
+            return [item]
+        out = [self._held] if self._held is not None else []
+        self._held, self._last = item, now
+        return out
+
+    def poll(self, now):
+        """Call regularly. Returns a held single pose once the window has passed with no partner."""
+        if self._held is not None and now - self._last > self.window_s:
+            item, self._held = self._held, None
+            return [item]
+        return []
+
+
 class FreshnessGate:
     """True while the newest mapper pose is younger than window_s. Nothing received yet is stale."""
 
@@ -188,6 +222,8 @@ def main():
             self.declare_parameter("max_jump_m", 0.5)
             self.declare_parameter("publish_odom", False)
             self.declare_parameter("odom_topic", "/odom")
+            self.declare_parameter("select_final_pose", True)
+            self.declare_parameter("pair_window_s", 0.05)
             p = lambda name: self.get_parameter(name).value
             self._odom_frame, self._base_frame = p("odom_frame"), p("base_frame")
             self._core = OdomFromMapper(p("body_in_base_m"), p("max_startup_tilt_deg"), p("max_jump_m"))
@@ -197,8 +233,11 @@ def main():
             self._stale_reported = False
             self._failed = False
             self._prev = None  # (rotation, position, stamp seconds) of the previous base pose, for the optional twist
+            self._select = ScanPairSelector(p("pair_window_s")) if p("select_final_pose") else None
             self.create_subscription(Odometry, p("mapper_topic"), self._on_pose, 10)
             self.create_timer(0.1, self._watch)
+            if self._select is not None:
+                self.create_timer(0.01, self._flush_single)
             self.get_logger().info("odom -> %s from %s, body offset %s m, stops after %.2f s of silence"
                                    % (self._base_frame, p("mapper_topic"), tuple(p("body_in_base_m")), p("freshness_window_s")))
 
@@ -221,6 +260,15 @@ def main():
             if self._stale_reported:
                 self.get_logger().info("mapper output is back")
                 self._stale_reported = False
+            item = (msg, pos, quat)
+            for ready in (self._select.offer(self._now(), item) if self._select is not None else [item]):
+                self._publish(*ready)
+
+        def _flush_single(self):
+            for ready in self._select.poll(self._now()):
+                self._publish(*ready)
+
+        def _publish(self, msg, pos, quat):
             t = TransformStamped()
             t.header.stamp = msg.header.stamp
             t.header.frame_id, t.child_frame_id = self._odom_frame, self._base_frame

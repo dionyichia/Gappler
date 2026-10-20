@@ -189,6 +189,44 @@ class BridgeTransformTests(unittest.TestCase):
         v, w = bridge.twist_between(a, a, dt)
         self.assertEqual((v, w), ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]))
 
+    def test_only_the_final_pose_of_each_scan_is_published(self):
+        """Visual mode publishes twice per scan: after the partial LIO update (before the visual correction), then after the final one.
+
+        Measured on handdriven1: gaps between the two are 0 to 50 ms, between scans 55 to 100 ms (T3.5e write-up)."""
+        sel = bridge.ScanPairSelector(window_s=0.05)
+        out = []
+        for t, name in ((0.000, "a1"), (0.014, "a2"), (0.100, "b1"), (0.113, "b2"), (0.201, "c1"), (0.214, "c2")):
+            out += [(t, i) for i in sel.offer(t, name)]
+        self.assertEqual([i for _, i in out], ["a2", "b2", "c2"])
+        self.assertEqual([t for t, _ in out], [0.014, 0.113, 0.214], "the final pose goes out the moment it arrives, no added delay")
+        self.assertEqual(sel.poll(0.5), [], "nothing left pending after a pair")
+
+    def test_a_scan_with_a_single_pose_is_published_after_the_window(self):
+        sel = bridge.ScanPairSelector(window_s=0.05)
+        self.assertEqual(sel.offer(0.0, "solo"), [])
+        self.assertEqual(sel.poll(0.04), [], "still inside the window")
+        self.assertEqual(sel.poll(0.06), ["solo"])
+        self.assertEqual(sel.poll(0.2), [], "published once only")
+
+    def test_a_single_pose_is_flushed_by_the_next_scans_first_message(self):
+        sel = bridge.ScanPairSelector(window_s=0.05)
+        sel.offer(0.0, "solo")
+        self.assertEqual(sel.offer(0.1, "n1"), ["solo"])
+        self.assertEqual(sel.offer(0.114, "n2"), ["n2"])
+
+    def test_gap_equal_to_the_window_still_counts_as_the_same_scan_and_a_longer_one_does_not(self):
+        sel = bridge.ScanPairSelector(window_s=0.05)
+        sel.offer(0.0, "p1")
+        self.assertEqual(sel.offer(0.05, "p2"), ["p2"])
+        sel = bridge.ScanPairSelector(window_s=0.05)
+        sel.offer(0.0, "q1")
+        self.assertEqual(sel.offer(0.0501, "q2"), ["q1"], "too late to be a partner: a new scan")
+
+    def test_three_poses_in_one_window_publish_the_later_two_never_the_first(self):
+        sel = bridge.ScanPairSelector(window_s=0.05)
+        out = sel.offer(0.0, "x1") + sel.offer(0.01, "x2") + sel.offer(0.02, "x3")
+        self.assertEqual(out, ["x2", "x3"])
+
     def test_wrong_frame_names_are_refused(self):
         bridge.check_frames("camera_init", "aft_mapped")
         for frame, child in (("map", "aft_mapped"), ("camera_init", "base_link"), ("", ""), ("camera_init", "")):
