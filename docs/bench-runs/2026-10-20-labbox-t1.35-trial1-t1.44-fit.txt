@@ -66,3 +66,17 @@ Dion's local folder, anygrasp_offline_checks.py / _45cm.log. Bag fitdebug_table_
  Not used: the cone column is measured against the camera axis, as the node does.
  Decision (Dion): max_approach_deg 40. Keeps the low edge at 84 deg from straight down, above
  level, with margin for arm width and swivel.
+
+== Node replay, branch t1.44-grasp-min-score (4d860fb), 2026-10-20 night, on the box ==
+ The branch's anygrasp_detection_node.py (min score 0.3, cone 40, whole scene + on_mask, grow 5 px)
+ run from a /tmp copy on bag t1.35-bags/fitdebug_table_45cm (camera, depth, camera_info, SAM mask
+ only). Domain 147, localhost only, /pipeline_state EXECUTING published by hand. Nothing moved.
+   old node (recorded in the bag): 371 messages with grasps, top score median 0.138, max 0.468,
+                                   5% with top score >= 0.3
+   branch node (replay):            16 messages with grasps, top score median 0.426, max 0.654,
+                                   100% with top score >= 0.3
+ Node warnings (throttled to one per 5 s, so undercounted): No confident grasp 10, No grasp along
+ the camera's view 5, No grasp fits the gripper 9, No grasp on the target's mask 0.
+ Reading: the node starts, loads the branch config, and publishes only confident grasps. This bag
+ is the 75 mm face pose the gripper cannot take, so few grasps is the expected answer. Live test
+ at the arm still owed (T1.44 stays open until it passes).
