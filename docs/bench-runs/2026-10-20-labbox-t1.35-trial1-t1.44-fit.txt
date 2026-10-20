@@ -52,3 +52,17 @@ Dion's local folder, anygrasp_offline_checks.py / _45cm.log. Bag fitdebug_table_
  cannot take. The fit check correctly drops those, so what is left and published is low-score
  edge and corner grasps, which measure narrow and pass. The 60 mm pair (top-down) is outside the
  cone and AnyGrasp scores it low even without the cone. Whole scene vs masked: small change only.
+
+== Angle check (cone around the camera view axis), 2026-10-20 night, offline on the box ==
+ Script: docs/dion_docs/local/t1.44_fit_debug_2026-10-20/anygrasp_angle_checks.py (local only).
+ Recordings: wrist_camera_three_boxes, two_cardboard_boxes, two_cardboard_boxes_v2 (2026-10-20).
+ Whole scene, max width 0.10. Confident = score >= 0.3. "Kept" = within the cone.
+   recording            confident   30         40         45         60         75
+   three boxes          449         238 (53%)  375 (84%)  405 (90%)  435 (97%)  449
+   two cardboard        593         152 (26%)  428 (72%)  441 (74%)  556 (94%)  592
+   two cardboard v2     810         272 (34%)  452 (56%)  610 (75%)  757 (93%)  809
+ Best score at 30/40/45/60: 0.51/0.51/0.51/0.51, 0.54/0.61/0.61/0.61, 0.63/0.63/0.66/0.66.
+ The script's "angle to straight down" uses a flipped sign (reports the axis as 135 deg, not 44).
+ Not used: the cone column is measured against the camera axis, as the node does.
+ Decision (Dion): max_approach_deg 40. Keeps the low edge at 84 deg from straight down, above
+ level, with margin for arm width and swivel.
