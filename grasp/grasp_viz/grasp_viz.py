@@ -2,10 +2,13 @@
 Grasp candidate visualizer.
 Subscribes to /grasp_candidates and publishes a MarkerArray to RViz.
 
-Each candidate is visualized as a gripper geometry in base_link frame:
-  - Palm cylinder (approach axis)
+Each candidate is visualized as a gripper geometry in base_link frame
+(where each part goes: gripper_drawing.py):
+  - Palm cylinder (approach axis), behind the fingers
   - Left finger bar
   - Right finger bar
+  - Approach arrow from the fingertips toward the object
+The top candidate is drawn in full colour, the rest faded.
 
 Poses are transformed from camera_color_optical_frame → base_link.
 
@@ -23,6 +26,7 @@ from tf2_geometry_msgs import do_transform_pose
 from tf2_ros import Buffer, TransformListener
 from visualization_msgs.msg import Marker, MarkerArray
 from gappler_common import config
+from gripper_drawing import gripper_points
 
 # shared/global_config.yaml and grasp/grasp_config.yaml (grasp_visualizer)
 CFG = config("grasp", "grasp_visualizer")
@@ -33,7 +37,8 @@ PALM_LENGTH = CFG["palm_length_m"]  # cylinder along approach axis
 PALM_RADIUS = CFG["palm_radius_m"]
 FINGER_LENGTH = CFG["finger_length_m"]  # finger bar length along approach axis
 FINGER_RADIUS = CFG["finger_radius_m"]
-FINGER_OFFSET = CFG["finger_offset_m"]  # finger offset along approach axis from palm centre
+OPEN_WIDTH = CFG["open_width_m"]  # distance between the fingers, gripper open
+ARROW_LENGTH = 0.08
 
 
 class GraspVisualizer(Node):
@@ -159,14 +164,20 @@ class GraspVisualizer(Node):
         max_s = max(scores) if max(scores) != min_s else min_s + 1e-6
 
         marker_id = 0
-        for i, grasp in enumerate(msg.grasps[:1]):
+        for i, grasp in enumerate(msg.grasps):
             # Transform pose to base_link
             pose_base = do_transform_pose(grasp.pose, transform)
 
             t = (grasp.score - min_s) / (max_s - min_s)
-            color = (0.0, float(t), 1.0, 0.9)  # RGBA: blue→cyan by score
+            alpha = 0.9 if i == 0 else 0.25  # top candidate highlighted
+            color = (0.0, float(t), 1.0, alpha)  # RGBA: blue→cyan by score
 
-            # ---- Palm cylinder (along approach / +Z of grasp frame) ----
+            o = pose_base.orientation
+            tips = (pose_base.position.x, pose_base.position.y, pose_base.position.z)
+            pts = gripper_points(tips, (o.x, o.y, o.z, o.w), OPEN_WIDTH, FINGER_LENGTH,
+                                 PALM_LENGTH, ARROW_LENGTH)
+
+            # ---- Palm cylinder (along approach axis, behind the fingers) ----
             palm = Marker()
             palm.header.frame_id = "base_link"
             palm.header.stamp = self.get_clock().now().to_msg()
@@ -175,7 +186,8 @@ class GraspVisualizer(Node):
             marker_id += 1
             palm.type = Marker.CYLINDER
             palm.action = Marker.ADD
-            palm.pose = pose_base
+            palm.pose.position = Point(x=pts["palm"][0], y=pts["palm"][1], z=pts["palm"][2])
+            palm.pose.orientation = o
             palm.scale.x = PALM_RADIUS * 2
             palm.scale.y = PALM_RADIUS * 2
             palm.scale.z = PALM_LENGTH
@@ -183,42 +195,7 @@ class GraspVisualizer(Node):
             palm.lifetime.sec = 1
             marker_array.markers.append(palm)
 
-            # ---- Derive rotation matrix from quaternion ----
-            q = pose_base.orientation
-            qx, qy, qz, qw = q.x, q.y, q.z, q.w
-
-            # X axis of grasp frame (finger width direction)
-            gx = np.array(
-                [
-                    1 - 2 * (qy**2 + qz**2),
-                    2 * (qx * qy + qw * qz),
-                    2 * (qx * qz - qw * qy),
-                ]
-            )
-            # Z axis of grasp frame (approach direction)
-            gz = np.array(
-                [
-                    2 * (qx * qz + qw * qy),
-                    2 * (qy * qz - qw * qx),
-                    1 - 2 * (qx**2 + qy**2),
-                ]
-            )
-
-            cx = pose_base.position.x
-            cy = pose_base.position.y
-            cz = pose_base.position.z
-            half_w = float(grasp.width) / 2.0
-
-            # Finger tips are offset along approach axis from palm centre
-            for side, sign in [("left", -1.0), ("right", 1.0)]:
-                finger_centre = np.array(
-                    [
-                        cx + sign * half_w * gx[0] + FINGER_OFFSET * gz[0],
-                        cy + sign * half_w * gx[1] + FINGER_OFFSET * gz[1],
-                        cz + sign * half_w * gx[2] + FINGER_OFFSET * gz[2],
-                    ]
-                )
-
+            for side, finger_centre in zip(["left", "right"], pts["fingers"]):
                 finger = Marker()
                 finger.header.frame_id = "base_link"
                 finger.header.stamp = self.get_clock().now().to_msg()
@@ -239,7 +216,7 @@ class GraspVisualizer(Node):
                 finger.color.r = 0.0
                 finger.color.g = 1.0
                 finger.color.b = 0.0
-                finger.color.a = 0.9
+                finger.color.a = alpha
                 finger.lifetime.sec = 1
                 marker_array.markers.append(finger)
 
@@ -252,15 +229,15 @@ class GraspVisualizer(Node):
             marker_id += 1
             text.type = Marker.TEXT_VIEW_FACING
             text.action = Marker.ADD
-            text.pose = pose_base
-            text.pose.position.z += 0.04
+            text.pose.position = Point(x=tips[0], y=tips[1], z=tips[2] + 0.04)
+            text.pose.orientation.w = 1.0
             text.scale.z = 0.02
             text.color.r = text.color.g = text.color.b = text.color.a = 1.0
             text.text = f"s:{grasp.score:.2f} w:{grasp.width:.3f} d:{grasp.depth:.3f}"
             text.lifetime.sec = 1
             marker_array.markers.append(text)
 
-            # ---- Approach arrow (red, points along +Z of grasp frame) ----
+            # ---- Approach arrow (red, from the tips along -Z of grasp frame) ----
             arrow = Marker()
             arrow.header.frame_id = "base_link"
             arrow.header.stamp = self.get_clock().now().to_msg()
@@ -269,22 +246,14 @@ class GraspVisualizer(Node):
             marker_id += 1
             arrow.type = Marker.ARROW
             arrow.action = Marker.ADD
-            # Arrow defined by two points: tail at palm centre, head along gz
-            ARROW_LENGTH = 0.08
-            tail = Point(x=cx, y=cy, z=cz)
-            head = Point(
-                x=cx + ARROW_LENGTH * gz[0],
-                y=cy + ARROW_LENGTH * gz[1],
-                z=cz + ARROW_LENGTH * gz[2],
-            )
-            arrow.points = [tail, head]
+            arrow.points = [Point(x=a[0], y=a[1], z=a[2]) for a in pts["arrow"]]
             arrow.scale.x = 0.008  # shaft diameter
             arrow.scale.y = 0.014  # head diameter
             arrow.scale.z = 0.02  # head length
             arrow.color.r = 1.0
             arrow.color.g = 0.0
             arrow.color.b = 0.0
-            arrow.color.a = 1.0
+            arrow.color.a = alpha
             arrow.lifetime.sec = 1
             marker_array.markers.append(arrow)
 

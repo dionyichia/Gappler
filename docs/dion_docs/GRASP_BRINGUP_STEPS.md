@@ -31,20 +31,26 @@ fix in `dev` but no finished grasp yet:
 **Next session at the box, in order:**
 1. **Update the box.** `cd ~/rcp-Gappler && git checkout dev && git pull && ./build.sh`. Keep the
    local edit `use_simple_execute: false` in `grasp/grasp_config.yaml`.
-2. **T1.34 first (Dion, key).** The RViz gripper drawing (grasp_viz) is wrong since #82 and #83:
-   fingers 90 degrees off, approach arrow reversed, palm on the tips. Fix it and check it against a
-   live candidate before trusting RViz. Until then judge by eye and numbers.
-3. **Camera mount check (part of T1.35, arm still, about 10 min).** Where the URDF says the wrist
-   camera sits (`rm_65_w_gripper.urdf.xacro:24`) was typed in by the earlier developers and never
-   measured. Box at a taped spot, read where the system puts the box face in `base_link`, measure it
-   from the arm base with a ruler. Within about 1 cm is fine. If not, every grasp is off by that much.
-4. **Step 7d again.** `./quickstart_terminals.sh grasp --anygrasp`, start the state machine, box at
+2. **T1.34: done 2026-10-20 on the replay bag and the simulated arm.** RViz shows the arm,
+   AnyGrasp's points and the candidates, drawn the way `grasp_frame` grips. Branch
+   `t1.34-grasp-viz-drawing` (940ba0f). The live check is folded into the next item. See "Result,
+   2026-10-20: T1.34 RViz works on the replay".
+3. **The real-arm run, first step: home, then confirm RViz on a live candidate.** Home the arm (the
+   command is in "Result, 2026-10-15", "Next time" item 1), box in view at the usual spot, then
+   check the drawing on a live candidate: fingers on two opposite faces, palm on the camera side,
+   arrow into the box. Then items 5 to 8.
+4. **Camera mount check: PASS (Dion, 2026-10-15).** The URDF camera origin
+   (`rm_65_w_gripper.urdf.xacro:24`) matches the real mount. Glass to fingertips: Dion 119 mm, model
+   118.6 mm. Camera body centre from the gripper centre: model 12.5 mm in x and 60 mm in y, Dion
+   confirmed both and the side (a first tape reading gave 14 mm in x) (checked against the 3D check page
+   https://claude.ai/artifact/S4BfsEeN1JwYKaWYEBuTrq) `[reported]`. No URDF change.
+5. **Step 7d again.** `./quickstart_terminals.sh grasp --anygrasp`, start the state machine, box at
    44.5 cm with the 6 cm face to the arm, hand on the e-stop pane (row 1, column 1), one
    `/manipulator/grasp_request`. Pass: the wrist stays within 90 degrees and the tips end past the face.
-5. **T1.17.** 5 attempts through AnyGrasp at the ideal spot, compared with the simple path's 5 of 8.
-6. **T1.32 and T1.37.** Merge T1.32, check a 7.5 cm face is dropped live, and settle the retry
+6. **T1.17.** 5 attempts through AnyGrasp at the ideal spot, compared with the simple path's 5 of 8.
+7. **T1.32 and T1.37.** Merge T1.32, check a 7.5 cm face is dropped live, and settle the retry
    question (T1.37) before random poses make it common.
-7. **Step 8, T1.35: random positions and angles.** Design with Dion first (below), then run it.
+8. **Step 8, T1.35: random positions and angles.** Design with Dion first (below), then run it.
 
 ### Step 8 (T1.35): the box anywhere, at any angle
 
@@ -727,6 +733,88 @@ had opened it earlier, and the state machine did not notice.
 
 ---
 
+### Result, 2026-10-15: T1.34 at the box, not finished
+
+**Not finished: no grasp candidate to draw.** The fix is on the box and its self-check passes.
+Session ended at Dion's request (no time). The `grasp` tmux session is closed and the box is free.
+
+- **Fix on the box, uncommitted:** `grasp_viz.py`, the new `gripper_drawing.py` and the
+  `grasp_visualizer` block of `grasp_config.yaml`, applied from `t1.34.patch` (left in the repo
+  root). The local edit `use_simple_execute: false` is still there. Self-check PASS: "fingers close
+  along grasp y, arrow along -z from the tips, palm 0.05 m behind".
+- **Arm off at first.** The driver logged "Connect failed" and 192.168.1.18 did not answer ping
+  until Dion switched the arm on. The driver then connected by itself.
+- **Arm at all zeros, not HOME,** so the wrist camera did not see the box. SAM 3 found no box,
+  `/camera/sam/mask` stayed empty and AnyGrasp logged "No SAM mask received yet". The quickstart
+  `grasp` layout does not home the arm. Only the state machine does.
+- **The stand-in still works:** `EXECUTING` on `/pipeline_state` at 1 Hz, no state machine, turns
+  AnyGrasp on as in step 7b.
+- **RViz never draws the robot** (Dion's other session) `[reported]`. In
+  `grasp/grasp_viz/rviz_config.rviz` the MotionPlanning display is off and there is no RobotModel
+  display. The data is fine: `/robot_description`, `/joint_states` and the TF from `base_link` to
+  the camera all resolve. Proposed: add a RobotModel display (Description Topic
+  `/robot_description`) to the T1.34 branch.
+  Fixed 2026-10-20: see "Result, 2026-10-20: T1.34 RViz works on the replay".
+- **RViz showed nothing useful** (Dion, at the monitor): no arm, no model, a blank scene. Decided:
+  do not ship T1.34 until RViz works. From the config `[code]`:
+  - no display draws the robot (above)
+  - the PointCloud2 display reads `/camera/camera/depth/color/points`, which the grasp layout no
+    longer publishes (T2.11 turned the point cloud off, `quickstart_terminals.sh:59-62`), so the box
+    is never drawn as points
+  - the Camera display dropped every frame ("queue is full", then "earlier than all the data in the
+    transform cache") while the arm was not yet connected `[reported]`
+  - candidate markers need a candidate, which needs the arm homed and the box in view
+
+**Next time, in order:**
+1. Home the arm. Type, do not send, then Dion presses Enter:
+   `ros2 topic pub --once /rm_driver/movej_cmd rm_ros_interfaces/msg/Movej "{joint: [0.0, 0.0, 0.7854, 0.0, 1.5708, 1.5708], speed: 5, block: false, trajectory_connect: 0, dof: 6}"`
+2. Put the box in view at the usual spot.
+3. Stand-in `EXECUTING`, grasp_viz and RViz, then the three by-eye checks.
+
+Better: get RViz working at the desk first, on the replay bag and the simulated arm, so the box
+visit is only a confirmation (T1.34 note).
+
+### Result, 2026-10-20: T1.34 RViz works on the replay
+
+**PASS by eye** (Dion, two screenshots at the box) `[reported]`. RViz shows the arm, AnyGrasp's
+points and the candidates. The green fingers straddle two opposite box faces, the cyan palm sits on
+the camera side, and the red arrow points from the tips into the box. The fingers are drawn at the
+real 71 mm opening (`grasp_config.yaml` `open_width_m: 0.071`). The `w:0.100` text label is
+AnyGrasp's gripper model width (`max_gripper_width_m: 0.10`), not the drawn width `[code]`.
+
+- **Set-up:** replay bag `assets/recordings/wrist_camera` (wrist_camera_box_at_home_2026-10-13), the
+  simulated arm (`bench/nodes/sim_arm.launch.py`, mock_components) at all zeros, grasp_viz, RViz on
+  `DISPLAY=:1`, `ROS_DOMAIN_ID` 77, localhost only. At zeros the camera looks straight up, so the
+  points float about 40 cm above the gripper.
+- **Fixes, commit 940ba0f** `[code]`:
+  - a RobotModel display in `grasp/grasp_viz/rviz_config.rviz:65`
+  - `anygrasp_detection_node.py` publishes the masked points it is given on `/debug/anygrasp_points`
+    (`grasp/grasp_config.yaml:28`), stamped now() like the candidates
+  - `./quickstart_terminals.sh grasp` starts grasp_viz and RViz
+  - `bench/nodes/test_anygrasp_replay.py:103` publishes a static TF from `camera_link` to
+    `camera_color_optical_frame`
+- **Finding 1: the replay has no camera optical frame** `[code]`. The bag has no TF, and
+  `rm_65_w_gripper.urdf.xacro:23` includes `sensor_d435` with `use_nominal_extrinsics` false, so the
+  URDF only defines `camera_link`. Live, the realsense driver publishes `camera_color_optical_frame`.
+  On the replay grasp_viz logged "TF lookup failed: camera_color_optical_frame does not exist" and
+  RViz drew nothing `[reported]`. Fixed in the replay test with the D435 nominal values (y 0.015 m,
+  roll -90 deg, yaw -90 deg, from realsense2_description `_d435.urdf.xacro`).
+- **Finding 2: old stamps.** The bag's messages carry their 2026-10-13 stamps, so RViz dropped them
+  against live TF ("Message Filter dropping message ... queue is full") `[reported]`. Fixed by
+  stamping the points with now().
+- **Replay numbers, 3 runs** `[reported]`:
+
+  | Check | Result |
+  |---|---|
+  | Segmentation | PASS, 159 to 196 masks in 60 s, median depth 0.400 m |
+  | Grasp detection | PASS, 134 to 171 candidate sets, top score 0.42 to 0.45 |
+  | Gate (A1) | FAIL, 1 set at the IDLE switch. Open task T1.36, not new |
+
+- **Open:** a magenta dashed line shows near the points. It does not come from grasp_viz (palm blue
+  to cyan, fingers green, arrow red, centroid red sphere). Source unknown, harmless.
+- **Not done:** the live check on the real arm. It is the first step of the next box session
+  (Start here, item 3).
+
 ## Things to watch
 
 From reading the code. None of these is confirmed on the real arm.
@@ -791,3 +879,8 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-14 | Claude Opus 5.5 + Dion | Start here rewritten as a cold start: #83, T1.33 design choices, sim, step 7d again. |
 | 2026-10-14 | Claude Opus 5.5 + Dion | Start here rewritten after #84 merged: box update, T1.34, camera mount check, 7d, T1.17, then step 8 (T1.35, random box positions and angles, Dion: the ideal-spot claim is weak). |
 | 2026-10-15 | Claude Opus 5.5 + Dion | Step 8 notes T1.32 built and the retry question (T1.37). |
+| 2026-10-15 | Claude Opus 5.5 + Dion | Camera mount check skipped: the URDF origin already gives working grasps. Partial measurement kept in Start here item 3. |
+| 2026-10-15 | Claude Opus 5.5 + Dion | Camera mount check PASS: body centre 12.5 and 60 mm confirmed, glass 119 vs 118.6 mm. Replaces the skipped note. |
+| 2026-10-15 | Claude Opus 5.5 + Dion | T1.34 at the box, not finished: fix applied (self-check PASS), arm off then at zeros so no box in view. RViz config draws no robot. Next time home the arm first. |
+| 2026-10-15 | Claude Opus 5.5 + Dion | T1.34 box attempt, not finished. RViz blank (no robot display, point cloud topic not published). Decided: fix RViz before shipping T1.34. All on branch `t1.34-grasp-viz-drawing`. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | T1.34 RViz works on the replay bag and the simulated arm (PASS by eye, commit 940ba0f): result section with the missing optical frame and old-stamp findings. Start here: T1.34 done, next is the real-arm run (home, RViz live check, 7d, T1.17, T1.32, T1.35). 2026-10-15 result points at the fix. |
