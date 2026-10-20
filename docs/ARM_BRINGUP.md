@@ -125,7 +125,10 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    `[code]`, and whether the controller keeps the stop in force is not known `[unverified]`. Until
    T1.38 is done, the physical stop (power) is the only stop during any state machine run.
    The state machine side is written on branch `t1.38-estop-state-machine`: it now listens to E, S
-   and R `[code]`. Not yet tested on the simulated arm or the robot.
+   and R `[code]`. Robot test 2026-10-20 PASS: E 1.35 s into the final grasp move stopped the arm,
+   MoveIt cancelled the move within 1 ms (`bench-runs/2026-10-20-labbox-t1.38-robot.txt`). The
+   controller itself rejects the stop (driver error -4, T1.42) `[reported]`, so the arm stops only
+   because our software stops sending. The physical stop stays the only stop independent of our code.
 
 ## Controller, driver, and feedback
 
@@ -280,4 +283,4 @@ T1.5 done or treating it as an independently validated shared runbook.
 | 2026-09-23 | OpenCode + Sherman | Added a checkout/overlay provenance gate after a read-only lab-box check found an older branch with local changes; do not change that checkout during first-power verification. |
 | 2026-10-13 | OpenCode + Sherman | Validated: the required independent UDP capture overlapping ROS feedback was observed (23,043 wire packets spanning the joint observation); T1.5 DONE. Title/banner updated, observed rate note added. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | Step on T-ESTOP: the E key did not stop the arm during a state machine run (T1.38). Physical stop only until fixed. |
-| 2026-10-20 | Claude Opus 5.5 + Dion | T-ESTOP and T-INSPECT: state machine stop subscriber written (T1.38), untested. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | T-ESTOP and T-INSPECT: state machine stop subscriber written (T1.38), robot test PASS, controller rejects the stop (T1.42). |
