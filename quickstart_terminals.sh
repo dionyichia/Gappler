@@ -68,6 +68,9 @@ lay_grasp() {
   # Its own venv (T1.10). Run from its folder: the checkpoint path is relative
   ((ANYGRASP)) && pane auto grasp "cd $R/grasp/anygrasp_node && $R/grasp/anygrasp_venv/.venv/bin/python anygrasp_detection_node.py --checkpoint_path log/checkpoint_detection.tar"
   pane auto arm "ros2 topic echo /pipeline_state"
+  # RViz on the box monitor (T1.34): the arm, AnyGrasp's points and the candidates
+  pane auto grasp "python3 $R/grasp/grasp_viz/grasp_viz.py"
+  pane auto grasp "DISPLAY=\${DISPLAY:-:1} rviz2 -d $R/grasp/grasp_viz/rviz_config.rviz"
   pane typed grasp "ros2 launch grasp_state_machine grasp_state_machine.launch.py"
   # One attempt per request (T1.25). Send once IDLE shows and the client is publishing a centroid
   pane typed grasp "ros2 topic pub --once /manipulator/grasp_request std_msgs/msg/Empty"

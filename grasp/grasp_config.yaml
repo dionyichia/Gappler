@@ -24,6 +24,8 @@
       debug_sam_mask: "/debug/sam_mask"
       debug_centroid_marker: "/debug/centroid_marker"
       debug_state_marker: "/debug/state_marker"
+      # anygrasp_detection_node -> RViz (debug): the masked points AnyGrasp was given (T1.34)
+      debug_anygrasp_points: "/debug/anygrasp_points"
     # How many grasp candidates AnyGrasp publishes per frame.
     # read by: anygrasp_node, anygrasp_detection_node
     num_grasp_candidates: 5
@@ -84,9 +86,10 @@ grasp_visualizer:
   ros__parameters:
     palm_length_m: 0.04     # cylinder along the approach axis
     palm_radius_m: 0.006
-    finger_length_m: 0.04   # finger bar length along the approach axis
+    # Measured gripper (Dion, 2026-10-14): a U 50 mm deep inside, opens 71 mm (T1.34).
+    finger_length_m: 0.05   # finger bar length along the approach axis, back from the tips
     finger_radius_m: 0.005
-    finger_offset_m: 0.01   # finger offset along the approach axis from the palm centre
+    open_width_m: 0.071     # distance between the fingers, gripper open
 
 # grasp/grasp_state_machine/src/grasp_state_machine.cpp. These move the real arm: change them
 # only with a plan to test on the simulated arm first (./bench/state_machine_sim.sh).

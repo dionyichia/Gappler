@@ -18,6 +18,7 @@ from rclpy.node import Node
 from grasp_interfaces.msg import GraspCandidate, GraspCandidateArray
 from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, Image
+from sensor_msgs_py import point_cloud2
 from std_msgs.msg import String
 from gappler_common import config
 from anygrasp_to_grasp_frame import fingertip_position, fits_gripper, nearer_twin, to_grasp_frame
@@ -90,6 +91,10 @@ class AnyGraspDetectionNode(Node):
         # Publisher
         self.grasp_pub = self.create_publisher(
             GraspCandidateArray, TOPICS["grasp_candidates"], 10
+        )
+        # The points AnyGrasp is given, for RViz (T1.34): do the fingers sit on the box faces
+        self.points_pub = self.create_publisher(
+            point_cloud2.PointCloud2, TOPICS["debug_anygrasp_points"], 1
         )
 
         # Synchronized RGB + depth
@@ -216,6 +221,10 @@ class AnyGraspDetectionNode(Node):
 
         points = points_full[combined_mask].astype(np.float32)
         colors_masked = colors[combined_mask].astype(np.float32)
+        # Stamped now, like the candidates (build_grasp_msg), so RViz can place a replayed bag's frames
+        header = depth_msg.header
+        header.stamp = self.get_clock().now().to_msg()
+        self.points_pub.publish(point_cloud2.create_cloud_xyz32(header, points))
 
         # Per-frame stateless detection
         try:
