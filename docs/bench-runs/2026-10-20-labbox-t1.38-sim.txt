@@ -1,0 +1,21 @@
+T1.38 e-stop on the simulated arm. Lab box, 2026-10-20 17:11, branch t1.38-estop-state-machine (68e2b13).
+Command: BENCH_DOMAIN=138 ./bench/state_machine_sim.sh candidates
+Result: PASS, 26 checks (launch log on the box: ~/rcp-Gappler/log/bench_state_machine_2026-10-20_1711.txt)
+
+New checks:
+  [PASS] E mid-approach: STOPPED, arm still, request refused, gripper untouched
+         joints moved 0.0008 rad over 5 s, 0 gripper commands
+  [PASS] R: back to IDLE, no motion, old request dropped (0.0000 rad over 3 s)
+  [PASS] S mid-approach stops it the same way (0.0000 rad over 3 s)
+
+From the launch log:
+  E landed during a move. 1792487570.973 STOP logged, MoveIt "Received event 'stop'",
+  rm_group_controller "Canceling active action goal", execution PREEMPTED at .983 (10 ms),
+  State -> STOPPED at .985. A grasp request 2 s later: "ignored: stopped".
+  S landed during planning. The planner refused the move: "moveCartesianStep: not sent, stopped".
+
+Earlier run at 17:09 in simple mode: FAIL at "final approach", not caused by T1.38. The box's
+local grasp_config.yaml has use_simple_execute: false, so the node waited for AnyGrasp
+candidates that simple mode never sends ("no candidates in 3 s"). Run candidates mode on the box.
+
+Not shown by this run: whether the real arm stops (rm_control and the controller), see the robot test.

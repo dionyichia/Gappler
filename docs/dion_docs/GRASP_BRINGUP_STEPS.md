@@ -14,6 +14,11 @@ sent. This file does not repeat them.
 
 ## Start here, cold start after 2026-10-14 (step 7, then step 8 = T1.35)
 
+**Update 2026-10-20: paused on safety.** Step 7d PASS, T1.17 2 of 3, RViz works live. T1.35 is
+designed but 0 of 12 run: the E key did not stop the arm (T1.38). Next: fix T1.38 at the desk and
+test it at the robot, then run the 12 T1.35 trials. See "Result, 2026-10-20: real arm" below. Items
+1 to 7 of the list below are done or closed.
+
 **Where we are.** Steps 1 to 6 pass on the real arm. Step 7 (T1.17, the AnyGrasp path) has every
 fix in `dev` but no finished grasp yet:
 - **7a to 7c:** AnyGrasp's settings (0.10 m, 30 degrees), its axes turned into `grasp_frame`'s
@@ -815,6 +820,31 @@ AnyGrasp's gripper model width (`max_gripper_width_m: 0.10`), not the drawn widt
 - **Not done:** the live check on the real arm. It is the first step of the next box session
   (Start here, item 3).
 
+### Result, 2026-10-20: real arm, step 7d, T1.17, T1.35 paused on the e-stop
+
+Full record: [`../bench-runs/2026-10-20-labbox-t1.17-t1.35-live.txt`](../bench-runs/2026-10-20-labbox-t1.17-t1.35-live.txt).
+
+- **Step 7d: PASS.** The wrist did not turn 180 deg. Joint6 turned 11 to 29 deg on the grasps that
+  were recorded `[reported]` (ros2 bag of `/joint_states`).
+- **T1.17: 2 of 3 at the ideal spot** (A and C pass, B fail). Dion stopped after 3 attempts. The
+  simple path scored 5 of 8. A grasp counts as a pass if the box is held, back-offs included.
+- **RViz live: works.** With the arm on, RViz shows the arm, the box points and candidates on the
+  camera image. Before the driver connects it shows "Frame [base_link] does not exist" and a white
+  lump: that is the arm off, not a bug.
+- **T1.35: design settled, 0 of 12 run.** 35, 42, 50 cm, -10, 0, +10 cm sideways, 0, 30, 60, 90 deg,
+  12 trials from `random.seed(35)` (list in the run record), pass bar 9 of 12, no skipping.
+- **Paused: the E key did not stop the arm (T1.38).** Pressed while the arm waited between retries.
+  4.5 s later the arm ran a new grasp move and a move to the holding pose. Physical stop only until
+  T1.38 is fixed and tested.
+- **Found, each now a task:**
+  - The final move often fails to plan around 57 to 63 cm out from the base centre. Each failure
+    backs off one step and waits for a new stable target, with no limit and no log line (T1.39).
+    50 cm centre 0 deg needed 61 to 63 cm, at the edge of reach.
+  - Grasp B: after five failed plans a low target (z 0.155 m) planned, and the wrist made a large
+    twist on the way. After power-on: j4 146, j5 29, j6 274 deg. The T1.33 twin choice only limits
+    the final roll, not the path (T1.40).
+  - RViz keeps the last points and candidates after release (T1.41).
+
 ## Things to watch
 
 From reading the code. None of these is confirmed on the real arm.
@@ -884,3 +914,4 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-15 | Claude Opus 5.5 + Dion | T1.34 at the box, not finished: fix applied (self-check PASS), arm off then at zeros so no box in view. RViz config draws no robot. Next time home the arm first. |
 | 2026-10-15 | Claude Opus 5.5 + Dion | T1.34 box attempt, not finished. RViz blank (no robot display, point cloud topic not published). Decided: fix RViz before shipping T1.34. All on branch `t1.34-grasp-viz-drawing`. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | T1.34 RViz works on the replay bag and the simulated arm (PASS by eye, commit 940ba0f): result section with the missing optical frame and old-stamp findings. Start here: T1.34 done, next is the real-arm run (home, RViz live check, 7d, T1.17, T1.32, T1.35). 2026-10-15 result points at the fix. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | Real-arm session: step 7d PASS, T1.17 2 of 3, RViz live works, T1.35 design settled and paused because the E key did not stop the arm (T1.38). New tasks T1.39 to T1.41. Start here update. |

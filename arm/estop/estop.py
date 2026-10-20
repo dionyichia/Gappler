@@ -10,6 +10,7 @@ Run in a separate terminal before any hardware motion test.
   Ctrl+C  — emergency stop, then quit
 
 Closing the terminal, or kill / kill -INT from outside, also sends an emergency stop.
+grasp_state_machine listens too: E and S stop it, and it sends nothing more until R (T1.38).
 Every stop is confirmed by the driver's subscription before the script exits.
 """
 
