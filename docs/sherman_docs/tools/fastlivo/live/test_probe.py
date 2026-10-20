@@ -45,6 +45,14 @@ class ProbeTests(unittest.TestCase):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, PLAYER)
 
+    def test_player_sources_ros_with_nounset_off(self):
+        # ROS setup.bash reads unset variables; under set -u it aborts the player.
+        before = PLAYER[:PLAYER.index('source /opt/ros/humble/setup.bash')]
+        self.assertIn('set +u', before)
+        after = PLAYER[PLAYER.index('install_nav/setup.bash'):]
+        self.assertIn('set -u', after)
+        self.assertLess(after.index('set -u'), after.index('ros2 bag play'))
+
     def test_both_scripts_parse_and_stop_on_error(self):
         for name in ('t35d_probe_container.sh', 't35d_probe_player.sh'):
             with self.subTest(name=name):
