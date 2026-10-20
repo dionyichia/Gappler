@@ -1,0 +1,58 @@
+T8.5: the cross-camera matcher takes its glasses side from the aria client's /grasp/target
+Lab box, 2026-10-20 late, Claude Opus 5.5 + Dion. Domain 86, localhost only, nothing moved.
+
+Question: with the matcher reading the client's reference crop (picked with the gaze from when
+you spoke) instead of its own glasses SAM 3 and the latest gaze, does it still find the target in
+the wrist view, and what happens when the reference is wrong?
+
+Setup
+- Code: branch t8.5-matcher-uses-glasses-target (from dev 8f39b5e), copied to /tmp/dion_t8.5/repo
+  (.venv, install, assets/models linked from ~/rcp-Gappler).
+- Running: segmentation service, aria segmentation client, the matcher
+  (object_recognition_pipeline.py), wrist bag looping, glasses VRS replayed onto ROS, "box" sent
+  on /aria/audio/prompt at set times (dev has no stamped word yet, PR #91). Script:
+  run_t85.sh (local scratch, not in git), same shape as the T2.9 e2e.
+- Scored by the matched wrist mask's box in the log line.
+
+1. Client unit tests on the box (crop margin 20 px): Ran 28 tests, OK.
+
+2. Glasses c2cbafe8 (about 3 m), "box" at 22, 46, 70, 95 s. 4 of 4 words sent a reference.
+   a. wrist_camera_three_boxes_2026-10-20: 245 of 245 matches on the target [269, 377, 410, 480],
+      0 ties, 0 below cutoff. Saved pictures: the reference crop is the target box.
+   b. wrist_camera_two_cardboard_boxes_2026-10-20, per word:
+        word 1: 44 target
+        word 2: 12 target, 22 tall box, 18 wrist ties
+        word 3: 34 target, 5 tall box, 4 other, 13 ties
+        word 4: 58 target, 2 other, 9 ties
+      148 of 180 matches on the target. The tall same-colour box still wins some frames: CLIP
+      alone does not separate look-alike boxes (T8.7, T8.8).
+   Matches now run on every wrist frame while a reference stands (until the next Target), so the
+   counts are per wrist frame, not comparable one to one with T8.7's 29 and 12.
+
+3. Fair redo: glasses 5e5d6a91 (Dion at four spots) with wrist bag
+   wrist_camera_two_cardboard_boxes_2026-10-20_v2. Target: the small box standing on its end,
+   wrist box about [270, 240, 370, 430].
+   Word times: Dion listened, "box" at 61 s (1 m), 75 s (1.5 m), 100 s (1.6 m diagonal),
+   114 s (0.4 m). Whisper alone found them 0.3 to 2 s early and missed some: the voice is soft
+   and one bang at 25.5 s set the peak. "box" sent 2.2 s after each (word end + 1.5 s speech
+   latency the client assumes).
+   Reference crops saved (scratch save_refs.py):
+        word 1 (1 m):   the target box         24 of 24 target
+        word 2 (1.5 m): THE WHOLE TABLE        7 target, 55 below cutoff
+        word 3 (1.6 m): the target box         20 target, 7 below, 1 tie, 1 other
+        word 4 (0.4 m): the target box         76 target, 1 tie, 1 other
+   A first run with the words 1.5 to 2 s early: 105 matches, all target, 102 below cutoff
+   (words 2 and 3). Crops not saved for that run.
+
+Finding: word 2's reference was the table, not the box. SAM 3 also called the stacked floor mats a
+"box" (score 0.34, above the client's 0.3 cutoff). The gaze sat on the small box, which lies inside
+that mask, so both masks contained the gaze. pick_mask breaks that tie by score order (the earlier,
+higher-score mask), and the vote then gave the table 80% of the gaze. CLIP scored the table crop
+about 0.51 against the wrist box, under 0.56, so the matcher refused. The matcher's cutoff caught a
+wrong reference; the client's checks (SAM 3 cutoff 0.3, vote share 0.5) did not.
+Proposed, not decided: prefer the smallest mask under the gaze (Dion to choose).
+
+Also made: ~/aria-recordings/5e5d6a91-...commands.wav on the Mac, silence with
+pick_up_box_command.wav placed so its "box" (2.59 s into the clip) lands at 61, 75, 100, 114 s,
+for the stamped-word replay once PR #91 merges. Louder audio for listening:
+~/aria-recordings/5e5d6a91_louder.wav.
