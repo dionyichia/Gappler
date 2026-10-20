@@ -51,6 +51,13 @@
         history: "KEEP_LAST"
         depth: 10
 
+    # How far the gaze may be from a mask and still count as looking at it: the mask under the
+    # gaze, else the nearest within this many pixels of the published 1408 px image. Recording
+    # c2cbafe8 needed about 60 at 1.4 m (T2.9). Tune on more recordings.
+    # read by: aria_segmentation_client (gaze pick vote), object_recognition_pipeline (T8.7 matcher
+    # needs the gaze on the chosen glasses mask), tools/replay_recording_gaze_pick.py
+    pick_radius_px: 80
+
 # read by: aria/aria_app/config/base.py (Settings)
 app:
   ros__parameters:
@@ -114,9 +121,6 @@ aria_segmentation_client:
     # If no glasses image taken since you started speaking has arrived when the word comes, the
     # client waits up to this long for one. Images arrive 1 to 3 s late on the box (T2.9, T2.20).
     matching_image_wait_s: 3.0
-    # Pick the mask under the gaze, else the nearest within this many pixels of the published
-    # 1408 px image. Recording c2cbafe8 needed about 60 at 1.4 m. Tune on more recordings.
-    pick_radius_px: 80
     # The vote (T2.20): each gaze sample votes for the mask it picks. The mask with the most votes
     # wins if it has at least this share of them. Else the word alone stands.
     # 0.5 chosen by Dion (2026-10-17). Every value from 0.3 to 0.9 gave the same 60 of 61 on
