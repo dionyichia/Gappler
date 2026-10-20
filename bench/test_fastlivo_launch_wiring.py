@@ -116,5 +116,33 @@ class LaunchWiringTests(unittest.TestCase):
                 self.assertIn("xfer_format", [n.value for n in ast.walk(include) if isinstance(n, ast.Constant)])
 
 
+    def test_only_the_base_driver_declares_pub_tf(self):
+        """The unscoped SetParameter reaches every node launched after it, so no other node may give pub_tf a meaning.
+
+        Searches all source under nav/ and the other launched subsystems for the name: owned code may mention it only in the two
+        SLAM launches (the SetParameter), vendor code only in the base driver's package xpkg_vehicle."""
+        hits = []
+        for root in ("nav", "shared", "aria", "arm", "grasp", "launchers"):
+            for path in (REPO / root).rglob("*"):
+                if path.suffix in (".py", ".cpp", ".h", ".hpp", ".yaml", ".json", ".xml", ".txt") and path.is_file() and "__pycache__" not in path.parts:
+                    try:
+                        text = path.read_text(errors="ignore")
+                    except OSError:
+                        continue
+                    if "pub_tf" in text:
+                        hits.append(path.relative_to(REPO).as_posix())
+        owned = sorted(h for h in hits if "/vendor/" not in h and "/open_vins/" not in h)
+        self.assertEqual(owned, sorted(LAUNCHES), "owned code that mentions pub_tf: %s" % owned)
+        vendor = sorted(h for h in hits if "/vendor/" in h)
+        # the base driver's own package, and the vendor XML launch of that same driver node (not the one we include)
+        self.assertTrue(vendor and all("/xpkg_vehicle/" in h or h.endswith("bringup_basic_ctrl.launch.xml") for h in vendor),
+                        "vendor code other than the base driver mentions pub_tf: %s" % vendor)
+        # The launch we include must not set pub_tf itself: a node-level value would override the global one. The vendor
+        # XML variant sets it to true, so switching the include to it would silently break fastlivo mode.
+        included = REPO / "nav/vendor/demo/demo_general_chassis/demo_vehicle/ROS2/launch/bringup_basic_ctrl.launch.py"
+        self.assertNotIn("pub_tf", included.read_text())
+        self.assertEqual(sum(h.endswith("ros2_interface.cpp") for h in vendor), 1, "the base driver declares it exactly once")
+
+
 if __name__ == "__main__":
     unittest.main()
