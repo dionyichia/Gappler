@@ -1,0 +1,108 @@
+T8.4: first run of the old cross-camera matcher (SuperPoint + LightGlue), glasses vs wrist camera
+Lab box, 2026-10-19 00:08 to 00:16. Branch t8.4-old-matcher-baseline (dev 66b9eae + one fix).
+Scratch copy ~/dion_t8.4/repo (.venv, install, assets linked from ~/rcp-Gappler).
+Private channel: ROS_DOMAIN_ID=84, ROS_LOCALHOST_ONLY=1, checked empty first. Nothing moves.
+
+Inputs
+- Glasses: recording c2cbafe8 replayed with aria/tools/replay_recording_to_glasses_topics.py,
+  0 to 118 s (undistorted image + gaze on the glasses clock).
+- Wrist: assets/recordings/wrist_camera/wrist_camera_box_at_home_2026-10-13_0.db3, ros2 bag play
+  --loop. Same box, same place as the glasses recording (Dion), seen from other angles.
+- Word: "box" once on /aria/audio/prompt, 00:13:58.
+- Pipeline: aria/aria_app/services/object_recognition/object_recognition_pipeline.py run on its
+  own (its __main__), Python logging at DEBUG. Its arm-facing publish stays commented out.
+
+Fix needed to run it
+- The file's __main__ never called rclpy.init(), so it could not start on its own
+  (NotInitializedException). Added the same two lines main.py:34-35 uses.
+- Not code: first run downloaded superpoint_v1.pth (5 MB) and superpoint_lightglue_v0-1_arxiv.pth
+  (45 MB) from github.com/cvg/LightGlue into ~/.cache/torch/hub/checkpoints/. Cached now.
+
+What ran
+- SAM 3, SuperPoint and LightGlue load, 5 nodes up, about 6.7 GB GPU.
+- Glasses masks picked by gaze: 14 ("Success").
+- Match attempts (both sides had at least one mask): 15.
+
+Result: 0 of 15 attempts chose a wrist mask.
+- Matches between the whole glasses image and the whole wrist image: 8 to 19 per pair
+  (of up to 2048 keypoints each). [measured]
+- Of those, inside the gazed glasses mask: 0 in 11 attempts, 1 or 2 in the other 4.
+- None of those 1 or 2 landed inside any wrist mask, so the vote never picked one.
+- "No objects detected" 11 times (SAM 3 at the wrapper's 0.5 cutoff), camera not logged.
+
+Read [inferred], not checked
+- The two views share very few keypoints at all. Likely causes: scale (glasses 1.4 to 2.4 m
+  from the box, wrist 0.4 m), viewpoint, and SuperPoint not being rotation invariant if the two
+  images are rolled differently.
+- The wrist recording shows one box, so this run cannot test choosing the right box, only
+  whether any match lands on it.
+
+Second run, 00:3x, same setup plus a saver on /aria/rgb_camera/feature_match (~/dion_t8.4/
+run_with_saver.sh): 25 pairs saved, 0 wrist masks chosen, 5 to 33 matches per pair, mean 16.
+Pictures: the first-run baseline pair is kept on Dion's Mac (not in git). All 25 pairs: ~/dion_t8.4/matches on the box.
+
+Logs: logs2/ for the second run, pipeline.log, replay.log, bag.log in ~/dion_t8.4/logs on the box.
+
+Crop rerun, 00:51 to 00:53 (~/dion_t8.4/run_crop.sh, logs in logs3/, pictures in matches_crop/)
+Change: _find_matching_ros_mask now cuts the gazed glasses mask and each wrist mask to its bounding
+box plus 20 px (_CROP_MARGIN_PX), matches the glasses crop against each wrist crop, and counts
+only matches that land on both masks. Same inputs as above.
+
+Result: 11 of 11 pairs chose a wrist mask, but every match is wrong.
+- Matches on both masks: 1 to 7 per pair (glasses crops 83x98 to 113x70 px, wrist crops about
+  230x137 px). [measured]
+- Pair 1 (7 matches, Dion reviewed the picture): the glasses crop is the box, but all 7 glasses
+  points sit on one spot, the right edge of the top face. Their wrist partners spread along the
+  top face and the right and front edges. No match is a true correspondence. [measured]
+- Pair 4 (6 matches): the glasses crop is not the box, it shows the background. Pairs 4 to 6 use
+  the same crop. So gaze or the glasses mask pointed at the wrong object there. [measured]
+- "Chose a wrist mask" means at least 1 match. With one box in the wrist view it always wins.
+  The count says nothing about whether the match is right.
+- The saver's ExternalShutdownException at the end is the normal Ctrl-C shutdown, not a failure.
+
+Why the matches are bad, not yet confirmed:
+- LightGlue's SuperPoint resizes every image so its longer side is 1024 px, and it upscales small
+  images too (lightglue/superpoint.py:116 "resize": 1024, applied in utils.py:143 extract). [code]
+  So the 90x90 glasses crop is blown up about 11 times and the wrist crop about 4.5 times: blurry,
+  and at two different scales. That fits SuperPoint reporting 2048 keypoints on a 90x90 crop,
+  more than such a small image can hold at its 4 px spacing. [inferred]
+- A plain box has few features, and its corners look alike, so the matcher cannot tell one
+  corner from another. [inferred]
+- Not a baseline yet: Dion wants the cause found first (T8.4).
+
+Pictures, Dion's Mac only (not in git): docs/dion_docs/local/t8.4_crop_7_matches_2026-10-19.jpg
+in the main checkout. Both picked pairs and summary.json also in Gappler-t8.4/docs/dion_docs/local/.
+
+Offline diagnostics, 2026-10-19 (box, CPU only, scratch /tmp/dion_t8.4_check, inputs: the 11
+saved crop pairs in ~/dion_t8.4/matches_crop). Same SuperPoint + LightGlue settings as
+feature_matching.py:35-36. Scripts, pictures and results.json per check: Dion's Mac only, main
+checkout docs/dion_docs/local/t8.4_{resize,lightglue_debug,scale,loftr}_check*_2026-10-19/.
+
+Caveat: the saved crops are JPEG twice over (quality 80 in match_frames' debug message,
+feature_matching.py:72 + image_helper.py:14, then the saver's .jpg write). LightGlue saw the raw
+crops live. So counts differ from the live run (pair 1: 20 here vs 7 live). Treat counts as rough.
+
+1. Upscaling on or off, 11 pairs.
+   - 8 of 11 glasses crops are not the box (pairs 0 and 4 to 10 show background, a shelf or a
+     poster). Only pairs 1 to 3 show the box. [measured]
+   - resize 1024 (default): 2048 points on every glasses crop, 4 to 21 matches, almost all wrong.
+     resize None: 16 to 40 points on the glasses crop, 0 to 3 matches. [measured]
+2. Is LightGlue itself working? Pairs 1 to 3, each crop against a half-size copy of itself.
+   - resize 1024: 630 to 952 matches, 100% correct (1 miss in about 5,000). Native: 3 to 17
+     matches, 30 to 100% correct. LightGlue works. [measured]
+   - Keypoint maps at 1024: points in rows and grids, on the box and the floor alike. That is the
+     JPEG 8x8 block grid, upscaled 4 to 11 times. Noise matches itself, not the other camera.
+     [measured, cause inferred]
+3. Same box size in both crops (box = crop minus the 20 px margin), resize None, pairs 1 to 3.
+   - Shrink the wrist crop, nothing upscaled: 4 to 5 matches, about half plausible by eye.
+   - Upscale both, box 256 px: 15 to 64, mostly wrong. Blur 0.8 px first: 17 to 28, mostly wrong.
+     [measured]
+4. Dense matcher, LoFTR (kornia 0.8.2, indoor weights), pairs 1 to 3, box at 128 and 256 px.
+   - 2 to 14 matches at 128, 54 to 113 at 256, mostly confidence 0.5 or more, mostly wrong by eye.
+     Many start on the glasses floor. [measured]
+
+Baseline result (Dion, 2026-10-19): on this pair, a plain box seen far and front-on by the glasses
+and close and from above by the wrist, point matching does not find the box. LightGlue works, but
+upscaling small crops turns JPEG noise into fake points, and without upscaling the box has too
+few features. A second matcher fails the same way, so the limit is the input. [inferred]
+Further diagnostics are parked (T8.6).
