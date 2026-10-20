@@ -103,6 +103,8 @@ s=$(step "L0  Livox CustomMsg to PointCloud2 converter" python3 bench/test_livox
 row L0 "Livox CustomMsg to PointCloud2 converter" "$s" "numpy fast-path check skipped where numpy is missing"
 s=$(step "L0  FAST-LIVO2 odom_source launch wiring" python3 bench/test_fastlivo_launch_wiring.py)
 row L0 "FAST-LIVO2 odom_source launch wiring" "$s" ""
+s=$(step "L0  FAST-LIVO2 mapper /tf remap" python3 bench/test_fastlivo_mapper_remap.py)
+row L0 "FAST-LIVO2 mapper /tf remap" "$s" ""
 s=$(step "L0  T3.4 bench coverage" python3 bench/test_t34_bench_coverage.py)
 row L0 "T3.4 bench coverage" "$s" ""
 s=$(step "L0  FAST-LIVO diagnostic patch" python3 docs/sherman_docs/tools/fastlivo/recipe/test_diagnostics.py)
