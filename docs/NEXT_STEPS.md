@@ -849,8 +849,9 @@ geometry (this section). Built in `object_recognition_pipeline.py` with the rule
 `cross_camera_mask_match_rule.py`: cutoff 0.56, keep within 0.01 of the best, the gaze must be within
 `pick_radius_px` (80, aria shared config) of the chosen glasses mask, a wrist tie returns no match.
 Box replay of the T8.4 setup: all 27 matches in the last run chose the brown box, gaze within 30 px
-(T8.4: 0 of 15). Not shown yet: choosing among two or more wrist objects (the wrist view still held
-one), and the gaze is the latest sample, not the one at the picture's capture time (the T2.9 client
+(T8.4: 0 of 15). With several wrist objects: three different colours 29 of 29 on the target, two
+same-colour cardboard boxes 6 of 12, so look-alike objects need the geometry methods below
+(`bench-runs/2026-10-20-labbox-t8.7-wrist-multi-box-replay.txt`) `[measured]`. Also open: the gaze is the latest sample, not the one at the picture's capture time (the T2.9 client
 does that), which cost about 5 s of matching in one stretch `[measured]`. Record:
 `bench-runs/2026-10-20-labbox-t8.7-mask-embedding-offline.txt`.
 
@@ -1547,3 +1548,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-19 | Claude Opus 5.5 + Dion | §2.13: baseline recorded (T8.4). Four offline checks: LightGlue works, upscaling turns JPEG noise into fake points, the plain box has too few features, LoFTR fails too. Further diagnostics parked as T8.6. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | §2.13: mask embeddings (T8.7) tested offline. CLIP picks the gazed box 25 of 25 against decoys, SAM 3 features weaker. Design agreed, build next. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | §2.13: T8.7 built (CLIP matcher, gaze within pick_radius_px) and replayed on the box: 27 of 27 matches on the brown box. Open: two or more wrist objects, gaze at capture time. `pick_radius_px` moved to aria's shared config section. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | §2.13: T8.7 with several wrist boxes: three colours 29 of 29, two same-colour cardboard boxes 6 of 12. Gaze fix moved to T8.5. |
