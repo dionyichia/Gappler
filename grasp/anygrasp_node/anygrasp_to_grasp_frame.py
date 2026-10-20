@@ -24,7 +24,7 @@ the object fits the real one. fits_gripper measures it from the masked points: t
 sweep (finger_height tall, through the grasp centre), from the tips back max_depth along the
 approach. Width is that slice's spread along the closing axis. Depth is how far the tips go past
 its nearest point. Percentiles, not min and max, so stray edge points (flying pixels) are ignored.
-The camera sees only the faces turned to it, but the node keeps grasps within 30 deg of its view,
+The camera sees only the faces turned to it, but the node keeps grasps within 40 deg of its view,
 so the closing axis runs across the image, where the full width is visible [inferred].
 
 Run this file to check the conversion: python3 anygrasp_to_grasp_frame.py
@@ -73,7 +73,30 @@ def fits_gripper(points, translation, rotation_matrix, depth, max_width, max_dep
     return bool(width <= max_width and depth_in <= max_depth), width, depth_in
 
 
+def on_mask(points, mask, fx, fy, cx, cy):
+    """For each camera-frame point, does it project onto the image mask (T1.44, OK-Robot style)."""
+    h, w = mask.shape
+    z = points[:, 2]
+    z_safe = np.where(z > 0, z, 1.0)
+    u = np.round(points[:, 0] * fx / z_safe + cx).astype(int)
+    v = np.round(points[:, 1] * fy / z_safe + cy).astype(int)
+    inside = (z > 0) & (u >= 0) & (u < w) & (v >= 0) & (v < h)
+    hit = np.zeros(len(points), dtype=bool)
+    hit[inside] = mask[v[inside], u[inside]]
+    return hit
+
+
 if __name__ == "__main__":
+    # T1.44: a 20 x 20 px mask in a 640 x 480 image, camera fx = fy = 600, centre (320, 240)
+    m = np.zeros((480, 640), dtype=bool)
+    m[230:250, 310:330] = True
+    pts = np.array([[0.0, 0.0, 0.5],      # image centre: on the mask
+                    [0.1, 0.0, 0.5],      # u = 440: off the mask
+                    [0.0, 0.0, -0.5],     # behind the camera
+                    [5.0, 0.0, 0.5]])     # outside the image
+    assert on_mask(pts, m, 600, 600, 320, 240).tolist() == [True, False, False, False], "on_mask"
+    print("PASS: on_mask keeps points that project onto the mask, drops off-mask, behind, outside")
+
     rng = np.random.default_rng(0)
     for _ in range(100):
         r_a, _ = np.linalg.qr(rng.normal(size=(3, 3)))

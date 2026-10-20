@@ -51,6 +51,9 @@ anygrasp_detection_node:
     # Workspace box in the camera frame, metres: [x_min, x_max, y_min, y_max, z_min, z_max].
     # Wide on purpose: the SAM mask does the spatial filtering.
     workspace_limits_m: [-1.0, 1.0, -1.0, 1.0, 0.0, 1.5]
+    # T1.44: AnyGrasp sees the whole scene (OK-Robot style). A grasp is kept only if its centre
+    # projects onto the target's SAM mask, grown by this many pixels (about 4 mm at 0.46 m).
+    grasp_on_mask_grow_px: 5
     # AnyGrasp's gripper model, not the real opening (the real gripper opens about 71 mm).
     # AnyGrasp reports every grasp at this width and needs clearance around the object: told
     # 0.07, it found no grasp on a 6 cm box face (top score 0.005); told 0.10, 0.34 to 0.5
