@@ -23,6 +23,7 @@ GRAV4 = os.environ.get('GRAV4') == '1'
 FLAT_MAX = float(os.environ.get('FLAT_MAX', '0.1'))
 TOL_POS = float(os.environ.get('TOL_POS', '0.10'))
 TOL_YAW = float(os.environ.get('TOL_YAW', '4'))
+LEVEL = int(os.environ.get('LEVEL', '0'))  # +1/-1: tilt-correct each session by its first pose's roll/pitch (sign unverified)
 
 
 def rot(q):
@@ -87,7 +88,15 @@ def to_session_frame(odom, scans):
         rng = np.linalg.norm(pts, axis=1)
         pts = pts[(rng > 0.5) & (rng < RMAX)]
         out.append((pts + T_EXT) @ R.T + t)
-    return np.vstack(out)
+    out = np.vstack(out)
+    if LEVEL:  # rotate the whole session so its initial roll/pitch is removed (yaw untouched)
+        R0 = rot(odom[0, 4:8])
+        r0 = math.atan2(R0[2, 1], R0[2, 2]); p0 = -math.asin(np.clip(R0[2, 0], -1, 1))
+        Rx = np.array([[1, 0, 0], [0, math.cos(r0), -math.sin(r0)], [0, math.sin(r0), math.cos(r0)]])
+        Ry = np.array([[math.cos(p0), 0, math.sin(p0)], [0, 1, 0], [-math.sin(p0), 0, math.cos(p0)]])
+        Rt = Ry @ Rx
+        out = out @ (Rt if LEVEL > 0 else Rt.T)  # row-vector form: p' = Rt^T p for LEVEL>0
+    return out
 
 
 def voxel(p, v=VOX):
@@ -179,7 +188,7 @@ def yaw_of(T):
 if __name__ == '__main__':
     map_bag, q_bag = sys.argv[1], sys.argv[2]
     qsec = float(sys.argv[3]) if len(sys.argv) > 3 else 3.0
-    print('config: RMAX %g MAP_T %s GRAV4 %s FLAT_MAX %g tol %.2f m / %.1f deg' % (RMAX, MAP_T, GRAV4, FLAT_MAX, TOL_POS, TOL_YAW))
+    print('config: RMAX %g MAP_T %s GRAV4 %s LEVEL %d FLAT_MAX %g tol %.2f m / %.1f deg' % (RMAX, MAP_T, GRAV4, LEVEL, FLAT_MAX, TOL_POS, TOL_YAW))
     for name, b in (('map bag', map_bag), ('query bag', q_bag)):
         lid, od = first_poses(b)
         T0 = od[1]
