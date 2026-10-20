@@ -119,6 +119,11 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
    acknowledgement but **does not check its return value** (`arm/estop/estop.py:57-61,119-125`):
    an exit or `EMERGENCY STOP SENT` log does not prove delivery or physical stopping. If T-ESTOP
    exits unexpectedly or the physical stop operator is not ready, end the procedure.
+   **2026-10-20: `E` did not stop the arm** (T1.38). With the grasp state machine running, `E` was
+   sent while the arm stood still, and 4.5 s later the arm ran two new trajectories
+   (`bench-runs/2026-10-20-labbox-t1.17-t1.35-live.txt`). The state machine has no stop subscriber
+   `[code]`, and whether the controller keeps the stop in force is not known `[unverified]`. Until
+   T1.38 is done, the physical stop (power) is the only stop during any state machine run.
 
 ## Controller, driver, and feedback
 
@@ -271,3 +276,4 @@ T1.5 done or treating it as an independently validated shared runbook.
 | 2026-09-23 | OpenCode + Sherman | After merging current dev, replaced the stale open-T1.4 blocker with its accepted no-motion verdict, documented rear overhang and D3 residual, and a day-of-condition check. No hardware run. |
 | 2026-09-23 | OpenCode + Sherman | Added a checkout/overlay provenance gate after a read-only lab-box check found an older branch with local changes; do not change that checkout during first-power verification. |
 | 2026-10-13 | OpenCode + Sherman | Validated: the required independent UDP capture overlapping ROS feedback was observed (23,043 wire packets spanning the joint observation); T1.5 DONE. Title/banner updated, observed rate note added. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | Step on T-ESTOP: the E key did not stop the arm during a state machine run (T1.38). Physical stop only until fixed. |
