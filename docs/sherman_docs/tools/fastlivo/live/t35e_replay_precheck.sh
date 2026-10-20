@@ -14,7 +14,8 @@ hits=$(ps -eo pid,user,etime,args | grep -iE "[r]ealsense|[r]s_launch|[r]os2 lau
 if [ -n "$hits" ]; then echo "$hits"; why "robot, camera, mapper, CI or container processes are running (list above)"; else echo "(none)"; fi
 echo; echo "== camera / lidar device users"; fuser -v /dev/video* 2>&1 | head -5
 echo; echo "== GPU"; nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total --format=csv,noheader
-gp=$(nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv,noheader 2>/dev/null)
+# the remote-desktop capture daemon and the desktop compositor show up here but are not someone's compute job
+gp=$(nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv,noheader 2>/dev/null | grep -vE "gnome-remote-desktop|Xorg|gnome-shell")
 if [ -n "$gp" ]; then echo "$gp"; why "GPU compute processes are running (list above)"; else echo "(no GPU compute processes)"; fi
 echo; echo "== tmux sessions and attached clients"
 tmux ls -F '#{session_name}: windows=#{session_windows} attached_clients=#{session_attached}' 2>&1

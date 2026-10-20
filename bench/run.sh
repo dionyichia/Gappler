@@ -153,7 +153,7 @@ else
   if [ "$arm" != PASS ]; then
     row L4 "Simulation" SKIPPED "arm build did not pass (see L3)"
   else
-    for t in sim_moveit estop_delivery state_machine_sim nav_nodes velocity_smoother cloud_scan slam_persistence anygrasp_env anygrasp_replay segmentation_service; do
+    for t in sim_moveit estop_delivery state_machine_sim nav_nodes velocity_smoother cloud_scan slam_persistence anygrasp_env anygrasp_replay segmentation_service fastlivo_bridge; do
       s=$(step "L4  Simulation: $t" ./bench/$t.sh)
       row L4 "Sim: $t" "$s" ""
     done
