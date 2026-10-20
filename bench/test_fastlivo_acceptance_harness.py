@@ -48,5 +48,14 @@ class HarnessPlaybackTests(unittest.TestCase):
         self.assertIn('default="recorded"', source)
 
 
+    def test_the_runner_refuses_to_start_unless_the_box_precheck_is_clear(self):
+        runner = (REPO / "docs/sherman_docs/tools/fastlivo/acceptance/run_phase3.sh").read_text()
+        gate = runner.index("PRECHECK")
+        self.assertIn("|| { echo", runner[gate:gate + 400], "a blocked pre-check must stop the runner")
+        self.assertLess(gate, runner.index("\nrun map"), "the gate comes before the first session")
+        self.assertIn("exit 1", runner[gate:runner.index("\nrun map")])
+        self.assertIn("set +u", runner, "the ROS setup scripts do not tolerate set -u")
+
+
 if __name__ == "__main__":
     unittest.main()
