@@ -57,5 +57,19 @@ class HarnessPlaybackTests(unittest.TestCase):
         self.assertIn("set +u", runner, "the ROS setup scripts do not tolerate set -u")
 
 
+    def test_the_diagnostic_runner_is_gated_on_the_precheck_before_and_between_sessions(self):
+        runner = (REPO / "docs/sherman_docs/tools/fastlivo/acceptance/diag_runner.sh").read_text()
+        gate = runner.index("PRECHECK")
+        self.assertIn("|| { echo", runner[gate:gate + 300])
+        self.assertLess(gate, runner.index("\nrun map"))
+        self.assertIn('run() { echo "=== $*"; bash "$PRECHECK"', runner, "re-checked before every session")
+        self.assertIn("set +u", runner)
+
+    def test_slam_parameter_overrides_are_recorded_in_the_result(self):
+        source = HARNESS.read_text()
+        self.assertIn('"slam_params": args.slam_param', source)
+        self.assertIn('"-p", kv.replace("=", ":=", 1)', source)
+
+
 if __name__ == "__main__":
     unittest.main()

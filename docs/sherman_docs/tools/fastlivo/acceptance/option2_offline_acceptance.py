@@ -96,6 +96,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("mode", choices=("map", "scanonly", "localize")); ap.add_argument("out")
     ap.add_argument("--stamp", choices=("recorded", "scanend"), default="recorded")
+    ap.add_argument("--slam-param", action="append", default=[], metavar="KEY=VALUE", help="extra SLAM Toolbox parameter override, repeatable")
     ap.add_argument("--guess", nargs=3, type=float, default=[2.0, 1.2, 0.0]); ap.add_argument("--bag"); ap.add_argument("--rate", type=float, default=1.0)
     ap.add_argument("--graph", help="pose graph prefix for localize (default OUT/../map/session)")
     args = ap.parse_args()
@@ -119,7 +120,11 @@ def main():
     rclpy.init()
     node = Node("option2_acceptance")
     buf = Buffer(); TransformListener(buf, node)
-    first_pose = []
+    first_pose = []; scan_stats = []
+    from sensor_msgs.msg import LaserScan
+    def on_scan(m):
+        r_ = np.array(m.ranges, dtype=np.float64); scan_stats.append((len(r_), int(np.isfinite(r_).sum())))
+    node.create_subscription(LaserScan, "/scan", on_scan, 10)
     node.create_subscription(Odometry, "/aft_mapped_to_init", lambda m: first_pose.append(m) if not first_pose else None, 10)
 
     def spin(sec):
@@ -161,6 +166,8 @@ def main():
         else:
             params = ["--params-file", str(SRC / "nav/robot_slam/config/slam_toolbox.yaml")]
             exe = "async_slam_toolbox_node"
+        for kv in args.slam_param:
+            params += ["-p", kv.replace("=", ":=", 1)]
         procs.append(start(["ros2", "run", "slam_toolbox", exe, "--ros-args"] + params + ["-r", "scan:=/scan"], folder / "slam_toolbox.log"))
         spin(6.0)
         player = start(["ros2", "bag", "play", str(bag), "--rate", str(args.rate), "--topics", "/aft_mapped_to_init", "/livox/lidar",
@@ -177,7 +184,11 @@ def main():
             except Exception:
                 pass
         spin(3.0)
-        result = {"mode": args.mode, "stamp": args.stamp, "bag": str(bag), "map_to_odom_samples": samples}
+        result = {"mode": args.mode, "stamp": args.stamp, "slam_params": args.slam_param, "bag": str(bag), "map_to_odom_samples": samples}
+        if scan_stats:
+            ss = np.array(scan_stats); frac = ss[:, 1] / ss[:, 0]
+            result["scan_stats"] = {"scans": int(len(ss)), "beams": int(ss[0, 0]), "valid_median": int(np.median(ss[:, 1])), "valid_fraction_median": round(float(np.median(frac)), 3),
+                                    "valid_fraction_p5": round(float(np.percentile(frac, 5)), 3)}
         try:
             t = buf.lookup_transform("map", "odom", rclpy.time.Time()); q = t.transform.rotation
             result["map_to_odom_at_save"] = {"x": t.transform.translation.x, "y": t.transform.translation.y, "z": t.transform.translation.z, "quat_xyzw": [q.x, q.y, q.z, q.w]}
