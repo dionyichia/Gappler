@@ -1,0 +1,13 @@
+msgs 812 duration 40.7 s total yaw change -357.9 deg, min -358.4 max 0.1
+turn segment 2.6 s to 40.7 s (38.1 s long), yaw swept -358.0 deg
+reconstructed base with corrected_constant    : xy spread max radius 0.089 m, std 0.020 m, peak-to-peak x 0.168 y 0.143, z p2p 0.063
+reconstructed base with precorrection_constant: xy spread max radius 0.135 m, std 0.033 m, peak-to-peak x 0.261 y 0.237, z p2p 0.060
+raw mapper pose (IMU) circle: radius mean 0.185 m, max 0.277, min 0.098
+before turn (still): n=48, position std 0.0008 m
+after turn (still): n=2, position std 0.0020 m
+--- fit: p_xy(t) = smooth drift (poly of given order) + Rz(yaw)(t)·t_xy ; t_xy = effective IMU position in the base frame
+order 1: t_xy = (0.191, 0.077) m, |t_xy| 0.206, fit rms 0.0095 m
+order 2: t_xy = (0.190, 0.080) m, |t_xy| 0.206, fit rms 0.0094 m
+order 3: t_xy = (0.197, 0.073) m, |t_xy| 0.210, fit rms 0.0078 m
+order 4: t_xy = (0.200, 0.079) m, |t_xy| 0.215, fit rms 0.0075 m
+candidates: corrected (0.191, 0.023) |0.192|; pre-correction (0.169, -0.023) |0.171|

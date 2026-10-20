@@ -1605,6 +1605,45 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Not pushed. Sherman: no PR until all of T3.5 (a to f) is finished. Next: T3.5d
   attended live mapping in the lab. T3.5 PROGRESS.
 
+## [2026-10-20] T3.5d | step 1: the tested mapper image runs through the host network
+
+- Lab box rebooted by hand (silent hang, last log line 06:19 on 20 Oct box time, no panic or
+  hardware error in the journal, same signature as 2026-10-06). Cause unknown, may recur.
+- Decisions (Sherman): run the combined image `ac276ad7` live in a container on the host
+  network with the sensor drivers native on the box (no native FAST-LIVO2 build exists: Sophus
+  and vikit are absent); run T3.5d without the map-to-odom bridge (it does not exist, it is
+  T3.5f), composing the base pose offline.
+- Probe scripts `tools/fastlivo/live/` (commits `b74fe35`, `e8eef42`, `2570d79`): container
+  keeps the replay envelope (no caps, no new privileges, memory and pid limits, ROS domain 174,
+  localhost only) and relaxes only network and ipc to host. Two script bugs found and fixed
+  on the way: a fixed sleep raced the camera parameter server (mapper aborted with "Camera
+  model not correctly specified", run 1 kept as `out-run1-camera-abort`), and the player
+  sourced ROS under `set -u`.
+- Run 2 (no sensors, stationary02 played from the host at 0.25x into the container): lidar
+  747, image 2,179, diag rows 1,482, zero-point coloured 118 at the same positions with the
+  same source points, visual retrievals 1,303, 0 error lines, clean SIGINT shutdown, no
+  core. All equal to B2.
+- Not identical to B2: 418 of 1,482 coloured-point counts differ (median 0.1%, max 3.1%,
+  total 1,860,813 against 1,861,022). The three sealed harness runs were line-for-line
+  identical. `[inferred]` host delivery timing changes which image pairs with a few scans.
+- Proves the route only. Not live timing, not sensor behaviour. Evidence
+  `EVIDENCE_t35d-probe-stage-20261020.sha256` (7 files) and
+  `EVIDENCE_t35d-probe-run-20261020.sha256`. T3.5d PROGRESS, not passed.
+
+## [2026-10-20] T3.5d | attended live mapping: stationary and hand-driven done, spin inconclusive
+
+- Full record: [`T3.5d_ATTENDED_RESULT_20261020.md`](T3.5d_ATTENDED_RESULT_20261020.md). Mapper
+  image `ac276ad7` in a host-network container, native Livox and D455 drivers, no bridge.
+- Stationary: pose held to 0.8 mm (24 s) and 5.7 mm (30 s after restart). Hand-driven 117.9 s
+  bag: 2,356 odom and 4,712 clouds all valid, longest gap 0.098 s, path 29.9 m, returned to the
+  start within 12 mm (Sherman by eye: about 1 cm). Map coherent per Sherman except the
+  transparent and mirror section.
+- Findings: Ethernet flap during Orin unplug stalled the mapper once (recorded); visual-mode
+  odom is 20 Hz; mapper teardown aborts intermittently (2 of 4 stops); spin test cannot expose
+  the sign because the reported pose follows the extrinsic it is given.
+- Evidence `EVIDENCE_t35d-attended-session-20261020.sha256` (74 files, SHA `7dd6dadc...`). Not
+  pushed; no PR until all of T3.5 is finished. T3.5d DONE 2026-10-20 (Sherman approved), residuals stated in the task text.
+
 ## Record Template
 
 
