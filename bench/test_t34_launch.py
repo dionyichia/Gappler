@@ -37,7 +37,11 @@ class LidarLaunchTests(unittest.TestCase):
         self.assertEqual(ast.literal_eval(args["executable"]), "livox_ros_driver2_node")
         parameters = args["parameters"].elts[0]
         values = {ast.literal_eval(key): value for key, value in zip(parameters.keys, parameters.values)}
-        self.assertEqual(ast.literal_eval(values["xfer_format"]), 0)
+        # The format comes from a launch argument (T3.5e, odom_source:=fastlivo asks for CustomMsg); its default must stay 0 (PointCloud2).
+        self.assertEqual(values["xfer_format"].func.id, "ParameterValue")
+        declared = next(c for c in calls if isinstance(c.func, ast.Name) and c.func.id == "DeclareLaunchArgument"
+                        and ast.literal_eval(c.args[0]) == "xfer_format")
+        self.assertEqual(ast.literal_eval({k.arg: k.value for k in declared.keywords}["default_value"]), "0")
         self.assertEqual(ast.literal_eval(values["publish_freq"]), 10.0)
         self.assertEqual(ast.literal_eval(values["frame_id"]), "livox_frame")
         self.assertNotIn("ExecuteProcess", LAUNCH.read_text())
@@ -55,12 +59,16 @@ def runtime_check() -> None:
     with patch("launch_ros.actions.Node", wraps=Node) as constructor:
         module = runpy.run_path(str(LAUNCH))
         description = module["generate_launch_description"]()
-        assert len(description.entities) == 1
+        assert len(description.entities) == 2  # the xfer_format launch argument and the one node
         kwargs = constructor.call_args.kwargs
         assert kwargs["package"] == "livox_ros_driver2"
         assert kwargs["executable"] == "livox_ros_driver2_node"
         parameters = kwargs["parameters"][0]
-        assert parameters["xfer_format"] == 0
+        from launch import LaunchContext
+        from launch.utilities import perform_substitutions
+        context = LaunchContext()
+        description.entities[0].visit(context)  # declares xfer_format with its default
+        assert context.launch_configurations["xfer_format"] == "0", "default must stay PointCloud2"
         assert Path(parameters["user_config_path"]).is_file(), "installed MID360_config.json missing"
     print("PASS: real LiDAR-only launch construction and config path; no actions executed")
 
