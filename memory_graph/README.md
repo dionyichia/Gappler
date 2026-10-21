@@ -341,8 +341,8 @@ lines: find, go to the first hit, reject it, find again, until the list is empty
 
 ### What this file does not do
 
-- It does not choose the target and related classes. They are given to the task. Choosing them
-  from the instruction is task T6.7b.
+- It does not choose the target and related classes. They are given to the task.
+  `ClassExpander` in [`reasoning.py`](reasoning.py) chooses them from the instruction (T6.7b).
 - It does not lift a box drawn on a stored photo into 3D. No task covers that yet.
 - It does not pick photos to search when nothing matches.
 - It differs from HiCo-Nav's version in five ways, listed at the top of
