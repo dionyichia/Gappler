@@ -1,0 +1,54 @@
+T6.5: photos kept by the gate's pose half on the handdriven1 drive, and the SAM 3 time saved
+2026-10-22, lab box (rcp2026@100.87.133.60, tailscale)
+Run over SSH by Claude Opus 5.5 for Zongzhe. Scratch copy of the working tree of branch
+t6.5-pose-gate-on-drive (on fc33132, changes not yet committed) in /tmp/zongzhe_t65_20261022,
+deleted after. ~/rcp-Gappler was not touched. Python from ~/rcp-Gappler/.venv. CPU only
+(CUDA_VISIBLE_DEVICES empty). No camera, no ROS, no robot.
+
+Before start
+  GPU in use by someone else: ../anygrasp_venv/.venv/bin/python
+  ~/t1.44_viz_scratch/grasp_table_clearance.py (9.4 GB). Not touched: this run needs no GPU, and
+  the GPU was hidden from it. No realsense, ros2 launch, bench or runner job. /home 12 GB free.
+
+Tests
+  test_gate_sweep.py + test_config_and_filters.py:  31 ran, 31 passed.
+  bench/memory_graph_tests.sh with .venv, CPU:      334 ran, 334 passed, exit 0 (nothing skipped).
+    The real CLIP model ran on the CPU here, since the GPU was hidden.
+
+Sweep
+  python -m memory_graph.gate_sweep --bag .../handdriven1/handdriven1_0.db3 --sam3-seconds 1.85
+  Poses only: no images, no clouds, no model. 1.5 s wall time.
+  SAM 3 cost per call: 1.85 s, the median from T6.4's drive run
+  (docs/bench-runs/2026-10-21-labbox-t6.4-drive-run.txt, branch t6.4-merge-tuning).
+
+  3536 frames over 117.85 s (the drive moves for the first 104 s, then stands still).
+  Every frame through SAM 3: 3536 calls, 6541.6 s. One photo a second: 117 calls, 216.5 s.
+
+  metres degrees  kept  per min  SAM 3 s  saved vs every frame  saved vs 1 Hz
+    0.50    30.0    52    26.47     96.2      98.53 %              55.6 %
+    0.50    45.0    45    22.91     83.2      98.73 %              61.5 %
+    0.50    90.0    43    21.89     79.5      98.78 %              63.2 %
+    1.00    30.0    40    20.36     74.0      98.87 %              65.8 %
+    1.00    45.0    29    14.76     53.7      99.18 %              75.2 %   <- the real gate (config)
+    1.00    90.0    22    11.20     40.7      99.38 %              81.2 %
+    2.00    30.0    34    17.31     62.9      99.04 %              70.9 %
+    2.00    45.0    24    12.22     44.4      99.32 %              79.5 %
+    2.00    90.0    14     7.13     25.9      99.60 %              88.0 %
+  Also run: 0.25 m / 15 degrees keeps 103 (52.4 per minute), 1 m / 15 degrees 74, 0.25 m / 45
+  degrees 86.
+
+Cross-check against T6.4's GPU run
+  T6.4 saved 103 photos at the same fine gate (0.25 m, 15 degrees) after SAM 3, and the sweep
+  keeps 103 from the poses alone. So no photo that passed the pose half was rejected for having
+  no detections, and the sweep's assumption holds on this drive.
+  The real gate keeps 29 here and 26 in T6.4's record. T6.4 applied the real gate only to the
+  103 fine-gate photos, a coarser sampling of the poses, so 29 is the exact count.
+
+Result
+  At the real gate the drive gives 29 anchors, 14.8 a minute over the whole bag (16.7 a minute
+  over the 104 s of movement). Upstream reports about one anchor every 1 to 2 s, 30 to 60 a
+  minute `[paper]`. SAM 3 runs 29 times, 54 s in all, against 6542 s for every frame (99.2 %
+  saved) and 217 s at one photo a second (75 % saved).
+  Not measured: the target-in-view rule, which the pose half first cannot fire on its own
+  (D-MG12). Whether 29 anchors are enough for the graph is T6.4's measurement.
+  Result file (not in git): docs/zongzhe_docs/local/t6.5/sweep_handdriven1.json on Zongzhe's Mac.
