@@ -206,6 +206,11 @@ def intentional_returncode(code) -> bool:
     return code in (0, -signal.SIGINT, -signal.SIGTERM)
 
 
+def write_pose_csv(path: Path, rows: list) -> None:
+    """Every odometry message the monitor saw: stamp x y z qx qy qz qw (best-effort subscription, so a gap is possible; the count is in result.json)."""
+    path.write_text("stamp,x,y,z,qx,qy,qz,qw\n" + "".join(",".join(repr(float(v)) for v in row) + "\n" for row in rows))
+
+
 def new_stream() -> dict:
     return {"count": 0, "first": None, "last": None, "invalid": 0}
 
@@ -497,9 +502,12 @@ def main() -> int:
                 clock["backward"] = True
             clock["last"] = value
 
+        odom_rows = []
+
         def receive(kind, message):
             if kind == "odom":
                 p, q = message.pose.pose.position, message.pose.pose.orientation
+                odom_rows.append((stamp(message), p.x, p.y, p.z, q.x, q.y, q.z, q.w))
                 valid = valid_pose([p.x, p.y, p.z], [q.x, q.y, q.z, q.w])
             elif kind == "cloud":
                 validation_started = time.monotonic()
@@ -732,6 +740,8 @@ def main() -> int:
                     visual_count += bool(match and int(match.group(1)) > 0)
                     if "[T35_DIAG_CLOUD]" in line:
                         diag_lines.append(line)
+        write_pose_csv(evidence / "odom_poses.csv", odom_rows)
+        report["odom_poses_file"] = {"name": "odom_poses.csv", "rows": len(odom_rows)}
         report.update(eof=eof, positive_visual_retrievals=visual_count,
                       mapper_cloud_diag=parse_cloud_diag(diag_lines))
         finalize_report(report, started, diagnostic_captured)

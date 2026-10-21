@@ -163,6 +163,18 @@ class ReplayTests(unittest.TestCase):
     def setUp(self):
         self.replay = load("replay")
 
+    def test_odom_poses_are_written_for_closure_checks(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "odom_poses.csv"
+            self.replay.write_pose_csv(path, [(1.5, 0.0, 0.1, 0.2, 0.0, 0.0, 0.0, 1.0), (2.0, 1.0, 2.0, 3.0, 0.0, 0.0, 0.0, 1.0)])
+            lines = path.read_text().splitlines()
+        self.assertEqual(lines[0], "stamp,x,y,z,qx,qy,qz,qw")
+        self.assertEqual(lines[2].split(","), ["2.0", "1.0", "2.0", "3.0", "0.0", "0.0", "0.0", "1.0"])
+        supervisor = (HERE / "replay.py").read_text()
+        self.assertIn("odom_rows.append((stamp(message)", supervisor)
+        self.assertIn('write_pose_csv(evidence / "odom_poses.csv", odom_rows)', supervisor)
+
     def test_cloud_reports_reasons_not_just_true_false(self):
         cloud = load("replay").valid_cloud
         import struct
