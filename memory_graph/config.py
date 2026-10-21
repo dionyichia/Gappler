@@ -111,8 +111,13 @@ class MemoryGraphConfig:
 
     # ---- S10 association --------------------------------------------------
     # A candidate point "overlaps" an object if the object has a point this close.
-    # Upstream hardcodes 2.5 cm (pointcloud.py:672).
-    match_radius_m: float = 0.025
+    # Upstream hardcodes 2.5 cm (pointcloud.py:672). 10 cm since 2026-10-22 (Zongzhe,
+    # T6.4): with sparse LiDAR depth and two views of one object 4 to 9 cm apart, 2.5 cm
+    # left most real objects as several entries. On the handdriven1 drive 10 cm cut
+    # duplicates from 8 to 3 with no false merges and no new misses. On a second drive
+    # it also cut them, and 15 cm started merging a chair into the desk beside it.
+    # docs/bench-runs/2026-10-21-labbox-t6.4-drive-run.txt, D-MG2.
+    match_radius_m: float = 0.10
     # score = (1 + phys_bias) * overlap + (1 - phys_bias) * appearance
     phys_bias: float = 0.5
     # A candidate merges into its best object only above this score.

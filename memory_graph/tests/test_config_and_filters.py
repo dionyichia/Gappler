@@ -19,7 +19,9 @@ IMG = (480, 640)
 class ConfigTest(unittest.TestCase):
     def test_defaults_are_upstream_values(self):
         self.assertEqual(CFG.sim_threshold, 0.6)
-        self.assertEqual(CFG.match_radius_m, 0.025)
+        self.assertEqual(CFG.phys_bias, 0.5)
+        # Not upstream's 2.5 cm: tuned on the recorded drives (T6.4, D-MG2).
+        self.assertEqual(CFG.match_radius_m, 0.10)
         self.assertAlmostEqual(CFG.gate_rotation_rad, math.pi / 4)
         self.assertEqual(CFG.association_mode, "greedy")
 
