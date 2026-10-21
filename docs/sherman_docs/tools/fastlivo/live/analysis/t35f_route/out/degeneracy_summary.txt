@@ -1,0 +1,3 @@
+run1: 152 scans analysed of 758, map 58363 voxels (43873 planar). lam3_min median 0.1278 p10 0.1006 min 0.0837 | lam2_min median 0.1279 p10 0.1006 | in-box lam3_min median 0.1275
+run2: 159 scans analysed of 794, map 61611 voxels (46500 planar). lam3_min median 0.1266 p10 0.1061 min 0.0903 | lam2_min median 0.1266 p10 0.1061 | in-box lam3_min median 0.1319
+hd1: 236 scans analysed of 1179, map 87868 voxels (60590 planar). lam3_min median 0.1358 p10 0.1219 min 0.1106 | lam2_min median 0.1359 p10 0.1219 | in-box lam3_min median 0.1104

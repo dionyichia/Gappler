@@ -143,7 +143,7 @@ are FAIL. Total supervisor acceptance budget is 600 seconds including cleanup;
 operations stop at 590 seconds, reserving ten seconds for the existing shutdown
 escalation. Any observed final elapsed time above 600 seconds fails acceptance.
 each readiness phase is bounded at 60 seconds. The host wait has a 660-second
-ceiling. `T35_REPLAY_RATE` defaults to 0.25 and allows slower finite positive
+ceiling. `T35_REPLAY_RATE` defaults to 0.25 and allows finite positive rates up to 0.3 (0.3 was added for the 117.9 s handdriven1 bag: 583 s of 600), but only
 rates only if playback plus 60s startup, 120s drain and 10s cleanup fit within 600s; actual
 remaining time is checked again before resuming. For this bag, 0.2 fits but 0.1
 does not. Increasing custody or CPU limits is not an automatic fallback.

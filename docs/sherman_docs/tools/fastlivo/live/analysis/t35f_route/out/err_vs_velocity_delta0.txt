@@ -1,0 +1,8 @@
+run1 moving windows 15
+  speed m/s median 0.29; |err| median 0.066; cos(err,velocity) median -0.99 (1=along, 0=sideways); err/speed along-track median -0.22 s; cross-track +0.02 s
+  corr(|err|, speed) 0.56; cos values: [-0.9 -0.9 -1.  -1.  -0.9 -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.  -1.
+ -0.8]
+run2 moving windows 18
+  speed m/s median 0.25; |err| median 0.063; cos(err,velocity) median -0.96 (1=along, 0=sideways); err/speed along-track median -0.25 s; cross-track +0.04 s
+  corr(|err|, speed) 0.78; cos values: [-0.9 -0.9 -1.  -1.  -1.  -0.9 -1.  -1.  -1.  -1.  -1.  -1.  -0.9 -1.
+ -1.  -0.9 -0.3 -0.6]

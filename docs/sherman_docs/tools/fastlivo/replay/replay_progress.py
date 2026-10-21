@@ -34,8 +34,8 @@ def callback_patterns(params: dict) -> dict:
 def playback_rate(value: str, duration: float) -> float:
     """Allow slower playback only when startup/drain still fit the existing window."""
     rate = float(value)
-    if not math.isfinite(rate) or not 0 < rate <= 0.25:
-        raise ValueError('T35_REPLAY_RATE must be finite, positive and no faster than 0.25')
+    if not math.isfinite(rate) or not 0 < rate <= 0.3:
+        raise ValueError('T35_REPLAY_RATE must be finite, positive and no faster than 0.3')
     if not math.isfinite(duration) or duration <= 0 or duration / rate + 60 + 120 + 10 > 600:
         raise ValueError('playback plus 60s startup/120s drain/10s cleanup exceeds 600s budget')
     return rate

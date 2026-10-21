@@ -159,11 +159,14 @@ class ProgressTests(unittest.TestCase):
         module = self.progress()
         self.assertEqual(module.playback_rate('0.2', 66.7), 0.2)
         self.assertEqual(module.playback_rate('0.25', 66.7), 0.25)
-        for rate in ('0', '-1', 'nan', 'inf', 'oops', '0.1', '1'):
+        self.assertEqual(module.playback_rate('0.3', 117.894), 0.3)  # handdriven1: 583 s of 600
+        for rate in ('0', '-1', 'nan', 'inf', 'oops', '0.1', '1', '0.31'):
             with self.subTest(rate=rate), self.assertRaises(ValueError):
                 module.playback_rate(rate, 66.7)
         with self.assertRaises(ValueError):
             module.playback_rate('0.24', 100)  # Must reserve cleanup as well.
+        with self.assertRaises(ValueError):
+            module.playback_rate('0.3', 125)  # 417 s of playback plus 190 s reserve
 
     def test_final_supervisor_verdict_rejects_gaps_and_budget_overrun(self):
         self.assertTrue(hasattr(replay, 'finalize_report'), 'final supervisor accounting is not extracted yet')
