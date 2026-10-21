@@ -90,6 +90,26 @@ def project_cloud_to_depth(
     return nearest.reshape(h, w).astype(np.float32)
 
 
+def drop_occluded(depth: np.ndarray, window: int, margin: float) -> np.ndarray:
+    """Clear depth pixels that are hidden behind a nearer point close by.
+
+    A projected LiDAR cloud is sparse, so the z-buffer alone lets the wall behind
+    an object show through the gaps between the object's own points. A pixel is
+    cleared if some pixel within its window x window block is more than `margin`
+    (a fraction) nearer. Without this a chair's mask held its own points and the
+    floor's, and S8 kept the floor (frame 700 of the FAST-LIVO bag, T6.3).
+    window <= 1 returns the depth unchanged.
+    """
+    from scipy.ndimage import minimum_filter
+
+    depth = np.asarray(depth, dtype=np.float32)
+    if window <= 1:
+        return depth
+    valid = depth > 0
+    nearest = minimum_filter(np.where(valid, depth, np.inf), size=int(window), mode="constant", cval=np.inf)
+    return np.where(valid & (depth > nearest * (1.0 + margin)), 0.0, depth).astype(np.float32)
+
+
 def back_project(obs: Observation, masks: np.ndarray, cfg: MemoryGraphConfig) -> List[Optional[Cloud]]:
     """One world-frame cloud per mask, or None if the mask has fewer than
     cfg.min_points pixels with valid depth (pointcloud.py:138).

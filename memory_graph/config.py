@@ -70,6 +70,9 @@ class MemoryGraphConfig:
     # Upstream hardcodes 0.8 and 0.7 (map_utils.py:295).
     contain_inner_ratio: float = 0.8
     contain_outer_ratio: float = 0.7
+    # Then a pixel still in two masks stays only in the more confident one.
+    # Not upstream. Chosen 2026-10-21 (Zongzhe, T6.3), see masks.one_owner_per_pixel.
+    mask_one_owner_per_pixel: bool = True
 
     # ---- S6 image feature -------------------------------------------------
     # Crop padding per side as a fraction of the box's width and height.

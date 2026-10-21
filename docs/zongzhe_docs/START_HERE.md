@@ -17,6 +17,7 @@ Those are the shared reference. This folder does not repeat them, it links to th
 | [`BUILD_WORKSPACES.md`](BUILD_WORKSPACES.md) | Why `deps_ws` and `ros2_robot_ws` are built separately instead of together, answered by Puneet on 2026-08-25, checked against the code. Explains the underlay and overlay idea for anyone who has not used colcon. | Before your first build, and before changing anything about how the project is built. |
 | [`HICO_NAV_CLASS_DIAGRAM.md`](HICO_NAV_CLASS_DIAGRAM.md) | Class diagram of HiCo-Nav's `map/` package at commit `ffc1517`: the graph data model, the inter-process message types, and what is dead code. | Before reading any HiCo-Nav source, and before `CMG_GRAPH_STRUCTURE.md`. |
 | [`CMG_GRAPH_STRUCTURE.md`](CMG_GRAPH_STRUCTURE.md) | Why HiCo-Nav's Cognitive Memory Graph is not stored as a graph, what its pruning formula means, and a prototype replacement structure with 16 passing checks (the prototype now lives in `memory_graph/`). The evidence behind [`../MEMORY_GRAPH_DESIGN.md`](../MEMORY_GRAPH_DESIGN.md). | After [`HICO_NAV_CLASS_DIAGRAM.md`](HICO_NAV_CLASS_DIAGRAM.md), and before writing any memory-graph code for Gappler. |
+| [`T6.3_WALKTHROUGH.md`](T6.3_WALKTHROUGH.md) | What the T6.3 code does, step by step, from one lab photo to objects in the room, with the chair in frame 700 as the example and a pointer to the code for each step. | Before reading `memory_graph/run_photo.py`, and before [`quizzes/T6.3_QUIZ.md`](quizzes/T6.3_QUIZ.md). |
 
 ## Rules this folder follows
 
@@ -43,3 +44,4 @@ From [`../START_HERE.md`](../START_HERE.md) and the root `CLAUDE.md`:
 | 2026-09-15 | Claude (Opus 5) + Zongzhe | Added `T0.3_SESSION.md`. |
 | 2026-09-21 | Claude (Opus 5) + Zongzhe | Added `CMG_GRAPH_STRUCTURE.md` and `prototypes/`. |
 | 2026-10-05 | Claude (Opus 5.5) + Zongzhe | `prototypes/` removed: its two files moved to `memory_graph/` (T6.3a). |
+| 2026-10-21 | Claude (Opus 5.5) + Zongzhe | Added `T6.3_WALKTHROUGH.md` to the table. |
