@@ -306,25 +306,18 @@ class FastLivoFrame:
 class FastLivoBag:
     """A FAST-LIVO rosbag2 recording, read as Observations (T6.3b, LiDAR path).
 
-    No depth image is recorded, so depth is rendered from the registered LiDAR
-    cloud. For each colour image the loader finds the nearest odometry pose,
-    composes the camera-to-world transform
+    No depth is recorded, so for each colour image the loader takes the nearest
+    odometry pose, composes the camera-to-world transform
 
         T_world_cam = T_world_imu @ T_imu_lidar @ inv(T_cam_lidar)
 
-    and projects the cloud messages within a time window around the image into
-    the colour frame (geometry.project_cloud_to_depth). Everything downstream
-    then treats the frame as an ordinary RGB-D Observation.
+    and projects the world-frame /cloud_registered messages in a time window
+    around the image into the colour frame, giving an ordinary RGB-D Observation.
 
-    Only /cloud_registered is read, not /livox/lidar: it is standard PointCloud2
-    already in the world frame, so no custom message type and no per-scan pose
-    are needed. Poses and intrinsics are read up front; images and clouds are
-    read per frame, so a multi-gigabyte bag is never held in memory at once.
-
-    frame_id is the position among the frames kept, plus first_frame_id; as with
-    TumSequence, start a second recording at first_frame_id = len(first) so ids
-    never collide (T6.9). Reading the bag needs the `rosbags` package, imported
-    on first use.
+    Only /cloud_registered is read (standard PointCloud2, already world-frame, no
+    custom type). Poses and intrinsics are read up front, images and clouds per
+    frame, so a multi-gigabyte bag is never all in memory. frame_id follows the
+    TumSequence rule (first_frame_id, never reset). Needs `rosbags`.
     """
 
     def __init__(
@@ -355,11 +348,14 @@ class FastLivoBag:
 
         db = _BagDB(self.db3_path)
         try:
-            self.K = db.deserialize(db.first_rowid(TOPIC_CAMERA_INFO), TOPIC_CAMERA_INFO).k.reshape(3, 3).astype(np.float64)
-            odom = db.all(TOPIC_ODOM)
+            cam = db.rows(TOPIC_CAMERA_INFO)
+            if not cam:
+                raise ValueError(f"no messages on {TOPIC_CAMERA_INFO}")
+            self.K = db.deserialize(cam[0][1], TOPIC_CAMERA_INFO).k.reshape(3, 3).astype(np.float64)
+            odom = db.rows(TOPIC_ODOM)
             odom_times = np.array([t for t, _ in odom], dtype=np.float64)
             odom_T = [self._pose_to_world_cam(db.deserialize(rowid, TOPIC_ODOM)) for _, rowid in odom]
-            colour = db.all(TOPIC_COLOR)
+            colour = db.rows(TOPIC_COLOR)
         finally:
             db.close()
 
@@ -391,8 +387,8 @@ class FastLivoBag:
             img = db.deserialize(frame.color_rowid, TOPIC_COLOR)
             if img.encoding != "rgb8":
                 raise ValueError(f"expected rgb8 colour, got {img.encoding!r}")
-            rows = db.rows_between(TOPIC_CLOUD, frame.timestamp - self.cloud_window_s,
-                                   frame.timestamp + self.cloud_window_s)
+            rows = db.rows(TOPIC_CLOUD, frame.timestamp - self.cloud_window_s,
+                           frame.timestamp + self.cloud_window_s)
             clouds = [_cloud_xyz(db.deserialize(rowid, TOPIC_CLOUD)) for _, rowid in rows]
         finally:
             db.close()
@@ -425,27 +421,16 @@ class _BagDB:
             self._store = get_typestore(Stores.ROS2_HUMBLE)
         return self._store
 
-    def all(self, topic: str) -> List[Tuple[float, int]]:
-        """(timestamp seconds, rowid) for every message on `topic`, time-ordered."""
-        tid = self._require(topic)
-        rows = self._con.execute(
-            "SELECT timestamp, id FROM messages WHERE topic_id = ? ORDER BY timestamp", (tid,))
-        return [(ts * 1e-9, rowid) for ts, rowid in rows]
-
-    def rows_between(self, topic: str, t0: float, t1: float) -> List[Tuple[float, int]]:
-        tid = self._require(topic)
-        rows = self._con.execute(
-            "SELECT timestamp, id FROM messages WHERE topic_id = ? AND timestamp BETWEEN ? AND ? ORDER BY timestamp",
-            (tid, int(t0 * 1e9), int(t1 * 1e9)))
-        return [(ts * 1e-9, rowid) for ts, rowid in rows]
-
-    def first_rowid(self, topic: str) -> int:
-        tid = self._require(topic)
-        row = self._con.execute(
-            "SELECT id FROM messages WHERE topic_id = ? ORDER BY timestamp LIMIT 1", (tid,)).fetchone()
-        if row is None:
-            raise ValueError(f"no messages on {topic}")
-        return int(row[0])
+    def rows(self, topic: str, t0: Optional[float] = None, t1: Optional[float] = None) -> List[Tuple[float, int]]:
+        """(timestamp seconds, rowid) for `topic`, time-ordered. With t0 and/or t1
+        given, only messages in that closed time window (seconds)."""
+        sql = "SELECT timestamp, id FROM messages WHERE topic_id = ?"
+        params: List[int] = [self._require(topic)]
+        if t0 is not None:
+            sql, params = sql + " AND timestamp >= ?", params + [int(t0 * 1e9)]
+        if t1 is not None:
+            sql, params = sql + " AND timestamp <= ?", params + [int(t1 * 1e9)]
+        return [(ts * 1e-9, rowid) for ts, rowid in self._con.execute(sql + " ORDER BY timestamp", params)]
 
     def deserialize(self, rowid: int, topic: str):
         row = self._con.execute("SELECT data FROM messages WHERE id = ?", (rowid,)).fetchone()

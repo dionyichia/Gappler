@@ -7,20 +7,20 @@ fixtures/tum_fr1_xyz/ (see fixtures/README.md).
 
 from memory_graph.tests import _requires_numpy  # noqa: F401  (skips without numpy)
 
+import struct
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-import struct
-import types
-
-from memory_graph.geometry import camera_rays, transform_points
+from memory_graph.geometry import camera_rays, invert_rigid, transform_points
 from memory_graph.replay_loader import (
-    TUM_DEPTH_UNITS_PER_METRE, TumSequence, _cloud_xyz, depth_to_metres, nearest_in_time,
-    read_tum_list, rigid_transform, to_observation,
+    EXTRINSIC_R, EXTRINSIC_T, PCL, RCL, TUM_DEPTH_UNITS_PER_METRE, FastLivoBag, TumSequence,
+    _cloud_xyz, _rigid_from_rowmajor, depth_to_metres, nearest_in_time, read_tum_list,
+    rigid_transform, to_observation,
 )
 from memory_graph.tests._fixtures import pose, rot_z
 
@@ -58,6 +58,45 @@ class CloudXyzTest(unittest.TestCase):
     def test_drops_non_finite_points(self):
         pts = [(1.0, 2.0, 3.0), (float("nan"), 0.0, 0.0), (7.0, 8.0, 9.0)]
         np.testing.assert_allclose(_cloud_xyz(_pc2(pts)), [(1.0, 2.0, 3.0), (7.0, 8.0, 9.0)])
+
+
+def _odom(position=(0.0, 0.0, 0.0), quat_xyzw=(0.0, 0.0, 0.0, 1.0)):
+    """A stand-in nav_msgs/Odometry with just the pose fields the loader reads."""
+    x, y, z = position
+    qx, qy, qz, qw = quat_xyzw
+    return types.SimpleNamespace(pose=types.SimpleNamespace(pose=types.SimpleNamespace(
+        position=types.SimpleNamespace(x=x, y=y, z=z),
+        orientation=types.SimpleNamespace(x=qx, y=qy, z=qz, w=qw))))
+
+
+class PoseCompositionTest(unittest.TestCase):
+    """T_world_cam = T_world_imu @ T_imu_lidar @ inv(T_cam_lidar), the step the
+    loader warns is easy to get wrong."""
+
+    def _bag(self):
+        bag = object.__new__(FastLivoBag)
+        bag._T_cam_lidar = _rigid_from_rowmajor(RCL, PCL)
+        bag._T_imu_lidar = _rigid_from_rowmajor(EXTRINSIC_R, EXTRINSIC_T)
+        bag._T_imu_cam = bag._T_imu_lidar @ invert_rigid(bag._T_cam_lidar)
+        return bag
+
+    def test_lidar_point_reads_back_as_rcl_pcl_in_the_camera(self):
+        """With identity odometry (world == imu), a LiDAR point put into the world
+        and read back in camera coordinates equals Rcl @ p + Pcl. Fails if the
+        inv(T_cam_lidar) step is dropped or the mount is applied the wrong way."""
+        bag = self._bag()
+        T_world_cam = bag._pose_to_world_cam(_odom())
+        p_lidar = np.array([[1.0, 2.0, 3.0], [-0.5, 0.4, 2.0]])
+        p_world = transform_points(bag._T_imu_lidar, p_lidar)
+        p_cam = transform_points(invert_rigid(T_world_cam), p_world)
+        np.testing.assert_allclose(p_cam, transform_points(bag._T_cam_lidar, p_lidar), atol=1e-9)
+
+    def test_moving_the_body_moves_the_camera_by_the_same_amount(self):
+        """The odometry pose is used forward: a 1 m body shift is a 1 m camera shift."""
+        bag = self._bag()
+        a = bag._pose_to_world_cam(_odom(position=(0.0, 0.0, 0.0)))[:3, 3]
+        b = bag._pose_to_world_cam(_odom(position=(1.0, 0.0, 0.0)))[:3, 3]
+        np.testing.assert_allclose(b - a, [1.0, 0.0, 0.0], atol=1e-9)
 
 try:
     import cv2

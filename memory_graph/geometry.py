@@ -57,24 +57,14 @@ def project_cloud_to_depth(
     K: np.ndarray,
     image_hw: Tuple[int, int],
 ) -> np.ndarray:
-    """A depth image in the colour frame, rendered from a world-frame cloud.
+    """A depth image in the colour frame, rendered from a world-frame cloud: the
+    inverse of back_project, so a LiDAR recording reaches the pipeline as RGB-D.
 
-    The inverse of back_project: where camera_rays turns a depth image into
-    camera-frame points, this turns world-frame points (a LiDAR scan registered
-    to the map) into a depth image aligned to the colour camera, so the rest of
-    the pipeline can treat a LiDAR recording exactly like an RGB-D one (T6.3b,
-    option b).
-
-    Each point is moved into the camera frame, dropped if it is at or behind the
-    optical plane (z <= 0), projected with K and rounded to the nearest pixel.
-    Where several points land on one pixel the nearest wins (a z-buffer), so a
-    near surface is never painted over by something behind it. The result is
-    float32 metres along the optical axis, 0 where no point landed, which is what
-    Observation.depth and back_project expect.
-
-    The depth is sparse: a LiDAR scan fills far fewer pixels than a depth camera,
-    so expect many zeros. Accumulate a time window of scans before calling this
-    if one scan is too thin.
+    Each point is moved into the camera frame, dropped if at or behind the optical
+    plane, projected with K and rounded to a pixel; where several land on one
+    pixel the nearest wins (a z-buffer). Returns float32 metres along the optical
+    axis, 0 where no point landed. Expect it sparse: a LiDAR scan fills far fewer
+    pixels than a depth camera, so accumulate a window of scans if one is too thin.
     """
     h, w = int(image_hw[0]), int(image_hw[1])
     pts = np.asarray(points_world, dtype=np.float64).reshape(-1, 3)
