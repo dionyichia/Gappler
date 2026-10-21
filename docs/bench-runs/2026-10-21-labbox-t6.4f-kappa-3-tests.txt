@@ -1,0 +1,26 @@
+T6.4f: kappa set to 3 (tentative, D-MG1), every memory graph test on the lab box
+2026-10-21, lab box (rcp2026@100.87.133.60, tailscale), RTX 4060 Ti
+Run over SSH by Claude Opus 5.5 for Zongzhe. Scratch copy of branch t6.4f-kappa-3 (dev at
+ebbafd7 plus the uncommitted kappa change, the tracked files of memory_graph/ and
+bench/memory_graph_tests.sh) in /tmp/zongzhe_t64f_20261021. Python from ~/rcp-Gappler/.venv, CLIP
+weights from ~/rcp-Gappler/assets/models/open_clip. GPU and CPU only, no camera, no ROS, no robot.
+
+Before start
+  nvidia-smi 396 MiB, 0 %. Only GPU process: gnome-remote-desktop-daemon. No bench or runner job.
+  Not ours, left alone: a RealSense driver (rs_launch.py serial_no:=146222253541, colour only,
+  640x480x30) logging to ~/rcp-Gappler/log/t59-fastlivo/log/t35f-live-20261021/. This run does not
+  use any camera.
+
+  RESULT: PASS. bench/memory_graph_tests.sh: 253 ran, 253 passed, 0 skipped, exit 0.
+
+What changed
+  memory_graph/config.py   prune_kappa 1 -> 3, comment says tentative and why.
+  memory_graph/cleanup.py  docstring: default 3.
+  test_cleanup.py          three tests written for kappa 1 got it from the default. They now ask
+                           for prune_kappa=1 explicitly, so they still test what they were
+                           written for. The default test now expects (10, 3).
+
+Photos kept on the test room (6 objects, 11 photos, one pass), from test_cleanup.py's drive:
+  kappa 1: 2 of 11. kappa 2: 5 of 11. kappa 3: 8 of 11.
+  A made-up room, so this does not tune kappa. MEMORY_GRAPH_DESIGN.md section 6 measured
+  2.6 times the photos of kappa 1 at 500 anchors and 300 objects.
