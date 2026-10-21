@@ -1,0 +1,79 @@
+T6.3c (c): batched SAM 3 on the lab box GPU. Same answer as one call per phrase, which phrases
+fire on the test photos, and time per photo against the number of phrases
+2026-10-20, lab box (rcp2026@100.87.133.60, tailscale), NVIDIA GeForce RTX 4060 Ti 16 GB
+Run over SSH by Claude Opus 5.5 for Zongzhe. Scratch copy in /tmp/zongzhe_t63c_20261020 (branch
+t6.3c-sam3-batched-prompts at 4616177, plus the detect fix below), python from
+~/rcp-Gappler/.venv (torch 2.10.0+cu128), weights ~/rcp-Gappler/assets/models/sam3/sam3.pt.
+GPU only: no camera, no ROS, no robot. Logs and JSON stay in the /tmp folder.
+
+Before start
+  nvidia-smi 129 MiB, 0 %, no compute process. No realsense, ros2 launch, bench, runner job
+  or SAM 3 process running. All tmux panes idle shells (t35capture and others, not ours, left
+  alone). ~/rcp-Gappler has someone's uncommitted changes, so it was not used as a checkout.
+  Three runs, each started with setsid, each exited on its own. GPU back to 131 MiB after.
+
+Settings
+  As the segmentation service: bfloat16 autocast in the main thread, tf32 on. Processor
+  threshold 0.15 (S2 keeps a target down to 0.15, T6.3c item 3). Phrases: HiCo-Nav's
+  data/scannet200_classes_ori.txt, 163 names, ScanNet200 with HiCo-Nav's edits, used for this
+  run only. Photos: the 5 lab crops in memory_graph/tests/fixtures (one object each, cut from
+  Zongzhe's phone photos) and the 2 TUM fr1_xyz desk frames (640x480, a whole scene, not our lab).
+
+1. Same answer both ways (first 40 phrases, every photo)
+  Within each class, each batched detection paired with the one-call-per-phrase detection whose
+  mask overlaps most.
+    photo                 detections  unpaired  mask IoU median  min    score max diff
+    bench                 12 / 12     0         1.000            0.999  0.002
+    chair_view_a          12 / 12     0         0.999            0.938  0.005
+    chair_view_b          25 / 25     0         1.000            0.989  0.008
+    shelf                 56 / 56     0         0.999            0.987  0.015
+    sofa                  25 / 25     0         0.999            0.898  0.030
+    tum 1102              66 / 66     0         0.999            0.966  0.005
+    tum 1106              26 / 26     0         0.999            0.995  0.004
+  Same detections, same class ids. The small differences are bfloat16 rounding: the batch
+  changes the order of the sums. (The first run paired by class then score, which swaps
+  near-equal scores, and showed false box differences of up to 245 px. Not a real difference.)
+
+2. Time per photo, 640x480 TUM frame, median of 3 (163 one call each: 1 run)
+    phrases   one call each   batched 8/pass   batched 16/pass   batched 32/pass
+    1         0.24 s          0.24 s           0.24 s            0.24 s
+    10        2.42 s          0.69 s           0.59 s            0.59 s
+    40        9.70 s          1.88 s           1.69 s            out of memory
+    163       41.9 s          7.16 s           6.19 s            not run
+  Peak GPU memory (PyTorch allocated): 8/pass 7.7 GiB, 16/pass 10.3 GiB, one call each 5.4 GiB.
+  Image encoder alone 0.20 s. One phrase after it 0.05 s. So, roughly:
+    one call each       0.24 s x phrases
+    batched, 16/pass    0.20 s + 0.037 s x phrases
+    batched, 8/pass     0.29 s + 0.042 s x phrases
+  At 40 phrases batched is 5.7 times faster, at 163 it is 6.8 times.
+
+3. Which phrases fire (best score per phrase, all 163 phrases, batched)
+  Score >= 0.5:
+    bench          furniture, chair, seat, power outlet, floor, cushion, trash can, trash bin, bench
+    chair_view_a   chair, furniture, seat, box, floor, power outlet, cup, ceiling, desk, wall,
+                   light, ceiling light, poster, tissue box
+    chair_view_b   chair, furniture, seat, floor, poster, sign, ceiling light, light, stool, door,
+                   paper, cushion, power outlet
+    shelf          cabinet, floor, furniture, bag, book, chair, paper, shelf, seat, tv_monitor,
+                   light, wall, purse, box
+    sofa           floor, sofa, furniture, shelf, bag, couch, clothes, cabinet, window
+    tum 1102       keyboard, chair, seat, tv_monitor, book, mouse, clothes, cup, telephone,
+                   furniture, paper, desk, tv stand, stand, table, tissue box, floor, wall, box,
+                   paper bag, picture, laptop
+    tum 1106       keyboard, desk, cup, book, tv_monitor, tv stand, paper, mouse, stand, telephone,
+                   table, clothes, power strip, furniture, picture
+  32 distinct phrases on the lab crops, 42 on all 7 photos. At >= 0.15: 19 to 36 per photo.
+  Observed:
+    - Umbrella words fire on nearly everything: "furniture" (every lab crop, up to 0.95) and
+      "seat" (with every chair). Under S5's duplicate rule the more confident phrase keeps a
+      mask, so "furniture" can take the label from "sofa" (0.92 against 0.93 on sofa.jpg).
+    - Synonyms fire in pairs: sofa / couch, trash can / trash bin, bag / purse,
+      light / ceiling light, tv stand / stand.
+    - floor, wall and ceiling fire often. They are bg_classes, dropped by S2, so prompting
+      them costs time for nothing.
+
+Bug found and fixed in this run
+  detect(batched=False) ran out of 16 GB at 163 phrases. The T6.3c refactor collected every
+  one-phrase result before converting, and each holds SAM 3's whole state with the image
+  features. Fixed in memory_graph/sam3_adapter.py: convert each result before the next call,
+  as the code before T6.3c did. The 163-phrase row above is after the fix (5.4 GiB).
