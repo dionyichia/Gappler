@@ -111,6 +111,8 @@ s=$(step "L0  FAST-LIVO2 live mapper config" python3 bench/test_fastlivo_live_co
 row L0 "FAST-LIVO2 live mapper config" "$s" ""
 s=$(step "L0  FAST-LIVO2 live TF edge check" python3 bench/test_tf_edge_check.py)
 row L0 "FAST-LIVO2 live TF edge check" "$s" ""
+s=$(step "L0  T3.5f live runbook" python3 bench/test_fastlivo_runbook.py)
+row L0 "T3.5f live runbook" "$s" ""
 s=$(step "L0  T3.4 bench coverage" python3 bench/test_t34_bench_coverage.py)
 row L0 "T3.4 bench coverage" "$s" ""
 s=$(step "L0  FAST-LIVO diagnostic patch" python3 docs/sherman_docs/tools/fastlivo/recipe/test_diagnostics.py)
