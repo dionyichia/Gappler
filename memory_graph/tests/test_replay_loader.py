@@ -14,12 +14,50 @@ from pathlib import Path
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+import struct
+import types
+
 from memory_graph.geometry import camera_rays, transform_points
 from memory_graph.replay_loader import (
-    TUM_DEPTH_UNITS_PER_METRE, TumSequence, depth_to_metres, nearest_in_time, read_tum_list,
-    rigid_transform, to_observation,
+    TUM_DEPTH_UNITS_PER_METRE, TumSequence, _cloud_xyz, depth_to_metres, nearest_in_time,
+    read_tum_list, rigid_transform, to_observation,
 )
 from memory_graph.tests._fixtures import pose, rot_z
+
+
+def _pc2(points, *, with_rgb=True):
+    """A stand-in PointCloud2 message with float32 xyz (and optional rgb)."""
+    step = 16 if with_rgb else 12
+    buf = bytearray()
+    for x, y, z in points:
+        buf += struct.pack("<fff", x, y, z)
+        if with_rgb:
+            buf += struct.pack("<f", 0.0)
+    fields = [types.SimpleNamespace(name=n, offset=o, datatype=7, count=1)
+              for n, o in (("x", 0), ("y", 4), ("z", 8))]
+    if with_rgb:
+        fields.append(types.SimpleNamespace(name="rgb", offset=12, datatype=7, count=1))
+    return types.SimpleNamespace(width=len(points), height=1, point_step=step,
+                                 is_bigendian=False, fields=fields,
+                                 data=np.frombuffer(bytes(buf), dtype=np.uint8))
+
+
+class CloudXyzTest(unittest.TestCase):
+    """_cloud_xyz pulls xyz out of a PointCloud2, ignoring rgb, and treats the
+    empty clouds FAST-LIVO interleaves as no points rather than an error."""
+
+    def test_empty_cloud_gives_no_points(self):
+        empty = types.SimpleNamespace(width=0, height=1, point_step=0, is_bigendian=False,
+                                      fields=[], data=np.zeros(0, dtype=np.uint8))
+        self.assertEqual(_cloud_xyz(empty).shape, (0, 3))
+
+    def test_reads_xyz_and_ignores_rgb(self):
+        pts = [(1.0, 2.0, 3.0), (4.0, 5.0, 6.0)]
+        np.testing.assert_allclose(_cloud_xyz(_pc2(pts)), pts)
+
+    def test_drops_non_finite_points(self):
+        pts = [(1.0, 2.0, 3.0), (float("nan"), 0.0, 0.0), (7.0, 8.0, 9.0)]
+        np.testing.assert_allclose(_cloud_xyz(_pc2(pts)), [(1.0, 2.0, 3.0), (7.0, 8.0, 9.0)])
 
 try:
     import cv2

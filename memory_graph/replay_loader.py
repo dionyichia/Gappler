@@ -275,13 +275,17 @@ def _cloud_xyz(msg) -> np.ndarray:
     are ignored. Assumes float32 xyz and little-endian, which the Livox driver
     and FAST-LIVO both emit; anything else is refused rather than misread.
     """
+    n = int(msg.width) * int(msg.height)
     offsets = {f.name: (f.offset, f.datatype) for f in msg.fields}
+    # FAST-LIVO publishes an empty cloud between every registered scan; it simply
+    # carries no depth, so skip it rather than treat it as malformed.
+    if n == 0 or not {"x", "y", "z"} <= set(offsets):
+        return np.zeros((0, 3))
     for name in ("x", "y", "z"):
-        if name not in offsets or offsets[name][1] != 7:   # 7 is FLOAT32
-            raise ValueError(f"cloud field {name!r} is missing or not float32")
+        if offsets[name][1] != 7:   # 7 is FLOAT32
+            raise ValueError(f"cloud field {name!r} is not float32")
     if msg.is_bigendian:
         raise ValueError("big-endian point clouds are not supported")
-    n = int(msg.width) * int(msg.height)
     raw = np.frombuffer(msg.data, dtype=np.uint8).reshape(n, int(msg.point_step))
 
     def column(name: str) -> np.ndarray:
