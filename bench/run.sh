@@ -107,6 +107,8 @@ s=$(step "L0  FAST-LIVO2 mapper /tf remap" python3 bench/test_fastlivo_mapper_re
 row L0 "FAST-LIVO2 mapper /tf remap" "$s" ""
 s=$(step "L0  FAST-LIVO2 mode SLAM config" python3 bench/test_fastlivo_slam_config.py)
 row L0 "FAST-LIVO2 mode SLAM config" "$s" ""
+s=$(step "L0  FAST-LIVO2 live mapper config" python3 bench/test_fastlivo_live_config.py)
+row L0 "FAST-LIVO2 live mapper config" "$s" ""
 s=$(step "L0  T3.4 bench coverage" python3 bench/test_t34_bench_coverage.py)
 row L0 "T3.4 bench coverage" "$s" ""
 s=$(step "L0  FAST-LIVO diagnostic patch" python3 docs/sherman_docs/tools/fastlivo/recipe/test_diagnostics.py)
