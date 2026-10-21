@@ -133,9 +133,11 @@ class MemoryGraphConfig:
     # (map.py:899).
     cleanup_every_photos: int = 10
     # kappa: how many photos to keep per object when pruning, if it has that
-    # many. Upstream's 1 keeps a single view of each object. D-MG1 in
-    # docs/MEMORY_GRAPH_DESIGN.md.
-    prune_kappa: int = 1
+    # many. Upstream's 1 keeps a single view of each object, so one bad view
+    # leaves the object with no usable photo. TENTATIVE 3 (Zongzhe, 2026-10-21,
+    # D-MG1 in docs/MEMORY_GRAPH_DESIGN.md): about 2.6 times the photos of
+    # kappa 1 on the section 6 benchmark. Check it on the recorded drive (T6.4).
+    prune_kappa: int = 3
     # An object's cloud is left as it was if denoising would leave fewer points
     # than this (pointcloud.py:787).
     denoise_min_points: int = 4

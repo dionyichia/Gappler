@@ -235,14 +235,14 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
   before its workers were ready, fixed in the review), then 4 of 4 again with the fix
   (`bench-runs/2026-10-15-labbox-t2.9-review-fixes.txt`). The grasp side does not use the reference
   yet (`T8.5`), so which object the arm takes is unchanged. Write-up:
-  `dion_docs/T2.9_GAZE_PICK_ON_RECORDING.md`.
+  `adb5466:docs/dion_docs/T2.9_GAZE_PICK_ON_RECORDING.md`.
 - **Timing, open 2026-10-17 (`T2.19` to `T2.21`).** The aria client times the word, the gaze and
   the image by when each reaches it, not when the glasses captured it, and guesses the gaps with
   `speech_latency_s` (1.5 s, measured) and `image_wait_s` `[code]`. Those knobs measure how fast the
   box is, so they need retuning whenever the box changes. The fix is the standard one: stamp each
   glasses message with its capture time (glasses clock), keep a short history, look up the image
   and gaze from when the word was said, and vote by gaze dwell. Plan and an independent review:
-  `dion_docs/T2.9_TIMING_REVIEW.md` sections 9.1 to 9.10.
+  `adb5466:docs/dion_docs/T2.9_TIMING_REVIEW.md` sections 9.1 to 9.10.
   **PR A built 2026-10-17 (`T2.19`, `T2.20`, branch `t2.19-glasses-capture-timestamps`):** images
   and gaze carry the glasses capture time (gaze is `PointStamped`). The client keeps 20 s of both,
   and the gaze from when you spoke picks the image taken then. Gaze near that image votes on the

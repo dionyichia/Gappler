@@ -1,8 +1,0 @@
-source /home/rcp2026/rcp-Gappler/arm/arm_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1 && python3 /home/rcp2026/rcp-Gappler/arm/estop/estop.py   
-rcp2026@iot22-Computer:~/rcp-Gappler$ source /home/rcp2026/rcp-Gappler/arm/arm_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1 && python3 /home/rcp2026/rcp-Gappler/arm/estop/estop.py         
-[INFO] [1791887751.853325033] [estop]: E-stop ready.  E=emergency  R=resume  S=soft stop  Q=quit  Ctrl+C=emergency and quit         
-
-
-
-
-
