@@ -22,7 +22,7 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 **Dion's current work (2026-10-14) is the grasp bring-up, not the bench.** Cold start at
 [`dion_docs/GRASP_BRINGUP_STEPS.md`](dion_docs/GRASP_BRINGUP_STEPS.md), "Start here". Steps 1 to 6
-pass (step 6: grasp, release by voice and a second grasp in one launch). Step 7, T1.17, AnyGrasp: the first AnyGrasp grasp ran on 2026-10-14 and failed on a 180 degree wrist turn, fixed by T1.33 (PR #84, merged, sim only so far). T1.32 (does the object fit the real gripper) is built on PR branch `t1.32-grasp-fits-gripper`. Next at the robot: T1.34, a camera mount check, 7d again, T1.17, then T1.35 (box at random positions and angles). See `dion_docs/GRASP_BRINGUP_STEPS.md` Start here. The rest of this section is the bench and CI state as of 2026-09-22.
+pass (step 6: grasp, release by voice and a second grasp in one launch). Step 7 (AnyGrasp) passes on the real arm since 2026-10-20: 7d PASS, T1.17 2 of 3. T1.35 (box at random positions and angles) is designed but paused: **the E key did not stop the arm during a state machine run (T1.38, §3 rule history)**. Next: fix and test T1.38, then T1.35. See `dion_docs/GRASP_BRINGUP_STEPS.md` Start here. The rest of this section is the bench and CI state as of 2026-09-22.
 
 ### T0.11 is done (2026-09-22). The CI setup, for whoever maintains it
 
@@ -583,6 +583,14 @@ Moved out of `CLAUDE.md` on 2026-10-15 (T0.19) so that file holds only the curre
   session the agent runs commands in the session's panes so the user can watch, types but never sends
   anything that moves the arm, gripper or base, and names panes by row and column because pane
   numbers are not visible. `.claude/hooks/lab_safety_guard.py` enforces the parts a script can check.
+- **The E key is not a stop for the state machine** (2026-10-20, T1.38). During T1.35 on the real
+  arm, Dion pressed `E` while the arm waited between retries. 4.5 s later the state machine sent a
+  new grasp move and the arm ran it. The state machine has no stop subscriber, and the controller's
+  behaviour after `rm_set_arm_emergency_stop` is not confirmed. Until T1.38 is fixed and tested at
+  the robot, the physical stop (power) is the only stop. Same session: an agent script read the
+  live ros2 bag file and crashed the recorder ("database is locked"). Read a copy of a bag that is
+  still recording, never the live file
+  (`bench-runs/2026-10-20-labbox-t1.17-t1.35-live.txt`).
 
 ---
 
@@ -873,3 +881,4 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-10-14 | Claude Opus 5.5 + Dion | "Start here": step 7 status, first AnyGrasp grasp, next T1.33. |
 | 2026-10-15 | Claude Opus 5.5 + Dion | "Start here": T1.33 merged, T1.32 built, next at the robot T1.34 to T1.35. |
 | 2026-10-15 | Claude Opus 5.5 + Dion | T0.19: §3 gains "Rule history", the dated reasons and incidents moved out of CLAUDE.md. §7 gains the two tailscale nodes. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | §3 rule history: the E key did not stop the arm during a state machine run (T1.38), and do not read a live bag file. "Start here": step 7 passes, T1.35 paused on T1.38. |

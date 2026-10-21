@@ -52,6 +52,18 @@ class FakeSam3:
         return self.results.get(prompt, found())
 
 
+class FakeBatchedSam3(FakeSam3):
+    """Stands in for sam3_batched.BatchedSam3: the same results, all phrases in one call."""
+
+    def __init__(self, results):
+        super().__init__(results)
+        self.batch_calls = []
+
+    def process_text_prompts(self, image, prompts):
+        self.batch_calls.append((image, list(prompts)))
+        return [self.results.get(prompt, found()) for prompt in prompts]
+
+
 TABLE = (10, 50, 10, 70)
 CUP = (20, 30, 30, 40)
 
@@ -116,6 +128,53 @@ class DetectTest(unittest.TestCase):
 
     def test_empty_vocabulary(self):
         self.assertEqual(len(detect(FakeSam3({}), RGB, [])), 0)
+
+
+class BatchedDetectTest(unittest.TestCase):
+    RESULTS = {"table": found((TABLE, 0.9)), "cup": found((CUP, 0.8), ((0, 5, 0, 5), 0.6))}
+    VOCAB = ["chair", "table", "cup"]
+
+    def assert_same(self, a, b):
+        np.testing.assert_array_equal(a.xyxy, b.xyxy)
+        np.testing.assert_array_equal(a.conf, b.conf)
+        np.testing.assert_array_equal(a.class_id, b.class_id)
+        self.assertEqual(a.label, b.label)
+        np.testing.assert_array_equal(a.masks, b.masks)
+
+    def test_one_call_for_the_whole_vocabulary(self):
+        sam = FakeBatchedSam3(self.RESULTS)
+        d = detect(sam, RGB, self.VOCAB)
+        self.assertEqual(sam.batch_calls, [(RGB, self.VOCAB)])
+        self.assertEqual(sam.calls, [])                              # no per-phrase calls
+        self.assertEqual(d.label, ["table", "cup", "cup"])
+        np.testing.assert_array_equal(d.class_id, [1, 2, 2])        # positions in the vocabulary
+
+    def test_same_detections_as_one_call_per_phrase(self):
+        sam = FakeBatchedSam3(self.RESULTS)
+        self.assert_same(detect(sam, RGB, self.VOCAB, batched=True),
+                         detect(sam, RGB, self.VOCAB, batched=False))
+        self.assertEqual([p for _, p in sam.calls], self.VOCAB)
+
+    def test_a_segmenter_without_the_batch_method_gets_one_call_per_phrase(self):
+        sam = FakeSam3(self.RESULTS)
+        self.assert_same(detect(sam, RGB, self.VOCAB), detect(FakeBatchedSam3(self.RESULTS), RGB, self.VOCAB))
+        self.assertEqual(len(sam.calls), 3)
+
+    def test_a_result_missing_for_a_phrase_is_an_error(self):
+        sam = FakeBatchedSam3(self.RESULTS)
+        sam.process_text_prompts = lambda image, prompts: [found()]
+        with self.assertRaises(ValueError):
+            detect(sam, RGB, self.VOCAB)
+
+    def test_empty_vocabulary_makes_no_call(self):
+        sam = FakeBatchedSam3(self.RESULTS)
+        self.assertEqual(len(detect(sam, RGB, [])), 0)
+        self.assertEqual(sam.batch_calls, [])
+
+    def test_segment_photo_gives_the_same_either_way(self):
+        sam = FakeBatchedSam3(self.RESULTS)
+        both = [segment_photo(sam, RGB, self.VOCAB, set(), CFG) for sam in (sam, FakeSam3(self.RESULTS))]
+        self.assert_same(*both)
 
 
 class SegmentPhotoTest(unittest.TestCase):

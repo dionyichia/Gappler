@@ -3,8 +3,8 @@
 #include <moveit/trajectory_processing/time_optimal_trajectory_generation.h>
 
 // Stores pointer to state machine node from which it originated
-MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr &node)
-    : node_(node)
+MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr &node, const std::atomic<bool> &stopped)
+    : node_(node), stopped_(stopped)
 {
   step_settle_s_ = node_->get_parameter("step_settle_s").as_double();
   mtc_node_ = std::make_shared<rclcpp::Node>(
@@ -57,6 +57,8 @@ bool MtcPlanner::moveToPose(const geometry_msgs::msg::Pose &target_pose)
       RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] moveToPose: planning failed");
       return false;
     }
+    if (refuseIfStopped("moveToPose"))
+      return false;
     RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] moveToPose: executing...");
     task.execute(*task.solutions().front());
     return true;
@@ -80,6 +82,8 @@ bool MtcPlanner::moveToHome()
     RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] moveToHome: planning failed");
     return false;
   }
+  if (refuseIfStopped("moveToHome"))
+    return false;
   move_group_->execute(plan);
   return true;
 }
@@ -95,6 +99,8 @@ bool MtcPlanner::moveToReturn()
     RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] moveToReturn: planning failed");
     return false;
   }
+  if (refuseIfStopped("moveToReturn"))
+    return false;
   move_group_->execute(plan);
   return true;
 }
@@ -133,5 +139,20 @@ bool MtcPlanner::moveCartesianStep(const geometry_msgs::msg::Pose &goal_pose_bas
 
   moveit::planning_interface::MoveGroupInterface::Plan plan;
   plan.trajectory_ = trajectory;
+  if (refuseIfStopped("moveCartesianStep"))
+    return false;
   return (move_group_->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS);
+}
+
+// Checked after planning, just before each execute: planning takes up to 5 s, and a stop that
+// came in meanwhile must not be followed by the move (T1.38).
+// ponytail: a stop landing between this check and MoveIt starting the move still lets that move
+// start. The stop's own cancel (stopMotion) was sent before it, so it does not cancel it. The
+// window is milliseconds. Close it with asyncExecute + a stop check if it ever shows up.
+bool MtcPlanner::refuseIfStopped(const char *what)
+{
+  if (!stopped_)
+    return false;
+  RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] %s: not sent, stopped. Press R in the e-stop pane to resume", what);
+  return true;
 }

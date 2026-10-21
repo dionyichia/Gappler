@@ -1,3 +1,4 @@
+#include <atomic>
 #include <thread>
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose.hpp>
@@ -12,7 +13,8 @@ using namespace moveit::task_constructor;
 class MtcPlanner
 {
 public:
-  MtcPlanner(const rclcpp::Node::SharedPtr &node);
+  // stopped: the state machine's stop flag (T1.38). While it is set, no move is sent.
+  MtcPlanner(const rclcpp::Node::SharedPtr &node, const std::atomic<bool> &stopped);
 
   ~MtcPlanner()
   {
@@ -33,6 +35,9 @@ public:
 
   bool moveCartesianStep(const geometry_msgs::msg::Pose &goal_pose_base);
 
+  // Cancels the move in progress. Safe from another thread: it only publishes MoveIt's "stop" event.
+  void stopMotion() { move_group_->stop(); }
+
 private:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Node::SharedPtr mtc_node_;
@@ -40,6 +45,9 @@ private:
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_;
   std::thread mtc_spin_thread_;
   double step_settle_s_; // step_settle_s in grasp/grasp_config.yaml
+  const std::atomic<bool> &stopped_;
+
+  bool refuseIfStopped(const char *what);
 
   const std::string ARM_GROUP = "rm_group";
 
