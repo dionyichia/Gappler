@@ -1,0 +1,12 @@
+======== F_run1 log lines of sync warnings: 35706, HARD lag lines: 1166; bag window 1792571860.3 to 1792571936.1
+ not-synced: log time 1792572010.7 to 1792572994.4; in drive window: 0; before window: 0; after: 35706
+   value stats: min 0.5000 median 1.2101 max 2.8255; first 3 [0.5496 0.5452 0.5395]; last 3 [0.5108 0.5054 0.5011]
+   per minute from first warning: {0: 1175, 1: 145, 4: 2111, 8: 3540, 9: 5251, 11: 2851, 12: 9716, 14: 5011, 15: 1068, 16: 4838}
+ HARD lag: log time 1792572014.0 to 1792572992.1; in drive window: 0; before window: 0; after: 1166
+   value stats: min -2.9313 median -1.7300 max -1.1253; first 3 [-1.1497 -1.1496 -1.1495]; last 3 [-1.1307 -1.1308 -1.1253]
+   per minute from first warning: {0: 13, 4: 79, 8: 107, 9: 217, 11: 64, 12: 261, 14: 197, 15: 46, 16: 182}
+======== F_run2 log lines of sync warnings: 97, HARD lag lines: 0; bag window 1792573585.2 to 1792573664.5
+ not-synced: log time 1792573657.2 to 1792573748.6; in drive window: 5; before window: 0; after: 92
+   value stats: min 0.5014 median 0.5214 max 0.5416; first 3 [0.5215 0.5172 0.5114]; last 3 [0.5114 0.507  0.5016]
+   in-window values: min 0.5014 median 0.5114 max 0.5215
+   per minute from first warning: {0: 5, 1: 92}

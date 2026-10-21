@@ -1,0 +1,33 @@
+==================== T35d
+topics: {'/aft_mapped_to_init': 2356, '/camera/camera/color/camera_info': 3535, '/camera/camera/color/image_raw': 3536, '/cloud_registered': 4712, '/livox/imu': 23580, '/livox/lidar': 1179, '/path': 2356, '/tf': 2356}
+IMU 23580 msgs: 200.0 Hz (stamp), max gap 0.008 s, p99 gap 0.0060 s; first 10 s: |acc| mean 0.9911 (units: g), acc mean xyz [ 8.00e-04 -8.50e-03  9.91e-01], gyro mean xyz [-0.013    0.00102  0.07679], gyro std [0.00252 0.00325 0.124  ]
+   IMU receipt-minus-stamp lag: mean 0.0002 s, max 0.0496 s, stamp-recv offset drift 0.0001 s
+LiDAR 1179 scans: 10.01 Hz, max gap 0.101 s, p99 gap 0.1010 s; points/scan mean 20000 min 19872 max 20160; offset_time max mean 100.0 ms (max 100.8); tag!=0 mean 3685; mean range 1.87 m
+   LiDAR receipt-minus-stamp lag: mean 0.1012 s, max 0.1030 s
+camera 3536 frames: 30.0 Hz (receipt), max gap 0.086 s, p99 0.0439 s
+poses 2356: 20.0 Hz, max gap 0.098 s; path 26.0 m, duration 117.8 s, mean speed 0.22 m/s, max 1 s speed 0.38 m/s
+   raw first pose [ 0.003  0.002 -0.003] ; raw last pose [0.012 0.01  0.001]
+   raw last-minus-first xyz [0.009 0.008 0.004] (horizontal 0.012 m, vertical 0.004 m)
+   z range 0.094 m (min -0.037 max 0.057)
+==================== F_run1
+topics: {'/aft_mapped_to_init': 1502, '/camera/camera/color/camera_info': 2273, '/camera/camera/color/image_raw': 2273, '/cloud_registered': 3003, '/fastlivo/tf': 1493, '/livox/imu': 15154, '/livox/lidar': 758, '/map': 77, '/scan': 758, '/tf': 5324}
+IMU 15154 msgs: 200.0 Hz (stamp), max gap 0.008 s, p99 gap 0.0060 s; first 10 s: |acc| mean 0.9914 (units: g), acc mean xyz [-0.0051 -0.0063  0.9914], gyro mean xyz [-0.01533  0.00336  0.01289], gyro std [0.00128 0.00103 0.00095]
+   IMU receipt-minus-stamp lag: mean 0.0001 s, max 0.0060 s, stamp-recv offset drift 0.0000 s
+LiDAR 758 scans: 10.01 Hz, max gap 0.102 s, p99 gap 0.1002 s; points/scan mean 20000 min 19872 max 20160; offset_time max mean 100.2 ms (max 100.9); tag!=0 mean 3656; mean range 1.91 m
+   LiDAR receipt-minus-stamp lag: mean 0.1011 s, max 0.1025 s
+camera 2273 frames: 30.0 Hz (receipt), max gap 0.047 s, p99 0.0439 s
+poses 1502: 20.0 Hz, max gap 0.104 s; path 14.1 m, duration 75.2 s, mean speed 0.19 m/s, max 1 s speed 0.42 m/s
+   raw first pose [ 0.001 -0.     0.001] ; raw last pose [ 0.246 -0.202  0.006]
+   raw last-minus-first xyz [ 0.245 -0.202  0.005] (horizontal 0.317 m, vertical 0.005 m)
+   z range 0.039 m (min -0.022 max 0.017)
+==================== F_run2
+topics: {'/aft_mapped_to_init': 1582, '/camera/camera/color/camera_info': 2380, '/camera/camera/color/image_raw': 2379, '/cloud_registered': 3165, '/fastlivo/tf': 1580, '/livox/imu': 15866, '/livox/lidar': 794, '/map': 79, '/scan': 793, '/tf': 5541}
+IMU 15866 msgs: 200.0 Hz (stamp), max gap 0.008 s, p99 gap 0.0060 s; first 10 s: |acc| mean 0.9914 (units: g), acc mean xyz [-0.0084 -0.011   0.9913], gyro mean xyz [-0.01557  0.00338  0.01318], gyro std [0.00134 0.00101 0.00097]
+   IMU receipt-minus-stamp lag: mean 0.0001 s, max 0.0473 s, stamp-recv offset drift 0.0001 s
+LiDAR 794 scans: 10.01 Hz, max gap 0.100 s, p99 gap 0.1002 s; points/scan mean 20000 min 19872 max 20160; offset_time max mean 100.2 ms (max 100.4); tag!=0 mean 3721; mean range 1.88 m
+   LiDAR receipt-minus-stamp lag: mean 0.1010 s, max 0.1022 s
+camera 2379 frames: 30.0 Hz (receipt), max gap 0.088 s, p99 0.0439 s
+poses 1582: 20.0 Hz, max gap 0.101 s; path 16.8 m, duration 79.3 s, mean speed 0.21 m/s, max 1 s speed 0.37 m/s
+   raw first pose [-0.042  0.037  0.006] ; raw last pose [-0.274  0.238  0.026]
+   raw last-minus-first xyz [-0.232  0.201  0.02 ] (horizontal 0.307 m, vertical 0.020 m)
+   z range 0.201 m (min -0.123 max 0.078)
