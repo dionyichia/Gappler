@@ -64,6 +64,14 @@ def generate_launch_description():
     )
     odom_is_fastlivo = PythonExpression(["'", LaunchConfiguration("odom_source"), "' == 'fastlivo'"])
 
+    # base_driver:=false starts no base driver at all (the live runbook pushes the base by hand and starts the driver once at the end,
+    # through base_driver_check.launch.py, to confirm it publishes no odom TF). Default true: both modes start it as before.
+    base_driver_arg = DeclareLaunchArgument(
+        "base_driver", default_value="true", choices=["true", "false"],
+        description="false: do not start the base driver (xnode_comm, xnode_vehicle)",
+    )
+    base_driver_on = PythonExpression(["'", LaunchConfiguration("base_driver"), "' == 'true'"])
+
     echo_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [
@@ -76,11 +84,11 @@ def generate_launch_description():
                 )
             ]
         ),
-        condition=UnlessCondition(odom_is_fastlivo),
+        condition=IfCondition(PythonExpression(["not ", odom_is_fastlivo, " and ", base_driver_on])),
     )
     echo_launch_fastlivo = GroupAction(
         scoped=False,
-        condition=IfCondition(odom_is_fastlivo),
+        condition=IfCondition(PythonExpression([odom_is_fastlivo, " and ", base_driver_on])),
         actions=[
             SetParameter(name="pub_tf", value=False),
             IncludeLaunchDescription(
@@ -282,6 +290,7 @@ def generate_launch_description():
         [
             odom_source_arg,
             nav2_arg,
+            base_driver_arg,
             robot_state_publisher,
             joint_state_publisher,
             echo_launch,

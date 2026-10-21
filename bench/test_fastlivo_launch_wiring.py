@@ -11,6 +11,7 @@ import unittest
 REPO = Path(__file__).resolve().parents[1]
 LAUNCHES = ("nav/robot_slam/launch/slam_mapping.launch.py", "nav/robot_slam/launch/slam_localization.launch.py")
 LIDAR = REPO / "nav/robot_slam/launch/lidar_only.launch.py"
+BASE_CHECK = "nav/robot_slam/launch/base_driver_check.launch.py"
 
 
 def parse(relative):
@@ -132,7 +133,8 @@ class LaunchWiringTests(unittest.TestCase):
                     if "pub_tf" in text:
                         hits.append(path.relative_to(REPO).as_posix())
         owned = sorted(h for h in hits if "/vendor/" not in h and "/open_vins/" not in h)
-        self.assertEqual(owned, sorted(LAUNCHES), "owned code that mentions pub_tf: %s" % owned)
+        expected = sorted(LAUNCHES + (BASE_CHECK,))
+        self.assertEqual(owned, expected, "owned code that mentions pub_tf: %s" % owned)
         vendor = sorted(h for h in hits if "/vendor/" in h)
         # the base driver's own package, and the vendor XML launch of that same driver node (not the one we include)
         self.assertTrue(vendor and all("/xpkg_vehicle/" in h or h.endswith("bringup_basic_ctrl.launch.xml") for h in vendor),
@@ -167,6 +169,44 @@ class LaunchWiringTests(unittest.TestCase):
             with self.subTest(launch=relative):
                 text = (REPO / relative).read_text()
                 self.assertEqual(text.count("LaunchConfiguration(\"nav2\")"), 1, "only the Nav2 start reads the switch")
+
+
+    def test_base_driver_switch_defaults_to_true_and_gates_both_vendor_includes(self):
+        """base_driver:=false pushes the base by hand with no driver running. Default true: wheel and fastlivo start it as before."""
+        for relative in LAUNCHES:
+            with self.subTest(launch=relative):
+                tree = parse(relative)
+                arg = assigned(tree, "base_driver_arg")
+                self.assertEqual(const(arg.args[0]), "base_driver")
+                self.assertEqual(const(kw(arg, "default_value")), "true")
+                self.assertEqual([const(e) for e in kw(arg, "choices").elts], ["true", "false"])
+                self.assertIn("base_driver_arg", returned_names(tree))
+                wheel = ast.unparse(kw(assigned(tree, "echo_launch"), "condition"))
+                fastlivo = ast.unparse(kw(assigned(tree, "echo_launch_fastlivo"), "condition"))
+                for text in (wheel, fastlivo):
+                    self.assertIn("base_driver_on", text)
+                self.assertIn("'not '", wheel, "the wheel include is still wheel only")
+                self.assertIn("odom_is_fastlivo", wheel)
+                self.assertNotIn("'not '", fastlivo, "the fastlivo group is still fastlivo only")
+                self.assertIn("odom_is_fastlivo", fastlivo)
+                base_on = ast.unparse(assigned(tree, "base_driver_on"))
+                self.assertIn("LaunchConfiguration('base_driver')", base_on)
+                self.assertIn("== 'true'", base_on)
+
+    def test_the_base_driver_check_launch_starts_only_the_driver_with_pub_tf_off(self):
+        tree = parse(BASE_CHECK)
+        setters = calls(tree, "SetParameter")
+        self.assertEqual(len(setters), 1)
+        self.assertEqual((const(kw(setters[0], "name")), const(kw(setters[0], "value"))), ("pub_tf", False))
+        group = next(g for g in calls(tree, "GroupAction") if setters[0] in list(ast.walk(g)))
+        self.assertIs(const(kw(group, "scoped")), False)
+        includes = calls(tree, "IncludeLaunchDescription")
+        self.assertEqual(len(includes), 1)
+        strings = [n.value for n in ast.walk(includes[0]) if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+        self.assertIn("bringup_basic_ctrl.launch.py", strings)
+        self.assertIn("xpkg_demo", strings, "the vendor launch, not a copy")
+        self.assertEqual(calls(tree, "Node"), [], "no other node")
+        self.assertEqual(calls(tree, "ExecuteProcess"), [])
 
 
 if __name__ == "__main__":
