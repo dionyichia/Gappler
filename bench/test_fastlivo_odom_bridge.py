@@ -227,6 +227,17 @@ class BridgeTransformTests(unittest.TestCase):
         out = sel.offer(0.0, "x1") + sel.offer(0.01, "x2") + sel.offer(0.02, "x3")
         self.assertEqual(out, ["x2", "x3"])
 
+    def test_stamp_shift_is_exact_integer_nanoseconds(self):
+        # the T3.5f finding: mapper pose stamps run about 0.15 s late, so the bridge can move them back by stamp_offset_s
+        self.assertEqual(bridge.shift_stamp(100, 120_000_000, -0.15), (99, 970_000_000), "borrows from the seconds field")
+        self.assertEqual(bridge.shift_stamp(100, 920_000_000, 0.15), (101, 70_000_000), "carries into the seconds field")
+        self.assertEqual(bridge.shift_stamp(1792572268, 920388927, -0.15), (1792572268, 770388927), "no float rounding at epoch size")
+        self.assertEqual(bridge.shift_stamp(1792572268, 920388927, 0.0), (1792572268, 920388927))
+
+    def test_stamp_offset_default_leaves_the_stamps_alone_until_it_is_proven_on_the_robot(self):
+        self.assertEqual(config_value("stamp_offset_s"), 0.0)
+        self.assertIn('declare_parameter("stamp_offset_s", 0.0)', (REPO / "nav/robot_slam/scripts/fastlivo_odom_bridge.py").read_text())
+
     def test_wrong_frame_names_are_refused(self):
         bridge.check_frames("camera_init", "aft_mapped")
         for frame, child in (("map", "aft_mapped"), ("camera_init", "base_link"), ("", ""), ("camera_init", "")):

@@ -90,6 +90,12 @@ class MapperJumpError(ValueError):
     """Consecutive mapper poses are too far apart: the mapper restarted or lost its origin."""
 
 
+def shift_stamp(sec, nanosec, offset_s):
+    """A message stamp moved by offset_s seconds, in exact integer nanoseconds. T3.5f measured the mapper's pose stamps about
+    0.15 s later than the pose they carry (time_offset_sweep.py, three recordings), so stamp_offset_s: -0.15 restamps them."""
+    return divmod(sec * 1_000_000_000 + nanosec + round(offset_s * 1e9), 1_000_000_000)
+
+
 class ScanPairSelector:
     """Keep only the final pose of each scan.
 
@@ -224,10 +230,12 @@ def main():
             self.declare_parameter("odom_topic", "/odom")
             self.declare_parameter("select_final_pose", True)
             self.declare_parameter("pair_window_s", 0.05)
+            self.declare_parameter("stamp_offset_s", 0.0)
             p = lambda name: self.get_parameter(name).value
             self._odom_frame, self._base_frame = p("odom_frame"), p("base_frame")
             self._core = OdomFromMapper(p("body_in_base_m"), p("max_startup_tilt_deg"), p("max_jump_m"))
             self._gate = FreshnessGate(p("freshness_window_s"))
+            self._stamp_offset = p("stamp_offset_s")
             self._tf = TransformBroadcaster(self)
             self._odom_pub = self.create_publisher(Odometry, p("odom_topic"), 10) if p("publish_odom") else None
             self._stale_reported = False
@@ -270,7 +278,7 @@ def main():
 
         def _publish(self, msg, pos, quat):
             t = TransformStamped()
-            t.header.stamp = msg.header.stamp
+            t.header.stamp.sec, t.header.stamp.nanosec = shift_stamp(msg.header.stamp.sec, msg.header.stamp.nanosec, self._stamp_offset)
             t.header.frame_id, t.child_frame_id = self._odom_frame, self._base_frame
             t.transform.translation.x, t.transform.translation.y, t.transform.translation.z = pos
             t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z, t.transform.rotation.w = quat
@@ -282,7 +290,8 @@ def main():
             stamp = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
             rot = quat_to_mat(quat)
             o = Odometry()
-            o.header.stamp, o.header.frame_id, o.child_frame_id = msg.header.stamp, self._odom_frame, self._base_frame
+            o.header.stamp.sec, o.header.stamp.nanosec = shift_stamp(msg.header.stamp.sec, msg.header.stamp.nanosec, self._stamp_offset)
+            o.header.frame_id, o.child_frame_id = self._odom_frame, self._base_frame
             o.pose.pose.position.x, o.pose.pose.position.y, o.pose.pose.position.z = pos
             o.pose.pose.orientation.x, o.pose.pose.orientation.y, o.pose.pose.orientation.z, o.pose.pose.orientation.w = quat
             if self._prev is not None and stamp > self._prev[2]:

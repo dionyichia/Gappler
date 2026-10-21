@@ -25,3 +25,7 @@ fastlivo_odom_bridge:
     # Poses arriving within this many seconds of the previous one belong to the same scan. Measured gaps: within a scan 0 to 50 ms,
     # between scans 55 to 100 ms. Arrival time, so this assumes real-time playback.
     pair_window_s: 0.05
+    # Added to every published stamp (s). The mapper's pose stamps run about 0.15 s later than the pose they carry (T3.5f time_offset_sweep:
+    # +0.15 s median on three recordings), so -0.15 is the proposed value. Default 0.0 = unchanged until it is checked on the robot: with
+    # the stamp moved back, TF lookups at the newest scan time need the consumer's transform timeout to cover the 0.15 s.
+    stamp_offset_s: 0.0
