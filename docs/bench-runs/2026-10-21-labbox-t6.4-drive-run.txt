@@ -93,3 +93,58 @@ Ground truth finished (Zongzhe, 23:45) and the baseline rescored
   shelf at (4.51, 2.15) 10 times, a desk at (-1.14, -2.47) 9 times. Their look-here places were
   checked and left unmarked.
   This is the baseline step 4 tunes against.
+
+Step 4, the sweep (2026-10-22, Zongzhe's Mac CPU, saved photos, final ground truth)
+  Scratch script docs/zongzhe_docs/local/t6.4/sweep.py: each photo's sightings are built once
+  per geometry setting, then S10 to S13 run from fresh copies for every merge setting, scored
+  with score_drive.score. Raw results in that folder (sweep_one.json, sweep_grid.json).
+
+  One setting at a time (baseline: radius 2.5 cm, phys_bias 0.5, threshold 0.6, greedy,
+  min_points 16, DBSCAN eps 0.1 m, min points 10):
+    setting                  real gate: dup fm miss extra    fine gate: dup fm miss extra
+    baseline                            8   0  4    20                  9   0  3    27
+    match_radius 1 cm                  31   1  3    40                 29   1  3    56
+    match_radius 5 cm                   4   0  3    16                  8   0  3    25
+    match_radius 7.5 cm                 4   0  3    16                  6   0  3    22
+    match_radius 10 cm                  3   0  3    14                  4   0  3    23
+    match_radius 15 cm                  3   0  3    14                  3   0  3    21
+    match_radius 20 cm                  2   0  3    14                  2   0  3    20
+    phys_bias 0                         0   0 12     5                  0   0 11     1
+    phys_bias 0.25                      1   0  6     7                  1   1  5     8
+    phys_bias 0.75                     10   0  3    22                 14   0  3    37
+    phys_bias 1                        11   0  3    25                 20   0  3    42
+    threshold 0.3                       0   0 14     6                  0   0 10     2
+    threshold 0.4                       0   0  6     8                  0   1  4     8
+    threshold 0.5                       6   0  4    16                  8   0  3    27
+    threshold 0.7                       8   0  4    23                 14   0  3    35
+    threshold 0.8                      10   0  3    24                 16   0  3    41
+    one_to_one                         13   1  3    28                 26   1  3    40
+    min_points 8                        8   0  4    19                 10   0  3    34
+    min_points 32                       5   0  3    14                  7   0  3    21
+    DBSCAN eps 5 cm                    15   0  3    24                 17   0  3    46
+    DBSCAN eps 20 cm                    6   1  3    15                  9   0  4    22
+    DBSCAN min points 5                 7   1  3    19                 12   0  3    27
+    DBSCAN min points 20                8   0  3    18                  9   0  3    28
+  Over-merging shows as misses, not false merges: with phys_bias 0 or threshold 0.3 the store
+  collapses to 34 to 36 objects and 10 to 14 of the 16 real objects are missed. A merged blob
+  spreads its points over many real objects, so none holds the 15 percent the false-merge rule
+  needs. Read the misses column as the over-merge signal.
+
+  Radius, phys_bias and threshold together (real gate, 36 runs), the stable region:
+    radius 15 to 20 cm with phys_bias 0.5 or 0.75 and threshold 0.5 to 0.7: 2 or 3 duplicates,
+    0 false merges, 3 misses, 13 to 14 extras. phys_bias 0.25 with threshold 0.7 gives 1 or 2
+    duplicates, but phys_bias 0.25 with threshold 0.6 already collapses (5 to 7 misses), so it
+    sits next to a cliff. Best five rechecked at the fine gate: radius 20 cm / bias 0.25 /
+    threshold 0.7 gives 1 duplicate, 3 misses; radius 15 cm / 0.25 / 0.7 the same; radius
+    20 cm / 0.5 / 0.5 gives 2 duplicates, 3 misses.
+
+  Reading (for D-MG2 and D-MG8):
+    - The match radius is the lever. Upstream's 2.5 cm is too tight for this depth: sparse
+      LiDAR and two views of one object 4 to 9 cm apart (T6.3). 10 to 20 cm cuts duplicates
+      from 8 to 2 or 3 with no false merges and no new misses, at both gates.
+    - Giving appearance more weight (phys_bias down) does not fix duplicates safely: it merges
+      everything that touches. Geometry-dominant stays right (D-MG2).
+    - Greedy beats one_to_one (8 against 13 duplicates). D-MG8 stays greedy.
+    - min_points 32 helps a little (5 duplicates) by dropping small sightings, at the cost of
+      small objects. Not recommended alone.
+  Limits: one drive, 16 real objects, 8 baseline duplicates. Differences of 1 are noise.
