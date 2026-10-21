@@ -44,3 +44,21 @@ Tests
 
 After
   GPU back to 404 MiB.
+
+Step 2, the scorer, first baseline (Zongzhe's Mac CPU, same day)
+  python -m memory_graph.score_drive <drive_hd1> --gate real|fine, today's config, against
+  memory_graph/eval/lab_ground_truth_handdriven1.json (12 objects). Rules in score_drive.py.
+    gate   duplicates (same class)   false merges   misses (same class)   extras   label ok
+    real   27 (15)                   0              3 (4)                 26       23 of 36
+    fine   37 (17)                   0              3 (3)                 41       26 of 46
+  Real gate, per real object: shelf 2 (the glass bookcase) collects 11 "shelf" objects, one per
+  cell, which do not touch in 3D, so no merge setting can join them. Chairs 9 and 11 (pushed
+  under desks) collect desk, table and tv_monitor objects: no desk is marked, so desk objects
+  land on the chairs' outlines. Misses: the glass door (7) and computer towers 10 and 12.
+  Extras with many sightings sit at the unmarked spots listed in memory_graph/eval/README.md:
+  desks at (-1.3, -2.6) seen 8 times and (-1.14, -2.47) 9 times, chairs at (-1.54, -2.31) 11
+  times, (-3.69, -1.95) 8 times and (4.64, -1.49) 7 times, a tv_monitor at (4.68, 2.13) 11
+  times, a shelf at (4.51, 2.15) 10 times. Likely real furniture missing from the list.
+  So the baseline mostly measures gaps in the ground truth and the bookcase cells, not merging.
+  Tuning (step 4) waits on finishing the list.
+  Scorer tests: memory_graph/tests/test_score_drive.py, 11 tests, pass on the Mac CPU.
