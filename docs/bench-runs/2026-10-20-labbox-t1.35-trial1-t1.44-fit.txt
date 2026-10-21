@@ -1,0 +1,89 @@
+2026-10-20 evening, lab box, T1.35 trial 1 and the T1.44 fit check debug
+Branch on the box: dev 84ac355, ./build.sh PASS (25 packages). Local box edits (not committed):
+use_simple_execute false, centroid_max_age_s 3.0. Session: ./quickstart_terminals.sh grasp --anygrasp,
+domain 91. Dion at the robot, hand on the power switch.
+
+Box: 75 x 60 x 143 mm (Dion). Gripper opens 71 mm, fit limit max_object_width_m 0.068.
+
+TRIAL 1 (pose 50 cm, right 10, turned 90: the 75 mm face to the camera). None of these count.
+ a) Ended at SELECTING: "centroid 2.04s old (limit 2.00s), object lost". AnyGrasp never ran.
+    centroid_max_age_s raised 2.0 -> 3.0 (Dion). Bag trial_01.
+ b) Approach reached 0.201 m. Final target x=-0.624 y=0.075 z=0.237 (63 cm out): MoveIt
+    "planning failed" 3 times, back-off each time, then IDLE. Bag trial_01b.
+    Dion: swap every 50 cm pose to 46 cm (trials 1, 4, 6, 8).
+ c) 46 cm: target x=-0.590 y=0.078 z=0.232, plan and move succeeded, gripper closed, state machine
+    said "Holding the object". Dion: FAIL, the open gripper pushed the 75 mm face. Bag trial_01_46cm.
+    The fired grasp was published by the AnyGrasp node, so it passed fits_gripper [code:
+    anygrasp_detection_node.py:252-264, grasp_state_machine.cpp:668-683].
+
+FIT DEBUG (domain 147, camera + SAM 3 + seg client + AnyGrasp only, no arm driver,
+/pipeline_state forced to EXECUTING). Arm at HOME, about 50 deg down, box on the table.
+ fitdebug_table_45cm: 75 mm face to the camera, box at 45, 40, 35 cm from the base.
+ fitdebug_table_6cm_face: meant as the 6 cm control, but the box sits at the image's bottom edge,
+   partly out of view. Not a usable control.
+ Offline replay of fits_gripper (scripts in Dion's local folder):
+   369 of 369 published grasps reproduce PASS. Median width measured on the 75 mm face: 55 mm.
+   Pictures: the passing grasps sit on the box's bottom edge or a corner. The measured slice runs
+   off the visible box (table masked out, back faces unseen), so it looks narrow.
+ Tried offline, neither separates 75 mm from 6 cm:
+   finger clearance in the full depth cloud: passes 574/1405 (75 mm) vs 1700/3763 (6 cm bag)
+   width along the SAM mask outline: 475 of 958 measurable pass, median 69 mm (5th-95th 25-106)
+ AnyGrasp SDK (grasp/vendor/anygrasp_sdk README and grasp_detection/demo.py): the demo passes the
+   full scene cloud (every valid depth pixel, cropped by lims), default collision detection, and
+   max_gripper_width at most 0.1 for the real gripper. We pass only SAM-masked points and 0.10 m.
+ Next (T1.44): offline AnyGrasp on these bags, current setup vs full scene + 0.071 m + keep
+ grasps whose centre is inside the mask.
+
+Bags (box only, not in git, about 5.6 GB): ~/rcp-Gappler/docs/bench-runs/t1.35-bags/
+
+OFFLINE ANYGRASP CHECKS (later the same evening, box GPU, nothing published). Script and full log:
+Dion's local folder, anygrasp_offline_checks.py / _45cm.log. Bag fitdebug_table_45cm, 102 frames.
+ 1) Camera tilt from the table plane: view axis 44.3 deg from straight down (44.1-44.6).
+    So top-down grasps are outside the node's 30 deg cone (max_approach_deg).
+ 2) Published first candidates: score median 0.138, p90 0.251, only 5% >= 0.3.
+ 3) AnyGrasp offline, grasps centred on the box, sorted by the face pair the fingers close on:
+    A   (masked points, 0.10):   score >= 0.3 within 30 deg: 97 on the 75 mm pair, 0 on the 60 mm
+                                 pair, 2 edge/corner. 60 mm pair grasps overall: median 0.052, max 0.351.
+    B10 (whole scene, 0.10):     score >= 0.3 within 30 deg: 132 on the 75 mm pair, nothing else.
+                                 Best 0.674. 60 mm pair grasps: median 0.047, max 0.227.
+    B71 (whole scene, 0.071):    nothing >= 0.3 at any angle, best 0.203, 35 of 102 frames empty.
+                                 Confirms Dion's finding that 0.071 hides the good grasps.
+ Reading: AnyGrasp's confident grasps close across the 75 mm face, which the real 71 mm gripper
+ cannot take. The fit check correctly drops those, so what is left and published is low-score
+ edge and corner grasps, which measure narrow and pass. The 60 mm pair (top-down) is outside the
+ cone and AnyGrasp scores it low even without the cone. Whole scene vs masked: small change only.
+
+== Angle check (cone around the camera view axis), 2026-10-20 night, offline on the box ==
+ Script: docs/dion_docs/local/t1.44_fit_debug_2026-10-20/anygrasp_angle_checks.py (local only).
+ Recordings: wrist_camera_three_boxes, two_cardboard_boxes, two_cardboard_boxes_v2 (2026-10-20).
+ Whole scene, max width 0.10. Confident = score >= 0.3. "Kept" = within the cone.
+   recording            confident   30         40         45         60         75
+   three boxes          449         238 (53%)  375 (84%)  405 (90%)  435 (97%)  449
+   two cardboard        593         152 (26%)  428 (72%)  441 (74%)  556 (94%)  592
+   two cardboard v2     810         272 (34%)  452 (56%)  610 (75%)  757 (93%)  809
+ Best score at 30/40/45/60: 0.51/0.51/0.51/0.51, 0.54/0.61/0.61/0.61, 0.63/0.63/0.66/0.66.
+ The script's "angle to straight down" uses a flipped sign (reports the axis as 135 deg, not 44).
+ Not used: the cone column is measured against the camera axis, as the node does.
+ Decision (Dion): max_approach_deg 40. Keeps the low edge at 84 deg from straight down, above
+ level, with margin for arm width and swivel.
+
+== Node replay, branch t1.44-grasp-min-score (4d860fb), 2026-10-20 night, on the box ==
+ The branch's anygrasp_detection_node.py (min score 0.3, cone 40, whole scene + on_mask, grow 5 px)
+ run from a /tmp copy on bag t1.35-bags/fitdebug_table_45cm (camera, depth, camera_info, SAM mask
+ only). Domain 147, localhost only, /pipeline_state EXECUTING published by hand. Nothing moved.
+   old node (recorded in the bag): 371 messages with grasps, top score median 0.138, max 0.468,
+                                   5% with top score >= 0.3
+   branch node (replay):            16 messages with grasps, top score median 0.426, max 0.654,
+                                   100% with top score >= 0.3
+ Node warnings (throttled to one per 5 s, so undercounted): No confident grasp 10, No grasp along
+ the camera's view 5, No grasp fits the gripper 9, No grasp on the target's mask 0.
+ Reading: the node starts, loads the branch config, and publishes only confident grasps. This bag
+ is the 75 mm face pose the gripper cannot take, so few grasps is the expected answer. Live test
+ at the arm still owed (T1.44 stays open until it passes).
+
+== Bags moved, 2026-10-20 night ==
+ The two image bags now live outside the repo on the box, in ~/grasp_replay_bags/ (T1.46 test bags):
+   fitdebug_table_45cm      -> ~/grasp_replay_bags/box_75mm_face_45cm_not_graspable
+   fitdebug_table_6cm_face  -> ~/grasp_replay_bags/box_60mm_face_graspable
+ The trial_01, trial_01_46cm and trial_01b bags (joints and candidates only, no images) were deleted
+ (Dion). Their results are recorded above.

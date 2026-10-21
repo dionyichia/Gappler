@@ -16,12 +16,13 @@ from gsnet import AnyGrasp  # Compiled binary, must be in conda env
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.node import Node
 from grasp_interfaces.msg import GraspCandidate, GraspCandidateArray
+from scipy.ndimage import binary_dilation
 from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, Image
 from sensor_msgs_py import point_cloud2
 from std_msgs.msg import String
 from gappler_common import config
-from anygrasp_to_grasp_frame import fingertip_position, fits_gripper, nearer_twin, to_grasp_frame
+from anygrasp_to_grasp_frame import fingertip_position, fits_gripper, nearer_twin, on_mask, to_grasp_frame
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -55,6 +56,8 @@ LIMS = CFG["workspace_limits_m"]
 cfgs.max_gripper_width = CFG["max_gripper_width_m"]
 # A grasp's approach is its rotation's x column. Kept if within max_approach_deg of the camera's z.
 MIN_APPROACH_COS = float(np.cos(np.radians(CFG["max_approach_deg"])))
+MIN_SCORE = CFG["min_grasp_score"]  # T1.44: low scores were edge and corner guesses
+MASK_GROW_PX = CFG["grasp_on_mask_grow_px"]  # T1.44: grasp centres may sit just off the mask edge
 # Does the object fit the real gripper (T1.32, anygrasp_to_grasp_frame.py fits_gripper)
 FIT = dict(max_width=CFG["max_object_width_m"], max_depth=CFG["max_grasp_depth_m"],
            finger_height=CFG["finger_height_m"], percentile=CFG["fit_percentile"])
@@ -92,7 +95,8 @@ class AnyGraspDetectionNode(Node):
         self.grasp_pub = self.create_publisher(
             GraspCandidateArray, TOPICS["grasp_candidates"], 10
         )
-        # The points AnyGrasp is given, for RViz (T1.34): do the fingers sit on the box faces
+        # The target's points, for RViz (T1.34): do the fingers sit on the box faces. AnyGrasp
+        # itself is given the whole scene (T1.44)
         self.points_pub = self.create_publisher(
             point_cloud2.PointCloud2, TOPICS["debug_anygrasp_points"], 1
         )
@@ -219,8 +223,11 @@ class AnyGraspDetectionNode(Node):
             self.get_logger().warn("Combined mask empty, skipping frame")
             return
 
-        points = points_full[combined_mask].astype(np.float32)
-        colors_masked = colors[combined_mask].astype(np.float32)
+        # T1.44, as OK-Robot does: AnyGrasp gets the whole scene, so its collision check sees the
+        # table and neighbouring boxes. Only grasps centred on the target's mask are kept below.
+        scene_points = points_full[depth_mask].astype(np.float32)
+        scene_colors = colors[depth_mask].astype(np.float32)
+        points = points_full[combined_mask].astype(np.float32)  # the target alone, for fits_gripper
         # Stamped now, like the candidates (build_grasp_msg), so RViz can place a replayed bag's frames
         header = depth_msg.header
         header.stamp = self.get_clock().now().to_msg()
@@ -229,8 +236,8 @@ class AnyGraspDetectionNode(Node):
         # Per-frame stateless detection
         try:
             gg, _ = self.detector.get_grasp(
-                points,
-                colors_masked,
+                scene_points,
+                scene_colors,
                 lims=LIMS,
                 apply_object_mask=True,
                 dense_grasp=False,
@@ -245,6 +252,17 @@ class AnyGraspDetectionNode(Node):
             return
 
         gg = gg.nms().sort_by_score()
+        target = binary_dilation(sam_mask, iterations=MASK_GROW_PX)  # so edge grasps survive
+        gg = gg[on_mask(gg.translations, target, self.fx, self.fy, self.cx, self.cy)]
+        if len(gg) == 0:
+            self.get_logger().warn("No grasp on the target's mask", throttle_duration_sec=5.0)
+            return
+        best = float(gg.scores[0])
+        gg = gg[gg.scores >= MIN_SCORE]
+        if len(gg) == 0:
+            self.get_logger().warn(f"No confident grasp: best score {best:.3f} (limit {MIN_SCORE}, T1.44)",
+                                   throttle_duration_sec=5.0)
+            return
         gg = gg[gg.rotation_matrices[:, 2, 0] >= MIN_APPROACH_COS]
         if len(gg) == 0:
             self.get_logger().warn("No grasp along the camera's view", throttle_duration_sec=5.0)

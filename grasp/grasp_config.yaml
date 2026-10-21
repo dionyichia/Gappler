@@ -51,17 +51,25 @@ anygrasp_detection_node:
     # Workspace box in the camera frame, metres: [x_min, x_max, y_min, y_max, z_min, z_max].
     # Wide on purpose: the SAM mask does the spatial filtering.
     workspace_limits_m: [-1.0, 1.0, -1.0, 1.0, 0.0, 1.5]
+    # T1.44: AnyGrasp sees the whole scene (OK-Robot style). A grasp is kept only if its centre
+    # projects onto the target's SAM mask, grown by this many pixels (about 4 mm at 0.46 m).
+    grasp_on_mask_grow_px: 5
     # AnyGrasp's gripper model, not the real opening (the real gripper opens about 71 mm).
     # AnyGrasp reports every grasp at this width and needs clearance around the object: told
     # 0.07, it found no grasp on a 6 cm box face (top score 0.005); told 0.10, 0.34 to 0.5
     # (T1.17, bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt). It does not check the
     # object fits in 71 mm (T1.32).
     max_gripper_width_m: 0.10
-    # Drop grasps whose approach is further than this from the wrist camera's view axis. A
-    # first-run safety limit (Dion, 2026-10-14), not a measured one: the candidate path moves to
-    # the grasp's full pose, so larger angles may work. Raise it once RViz and a few real grasps
-    # show they do. Without it, most grasps came from the side or across the top face.
-    max_approach_deg: 30
+    # Drop grasps whose approach is further than this from the wrist camera's view axis. It is a
+    # cone around that axis. At HOME the axis is 44 deg from straight down, so 40 allows 4 to 84 deg
+    # from straight down: never below level, with a margin for the arm's width and swivel (T1.44,
+    # Dion, 2026-10-20). Offline, 3 wrist recordings: 30 kept 26-53% of grasps scoring >= 0.3, 40
+    # keeps 56-84%, 45 keeps 74-90% (bench-runs/2026-10-20-labbox-t1.35-trial1-t1.44-fit.txt).
+    max_approach_deg: 40
+    # T1.44: drop grasps AnyGrasp scores below this. On the 75 mm box face (2026-10-20 offline
+    # checks) 95% of published grasps scored under 0.3: edge and corner guesses. Good grasps on a
+    # 6 cm face scored 0.34 to 0.5 (T1.17). Lower if good grasps are dropped.
+    min_grasp_score: 0.3
     # T1.32: does the object fit the REAL gripper? AnyGrasp cannot tell (it is told 0.10 m above),
     # so the node measures each grasp from the masked points and drops it if any limit fails.
     # Gripper (Dion, 2026-10-14): a U 50 mm deep inside, opens 71 mm, rubber pads 16 mm long.
@@ -111,7 +119,7 @@ grasp_state_machine:
     # End the approach if the newest centroid is older than this. Age counts from the camera
     # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
     # frame (measured 2026-10-12, T1.24 3b)
-    centroid_max_age_s: 2.0
+    centroid_max_age_s: 3.0         # was 2.0, T1.35 trial 1 stopped at 2.04 s (2026-10-20)
     # After a /manipulator/grasp_request, the first centroid must arrive within this time or the
     # request lapses (T1.25). SAM 3 gives the first one in about 1 s when the object is in view
     # (0.27 to 0.53 s per frame, 0.5 s warm-up, measured 2026-10-08 and 2026-10-12)
