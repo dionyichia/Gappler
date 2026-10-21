@@ -1,0 +1,100 @@
+T3.5 resolved-dev checkpoint: isolated verification, 2026-10-13
+
+Frozen tested tree: 06b89328ff29385df6b98183b72c64fea5e5c625
+Feature parent: aa214830b7ccd2d821096c2aebfc6af3ac85563a
+Incoming merge parent: fdd606188925c7e31308b0471ae117255421170f (T3.4 PR #69)
+Resolved merge was not committed at test time. Snapshot has an index, no HEAD.
+Box snapshot: log/t35-postmerge-06b89328 under the approved lab checkout.
+Built from available e62e055 archive plus 68 changed/added candidate files.
+Exact git write-tree and clean worktree/index confirmed before and after tests.
+Post-test edits are documentation only; this evidence does not certify a later
+whole-tree revision. The earlier Phase 2 record still pins 9c098dc separately.
+
+Parallel work: read-only launch audit, readiness design and merge review;
+one verifier exclusively ran all box checks SERIAL on domain 127/localhost-only.
+Lead alone wrote Git/source/docs. No build, install, deployment, hardware driver,
+full SLAM/Nav2 launch, goal, arm/wheel command or teammate process cleanup.
+
+Initial verifier preflight stopped when original dev had externally advanced
+from expected e62e055 to 0bf552e (PR #70). Zero tests ran in that attempt.
+Resumed using 0bf552e as the observed baseline, without reverting/changing it.
+Frozen candidate remained independent. Fresh process/CI checks and native
+empty-domain guards passed; inaccessible process environments alone were not
+treated as evidence of emptiness. Discovery is an observation, not reservation.
+
+Focused checks, captured from 10:14:27 UTC; all exit 0, no unittest skips:
+python3 bench/test_slam_maps.py                     8 tests OK
+python3 bench/test_navigation_launches.py            2 tests OK
+python3 bench/test_map_saver.py                      5 tests OK
+python3 bench/test_slam_fixture.py                   5 tests OK
+python3 bench/test_cloud_scan.py                     5 tests OK
+python3 bench/test_bench_coverage.py                 2 tests OK
+python3 bench/test_t34_bench_coverage.py             2 tests OK
+python3 bench/test_t34_guard.py                     4 tests OK
+python3 bench/test_t34_keyboard.py                  5 tests OK
+python3 bench/test_command_ownership.py             5 tests OK
+python3 bench/check_installed.py --self-test         4 tests OK
+Total: 47 focused tests, zero failures, zero skips. NOT the whole bench suite.
+
+python3 bench/test_navigation_launches.py --runtime: exit 0, seven observations
+Missing map/pose/manifest refused before action construction; mapping,
+localization/navigation includes and owned LiDAR parameters constructed.
+Source-backed shares used. NO returned launch action executed.
+
+bash bench/cloud_scan.sh: exit 0
+12/12 cases: mapping/localization/navigation x geometry/bounds/invalid/empty,
+each 10/10 scans. Known/bounds: four occupied bins; invalid/empty: zero.
+Three QoS observations: reliability/durability introspected, history/depth
+source-checked. SLAM relay routes and navigation direct route tested.
+
+bash bench/slam_persistence.sh: exit 0
+Owned saver graph/image/manifest with spaces; normal, SIGINT and SIGTERM pause
+restoration passed. Mapper resumed and processed fresh scans. Localization-mode
+saver refused before creating snapshot. Missing load produced no usable map.
+Service reload recovered exact saved 160x120 raster. Biased-odometry pose errors:
+0.000/0.001/0.001 m, each 0.001 rad. Post-/initialpose observation: 0.000m/0.000rad.
+These are ideal synthetic observations, not physical accuracy or reseed causality.
+Corrupt fixture aborted installed localizer: std::length_error,
+basic_string::_M_replace_aux, [ros2run]: Aborted. NOT safe corrupt-file rejection.
+
+Installed comparison before AND after: exit 1, identical output/hashes.
+Mapping/localization/navigation launch files DRIFT; lidar_only launch MISSING.
+Four YAML files MATCH; shared/slam_maps.py SKIP (no installed counterpart).
+4 MATCH, 3 DRIFT, 1 MISSING, 1 SKIP. NOT deployment PASS.
+
+Final verification 10:18:19 UTC: native graph has no nodes and only
+/parameter_events, /rosout. Empty-domain guards passed; no test jobs remain.
+Original checkout start/end dev 0bf552ef2c936b9877843464d2a693b135ec12db,
+only existing untracked docs/dion_docs/t1.7_logs/. Recorded tracked/untracked
+hashes, resolved compared-file hashes and network snapshots identical.
+Overlay fingerprint unchanged:
+8227f1d31c3ceeff695cabcc825835c3909df2b2bfdef027fbff2597bc14b6e1
+Candidate index SHA256 unchanged:
+24173395a7ea83ead43083f186dd11557d5d5cace53caa94945aa470cb59024a
+
+Raw evidence under snapshot log/agent-c-resolved06b-20261013T1020/:
+results.txt, individual test logs, cloud-scan.log, persistence.log,
+final-verification.log, before/after manifests and preserved runtime-logs/.
+Local ignored copy: log/t35-postmerge-agent-c-evidence/.
+All 42 listed evidence-file SHA256s verified after transfer.
+evidence-checksums.sha256 SHA256:
+9fe193ef93801394a5c93fcde7f3f40c53faea7a2780bad462fcb9389189f212
+
+Read-only merge review: both parents' suites/evidence retained, one ten-suite
+L4 loop, all 119 unique task records preserved, intended T3.5/T3.9 PROGRESS
+updates only. Navigation source unchanged versus 9c098dc. Documentation review
+corrected reseed-efficacy wording and distinguished mapping/reload prerequisites.
+
+Final Mac quick bench exit 0: executed checks PASS, explicit missing .venv,
+PyYAML/ROS skips and one saver-test skip. L3-L6 not run. Zero owned static
+findings, two vendor findings; contract check has two imported endpoint warnings,
+no regressions or baseline reset. Captured log/t35-resolved-final-quick.txt.
+
+Residuals: automatic map_file_name/map_start_pose startup and matched reseed
+negative control NOT run. No historical graph compatibility, live scan/TF,
+physical map/relocalization, stopping, deployed candidate or full-suite proof.
+G2-G4 staging/dry-load/corrupt-handling proposals remain unimplemented.
+Team SLAM sign-off, operator readiness and independent physical limits owed.
+T3.5/T3.9 remain PROGRESS; no completion PR, live mapping or deployment approval.
+Remote dev advanced to 0bf552e while this fdd6061 merge was in progress; that
+later docs-only delta is not integrated by this checkpoint. Catch-up owed.

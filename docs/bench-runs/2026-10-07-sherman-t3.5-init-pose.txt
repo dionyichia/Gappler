@@ -1,0 +1,26 @@
+T3.5 explicit localization start pose, 2026-10-07
+Candidate: 27a9d25 plus source-only init-pose gate on t3.5-launch-prep.
+No launch actions executed; no hardware/control topics published.
+
+Box (candidate snapshot checkout, sourced nav_env.sh for --runtime):
+python3 bench/test_slam_maps.py -> 6 tests OK
+python3 bench/test_navigation_launches.py --runtime ->
+PASS missing-map refusal before node/include construction; no actions executed
+PASS missing-pose refusal before node/include construction; no actions executed
+PASS construction and resolved includes (all three launches)
+PASS owned LiDAR parameters/config; source-backed shares, no actions executed
+bash bench/slam_persistence.sh (full synthetic round trip incl. owned saver) ->
+PASS /initialpose reseeding: error 0.000m/0.000rad (biased odometry +0.4m,-0.3m,+0.1rad)
+guards ok: domain 127 empty, localhost only; exit 0.
+
+Mac: test_slam_maps 6 OK; test_navigation_launches 2 OK; test_map_saver 4 pass + 1 explicit PyYAML skip.
+Red observed before implementation: require_initial_pose import error, then
+missing-pose launch test failure; both fixed by the helper + launch override.
+Read-only review: PASS, no blockers.
+
+Operator usage: export GAPPLER_MAP_START_POSE=x,y,theta (finite numbers) before
+constructing the localization launch. Unset/malformed refuses startup by design.
+This gates launch construction only; it does not prove attended initial-pose
+accuracy or far-teleport recovery without a seed.
+
+T3.4/T3.5 remain PROGRESS. No build/install, PR or merge.

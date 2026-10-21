@@ -1,0 +1,130 @@
+# Bright_Screen_Wall: offline full LiDAR-inertial-visual replay, not hardware launch.
+# Baseline: https://github.com/hku-mars/FAST-LIVO2/blob/0d2c0346107b75b59934975adec9a6eeeb913c64/config/avia.yaml
+# Runtime: https://github.com/U-AMC/FAST-LIVO2-ROS2/blob/a09599a288c56b832114d7ad9e898248a4111d9e/src/LIVMapper.cpp
+# Complete upstream Avia values, with explicit fork defaults and ROS 2 types.
+# No RViz or hardware driver is launched by this parameter file.
+laserMapping:
+  ros__parameters:
+    use_sim_time: true
+
+    # Raw bgr8 images come pre-decoded from the offline raw bag on this topic.
+    # No republish process runs: upstream image_transport segfaults on shutdown
+    # (T3.5 GDB backtrace: rclcpp::CallbackGroup::~CallbackGroup).
+    common.img_topic: "/left_camera/image"
+    common.lid_topic: "/livox/lidar"
+    common.imu_topic: "/livox/imu"
+    common.img_en: 1
+    common.lidar_en: 1
+    common.ros_driver_bug_fix: false
+    common.livox_msg_type: "livox_ros_driver2"
+
+    # UNVERIFIED for this recording: upstream LiDAR-to-IMU baseline, not a
+    # measured Bright_Screen_Wall transform. p_imu = R * p_lidar + T (metres).
+    # Identity entries must be doubles: mapper declares vector<double>.
+    extrin_calib.extrinsic_T: [0.04165, 0.02326, -0.0284]
+    extrin_calib.extrinsic_R: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+    # Publisher's FIRST calibration section, matching official Avia baseline.
+    # LiDAR-to-camera: p_camera = Rcl * p_lidar + Pcl (metres).
+    extrin_calib.Rcl: [0.00610193, -0.999863, -0.0154172, -0.00615449, 0.0153796, -0.999863, 0.999962, 0.00619598, -0.0060598]
+    extrin_calib.Pcl: [0.0194384, 0.104689, -0.0251952]
+
+    # Preserve converted headers, including LiDAR header ~ timebase + 0.1 s.
+    # Mapper uses image header + img_time_offset, IMU header - imu_time_offset.
+    # Baseline +0.1 s is deliberate, NOT a proven recording-specific correction.
+    # Do not subtract the LiDAR header/timebase delta or silently zero this value.
+    time_offset.imu_time_offset: 0.0
+    time_offset.img_time_offset: 0.1
+    # Fork's CustomMsg callback does not apply lidar_time_offset; zero documents
+    # the baseline without pretending this knob can correct CustomMsg timing.
+    time_offset.lidar_time_offset: 0.0
+    time_offset.exposure_time_init: 0.0
+
+    # Disable fork rolling-shutter and online time-delay estimation extensions.
+    rolling_shutter.enable: false
+    rolling_shutter.tr_readout: 0.0
+    rolling_shutter.anchor_factor: 0.5
+    rolling_shutter.debug_print: false
+    rolling_shutter.td_estimate_enable: false
+    rolling_shutter.td_step_alpha: 0.1
+    rolling_shutter.td_step_cap: 0.0005
+    rolling_shutter.td_lambda: 100.0
+    rolling_shutter.td_min_jac_sq: 1.0
+
+    preprocess.point_filter_num: 1
+    preprocess.filter_size_surf: 0.1
+    preprocess.lidar_type: 1
+    preprocess.scan_line: 6
+    preprocess.blind: 0.8
+    preprocess.hilti_en: false
+    preprocess.feature_extract_enabled: false
+
+    vio.max_iterations: 5
+    vio.outlier_threshold: 1000
+    vio.img_point_cov: 100
+    vio.patch_size: 8
+    # 'pyrimid' is the actual upstream/fork parameter spelling.
+    vio.patch_pyrimid_level: 4
+    vio.grid_size: 5
+    vio.grid_n_height: 17
+    vio.normal_en: true
+    vio.raycast_en: false
+    vio.inverse_composition_en: false
+    vio.exposure_estimate_en: true
+    vio.inv_expo_cov: 0.1
+
+    imu.imu_en: true
+    imu.imu_int_frame: 30
+    imu.acc_cov: 0.5
+    imu.gyr_cov: 0.3
+    # Retained upstream metadata: fork does not declare/read these two keys;
+    # initializeComponents hard-codes both bias covariance values to 0.0001.
+    imu.b_acc_cov: 0.0001
+    imu.b_gyr_cov: 0.0001
+    imu.gravity_est_en: true
+    imu.ba_bg_est_en: true
+
+    # Fork src/voxel_map.cpp reads lio.min_iterations into max_iterations_.
+    # Upstream lio.max_iterations: 5 would be silently unused in this fork.
+    lio.min_iterations: 5
+    lio.dept_err: 0.02
+    lio.beam_err: 0.05
+    lio.min_eigen_value: 0.0025
+    lio.voxel_size: 0.5
+    lio.max_layer: 2
+    lio.max_points_num: 50
+    lio.layer_init_num: [5, 5, 5, 5, 5]
+    lio.sigma_num: 3.0
+
+    local_map.map_sliding_en: false
+    local_map.half_map_size: 100
+    local_map.sliding_thresh: 8.0
+
+    uav.imu_rate_odom: false
+    uav.gravity_align_en: false
+
+    publish.dense_map_en: true
+    publish.pub_effect_point_en: false
+    publish.pub_plane_en: false
+    publish.pub_scan_num: 1
+    publish.blind_rgb_points: 0.0
+
+    evo.seq_name: "Bright_Screen_Wall"
+    evo.pose_output_en: false
+
+    # Saving disabled is NOT a read-only-root guarantee. ROOT_DIR is the
+    # compile-time source directory: mapper always opens Log/mat_pre.txt and
+    # Log/mat_out.txt; IMU initialization opens Log/imu.txt. Runner must provide
+    # a writable Log/ there. No runtime root_dir parameter redirects these.
+    pcd_save.pcd_save_en: false
+    pcd_save.type: 0
+    pcd_save.colmap_output_en: false
+    pcd_save.filter_size_pcd: 0.15
+    pcd_save.interval: -1
+    # Fork declares but does not get these image-save overrides; in-class
+    # defaults are already false/1, so disabling remains effective.
+    image_save.img_save_en: false
+    image_save.interval: 1
+
+    # Keep optional reference-patch PNG debug output outside replay times.
+    debug.plot_time: -10.0
+    debug.frame_cnt: 6

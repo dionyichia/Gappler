@@ -1,0 +1,12 @@
+[INFO] [1792484410.618747903] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3' for READ_ONLY.
+[INFO] [1792484600.093666166] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/spin-corrected/bag/bag_0.db3' for READ_ONLY.
+config LEVEL 1 GRAV4 True FLAT_MAX 0.5 | reference (polished from 1.94, 1.19, 0): x 1.934 y 1.182 z -0.056 m | yaw -0.82 pitch -0.00 roll 0.00 deg | inliers 0.974 rms_pl 0.025 | gate 0.90
+  start (1.5, 0.7, -15 deg) -> x 1.934 y 1.182 yaw -0.85 | dpos 0.001 m dyaw -0.04 deg | inliers 0.975 rms_pl 0.025 | CONVERGED | gate PASS
+  start (1.5, 0.7, +15 deg) -> x 1.934 y 1.182 yaw -0.81 | dpos 0.000 m dyaw +0.00 deg | inliers 0.974 rms_pl 0.025 | CONVERGED | gate PASS
+  start (1.5, 1.7, -15 deg) -> x 1.934 y 1.182 yaw -0.85 | dpos 0.000 m dyaw -0.04 deg | inliers 0.974 rms_pl 0.025 | CONVERGED | gate PASS
+  start (1.5, 1.7, +15 deg) -> x 1.934 y 1.182 yaw -0.82 | dpos 0.000 m dyaw +0.00 deg | inliers 0.974 rms_pl 0.025 | CONVERGED | gate PASS
+  start (2.5, 0.7, -15 deg) -> x 1.934 y 1.182 yaw -0.85 | dpos 0.000 m dyaw -0.04 deg | inliers 0.974 rms_pl 0.025 | CONVERGED | gate PASS
+  start (2.5, 0.7, +15 deg) -> x 1.935 y 1.186 yaw -0.66 | dpos 0.004 m dyaw +0.16 deg | inliers 0.974 rms_pl 0.026 | CONVERGED | gate PASS
+  start (2.5, 1.7, -15 deg) -> x 1.934 y 1.182 yaw -0.85 | dpos 0.000 m dyaw -0.04 deg | inliers 0.974 rms_pl 0.025 | CONVERGED | gate PASS
+  start (2.5, 1.7, +15 deg) -> x 2.009 y 1.374 yaw +20.55 | dpos 0.206 m dyaw +21.37 deg | inliers 0.713 rms_pl 0.038 | different | gate FAIL
+converged to the reference: 7 of 8 | pass the gate: 7 of 8 | converged and passed: 7 of 8

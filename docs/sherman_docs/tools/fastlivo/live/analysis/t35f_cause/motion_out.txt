@@ -1,0 +1,12 @@
+======== T35d IMU 23580
+ gyro bias from first 5 s (rad/s): [-0.0127  0.0021  0.011 ] ; |wz| p50 9.5 p95 22.7 max 29.3 deg/s (moving samples only: p50 14.4)
+ |gyro xy| (roll/pitch rates) p95 1.2 max 4.6 deg/s; accel norm minus rest: p95 0.028 g max 0.098 g; horiz jerk p95 1.18 max 6.95 g/s
+ /cloud_registered: 4712 msgs, 2526 empty (54%), non-empty median 1156 points, p5 86
+======== F_run1 IMU 15154
+ gyro bias from first 5 s (rad/s): [-0.0154  0.0034  0.0129] ; |wz| p50 5.8 p95 23.4 max 34.3 deg/s (moving samples only: p50 10.3)
+ |gyro xy| (roll/pitch rates) p95 1.4 max 4.8 deg/s; accel norm minus rest: p95 0.040 g max 0.132 g; horiz jerk p95 1.32 max 8.84 g/s
+ /cloud_registered: 3003 msgs, 1610 empty (54%), non-empty median 1202 points, p5 96
+======== F_run2 IMU 15866
+ gyro bias from first 5 s (rad/s): [-0.0156  0.0034  0.0132] ; |wz| p50 5.1 p95 21.3 max 29.9 deg/s (moving samples only: p50 11.6)
+ |gyro xy| (roll/pitch rates) p95 1.2 max 4.7 deg/s; accel norm minus rest: p95 0.027 g max 0.071 g; horiz jerk p95 1.23 max 3.55 g/s
+ /cloud_registered: 3165 msgs, 1701 empty (54%), non-empty median 1033 points, p5 75

@@ -1,0 +1,11 @@
+FINAL SHUTDOWN 2026-10-20 (operator said he had shut down; the drivers were still running 35 min; Ctrl-C then sent via tmux by the assistant at the operator's request)
+order: spin run 2 mapper (operator Ctrl-C), camera driver (Ctrl-C), LiDAR driver (Ctrl-C), ros2 daemon domain 174 stopped
+camera driver: gone within 2 s. LiDAR driver: gone within 1 s. No SIGBUS/segfault text in the captured logs.
+exit codes NOT captured (output went through tee); absence of crash text is therefore weak evidence.
+mapper teardown, 4 stops observed (CORRECTED; an earlier line in this note said every stop aborted, which was wrong):
+  init (stationary): SIGINT line, log ends, no abort text, exit code not captured
+  init2 (hand-driven): terminate called after throwing an instance of rclcpp::exceptions::RCLError (could not create publisher: rcl node context is invalid) -> Aborted (core dumped), seen in the pane
+  spin-corrected: the same terminate/RCLError text in mapper.stderr.log
+  spin-precorrection: SIGINT line, log ends, no abort text, exit code not captured
+  so the teardown abort is intermittent (2 of 4 stops showed it); the other two stops are not proven clean because exit codes were not captured.
+leftover check after shutdown: no livox, realsense, fastlivo, ros2 launch, ros2 bag, docker run or ros2 daemon processes.

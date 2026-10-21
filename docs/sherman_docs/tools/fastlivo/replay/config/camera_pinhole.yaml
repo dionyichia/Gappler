@@ -1,0 +1,23 @@
+# Publisher's FIRST Bright_Screen_Wall calibration, matching official baseline:
+# https://github.com/hku-mars/FAST-LIVO2/blob/0d2c0346107b75b59934975adec9a6eeeb913c64/config/camera_pinhole.yaml
+# Vikit: U-AMC/rpg_vikit_rational_polynomial@6f213c7fe6be1aff1fc79c7bd6103e3e9bc4a02d
+# Mapper initializeComponents loads from remote node 'parameter_blackboard'.
+# Start demo_nodes_cpp/parameter_blackboard and wait for its parameter service
+# before starting fast_livo/fastlivo_mapping (internal node name laserMapping).
+# These keys belong directly on that server, not under a camera.* prefix.
+# Intrinsics are full-resolution; Vikit applies scale internally (640 x 512).
+parameter_blackboard:
+  ros__parameters:
+    use_sim_time: true
+    cam_model: "Pinhole"
+    cam_width: 1280
+    cam_height: 1024
+    scale: 0.5
+    cam_fx: 1293.56944
+    cam_fy: 1293.3155
+    cam_cx: 626.91359
+    cam_cy: 522.799224
+    cam_d0: -0.076160
+    cam_d1: 0.123001
+    cam_d2: -0.00113
+    cam_d3: 0.000251

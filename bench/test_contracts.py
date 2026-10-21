@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from contracts import REPO, PyExtractor, extract_cpp, extract_launch, new_bucket
+from contracts import REPO, PyExtractor, extract_cpp, extract_launch, new_bucket, walk
 
 SRC = '''
 from sensor_msgs.msg import Image
@@ -80,4 +80,11 @@ for name in ('arm_mount', 'lidar_mount'):
                 extract_launch(root / 'fake.launch.py',
                                'Node(executable="static_transform_publisher", arguments=static_transform_args("' + name + '"))', invalid)
             assert invalid['parse_errors'] and not invalid['static_tf'], (name, raw)
+tools_py = REPO / 'docs/sherman_docs/tools/fastlivo/analyze_bag.py'
+normal_py = REPO / 'main.py'
+assert tools_py.is_file() and normal_py.is_file(), 'walk() fixtures moved; update this test'
+with patch('contracts.repo_files', return_value=[tools_py, normal_py]):
+    seen = list(walk('.py'))
+assert normal_py in seen, 'walk() must still yield ordinary repository files'
+assert tools_py not in seen, 'preserved lab tooling must stay out of contract extraction'
 print("test_contracts: PASS")

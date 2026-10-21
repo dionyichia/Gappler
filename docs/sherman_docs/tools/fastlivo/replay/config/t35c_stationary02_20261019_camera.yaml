@@ -1,0 +1,24 @@
+# stationary02, 2026-10-19: measured CameraInfo for offline A/B replay.
+# Full native audit: one calibration variant, 2179 image/CameraInfo stamp pairs,
+# plumb_bob, RGB8 640x480, frame camera_color_optical_frame, D455 146222253541.
+# Values equal the old frozen camera pair because this is the same camera/profile;
+# this new file records the new bag's provenance rather than reusing its identity.
+# parameter_blackboard must be ready before the mapper requests camera parameters.
+# The pinned vikit loader reads d0..d3 only. d4 records measured k3 but is inert;
+# omitting it at runtime is a known camera-model limit, not calibrated away here.
+parameter_blackboard:
+  ros__parameters:
+    use_sim_time: true
+    cam_model: "Pinhole"
+    cam_width: 640
+    cam_height: 480
+    scale: 1.0
+    cam_fx: 385.0851135253906
+    cam_fy: 384.5696105957031
+    cam_cx: 324.9161376953125
+    cam_cy: 248.54244995117188
+    cam_d0: -0.05590025335550308
+    cam_d1: 0.06613793224096298
+    cam_d2: 0.00020105774456169456
+    cam_d3: 0.0002285563386976719
+    cam_d4: -0.021481290459632874

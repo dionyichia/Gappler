@@ -1,0 +1,13 @@
+run2[0:3 s]  -> run1[0:3 s]   (step 0a; 81 starts, distinct answers)
+   dx +0.287 dy -0.221 dyaw +0.81 deg  inliers 0.935
+   dx -0.776 dy -0.789 dyaw +36.38 deg  inliers 0.320
+run2[0:3 s]  -> run1[last 3 s]  (identity if run 2 starts where run 1 ended)
+   dx +0.283 dy -0.223 dyaw +0.84 deg  inliers 0.987
+   dx -1.078 dy -0.515 dyaw +28.81 deg  inliers 0.342
+run2[last 3 s] -> run1[0:3 s]   (identity if run 2 ends where run 1 started)
+   dx +0.273 dy -0.214 dyaw +0.72 deg  inliers 0.993
+   dx -1.856 dy -0.474 dyaw +47.03 deg  inliers 0.335
+run1[last 3 s] -> run1[0:3 s]   (closure, scan-to-scan; compare start_end_check)
+   dx +0.004 dy +0.003 dyaw -0.01 deg  inliers 0.952
+   dx +0.493 dy -0.051 dyaw +15.00 deg  inliers 0.462
+   dx -1.691 dy +0.443 dyaw +28.21 deg  inliers 0.366

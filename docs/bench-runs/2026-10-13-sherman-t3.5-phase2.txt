@@ -1,0 +1,98 @@
+T3.5 Phase 2: isolated software verification, 2026-10-13
+
+Tested commit: 9c098dc81c879335a9b3f35e4d63fd5980aa8e63
+Tested tree: d9f55d45dfb8f992d409014ea2ee60185a080896
+Box snapshot: log/t35-phase2-9c098dc (under approved lab checkout)
+Constructed from dev 4cbb56e archive + 56 candidate delta files.
+Exact indexed tree matched before tests and after cleanup; git diff exit 0.
+Snapshot has an index, not a committed HEAD. Original checkout not switched.
+
+Scope: map prerequisites, construction-only launches, map saver, synthetic
+cloud/scan conversion and installed SLAM save/restart/reload. NO full SLAM
+launch, hardware driver, camera, Nav2 controller, goal or real wheel command.
+Runtime tests ran serially with ROS_DOMAIN_ID=127, ROS_LOCALHOST_ONLY=1.
+Competing bench/driver process checks and empty-domain guards passed.
+No build/install/deploy, dependency installation, vendor fix or tmux cleanup.
+
+Preflight: no matching robot driver or active bench/Runner.Worker process;
+GPU used by desktop processes only; no video-device holder reported.
+68 GB available on box /home. Original lab checkout remained dev e62e055,
+with the existing untracked docs/dion_docs/t1.7_logs/ preserved.
+
+Preparation observations from the session transcript (not test passes):
+- Initial snapshot index omitted tracked vendor example PNGs due .gitignore.
+  Force-indexing this new archive-only snapshot gave the exact expected tree.
+- Initial shell sourcing failed: AMENT_TRACE_SETUP_FILES unbound under set -u.
+  Sourced the existing nav environment with nounset disabled, as maintained
+  bench wrappers do; re-enabled afterward. No source/environment-file change.
+
+Focused checks, 17:50:58-17:51:34 local time: all passed, no unittest skips.
+python3 bench/test_slam_maps.py -v                         8 tests OK
+python3 bench/test_navigation_launches.py -v               2 tests OK
+python3 bench/test_map_saver.py -v                         5 tests OK
+python3 bench/test_slam_fixture.py -v                      5 tests OK
+python3 bench/check_installed.py --self-test               4 tests OK
+python3 bench/test_cloud_scan.py -v                        5 tests OK
+Total: 29 focused tests. This is NOT the full bench suite.
+
+python3 bench/test_navigation_launches.py --runtime: exit 0
+PASS missing-map refusal before node/include construction; no actions executed
+PASS missing-pose refusal before node/include construction; no actions executed
+PASS missing-manifest refusal before node/include construction; no actions executed
+PASS construction/resolved includes: mapping, SLAM localization, navigation
+PASS owned LiDAR parameters/config; source-backed shares, no actions executed
+
+Runtime output excerpts, 17:51:34-17:54:09 local time:
+bash bench/cloud_scan.sh: exit 0
+PASS slam_mapping: known_geometry/bounds/invalid_only/empty, each 10/10 scans
+PASS slam_localization: known_geometry/bounds/invalid_only/empty, each 10/10 scans
+PASS navigation: known_geometry/bounds/invalid_only/empty, each 10/10 scans
+All 12 cases passed; reliability/durability observed, history/depth source-checked.
+SLAM profiles use relay routes; navigation profile uses direct conversion.
+Known/bounds cases: 4 occupied bins; invalid/empty cases: 0 occupied bins.
+guards ok: domain 127 empty, localhost only
+
+bash bench/slam_persistence.sh: exit 0
+PASS owned saver: new graph/image snapshot, manifest, spaces, mapper resumed
+PASS owned saver sigint: interrupted after pause, mapper restored and fresh scans processed
+PASS owned saver sigterm: interrupted after pause, mapper restored and fresh scans processed
+PASS mapping and real graph serialization
+PASS image save with YAML/image reference; path contains spaces
+PASS missing load: service replies but no usable map; no success claim
+OBSERVED LIMITATION: corrupt graph aborts installed localizer (std::length_error); NOT safe rejection
+PASS fresh localization loaded map: 160x120
+PASS localization: error 0.000m/0.001rad; biased odometry
+PASS localization: error 0.001m/0.001rad; biased odometry
+PASS localization: error 0.001m/0.001rad; biased odometry
+PASS /initialpose reseeding: error 0.000m/0.000rad
+PASS owned saver refuses localization mode before creating snapshot
+guards ok: domain 127 empty, localhost only
+
+Installed-file comparison: exit 1 before AND after, unchanged output.
+File                                      Candidate SHA12 Installed SHA12 Status
+slam_mapping.launch.py                    e9d3d633dfa7    c322edce61d9    DRIFT
+slam_localization.launch.py               b44139b9ca07    ce0d12d020bf    DRIFT
+lidar_only.launch.py                      e5ec2d8d6814    absent          MISSING
+slam_toolbox.yaml                         76c8a988175f    76c8a988175f    MATCH
+slam_toolbox_localization.yaml            f0129bc1e606    f0129bc1e606    MATCH
+robot_slam/config/nav2_params.yaml        9307815097bf    9307815097bf    MATCH
+navigation.launch.py                      3a3238fbfb62    252870e4c273    DRIFT
+robot_navigation/config/nav2_params.yaml  79ff932c6237    79ff932c6237    MATCH
+shared/slam_maps.py: SKIP, no installed counterpart by checker design.
+4 match, 3 drift, 1 missing, 1 skipped. NOT deployment readiness.
+
+Final 17:54:44 verification: domain 127 empty; no matching driver/test processes;
+compared installed files unchanged; original checkout status/HEAD unchanged.
+Installed packages: ros-humble-slam-toolbox 2.6.10-1jammy.20251228.130030;
+ros-humble-nav2-map-server 1.1.20-1jammy.20251228.102023.
+Detailed SLAM/converter/saver logs retained in the new snapshot's log/ directory.
+Captured session outputs in the local checkout: log/t35-phase2-static.txt,
+log/t35-phase2-runtime.txt and log/t35-phase2-final.txt (untracked transcripts).
+
+Limits: ideal synthetic geometry/biased odometry and nearby pose seed only.
+Service-based deserialize and /initialpose tested, not full parameter-startup
+localization, historical graph compatibility, live sensors/TF/map quality,
+physical accuracy/stopping, corrupt-file safety or G2-G4 readiness gates.
+T3.5/T3.9 remain PROGRESS. Another session began an origin/dev merge in the
+local worktree during this run. Its conflicted files were not changed by this
+session. Results apply ONLY to the pinned tree above, not that eventual merge.

@@ -1,0 +1,12 @@
+run1: first/last 1.0 s (11 / 11 scans, 9866 / 9838 voxels), end-of-bag speed 0.000 m/s
+   LiDAR scan-to-scan: end pose in start frame x +0.246 y -0.201 z +0.003 m (horizontal 0.318), yaw -0.77 deg | inliers 0.933 rms_plane 0.017
+   odometry first-to-last in the same frame: x +0.246 y -0.202 z +0.004 m (horizontal 0.318), yaw -0.73 deg
+   difference (odometry minus LiDAR): x -0.001 y -0.001 m (horizontal 0.001), yaw +0.04 deg
+run2: first/last 1.0 s (11 / 10 scans, 9803 / 9428 voxels), end-of-bag speed 0.011 m/s
+   LiDAR scan-to-scan: end pose in start frame x -0.244 y +0.208 z -0.000 m (horizontal 0.321), yaw -0.93 deg | inliers 0.910 rms_plane 0.018
+   odometry first-to-last in the same frame: x -0.235 y +0.205 z -0.002 m (horizontal 0.312), yaw -0.88 deg
+   difference (odometry minus LiDAR): x +0.009 y -0.003 m (horizontal 0.009), yaw +0.05 deg
+hd1: first/last 1.0 s (11 / 11 scans, 8836 / 9207 voxels), end-of-bag speed 0.007 m/s
+   LiDAR scan-to-scan: end pose in start frame x +0.002 y +0.003 z +0.000 m (horizontal 0.004), yaw -2.58 deg | inliers 0.901 rms_plane 0.017
+   odometry first-to-last in the same frame: x +0.007 y +0.008 z +0.002 m (horizontal 0.011), yaw -2.58 deg
+   difference (odometry minus LiDAR): x +0.005 y +0.005 m (horizontal 0.007), yaw -0.00 deg

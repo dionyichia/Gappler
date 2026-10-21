@@ -7,5 +7,6 @@ install(DIRECTORY config launch urdf
   DESTINATION share/${PROJECT_NAME}/
 )
 # The node scripts moved to one package each (nav/object_approach, nav/goto_glasses, ...) 2026-09-22.
+install(PROGRAMS scripts/save_slam_map.py scripts/fastlivo_odom_bridge.py scripts/livox_custom_to_cloud.py DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

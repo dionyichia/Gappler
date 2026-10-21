@@ -1,0 +1,7 @@
+SPIN TEST RESULT (2026-10-20): INCONCLUSIVE for the LiDAR->IMU sign, by the runbook table ("both hold still / indistinguishable").
+runs: spin-corrected (config extrinsic_T [-0.011,-0.02329,0.04412]), spin-precorrection (contrast [0.011,0.02329,-0.04412]); one slow ~360 deg turn by hand each.
+fit t_xy (effective IMU position in base frame), orders 1-4: run1 (0.19-0.20, 0.073-0.080); run2 (0.172-0.179, 0.031-0.041).
+run2 minus run1 = (-0.018, -0.042) m; derivation predicts 2*T_corr_xy = (-0.022, -0.047) m: matches within about 5 mm.
+common offset in y (about +0.054 m in both runs) = hand pivot not at base centre or mount y error; shared by both runs.
+reading [inferred]: the reported pose follows the extrinsic the mapper was GIVEN (p_I = p_L - R*T_used, p_L fixed by registration + mount), whichever sign is physically true. The geometry cannot expose the truth; only matched config/constant consistency is visible.
+consequence for T3.5f: derive the bridge constant from the same T the mapper runs with (equivalently base = p_L - R*mount); then the sign question does not move the base pose.

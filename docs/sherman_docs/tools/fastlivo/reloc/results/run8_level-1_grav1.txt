@@ -1,0 +1,32 @@
+[INFO] [1792480521.694377033] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3' for READ_ONLY.
+[INFO] [1792480521.853386662] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/spin-corrected/bag/bag_0.db3' for READ_ONLY.
+[INFO] [1792480521.921820531] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3' for READ_ONLY.
+[INFO] [1792480649.426386043] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/spin-corrected/bag/bag_0.db3' for READ_ONLY.
+[INFO] [1792480653.206749583] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3' for READ_ONLY.
+config: RMAX 40 MAP_T None GRAV4 True LEVEL -1 FLAT_MAX 0.1 tol 0.10 m / 4.0 deg
+ORIGIN map bag: first odom pose x 0.0029 y 0.0020 z -0.0035 yaw -0.013 deg (roll/pitch yaw -0.01 pitch 0.04 roll -0.73 deg) at +0.116 s from first LiDAR msg
+ORIGIN query bag: first odom pose x 0.0132 y 0.0360 z 0.0791 yaw 0.659 deg (roll/pitch yaw 0.66 pitch -0.05 roll 0.73 deg) at +0.116 s from first LiDAR msg
+map: 589 scans -> 89033 voxels (0.10 m), extent [29.9 46.5  9.2] m; planar (flat<=0.1): 15346 (17%)
+query: 30 scans in first 3.0 s -> 12065 voxels
+SELF-TEST (map bag first 3s vs its own map, start offset 0.3,-0.2,10deg): x -0.001 y -0.001 z 0.000 m | yaw -0.02 pitch -0.00 roll 0.00 deg | inliers 1.00 rms_p2p 0.032 rms_p2plane 0.015  (identity expected)
+QUERY from identity: x -0.398 y -0.316 z 0.144 m | yaw -25.39 pitch -0.00 roll 0.00 deg | inliers 0.47 rms_p2p 0.080 rms_p2plane 0.059 m
+basin test (same = within 0.10 m and 4.0 deg of the identity-start answer):
+  init (0.0,0.0,   0 deg) -> same | dpos 0.000 m dyaw 0.00 deg | inl 0.47 rms_p2p 0.080 rms_p2plane 0.059
+  init (0.3,0.0,   0 deg) -> same | dpos 0.076 m dyaw 0.90 deg | inl 0.48 rms_p2p 0.081 rms_p2plane 0.060
+  init (0.0,0.3,   0 deg) -> DIFFERENT | dpos 2.863 m dyaw -5.96 deg | inl 0.52 rms_p2p 0.082 rms_p2plane 0.062
+  init (-0.3,-0.3,   0 deg) -> DIFFERENT | dpos 0.673 m dyaw 28.68 deg | inl 0.50 rms_p2p 0.083 rms_p2plane 0.062
+  init (0.0,0.0,   5 deg) -> DIFFERENT | dpos 0.671 m dyaw 28.74 deg | inl 0.50 rms_p2p 0.083 rms_p2plane 0.062
+  init (0.0,0.0,  -5 deg) -> DIFFERENT | dpos 0.191 m dyaw -3.04 deg | inl 0.50 rms_p2p 0.079 rms_p2plane 0.058
+  init (0.0,0.0,  10 deg) -> DIFFERENT | dpos 0.671 m dyaw 28.72 deg | inl 0.50 rms_p2p 0.083 rms_p2plane 0.062
+  init (0.0,0.0, -10 deg) -> DIFFERENT | dpos 2.283 m dyaw -2.54 deg | inl 0.54 rms_p2p 0.079 rms_p2plane 0.059
+  init (0.0,0.0,  15 deg) -> DIFFERENT | dpos 0.670 m dyaw 28.74 deg | inl 0.50 rms_p2p 0.083 rms_p2plane 0.062
+  init (0.0,0.0, -15 deg) -> DIFFERENT | dpos 2.283 m dyaw -2.73 deg | inl 0.54 rms_p2p 0.079 rms_p2plane 0.058
+  init (0.0,0.0,  30 deg) -> DIFFERENT | dpos 2.872 m dyaw -5.67 deg | inl 0.52 rms_p2p 0.082 rms_p2plane 0.063
+  init (0.0,0.0, -30 deg) -> DIFFERENT | dpos 1.146 m dyaw -40.77 deg | inl 0.55 rms_p2p 0.081 rms_p2plane 0.059
+  init (0.5,0.5,  20 deg) -> DIFFERENT | dpos 2.860 m dyaw -4.70 deg | inl 0.52 rms_p2p 0.082 rms_p2plane 0.063
+  init (-0.5,0.5, -20 deg) -> DIFFERENT | dpos 1.697 m dyaw -24.99 deg | inl 0.52 rms_p2p 0.081 rms_p2plane 0.060
+  init (0.0,0.0,  60 deg) -> DIFFERENT | dpos 0.808 m dyaw 100.99 deg | inl 0.52 rms_p2p 0.084 rms_p2plane 0.064
+  init (0.0,0.0, 120 deg) -> DIFFERENT | dpos 3.724 m dyaw -159.42 deg | inl 0.53 rms_p2p 0.072 rms_p2plane 0.050
+  init (0.0,0.0, 180 deg) -> DIFFERENT | dpos 2.620 m dyaw -159.73 deg | inl 0.49 rms_p2p 0.072 rms_p2plane 0.051
+same answer in 2 of 17 starts
+GLOBAL sweep (12 yaws x 5 offsets), best: x 0.000 y -3.370 z 0.057 m | yaw 144.83 pitch -0.00 roll 0.00 deg | inliers 0.61 rms_p2p 0.080 rms_p2plane 0.059

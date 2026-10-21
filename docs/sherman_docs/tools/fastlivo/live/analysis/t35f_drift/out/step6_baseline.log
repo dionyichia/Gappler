@@ -1,0 +1,15 @@
+== LiDAR-only first 1 s vs last 1 s (sensor frame; platform stationary)
+  t35b_proof2 (Oct 17)   73.6 s: dx +0.0016 dy -0.0013 dz -0.0009 m (horizontal 0.0021, 3D 0.0023), yaw -0.024 roll -0.011 pitch +0.001 deg, inliers 0.953
+  t35b_proof3 (Oct 17)   73.9 s: dx -0.0001 dy +0.0001 dz -0.0006 m (horizontal 0.0001, 3D 0.0006), yaw -0.005 roll -0.017 pitch -0.007 deg, inliers 0.899
+  stationary01 (Oct 19)  73.3 s: dx +0.0004 dy +0.0030 dz -0.0006 m (horizontal 0.0031, 3D 0.0031), yaw -0.015 roll +0.001 pitch +0.001 deg, inliers 0.981
+  stationary02 (Oct 19)  74.6 s: dx -0.0004 dy -0.0001 dz -0.0008 m (horizontal 0.0004, 3D 0.0009), yaw -0.006 roll -0.013 pitch -0.009 deg, inliers 0.986
+== gyro bias (rad/s), mean of the still part; the still part = whole bag for stationary bags, first 3 s for moving bags
+  bag                             x        y        z | std z | first10s z  last10s z | |bias|  bias*T yaw if uncorrected
+  t35b_proof2 (Oct 17)     -0.0116 +0.0021 +0.0075 | 0.0010 | +0.0075  +0.0075 | 0.0140  31.8 deg over 74 s
+  t35b_proof3 (Oct 17)     -0.0116 +0.0020 +0.0075 | 0.0010 | +0.0076  +0.0075 | 0.0140  31.9 deg over 74 s
+  stationary01 (Oct 19)    -0.0128 +0.0022 +0.0105 | 0.0010 | +0.0104  +0.0104 | 0.0167  43.9 deg over 73 s
+  stationary02 (Oct 19)    -0.0128 +0.0023 +0.0104 | 0.0010 | +0.0104  +0.0105 | 0.0166  44.6 deg over 75 s
+  handdriven1 (Oct 20)     -0.0127 +0.0022 +0.0110 | 0.0010 | +nan  +nan | 0.0169  74.6 deg over 118 s
+  spin-corrected (Oct 20)  -0.0122 +0.0023 +0.0105 | 0.0010 | +nan  +nan | 0.0163  24.6 deg over 41 s
+  run1 (Oct 21)            -0.0154 +0.0035 +0.0128 | 0.0010 | +nan  +nan | 0.0203  55.6 deg over 76 s
+  run2 (Oct 21)            -0.0156 +0.0033 +0.0132 | 0.0010 | +nan  +nan | 0.0207  60.0 deg over 79 s

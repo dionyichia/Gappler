@@ -1,0 +1,23 @@
+[INFO] [1792477351.074636206] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3' for READ_ONLY.
+[INFO] [1792477428.573702309] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/spin-corrected/bag/bag_0.db3' for READ_ONLY.
+[INFO] [1792477430.722672344] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3' for READ_ONLY.
+map: 589 scans -> 87737 voxels (0.10 m), extent [29.9 46.5  9.6] m
+query: 30 scans in first 3.0 s -> 12150 voxels
+SELF-TEST (map bag first 3s vs its own map, start offset 0.3,-0.2,10deg): x -0.068 y 0.007 z -0.003 m | yaw 2.30 pitch -0.03 roll -0.03 deg | inliers 1.00 rms 0.050  (identity expected)
+QUERY from identity: x 0.421 y 1.246 z -0.086 m | yaw 0.96 pitch 0.15 roll -1.53 deg | inliers 0.74 rms 0.064 m
+basin test:
+  init (0.0,0.0,   0 deg) -> same | dpos 0.000 m dyaw 0.00 deg | inl 0.74 rms 0.064
+  init (0.3,0.0,   0 deg) -> same | dpos 0.000 m dyaw 0.00 deg | inl 0.74 rms 0.064
+  init (0.0,0.3,   0 deg) -> DIFFERENT | dpos 0.057 m dyaw 3.58 deg | inl 0.75 rms 0.064
+  init (-0.3,-0.3,   0 deg) -> DIFFERENT | dpos 1.160 m dyaw -8.04 deg | inl 0.57 rms 0.065
+  init (0.0,0.0,  15 deg) -> DIFFERENT | dpos 0.133 m dyaw 3.27 deg | inl 0.74 rms 0.064
+  init (0.0,0.0, -15 deg) -> DIFFERENT | dpos 0.420 m dyaw -7.53 deg | inl 0.64 rms 0.064
+  init (0.0,0.0,  30 deg) -> DIFFERENT | dpos 0.328 m dyaw 20.45 deg | inl 0.70 rms 0.066
+  init (0.0,0.0, -30 deg) -> DIFFERENT | dpos 0.961 m dyaw -28.31 deg | inl 0.63 rms 0.063
+  init (0.5,0.5,  20 deg) -> DIFFERENT | dpos 0.328 m dyaw 17.21 deg | inl 0.72 rms 0.066
+  init (-0.5,0.5, -20 deg) -> DIFFERENT | dpos 0.151 m dyaw -17.69 deg | inl 0.61 rms 0.063
+  init (0.0,0.0,  60 deg) -> DIFFERENT | dpos 0.949 m dyaw 63.49 deg | inl 0.62 rms 0.067
+  init (0.0,0.0, 120 deg) -> DIFFERENT | dpos 2.350 m dyaw 126.76 deg | inl 0.57 rms 0.066
+  init (0.0,0.0, 180 deg) -> DIFFERENT | dpos 2.748 m dyaw 177.10 deg | inl 0.55 rms 0.063
+same solution in 2 of 13 starts
+GLOBAL sweep (12 yaws x 5 offsets), best: x 0.376 y 1.206 z -0.085 m | yaw 4.60 pitch 0.15 roll -1.55 deg | inliers 0.75 rms 0.064

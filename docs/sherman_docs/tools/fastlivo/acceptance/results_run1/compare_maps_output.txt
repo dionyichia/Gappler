@@ -1,0 +1,18 @@
+== map sharpness (occupied cells: fewer and a lower thickness proxy mean thinner, crisper walls)
+A_recorded   {"size": [730, 390], "occupied": 5980, "free": 28196, "boundary_cells": 4535, "thickness_proxy": 1.319, "speckles": 602}
+B_scanend    {"size": [732, 471], "occupied": 5815, "free": 36878, "boundary_cells": 5356, "thickness_proxy": 1.086, "speckles": 1457}
+C_scanonly   {"size": [193, 186], "occupied": 104, "free": 2735, "boundary_cells": 104, "thickness_proxy": 1.0, "speckles": 46}
+
+== reload of spin-corrected, initial guess (2.0, 1.2, 0 deg), against the tape (2.00, 1.16). error = map->odom minus tape
+A_recorded (stamp recorded): 81 samples over 41 s
+   first 6 s   x 1.859 y 1.421 yaw +3.69 deg | error dx -0.141 dy +0.261 plan 0.297 m | spread x 0.000 y 0.000 yaw 0.00
+   6 to 15 s   x 1.858 y 1.435 yaw +3.00 deg | error dx -0.142 dy +0.275 plan 0.310 m | spread x 0.003 y 0.065 yaw 3.10
+   after 15 s  x 1.867 y 1.384 yaw +4.62 deg | error dx -0.133 dy +0.224 plan 0.261 m | spread x 0.016 y 0.142 yaw 6.63
+   final sample x 1.872 y 1.371 yaw +7.22 -> error plan 0.246 m
+B_scanend (stamp scanend): 81 samples over 41 s
+   first 6 s   x 1.890 y 1.038 yaw -17.68 deg | error dx -0.110 dy -0.122 plan 0.164 m | spread x 0.000 y 0.000 yaw 0.00
+   6 to 15 s   x 1.876 y 1.038 yaw -16.12 deg | error dx -0.124 dy -0.122 plan 0.174 m | spread x 0.085 y 0.002 yaw 9.36
+   after 15 s  x 1.766 y 0.944 yaw -2.52 deg | error dx -0.234 dy -0.216 plan 0.318 m | spread x 0.059 y 0.122 yaw 9.11
+   final sample x 1.746 y 0.914 yaw +0.79 -> error plan 0.353 m
+
+wrote /home/rcp2026/rcp-Gappler/log/t35e-option2/run1/maps_side_by_side.png (left to right: recorded stamps, scan-end stamps, scan matching only)
