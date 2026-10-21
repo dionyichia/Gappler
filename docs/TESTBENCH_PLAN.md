@@ -532,7 +532,7 @@ the driver-only boundary are in the runbook.
    machine homes the arm within seconds, unprompted (ORIENTATION §8.1) — and to the home pose. That pose
    was reached on the real arm by direct command in T1.7 (2026-09-23), but the state machine has never
    homed the real arm, and it homes without asking (CODE_AUDIT §B4). T1.2 removed the orchestrator's duplicate
-   arm bring-up launch (`sherman_docs/T1.2_SAFETY_FIXES.md` §I1); the grasp pipeline still includes
+   arm bring-up launch (`sherman_docs/setup/T1.2_SAFETY_FIXES.md` §I1); the grasp pipeline still includes
    the state machine and is not a no-motion launcher.
 2. **Never publish** to any `/rm_driver/*_cmd` topic, `/goal_pose`, `/cmd_vel`,
    `/manipulation/start`, `/manipulation/goal_pose`, or `/object_centroid_2d` on the real ROS domain.

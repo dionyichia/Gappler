@@ -1298,13 +1298,13 @@ Left for the nav owner, part of `PROJECT_PLAN` T3.5. Checked 2026-09-21 `[code]`
 all three owned navigation entry points include the T3.4 PointCloud2 LiDAR wrapper.
 Source-backed ROS construction and regression checks passed without executing actions.
 The installed box overlay remains unchanged. Map/localization choice below is still open.
-Evidence and limits: [`sherman_docs/T3.5_LAUNCH_PREP.md`](sherman_docs/T3.5_LAUNCH_PREP.md).
+Evidence and limits: [`sherman_docs/t3.5/T3.5_LAUNCH_PREP.md`](sherman_docs/t3.5/T3.5_LAUNCH_PREP.md).
 
 **Synthetic scan preparation, same branch/date:** `[observed]` All 12 small-cloud cases
 passed on the box using the actual source converter profiles/routes: nearest beam/range,
 height/range filtering, invalid/empty data, message preservation and distinct frames.
 No sensors/controllers launched; no physical TF, live LiDAR or mapping acceptance proved.
-Evidence: [`sherman_docs/T3.5_CLOUD_SCAN.md`](sherman_docs/T3.5_CLOUD_SCAN.md).
+Evidence: [`sherman_docs/t3.5/T3.5_CLOUD_SCAN.md`](sherman_docs/t3.5/T3.5_CLOUD_SCAN.md).
 
 **Map preparation, same branch/date:** Sherman selected SLAM Toolbox as the baseline;
 teammate coordination is still outstanding. Read-only audit found the configured map
@@ -1312,7 +1312,7 @@ directory absent and historical image/graph pairs present. Candidate localizatio
 refuses absent/empty/unreadable graph files before constructing hardware actions.
 Box construction checks passed without executing actions. Mapping still saves images
 only; graph serialization, compatibility, initialization and restart localization remain
-unproven. See [`sherman_docs/T3.5_MAP_PREP.md`](sherman_docs/T3.5_MAP_PREP.md).
+unproven. See [`sherman_docs/t3.5/T3.5_MAP_PREP.md`](sherman_docs/t3.5/T3.5_MAP_PREP.md).
 
 **Before-visit persistence experiment:** `[observed]` Installed SLAM Toolbox 2.6.10
 saved a synthetic graph and image, then a fresh localizer reloaded the exact raster
@@ -1320,7 +1320,7 @@ and estimated three known poses despite biased odometry. Missing-load service re
 do not establish success; malformed graph bytes abort the localizer with
 `std::length_error`. No vendor fix or safe corrupt-file rejection claimed. Candidate
 saving/readiness integration and installed deployment remain outstanding. Evidence:
-[`sherman_docs/T3.5_SLAM_PERSISTENCE.md`](sherman_docs/T3.5_SLAM_PERSISTENCE.md).
+[`sherman_docs/t3.5/T3.5_SLAM_PERSISTENCE.md`](sherman_docs/t3.5/T3.5_SLAM_PERSISTENCE.md).
 
 **Explicit snapshot handoff:** candidate `robot_slam/scripts/save_slam_map.py`
 saves graph/image into a new directory without overwriting historical assets.
@@ -1329,7 +1329,7 @@ It verifies mapping mode/topic, subscribes for refreshed raster, pauses measurem
 trip and SIGINT/SIGTERM tests passed; source-only packaging, no installed update.
 Automatic image saving remains unchanged; corrupt-load readiness/initialization
 and manual-driving runbook remain open. See
-[`sherman_docs/T3.5_MAP_SAVING.md`](sherman_docs/T3.5_MAP_SAVING.md).
+[`sherman_docs/t3.5/T3.5_MAP_SAVING.md`](sherman_docs/t3.5/T3.5_MAP_SAVING.md).
 
 - **There are two ways to drive, with two kinds of saved map.**
 
@@ -1509,7 +1509,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 
 - **2026-09-16, T0.2:** installed switch topology and persistent host addresses. RM65 and MID-360
   each replied from their required host address after a NetworkManager connection cycle. Evidence:
-  [`sherman_docs/T0.2_SESSION.md`](sherman_docs/T0.2_SESSION.md).
+  [`sherman_docs/setup/T0.2_SESSION.md`](sherman_docs/setup/T0.2_SESSION.md).
 
 ---
 
@@ -1526,7 +1526,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-07 | OpenCode + Sherman | Recorded explicit localization start-pose gate (GAPPLER_MAP_START_POSE) and synthetic /initialpose reseeding; readiness gates, manual-control runbook and install evidence remain open. |
 | 2026-10-07 | OpenCode + Sherman | Recorded snapshot manifest gate (checksums + geometry sanity) with map/pose/manifest refusal checks; manual-control runbook and install evidence remain open. |
 | 2026-10-07 | OpenCode + Sherman | Recorded minimal manual-control runbook (T1-T6, ownership checks, record sheet, gates; unvalidated procedure, no hardware run); install evidence and physical acceptance remain open. |
-| 2026-10-07 | OpenCode + Sherman | Recorded T3.4 attended LiDAR PointCloud2 at 9.999-10.002 Hz and Sherman-reported 19.3 V battery hold before driver/teleop startup. T3.4 PROGRESS; charger compatibility, driving/stopping and shutdown sign-off remain open. See sherman_docs/T3.4_BASE_BRINGUP.md. |
+| 2026-10-07 | OpenCode + Sherman | Recorded T3.4 attended LiDAR PointCloud2 at 9.999-10.002 Hz and Sherman-reported 19.3 V battery hold before driver/teleop startup. T3.4 PROGRESS; charger compatibility, driving/stopping and shutdown sign-off remain open. See sherman_docs/t3.4/T3.4_BASE_BRINGUP.md. |
 | 2026-09-14 | Claude (Opus 5) + Dion | §3.3 promoted to 🔴 and re-checked against the branch: exactly 15 files exist on `realman_manip` and not on `main`, ten of them pre-reorg duplicates. Added a fifth file to take, `anygrasp_node.sh`, which records that the verified session ran `checkpoint_tracking.tar` while `main` launches `checkpoint_detection.tar`. It is now `PROJECT_PLAN` T0.0, the first task in the plan. §3.2 marked done: the nav workspace built 10/10 on 2026-09-14, with two corrections — 10 packages not 8, and colcon does build `Livox-SDk2/` without a manifest. |
 | 2026-09-11 | Claude (Opus 5) + Dion | Added the pointer under §2.7 to the new `TESTBENCH_PLAN.md` handoff, and a root `CLAUDE.md` so a fresh session loads context automatically. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §2.6b pointing at the new `CODE_AUDIT.md` — a line-by-line read of all owned code. Headline finding: the grasp path cannot work, for three interlocking reasons. |
@@ -1556,7 +1556,7 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.12: first CI run recorded. Fixed preflight reporting FAIL for lab hardware on any non-lab Linux host. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.12: bench levels renamed L0-L5, `run.sh` runs every level it can and prints a summary table. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §2.5 marked done after T0.3 merged. Status block added above the original survey. The OpenVINS paths and the AnyGrasp `conda run` launch stay open. Dropped two mentions of the retired "no fixes yet" rule. |
-| 2026-09-19 | Claude (Opus 5) + Dion | §4: flagged the scope conflict with `PROJECT_PLAN` §4 (return leg and pose fusion out of scope), `PROJECT_PLAN` wins. Fixed the broken link to `sherman_docs/T0.2_SESSION.md` in §5. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §4: flagged the scope conflict with `PROJECT_PLAN` §4 (return leg and pose fusion out of scope), `PROJECT_PLAN` wins. Fixed the broken link to `sherman_docs/setup/T0.2_SESSION.md` in §5. |
 | 2026-09-20 | Claude (Opus 5) + Dion | **§2.2 decided: retire `sam3_ros_node.py` (Option 2).** Two reasons added: `object_recognition_pipeline.py` already subscribes to both cameras and holds the cross-view matcher, so the unified service is mostly written, and the duplicate 3.21 GB model is the largest VRAM saving in the system. Retiring it also closes L1 and the segmentation half of B3. Sequencing behind §1.3 and §2.1 is unchanged. |
 | 2026-09-20 | Claude (Opus 5) + Dion | **Added §2.14: GPU budget, phase-gated model residency, and which HiCo-Nav models we need.** Target design is every process booted and idle with the models gated by phase, and the state machine subscribing to `/manipulation/start` as a real gate, which closes CODE_AUDIT B6. Key finding: navigation is the tight phase, not grasping, and a local Qwen3-Omni does not fit on a 16 GB card at all. MobileSAM is replaceable by SAM3, YOLO-World probably is not, CLIP needs an API check. The OOM risk is at the phase transition, not in either steady state. Four open threads recorded. Not yet in `PROJECT_PLAN` or the task map. |
 | 2026-09-20 | Claude (Opus 5) + Dion | §2.6b: CODE_AUDIT open question 5 answered, so the I1 row now names the owner (`ros2_robot_ws/src/main.py`) and the deletion (`orchestrator.py:69-74`). Five open questions left. §2.1: pointer to the HiCo-Nav cascade and §2.14. |

@@ -31,23 +31,23 @@ evidence into the shared documents.
 | File | What it is | When to read it |
 |---|---|---|
 | [`WORK_LOG.md`](WORK_LOG.md) | Chronological index of Sherman's sessions, outcomes, and next actions | At the start or end of every session |
-| [`T0.2_SESSION.md`](T0.2_SESSION.md) | Evidence for the T0.2 network-switch proof | When reviewing M0 network evidence |
-| [`T0.9_BASE_FOOTPRINT.md`](T0.9_BASE_FOOTPRINT.md) | Reported base identity and pending footprint-measurement record | Before measuring or changing the navigation footprint |
-| [`T0.5_FRESH_CLONE.md`](T0.5_FRESH_CLONE.md) | Fresh Mac clone and safe-bench evidence | When reviewing M0 portability acceptance |
-| [`T0.1_D455_VALIDATION.md`](T0.1_D455_VALIDATION.md) | D455 USB 3 link and ROS-driver stream evidence | When reviewing M0 camera acceptance |
-| [`T1.2_SAFETY_FIXES.md`](T1.2_SAFETY_FIXES.md) | B1 launcher wording + I1 double-launch deletion evidence | When reviewing M1 pre-power safety |
-| [`T1.3_HOME_POSE.md`](T1.3_HOME_POSE.md) | Final T1.3 sim verdicts; original row retained; replacement pose still owed | When reviewing the arm home pose |
-| [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md) | T1.4 physical visit and no-motion power-on verdict; cell and motion checks remain downstream | Before the attended T1.6 session |
-| [`T3.4_BASE_BRINGUP.md`](T3.4_BASE_BRINGUP.md) | T3.4 DONE for attended keyboard/LiDAR scope, verified process shutdown and explicit unmeasured safety/calibration residuals | Before planning T3.5 or reviewing base evidence |
-| [`T3.4_REMOTE_CHECKS.md`](T3.4_REMOTE_CHECKS.md) | Maintained isolated keyboard/smoother tests, LiDAR-only launch and gated attended handoff | Re-running remote T3.4 checks |
-| [`T3.5_LAUNCH_PREP.md`](T3.5_LAUNCH_PREP.md) | Network-preserving SLAM launch preparation and shared PointCloud2 includes; source-only verification | Before T3.5 mapping/localization setup |
-| [`T3.5_CLOUD_SCAN.md`](T3.5_CLOUD_SCAN.md) | Synthetic point-cloud geometry/filtering and scan checks for all current launch profiles | Re-running remote T3.5 scan-pipeline checks |
-| [`T3.5_MAP_PREP.md`](T3.5_MAP_PREP.md) | Map audit, SLAM baseline direction and source-only missing-graph startup gate | Before save/reload preparation |
-| [`T3.5_SLAM_PERSISTENCE.md`](T3.5_SLAM_PERSISTENCE.md) | Installed synthetic graph/image saving and restart localization; corrupt-load abort documented | Before implementing the saving/readiness procedure |
-| [`T3.5_MAP_SAVING.md`](T3.5_MAP_SAVING.md) | Explicit non-overwriting graph/image snapshot tool and operator handoff | Saving current-session maps after attended mapping |
-| [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md) | T3.5 FAST-LIVO2 record: isolated build, verified public-data replay and four findings (remap fix, republisher bypass, LIO heartbeats, mapper teardown crash) | Before T3.5a close-out or any FAST-LIVO2 source patch |
-| [`T3.5_MANUAL_CONTROL.md`](T3.5_MANUAL_CONTROL.md) | Minimal manual-control runbook: T1-T6 terminals, command-path ownership checks, record sheet and gates; unvalidated | Before attended keyboard-driving session |
-| [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md) | Reported D455 mount design and remaining fabrication evidence | Before fabricating the camera mount |
+| [`T0.2_SESSION.md`](setup/T0.2_SESSION.md) | Evidence for the T0.2 network-switch proof | When reviewing M0 network evidence |
+| [`T0.9_BASE_FOOTPRINT.md`](setup/T0.9_BASE_FOOTPRINT.md) | Reported base identity and pending footprint-measurement record | Before measuring or changing the navigation footprint |
+| [`T0.5_FRESH_CLONE.md`](setup/T0.5_FRESH_CLONE.md) | Fresh Mac clone and safe-bench evidence | When reviewing M0 portability acceptance |
+| [`T0.1_D455_VALIDATION.md`](setup/T0.1_D455_VALIDATION.md) | D455 USB 3 link and ROS-driver stream evidence | When reviewing M0 camera acceptance |
+| [`T1.2_SAFETY_FIXES.md`](setup/T1.2_SAFETY_FIXES.md) | B1 launcher wording + I1 double-launch deletion evidence | When reviewing M1 pre-power safety |
+| [`T1.3_HOME_POSE.md`](setup/T1.3_HOME_POSE.md) | Final T1.3 sim verdicts; original row retained; replacement pose still owed | When reviewing the arm home pose |
+| [`T1.4_PHYSICAL_SETUP.md`](setup/T1.4_PHYSICAL_SETUP.md) | T1.4 physical visit and no-motion power-on verdict; cell and motion checks remain downstream | Before the attended T1.6 session |
+| [`T3.4_BASE_BRINGUP.md`](t3.4/T3.4_BASE_BRINGUP.md) | T3.4 DONE for attended keyboard/LiDAR scope, verified process shutdown and explicit unmeasured safety/calibration residuals | Before planning T3.5 or reviewing base evidence |
+| [`T3.4_REMOTE_CHECKS.md`](t3.4/T3.4_REMOTE_CHECKS.md) | Maintained isolated keyboard/smoother tests, LiDAR-only launch and gated attended handoff | Re-running remote T3.4 checks |
+| [`T3.5_LAUNCH_PREP.md`](t3.5/T3.5_LAUNCH_PREP.md) | Network-preserving SLAM launch preparation and shared PointCloud2 includes; source-only verification | Before T3.5 mapping/localization setup |
+| [`T3.5_CLOUD_SCAN.md`](t3.5/T3.5_CLOUD_SCAN.md) | Synthetic point-cloud geometry/filtering and scan checks for all current launch profiles | Re-running remote T3.5 scan-pipeline checks |
+| [`T3.5_MAP_PREP.md`](t3.5/T3.5_MAP_PREP.md) | Map audit, SLAM baseline direction and source-only missing-graph startup gate | Before save/reload preparation |
+| [`T3.5_SLAM_PERSISTENCE.md`](t3.5/T3.5_SLAM_PERSISTENCE.md) | Installed synthetic graph/image saving and restart localization; corrupt-load abort documented | Before implementing the saving/readiness procedure |
+| [`T3.5_MAP_SAVING.md`](t3.5/T3.5_MAP_SAVING.md) | Explicit non-overwriting graph/image snapshot tool and operator handoff | Saving current-session maps after attended mapping |
+| [`T3.5_FASTLIVO_REPLAY.md`](t3.5/T3.5_FASTLIVO_REPLAY.md) | T3.5 FAST-LIVO2 record: isolated build, verified public-data replay and four findings (remap fix, republisher bypass, LIO heartbeats, mapper teardown crash) | Before T3.5a close-out or any FAST-LIVO2 source patch |
+| [`T3.5_MANUAL_CONTROL.md`](t3.5/T3.5_MANUAL_CONTROL.md) | Minimal manual-control runbook: T1-T6 terminals, command-path ownership checks, record sheet and gates; unvalidated | Before attended keyboard-driving session |
+| [`T5.2_D455_MOUNT.md`](t5/T5.2_D455_MOUNT.md) | Reported D455 mount design and remaining fabrication evidence | Before fabricating the camera mount |
 
 The shared, unvalidated T1.5 procedure is in [`../ARM_BRINGUP.md`](../ARM_BRINGUP.md). This
 personal folder holds Sherman's session evidence, not a second copy of the operating procedure.

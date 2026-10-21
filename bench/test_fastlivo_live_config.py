@@ -14,7 +14,7 @@ LIVE = FASTLIVO / "live/config"
 REPLAY = FASTLIVO / "replay/config"
 MAPPER = "t35c_stationary02_20261019_visual.yaml"
 CAMERA = "t35c_stationary02_20261019_camera.yaml"
-RUNBOOK = REPO / "docs/sherman_docs/T3.5f_LIVE_RUNBOOK_20261020.md"
+RUNBOOK = REPO / "docs/sherman_docs/t3.5f/T3.5f_LIVE_RUNBOOK_20261020.md"
 
 
 class LiveConfigTests(unittest.TestCase):

@@ -5,7 +5,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-09-16] T0.2 | Network switch proof
 
-- Evidence: [`T0.2_SESSION.md`](T0.2_SESSION.md)
+- Evidence: [`T0.2_SESSION.md`](setup/T0.2_SESSION.md)
 - Verified: RM65 at `192.168.1.18` replied from host address `192.168.1.10`; MID-360 at
   `192.168.1.3` replied from host address `192.168.1.5`; both checks passed after a NetworkManager
   connection cycle.
@@ -14,7 +14,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-09-16] T0.9 | Base identity recorded
 
-- Evidence: [`T0.9_BASE_FOOTPRINT.md`](T0.9_BASE_FOOTPRINT.md)
+- Evidence: [`T0.9_BASE_FOOTPRINT.md`](setup/T0.9_BASE_FOOTPRINT.md)
 - Verified: The supplied Hexman Robotics ECHO Series Product Manual v1.8.7 identifies the chassis as
   ECHO-PLUS, `460 x 380 x 140 mm`, with a `265 mm` stated rotation radius.
 - Outcome: The manual's rotation radius exceeds the current `0.20 m` Nav2 radius by `0.065 m`.
@@ -23,7 +23,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-09-16] T5.2 | D455 mobile-base mount constraints
 
-- Evidence: [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md)
+- Evidence: [`T5.2_D455_MOUNT.md`](t5/T5.2_D455_MOUNT.md)
 - Verified: The planned D455 base mount uses `20 x 20 mm` aluminum extrusion, with a required
   `190 mm` extrusion length.
 - Outcome: Mount CAD and dimensions are reported complete. The provided D455 still needs USB 3 and
@@ -33,7 +33,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-09-21] T0.5 | Fresh Mac clone bench
 
-- Evidence: [`T0.5_FRESH_CLONE.md`](T0.5_FRESH_CLONE.md)
+- Evidence: [`T0.5_FRESH_CLONE.md`](setup/T0.5_FRESH_CLONE.md)
 - Verified: An isolated clone at `9bbb26a` passed L0 static checks, L1 contracts, and L2 preflight.
   L3-L4 skipped as expected because the Mac has no ROS 2 Humble or NVIDIA environment.
 - Outcome: Sherman's clean-clone evidence is complete. The independent-clone half of T0.5 remains open.
@@ -42,7 +42,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-09-24] T0.5 | Refreshed on current dev, both halves on one branch
 
-- Evidence: [`T0.5_FRESH_CLONE.md`](T0.5_FRESH_CLONE.md), [`../bench-runs/2026-09-24-sherman-mac-t0.5-fresh-clone.txt`](../bench-runs/2026-09-24-sherman-mac-t0.5-fresh-clone.txt)
+- Evidence: [`T0.5_FRESH_CLONE.md`](setup/T0.5_FRESH_CLONE.md), [`../bench-runs/2026-09-24-sherman-mac-t0.5-fresh-clone.txt`](../bench-runs/2026-09-24-sherman-mac-t0.5-fresh-clone.txt)
 - Verified: fresh clone of `dev` @ `787f2cc` on this Mac, `./bench/run.sh quick` PASS (L0-L2, 10/0/0/13; L3-L6 SKIPPED off-box as expected). Merged Sherman evidence with Zongzhe's `origin/t0.5` log onto the shared `t0.5` line; brought to current `dev` (stale plan/table touches resolved to current content).
 - Outcome: single T0.5 branch carrying both halves, PR to `dev` unmerged. T0.5 task flip needs owner sign-off (Zongzhe's half is his Sep-21 run).
 - Next: PR review + merge word; delete probe clone `~/fresh-clone-t05` after merge.
@@ -56,7 +56,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-09-22] T0.1 | D455 ROS-driver validation
 
-- Evidence: [`T0.1_D455_VALIDATION.md`](T0.1_D455_VALIDATION.md)
+- Evidence: [`T0.1_D455_VALIDATION.md`](setup/T0.1_D455_VALIDATION.md)
 - Verified: D455 on USB 3 (5000M, serial `146222253541`) after a port/cable swap; ROS driver delivered
   color, depth, and aligned depth at ~30 Hz sustained over a 60 s three-topic bag (2117/2273/2117 msgs).
   Earlier `hz` swings were a measurement artifact. D435i moved to its own direct USB 3 port.
@@ -65,7 +65,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-09-22] T1.2 | Remaining safety fixes done
 
-- Evidence: [`T1.2_SAFETY_FIXES.md`](T1.2_SAFETY_FIXES.md)
+- Evidence: [`T1.2_SAFETY_FIXES.md`](setup/T1.2_SAFETY_FIXES.md)
 - Verified: B1 launcher wording corrected (2 lines, zero behavior change; no phantom `q` promise left).
   I1 orchestrator double-launch copy deleted behind a new failing-first L0 check
   (`arm-bringup-single-launch`): RED with 2 sites, GREEN with 1. Full L0 (11 checks), L1, and
@@ -78,7 +78,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-09-22] T1.3 | Home pose decided row applied (code, Mac side)
 
-- Evidence: [`T1.3_HOME_POSE.md`](T1.3_HOME_POSE.md)
+- Evidence: [`T1.3_HOME_POSE.md`](setup/T1.3_HOME_POSE.md)
 - Verified (Mac): new L0 check `home-joints-decided` RED (5 joints differ) before the header edit,
   GREEN after; full L0 (12 checks) clean. Sim expectation flipped to the decided row (runs on the
   box only). Baseline banked in the evidence note; stale-warning verified absent; trivial_mtc copy
@@ -88,21 +88,21 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-09-22] T1.3 | Final evidence only; original home row retained
 
-- Evidence: [`T1.3_HOME_POSE.md`](T1.3_HOME_POSE.md)
+- Evidence: [`T1.3_HOME_POSE.md`](setup/T1.3_HOME_POSE.md)
 - Verified: original row has 2/2 full simulated-cycle PASSes; `realman_manip` has 5/5 final-approach FAILs; joint4 reached `-3.092`, only `0.008` rad from `-3.1`.
 - Outcome: `dev` keeps the original row. The decided-row change remains only in unmerged `t1.3-home-pose` / PR #18. Task-tree T1.3 is PROGRESS, not DONE.
 - Next: T1.4 physical setup, then a purpose-built candidate with joint-limit margin; replacement PR only after sim validation.
 
 ## [2026-09-22] T1.4 | Measurement plan recorded on t1.4-physical-setup
 
-- Evidence: [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md)
+- Evidence: [`T1.4_PHYSICAL_SETUP.md`](setup/T1.4_PHYSICAL_SETUP.md)
 - Verified: plan only; no physical visit, no arm motion, no table/cell.
 - Outcome: exact A–F sheet recorded (base verification, static envelope, extrusion/mount, safety setup, camera identity, blockers). Task-tree T1.4 status untouched.
 - Next: lab visit for T1.4-now measurements; T1.4-cell stays blocked until a table exists.
 
 ## [2026-09-23] T1.4 | Visit closed, DONE (power-on ready, no motion)
 
-- Evidence: [`T1.4_PHYSICAL_SETUP.md`](T1.4_PHYSICAL_SETUP.md)
+- Evidence: [`T1.4_PHYSICAL_SETUP.md`](setup/T1.4_PHYSICAL_SETUP.md)
 - Verified: A taped (0.380 x 0.460). B2/B4/C4/C5 measured-closed, single readings. B1 verdicts + C6-C9 reported with itemizations waived. D cleared as reported (D1 figures waived, D2 deleted, D3 verbal confirm with transcription owed, D4 no hazards). E serial 243222074878 matches banked wrist default. F blockers confirmed. Unpowered throughout, no motion commanded.
 - Outcome: T1.4 DONE locally on t1.4-physical-setup. Unpushed. Residuals: D3 figure transcription, T1.4-cell blocked until a table exists.
 - Next: Push + PR to dev on Sherman's word, then T1.3 purpose-built candidate from latest origin/dev.
@@ -122,27 +122,27 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-09-23] T1.3 | MAIN row adopted final, branch to dev
 
-- Evidence: [`T1.3_HOME_POSE.md`](T1.3_HOME_POSE.md)
+- Evidence: [`T1.3_HOME_POSE.md`](setup/T1.3_HOME_POSE.md)
 - Verified: Round A 4/4 reachable + TF placement mm-matches FK (C1 wins: lowest grasp 0.922, 44-deg view). Round B on C1: approach + close PASS (rejected row's killer step); return FAIL 0.0563 attributed to stale test RETURN (2.3562 vs fixed 2.3000, delta 0.0562), fixed test-only. C2 probe reverted. Archive guide bannered (was quoting rejected row). No production-code change: HOME_JOINTS already MAIN.
 - Outcome: verdict MAIN final (sim-validated + documented) on t1.3-home-pose-select. Residuals: variant matrix not run, T1.1 supersession owed (Dion), box green re-run owed, live validation T1.7.
 - Next: PR to dev, CI green, box verification, merge on Sherman's word. Task-tree T1.3 DONE at merge.
 
 ## [2026-09-24] T1.3 | Variant matrix green, scenario residual closed
 
-- Evidence: [`T1.3_HOME_POSE.md`](T1.3_HOME_POSE.md) (matrix rows in verdict section)
+- Evidence: [`T1.3_HOME_POSE.md`](setup/T1.3_HOME_POSE.md) (matrix rows in verdict section)
 - Verified: `SM_CY`/`SM_FAR` knobs added test-only on `t1.3-variant-matrix` (defaults = baseline); box sim 3/3 PASS (baseline, lateral +80px, shortened 0.22m) with gripper close in all, return 0.0001 rad, C7 XFAIL as designed. Box left clean, channel empty. Fixed stale "unvalidated on the real arm" test string (T1.7 validated 2026-09-23).
 - Outcome: MAIN survives off-center and shortened geometries. Remaining residuals: T1.1 supersession owed (Dion), live validation T1.7, D3 transcription, table frame.
 - Next: PR `t1.3-variant-matrix` to `dev` on Sherman's word (CI + merge word; box already verified).
 
 ## [2026-09-24] T5.4 | D455 TF determination opened (CAD + package sources)
 
-- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md)
+- Evidence: [`T5.4_D455_TF.md`](t5/T5.4_D455_TF.md)
 - Verified (Mac, no lab access): replacement-mount CAD inputs recorded (hole origin, platform edge −13.05/+29.50 mm, y = 0 centered, 3 mm middle plate vs 5 mm top platform — all design-intent, unverified as-built); D455 package facts read from Intel URDF (origin = bottom screw, color y −0.059, baseline 95 mm, fixed optical flip, driver overwrites fine extrinsics live).
 - Outcome: chain derived with one UNKNOWN (platform↔base placement); frame-collision flag to Dion/T5.5; October taping list referenced under T5.4-after-T5.3-fit. No PR; T5.4 stays OPEN.
 
 ## [2026-09-24] T5.2 | v2 plate revision DONE
 
-- Evidence: [`T5.2_D455_MOUNT.md`](T5.2_D455_MOUNT.md) (v2 section + changelog)
+- Evidence: [`T5.2_D455_MOUNT.md`](t5/T5.2_D455_MOUNT.md) (v2 section + changelog)
 - Verified: same mount, revised plate stack (3 mm middle, 5 mm top platform current); requirement recorded (Dion via Sherman: camera higher to see higher for navigation); positions carry over from verified v1 geometry. Task-tree T5.2 → DONE (v2).
 - Outcome: v2 design closed remotely (no lab access). Physical fit + view verification remain T5.3 (Oct 5+); geometry measurement remains T5.4.
 - Next: PR `t5.2-mount-v2` to `dev` (docs-only: CI + merge word, no box needed).
@@ -156,7 +156,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-06] T5.3 | Revised D455 mount fit PASS
 
-- Evidence: [`T5.3_D455_FIT.md`](T5.3_D455_FIT.md).
+- Evidence: [`T5.3_D455_FIT.md`](t5/T5.3_D455_FIT.md).
 - Verified: serial 146222253541 selected explicitly; RGB and depth browser endpoints delivered JPEG frames, and Sherman confirmed live views. Rigidity, fasteners, cable route, arm clearance and navigation-view suitability are Sherman-reported PASS, not independently certified by automation.
 - Outcome: task-tree T5.3 marked DONE. No runtime TF or robot motion commands added. Geometry integration remains T5.4 and camera–LiDAR calibration remains T5.5; photo archival, angular uncertainty and detailed clearance-method evidence remain residuals.
 - Branch checks: `git diff --check` and Mac `./bench/run.sh quick` PASS; L3–L6 skipped. These checks validate repository consistency, not physical fit.
@@ -164,49 +164,49 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-06] T5.4 | As-fitted screw geometry recorded
 
-- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md); T5.3 merged PR #38.
+- Evidence: [`T5.4_D455_TF.md`](t5/T5.4_D455_TF.md); T5.3 merged PR #38.
 - Verified: Sherman reported platform/screw measurements, 65 mm axle height and axle alignment with the chassis midpoint. Derived provisional bottom-screw xyz `(0.208, 0, 0.528) m`; zero rpy visually estimated, uncertainty unknown. Serial corrected to 146222253541. Mac quick bench and `git diff --check` PASS (L3–L6 skipped).
 - Outcome: measured placement recorded; T5.4 remains OPEN. No live TF changed. Preserved both work-log histories when merging latest `origin/dev` into the existing pushed T5.4 branch.
 - Next: distinguish arm, LiDAR, camera and return-clearance offsets before single-source integration; inspect installed camera package/frame chain, then focused tests and isolated box verification. Do not replace every 0.18 with the camera screw x=0.208.
 
 ## [2026-10-06] T5.4 | Shared fixed geometry, behavior preserved
 
-- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md), `shared/global_config.yaml`, `bench/test_geometry.py`.
+- Evidence: [`T5.4_D455_TF.md`](t5/T5.4_D455_TF.md), `shared/global_config.yaml`, `bench/test_geometry.py`.
 - Verified: Mac quick checks PASS with geometry runtime explicitly SKIPPED (PyYAML absent); box six geometry tests PASS; mock-nav six controls PASS/four existing XFAIL; isolated TF lookups matched arm/LiDAR/provisional screw config and publishers were stopped. Contract scanner extended/tested without baseline reset.
 - Outcome: both SLAM launches read shared mount definitions; approach/return legacy references remain separately 0.18 and marker height reads arm geometry. No stopping behavior changed. D455 screw stored, not deployed as a camera/optical transform. Review findings addressed: malformed-config errors and accurate runtime skip reporting.
 - Next: T5.4 remains PROGRESS pending D455 package/frame chain and Dion's navigation-reference decisions. No PR or merge yet. Task-tree artifact republish remains owed.
 
 ## [2026-10-06] T5.4 | D455 sensor-frame chain verified
 
-- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md), `nav/robot_slam/launch/base_camera.launch.py`, `nav/robot_slam/urdf/base_d455.urdf.xacro`.
+- Evidence: [`T5.4_D455_TF.md`](t5/T5.4_D455_TF.md), `nav/robot_slam/launch/base_camera.launch.py`, `nav/robot_slam/urdf/base_d455.urdf.xacro`.
 - Verified: installed Intel macro gives screw-to-link `(0.01115, 0.0475, 0.0145) m` (corrects earlier x=0.0158); driver serial 146222253541; RGB/depth frame headers resolve to robot_base_link. Exactly two static publishers with disjoint mount/body versus sensor children. Eight box geometry/model tests PASS; Mac quick PASS with runtime/model checks explicitly SKIPPED. Read-only code review found no important issues.
 - Outcome: opt-in camera-only source launch integrated and verified in private domain 176, no arm/base driver or stopping-behavior change. Our camera-only browser preview remains running. Installed-package deployment/full-system operation/calibration not proven; no build performed.
 - Decision reported by Sherman: 180 mm refers to camera, not robot front. Which camera/frame and whether both navigation legs use it remain to be confirmed; fitted D455 screw/depth x are 208/219.15 mm. T5.4 stays PROGRESS. Task-tree artifact republish owed.
 
 ## [2026-10-06] T5.4 | Both navigation legs reference D455 depth origin
 
-- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md), `shared/nav_geometry.py`, `bench/test_camera_navigation.py`, mock-nav log `bench_nav_nodes_2026-10-06_1642.txt` on the box.
+- Evidence: [`T5.4_D455_TF.md`](t5/T5.4_D455_TF.md), `shared/nav_geometry.py`, `bench/test_camera_navigation.py`, mock-nav log `bench_nav_nodes_2026-10-06_1642.txt` on the box.
 - Decision: Sherman explicitly selected the new base D455 for both approach and return. Distances are planar: 0.6/0.5 m, using actual TF sensor origin rather than old 180 mm or screw position. Separate arm/LiDAR geometry unchanged.
 - Verified: four new camera-reference mock cases failed old code; after implementation full mock-nav nine controls PASS/four existing XFAIL. Pure geometry/arrival-gate tests PASS; arrival map-TF loss regression failed before its guard fix. Box eight geometry/model tests and initial three pure geometry tests PASS. Missing camera TF produces no goal/start and return can retry when TF appears.
 - Outcome: legacy reference scalars removed. Camera launch must run on navigation's domain; private preview does not provide production TF. Full L0–L5 lab testing requested and pending, with real-arm-unreachable simulation guard intact; no real motion automated. Task remains PROGRESS until verification is reconciled.
 
 ## [2026-10-06] T5.4 | Evidence reconciliation before close-out
 
-- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md), candidate `12d784c`, isolated box `log/t54-full-suite.txt` and arm build log.
+- Evidence: [`T5.4_D455_TF.md`](t5/T5.4_D455_TF.md), candidate `12d784c`, isolated box `log/t54-full-suite.txt` and arm build log.
 - Verified: current box L0–L2 checks passed, including eight geometry/model tests and four camera-navigation tests. Arm/grasp build finished all 24 packages with exit 0 in 5 min 10 s. Mac quick bench passed executed checks; ROS-dependent checks skipped explicitly. Additional 10,000-case planar check passed (maximum error about 5e-15 m).
 - Clarified: initial CAD/no-runtime statements are historical; mount orientation remains visually estimated. Latest-available/cached TF is not fresh localisation or live camera health. Arrival still trusts nav success; calibration and physical stopping accuracy remain unproven. Original measurement-plan checks not evidenced are now labelled residuals.
 - Outcome: documentation prerequisite work progressed while the box suite runs. Navigation build and final-code mock navigation still pending at this entry. Existing environments/weights reused; fresh-machine reproducibility not claimed. T5.4 stays PROGRESS, no PR yet, merge approval withdrawn until results are reviewed and Sherman approves again.
 
 ## [2026-10-06] T5.4 | Final box evidence and geometry/software close-out
 
-- Evidence: [`T5.4_D455_TF.md`](T5.4_D455_TF.md), [`full box output`](../bench-runs/2026-10-06-sherman-t5.4-full.txt), candidate code `12d784c` (subsequent commits documentation-only).
+- Evidence: [`T5.4_D455_TF.md`](t5/T5.4_D455_TF.md), [`full box output`](../bench-runs/2026-10-06-sherman-t5.4-full.txt), candidate code `12d784c` (subsequent commits documentation-only).
 - Verified: L0–L2 PASS; both builds PASS (24 arm/grasp, 18 nav); final-code mock navigation nine controls PASS/four known XFAIL. MoveIt, e-stop and AnyGrasp environment PASS; recorded-image replay controls PASS/known A1 XFAIL.
 - Whole-suite disposition: FAIL, exit 1. State-machine simulation safely refused before launch with arm reachable; L5 failed because Aria USB absent, with six private-domain graph checks skipped. No guards bypassed and no real motion commanded. Unchanged vendor-driver compiler warnings recorded, not dismissed as proof of hardware safety.
 - Outcome: T5.4 marked DONE for geometry/software integration in task-tree, not calibration or real driving acceptance. Visual mount angles/measurement uncertainty, cached-TF health limitations, known defects and physical stopping accuracy remain explicit residuals. PR/CI next; no active merge approval. Hosted task-tree Artifact republish owed.
 
 ## [2026-10-06] T3.4 | LiDAR and base feedback, driving still open
 
-- Evidence: [`T3.4_BASE_BRINGUP.md`](T3.4_BASE_BRINGUP.md), [session excerpts](../bench-runs/2026-10-06-sherman-t3.4-excerpts.txt).
+- Evidence: [`T3.4_BASE_BRINGUP.md`](t3.4/T3.4_BASE_BRINGUP.md), [session excerpts](../bench-runs/2026-10-06-sherman-t3.4-excerpts.txt).
 - Verified: Sherman-run Livox PointCloud2 stream approximately 10 Hz; ECHO_PLUS driver initialized and odometry approximately 50 Hz. Incoming chassis frames decoded CAN mode and low battery (latest 20.5 V). Isolated Nav2 limiter on private test topics bounded forward/reverse outputs and returned to zero in 0.500 s after input stopped.
 - Outcome: T3.4 PROGRESS, not DONE. No runtime code/config change, keyboard-driving acceptance, physical stop proof, odometry accuracy measurement or fresh-build provenance claimed. Gripper and personal desktop work excluded from this task record.
 - Handoff: 21:01 read-only process check still showed communications-only xnode_comm, no vehicle/teleop/LiDAR/arm drivers. Chassis power, charging and custody not independently confirmed; no user process stopped by OpenCode.
@@ -214,7 +214,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-06] T3.4 | Maintained remote control preparation
 
-- Evidence: [`T3.4_REMOTE_CHECKS.md`](T3.4_REMOTE_CHECKS.md), [reviewed box results](../bench-runs/2026-10-06-sherman-t3.4-remote.txt), matching Mac/box SHA256 for six control/launch sources.
+- Evidence: [`T3.4_REMOTE_CHECKS.md`](t3.4/T3.4_REMOTE_CHECKS.md), [reviewed box results](../bench-runs/2026-10-06-sherman-t3.4-remote.txt), matching Mac/box SHA256 for six control/launch sources.
 - Changed: fail-closed fixed-domain guard, maintained keyboard/smoother bench, nonblocking teleop with 0.25 s inactivity timeout and burst-input correction, LiDAR-only PointCloud2 launch, focused static CMake executable resolution. Vendor files and full SLAM launches unchanged.
 - Verified: Mac quick bench PASS with declared skips; box private-domain suite PASS including hidden-node refusal, roughly 10 Hz keyboard publication, raw exit zeros, terminal restoration and surviving-smoother response to teleop crash. Pipeline silence zero observed in 0.457-0.603 s. Real LiDAR launch constructed without executing any action. Read-only review follow-up found no remaining important defects.
 - Whole quick-bench disposition on box: FAIL, exit 1. L0/L1 passed; L2 lacked three model-weight files in the separate test checkout. No guard bypass, asset duplication, full build or whole-stack PASS claimed.
@@ -222,7 +222,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-07] T3.5 | Navigation launch preparation, not deployed
 
-- Evidence: [`T3.5_LAUNCH_PREP.md`](T3.5_LAUNCH_PREP.md), [box/source results](../bench-runs/2026-10-07-sherman-t3.5-launch-prep.txt).
+- Evidence: [`T3.5_LAUNCH_PREP.md`](t3.5/T3.5_LAUNCH_PREP.md), [box/source results](../bench-runs/2026-10-07-sherman-t3.5-launch-prep.txt).
 - Changed on `t3.5-launch-prep`, stacked on T3.4 `3c4038c`: removed Ethernet mutation from both SLAM launches; all three owned navigation entry points use the owned PointCloud2 LiDAR wrapper. No vendor/config/map/scan/frame changes.
 - Verified: five original subcase failures reproduced before fixes; updated stdlib tests, Mac quick bench and focused box static/contracts passed. All three real ROS descriptions/includes constructed with temporary source-backed shares, returned LiDAR action and wrapper parameters verified; no actions executed. Review's omitted-return coverage gap corrected and mutation-tested.
 - Residuals: installed box overlay unchanged; no build/live LiDAR/scan/navigation acceptance or whole box suite claimed. Prior separate-checkout weight preflight gaps unchanged. Map route and save/load alignment still open; T3.4 physical stop/driving acceptance still open.
@@ -230,7 +230,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-07] T3.5 | Synthetic point-cloud conversion
 
-- Evidence: [`T3.5_CLOUD_SCAN.md`](T3.5_CLOUD_SCAN.md), [reviewed 12-case box output](../bench-runs/2026-10-07-sherman-t3.5-cloud-scan.txt), five matching source hashes.
+- Evidence: [`T3.5_CLOUD_SCAN.md`](t3.5/T3.5_CLOUD_SCAN.md), [reviewed 12-case box output](../bench-runs/2026-10-07-sherman-t3.5-cloud-scan.txt), five matching source hashes.
 - Changed: maintained domain-127 synthetic bench and L0 fixture/source-contract tests; no production node/configuration change. Actual source parameters/routes used, including relay paths for SLAM and direct cloud input for AMCL.
 - Verified: all 12 box cases received 10/10 distinct scans; known geometry/nearest beam, height/range limits, invalid/empty clouds, frame/timestamps and full relay metadata/payload checked. Input/output reliability and durability observed; history/depth declared/use-checked because DDS introspection reports UNKNOWN/0. Final domain empty. Five stdlib tests and available Mac quick levels passed; explicit skips retained.
 - Review: timeout cleanup grace, source routing/returned actions, full QoS contract, duplicate-frame rejection and full metadata checks strengthened. Follow-up found no remaining blockers. Interim unavailable depth/history assertion failure recorded, not hidden or fixed by altering production QoS.
@@ -239,7 +239,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 ## [2026-10-07] T3.5 | Map availability before localization actions
 
 - Added source-only readable/nonempty serialized-file gate before hardware action construction.
-- Four focused tests and real ROS construction/refusal checks passed on the box; available Mac quick checks passed. Evidence: [`T3.5_MAP_PREP.md`](T3.5_MAP_PREP.md) and [raw results](../bench-runs/2026-10-07-sherman-t3.5-map-prerequisites.txt).
+- Four focused tests and real ROS construction/refusal checks passed on the box; available Mac quick checks passed. Evidence: [`T3.5_MAP_PREP.md`](t3.5/T3.5_MAP_PREP.md) and [raw results](../bench-runs/2026-10-07-sherman-t3.5-map-prerequisites.txt).
 - Map audit and Sherman-selected SLAM baseline documented; teammate coordination pending.
 - No installed changes/actions/hardware. Graph serialization, corrupt-map refusal before hardware, initial pose and actual restart/reload remain outstanding. T3.5 PROGRESS.
 
@@ -248,19 +248,19 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Real installed mapper saved graph/data and YAML/image; fresh localizer recovered exact map raster and three known poses with biased odometry. No sensor/driver/controller or hardware commands.
 - Missing deserialize replies expose no usable map; malformed graph aborts localizer with std::length_error. Preserved failure evidence, then restarted for valid case. No vendor fix/safe rejection claimed.
 - Direct argv image saver handles spaces, avoiding upstream service's unquoted shell; candidate saving procedure remains unchanged. Old-node departure gate addresses observed restart discovery race.
-- Evidence/limits: [`T3.5_SLAM_PERSISTENCE.md`](T3.5_SLAM_PERSISTENCE.md). T3.5 PROGRESS; saving/readiness integration, initialization runbook, deployment and physical acceptance remain open.
+- Evidence/limits: [`T3.5_SLAM_PERSISTENCE.md`](t3.5/T3.5_SLAM_PERSISTENCE.md). T3.5 PROGRESS; saving/readiness integration, initialization runbook, deployment and physical acceptance remain open.
 
 ## [2026-10-07] T3.5 | Explicit snapshot saving
 
 - Added owned saver for new graph/image snapshots with manifest/checksums, mapping/topic checks, refreshed-raster subscription, measurement pause/restore and explicit stationary acknowledgment. This never stops wheels.
 - Synthetic box test invokes actual saver, advances graph with no map subscribers, verifies fresh map timestamp, reloads exact owned raster and checks fresh poses after normal/SIGINT/SIGTERM completion. Localization saving is refused before writes.
 - Review found stale-raster and interrupted-cleanup gaps; addressed and rerun, including repeated-signal regression. All five tests run on box; Mac PyYAML-dependent validation explicitly skipped.
-- Evidence: [`T3.5_MAP_SAVING.md`](T3.5_MAP_SAVING.md). No build/install/deploy, automatic graph saves or historical overwrite. Corrupt-localizer abort/readiness, initialization and minimal control runbook remain open. T3.5 PROGRESS.
+- Evidence: [`T3.5_MAP_SAVING.md`](t3.5/T3.5_MAP_SAVING.md). No build/install/deploy, automatic graph saves or historical overwrite. Corrupt-localizer abort/readiness, initialization and minimal control runbook remain open. T3.5 PROGRESS.
 
 ## [2026-10-07] T3.5 | Explicit localization start pose
 
 - Added `require_initial_pose` (finite `GAPPLER_MAP_START_POSE=x,y,theta`); localization launch now refuses silent-origin startup and passes `map_start_pose` before any hardware actions.
-- Verified: 6 map tests + construction refusals (map + pose) pass on Mac and box; synthetic `/initialpose` reseeding 0.000 m with biased odometry. Evidence: [`T3.5_MAP_PREP.md`](T3.5_MAP_PREP.md), [init-pose results](../bench-runs/2026-10-07-sherman-t3.5-init-pose.txt).
+- Verified: 6 map tests + construction refusals (map + pose) pass on Mac and box; synthetic `/initialpose` reseeding 0.000 m with biased odometry. Evidence: [`T3.5_MAP_PREP.md`](t3.5/T3.5_MAP_PREP.md), [init-pose results](../bench-runs/2026-10-07-sherman-t3.5-init-pose.txt).
 - Review: PASS no blockers. Readiness gates, minimal manual-control runbook, install evidence and physical acceptance remain open. T3.5 PROGRESS.
 
 ## [2026-10-07] T3.5 | Snapshot manifest gate
@@ -271,7 +271,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-07] T3.5 | Minimal manual-control runbook (unvalidated)
 
-- Evidence: [`T3.5_MANUAL_CONTROL.md`](T3.5_MANUAL_CONTROL.md)
+- Evidence: [`T3.5_MANUAL_CONTROL.md`](t3.5/T3.5_MANUAL_CONTROL.md)
 - Verified: docs only; no hardware, SSH/ROS, build or install performed. Sources re-read for citations: teleop defaults/behavior (`teleop_node.py:35-42,62-88,106-134`), tested smoother bounds (T3.4 doc), driver `/cmd_vel` subscription and `xnode_power` second publisher (vendor `ros2_interface.cpp:177` / `:154`), tested input/output wiring (`bench/nodes/test_velocity_smoother.py:85`), wider committed `nav2_params.yaml:190-203` defaults flagged as a T4 verify-and-override gate.
 - Outcome: T1-T6 terminals, single keyboard-to-driver path with `ros2` ownership checks, per-maneuver record sheet, halt-on-gate-failure rules and shutdown/custody checklist recorded. Explicit limits: arm driver off, no Nav2 goals, 1.0 s software bound is not a physical criterion, no kill/network experiments on moving hardware. Procedure unvalidated; driver-feed wiring, hardware-stop procedure and stopping criteria still owed at the attended session. T3.5 PROGRESS.
 - Next: attended-session review with the lab operator; fill in wiring/stop-procedure gaps; no PR/merge until validated.
@@ -285,7 +285,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-07] T3.4 | Attended LiDAR recheck, battery hold
 
-- Evidence: [`T3.4_BASE_BRINGUP.md`](T3.4_BASE_BRINGUP.md#2026-10-07-attended-follow-up-lidar-passed-battery-hold), [selected excerpts](../bench-runs/2026-10-07-sherman-t3.4-attended-hold.txt).
+- Evidence: [`T3.4_BASE_BRINGUP.md`](t3.4/T3.4_BASE_BRINGUP.md#2026-10-07-attended-follow-up-lidar-passed-battery-hold), [selected excerpts](../bench-runs/2026-10-07-sherman-t3.4-attended-hold.txt).
 - Verified: lab `dev` at `3dde592`; network addresses/USB adapter present; owned source LiDAR initialized, one PointCloud2 publisher, 9.999-10.002 Hz. Unsupported hidden-node flag failed first, then corrected Humble `--all` observation succeeded. Candidate source hashes matched; no installed-overlay change.
 - Outcome: Sherman reported chassis display **19.3 V**; no fresh ROS battery/alarm reading. Session halted before base driver, keyboard, smoother or activation; T3.4 stays PROGRESS. No movement/stopping acceptance or mapping.
 - Handoff: user-started LiDAR still running at last inspection; physical power-off, charging and custody not confirmed. No user process terminated by automation.
@@ -321,7 +321,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-13] T3.5 | Phase 1 source-only (parallel to T3.4 merge resolution)
 
-- Evidence: [`T3.5_MANUAL_CONTROL.md`](T3.5_MANUAL_CONTROL.md) (reconciliation table), [`T3.5_MAP_PREP.md`](T3.5_MAP_PREP.md) (route memo + G2–G4 proposal).
+- Evidence: [`T3.5_MANUAL_CONTROL.md`](t3.5/T3.5_MANUAL_CONTROL.md) (reconciliation table), [`T3.5_MAP_PREP.md`](t3.5/T3.5_MAP_PREP.md) (route memo + G2–G4 proposal).
 - Verified: working tree clean at phase start; local `t3.5-launch-prep` @ `ac1addf` in sync with origin; T3.4 resolution isolated in its own worktree/branch (`t3.4-bringup-evidence`), untouched. No T3.4-owned files modified. Mac `git diff --check` clean; `./bench/run.sh quick` PASS for executed checks, with explicit environment/subtest skips and L3-L6 not run.
 - Outcome: driving-sheet rows 1–4, 6–7 reconciled with T3.4 DONE with reported/observed limits; silence timing, timed stop, braking, watchdog, calibration, charger custody, mapping and localization remain open. SLAM baseline stands, team sign-off owed. G2 dry-load / G3 re-verify / G4 corrupt-graph procedure proposed, not implemented. T3.5 stays PROGRESS; no PR/merge.
 - Next: Phase 2 isolated box benches after T3.4 merge lands + idle-box window coordinated; Phase 3 live mapping only after deployment review.
@@ -392,7 +392,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-15] T3.5 | Split into T3.5a-f, FAST-LIVO2 replay record
 
-- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md)
+- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](t3.5/T3.5_FASTLIVO_REPLAY.md)
 - Verified: task-tree T3.5 split into six subtasks (public replay, sensor
   capture, our-data replay, live mapping, persistent localization, Nav2
   handover); T3.6 repointed to T3.5f; T5.9 reframed (FAST-LIVO2 implements
@@ -409,7 +409,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-16] T3.5a | Heartbeat gate, ASan runs staged
 
-- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md) (findings 3, 6)
+- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](t3.5/T3.5_FASTLIVO_REPLAY.md) (findings 3, 6)
 - Verified: LIO empty clouds proven upstream design from pinned source and
   counted as heartbeats (664 heartbeats, 663 valid clouds, 0 invalid on
   rerun). ASan image built with verified linkage after one mislabeled build
@@ -421,7 +421,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-16] T3.5a | Audit reset and ASan image-read finding
 
-- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md), runs
+- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](t3.5/T3.5_FASTLIVO_REPLAY.md), runs
   `t59-replay-20261016T070324Z-414486` and `t59-replay-20261016T070602Z-414943`.
 - Correction to the earlier entry: empty LIO clouds are source-observed behavior,
   not proven intentional design. ASan-only preload did not fix startup; ASan plus
@@ -439,7 +439,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-16] T3.5a | Destructor root-caused to Eigen/PCL alignment
 
-- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md), patched ASan
+- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](t3.5/T3.5_FASTLIVO_REPLAY.md), patched ASan
   image `56f183c4`, run `t59-replay-20261016T083645Z-421664`.
 - Verified: sampling guard held for the full recording (no vio report; 331
   valid clouds, 0 invalid). ASan diagnosed the original crash site:
@@ -454,7 +454,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-17] T3.5a | DONE — PASS replay, clean shutdown
 
-- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md), patched
+- Evidence: [`T3.5_FASTLIVO_REPLAY.md`](t3.5/T3.5_FASTLIVO_REPLAY.md), patched
   normal image `d0dcfa8a`, run `t59-replay-20261016T175305Z-433728`.
 - Verified: verdict PASS, supervisor exit 0, all processes exit 0; EOF with
   reconciled coverage (667/668/13,511+4 prestart, allowance 21); 665 odom,
@@ -466,7 +466,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-17] T3.5b | Stationary capture preparation
 
-- Plan: [`T3.5_SENSOR_CAPTURE.md`](T3.5_SENSOR_CAPTURE.md).
+- Plan: [`T3.5_SENSOR_CAPTURE.md`](t3.5/T3.5_SENSOR_CAPTURE.md).
 - Verified read-only: both cameras enumerated on 5000M USB links, 54 GiB free,
   required host Ethernet addresses retained, no matching hardware/bench/replay
   jobs or video holders reported. These checks do not establish custody or
@@ -479,7 +479,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-17] T3.5b | DONE — stationary capture recorded and characterised
 
-- Evidence: [`T3.5_SENSOR_CAPTURE.md`](T3.5_SENSOR_CAPTURE.md); primary bag
+- Evidence: [`T3.5_SENSOR_CAPTURE.md`](t3.5/T3.5_SENSOR_CAPTURE.md); primary bag
   `t35b_proof3` (74.03 s, 19,987 msgs, 2.2 GiB) plus `t35b_proof2` backup on
   the lab box at `log/t59-fastlivo/log/t35b-capture.R0fVks/`; analysis
   `analyze_proof3_ros.py` (`rosbag2_py` + `rclpy` deserialisation, no
@@ -503,7 +503,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-17] T3.5 | Verification audit, no hardware restart
 
-- Evidence: [verification report](T3.5_VERIFICATION_20261017.md).
+- Evidence: [verification report](t3.5/T3.5_VERIFICATION_20261017.md).
 - Fresh: full primary bag deserialisation/integrity, all-point finite/count/time
   checks, exact calibration pairing; Mac available bench PASS; lab recipe 10,
   harness 45 and sampling 7 tests PASS. Retained T3.5a result rechecked, not rerun.
@@ -515,8 +515,8 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-17] T3.5 | Phase A: tooling preserved, strict bag audit
 
-- Evidence: [freeze record](T3.5_INPUT_FREEZE_20261017.md),
-  [verification report](T3.5_VERIFICATION_20261017.md).
+- Evidence: [freeze record](t3.5/T3.5_INPUT_FREEZE_20261017.md),
+  [verification report](t3.5/T3.5_VERIFICATION_20261017.md).
 - Fresh: strict `analyze_bag.py` on `t35b_proof3` — `ANALYSIS_OK`, exit 0, every
   audit number reproduced (740/14,807/2,220/2,220; 14,799,936 points, 51.84%
   zero-range; 106.095 ms max LiDAR gap; one calibration variant). Synthetic
@@ -531,7 +531,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-17] T3.5 | Phase B: consumer contract, config pair, checker
 
-- Evidence: [consumer contract](T3.5_CONSUMER_CONTRACT.md).
+- Evidence: [consumer contract](t3.5/T3.5_CONSUMER_CONTRACT.md).
 - Fresh: pinned source read at exact commits (FAST-LIVO2 `a09599a`, vikit
   `6f213c7`): routing, preprocess clamp/blind/sampling, IMU init and
   normalisation, image cv_bridge path, remote camera loader, all 79 declared
@@ -555,7 +555,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-17] T3.5 | Phase B revision: nominal visual config, mode-aware checker
 
-- Evidence: [consumer contract](T3.5_CONSUMER_CONTRACT.md) (status, §4, §7, §8, R1).
+- Evidence: [consumer contract](t3.5/T3.5_CONSUMER_CONTRACT.md) (status, §4, §7, §8, R1).
 - Fresh: review found Phase B declared the visual leg blocked on missing
   T5.5 numbers, but Sherman's as-fitted camera measurements (T5.4 chain) compose
   into a nominal camera-LiDAR transform, and T3.5c's own framing ("nominal mount
@@ -586,7 +586,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-17] T3.5 | T3.5c: visual-config box round (revision's owed evidence)
 
-- Evidence: [consumer contract](T3.5_CONSUMER_CONTRACT.md) (§8 visual-config
+- Evidence: [consumer contract](t3.5/T3.5_CONSUMER_CONTRACT.md) (§8 visual-config
   round), [round manifest](tools/fastlivo/EVIDENCE_t35c-visual-config-20261017.sha256);
   box dir `~/rcp-Gappler/log/t59-fastlivo/log/t35c-visual-config` at commit
   `47a9b2e`.
@@ -602,7 +602,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-17] T3.5 | T3.5c: projection pre-check tool + first box round
 
-- Evidence: [consumer contract](T3.5_CONSUMER_CONTRACT.md) (§8 projection
+- Evidence: [consumer contract](t3.5/T3.5_CONSUMER_CONTRACT.md) (§8 projection
   block, R1), [box manifest](tools/fastlivo/EVIDENCE_t35c-projection-20261017.sha256);
   box dir `~/rcp-Gappler/log/t59-fastlivo/log/t35c-projection.zD3Wie` at commit
   `2c9abff`.
@@ -629,7 +629,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-17] T3.5 | T3.5c: standoff re-capture, depth probe, scene correction
 
-- Evidence: [consumer contract](T3.5_CONSUMER_CONTRACT.md) (§8 correction
+- Evidence: [consumer contract](t3.5/T3.5_CONSUMER_CONTRACT.md) (§8 correction
   block, R1); box dirs `t35c-projection-standoff.DxdNlI` (round 2) and
   `t35c-depth-check` (depth probe).
 - Verified: the pre-check re-run on the standoff bag `t35c_standoff` (746
@@ -677,7 +677,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-18] T3.5c | Own-data replay: LIO PASS, visual FAIL
 
-- Evidence: [two-round report](T3.5c_REPLAY_20261018.html),
+- Evidence: [two-round report](t3.5c/T3.5c_REPLAY_20261018.html),
   `tools/fastlivo/EVIDENCE_t35c-replay-20261018.sha256` (14 files).
 - Verified: Sherman ran frozen `t35b_proof3` in both modes from staged bundle
   `bfdd444`. A `20261018T062144Z-511887` PASS; B `20261018T064017Z-512716`
@@ -694,7 +694,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-18] T3.5c | Counters-only diagnostic candidate staged
 
-- Evidence: [report §7](T3.5c_REPLAY_20261018.html), recipe README;
+- Evidence: [report §7](t3.5c/T3.5c_REPLAY_20261018.html), recipe README;
   box bundle `log/t59-fastlivo/log/vio-diagnostic.VSnwsS`.
 - Implementation: SHA-gated additions-only source instrumentation, shadow key
   queries never used for selection; incremental mapper-only build from the exact
@@ -712,7 +712,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-18] T3.5c | Diagnostic build/replay completed: negative-depth rejection
 
-- Evidence: [report §8](T3.5c_REPLAY_20261018.html),
+- Evidence: [report §8](t3.5c/T3.5c_REPLAY_20261018.html),
   `tools/fastlivo/EVIDENCE_t35c-diagnostic-20261018.sha256` (14 files).
 - Verified: user-run build `build-logs.tMfThU` exits 0, generates diagnostic
   image `3cd781a6`; source diff/hashes and binary marker checks pass.
@@ -744,7 +744,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - Staged: `log/t59-fastlivo/log/visual-repair.xIOr2o`, manifest 32/32 checked;
   visibility-only build command prepared in pane 2, not executed. Full mapper
   candidate compilation and replay remain unverified.
-- Lab plan: [19 October capture](T3.5c_CAPTURE_PLAN_20261019.html), 15 s pilot
+- Lab plan: [19 October capture](t3.5c/T3.5c_CAPTURE_PLAN_20261019.html), 15 s pilot
   with audited overlap GO before a 75 s stationary bag. No hardware started;
   new scene/data is separate from software validation. T3.5b stays DONE,
   T3.5c remains PROGRESS. No PR or merge.
@@ -759,7 +759,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
   `mat_out.txt` byte-identical to original B and counters-only diagnostic.
 - Outcome: old invalid seed population prevented, but this data/configuration
   supplies no seed surviving the corrected path. Not a passing visual result.
-- Evidence: [report §10](T3.5c_REPLAY_20261018.html), 13-file visibility manifest.
+- Evidence: [report §10](t3.5c/T3.5c_REPLAY_20261018.html), 13-file visibility manifest.
 - Next: cumulative visibility/voxel build prepared in pane 2; user executes.
   Then public-bag regression to exercise usable visual features. No new build or
   further replay started. New scene pilot remains planned for 19 October.
@@ -833,7 +833,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-18] T3.5f | Read-only integration review: FAST-LIVO2 → the current stack
 
-- Evidence: [`T3.5f_INTEGRATION_REVIEW_20261018.html`](T3.5f_INTEGRATION_REVIEW_20261018.html)
+- Evidence: [`T3.5f_INTEGRATION_REVIEW_20261018.html`](t3.5f/T3.5f_INTEGRATION_REVIEW_20261018.html)
 - Reviewed read-only (no box, no hardware, no file changed outside this doc):
   mapper output contract, current TF ownership, Nav2's inputs, bench assertions.
 - New facts, previously unrecorded: the mapper's output frames are
@@ -857,14 +857,14 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 - **Revision 2026-10-18 (same day):** the body constant this entry quotes from
   the fork's Mid-360 profile was wrong by a sign — corrected to
   (0.191, 0.023, 0.156) m, identity rotation, per the entry below and
-  [`T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md`](T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md).
+  [`T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md`](t3.5/T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md).
   Decision 5 is settled for the pinned sensor class; the revised review doc
   carries the correction in its header, §4, the file-change table and the ledger.
 - Next: pilot-gated capture on 19 October per `T3.5c_CAPTURE_PLAN_20261019.html`.
 
 ## [2026-10-18] T3.5f | LiDAR→IMU extrinsic: pinned fork's Mid-360 profile has the sign inverted
 
-- Evidence: [`T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md`](T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md)
+- Evidence: [`T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md`](t3.5/T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md)
 - Found while answering "do we have every transform the bridge needs?": the pinned
   fork's Mid-360 `extrin_calib.extrinsic_T` is the Livox manual's IMU-position
   numbers **unnegated**, while its own code applies them verbatim as
@@ -936,7 +936,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-19] T3.5c | Bag identity for a later bag: `--emit-identity` / `--identity`
 
-- Evidence: [`T3.5_CONSUMER_CONTRACT.md`](T3.5_CONSUMER_CONTRACT.md) §8;
+- Evidence: [`T3.5_CONSUMER_CONTRACT.md`](t3.5/T3.5_CONSUMER_CONTRACT.md) §8;
   `tools/fastlivo/check_replay_configs.py` and `test_check_replay_configs.py`.
 - Verified: the checker's four frozen topics, counts and duration were hard-wired to `t35b_proof3`,
   so a new bag had no machine-checked identity — the capture plan's "create a new checked config
@@ -962,12 +962,12 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-19] T3.5d | Attended-session runbook (protocol; nothing started)
 
-- Evidence: [`T3.5d_ATTENDED_RUNBOOK.html`](T3.5d_ATTENDED_RUNBOOK.html).
+- Evidence: [`T3.5d_ATTENDED_RUNBOOK.html`](t3.5d/T3.5d_ATTENDED_RUNBOOK.html).
 - Verified: written from the settled integration review, the LiDAR→IMU finding and the pinned fork's
   source rather than from memory — the mapper's topic names (`/aft_mapped_to_init`,
   `/cloud_registered`, `/Laser_map`, `/path`, `/rgb_img`) and the camera load path
   (`LIVMapper.cpp:212`) were read from the pinned source, and the mapper teardown crash plus the
-  empty-diagnostic-cloud behaviour from [`T3.5_FASTLIVO_REPLAY.md`](T3.5_FASTLIVO_REPLAY.md).
+  empty-diagnostic-cloud behaviour from [`T3.5_FASTLIVO_REPLAY.md`](t3.5/T3.5_FASTLIVO_REPLAY.md).
 - Covered: preconditions; one-build/one-launch staging with the mapper in its own native colcon
   workspace sourced alongside Gappler; per-stage evidence; stationary-then-hand-driven acceptance
   with the rule that offline or stationary success does not prove moving-map quality; the in-place
@@ -985,8 +985,8 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-19] T3.5c/T3.5f | Config sweep of the pinned fork: 42 parameters, five findings
 
-- Evidence: [`T3.5_CONFIG_SWEEP_20261019.md`](T3.5_CONFIG_SWEEP_20261019.md);
-  [`T3.5_CONSUMER_CONTRACT.md`](T3.5_CONSUMER_CONTRACT.md) §2 item 6, §8.
+- Evidence: [`T3.5_CONFIG_SWEEP_20261019.md`](t3.5/T3.5_CONFIG_SWEEP_20261019.md);
+  [`T3.5_CONSUMER_CONTRACT.md`](t3.5/T3.5_CONSUMER_CONTRACT.md) §2 item 6, §8.
 - Verified: a read-only sweep of all twelve `config/*.yaml` in the pinned fork against the Mid-360
   manual, the parent project, the vendored driver and the fork's own source. Method as for the
   extrinsic defect: no finding is accepted on one evidence line. **None of the findings changes a
@@ -1031,7 +1031,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-19] T3.5 | F2 patch prepared (blind_sqr)
 
-- Evidence: [`T3.5_F2_BLIND_SQR_PATCH.md`](T3.5_F2_BLIND_SQR_PATCH.md); recipe section 2026-10-19 in
+- Evidence: [`T3.5_F2_BLIND_SQR_PATCH.md`](t3.5/T3.5_F2_BLIND_SQR_PATCH.md); recipe section 2026-10-19 in
   [`tools/fastlivo/recipe/README.md`](tools/fastlivo/recipe/README.md); MANIFEST re-verified 35/35.
 - Verified: Decision taken — patch, as a separate experimental image with the pinned image kept as the
   control. `patch_blind_sqr.py` restores upstream's `p_pre->blind_sqr = p_pre->blind * p_pre->blind`
@@ -1088,8 +1088,8 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-19] T3.5 | F2 `blind_sqr`: build succeeded, control measured
 
-- Evidence: [`T3.5_F2_BLIND_SQR_PATCH.md`](T3.5_F2_BLIND_SQR_PATCH.md) §4;
-  [`T3.5_F2_BLIND_SQR_BUILD.html`](T3.5_F2_BLIND_SQR_BUILD.html);
+- Evidence: [`T3.5_F2_BLIND_SQR_PATCH.md`](t3.5/T3.5_F2_BLIND_SQR_PATCH.md) §4;
+  [`T3.5_F2_BLIND_SQR_BUILD.html`](t3.5/T3.5_F2_BLIND_SQR_BUILD.html);
   `tools/fastlivo/EVIDENCE_f2-blind-sqr-build-20261019.sha256` (42 rows, 42/42 OK, own sha256
   `50d309a28c1c3bea…`), generated on the box over `log/f2-blind-sqr-build.lPMyTM` plus the control
   replay's `result.json` and `mapper.stdout.log`.
@@ -1130,7 +1130,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-19] T3.5c | New stationary capture and offline checks completed
 
-- Evidence: [`T3.5_CAPTURE_AUDIT_20261019.md`](T3.5_CAPTURE_AUDIT_20261019.md),
+- Evidence: [`T3.5_CAPTURE_AUDIT_20261019.md`](t3.5/T3.5_CAPTURE_AUDIT_20261019.md),
   `tools/fastlivo/EVIDENCE_t35c-capture-20261019.sha256` (79/79 files verified;
   paths relative to the box capture root `t35c-capture-20261019.of23agzq`).
 - Sherman operated the sensors and recorder in prepared Bash/tmux panes, domain
@@ -1632,7 +1632,7 @@ remain in [`../PROJECT_PLAN.md`](../PROJECT_PLAN.md).
 
 ## [2026-10-20] T3.5d | attended live mapping: stationary and hand-driven done, spin inconclusive
 
-- Full record: [`T3.5d_ATTENDED_RESULT_20261020.md`](T3.5d_ATTENDED_RESULT_20261020.md). Mapper
+- Full record: [`T3.5d_ATTENDED_RESULT_20261020.md`](t3.5d/T3.5d_ATTENDED_RESULT_20261020.md). Mapper
   image `ac276ad7` in a host-network container, native Livox and D455 drivers, no bridge.
 - Stationary: pose held to 0.8 mm (24 s) and 5.7 mm (30 s after restart). Hand-driven 117.9 s
   bag: 2,356 odom and 4,712 clouds all valid, longest gap 0.098 s, path 29.9 m, returned to the

@@ -9,7 +9,7 @@ import subprocess
 import unittest
 
 REPO = Path(__file__).resolve().parents[1]
-RUNBOOK = REPO / "docs/sherman_docs/T3.5f_LIVE_RUNBOOK_20261020.md"
+RUNBOOK = REPO / "docs/sherman_docs/t3.5f/T3.5f_LIVE_RUNBOOK_20261020.md"
 LIVE = REPO / "docs/sherman_docs/tools/fastlivo/live"
 TEXT = RUNBOOK.read_text()
 BLOCKS = re.findall(r"```bash\n(.*?)```", TEXT, re.S)

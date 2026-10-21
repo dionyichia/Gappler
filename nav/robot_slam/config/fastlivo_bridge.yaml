@@ -4,7 +4,7 @@ fastlivo_odom_bridge:
   ros__parameters:
     # Body (IMU) origin in robot_base_link, metres, identity rotation. Derivation: shared/global_config.yaml geometry.lidar_mount
     # (0.18, 0, 0.2) minus the mapper's corrected LiDAR->IMU extrinsic_T (-0.011, -0.02329, 0.04412); see
-    # docs/sherman_docs/T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md. Kept here for now: move to geometry in global_config after Dion approves.
+    # docs/sherman_docs/t3.5/T3.5_LIDAR_IMU_EXTRINSIC_FINDING.md. Kept here for now: move to geometry in global_config after Dion approves.
     body_in_base_m: [0.191, 0.02329, 0.15588]
     mapper_topic: "/aft_mapped_to_init"
     mapper_frame: "camera_init"

@@ -128,18 +128,18 @@ Run `python3 bench/test_slam_maps.py` for localization map-file prerequisites (L
 The ROS constructor check in `test_navigation_launches.py --runtime` also verifies
 missing-map refusal before hardware actions are constructed; fake files used for
 successful construction do not prove deserialization. See
-[`T3.5_MAP_PREP.md`](../docs/sherman_docs/T3.5_MAP_PREP.md).
+[`T3.5_MAP_PREP.md`](../docs/sherman_docs/t3.5/T3.5_MAP_PREP.md).
 
 `python3 bench/test_slam_fixture.py` checks synthetic room geometry (L0).
 `bash bench/slam_persistence.sh` exercises installed SLAM persistence (L4), not
 the full candidate launches. An exit-0 valid round trip still reports a known
 corrupt-file localizer abort; it does not establish safe hardware readiness.
-Details: [`T3.5_SLAM_PERSISTENCE.md`](../docs/sherman_docs/T3.5_SLAM_PERSISTENCE.md).
+Details: [`T3.5_SLAM_PERSISTENCE.md`](../docs/sherman_docs/t3.5/T3.5_SLAM_PERSISTENCE.md).
 
 `python3 bench/test_map_saver.py` checks the explicit snapshot tool. The synthetic
 SLAM bench additionally tests its actual saving/reload, stale-raster refresh without
 prior subscribers, interruption after pause and localization-mode refusal. See
-[`T3.5_MAP_SAVING.md`](../docs/sherman_docs/T3.5_MAP_SAVING.md). The local PyYAML
+[`T3.5_MAP_SAVING.md`](../docs/sherman_docs/t3.5/T3.5_MAP_SAVING.md). The local PyYAML
 validation skip is explicit; box tests exercise it.
 
 `python3 bench/check_installed.py --install-root ~/rcp-Gappler/install_nav`
@@ -155,7 +155,7 @@ converter parameters from launch source and uses the relay for the SLAM profiles
 direct-cloud route for AMCL. Twelve small-fixture cases check bin/range geometry, filtering,
 metadata and payload/QoS preservation; no physical TF, live sensor or navigation proof.
 Run serially with the keyboard bench because both reserve domain 127. Details:
-[`T3.5_CLOUD_SCAN.md`](../docs/sherman_docs/T3.5_CLOUD_SCAN.md).
+[`T3.5_CLOUD_SCAN.md`](../docs/sherman_docs/t3.5/T3.5_CLOUD_SCAN.md).
 
 ### Changelog
 
