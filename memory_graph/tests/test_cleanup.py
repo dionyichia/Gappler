@@ -101,7 +101,7 @@ class DoneWhenTest(unittest.TestCase):
     def test_pruning_removes_photos(self):
         """Not just "keeps enough": with kappa 1, two photos of three objects
         each cover all six."""
-        objects, anchors = new_stores(config())
+        objects, anchors = new_stores(config(prune_kappa=1))
         drive(objects, anchors, 0)
         report = PeriodicCleanup(objects, anchors).run()
         self.assertEqual(report.anchors_before, 11)
@@ -142,7 +142,7 @@ class DoneWhenTest(unittest.TestCase):
     def test_no_kept_photo_is_covered_by_another(self):
         """Upstream's check for kappa 1: no kept photo's objects are a subset
         of another kept photo's."""
-        objects, anchors = new_stores(config())
+        objects, anchors = new_stores(config(prune_kappa=1))
         drive(objects, anchors, 0)
         drive(objects, anchors, 100)
         PeriodicCleanup(objects, anchors).run()
@@ -283,9 +283,9 @@ class ScheduleTest(unittest.TestCase):
         cleanup.run()
         self.assertIsNone(cleanup.photo_stored())
 
-    def test_the_default_is_upstreams_ten_and_one(self):
+    def test_the_defaults_are_upstreams_ten_and_a_tentative_kappa_of_three(self):
         cfg = MemoryGraphConfig()
-        self.assertEqual((cfg.cleanup_every_photos, cfg.prune_kappa), (10, 1))
+        self.assertEqual((cfg.cleanup_every_photos, cfg.prune_kappa), (10, 3))     # D-MG1
 
     def test_bad_values_are_errors(self):
         for bad in ({"prune_kappa": 0}, {"cleanup_every_photos": 0}):
@@ -323,10 +323,13 @@ class AfterCleanupTest(unittest.TestCase):
 
     def test_each_entry_remembers_every_anchor_it_came_from(self):
         """The D-MG9 hook: `anchor_ids` is a history, so it keeps the ids of
-        photos that were pruned."""
-        entry = self.objects.get(0)
+        photos that were pruned. kappa 1, so object 0 is sure to lose photos."""
+        objects, anchors = new_stores(config(prune_kappa=1))
+        drive(objects, anchors, 0)
+        PeriodicCleanup(objects, anchors).run()
+        entry = objects.get(0)
         self.assertEqual(entry.sightings, len(entry.anchor_ids))
-        self.assertGreater(len(set(entry.anchor_ids)), self.objects.graph.degree(0))
+        self.assertGreater(len(set(entry.anchor_ids)), objects.graph.degree(0))
 
 
 if __name__ == "__main__":

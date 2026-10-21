@@ -26,7 +26,8 @@ Differences from upstream, on purpose:
   - Pruning is the greedy multicover in AnchorObjectGraph.prune. Upstream
     solves the same problem exactly with PuLP and CBC, with no time limit.
     Decided 2026-10-05, D-MG3 in docs/MEMORY_GRAPH_DESIGN.md.
-  - kappa is a config value. Upstream writes 1 at the call site.
+  - kappa is a config value, default 3 (tentative, D-MG1). Upstream writes 1
+    at the call site.
   - So is the interval. Upstream hardcodes 10.
   - Of two photos that are equally useful, the one with the better view of
     its objects is kept. Upstream's solver has no preference.
