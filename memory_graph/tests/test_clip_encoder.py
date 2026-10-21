@@ -12,9 +12,9 @@ class below, named Use1 to Use4:
 
 Use 3's scores inside the graph are TaskContext in task.py and the task score
 ObjectStore keeps on each entry (T6.7a), tested here with the real model. The
-rest of use 3 and use 4 are tested at the encoder only: that text and images
-land in one space and rank the way those uses need. Their functions are not
-built yet (T6.7b, T6.7d). The averaging in use 2 is ObjectStore in
+rest of use 3 is tested at the encoder only: that text and images land in one
+space and rank the way that use needs. Its function is not built yet (T6.7b).
+Use 4 is PhotoScorer in photo_score.py (T6.7d), tested here with the real model. The averaging in use 2 is ObjectStore in
 object_store.py (T6.4c).
 
 These tests load the model, so they need open_clip, torch and the weights.
@@ -33,6 +33,7 @@ from memory_graph.config import MemoryGraphConfig
 from memory_graph.association import appearance_matrix, combined_scores
 from memory_graph.image_feature import image_features, l2_normalise
 from memory_graph.object_store import ObjectStore
+from memory_graph.photo_score import PhotoScorer
 from memory_graph.stage_types import Candidate, OrientedBox
 from memory_graph.task import TaskContext
 
@@ -243,6 +244,18 @@ class Use4FrontierScoreTest(EncoderCase):
         self.assertEqual(scores.shape, (3,))
         self.assertEqual(int(scores.argmax()), 1)
         self.assertGreater(scores[1], np.delete(scores, 1).max() + 0.05)
+
+    def test_a_photo_of_the_target_ranks_first(self):
+        """T6.7d's done-when with the real model: PhotoScorer ranks the chair
+        photo above the photos without a chair."""
+        from PIL import Image
+
+        names = (CHAIR_VIEWS[0],) + OTHER_OBJECTS
+        photos = [(n, np.asarray(Image.open(FIXTURES / n).convert("RGB"))) for n in names]
+        task = TaskContext.from_text("find a chair", self.encoder)
+        ranked = PhotoScorer(self.encoder).ranked(task, photos)
+        self.assertEqual(ranked[0][0], CHAIR_VIEWS[0])
+        self.assertGreater(ranked[0][1], ranked[1][1])
 
 
 if __name__ == "__main__":

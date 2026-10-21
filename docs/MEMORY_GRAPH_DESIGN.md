@@ -364,3 +364,4 @@ prototype into the source tree (D-MG4), **T6.4c** and **T6.4d** write through `m
 | 2026-10-21 | Claude (Opus 5.5) + Zongzhe | T6.3 run on four lab photos with the real SAM 3 and CLIP. §8: D-MG10 added (one owner per pixel after S5, not upstream) and D-MG11 added (occlusion filter on LiDAR depth), both decided by Zongzhe. D-MG7: the GPU path is checked. |
 | 2026-10-21 | Claude (Opus 5.5) + Zongzhe | D-MG12 added, tentative: the two-stage trigger's first stage is the pose check, no cheap detector for now (T6.5b, T6.5). §9 T6.5 row points at it. |
 | 2026-10-21 | Claude (Opus 5.5) + Zongzhe | D-MG12: the re-decision is now task T6.10. |
+| 2026-10-21 | Claude (Opus 5.5) + Zongzhe | T6.7d built: `memory_graph/photo_score.py`, a whole photo scored against the task text, upstream's frontier score (`habitat/policy.py:178`). Tested on the lab box. No design change. |
