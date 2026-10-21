@@ -7,7 +7,7 @@ import unittest
 
 import numpy as np
 
-from memory_graph.anchor_gate import AnchorGate, rotation_angle, should_accept
+from memory_graph.anchor_gate import AnchorGate, pose_moved, rotation_angle, should_accept
 from memory_graph.config import MemoryGraphConfig
 from memory_graph.detection_filter import filter_detections
 from memory_graph.tests._fixtures import dets, pose, rot_z
@@ -132,6 +132,32 @@ class AnchorGateTest(unittest.TestCase):
         self.assertTrue(gate.check(moved, ["chair"], set()))   # not committed yet
         gate.commit(moved)
         self.assertFalse(gate.check(moved, ["chair"], set()))
+
+    def test_pose_half_is_the_first_photo_a_move_or_a_turn(self):
+        self.assertTrue(pose_moved(pose(), None, CFG))
+        self.assertTrue(pose_moved(pose(t=(1.1, 0, 0)), pose(), CFG))
+        self.assertFalse(pose_moved(pose(t=(0.9, 0, 0)), pose(), CFG))
+        self.assertTrue(pose_moved(pose(rot_z(50)), pose(), CFG))
+        self.assertFalse(pose_moved(pose(rot_z(30)), pose(), CFG))
+
+    def test_check_pose_ignores_labels_and_targets(self):
+        """Before SAM 3 there are no labels, so a target in view cannot add a
+        photo (D-MG12). The full check still can."""
+        gate = AnchorGate(CFG)
+        gate.commit(pose())
+        self.assertFalse(gate.check_pose(pose()))
+        self.assertTrue(gate.check(pose(), ["cup"], {"cup"}))
+        self.assertTrue(gate.check_pose(pose(t=(1.1, 0, 0))))
+
+    def test_both_halves_in_order_give_the_full_check(self):
+        """Pose half first, then the label half on what S2 left, agrees with
+        should_accept whenever no target is in view."""
+        gate = AnchorGate(CFG)
+        gate.commit(pose())
+        for T in (pose(), pose(t=(0.5, 0, 0)), pose(t=(1.5, 0, 0)), pose(rot_z(60))):
+            for labels in ([], ["chair"]):
+                two_stage = gate.check_pose(T) and bool(labels)
+                self.assertEqual(two_stage, gate.check(T, labels, set()))
 
     def test_rotation_angle(self):
         self.assertAlmostEqual(rotation_angle(np.eye(3), rot_z(30)), math.radians(30))

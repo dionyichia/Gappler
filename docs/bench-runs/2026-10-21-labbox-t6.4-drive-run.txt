@@ -186,3 +186,11 @@ Step 6, settled (Zongzhe, 2026-10-22)
   there, no torch).
   Not done in T6.4: kappa (D-MG1) was not checked on the drive, and the D455 depth stream
   (T6.2) may want a different radius.
+
+Correction (2026-10-22, from T6.5's note)
+  "Real gate" in this record means the real rule (1 m or 45 degrees) applied to the 103 photos
+  saved at the fine gate: 26 photos. Run over every frame, the real gate keeps 29 on
+  handdriven1 (memory_graph/gate_sweep.py, docs/bench-runs/2026-10-22-labbox-t6.5-pose-gate-sweep.txt).
+  So the real-gate numbers above are for a close stand-in, not the exact set. The conclusions
+  hold at both densities measured (26 and 103 photos). run_drive.py now uses
+  anchor_gate.pose_moved for both gates, so there is one pose rule.

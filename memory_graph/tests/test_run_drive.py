@@ -1,5 +1,6 @@
-"""The drive runner's helpers (T6.4 step 1): the gate's pose half, and finding each
-cleaned detection's CLIP vector among the raw detections'."""
+"""The drive runner's helper (T6.4 step 1): finding each cleaned detection's CLIP
+vector among the raw detections'. The gate's pose half is anchor_gate.pose_moved,
+tested in test_config_and_filters.py (T6.5)."""
 
 from memory_graph.tests import _requires_numpy  # noqa: F401  (skips without numpy)
 
@@ -8,23 +9,11 @@ import unittest
 import numpy as np
 
 from memory_graph.config import MemoryGraphConfig
-from memory_graph.run_drive import features_from_raw, moved_enough
+from memory_graph.run_drive import features_from_raw
 from memory_graph.run_photo import stages_after_detection
-from memory_graph.tests._fixtures import dets, patch_scene, pose, rot_z
+from memory_graph.tests._fixtures import dets, patch_scene
 
 CFG = MemoryGraphConfig()
-
-
-class MovedEnoughTest(unittest.TestCase):
-    def test_first_photo_is_kept(self):
-        self.assertTrue(moved_enough(pose(), None, 1.0, np.pi / 4))
-
-    def test_small_move_and_turn_are_not_enough(self):
-        self.assertFalse(moved_enough(pose(rot_z(10), t=(0.5, 0, 0)), pose(), 1.0, np.pi / 4))
-
-    def test_a_long_move_or_a_big_turn_is(self):
-        self.assertTrue(moved_enough(pose(t=(1.1, 0, 0)), pose(), 1.0, np.pi / 4))
-        self.assertTrue(moved_enough(pose(rot_z(50)), pose(), 1.0, np.pi / 4))
 
 
 class FeaturesFromRawTest(unittest.TestCase):

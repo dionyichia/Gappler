@@ -9,8 +9,11 @@ SAM 3 only sees a photo if the camera moved or turned enough since the last kept
 photo. Then the gate's other half: a photo with no detections left after S2 is not
 kept. Photos are saved at a finer gate than the real one (`--fine-m`, `--fine-deg`)
 so a replay can try other gate settings. Each photo also records whether the real
-gate (cfg.gate_translation_m, cfg.gate_rotation_rad) keeps it, so the default
-replay uses exactly the real gate.
+gate (cfg.gate_translation_m, cfg.gate_rotation_rad) keeps it, judged among the
+saved photos only. That is a close stand-in for the real gate, not the same set:
+the real gate run over every frame can pick a photo the fine gate skipped. On
+handdriven1 it keeps 26 of the saved photos where the exact rule keeps 29
+(memory_graph/gate_sweep.py, T6.5).
 
 Each saved photo is save_photo's .npz plus one CLIP vector for every raw detection
 (`raw_features.npy` alongside). Vectors per raw detection, not per cleaned one, mean
@@ -24,6 +27,7 @@ On the lab box, from the repo root:
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import time
 from pathlib import Path
@@ -31,21 +35,12 @@ from typing import Dict, Optional, Sequence, Tuple
 
 import numpy as np
 
-from memory_graph.anchor_gate import rotation_angle
+from memory_graph.anchor_gate import pose_moved
 from memory_graph.config import MemoryGraphConfig
 from memory_graph.image_feature import image_features
 from memory_graph.run_photo import SAM3_THRESHOLD, build_sam3, save_photo, stages_after_detection
 from memory_graph.sam3_adapter import detect
 from memory_graph.stage_types import Detections
-
-
-def moved_enough(T: np.ndarray, last: Optional[np.ndarray], metres: float, radians: float) -> bool:
-    """The gate's pose half: first photo, or moved or turned past the limits."""
-    if last is None:
-        return True
-    if np.linalg.norm(T[:3, 3] - last[:3, 3]) > metres:
-        return True
-    return rotation_angle(last[:3, :3], T[:3, :3]) > radians
 
 
 def raw_index(raw: Detections) -> Dict[Tuple, int]:
@@ -93,13 +88,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     bag = FastLivoBag(args.bag, cloud_window_s=args.cloud_window)
     segmenter, encoder = build_sam3(args.sam3), OpenClipEncoder.from_config(cfg)
     vocabulary = Vocabulary.from_config(cfg)
-    fine_rad = np.radians(args.fine_deg)
+    fine = dataclasses.replace(cfg, gate_translation_m=args.fine_m, gate_rotation_rad=float(np.radians(args.fine_deg)))
 
     last_fine = last_real = None
     photos, seconds = [], []
     for i, frame in enumerate(bag.frames):
         T = frame.T_world_cam
-        if not moved_enough(T, last_fine, args.fine_m, fine_rad):
+        if not pose_moved(T, last_fine, fine):
             continue
         t0 = time.time()
         obs = bag.observation(i)
@@ -110,7 +105,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if not len(res.dets):             # the gate's other half: nothing left after S2
             continue
         last_fine = T
-        real = moved_enough(T, last_real, cfg.gate_translation_m, cfg.gate_rotation_rad)
+        real = pose_moved(T, last_real, cfg)
         if real:
             last_real = T
         name = f"photo_{obs.frame_id:04d}"

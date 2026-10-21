@@ -1,0 +1,25 @@
+T6.7d: whole-photo task score tests, and every memory graph test, on the lab box
+2026-10-21, lab box (rcp2026@100.87.133.60, tailscale), RTX 4060 Ti
+Run over SSH by Claude Opus 5.5 for Zongzhe. Scratch copy of the working tree of branch
+t6.7d-photo-task-score (on 02b471d, changes not yet committed) in /tmp/zongzhe_t67d_20261021,
+deleted after. ~/rcp-Gappler was not touched. Python from ~/rcp-Gappler/.venv, CLIP weights from
+~/rcp-Gappler/assets/models/open_clip (OPEN_CLIP_CACHE_DIR). No camera, no ROS, no robot.
+
+Before start
+  nvidia-smi 404 MiB, 0 %. Only GPU process: gnome-remote-desktop-daemon (120 MiB). No
+  realsense, ros2 launch, bench, runner job or SAM 3 process. /home 12 GB free.
+
+  RESULT: PASS.
+  test_photo_score.py + test_clip_encoder.py, .venv:  34 ran, 34 passed, 0 skipped.
+  bench/memory_graph_tests.sh with .venv:             321 ran, 321 passed, exit 0 (nothing skipped).
+
+  Done-when, with the real model (open_clip ViT-B-32 laion2b_s34b_b79k, GPU, float16):
+  PhotoScorer.ranked on the four object photos in memory_graph/tests/fixtures/.
+    find a chair      chair 0.265, bench 0.236, shelf 0.176, sofa 0.165
+    find a sofa       sofa 0.261, bench 0.220, chair 0.160, shelf 0.149
+    find a bookshelf  shelf 0.267, bench 0.154, sofa 0.136, chair 0.106
+    find a bench      bench 0.240, sofa 0.175, chair 0.157, shelf 0.154
+  The photo of the target ranks first for each of the four tasks. The margins are small: the
+  chair leads the bench by 0.029. Whole-photo cosines with CLIP sit around 0.1 to 0.3.
+
+  Not covered: real lab photos with clutter, where the target fills a small part of the frame.
