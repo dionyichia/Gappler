@@ -4,7 +4,7 @@
  "bag": "/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3",
  "frame": "camera_init of this drive (FAST-LIVO world frame, z up, origin at the start pose)",
  "floor_z": -0.175,
- "marked": "2026-10-21T14:48:19.198Z",
+ "marked": "2026-10-21T15:45:37.349Z",
  "marked_by": "Zongzhe",
  "classes": [
   "chair",
@@ -29,7 +29,7 @@
   "joined": 0,
   "covered_by_hand": 9,
   "still_open": 0,
-  "hand_drawn": 8,
+  "hand_drawn": 12,
   "class_changed_from_clip": 3
  },
  "objects": [
@@ -429,6 +429,138 @@
    "source": "proposal",
    "proposal": "27",
    "clip_suggested": "person"
+  },
+  {
+   "id": 14,
+   "class": "tv_monitor",
+   "corners": [
+    [
+     4.649,
+     2.796
+    ],
+    [
+     4.613,
+     1.481
+    ],
+    [
+     4.711,
+     1.472
+    ],
+    [
+     4.755,
+     2.796
+    ]
+   ],
+   "z_bottom_above_floor": 1.5,
+   "z_top_above_floor": 2.2,
+   "centre": [
+    4.682,
+    2.136,
+    1.675
+   ],
+   "note": "TV monitor attached to the wall",
+   "source": "hand",
+   "proposal": null,
+   "clip_suggested": null
+  },
+  {
+   "id": 15,
+   "class": "chair",
+   "corners": [
+    [
+     4.044,
+     -1.274
+    ],
+    [
+     4.844,
+     -1.221
+    ],
+    [
+     4.888,
+     -1.874
+    ],
+    [
+     4.088,
+     -1.927
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 1,
+   "centre": [
+    4.466,
+    -1.574,
+    0.325
+   ],
+   "note": "small wooden chair to the left of the sofa",
+   "source": "hand",
+   "proposal": null,
+   "clip_suggested": null
+  },
+  {
+   "id": 17,
+   "class": "chair",
+   "corners": [
+    [
+     -3.208,
+     -1.896
+    ],
+    [
+     -2.63,
+     -2.023
+    ],
+    [
+     -2.919,
+     -2.602
+    ],
+    [
+     -3.475,
+     -2.416
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 0.4,
+   "centre": [
+    -3.058,
+    -2.234,
+    0.025
+   ],
+   "note": "rolling chair pushed into table",
+   "source": "hand",
+   "proposal": null,
+   "clip_suggested": null
+  },
+  {
+   "id": 19,
+   "class": "table",
+   "corners": [
+    [
+     -2.502,
+     -2.729
+    ],
+    [
+     0.02,
+     -2.671
+    ],
+    [
+     0.034,
+     -3.256
+    ],
+    [
+     -2.489,
+     -3.314
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 0.8,
+   "centre": [
+    -1.234,
+    -2.993,
+    0.225
+   ],
+   "note": "long table separated by dividers",
+   "source": "hand",
+   "proposal": null,
+   "clip_suggested": null
   }
  ]
 }

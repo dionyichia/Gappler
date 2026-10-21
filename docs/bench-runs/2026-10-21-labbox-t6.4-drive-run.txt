@@ -77,3 +77,19 @@ Step 2, scoring rule settled (Zongzhe, same day)
   Look-here hints for finishing the ground truth: the 7 extras seen 7 or more times, added to
   Zongzhe's local marking page as places only (no label shown).
   Scorer tests: 13, pass on the Mac CPU.
+
+Ground truth finished (Zongzhe, 23:45) and the baseline rescored
+  16 objects: the 12 before plus the wall TV (14), a chair by the sofa (15), a chair under a
+  table (17) and a long divided table (19), found by checking the 7 look-here places.
+  Scorer change: a point inside two marked boxes (a chair pushed under a table) no longer counts
+  towards a false merge. Before it, two desk objects over chair 9 and table 19 were called false
+  merges. 14 scorer tests pass.
+    gate   duplicates   parts   other label   false merges   misses (same class)   extras
+    real   8            10      13            0              4 (5)                20
+    fine   9            12      26            0              3 (3)                27
+  Real gate: duplicates on chair 13 (3), table 19 (2), chairs 1 and 15 and table 6 (1 each).
+  Misses: the glass door, both computer towers, and chair 17 (found at the fine gate).
+  Extras still seen often: a chair at (-1.54, -2.31) 11 times and at (-3.69, -1.95) 8 times, a
+  shelf at (4.51, 2.15) 10 times, a desk at (-1.14, -2.47) 9 times. Their look-here places were
+  checked and left unmarked.
+  This is the baseline step 4 tunes against.

@@ -79,6 +79,15 @@ class ScoreTest(unittest.TestCase):
         self.assertEqual(r["false_merge_objects"][0]["covers"], [1, 2])
         self.assertEqual(r["misses"], 2)            # its centre lands between the chairs, on neither
 
+    def test_points_where_two_marked_boxes_overlap_do_not_make_a_false_merge(self):
+        """A chair pushed under a desk: their boxes overlap. A desk object over both
+        is not a false merge just because its points fall in the chair's box too."""
+        desk = GtObject(1, "desk", square(0.0, 0.0, 0.6), 0.0, 0.8)
+        chair = GtObject(2, "chair", square(0.3, 0.0, 0.3), 0.0, 0.9)        # inside the desk's box
+        pts = np.random.default_rng(0).uniform([-0.5, -0.5, 0.6], [0.5, 0.5, 0.75], (200, 3))
+        r = score([obj(1, "desk", (0, 0, 0.7), points=pts)], [desk, chair], CLASSES)
+        self.assertEqual(r["false_merges"], 0)
+
     def test_a_missing_object_and_a_stray_one(self):
         r = score(one_each()[:3] + [obj(9, "chair", (8, 8, 0.4))], GT, CLASSES)
         self.assertEqual((r["misses"], r["extras"]), (1, 1))
@@ -123,7 +132,7 @@ class LoadAndSettingsTest(unittest.TestCase):
 
     def test_the_committed_ground_truth_loads(self):
         gt, classes = load_ground_truth()
-        self.assertEqual(len(gt), 12)
+        self.assertEqual(len(gt), 16)
         self.assertEqual([g.id for g in gt if g.many_parts], [2])     # the glass bookcase
         self.assertIn("chair", classes)
 

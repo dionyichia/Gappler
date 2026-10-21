@@ -132,7 +132,9 @@ def score(objects: Sequence, gt: Sequence[GtObject], classes: Iterable[str],
     .sightings) with the ground truth. See the module docstring for the rules.
 
     A graph object is a false merge if at least two real objects each hold
-    `merge_fraction` of its points and at least `merge_points` points.
+    `merge_fraction` of its points and at least `merge_points` points. A point
+    inside two real objects' boxes (a chair pushed under a table) counts for
+    neither, since it cannot tell them apart.
     """
     classes = set(classes)
     scored = [o for o in objects if o.label in classes]
@@ -148,9 +150,11 @@ def score(objects: Sequence, gt: Sequence[GtObject], classes: Iterable[str],
             label_ok += same_kind(o.label, g.cls)
         else:
             extras.append(o)
-        pts = np.asarray(o.points, dtype=float)
-        covered = [g.id for g in gt
-                   if (n := int(on_object(pts, g, 0.0, 0.10).sum())) >= merge_points and n >= merge_fraction * len(pts)]
+        pts = np.asarray(o.points, dtype=float).reshape(-1, 3)
+        inside = np.array([on_object(pts, g, 0.0, 0.10) for g in gt]).reshape(len(gt), len(pts))
+        alone = inside & (inside.sum(axis=0) == 1)          # points in exactly one real object
+        covered = [g.id for g, row in zip(gt, alone)
+                   if (n := int(row.sum())) >= merge_points and n >= merge_fraction * len(pts)]
         if len(covered) >= 2:
             false_merges.append((o, covered))
     by_id = {g.id: g for g in gt}
