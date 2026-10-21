@@ -38,6 +38,68 @@ def transform_points(T: np.ndarray, points: np.ndarray) -> np.ndarray:
     return points @ T[:3, :3].T + T[:3, 3]
 
 
+def invert_rigid(T: np.ndarray) -> np.ndarray:
+    """The inverse of a 4x4 rotation-plus-translation, without a general solve.
+
+    For T = [[R, t], [0, 1]] the inverse is [[R.T, -R.T @ t], [0, 1]].
+    """
+    R = T[:3, :3]
+    t = T[:3, 3]
+    out = np.eye(4)
+    out[:3, :3] = R.T
+    out[:3, 3] = -R.T @ t
+    return out
+
+
+def project_cloud_to_depth(
+    points_world: np.ndarray,
+    T_world_cam: np.ndarray,
+    K: np.ndarray,
+    image_hw: Tuple[int, int],
+) -> np.ndarray:
+    """A depth image in the colour frame, rendered from a world-frame cloud.
+
+    The inverse of back_project: where camera_rays turns a depth image into
+    camera-frame points, this turns world-frame points (a LiDAR scan registered
+    to the map) into a depth image aligned to the colour camera, so the rest of
+    the pipeline can treat a LiDAR recording exactly like an RGB-D one (T6.3b,
+    option b).
+
+    Each point is moved into the camera frame, dropped if it is at or behind the
+    optical plane (z <= 0), projected with K and rounded to the nearest pixel.
+    Where several points land on one pixel the nearest wins (a z-buffer), so a
+    near surface is never painted over by something behind it. The result is
+    float32 metres along the optical axis, 0 where no point landed, which is what
+    Observation.depth and back_project expect.
+
+    The depth is sparse: a LiDAR scan fills far fewer pixels than a depth camera,
+    so expect many zeros. Accumulate a time window of scans before calling this
+    if one scan is too thin.
+    """
+    h, w = int(image_hw[0]), int(image_hw[1])
+    pts = np.asarray(points_world, dtype=np.float64).reshape(-1, 3)
+    depth = np.zeros((h, w), dtype=np.float32)
+    if len(pts) == 0:
+        return depth
+    cam = transform_points(invert_rigid(np.asarray(T_world_cam, dtype=np.float64)), pts)
+    z = cam[:, 2]
+    infront = z > 0
+    if not np.any(infront):
+        return depth
+    cam, z = cam[infront], z[infront]
+    fx, fy, cx, cy = K[0, 0], K[1, 1], K[0, 2], K[1, 2]
+    u = np.round(cam[:, 0] * fx / z + cx).astype(np.int64)
+    v = np.round(cam[:, 1] * fy / z + cy).astype(np.int64)
+    on = (u >= 0) & (u < w) & (v >= 0) & (v < h)
+    if not np.any(on):
+        return depth
+    flat = v[on] * w + u[on]
+    nearest = np.full(h * w, np.inf)
+    np.minimum.at(nearest, flat, z[on])          # the closest point at each pixel
+    nearest[~np.isfinite(nearest)] = 0.0
+    return nearest.reshape(h, w).astype(np.float32)
+
+
 def back_project(obs: Observation, masks: np.ndarray, cfg: MemoryGraphConfig) -> List[Optional[Cloud]]:
     """One world-frame cloud per mask, or None if the mask has fewer than
     cfg.min_points pixels with valid depth (pointcloud.py:138).
