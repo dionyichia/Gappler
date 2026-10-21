@@ -1,0 +1,42 @@
+T6.7b: the reasoning layer's model call, and every memory graph test, on the lab box
+2026-10-22, lab box (rcp2026@100.87.133.60, tailscale), RTX 4060 Ti
+Run over SSH by Claude Opus 5.5 for Zongzhe. Scratch copy of the working tree of branch
+t6.7b-class-expansion (on origin/dev f35a94e, changes not yet committed) in
+/tmp/zongzhe_t67b_20261022, deleted after. ~/rcp-Gappler was not touched (it holds someone's
+uncommitted changes). Python from ~/rcp-Gappler/.venv (transformers 5.2.0, torch 2.10.0+cu128).
+CLIP weights from ~/rcp-Gappler/assets/models/open_clip (OPEN_CLIP_CACHE_DIR). Qwen weights from
+the Hugging Face cache, already there from the voice path. HF_HUB_OFFLINE=1, so nothing was
+downloaded. No camera, no ROS, no robot.
+
+Before start
+  nvidia-smi 405 MiB, 0 %. Only GPU process: gnome-remote-desktop-daemon (120 MiB). No
+  realsense, ros2 launch, bench, runner job or SAM 3 process. /home 12 GB free.
+
+  RESULT: PASS.
+  test_reasoning_model.py, .venv (real Qwen2.5-0.5B-Instruct + open_clip, GPU):  3 ran, 3 passed.
+  test_reasoning.py, system python3:                26 ran, 26 passed, 0 skipped.
+  bench/memory_graph_tests.sh with .venv:           363 ran, 363 passed, exit 0 (nothing skipped).
+
+  Proposed done-when, with the real model:
+    "find a chair" uses the model's own reply, names chair, within the 10 s limit.
+    Related classes are only vocabulary classes ("bring me my laptop").
+    A 0.001 s limit falls back to CLIP, which keeps chair, and returns in under 0.5 s.
+  The stand-in tests (test_reasoning.py) cover every kind of bad reply, a model error, a
+  stuck model, and a second task while a stuck call still runs.
+
+  Sample instructions, python -m memory_graph.reasoning, base vocabulary of 30, float16 GPU.
+  Model load not counted. All seven used the model's reply, none fell back.
+    find a chair                     0.37 s  targets chair        related cabinet, desk, shelf
+    bring me my laptop               0.14 s  targets laptop       related computer tower
+    get me a cup of water            0.17 s  targets water        related (sink, bath dropped: not in the list)
+    where is the trash can           0.14 s  targets trash can    related none
+    find a pen                       0.19 s  targets pen (new)    related book, cabinet, desk
+    grab the red bottle on the desk  0.18 s  targets red bottle (new)  related bottle, cabinet
+    turn off the light               0.12 s  targets light        related none
+  The 0.5B model replied with "targets" as one string, not a list, every time. The parser
+  takes both. First reading of the lists, for T6.7's hand check: "water" where cup was wanted,
+  and "red bottle" added as a new class although "bottle" is in the list. Desk was not given
+  as related for the red bottle although the instruction names it.
+
+  Not covered: the hand check of the lists on a written set of instructions (T6.7), and the
+  1.5B model.

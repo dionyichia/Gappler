@@ -1,0 +1,196 @@
+T6.4 step 1: the whole handdriven1 drive through the gate, SAM 3 and CLIP once, saved for tuning
+2026-10-21, lab box (rcp2026@100.87.133.60, tailscale), NVIDIA GeForce RTX 4060 Ti 16 GB
+Run over SSH by Claude Opus 5.5 for Zongzhe. Scratch copy ~/zongzhe_t63 (branch t6.4-merge-tuning
+before its first commit), python ~/rcp-Gappler/.venv, SAM 3 ~/rcp-Gappler/assets/models/sam3/sam3.pt,
+CLIP weights ~/rcp-Gappler/assets/models/open_clip. GPU and files only: no camera, no ROS, no robot.
+
+Before start
+  GPU 404 MiB, 0 %, one 120 MiB process not ours. No realsense, ros2 launch, bench, runner job,
+  SAM 3 or AnyGrasp process. /home 12 GB free.
+
+Command
+  python -m memory_graph.run_drive --bag .../handdriven1/handdriven1_0.db3 --out drive_hd1
+  Started with setsid (process group 186050), exited on its own. A 3-photo trial (--limit 3)
+  ran first and matched.
+
+Settings
+  Gate, pose half first (D-MG12), saved at a fine gate: moved 0.25 m or turned 15 degrees. Each
+  saved photo also marks whether the real gate (1 m or 45 degrees, config) keeps it. A photo with
+  no detections after S2 is not saved. LiDAR window 1.0 s either side, occlusion filter 7 px,
+  10 percent (D-MG11). SAM 3 bfloat16, threshold 0.15, 30-phrase base vocabulary, batched 16 per
+  pass. CLIP ViT-B-32 float16 on every raw detection, stored as float16.
+
+Result
+  3536 frames in the bag, 103 photos saved (frames 0 to 3128, 0 to 104.3 s; the drive stands
+  still at its start point after that). 26 of them kept by the real gate.
+  Per photo, medians: 137 raw detections, 47 after S2 and S5, 28 objects, 1.85 s (all 103:
+  191 s). 41 MB on disk.
+  Stored outside git: lab box ~/zongzhe_t63/drive_hd1, and Zongzhe's Mac
+  docs/zongzhe_docs/local/t6.4/drive_hd1 (gitignored).
+
+Replay check (Zongzhe's Mac CPU, no GPU, no model)
+  Every saved photo loaded and run through S2 to S9 with the stored vectors (run_drive's
+  features_from_raw): object counts identical to the GPU run on all 103.
+  Through S10 and S11 with today's config (match radius 2.5 cm, phys_bias 0.5, greedy):
+    real gate, 26 photos:  677 sightings -> 228 objects
+    fine gate, 103 photos: 2792 sightings -> 361 objects
+  For scale: the ground truth (memory_graph/eval/lab_ground_truth_handdriven1.json) has 12
+  furniture objects. The graph also holds unscored small things (books, lights, paper), so the
+  numbers do not compare directly. Scoring is T6.4 step 2.
+  Replaying both passes took 68 s.
+
+Tests
+  memory_graph/tests/test_run_drive.py, 6 tests, pass on the Mac CPU (numpy, scipy, pillow).
+
+After
+  GPU back to 404 MiB.
+
+Step 2, the scorer, first baseline (Zongzhe's Mac CPU, same day)
+  python -m memory_graph.score_drive <drive_hd1> --gate real|fine, today's config, against
+  memory_graph/eval/lab_ground_truth_handdriven1.json (12 objects). Rules in score_drive.py.
+    gate   duplicates (same class)   false merges   misses (same class)   extras   label ok
+    real   27 (15)                   0              3 (4)                 26       23 of 36
+    fine   37 (17)                   0              3 (3)                 41       26 of 46
+  Real gate, per real object: shelf 2 (the glass bookcase) collects 11 "shelf" objects, one per
+  cell, which do not touch in 3D, so no merge setting can join them. Chairs 9 and 11 (pushed
+  under desks) collect desk, table and tv_monitor objects: no desk is marked, so desk objects
+  land on the chairs' outlines. Misses: the glass door (7) and computer towers 10 and 12.
+  Extras with many sightings sit at the unmarked spots listed in memory_graph/eval/README.md:
+  desks at (-1.3, -2.6) seen 8 times and (-1.14, -2.47) 9 times, chairs at (-1.54, -2.31) 11
+  times, (-3.69, -1.95) 8 times and (4.64, -1.49) 7 times, a tv_monitor at (4.68, 2.13) 11
+  times, a shelf at (4.51, 2.15) 10 times. Likely real furniture missing from the list.
+  So the baseline mostly measures gaps in the ground truth and the bookcase cells, not merging.
+  Tuning (step 4) waits on finishing the list.
+  Scorer tests: memory_graph/tests/test_score_drive.py, 11 tests, pass on the Mac CPU.
+
+Step 2, scoring rule settled (Zongzhe, same day)
+  Parts: the glass bookcase (gt 2) is flagged many_parts in the ground truth file, so its
+  per-cell "shelf" objects count as parts. Everywhere else every extra same-kind object is a
+  duplicate. Two automatic rules were tried first and rejected: by size (graph boxes are much
+  smaller than marked ones, so chair 13's 4 copies became parts) and by touching points
+  (neighbouring bookcase cells share boards, so the cells became duplicates). Wide duplicates
+  across labels were dropped: other labels on a real object are reported as other_label.
+    gate   duplicates   parts   other label   false merges   misses (same class)   extras
+    real   5            10      13            0              3 (4)                26
+    fine   5            12      20            0              3 (3)                41
+  Real gate duplicates: chair 13 (4 copies), chair 1 (2), table 6 (2 desk objects).
+  Look-here hints for finishing the ground truth: the 7 extras seen 7 or more times, added to
+  Zongzhe's local marking page as places only (no label shown).
+  Scorer tests: 13, pass on the Mac CPU.
+
+Ground truth finished (Zongzhe, 23:45) and the baseline rescored
+  16 objects: the 12 before plus the wall TV (14), a chair by the sofa (15), a chair under a
+  table (17) and a long divided table (19), found by checking the 7 look-here places.
+  Scorer change: a point inside two marked boxes (a chair pushed under a table) no longer counts
+  towards a false merge. Before it, two desk objects over chair 9 and table 19 were called false
+  merges. 14 scorer tests pass.
+    gate   duplicates   parts   other label   false merges   misses (same class)   extras
+    real   8            10      13            0              4 (5)                20
+    fine   9            12      26            0              3 (3)                27
+  Real gate: duplicates on chair 13 (3), table 19 (2), chairs 1 and 15 and table 6 (1 each).
+  Misses: the glass door, both computer towers, and chair 17 (found at the fine gate).
+  Extras still seen often: a chair at (-1.54, -2.31) 11 times and at (-3.69, -1.95) 8 times, a
+  shelf at (4.51, 2.15) 10 times, a desk at (-1.14, -2.47) 9 times. Their look-here places were
+  checked and left unmarked.
+  This is the baseline step 4 tunes against.
+
+Step 4, the sweep (2026-10-22, Zongzhe's Mac CPU, saved photos, final ground truth)
+  Scratch script docs/zongzhe_docs/local/t6.4/sweep.py: each photo's sightings are built once
+  per geometry setting, then S10 to S13 run from fresh copies for every merge setting, scored
+  with score_drive.score. Raw results in that folder (sweep_one.json, sweep_grid.json).
+
+  One setting at a time (baseline: radius 2.5 cm, phys_bias 0.5, threshold 0.6, greedy,
+  min_points 16, DBSCAN eps 0.1 m, min points 10):
+    setting                  real gate: dup fm miss extra    fine gate: dup fm miss extra
+    baseline                            8   0  4    20                  9   0  3    27
+    match_radius 1 cm                  31   1  3    40                 29   1  3    56
+    match_radius 5 cm                   4   0  3    16                  8   0  3    25
+    match_radius 7.5 cm                 4   0  3    16                  6   0  3    22
+    match_radius 10 cm                  3   0  3    14                  4   0  3    23
+    match_radius 15 cm                  3   0  3    14                  3   0  3    21
+    match_radius 20 cm                  2   0  3    14                  2   0  3    20
+    phys_bias 0                         0   0 12     5                  0   0 11     1
+    phys_bias 0.25                      1   0  6     7                  1   1  5     8
+    phys_bias 0.75                     10   0  3    22                 14   0  3    37
+    phys_bias 1                        11   0  3    25                 20   0  3    42
+    threshold 0.3                       0   0 14     6                  0   0 10     2
+    threshold 0.4                       0   0  6     8                  0   1  4     8
+    threshold 0.5                       6   0  4    16                  8   0  3    27
+    threshold 0.7                       8   0  4    23                 14   0  3    35
+    threshold 0.8                      10   0  3    24                 16   0  3    41
+    one_to_one                         13   1  3    28                 26   1  3    40
+    min_points 8                        8   0  4    19                 10   0  3    34
+    min_points 32                       5   0  3    14                  7   0  3    21
+    DBSCAN eps 5 cm                    15   0  3    24                 17   0  3    46
+    DBSCAN eps 20 cm                    6   1  3    15                  9   0  4    22
+    DBSCAN min points 5                 7   1  3    19                 12   0  3    27
+    DBSCAN min points 20                8   0  3    18                  9   0  3    28
+  Over-merging shows as misses, not false merges: with phys_bias 0 or threshold 0.3 the store
+  collapses to 34 to 36 objects and 10 to 14 of the 16 real objects are missed. A merged blob
+  spreads its points over many real objects, so none holds the 15 percent the false-merge rule
+  needs. Read the misses column as the over-merge signal.
+
+  Radius, phys_bias and threshold together (real gate, 36 runs), the stable region:
+    radius 15 to 20 cm with phys_bias 0.5 or 0.75 and threshold 0.5 to 0.7: 2 or 3 duplicates,
+    0 false merges, 3 misses, 13 to 14 extras. phys_bias 0.25 with threshold 0.7 gives 1 or 2
+    duplicates, but phys_bias 0.25 with threshold 0.6 already collapses (5 to 7 misses), so it
+    sits next to a cliff. Best five rechecked at the fine gate: radius 20 cm / bias 0.25 /
+    threshold 0.7 gives 1 duplicate, 3 misses; radius 15 cm / 0.25 / 0.7 the same; radius
+    20 cm / 0.5 / 0.5 gives 2 duplicates, 3 misses.
+
+  Reading (for D-MG2 and D-MG8):
+    - The match radius is the lever. Upstream's 2.5 cm is too tight for this depth: sparse
+      LiDAR and two views of one object 4 to 9 cm apart (T6.3). 10 to 20 cm cuts duplicates
+      from 8 to 2 or 3 with no false merges and no new misses, at both gates.
+    - Giving appearance more weight (phys_bias down) does not fix duplicates safely: it merges
+      everything that touches. Geometry-dominant stays right (D-MG2).
+    - Greedy beats one_to_one (8 against 13 duplicates). D-MG8 stays greedy.
+    - min_points 32 helps a little (5 duplicates) by dropping small sightings, at the cost of
+      small objects. Not recommended alone.
+  Limits: one drive, 16 real objects, 8 baseline duplicates. Differences of 1 are noise.
+
+Step 5, check on a second drive (2026-10-22)
+  Drive: t35f-live-20261021/bag (76 s). Same command on the lab box GPU (free before: 405 MiB,
+  0 %): 55 photos saved, 14 kept by the real gate, 1.70 s each. Its LiDAR map exported with the
+  T6.4e tool (floor at the same height, -0.175; the drive ends 32 cm from its start).
+  Ground truth moved across with a scratch script (docs/zongzhe_docs/local/t6.4/align_maps.py):
+  both maps reduced to walls and furniture on a 5 cm grid, every heading tried in 3 degree
+  steps, refined by ICP. Fit: turned 3.58 degrees and shifted (-1.24, -0.33) m, so the second
+  drive started 1.2 m from the first. 81 % of the second drive's cells within 10 cm of the
+  first's, median 2.8 cm. A self-check (a map against itself) gives 0 degrees, 0 m, 100 %.
+  All 16 objects are seen by at least one of the second drive's photos within 6 m.
+    radius     real gate: dup fm miss extra    fine gate: dup fm miss extra
+    2.5 cm                 2   0  7    20                 4   0  6    26
+    5 cm                   1   0  7    15
+    7.5 cm                 1   0  7    14
+    10 cm                  1   0  8    14                 2   0  6    19
+    15 cm                  1   0  8    14                 2   0  6    19
+    20 cm                  1   0  8    14                 2   0  6    18
+  The extra miss from 10 cm up: at 10 cm chair 4 keeps its chair object but loses its
+  tv_monitor neighbour; at 15 cm chair 4 is left with only a desk object, so the chair has been
+  merged into the desk next to it. The sofa (5) only ever had cabinet and shelf objects on it in
+  this drive; they disappear from 10 cm. Merges of neighbours like these are not caught by the
+  false-merge rule (their points sit in overlapping or adjoining boxes).
+  This drive saw fewer things well: 7 of 16 missed already at 2.5 cm (14 photos at the real gate).
+  Reading: the gain on drive 1 holds on drive 2 (fewer duplicates at both gates), but 15 cm
+  starts merging a chair into its desk here. 10 cm keeps that chair as a chair. 7.5 to 10 cm is
+  the safer side.
+
+Step 6, settled (Zongzhe, 2026-10-22)
+  New default: match_radius_m 0.10 (was upstream's 0.025). phys_bias 0.5 and sim_threshold 0.6
+  stay upstream's, association stays greedy. D-MG2 settled in docs/MEMORY_GRAPH_DESIGN.md.
+  Effect, real gate: handdriven1 8 -> 3 duplicates, second drive 2 -> 1, no false merges.
+  Guard test: test_score_drive.StoredPhotosTest replays the three stored handdriven1 photos at
+  the default and checks no duplicates, no false merges, and chair 1, the sofa, the wall TV and
+  chair 15 kept as themselves. 302 memory graph tests pass on the Mac CPU (15 CLIP tests skip
+  there, no torch).
+  Not done in T6.4: kappa (D-MG1) was not checked on the drive, and the D455 depth stream
+  (T6.2) may want a different radius.
+
+Correction (2026-10-22, from T6.5's note)
+  "Real gate" in this record means the real rule (1 m or 45 degrees) applied to the 103 photos
+  saved at the fine gate: 26 photos. Run over every frame, the real gate keeps 29 on
+  handdriven1 (memory_graph/gate_sweep.py, docs/bench-runs/2026-10-22-labbox-t6.5-pose-gate-sweep.txt).
+  So the real-gate numbers above are for a close stand-in, not the exact set. The conclusions
+  hold at both densities measured (26 and 103 photos). run_drive.py now uses
+  anchor_gate.pose_moved for both gates, so there is one pose rule.

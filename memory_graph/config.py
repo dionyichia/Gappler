@@ -111,8 +111,13 @@ class MemoryGraphConfig:
 
     # ---- S10 association --------------------------------------------------
     # A candidate point "overlaps" an object if the object has a point this close.
-    # Upstream hardcodes 2.5 cm (pointcloud.py:672).
-    match_radius_m: float = 0.025
+    # Upstream hardcodes 2.5 cm (pointcloud.py:672). 10 cm since 2026-10-22 (Zongzhe,
+    # T6.4): with sparse LiDAR depth and two views of one object 4 to 9 cm apart, 2.5 cm
+    # left most real objects as several entries. On the handdriven1 drive 10 cm cut
+    # duplicates from 8 to 3 with no false merges and no new misses. On a second drive
+    # it also cut them, and 15 cm started merging a chair into the desk beside it.
+    # docs/bench-runs/2026-10-21-labbox-t6.4-drive-run.txt, D-MG2.
+    match_radius_m: float = 0.10
     # score = (1 + phys_bias) * overlap + (1 - phys_bias) * appearance
     phys_bias: float = 0.5
     # A candidate merges into its best object only above this score.
@@ -145,6 +150,29 @@ class MemoryGraphConfig:
     # than this (pointcloud.py:787).
     denoise_min_points: int = 4
 
+    # ---- Reasoning layer: instruction -> target and related classes (T6.7b)
+    # A local text model, decided in T6.6. The 0.5B model is the one the voice
+    # path already loads (aria/aria_app/services/prompt_extractor.py). T6.7's hand
+    # check decides whether to step up to Qwen/Qwen2.5-1.5B-Instruct.
+    reasoning_model: str = "Qwen/Qwen2.5-0.5B-Instruct"
+    # "auto" is cuda if torch sees a GPU, else cpu.
+    reasoning_device: str = "auto"
+    # How long to wait for the reply before falling back to CLIP. Upstream waits
+    # with no limit. TENTATIVE 10 s (Zongzhe, 2026-10-22): the call runs once, at
+    # the start of a task, so a few seconds is fine. A hang is not.
+    reasoning_timeout_s: float = 10.0
+    reasoning_max_new_tokens: int = 96
+    # At most this many classes are taken from the reply. Every class added to
+    # the vocabulary costs SAM 3 about 0.04 s per photo (T6.3c), so a reply that
+    # lists the whole vocabulary must not be taken as it is.
+    reasoning_max_targets: int = 3
+    reasoning_max_related: int = 5
+    # The fall-back when the reply is unusable, upstream's rule (map/map.py:193):
+    # the vocabulary classes within this fraction of the best text similarity to
+    # the instruction, at most top_k of them, become the targets.
+    fallback_ratio: float = 0.95
+    fallback_top_k: int = 5
+
     def __post_init__(self) -> None:
         if self.association_mode not in ("greedy", "one_to_one"):
             raise ValueError(f"association_mode must be 'greedy' or 'one_to_one', got {self.association_mode!r}")
@@ -167,6 +195,13 @@ class MemoryGraphConfig:
         background = sorted(set(phrases) & {normalise(b) for b in self.bg_classes})
         if background:
             raise ValueError(f"base_vocabulary has background classes {background}, which S2 drops")
+        if self.reasoning_timeout_s <= 0 or self.reasoning_max_new_tokens < 1:
+            raise ValueError("reasoning_timeout_s and reasoning_max_new_tokens must be positive")
+        if self.reasoning_max_targets < 1 or self.reasoning_max_related < 0 or self.fallback_top_k < 1:
+            raise ValueError("reasoning_max_targets and fallback_top_k must be at least 1, "
+                             "reasoning_max_related at least 0")
+        if not 0.0 < self.fallback_ratio <= 1.0:
+            raise ValueError("fallback_ratio must be in (0, 1]")
         for name in ("voxel_size_m", "dbscan_eps_m", "match_radius_m", "gate_translation_m"):
             if getattr(self, name) <= 0:
                 raise ValueError(f"{name} must be positive")

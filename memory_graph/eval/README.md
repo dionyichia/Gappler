@@ -25,9 +25,10 @@ drive compare directly. Another drive has its own origin and needs its map lined
 | `centre` | middle of the box in the world frame (x, y, z). z counts from the frame's origin, not the floor: the floor is at `floor_z` (-0.175) |
 | `source` | `hand` drawn by Zongzhe, `proposal` a LiDAR proposal Zongzhe accepted |
 | `clip_suggested` | for proposals, CLIP's class guess, kept to see how often it was changed |
+| `many_parts` | present and true on the glass bookcase (2) only: the graph sees it as one "shelf" per cell, and no merge should be expected to join them, so the scorer counts those as parts, not duplicates (Zongzhe, 2026-10-21) |
 
-**Counts:** 12 objects. 5 chair, 2 computer tower, 1 each of shelf, sofa, table, door, tv_monitor.
-8 drawn by hand, 4 accepted from proposals.
+**Counts:** 16 objects. 7 chair, 2 computer tower, 2 table, 2 tv_monitor, 1 each of shelf, sofa,
+door. 12 drawn by hand, 4 accepted from proposals.
 
 ## How it was made
 
@@ -47,13 +48,14 @@ light, sign, cup, box, bag, cushion, clothes, power outlet) are not in the list 
 
 ## Known limits
 
-- **Coverage is not checked.** After marking, several blobs on the map had no mark: around
-  (-3.3, -2.6), (-1.6, -2.5), (-2.2, -0.5), (1.0, -2.3), (2.9, -1.2), (3.7, -1.4), (3.2, -2.6),
-  (4.6, -3.0), and a TV that T6.3 saw near (4.7, 2.1) about 1.5 m up. Some may be people who
-  walked past during the drive, or things outside the 13 classes. No desk is marked, though the
-  office area (y -2 to -4) looked like rows of desks in the photos. So in T6.4, graph objects
-  there that match nothing are "extras" that may be real. Read extras in those places with care,
-  or mark them and save the file again.
+- **Coverage, second pass.** The first list (12 objects, 2026-10-21 22:48) left several blobs on
+  the map unmarked. For a second pass the marking page showed 7 "look here" places: where the graph
+  (T6.4 baseline) saw something 7 or more times with no box marked. Only the place and the count
+  were shown, not the graph's label. Zongzhe checked each in the photos and added 4 objects: the
+  wall TV (14), a chair by the sofa (15), a chair under a table (17) and a long divided table (19).
+  The other places were judged not to be furniture in the list. Final list saved 2026-10-21 23:45.
+  This pass used the graph's output to point at places, so objects the graph never saw at all can
+  still be missing.
 - **Heights are read from the map**, the highest 10 cm band with points inside the outline. A box
   can pick up something above the object: computer towers 10 and 12 read 2.3 m, likely a
   partition or shelf above them. T6.4 matches on the floor outline, so this matters little there.
