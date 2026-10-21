@@ -1,0 +1,433 @@
+{
+ "what": "T6.4e ground truth: furniture in the lab, marked by hand on the FAST-LIVO LiDAR map",
+ "drive": "handdriven1 (FAST-LIVO hand drive, 2026-10-20)",
+ "bag": "/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3",
+ "frame": "camera_init of this drive (FAST-LIVO world frame, z up, origin at the start pose)",
+ "floor_z": -0.175,
+ "marked": "2026-10-21T14:48:19.198Z",
+ "marked_by": "Zongzhe",
+ "classes": [
+  "chair",
+  "sofa",
+  "bench",
+  "stool",
+  "table",
+  "desk",
+  "cabinet",
+  "shelf",
+  "tv_monitor",
+  "whiteboard",
+  "trash can",
+  "computer tower",
+  "door"
+ ],
+ "review": {
+  "proposals": 55,
+  "accepted": 4,
+  "rejected": 44,
+  "split": 2,
+  "joined": 0,
+  "covered_by_hand": 9,
+  "still_open": 0,
+  "hand_drawn": 8,
+  "class_changed_from_clip": 3
+ },
+ "objects": [
+  {
+   "id": 1,
+   "class": "chair",
+   "corners": [
+    [
+     3.739,
+     2.359
+    ],
+    [
+     4.375,
+     2.425
+    ],
+    [
+     4.534,
+     1.683
+    ],
+    [
+     3.779,
+     1.709
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 0.5,
+   "centre": [
+    4.107,
+    2.044,
+    0.075
+   ],
+   "note": "small wooden chair",
+   "source": "hand",
+   "proposal": null,
+   "clip_suggested": null
+  },
+  {
+   "id": 2,
+   "class": "shelf",
+   "corners": [
+    [
+     4.402,
+     1.444
+    ],
+    [
+     4.481,
+     0.451
+    ],
+    [
+     5.038,
+     0.451
+    ],
+    [
+     4.985,
+     1.471
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 2,
+   "centre": [
+    4.726,
+    0.954,
+    0.825
+   ],
+   "note": "transparent shelf",
+   "source": "hand",
+   "proposal": null,
+   "clip_suggested": null
+  },
+  {
+   "id": 4,
+   "class": "chair",
+   "corners": [
+    [
+     -1.137,
+     -0.398
+    ],
+    [
+     -0.912,
+     -0.822
+    ],
+    [
+     -1.432,
+     -1.098
+    ],
+    [
+     -1.658,
+     -0.674
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 1,
+   "centre": [
+    -1.285,
+    -0.748,
+    0.325
+   ],
+   "note": "rolling office chair next to table",
+   "source": "hand",
+   "proposal": null,
+   "clip_suggested": null
+  },
+  {
+   "id": 5,
+   "class": "sofa",
+   "corners": [
+    [
+     4.216,
+     0.371
+    ],
+    [
+     4.243,
+     -1.232
+    ],
+    [
+     4.892,
+     -1.126
+    ],
+    [
+     4.918,
+     0.424
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 0.9,
+   "centre": [
+    4.567,
+    -0.391,
+    0.275
+   ],
+   "note": "large black sofa",
+   "source": "hand",
+   "proposal": null,
+   "clip_suggested": null
+  },
+  {
+   "id": 6,
+   "class": "table",
+   "corners": [
+    [
+     -1.007,
+     0.517
+    ],
+    [
+     -1.03,
+     -0.214
+    ],
+    [
+     -2.212,
+     -0.167
+    ],
+    [
+     -2.178,
+     0.528
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 0.85,
+   "centre": [
+    -1.607,
+    0.166,
+    0.25
+   ],
+   "note": "",
+   "source": "hand",
+   "proposal": null,
+   "clip_suggested": null
+  },
+  {
+   "id": 7,
+   "class": "door",
+   "corners": [
+    [
+     1.312,
+     3.473
+    ],
+    [
+     3.365,
+     3.473
+    ],
+    [
+     3.354,
+     3.52
+    ],
+    [
+     1.324,
+     3.52
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 2.3,
+   "centre": [
+    2.339,
+    3.496,
+    0.975
+   ],
+   "note": "large automatic glass door",
+   "source": "hand",
+   "proposal": null,
+   "clip_suggested": null
+  },
+  {
+   "id": 8,
+   "class": "tv_monitor",
+   "corners": [
+    [
+     0.907,
+     2.627
+    ],
+    [
+     0.141,
+     1.491
+    ],
+    [
+     -0.184,
+     1.71
+    ],
+    [
+     0.581,
+     2.846
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 1.9,
+   "centre": [
+    0.361,
+    2.168,
+    0.775
+   ],
+   "note": "",
+   "source": "hand",
+   "proposal": null,
+   "clip_suggested": null
+  },
+  {
+   "id": 9,
+   "class": "chair",
+   "corners": [
+    [
+     -0.833,
+     -2.289
+    ],
+    [
+     -0.334,
+     -2.254
+    ],
+    [
+     -0.288,
+     -2.811
+    ],
+    [
+     -0.879,
+     -2.857
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 1,
+   "centre": [
+    -0.584,
+    -2.553,
+    0.325
+   ],
+   "note": "rolling chair pushed into the table",
+   "source": "hand",
+   "proposal": null,
+   "clip_suggested": null
+  },
+  {
+   "id": 10,
+   "class": "computer tower",
+   "corners": [
+    [
+     0.091,
+     -3.453
+    ],
+    [
+     1.211,
+     -3.453
+    ],
+    [
+     1.211,
+     -2.973
+    ],
+    [
+     0.091,
+     -2.973
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 2.3,
+   "centre": [
+    0.651,
+    -3.213,
+    0.975
+   ],
+   "note": "",
+   "source": "proposal",
+   "proposal": "10",
+   "clip_suggested": "chair"
+  },
+  {
+   "id": 11,
+   "class": "chair",
+   "corners": [
+    [
+     -2.529,
+     -3.041
+    ],
+    [
+     -1.651,
+     -2.949
+    ],
+    [
+     -1.701,
+     -2.474
+    ],
+    [
+     -2.579,
+     -2.566
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 1.3,
+   "centre": [
+    -2.115,
+    -2.758,
+    0.475
+   ],
+   "note": "",
+   "source": "proposal",
+   "proposal": "13",
+   "clip_suggested": "chair"
+  },
+  {
+   "id": 12,
+   "class": "computer tower",
+   "corners": [
+    [
+     1.691,
+     -3.893
+    ],
+    [
+     2.291,
+     -3.893
+    ],
+    [
+     2.291,
+     -3.353
+    ],
+    [
+     1.691,
+     -3.353
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 2.3,
+   "centre": [
+    1.991,
+    -3.623,
+    0.975
+   ],
+   "note": "",
+   "source": "proposal",
+   "proposal": "17",
+   "clip_suggested": "bag"
+  },
+  {
+   "id": 13,
+   "class": "chair",
+   "corners": [
+    [
+     -4.572,
+     -2.107
+    ],
+    [
+     -4.24,
+     -2.078
+    ],
+    [
+     -4.282,
+     -1.598
+    ],
+    [
+     -4.614,
+     -1.627
+    ]
+   ],
+   "z_bottom_above_floor": 0,
+   "z_top_above_floor": 0.9,
+   "centre": [
+    -4.427,
+    -1.853,
+    0.275
+   ],
+   "note": "",
+   "source": "proposal",
+   "proposal": "27",
+   "clip_suggested": "person"
+  }
+ ]
+}
