@@ -92,8 +92,78 @@ stays the contract and T6.3e's code is unchanged (only its config constants, `mi
 `voxel_size_m`, the DBSCAN values, are expected to retune on this sparser depth, under T6.4).
 This is a fork from T6.3b's RGB-D assumption and may want its own sub-task; not added yet.
 
+## Run evidence (the real bag, 2026-10-21)
+
+`FastLivoBag` ran end to end on `handdriven1_0.db3` on the lab box `.venv` (needs
+`rosbags`, installed there 2026-10-21, version 0.11.9). `[code]` `[reported]`:
+
+- 3536 colour frames kept, every one matched a pose within 0.1 s. Camera path
+  29.9 m, a roughly 4 x 4 m room at a near-constant 0.4 m height, starting and
+  ending at the origin: a plausible handheld loop.
+- Depth is metres-scale (median 3 to 4.4 m, 5th percentile 1 to 2 m, 95th 6 to
+  10 m), so no unit error. Points land in front of and inside the image, which is
+  the empirical proof the extrinsic direction is right: an un-inverted
+  `T_cam_lidar` would have thrown the cloud behind the camera.
+- FAST-LIVO interleaves an empty cloud between every registered scan, so
+  `_cloud_xyz` skips zero-width or field-less clouds rather than failing.
+
+Loader and geometry tests pass on the box `.venv`: 47 in all, including the LiDAR
+depth round-trip and the empty-cloud cases.
+
+## LiDAR depth vs a D455 depth stream, and how they complement
+
+The decisive measured fact is **sparsity**. LiDAR projected into the colour frame
+fills little of the image, and the fill scales with the cloud window:
+
+| cloud window | coverage | valid pixels (of 480x640) |
+| --- | --- | --- |
+| +-0.1 s | 1.6 to 2.4 % | about 5 to 7 k |
+| +-0.5 s | about 7.3 % | about 22 k |
+| +-1.0 s | about 13 % | about 40 k |
+
+Median depth barely moves across windows, so accumulation is not smearing over
+these ranges. A D455 aligned depth image, by contrast, fills close to 100 %.
+
+Density is not the only difference, and not even the one that most limits the
+LiDAR path here:
+
+- **Accuracy and range.** The points LiDAR does give are metrically sharp and
+  stay good at range and on dark, shiny or textureless surfaces, where D455
+  stereo depth gets noisy and drops out. So it is a trade, not a strict loss:
+  LiDAR is sparse but sharp, D455 is dense but softer at the 3 to 4 m range this
+  drive sits at.
+- **Alignment.** A D455's depth is factory-aligned to its own colour image, so it
+  needs no cross-sensor extrinsic at all. The LiDAR path carries the provisional,
+  tape-level, 34 cm-lever-arm extrinsic above, and that, not sparsity, is its
+  larger risk: a wider window fixes coverage, but nothing in the loader fixes a
+  bad extrinsic short of recalibration.
+
+**Where each is the better source:**
+
+- Near and small objects, grasp range: D455 dense depth, more points per mask and
+  no extrinsic error.
+- Room-scale, far, low-texture or poorly-lit scenes: LiDAR, for range and
+  robustness.
+- Existing FAST-LIVO captures that recorded no depth stream: LiDAR is the only
+  option, and it comes already registered to the world frame, which fits D-MG9's
+  world-coordinate decision.
+
+**How they combine.** Both reach the pipeline as the same `Observation.depth`
+(metres, 0 invalid), so fusing them is a loader concern and the downstream stages
+stay unchanged. A future recording could capture D455 aligned depth and LiDAR at
+once and, per frame, take D455 depth where it is valid and fall back to projected
+LiDAR in its holes and beyond its reliable range. That gives dense near-field
+depth without losing the far and low-texture returns.
+
+**Status.** The loader mechanism is done and tested on both the TUM and the
+FAST-LIVO paths. Whether LiDAR depth is good enough for the later stages is a
+measurement question for T6.4 against ground truth (T6.4e), not settled by the
+loader passing. Re-recording with the D455 depth stream enabled (option (a),
+deferred) stays open and is the better input for the grasp-range objects.
+
 ## Changelog
 
 | Date | Who | What |
 | --- | --- | --- |
 | 2026-10-21 | Claude (Opus 4.8) + Zongzhe | Created. The three facts (extrinsic and direction, pose frames, colour encoding) read off the lab box, the camera-to-world composition, and the provisional-extrinsic caveat, ahead of writing the `FastLivoBag` loader on branch `t6.3b-fastlivo-loader`. |
+| 2026-10-21 | Claude (Opus 4.8) + Zongzhe | Added the real-bag run evidence (3536 frames, metres-scale depth, 1.6 to 13 % coverage by window) and the LiDAR-vs-D455 finding: the density, accuracy-at-range and alignment trade-offs, where each is the better source, and how a future recording could fuse D455 near-field depth with LiDAR at range. |
