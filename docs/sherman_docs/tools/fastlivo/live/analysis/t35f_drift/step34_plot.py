@@ -50,7 +50,7 @@ for c, r in enumerate(("run1", "run2")):
         ax = axs[rr, c]; under(ax); a = S[(r, d)]
         sc = ax.scatter(a["x1"], a["y1"], c=a["eh"], s=26, cmap="magma_r", vmin=0, vmax=0.13, zorder=3)
         ax.plot(*maps["hd1"]["track"][:, :2].T, color=D.COL["hd1"], lw=.8, alpha=.6)
-        ax.set_title("%s, %s: error vs reference along the route (IMU track)" % (r, "pose at stamp + 0.15 s" if d == "d015" else "pose at scan stamp"), fontsize=10)
+        ax.set_title("%s, %s" % (r, "pose at stamp + 0.15 s" if d == "d015" else "pose at scan stamp"), fontsize=10)
         i = int(np.nanargmax(a["eh"])); ax.annotate("max %.2f m, t=%.0f s" % (a["eh"][i], a["t_s"][i]), (a["x1"][i], a["y1"][i]), xytext=(1.5, 3.3), arrowprops=dict(arrowstyle="->"), fontsize=9)
 plt.colorbar(sc, ax=axs, shrink=.5, label="horizontal error (m)"); fig.savefig(OUT + "/step3_map.png", dpi=100); plt.close(fig)
 
@@ -61,8 +61,8 @@ for ax, r in zip(axs, ("run1", "run2", "hd1")):
     ang = np.radians(g["weak2_deg"] + math.degrees(math.atan2(F[1, 0], F[0, 0])))
     under(ax); sc = ax.scatter(p[:, 0], p[:, 1], c=g["lam2_min"], s=30, cmap="viridis", vmin=0.08, vmax=0.14, zorder=3)
     ax.quiver(p[:, 0], p[:, 1], np.cos(ang), np.sin(ang), pivot="mid", scale=11, width=0.003, headwidth=0, headlength=0, headaxislength=0, color="k", zorder=4)
-    ax.set_title("%s: smallest horizontal eigenvalue (colour) and its direction (tick); median %.3f, min %.3f" % (r, np.median(g["lam2_min"]), g["lam2_min"].min()), fontsize=9)
-plt.colorbar(sc, ax=axs, shrink=.6, label="smallest eigenvalue of mean(n n^T), horizontal (1/3 would be balanced in 3D)"); fig.savefig(OUT + "/step4_weak.png", dpi=100); plt.close(fig)
+    ax.set_title("%s: lambda_min median %.3f, min %.3f" % (r, np.median(g["lam2_min"]), g["lam2_min"].min()), fontsize=9)
+plt.colorbar(sc, ax=axs, shrink=.6, label="smallest horizontal eigenvalue of mean(n n^T); tick = weak direction"); fig.savefig(OUT + "/step4_weak.png", dpi=100); plt.close(fig)
 
 # ---- features: rank correlation of the error with route features (windows), and a 10 s table
 print("rank correlation (Spearman) of horizontal error with route features, windows of 1 s:")

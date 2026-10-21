@@ -59,8 +59,8 @@ for lab in labels:
 for lab in labels:
     t = tracks[lab]; ax.plot(t[:, 0], t[:, 1], color=D.COL[lab], lw=2.2, path_effects=None); ax.plot(*t[0, :2], "o", color=D.COL[lab], mec="k", ms=9); ax.plot(*t[-1, :2], "s", color=D.COL[lab], mec="k", ms=9)
 decorate(ax)
-ax.set_title("Three /cloud_registered maps (5 cm, 0.2-1.5 m band) in the run 1 frame.\nLines: base tracks (circle = start, square = end). Black dashed: replay glass box; cyan dotted: approximate glass planes. Stars: marks A, B, C from run 1 odom readings", fontsize=10)
-ax.legend(markerscale=14, loc="upper left"); fig.tight_layout(); fig.savefig(D.OUT + "/step1_overlay.png", dpi=110); plt.close(fig)
+ax.set_title("Three /cloud_registered maps (5 cm, 0.2-1.5 m band), run 1 frame. Lines: base tracks (circle start, square end)\nBlack dashed: replay glass box. Cyan dotted: approximate glass planes. Stars: marks A, B, C (run 1 odom readings)", fontsize=9)
+ax.legend(markerscale=4, loc="upper left"); fig.tight_layout(); fig.savefig(D.OUT + "/step1_overlay.png", dpi=110); plt.close(fig)
 
 # ---- step 2
 def heat(src, dst, name):
