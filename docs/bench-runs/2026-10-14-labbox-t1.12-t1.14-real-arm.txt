@@ -1,0 +1,122 @@
+T1.12 bring-up step 5 (eight voice grasps, success rate) and T1.14 step 6 (release by voice, a second
+grasp in the same launch), on the real arm
+2026-10-14, 17:03 to 17:58, lab box (rcp2026@100.87.133.60). Dion at the robot. Claude Opus 5.5 set
+up and read tmux session grasp over SSH, Dion pressed every key that moved the arm. Domain 91,
+localhost only. Pane captures (not in the repo): ~/dion_logs/2026-10-14_t1.12_t1.14/pane_*.txt on
+the box. pane_7 is the state machine, pane_1 the driver and MoveIt, pane_9 the aria client, pane_10
+the replay. The state machine pane kept only the last ~900 lines, so attempts 1 to 3 are from the
+aria client log and Dion's report.
+
+RESULT
+  Step 5 (T1.12): PASS, 8 attempts recorded. 5 of 8 grasped. 5 of 6 within reach. 4 of the 5 grasps
+  closed on the edge of the box.
+  Step 6 (T1.14): PASS. Grasp, hold at HOME, release by voice, IDLE, a second grasp and release in the
+  same launch, no restart.
+
+Code
+  Step 5: ~/rcp-Gappler on dev d762f86, the build from T1.11.
+  Step 6: t1.14-multi-grasp-loop 6c23cfa (PR #75), ./build.sh PASS, 25 packages in 2 min 9 s. The
+  driver, camera, SAM 3 and the aria client kept running through the build. Only the state machine
+  was restarted.
+  After: back on dev 8b2e8ea, ./build.sh started.
+
+Before
+  Box free: no camera, ROS, bench or arm process, GPU idle, tmux only gh-runner and t0-18-uv-sync.
+  The arm answered at 192.168.1.18 once Dion powered it on.
+
+Setup
+  ./quickstart_terminals.sh grasp, then: the aria segmentation client (running), the replay of
+  pick_up_box_command.wav (typed), the /pipeline_state echo restarted with its type, two
+  rqt_image_view windows (colour and /camera/sam/mask) on the box screen. Step 6 added an echo of
+  /manipulation/done.
+  Panes added with tmux split-window opened in sh, not bash ("source: not found"). Fixed with
+  exec bash. Pass bash to split-window when adding panes to a quickstart session.
+  The grasp client logged "Glasses client found: default prompt dropped": from then on only voice
+  sets the target.
+
+Distances
+  Dion's measure: the box's front face 20.5 + 24 = 44.5 cm from the arm's black base (not counting
+  the base camera) at position 1. Table and base heights differ, so the distance to the shoulder is
+  longer [reported].
+  Orientation A and B are the two ways the box fits the gripper. The box is too wide any other way.
+
+Step 5 (T1.12)
+
+  #  time   placement                                        result
+  1  17:12  position 1 (44.5 cm), A                          grasped
+  2  17:16  position 1, B                                    grasped, on the edge, almost dropped
+  3  17:19  10 cm right, turned to face the arm, A           grasped, on the edge, almost missed
+  4  17:23  10 cm left, turned to face the arm, A            grasped, on the edge, less than 3
+  5  17:30  10 cm back (54.5 cm), A                          failed: final step out of reach
+  6  17:32  10 cm back (54.5 cm), A                          failed: same
+  7  17:37  5 cm back (49.5 cm), A                           failed: centroid stale in SELECTING
+  8  17:38  5 cm back (49.5 cm), A                           grasped
+
+  Every attempt was started by voice ("Target: 'box', grasp requested" in the aria client, the state
+  machine's "accepting centroids" in the same millisecond), except the very first request at 17:09.
+  That one came from the typed-request pane: Dion counts panes from 1, tmux from 0. With the aria
+  client up the grasp client had no target, so it lapsed: "no centroid within 10.0s". The typed
+  pane was then emptied. Its replay was still loading and Claude stopped it with Ctrl-C by mistake.
+
+  Attempts 5 and 6, the same in both: SELECTING stopped at "object at 0.199m" / "0.201m", the gripper
+  opened, then "[MtcPlanner] Cartesian path only 67% complete" and "EXECUTING: final Cartesian step
+  failed — aborting". The planner refuses below 80% (mtc_planner.cpp:118). 67% of the 0.12 m final
+  step (approach_step_final_m, grasp/grasp_config.yaml:72) is about 8 cm. The side walls are at
+  +-0.30 m and the box was centred, so they were not in the way [code]. So the arm most likely ran
+  out of reach, or into a straight elbow, 8 cm in [inferred]. Dion was turning the box during 5, but
+  6 failed the same way untouched. On dev a failed final step ends the worker, so the state machine
+  was restarted each time.
+  Reach limit: between 49.5 cm (grasped) and 54.5 cm (out of reach) from the base, at this table
+  height.
+
+  Attempt 7: "SELECTING: centroid 2.98s old (limit 2.00s), object lost — returning to IDLE" 9 s after
+  the request. The voice was fine. The "generation flags are not valid" warning Dion saw prints on
+  every replay and is harmless. Cause of the gap not known (see findings).
+
+Step 6 (T1.14), one launch from 17:44
+  17:45 first request: one approach step, then "centroid 2.44s old", IDLE. Restarted.
+  17:47 grasp. "object at 0.207m", final step, "Gripper closed", HOME, "Holding the object: waiting
+        for /manipulator/release". /manipulation/done printed once ({}).
+  17:49, 17:50 two pick_up replays sent by accident: "Grasp request ignored: busy, not waiting in
+        IDLE" both times. Correct.
+        The gripper was opened in this hold by the step 5 hand-release command (row 3 middle), not
+        by the state machine, so the box was not in the jaws. The state machine did not notice.
+  17:54 release_command.wav: "Release received", "Gripper opened", "Cycle complete — returning to
+        IDLE", IDLE. This release ran on an empty gripper.
+  17:55 pick_up again, same launch: "object at 0.208m", grasped on the edge, almost dropped, HOME,
+        holding.
+  17:57 release by voice, Dion's hand under the box: the box dropped, re-home, IDLE.
+  PASS: a second grasp in the same launch, release by voice both times.
+  During this run the centroid delay (ros2 topic delay /object_centroid_2d) was 0.50 to 0.64 s, at
+  2.7 a second. At rest before it, 0.50 s, gaps under 0.39 s.
+
+Findings, parked (tasks in the task tree)
+  1. The grip closes a few cm short every time (Dion). Same as step 4's "3 cm short": the mask and
+     its depth are the box's front face. A longer final step would fail sooner at the far spots,
+     so this pulls against the reach limit. T1.17 (AnyGrasp) is the planned fix.
+  2. No grasp angle. The jaws always close at the same yaw, so Dion turned the box to face the arm
+     for 3 and 4. AnyGrasp chooses an angle (T1.17).
+  3. The replay reloads Whisper and the LLM each run, about a minute an attempt. Fixed on branch
+     t2.16-replay-load-once (T2.16).
+  4. MoveIt warns "The computed trajectory is too short to detect jumps in joint-space Need at
+     least 10 steps, only got 3. Try a lower max_step." on every approach step (move_group, pane_1).
+     The steps are about 3 cm and computeCartesianPath splits them at 1 cm (mtc_planner.cpp:117), so
+     the check for a sudden joint flip never runs [code]. A smaller step (0.002 m) would turn it on.
+  5. Two stale-centroid misses (step 5 #7, step 6 first try), both early in SELECTING. The rate and
+     delay looked normal before and after. Not known whether SAM 3 lost the box, the mask had no
+     valid depth (grasp_segmentation_client.py:145, the cause in step 4), or the hot CPU stalled
+     [unverified].
+  6. /pipeline_state shows EXECUTING the whole time the arm holds the box. There is no holding state:
+     nothing is published between EXECUTING (grasp_state_machine.cpp:801) and IDLE (:884) on the
+     t1.14 branch [code].
+  7. The hand-release command opens the gripper behind the state machine's back. Use only the voice
+     release with T1.14 in, and keep the manual command out of the robot session's panes.
+
+Other notes
+  - The replay prints "You are sending unauthenticated requests to the HF Hub". Dion will set an
+    HF_TOKEN on the box.
+  - CPU hot again (load 8.8 during step 6). Replay load about a minute.
+  - Claude's permission check refused Claude sending the hand-release to the gripper (Remote Shell
+    Writes) and once a log read. From then on Claude typed commands into panes and Dion pressed Enter.
+  - The t0-18-uv-sync tmux session ended during the run. The grasp session was closed by exact name,
+    so most likely it ended on its own [inferred].

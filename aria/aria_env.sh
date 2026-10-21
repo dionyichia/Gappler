@@ -9,3 +9,5 @@ source "$GAPPLER_REPO/shared/base_envs/uv_venv.sh" || return 1
 # Optional: the glasses app itself runs without a build.
 [ -f "$GAPPLER_REPO/install/local_setup.bash" ] && source "$GAPPLER_REPO/install/local_setup.bash"
 case ":$PYTHONPATH:" in *":$GAPPLER_REPO/aria/aria_app:"*) ;; *) export PYTHONPATH="$GAPPLER_REPO/aria/aria_app:$PYTHONPATH" ;; esac
+# The repo root, last so aria_app names win, for the matcher's memory_graph import (CLIP, T8.7).
+case ":$PYTHONPATH:" in *":$GAPPLER_REPO:"*) ;; *) export PYTHONPATH="$PYTHONPATH:$GAPPLER_REPO" ;; esac

@@ -399,6 +399,8 @@ and closes. `/grasp_candidates` is subscribed and unused in this mode.
 Four keys. `E` publishes `Stop(state=true)` to `/rm_driver/emergency_stop_cmd`, `R` the same with
 `state=false`, `S` an `Empty` to `/rm_driver/move_stop_cmd` (current motion only), `Q` quits. It reads
 single keys from its own terminal (`keys()`), so the stop only works while that window has focus.
+The grasp state machine listens to the same two topics: `E` and `S` stop it and it sends nothing
+more until `R` (T1.38).
 
 Leaving any other way sends an emergency stop first: Ctrl+C, closing the terminal, or a kill signal.
 Before exiting it waits for subscribers to confirm the stop (`wait_delivered()`). All of this was
@@ -508,3 +510,4 @@ might that `return` at `:721` have been put there deliberately? ⬜ **open**
 | 2026-09-21 | Claude (Opus 5) + Dion | §1.1: the shared config is now `shared/global_config.yaml` (reorg step 2). It also holds machine paths now. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | Audio paragraph: note that `T2.10` replaced the once-a-second loop with one publish per finished sentence. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | §3.1: the state machine also listens to E, S and R (T1.38). |

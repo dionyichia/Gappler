@@ -199,6 +199,23 @@ class BadInputTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             ObjectStore(CFG).apply([panel_view(0)], [], anchor=1)
 
+    def test_a_repeated_anchor_is_an_error_and_changes_nothing(self):
+        # M6 quiz issue 1: the check has to come before any sighting is added
+        store = ObjectStore(CFG)
+        store.integrate([panel_view(0)], anchor=1)
+        with self.assertRaises(ValueError):
+            store.integrate([panel_view(1), panel_view(2, centre=(2.0, 0.0, 1.0), label="sofa")], anchor=1)
+        self.assertEqual(len(store), 1)
+        self.assertEqual(store.get(0).sightings, 1)
+        self.assertEqual(len(store.graph), 1)
+        self.assertEqual(store.check_invariants(), [])
+
+    def test_an_anchor_with_no_edges_left_can_be_used_again(self):
+        store = ObjectStore(CFG)
+        store.integrate([panel_view(0)], anchor=1)
+        store.graph.remove_anchor(1)
+        self.assertEqual(store.integrate([panel_view(1)], anchor=1), [0])
+
 
 if __name__ == "__main__":
     unittest.main()

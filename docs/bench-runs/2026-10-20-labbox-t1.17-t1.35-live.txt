@@ -1,0 +1,90 @@
+2026-10-20 lab box, real arm, Dion at the robot. AnyGrasp path (use_simple_execute false).
+Session: ./quickstart_terminals.sh grasp --anygrasp on dev 0b17344 (T1.32, T1.33, T1.34, T1.37 merged).
+Wrist angles: ros2 bag of /joint_states + /pipeline_state in ~/dion_logs/2026-10-20_t1.35/
+(joint_states_bag, joint_states_bag2, joint_states_bag3), summarised by joint6_per_grasp.py there.
+Distance = front edge of black base to near box face. Left/right seen from behind the arm.
+Angle 0 = 6 cm face to the arm, turned counter-clockwise seen from above.
+"Target" = final Cartesian goal x in base_link (negative = out in front).
+
+Step 7d (wrist does not turn 180 deg): PASS
+  grasp 1, box near the ideal spot (exact spot not recorded). Grasped, held, released.
+  Final move: planning failed at x=-0.534 and x=-0.538 (arm backed off and re-locked each time),
+  succeeded at x=-0.517. Grip landed near the box edge. joint6 not recorded for this grasp.
+  T1.37 log line seen live: "No grasp fits the gripper: narrowest 0.031 m wide (limit 0.068),
+  tips 0.102 m in (limit 0.045). 2 grasps checked (T1.32)".
+
+Grasp 2: not counted (spot unsure, maybe 35 cm centre 0 deg). Grasped. Final move first try at
+  x=-0.472. joint6 100.5 -> 90.0, turned 11.4 deg.
+
+T1.17 at 44.5 cm, centre, 0 deg (5 planned, stopped at 3)
+  A: PASS. Grasped, held, released. Final move: failed at x=-0.585, succeeded at x=-0.568.
+     joint6 107.1 -> 90.0, max 118.8, turned 28.8 deg.
+  B: FAIL, stopped by Dion (arm powered off). Five final moves failed to plan (x=-0.578 to -0.588,
+     z about 0.234), each followed by a back-off. After the fifth, about 50 s with no log output
+     until a stable target came. The sixth target was 8 cm lower (x=-0.556, z=0.155). It planned,
+     ran, the gripper closed and the arm moved to the holding pose. Dion: "the arm suddenly twisted
+     onto a weird position", close to but not 180 deg. Joint angles lost: the recorder crashed
+     (SQLite "database is locked") when Claude's reader script opened the live bag at about
+     16:18, before grasp B. Recorder restarted as joint_states_bag3 with --max-cache-size 0.
+     Read copies of the bag from now on, never the live file.
+     Joints after power-on (deg): j1 -7.3, j2 39.8, j3 101.3, j4 145.7, j5 28.6, j6 274.1.
+     HOME is 0, 0, 45, 0, 90, 90. So joint4 swung about 146 deg and joint6 about 184 deg, with
+     joint5 at only 29 deg. With joint5 near 0, joints 4 and 6 nearly line up (a wrist
+     singularity) and the planner can spin both a long way in opposite directions
+     [inferred from the angles].
+  C: PASS. Grasped. Final move first try at x=-0.559, z=0.236. joint6 99.1 -> 90.0, turned 9.1.
+  Stopped at 3 attempts by Dion's choice: 2 of 3 (A, C pass, B fail). Simple path was 5 of 8.
+
+T1.35, 12 random trials (seed 35), pass bar 9 of 12, no skipping
+  Logs from here: state_machine_pane.log, anygrasp_pane.log, joint_states_bag3 in the box folder.
+  Extra run, not a trial: box at 50 cm centre 0 deg (Dion placed it, not trial 1's spot). Final
+     moves failed to plan 5 times at x=-0.618 to -0.634, each with a back-off. Not counted: Dion
+     moved the box by hand mid-run to square it up. Grasp not held.
+
+SAFETY: the E key did not stop the arm.
+  1792485892.38  estop pane: "EMERGENCY STOP SENT" (arm standing still, state machine waiting for
+                 a stable target after a back-off).
+  1792485896.91  state machine: pose locked, planned x=-0.612 z=0.229, "moveToPose: executing".
+  1792485900.40  "Cartesian move succeeded", 1792485901.90 "Gripper closed".
+  1792485903.29  rm_control: new 36-point trajectory accepted, 1792485906.75 "Goal Succeeded".
+  So 4.5 s after E, the arm took and ran two new trajectories.
+  Known from code:
+  - grasp_state_machine.cpp has no e-stop subscriber. It never learns a stop was pressed and
+    keeps sending moves.
+  - E publishes rm_driver/emergency_stop_cmd, which calls rm_set_arm_emergency_stop
+    (arm/vendor/rm_driver/src/rm_driver.cpp:572-586). Whether the controller latches the stop or
+    only halts the motion in progress is not known [unverified]. estop.py does not check the
+    driver's result (ARM_BRINGUP.md:118-120).
+  Not known: whether the stop reached the controller at all. The E key has never been tested
+  stopping the real arm mid-motion.
+
+Findings
+  - Final-move planning failures are not a fixed reach limit: x=-0.534 failed in grasp 1 but
+    x=-0.568 worked in A. They depend on the full pose. Each failure costs about 10 s (back off,
+    wait for a stable pose, re-lock).
+  - The EXECUTING retry loop has no limit and logs nothing while waiting for a stable target
+    (grasp_state_machine.cpp:564-681). Looks like a hang.
+  - T1.33 keeps the grasp twin that turns the wrist least, but nothing stops the planned path to
+    that pose from twisting the wrist. Grasp B's twist happened anyway. Cause not confirmed
+    [inferred: the unusual low target at z=0.155].
+  - RViz keeps the last AnyGrasp point cloud and candidates after release: the node stops
+    publishing outside EXECUTING and RViz shows the last message. Display only. Fix: publish an
+    empty cloud and clear markers on IDLE. Parked.
+
+T1.35 trial list (python3 random.seed(35), random.sample of all 36 combinations, 12 drawn)
+   1. 50 cm, right 10 cm, 90 deg      7. 42 cm, left 10 cm, 30 deg
+   2. 42 cm, right 10 cm, 30 deg      8. 50 cm, right 10 cm, 30 deg
+   3. 35 cm, right 10 cm, 0 deg       9. 42 cm, centre, 60 deg
+   4. 50 cm, right 10 cm, 60 deg     10. 35 cm, left 10 cm, 30 deg
+   5. 35 cm, right 10 cm, 30 deg     11. 42 cm, right 10 cm, 90 deg
+   6. 50 cm, centre, 90 deg          12. 42 cm, centre, 0 deg
+  Open: keep 50 cm or swap to about 46 cm (Dion: keep for now, add points later if needed).
+  35 cm view check: from HOME the box sits at the bottom edge of the image, only the top face
+  visible, SAM 3 still finds it. Acceptable to try.
+
+End of session (about 16:56)
+  All grasp panes stopped with Ctrl-C (state machine first), the e-stop pane last (Ctrl-C sends a
+  stop: the controller may need resume or a power cycle next time). tmux sessions grasp and
+  t135bag closed with Dion's OK. Only gh-runner left on the box. Arm powered by Dion.
+  Box logs kept in ~/dion_logs/2026-10-20_t1.35/ (bags, pane logs, joint6_per_grasp.py,
+  joints_window.py).

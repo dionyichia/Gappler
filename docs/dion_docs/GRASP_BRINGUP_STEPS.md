@@ -7,61 +7,104 @@ the session at the machine on 2026-10-07.
 **Tasks:** steps 1 to 7 are tasks in [`../task-tree.html`](../task-tree.html). That page is
 authoritative for status. This file holds the reasoning, the commands and the pass criteria.
 
-**Read with:** [`T1.6_FIRST_POWERED_SESSION.md`](T1.6_FIRST_POWERED_SESSION.md) for the cold start
+**Read with:** `adb5466:docs/dion_docs/T1.6_FIRST_POWERED_SESSION.md` for the cold start
 (stop, boot wait, environment, shutdown order) and
-[`T1.7_FIRST_COMMANDED_MOTION.md`](T1.7_FIRST_COMMANDED_MOTION.md) for how the first motion was
+`adb5466:docs/dion_docs/T1.7_FIRST_COMMANDED_MOTION.md` for how the first motion was
 sent. This file does not repeat them.
 
-## Start here, 2026-10-13 (cold start)
+## Start here, cold start after 2026-10-14 (step 7, then step 8 = T1.35)
 
-**Where we are.** Steps 1, 2 and 3 pass. **3c passed on 2026-10-13: the real arm approached the
-box with live SAM 3, closed on it, lifted it and brought it back to HOME** (fourth attempt,
-[`../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt`](../bench-runs/2026-10-13-labbox-t1.24-3c-first-grasp.txt)).
-The 3b too-close depth fix (PR #62) is merged and passed at the box first.
+**Update 2026-10-20: paused on safety.** Step 7d PASS, T1.17 2 of 3, RViz works live. T1.35 is
+designed but 0 of 12 run: the E key did not stop the arm (T1.38). Next: fix T1.38 at the desk and
+test it at the robot, then run the 12 T1.35 trials. See "Result, 2026-10-20: real arm" below. Items
+1 to 7 of the list below are done or closed.
 
-**Merged into `dev` (`dec78c0`):** the T1.25 gate (#65) and the two 3c fixes (#67), a 0.5 s settle
-wait before each approach step (`step_settle_s`) and the virtual table at the measured 0.12 m
-(`table_top_z_m`). `~/rcp-Gappler` is rebuilt on it, so the normal `./quickstart_terminals.sh
-grasp` layout runs the gated state machine.
+**Where we are.** Steps 1 to 6 pass on the real arm. Step 7 (T1.17, the AnyGrasp path) has every
+fix in `dev` but no finished grasp yet:
+- **7a to 7c:** AnyGrasp's settings (0.10 m, 30 degrees), its axes turned into `grasp_frame`'s
+  (PR #82), and its point moved to where its fingertips go (PR #83). 7c is checked on live
+  candidates only, not on a finished grasp.
+- **7d, the first AnyGrasp grasp, FAIL:** the wrist turned about 180 degrees just before closing.
+  Fixed in PR #84 (T1.33, merged): the AnyGrasp node keeps the grasp twin that turns the wrist least.
+  Sim: joint6 turns 0.0 deg with the fix, 180.0 deg without. Not yet tried on the real arm.
+- **Even when 7d and T1.17 pass, the claim is weak (Dion, 2026-10-14).** Every grasp so far had the
+  box in an ideal spot: 44.5 cm away, the 6 cm face square to the arm. "AnyGrasp grasps work" needs
+  the box at random positions and angles. That is step 8, T1.35.
+- Records: [`../bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt`](../bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt)
+  (steps 7a to 7d), pane logs on the box in `~/dion_logs/2026-10-14_t1.17_anygrasp/`.
 
-**Since then (2026-10-13):** T2.6 merged (#64). Voice now sends the grasp request: the aria client
-sends `/manipulator/grasp_request` and the target with every object word, and "release" sends
-`/manipulator/release`. T2.7 merged (#63): `sam3_ros_node.py` is gone. `dev` is at `a376f9b`.
-Both are code outside the arm's C++, so no rebuild is needed for them, only `git pull`.
+**Next session at the box, in order:**
+1. **Update the box.** `cd ~/rcp-Gappler && git checkout dev && git pull && ./build.sh`. Keep the
+   local edit `use_simple_execute: false` in `grasp/grasp_config.yaml`.
+2. **T1.34: done 2026-10-20 on the replay bag and the simulated arm.** RViz shows the arm,
+   AnyGrasp's points and the candidates, drawn the way `grasp_frame` grips. Branch
+   `t1.34-grasp-viz-drawing` (940ba0f). The live check is folded into the next item. See "Result,
+   2026-10-20: T1.34 RViz works on the replay".
+3. **The real-arm run, first step: home, then confirm RViz on a live candidate.** Home the arm (the
+   command is in "Result, 2026-10-15", "Next time" item 1), box in view at the usual spot, then
+   check the drawing on a live candidate: fingers on two opposite faces, palm on the camera side,
+   arrow into the box. Then items 5 to 8.
+4. **Camera mount check: PASS (Dion, 2026-10-15).** The URDF camera origin
+   (`rm_65_w_gripper.urdf.xacro:24`) matches the real mount. Glass to fingertips: Dion 119 mm, model
+   118.6 mm. Camera body centre from the gripper centre: model 12.5 mm in x and 60 mm in y, Dion
+   confirmed both and the side (a first tape reading gave 14 mm in x) (checked against the 3D check page
+   https://claude.ai/artifact/S4BfsEeN1JwYKaWYEBuTrq) `[reported]`. No URDF change.
+5. **Step 7d again.** `./quickstart_terminals.sh grasp --anygrasp`, start the state machine, box at
+   44.5 cm with the 6 cm face to the arm, hand on the e-stop pane (row 1, column 1), one
+   `/manipulator/grasp_request`. Pass: the wrist stays within 90 degrees and the tips end past the face.
+6. **T1.17.** 5 attempts through AnyGrasp at the ideal spot, compared with the simple path's 5 of 8.
+7. **T1.32 and T1.37.** Merge T1.32, check a 7.5 cm face is dropped live, and settle the retry
+   question (T1.37) before random poses make it common.
+8. **Step 8, T1.35: random positions and angles.** Design with Dion first (below), then run it.
 
-**Next, at the robot: step 4 (T1.11), more grasps.** Same setup as 3c, from `~/rcp-Gappler`.
-Power the arm on about a minute before the driver pane, and start the state machine only after the
-driver prints "RM_65_driver is running" (attempt 0 of 3c, guard owed in T1.26). One request per
-attempt, restart the state machine between attempts. **Start each attempt by voice, not by hand.**
-The quickstart `grasp` layout does not start the aria client (only `aria` and `full` do), so open
-two more panes in the session (Ctrl-b %), each set up with
-`source aria/aria_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1`:
-1. the aria client, left running: `python aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py`
-2. per attempt: `python aria/tools/replay_audio_file_to_prompt.py assets/recordings/voice_commands/pick_up_box_command.wav`.
-   Whisper and the LLM load first (about 10 to 20 s `[inferred]`), then the word goes out about 1 s after the
-   recording ends. Stop it only with Ctrl-C, never `kill` or `timeout`, or its worker stays on the GPU.
+### Step 8 (T1.35): the box anywhere, at any angle
 
-The client turns "pick up the box" into the target `box` and one grasp request. This is the one
-join never tested together: voice, then SAM 3, then the gate, then the arm. If it fails, fall back
-to the typed request to tell which side broke. Replay `release_command.wav` to open the gripper,
-but only after T1.14: until then the state machine ignores release, so open by hand. Put the box in line with the gripper: attempt 3
-missed because it was not. Release by hand with `-w 1` (see 3c result). Before an unattended run,
-T1.26 (arm motion guards found in 3c).
+**Why.** Steps 5 to 7 put the box in one ideal spot. A grasp system that only works there is not
+working. This step is the real test of "AnyGrasp grasps work".
+
+**Proposed design, settle with Dion before running:**
+- **Positions:** front face 35, 42 and 50 cm from the black base (50 cm is near the reach limit:
+  54.5 cm failed in step 5), and left, centre and right of the arm (about -10, 0, +10 cm).
+- **Angles:** the box turned 0, 30, 60 and 90 degrees about the vertical.
+- **Random, not chosen:** draw about 12 (position, angle) pairs before the session, for example with
+  `python3 -c "import random; random.seed(35); ..."`, write them in the bench-run record, and run them
+  in that order. No skipping the hard ones.
+- **Pass bar:** set before the run, for example 9 of 12. Dion decides.
+- **Record per attempt:** grasped, lifted and brought to the return pose, or the failure: no
+  candidate, wrist turn, base of the U pushed the box, missed, out of reach, other. Also the approach
+  angle and how far the tips went past the face.
+- **T1.32 first.** Built 2026-10-14 on branch `t1.32-grasp-fits-gripper` (its own PR): the node
+  drops grasps where the object is over 0.068 m wide between the pads or the tips go over 0.045 m
+  past its near face. Merge it, and check on the live camera that a too-big face (7.5 cm) is dropped.
+- **Open question before T1.35 (T1.37, discuss with Dion):** when every grasp is too big, nothing
+  is published and the state machine gives up after 3 s (`grasp_state_machine.cpp:570-578`). Is a
+  retry needed, and how? `max_approach_deg` is 30 (a first-run limit): note attempts with no
+  candidate inside it.
+
+**Known from steps 5 and 6, all parked:**
+- The grip closes a few cm short and always at the same angle, so the box must face the arm. Most
+  grasps closed on the edge of the box. AnyGrasp (T1.17) is meant to fix both.
+- Two stale-centroid misses early in SELECTING, cause unknown (T1.30). Ask again.
+- `/pipeline_state` shows EXECUTING while the arm holds (T1.31).
+- MoveIt's joint-flip check is skipped on the small steps (T1.29).
+- The replay reloads its models each run, about a minute. Fixed on branch `t2.16-replay-load-once`
+  (T2.16): it now loads once and asks for the next file.
+- **Don't use the hand-release command while T1.14 runs.** It opens the gripper behind the state
+  machine's back. Say "release" instead. With the T2.16 replay, type `release` at its prompt.
 
 **Before touching the box:**
-- Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.98.10.50`. `100.87.133.60` has been
-  offline since mid-September.
-- `git log -1` in `~/rcp-Gappler`: expect `dev` at `a376f9b` (PR #64) or later.
-- **Never run anything from a scratch clone whose env files can build.** On 2026-10-13 a test in a `/tmp` clone sourced `grasp/grasp_env.sh` in six panes. Each found no AnyGrasp venv and started compiling it, the load hit 54 and the box had to be restarted ([`../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt`](../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt)). Run from `~/rcp-Gappler`.
-- After a restart, the CI runner needs starting again (tmux `gh-runner`).
+- Reach it with `ssh -o HostKeyAlias=10.91.242.76 rcp2026@100.87.133.60`. `tailscale status` shows
+  which node is active.
+- **Never run anything from a scratch clone whose env files can build.** A `/tmp` clone sourcing
+  `grasp/grasp_env.sh` started six AnyGrasp builds on 2026-10-13 and the box had to be restarted
+  ([`../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt`](../bench-runs/2026-10-13-labbox-e2e-voice-attempt-box-restart.txt)).
 - Check who else is on it: `ps -eo pid,user,etime,args | grep -iE "realsense|rs_launch|ros2 launch|bench/run.sh|Runner.Worker"`,
   `nvidia-smi`, `fuser /dev/video*`, `tmux ls`.
-- The box CPU was overheating on 2026-10-12: 89 C at 12% load, clamped to 0.8 GHz. It slows
-  SAM 3 from 0.27 to about 0.5 s a frame. Worth checking the fan before 3c.
+- Panes added to a quickstart session with `tmux split-window` open in `sh`. Pass `bash` as the
+  command. Name panes by position (row, column) when guiding someone, never by number.
 
-**Wrist camera:** `./quickstart_terminals.sh grasp` now starts it at `640x480x15` with no point
-cloud (T2.11, 2026-10-13), so no need to start it by hand for 3b. The driver default, 1280x720,
-sends frames again but makes SAM 3 about 40 % slower a call.
+**Wrist camera:** `./quickstart_terminals.sh grasp` starts it at `640x480x15` with no point cloud
+(T2.11). At this resolution depth stops at about 0.182 m.
 
 ---
 
@@ -486,7 +529,7 @@ The wrist camera pointed at the ceiling, no box in view.
   check above).
 - **Depth on a real object.** Prompt `light` found the ceiling light panel (score 0.84), depth
   1.255 m. Dion checked the mask by eye: it fits the panel. Depth not checked against a tape.
-  Picture: [`t1.24_3b/2026-10-12-ceiling-light-mask.png`](t1.24_3b/2026-10-12-ceiling-light-mask.png).
+  Picture: `adb5466:docs/dion_docs/t1.24_3b/2026-10-12-ceiling-light-mask.png`.
 - **GPU (RTX 4060 Ti, 16 GB).** The service holds 5.8 GB. During back-to-back calls: 61% busy on
   average, 80 W of 165 W, 55 C, not throttled. So the GPU has room for AnyGrasp alongside.
 - **CPU (i5-13400F, 16 threads).** The service uses about 1.2 threads on average, 2.1 at peak.
@@ -584,7 +627,23 @@ The gate held on the real arm: "Centroid ignored" every 5 s, no motion until a r
 
 Same setup as step 3. Now we judge the grasp: is the box in the gripper after the return? Restart
 the state machine between attempts (the one-shot `return;`). Record each attempt: grasped or not,
-and where it went wrong if not.
+and where it went wrong if not. Start each attempt by voice.
+
+### Result, 2026-10-13: PASS, a grasp started by voice
+
+Full record: [`../bench-runs/2026-10-13-labbox-t1.11-step4-voice-grasp.txt`](../bench-runs/2026-10-13-labbox-t1.11-step4-voice-grasp.txt).
+
+| Attempt | Started by | What happened | Fix |
+|---|---|---|---|
+| 1 | voice | Voice to target to request to SELECTING worked. Approach ended short: "centroid 2.78s old, object lost" | below |
+| 2 | typed (pane mix-up) | Same. Depth fell to 0.182 m, then the camera gave none. The stop was 0.18 m | Config: steps 0.04 to 0.02 m, stop 0.18 to 0.21 m, final step 0.10 to 0.12 m |
+| 3 | typed | "object at 0.198m", grasped, back to HOME | |
+| 4 | **voice** | "object at 0.206m", grasped, back to HOME | PASS |
+
+The grip lands about 3 cm short of the box centre, along the approach: the mask and the depth
+are the box's front face, so the simple path cannot know how deep the box is. Accepted. Step 7
+(AnyGrasp, T1.17) uses the point cloud. The simulated arm passes with the new config (13 PASS,
+C7 XFAIL).
 
 ---
 
@@ -594,9 +653,197 @@ and where it went wrong if not.
   One request per attempt (T1.25). Without it, SAM 3 would start a new cycle as soon as the
   one-shot `return;` is removed.
 - **Step 6 (T1.14, T2.6):** release, done, back to IDLE, a second grasp in the same launch.
-- **Step 7 (T1.17):** the AnyGrasp path.
+  Code on branch `t1.14-multi-grasp-loop` (PR #75). Simulated arm PASS 2026-10-14, 20 of 20 ([`bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt`](../bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt)).
+- **Step 7 (T1.17):** the AnyGrasp path. Desk prep on branch `t1.8-t1.10-anygrasp-gate-and-pane`
+  (stacked on PR #75): the gate fix (T1.8), the detector chosen and started from its venv
+  (T1.10), `state_` atomic (C4). Box checks PASS 2026-10-14: `./bench/anygrasp_replay.sh` and
+  `./bench/state_machine_sim.sh candidates` ([`bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt`](../bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt)). At the robot:
+  `./quickstart_terminals.sh grasp --anygrasp`, with `use_simple_execute: false`. The sim used a
+  fake candidate, so first check that AnyGrasp's grasp axes line up with `grasp_frame`: hand-check
+  the first candidate in RViz before letting the arm move to it. **Seen 2026-10-14 on the replay:**
+  AnyGrasp's grasps drawn on the camera image look impossible (at an angle no gripper could hold),
+  1 to 3 grasps per frame, scores 0.007 to 0.036. **Cause found 2026-10-14 (step 7a, live camera,
+  arm still):** AnyGrasp checks a gripper open to `max_gripper_width` fits around the object, and
+  the node said 0.07 m. A 6 cm face left 5 mm a side, so the obvious front grasp was rejected. At
+  0.10 m it finds front-face grasps, scores 0.34 to 0.5. Settings now in `grasp/grasp_config.yaml`:
+  `max_gripper_width_m: 0.10` and `max_approach_deg: 30`, a first-run limit, not measured. AnyGrasp no
+  longer checks the object fits the real 71 mm opening (T1.32), so only place the box in an
+  orientation the gripper can close on. And EXECUTING starts AnyGrasp at about 0.21 m, not the
+  0.4 m tested.
+
+### Result, 2026-10-14: step 7b, AnyGrasp's axes are not grasp_frame's
+
+Live camera, arm still, a stand-in `EXECUTING` on `/pipeline_state` and no state machine. Nothing
+draws the candidates in RViz, so 100 to 155 candidates were recorded and checked with the live TF
+instead ([`../bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt`](../bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt)).
+
+| Check | Result |
+|---|---|
+| 30 degree approach limit | Works: every grasp 10 to 30 degrees off the camera's view |
+| The box's mask | The box only, 63 mm across the face the fingers close on. Fits the 71 mm gripper |
+| AnyGrasp's width | 0.10 m (the cap) for most. It is the opening AnyGrasp wants. The state machine never reads it |
+| Grasp axes | **Wrong.** AnyGrasp: approach x, closing y. `grasp_frame`: approach -z, closing y |
+
+`grasp_frame` from the live TF: `Link6` sits 0.147 m along its +z, the fingers at +-0.040 m on y
+(`rm_65_w_gripper.urdf.xacro:15-18`). `moveToPose` aims `grasp_frame` at the candidate
+(`mtc_planner.cpp:41`), so with AnyGrasp's rotation unchanged the gripper would point 90 degrees
+away from AnyGrasp's approach. The state machine's 20 degree check (`grasp_state_machine.cpp:82-86`)
+reads `grasp_frame`'s z, so it is right once the axes are converted.
+
+**Fix** (branch `t1.17-anygrasp-to-grasp-frame`): `grasp/anygrasp_node/anygrasp_to_grasp_frame.py`
+turns each grasp by a fixed -90 degrees about y, the same conversion for every grasp. The node uses
+it before publishing. Its self-check passes on the box. `./bench/state_machine_sim.sh candidates` now
+builds its fake grasp in AnyGrasp's axes from where the gripper's links are, runs it through the same
+conversion, and checks the simulated gripper points within 5 degrees of it. PASS 2026-10-14, 22 of 22, gripper 0.0 deg off AnyGrasp's approach and finger line (box log/bench_state_machine_2026-10-14_1901.txt).
+
+Measured next (step 7c): `grasp_frame` is at the fingertips, AnyGrasp's point is `depth` short of
+them. Fixed on `t1.17-grasp-depth-offset`, see the bench-run record.
+Gripper inside (Dion, 2026-10-14): a U 50 mm deep and 71 mm wide, like a tuning fork on the
+flange (147.5 mm to the tips). Rubber pads 16 mm long from each tip, their middles 42 mm from its base. Tips more than about 50 mm past the near face push the box with the base of the U. Live, the
+median was 38 mm but the max 133 mm, so T1.32 also checks depth.
+
+### Result, 2026-10-14: step 7d, first AnyGrasp grasp FAIL (wrist turned 180 degrees)
+
+One grasp request, box at 44.5 cm. SELECTING to 0.209 m, EXECUTING, pose locked, a planned move
+to the grasp (9 s), gripper closed. Just before closing the wrist turned about 180 degrees and the
+jaws knocked the box off. The approach itself looked right. Cause `[inferred]` and the proposed
+fix are in T1.33 and the bench-run record. Pane logs: `~/dion_logs/2026-10-14_t1.17_anygrasp/` on the box.
+
+### Result, 2026-10-14: step 5 PASS, 5 of 8
+
+Run on `dev` d762f86, every attempt started by voice, the state machine restarted before each one
+(on `dev` it ends after one grasp). Distance is from the box's front face to the arm's black base.
+
+| # | Placement | Result |
+|---|---|---|
+| 1 | 44.5 cm, orientation A | grasped |
+| 2 | 44.5 cm, orientation B | grasped, on the edge, almost dropped |
+| 3 | 10 cm right, turned to face the arm, A | grasped, on the edge, almost missed |
+| 4 | 10 cm left, turned to face the arm, A | grasped, on the edge |
+| 5 | 54.5 cm, A | failed: final step only 67% plannable, out of reach `[inferred]` |
+| 6 | 54.5 cm, A | failed: same |
+| 7 | 49.5 cm, A | failed: stale centroid in SELECTING (T1.30) |
+| 8 | 49.5 cm, A | grasped |
+
+The planner refuses a final step under 80% (`mtc_planner.cpp:118`). The side walls were not in the
+way. Details and logs: [`../bench-runs/2026-10-14-labbox-t1.12-t1.14-real-arm.txt`](../bench-runs/2026-10-14-labbox-t1.12-t1.14-real-arm.txt).
+
+### Result, 2026-10-14: step 6 PASS
+
+One launch of `t1.14-multi-grasp-loop` 6c23cfa. Grasp, HOME, "Holding the object: waiting for
+/manipulator/release", `/manipulation/done` once. Two pick-up replays sent by accident were refused
+as busy. Release by voice, IDLE. Then a second grasp in the same launch and a release that dropped
+the box into Dion's hand, IDLE. The first release ran on an empty gripper: the hand-release command
+had opened it earlier, and the state machine did not notice.
 
 ---
+
+### Result, 2026-10-15: T1.34 at the box, not finished
+
+**Not finished: no grasp candidate to draw.** The fix is on the box and its self-check passes.
+Session ended at Dion's request (no time). The `grasp` tmux session is closed and the box is free.
+
+- **Fix on the box, uncommitted:** `grasp_viz.py`, the new `gripper_drawing.py` and the
+  `grasp_visualizer` block of `grasp_config.yaml`, applied from `t1.34.patch` (left in the repo
+  root). The local edit `use_simple_execute: false` is still there. Self-check PASS: "fingers close
+  along grasp y, arrow along -z from the tips, palm 0.05 m behind".
+- **Arm off at first.** The driver logged "Connect failed" and 192.168.1.18 did not answer ping
+  until Dion switched the arm on. The driver then connected by itself.
+- **Arm at all zeros, not HOME,** so the wrist camera did not see the box. SAM 3 found no box,
+  `/camera/sam/mask` stayed empty and AnyGrasp logged "No SAM mask received yet". The quickstart
+  `grasp` layout does not home the arm. Only the state machine does.
+- **The stand-in still works:** `EXECUTING` on `/pipeline_state` at 1 Hz, no state machine, turns
+  AnyGrasp on as in step 7b.
+- **RViz never draws the robot** (Dion's other session) `[reported]`. In
+  `grasp/grasp_viz/rviz_config.rviz` the MotionPlanning display is off and there is no RobotModel
+  display. The data is fine: `/robot_description`, `/joint_states` and the TF from `base_link` to
+  the camera all resolve. Proposed: add a RobotModel display (Description Topic
+  `/robot_description`) to the T1.34 branch.
+  Fixed 2026-10-20: see "Result, 2026-10-20: T1.34 RViz works on the replay".
+- **RViz showed nothing useful** (Dion, at the monitor): no arm, no model, a blank scene. Decided:
+  do not ship T1.34 until RViz works. From the config `[code]`:
+  - no display draws the robot (above)
+  - the PointCloud2 display reads `/camera/camera/depth/color/points`, which the grasp layout no
+    longer publishes (T2.11 turned the point cloud off, `quickstart_terminals.sh:59-62`), so the box
+    is never drawn as points
+  - the Camera display dropped every frame ("queue is full", then "earlier than all the data in the
+    transform cache") while the arm was not yet connected `[reported]`
+  - candidate markers need a candidate, which needs the arm homed and the box in view
+
+**Next time, in order:**
+1. Home the arm. Type, do not send, then Dion presses Enter:
+   `ros2 topic pub --once /rm_driver/movej_cmd rm_ros_interfaces/msg/Movej "{joint: [0.0, 0.0, 0.7854, 0.0, 1.5708, 1.5708], speed: 5, block: false, trajectory_connect: 0, dof: 6}"`
+2. Put the box in view at the usual spot.
+3. Stand-in `EXECUTING`, grasp_viz and RViz, then the three by-eye checks.
+
+Better: get RViz working at the desk first, on the replay bag and the simulated arm, so the box
+visit is only a confirmation (T1.34 note).
+
+### Result, 2026-10-20: T1.34 RViz works on the replay
+
+**PASS by eye** (Dion, two screenshots at the box) `[reported]`. RViz shows the arm, AnyGrasp's
+points and the candidates. The green fingers straddle two opposite box faces, the cyan palm sits on
+the camera side, and the red arrow points from the tips into the box. The fingers are drawn at the
+real 71 mm opening (`grasp_config.yaml` `open_width_m: 0.071`). The `w:0.100` text label is
+AnyGrasp's gripper model width (`max_gripper_width_m: 0.10`), not the drawn width `[code]`.
+
+- **Set-up:** replay bag `assets/recordings/wrist_camera` (wrist_camera_box_at_home_2026-10-13), the
+  simulated arm (`bench/nodes/sim_arm.launch.py`, mock_components) at all zeros, grasp_viz, RViz on
+  `DISPLAY=:1`, `ROS_DOMAIN_ID` 77, localhost only. At zeros the camera looks straight up, so the
+  points float about 40 cm above the gripper.
+- **Fixes, commit 940ba0f** `[code]`:
+  - a RobotModel display in `grasp/grasp_viz/rviz_config.rviz:65`
+  - `anygrasp_detection_node.py` publishes the masked points it is given on `/debug/anygrasp_points`
+    (`grasp/grasp_config.yaml:28`), stamped now() like the candidates
+  - `./quickstart_terminals.sh grasp` starts grasp_viz and RViz
+  - `bench/nodes/test_anygrasp_replay.py:103` publishes a static TF from `camera_link` to
+    `camera_color_optical_frame`
+- **Finding 1: the replay has no camera optical frame** `[code]`. The bag has no TF, and
+  `rm_65_w_gripper.urdf.xacro:23` includes `sensor_d435` with `use_nominal_extrinsics` false, so the
+  URDF only defines `camera_link`. Live, the realsense driver publishes `camera_color_optical_frame`.
+  On the replay grasp_viz logged "TF lookup failed: camera_color_optical_frame does not exist" and
+  RViz drew nothing `[reported]`. Fixed in the replay test with the D435 nominal values (y 0.015 m,
+  roll -90 deg, yaw -90 deg, from realsense2_description `_d435.urdf.xacro`).
+- **Finding 2: old stamps.** The bag's messages carry their 2026-10-13 stamps, so RViz dropped them
+  against live TF ("Message Filter dropping message ... queue is full") `[reported]`. Fixed by
+  stamping the points with now().
+- **Replay numbers, 3 runs** `[reported]`:
+
+  | Check | Result |
+  |---|---|
+  | Segmentation | PASS, 159 to 196 masks in 60 s, median depth 0.400 m |
+  | Grasp detection | PASS, 134 to 171 candidate sets, top score 0.42 to 0.45 |
+  | Gate (A1) | FAIL, 1 set at the IDLE switch. Open task T1.36, not new |
+
+- **Open:** a magenta dashed line shows near the points. It does not come from grasp_viz (palm blue
+  to cyan, fingers green, arrow red, centroid red sphere). Source unknown, harmless.
+- **Not done:** the live check on the real arm. It is the first step of the next box session
+  (Start here, item 3).
+
+### Result, 2026-10-20: real arm, step 7d, T1.17, T1.35 paused on the e-stop
+
+Full record: [`../bench-runs/2026-10-20-labbox-t1.17-t1.35-live.txt`](../bench-runs/2026-10-20-labbox-t1.17-t1.35-live.txt).
+
+- **Step 7d: PASS.** The wrist did not turn 180 deg. Joint6 turned 11 to 29 deg on the grasps that
+  were recorded `[reported]` (ros2 bag of `/joint_states`).
+- **T1.17: 2 of 3 at the ideal spot** (A and C pass, B fail). Dion stopped after 3 attempts. The
+  simple path scored 5 of 8. A grasp counts as a pass if the box is held, back-offs included.
+- **RViz live: works.** With the arm on, RViz shows the arm, the box points and candidates on the
+  camera image. Before the driver connects it shows "Frame [base_link] does not exist" and a white
+  lump: that is the arm off, not a bug.
+- **T1.35: design settled, 0 of 12 run.** 35, 42, 50 cm, -10, 0, +10 cm sideways, 0, 30, 60, 90 deg,
+  12 trials from `random.seed(35)` (list in the run record), pass bar 9 of 12, no skipping.
+- **Paused: the E key did not stop the arm (T1.38).** Pressed while the arm waited between retries.
+  4.5 s later the arm ran a new grasp move and a move to the holding pose. Physical stop only until
+  T1.38 is fixed and tested.
+- **Found, each now a task:**
+  - The final move often fails to plan around 57 to 63 cm out from the base centre. Each failure
+    backs off one step and waits for a new stable target, with no limit and no log line (T1.39).
+    50 cm centre 0 deg needed 61 to 63 cm, at the edge of reach.
+  - Grasp B: after five failed plans a low target (z 0.155 m) planned, and the wrist made a large
+    twist on the way. After power-on: j4 146, j5 29, j6 274 deg. The T1.33 twin choice only limits
+    the final roll, not the path (T1.40).
+  - RViz keeps the last points and candidates after release (T1.41).
 
 ## Things to watch
 
@@ -612,8 +859,9 @@ From reading the code. None of these is confirmed on the real arm.
   `[unverified]`. Look at them in RViz before 3c.
 - **A lost object is not noticed** until the stale-centroid check is in (see "With 3b"). Even
   then, the check only runs between steps, and each step takes a few seconds at 10% speed.
-- **A failed final step ends the node.** `:725` returns from the worker loop (the check is at `:722`), just like `:735`.
-  The gripper is open at that point, so it is safe, but nothing else will happen until a restart.
+- **A failed final step goes home and back to IDLE** since T1.14 (PR #75). It used to end the node.
+- **A late TF can end a request in SELECTING** (CODE_AUDIT E6, T1.28). Seen once in sim. If the arm
+  goes back to IDLE right after SELECTING with "EEF transform failed" in the log, ask again.
 - **"Object grasped successfully" means nothing.** It is logged unconditionally (`:728`). Judge
   grasp success by eye.
 - **Two unguarded transforms in EXECUTING** (`:694`, `:714`). If the camera's TF is late, the
@@ -650,3 +898,20 @@ From reading the code. None of these is confirmed on the real arm.
 | 2026-10-13 | Claude Opus 5.5 + Dion | 3c PASS, the first grasp on the real arm. Start here rewritten for step 4. 3c result table, release with `-w 1`. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | After #65 and #67 merged: Start here and step 3c run from `~/rcp-Gappler` and the quickstart grasp layout. The separate `~/rcp-Gappler-t1.25` build is deleted. Start the state machine after the driver is up. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | After T2.6 (#64) and T2.7 (#63): Start here says voice sends the grasp request, step 4 starts each attempt with the `pick_up_box_command.wav` replay, the signals table names the publishers. Box restart incident and the runner restart noted. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | Step 4 (T1.11) PASS, attempt 4 started by voice. Result table, the depth blind zone and the config change (uncommitted, branch t1.11-stop-before-depth-blind), the 3 cm front-face bias. Start here rewritten for step 5: release with `-t 3 -r 2`, the `/pipeline_state` type, pane names by position. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | Start here: the step 4 config is merged (#71), the box is reached at `100.87.133.60` again. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Steps 6 and 7: box sim and replay checks PASS. Things to watch: failed final step now goes home (T1.14), new E6 late TF in SELECTING. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Start here rewritten for the robot: step 5 on `dev`, step 6 on the PR #75 branch (release by voice, second grasp in one launch). Step 7: AnyGrasp's drawn grasps look impossible. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Steps 5 (T1.12) and 6 (T1.14) PASS on the real arm, result tables. Start here moved on to step 7. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Step 7a (T1.17) on the live camera, arm still: cause of AnyGrasp's impossible grasps found (gripper model 0.07 m), now 0.10 m plus a 30 degree approach limit. T1.32 added. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Step 7b (T1.17), arm still: AnyGrasp's grasp axes differ from `grasp_frame`'s, the arm would have come in 90 degrees off. Fix and sim check on `t1.17-anygrasp-to-grasp-frame`. Start here updated. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Steps 7c (depth offset) and 7d (first AnyGrasp grasp, wrist turned 180 degrees, FAIL). Start here points at T1.33. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Start here rewritten as a cold start: #83, T1.33 design choices, sim, step 7d again. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | Start here rewritten after #84 merged: box update, T1.34, camera mount check, 7d, T1.17, then step 8 (T1.35, random box positions and angles, Dion: the ideal-spot claim is weak). |
+| 2026-10-15 | Claude Opus 5.5 + Dion | Step 8 notes T1.32 built and the retry question (T1.37). |
+| 2026-10-15 | Claude Opus 5.5 + Dion | Camera mount check skipped: the URDF origin already gives working grasps. Partial measurement kept in Start here item 3. |
+| 2026-10-15 | Claude Opus 5.5 + Dion | Camera mount check PASS: body centre 12.5 and 60 mm confirmed, glass 119 vs 118.6 mm. Replaces the skipped note. |
+| 2026-10-15 | Claude Opus 5.5 + Dion | T1.34 at the box, not finished: fix applied (self-check PASS), arm off then at zeros so no box in view. RViz config draws no robot. Next time home the arm first. |
+| 2026-10-15 | Claude Opus 5.5 + Dion | T1.34 box attempt, not finished. RViz blank (no robot display, point cloud topic not published). Decided: fix RViz before shipping T1.34. All on branch `t1.34-grasp-viz-drawing`. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | T1.34 RViz works on the replay bag and the simulated arm (PASS by eye, commit 940ba0f): result section with the missing optical frame and old-stamp findings. Start here: T1.34 done, next is the real-arm run (home, RViz live check, 7d, T1.17, T1.32, T1.35). 2026-10-15 result points at the fix. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | Real-arm session: step 7d PASS, T1.17 2 of 3, RViz live works, T1.35 design settled and paused because the E key did not stop the arm (T1.38). New tasks T1.39 to T1.41. Start here update. |

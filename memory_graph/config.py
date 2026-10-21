@@ -20,8 +20,30 @@ from dataclasses import dataclass, fields, replace
 from typing import Any, Mapping, Tuple
 
 
+# TENTATIVE (Zongzhe, 2026-10-20, T6.7c): 30 phrases, all ScanNet200 names as HiCo-Nav
+# spells them (data/scannet200_classes_ori.txt), so "tv_monitor" keeps upstream's spelling.
+# 23 fired at 0.5 or more on the lab test photos, the other 7 (bottle, computer tower,
+# keyboard, laptop, mouse, table, whiteboard) are things a lab or the grasp tasks hold.
+# Left out on purpose: umbrella words that fire on everything ("furniture", "seat"), one of
+# each synonym pair ("couch", "trash bin", "purse", "ceiling light"), and bg_classes.
+# 30 because batched SAM 3 costs about 0.2 s + 0.04 s per phrase per photo on the lab box
+# GPU: docs/bench-runs/2026-10-20-labbox-t6.3c-sam3-batched-timing.txt. Check it against
+# the lab's real objects once T6.2 records the lab and T6.4e lists them.
+BASE_VOCABULARY: Tuple[str, ...] = (
+    "bag", "bench", "book", "bottle", "box", "cabinet", "chair", "clothes",
+    "computer tower", "cup", "cushion", "desk", "door", "keyboard", "laptop", "light",
+    "mouse", "paper", "poster", "power outlet", "shelf", "sign", "sofa", "stool",
+    "table", "tissue box", "trash can", "tv_monitor", "whiteboard", "window",
+)
+
+
 @dataclass(frozen=True)
 class MemoryGraphConfig:
+    # ---- S1 detection -----------------------------------------------------
+    # The phrases SAM 3 is prompted with on every photo, before any task adds
+    # its own. A class id is a phrase's position, so only append to this list.
+    base_vocabulary: Tuple[str, ...] = BASE_VOCABULARY
+
     # ---- S2 detection filtering -------------------------------------------
     bg_classes: Tuple[str, ...] = ("wall", "floor", "ceiling", "carpet", "rug", "bath mat")
     skip_bg: bool = True
@@ -48,6 +70,9 @@ class MemoryGraphConfig:
     # Upstream hardcodes 0.8 and 0.7 (map_utils.py:295).
     contain_inner_ratio: float = 0.8
     contain_outer_ratio: float = 0.7
+    # Then a pixel still in two masks stays only in the more confident one.
+    # Not upstream. Chosen 2026-10-21 (Zongzhe, T6.3), see masks.one_owner_per_pixel.
+    mask_one_owner_per_pixel: bool = True
 
     # ---- S6 image feature -------------------------------------------------
     # Crop padding per side as a fraction of the box's width and height.
@@ -106,6 +131,20 @@ class MemoryGraphConfig:
     anchor_height: int = 448
     anchor_width: int = 448
 
+    # ---- S13 periodic clean-up --------------------------------------------
+    # Run the clean-up after this many stored photos. Upstream hardcodes 10
+    # (map.py:899).
+    cleanup_every_photos: int = 10
+    # kappa: how many photos to keep per object when pruning, if it has that
+    # many. Upstream's 1 keeps a single view of each object, so one bad view
+    # leaves the object with no usable photo. TENTATIVE 3 (Zongzhe, 2026-10-21,
+    # D-MG1 in docs/MEMORY_GRAPH_DESIGN.md): about 2.6 times the photos of
+    # kappa 1 on the section 6 benchmark. Check it on the recorded drive (T6.4).
+    prune_kappa: int = 3
+    # An object's cloud is left as it was if denoising would leave fewer points
+    # than this (pointcloud.py:787).
+    denoise_min_points: int = 4
+
     def __post_init__(self) -> None:
         if self.association_mode not in ("greedy", "one_to_one"):
             raise ValueError(f"association_mode must be 'greedy' or 'one_to_one', got {self.association_mode!r}")
@@ -113,8 +152,21 @@ class MemoryGraphConfig:
             raise ValueError("phys_bias must be in [0, 1]")
         if self.clip_batch_size < 1:
             raise ValueError("clip_batch_size must be at least 1")
+        if self.cleanup_every_photos < 1 or self.prune_kappa < 1:
+            raise ValueError("cleanup_every_photos and prune_kappa must be at least 1")
         if self.anchor_height < 0 or self.anchor_width < 0:
             raise ValueError("anchor_height and anchor_width must be 0 or more")
+        from memory_graph.vocabulary import normalise   # the spelling Vocabulary compares under
+
+        phrases = [normalise(p) for p in self.base_vocabulary]
+        if any(not p for p in phrases):
+            raise ValueError("base_vocabulary has an empty phrase")
+        repeated = sorted({p for p in phrases if phrases.count(p) > 1})
+        if repeated:
+            raise ValueError(f"base_vocabulary repeats {repeated}")
+        background = sorted(set(phrases) & {normalise(b) for b in self.bg_classes})
+        if background:
+            raise ValueError(f"base_vocabulary has background classes {background}, which S2 drops")
         for name in ("voxel_size_m", "dbscan_eps_m", "match_radius_m", "gate_translation_m"):
             if getattr(self, name) <= 0:
                 raise ValueError(f"{name} must be positive")
@@ -126,8 +178,9 @@ class MemoryGraphConfig:
         if unknown:
             raise KeyError(f"unknown memory graph config keys: {unknown}")
         values = dict(values)
-        if "bg_classes" in values:
-            values["bg_classes"] = tuple(values["bg_classes"])
+        for name in ("bg_classes", "base_vocabulary"):
+            if name in values:
+                values[name] = tuple(values[name])
         return replace(cls(), **values)
 
     @classmethod

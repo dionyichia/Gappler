@@ -1,0 +1,93 @@
+T1.11 bring-up step 4: grasps on the real arm, each started by voice
+2026-10-13, 18:05 to 20:15, lab box (rcp2026@100.98.10.50). Dion at the robot with a hand on the
+power button. Claude Opus 5.5 set up and read tmux session grasp over SSH. Domain 91, localhost only.
+Pane captures, centroid depth log, gripper replies and the sim output: docs/dion_docs/t1.11_logs/.
+
+RESULT: PASS. Attempt 4 was started by voice and grasped the box: voice, target, grasp request,
+SAM 3, the T1.25 gate, approach, grasp, back to HOME. First time the whole chain ran together.
+One config change was needed (below). The grip lands about 3 cm short of the box centre (finding 1).
+
+Code
+  ~/rcp-Gappler on dev 0bf552e, plus an uncommitted change to grasp/grasp_config.yaml from
+  attempt 3 on (below). No rebuild: the launch reads the config from the repo.
+
+Before
+  Box free: no camera, ROS, bench or arm process, /dev/video* free, GPU idle, only gh-runner in tmux.
+  CPU 93 C at load 0.8, clamped to 800 MHz for the whole session (thermal idle_inject threads active).
+
+Setup
+  ./quickstart_terminals.sh grasp, plus three panes: the aria segmentation client (running), the
+  voice replay of assets/recordings/voice_commands/pick_up_box_command.wav (typed), and
+  rqt_image_view on the box screen. Later a centroid depth logger (ros2 topic echo --csv
+  /object_centroid_2d with timestamps).
+  The grasp client logged "Glasses client found: default prompt dropped", so it waited for the
+  voice target and did not use its default 'box'.
+  The /pipeline_state echo pane exited at start: "Could not determine the type for the passed
+  topic", because nothing publishes it before the state machine runs. Restarted with the type,
+  std_msgs/msg/String (finding 4).
+  State machine started after the driver connected: home move "Execute request success",
+  joints within 0.001 rad of HOME, IDLE. The gate held: "Centroid ignored" every 5 s.
+
+Attempt 1, 19:35, voice. Stopped short.
+  The replay took about a minute to load Whisper and the LLM on the hot CPU (doc said 10 to 20 s).
+  Aria client "Target: 'box', grasp requested", grasp client "Target: 'box'", state machine
+  "accepting centroids" in the same millisecond. SELECTING 8 s later, approach steps, then
+  "centroid 2.78s old (limit 2.00s), object lost", IDLE with the arm in front of the box.
+  SAM 3 still published masks at about 3 a second, but no centroids. The grasp client sends a mask
+  without a centroid when the depth under the mask is not valid (grasp_segmentation_client.py:145).
+
+Attempt 2, 19:41, typed request. Stopped short, same cause, measured.
+  Started by the typed request, not voice: I named panes by tmux id and Dion counted panes by
+  position, so the "replay" pane was the typed request pane. Same for attempt 3.
+  Centroid depth fell smoothly from 0.459 to 0.183 m in 15 s, last reading 0.182 m, then none.
+  The approach stops at execute_depth_thresh_m 0.18. So the wrist camera (640x480) gives no depth
+  closer than about 0.182 m, 2 mm before the stop, and the centroid goes stale. 3c attempt 4 got one
+  reading at 0.177 m: luck at the edge, not a margin.
+  Placing the box nearer does not help: the stop is measured from the camera.
+
+Config change (Dion approved), grasp/grasp_config.yaml, with comments
+  approach_step_m          0.04 -> 0.02   a step can no longer jump from above the stop into the blind zone
+  execute_depth_thresh_m   0.18 -> 0.21   the stop reading is 0.19 to 0.21 m, where the camera still sees
+  approach_step_final_m    0.10 -> 0.12   the jaws end 0.07 to 0.09 m from the camera's reading, 3c was 0.077
+  All approach numbers were already read from this file, none hard-coded (grasp_state_machine.cpp:126-142).
+  ros2 param get on the running state machine confirmed 0.02, 0.21, 0.12.
+  The simulated-arm test refused while rm_driver ran ("an rm_driver process is running"). Dion chose
+  to test on the real arm first and run the sim after.
+
+Attempt 3, 19:52, typed request. Grasped.
+  Request to SELECTING 1.5 s. 26 s of smaller steps, "object at 0.198m", EXECUTING, gripper open,
+  final step, gripper close, "Object grasped successfully", back to HOME with the box in the jaws.
+  The jaws closed in line with the box but about 3 cm short of its centre (Dion).
+
+Release by hand
+  ros2 topic pub --once -w 1 /rm_driver/set_gripper_position_cmd ... position 1000: sent twice,
+  "publishing #1" both times, no effect, no reply. The only listener on the topic is rm_driver,
+  reliable on both ends. Then -w 1 -t 3 -r 2 (three messages 0.5 s apart): the driver answered
+  data: true three times and the jaws opened (finding 3).
+
+Attempt 4, 20:06, voice. Grasped. PASS.
+  Aria client "grasp requested" and the state machine's request in the same millisecond, no typed
+  request. SELECTING 3 s after. "object at 0.206m", EXECUTING, open, final step, close,
+  "Object grasped successfully", back to HOME with the box in the jaws.
+
+After
+  State machine stopped (Ctrl-C). Arm sent from HOME to all joints 0 in one movej at speed 5
+  (Dion's choice, done before). Joints within 0.00004 rad of 0. Arm powered off.
+  estop quit with q, every other pane stopped with Ctrl-C, GPU free.
+  Simulated arm with the new config, arm off, domain 95: BENCH_DOMAIN=95 ./bench/state_machine_sim.sh
+  PASS, 13 PASS, C7 XFAIL as before. launch log: log/bench_state_machine_2026-10-13_2012.txt
+  tmux session grasp closed on Dion's request. gh-runner untouched.
+
+Findings
+  1. The grip lands about 3 cm short of the box centre, along the approach. The mask is the box's
+     front face and the depth is the front face's depth, so the simple path knows nothing about
+     the object's depth (Dion). Accepted for step 4. The fix is the point cloud path, AnyGrasp,
+     step 7 (T1.17).
+  2. The wrist camera's depth stops at about 0.182 m at 640x480. Any stop distance must sit at
+     least one approach step above it. Fixed by the config change above.
+  3. ros2 topic pub --once -w 1 to the gripper can still be lost [inferred: -w waits until the
+     publisher has found the driver, not until the driver has found the publisher, and --once
+     exits at once]. -t 3 -r 2 worked. Add to T1.26 item 4.
+  4. quickstart_terminals.sh:66, the /pipeline_state echo needs the type std_msgs/msg/String.
+  5. The CPU at 90 to 93 C clamps to 800 MHz. The voice replay took about a minute to load.
+  6. When guiding Dion through panes, name them by grid position, not tmux id.

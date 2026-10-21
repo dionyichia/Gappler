@@ -24,6 +24,8 @@
       debug_sam_mask: "/debug/sam_mask"
       debug_centroid_marker: "/debug/centroid_marker"
       debug_state_marker: "/debug/state_marker"
+      # anygrasp_detection_node -> RViz (debug): the masked points AnyGrasp was given (T1.34)
+      debug_anygrasp_points: "/debug/anygrasp_points"
     # How many grasp candidates AnyGrasp publishes per frame.
     # read by: anygrasp_node, anygrasp_detection_node
     num_grasp_candidates: 5
@@ -38,6 +40,10 @@ grasp_segmentation_client:
     # Give up on a request with no reply after this long, so a service that dies mid-call does not
     # stall the client for good. A normal call takes about 0.25 s.
     segment_timeout_s: 5.0
+    # Sent with every request. The service's defaults are looser, for the glasses (T2.9). The grasp
+    # client takes the best score, so it keeps the values it was tested with.
+    min_score: 0.5
+    max_detections: 5
 
 # grasp/anygrasp_node/anygrasp_detection_node.py
 anygrasp_detection_node:
@@ -45,24 +51,63 @@ anygrasp_detection_node:
     # Workspace box in the camera frame, metres: [x_min, x_max, y_min, y_max, z_min, z_max].
     # Wide on purpose: the SAM mask does the spatial filtering.
     workspace_limits_m: [-1.0, 1.0, -1.0, 1.0, 0.0, 1.5]
+    # AnyGrasp's gripper model, not the real opening (the real gripper opens about 71 mm).
+    # AnyGrasp reports every grasp at this width and needs clearance around the object: told
+    # 0.07, it found no grasp on a 6 cm box face (top score 0.005); told 0.10, 0.34 to 0.5
+    # (T1.17, bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt). It does not check the
+    # object fits in 71 mm (T1.32).
+    max_gripper_width_m: 0.10
+    # Drop grasps whose approach is further than this from the wrist camera's view axis. A
+    # first-run safety limit (Dion, 2026-10-14), not a measured one: the candidate path moves to
+    # the grasp's full pose, so larger angles may work. Raise it once RViz and a few real grasps
+    # show they do. Without it, most grasps came from the side or across the top face.
+    max_approach_deg: 30
+    # T1.32: does the object fit the REAL gripper? AnyGrasp cannot tell (it is told 0.10 m above),
+    # so the node measures each grasp from the masked points and drops it if any limit fails.
+    # Gripper (Dion, 2026-10-14): a U 50 mm deep inside, opens 71 mm, rubber pads 16 mm long.
+    # Widest the object may be where the pads close, metres. 71 mm opening minus 3 mm for depth
+    # noise. A 6 cm box measures about 63 mm in the point cloud (step 7a). Raise toward 0.071 if
+    # good grasps are dropped, lower if grasps close on objects that do not fit.
+    # [unverified] whether 71 mm is between the pads or outside them (pads about 2 mm a side).
+    max_object_width_m: 0.068
+    # Furthest the fingertips may go past the object's near face, metres. Past 0.050 the base of
+    # the U pushes the object. 5 mm kept as margin. In step 7c tips went up to 0.133 m in.
+    max_grasp_depth_m: 0.045
+    # Height of the slice measured, across the finger, metres. Roughly the pad width. [unverified]
+    # Larger counts more of the object (safer for boxes, drops grasps on narrow necks).
+    finger_height_m: 0.02
+    # Ignore this percent of points at each edge of the slice. They are often flying pixels: the
+    # camera mixes near and far depth at an edge. 0 uses the extreme points (strays then make
+    # objects look wider). Raise if stray points still widen objects.
+    fit_percentile: 2
 
 # grasp/grasp_viz/grasp_viz.py. Size of the gripper drawn in RViz, metres.
 grasp_visualizer:
   ros__parameters:
     palm_length_m: 0.04     # cylinder along the approach axis
     palm_radius_m: 0.006
-    finger_length_m: 0.04   # finger bar length along the approach axis
+    # Measured gripper (Dion, 2026-10-14): a U 50 mm deep inside, opens 71 mm (T1.34).
+    finger_length_m: 0.05   # finger bar length along the approach axis, back from the tips
     finger_radius_m: 0.005
-    finger_offset_m: 0.01   # finger offset along the approach axis from the palm centre
+    open_width_m: 0.071     # distance between the fingers, gripper open
 
 # grasp/grasp_state_machine/src/grasp_state_machine.cpp. These move the real arm: change them
 # only with a plan to test on the simulated arm first (./bench/state_machine_sim.sh).
 grasp_state_machine:
   ros__parameters:
-    approach_step_m: 0.04            # step towards the object while approaching
-    approach_step_final_m: 0.10      # step in the final simple execute
-    max_approach_steps: 50
-    execute_depth_thresh_m: 0.18     # stop approaching when the object is this close
+    # The approach steps toward the object, reading its depth from the wrist camera each step,
+    # and stops once the depth is under execute_depth_thresh_m. Then the gripper opens and
+    # the arm makes one blind step of approach_step_final_m and closes.
+    # The wrist camera gives no depth closer than about 0.182 m (640x480, measured 2026-10-13,
+    # T1.11). So the stop must sit above that by at least one step, or the last reading comes
+    # from inside the blind zone, the centroid goes stale and the approach ends short.
+    # Was 0.04 / 0.18 / 0.10: twice in a row the camera went blind at 0.182 m, 2 mm before the stop.
+    approach_step_m: 0.02            # step towards the object while approaching
+    # Final blind step. The stop reading is 0.19 to 0.21 m, so the jaws end 0.07 to 0.09 m from
+    # the camera's view of the object. The 3c grasp (T1.24, 2026-10-13) ended at 0.077 m
+    approach_step_final_m: 0.12
+    max_approach_steps: 50           # 50 x 0.02 m = 1 m of approach, the object starts about 0.46 m away
+    execute_depth_thresh_m: 0.21     # stop approaching when the object is this close
     # End the approach if the newest centroid is older than this. Age counts from the camera
     # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
     # frame (measured 2026-10-12, T1.24 3b)

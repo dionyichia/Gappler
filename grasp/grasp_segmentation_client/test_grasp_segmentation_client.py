@@ -126,6 +126,14 @@ class ClientTest(unittest.TestCase):
         node.on_frames(*frame(1))
         self.assertEqual(node.service.requests, [])
 
+    def test_requests_carry_the_grasp_cutoff_not_the_service_default(self):
+        # the service's defaults are loosened for the glasses (T2.9), the arm keeps 0.5 and 5
+        node = self.make()
+        node.on_frames(*frame(1))
+        request = node.service.requests[0]
+        self.assertAlmostEqual(request.min_score, 0.5)
+        self.assertEqual(request.max_detections, 5)
+
     def test_a_target_replaces_the_default(self):
         node = self.make()
         node.on_target(Target(prompt=" Red Cup "))

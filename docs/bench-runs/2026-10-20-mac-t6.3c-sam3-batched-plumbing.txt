@@ -1,0 +1,49 @@
+T6.3c: batched SAM 3 path, plumbing check on the real SAM 3 code with random weights
+2026-10-20, Zongzhe's Mac (Apple silicon, CPU only), branch t6.3c-sam3-batched-prompts
+Run by Claude Opus 5.5. No robot, no lab box, no GPU, no SAM 3 checkpoint.
+
+What this checks, and what it does not
+  It checks that memory_graph/sam3_batched.py drives the real SAM 3 code: the FindStage with
+  N queries on one image, the dummy geometry prompt for N, forward_text with N phrases, and
+  the per-query split. It does NOT check detection quality: the weights are random, so the
+  detections mean nothing. Accuracy and GPU timing are the lab box step, T6.3c (c).
+
+Setup (all in the session scratchpad, nothing in the repo or the uv cache changed)
+  A throwaway venv: numpy, scipy, opencv-python-headless, torch 2.x (CPU), torchvision, and
+  SAM 3 from the locked commit (Axemortal/rcp-sam3 at a9d9a34, the uv cache copy) installed
+  with --no-deps, plus its other dependencies by hand.
+  Three changes so SAM 3 runs on a Mac CPU at all, none on the image path's maths:
+    1. sam3.model.edt replaced by a stub. It imports triton (video tracker only), and triton
+       has no macOS build.
+    2. decord replaced by a stub. Video dataset only, no macOS build.
+    3. In the scratch copy only: device="cuda" -> "cpu" in position_encoding.py:49 and
+       decoder.py:278, where SAM 3 hard-codes the GPU.
+  build_sam3_image_model(checkpoint_path=None, load_from_HF=False). 2 tensors came out
+  uninitialised (NaN) and were filled with small random numbers, seed 0.
+  Image: 48x64 random noise. Phrases: "chair", "table", "red cup". Threshold 0 (keep all).
+
+Results
+  forward_grounding, 3 phrases in one pass against one at a time (image encoded once):
+    pred_logits        (3, 200, 1)          max difference 4.5e-07
+    pred_boxes         (3, 200, 4)          max difference 0
+    pred_masks         (3, 200, 288, 288)   max difference 8.1e-06
+    presence_logit_dec (3, 1)               max difference 7.2e-07
+  sam3_adapter.detect, batched=True (BatchedSam3) against batched=False (the processor's own
+  set_image + set_text_prompt per phrase):
+    600 detections each, same class ids, scores differ by at most 1.5e-07, boxes by 0 px,
+    masks differ in 0 of 1,843,200 pixels.
+
+  So the batched path gives the same answer as SAM 3's own one-phrase path, to float rounding.
+
+CPU timing, 640x480 image, random weights (not a GPU estimate)
+  image encoder (set_image)          8.0 s per photo
+  everything after it, 1 phrase      1.4 s
+                       4 phrases     6.9 s
+                       8 phrases    14.9 s
+  Per phrase after the image encoder: about 1.5 to 1.9 s, so it grows with the phrase count
+  in one pass too. Batching saves the image encoder for every phrase after the first. On a
+  CPU that is 8 s each. The GPU split is unknown until T6.3c (c).
+
+Tests in the same venv
+  memory_graph tests: 236 ran, 235 passed, 0 failed, 1 SKIPPED (test_clip_encoder.py, no
+  open_clip here). New: 8 in test_sam3_batched.py, 6 in test_sam3_adapter.py.

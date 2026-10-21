@@ -8,7 +8,7 @@ from typing import Any
 import aria.sdk as aria
 import cv2
 import numpy as np
-from geometry_msgs.msg import Point, PoseStamped
+from geometry_msgs.msg import Point, PointStamped, PoseStamped
 from projectaria_tools.core.calibration import (
     device_calibration_from_json_string,
     get_linear_camera_calibration,
@@ -21,8 +21,9 @@ from config import AriaConfig, ROS2Topics
 from services.arcuo import detect_aruco
 from services.aria_device import AriaStreamClient, ImageObserver
 from services.aria_device.eye_tracking import EyeTrackingPipeline
-from services.aria_device.stream.undistortion_helper import build_remap_maps
+from services.aria_device.stream.undistortion_helper import build_remap_maps, to_published_pixel
 from services.ros import ROSPublisher
+from services.ros.ros_publisher import stamp_from_ns
 
 logger = logging.getLogger(__name__)
 
@@ -125,15 +126,17 @@ def rgb_worker(
 
     while not quit_event.is_set():
         try:
-            image = rgb_queue.get(timeout=0.1)
+            image, capture_ns = rgb_queue.get(timeout=0.1)   # capture_ns: glasses clock (T2.19)
         except Exception:
             continue
 
-        image = np.rot90(image, -1)
-        rgb_publisher.publish_image(image)
+        rgb_publisher.publish_image(np.ascontiguousarray(np.rot90(image, -1)), capture_ns)
 
-        undistorted_image = cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR)
-        undistorted_rgb_publisher.publish_image(undistorted_image)
+        # Undistort, then rotate: the calibration is for the unrotated camera, and its lens centre
+        # is not mid-image, so rotating first shifted the result ~12.5 px (T2.13)
+        undistorted_image = np.ascontiguousarray(
+            np.rot90(cv2.remap(image, map_x, map_y, cv2.INTER_LINEAR), -1))
+        undistorted_rgb_publisher.publish_image(undistorted_image, capture_ns)
 
         now = time.monotonic()
         if now - last_aruco_time >= ARUCO_INTERVAL_S:
@@ -152,7 +155,7 @@ def et_worker(
 ) -> None:
     gaze_estimate_publisher = ROSPublisher(
         "gaze_estimate_publisher",
-        Point,
+        PointStamped,
         ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value,
     )
     et_raw_publisher = ROSPublisher(
@@ -169,24 +172,35 @@ def et_worker(
         return
 
     eye_tracking = EyeTrackingPipeline(device_calibration, rgb_camera_calibration)
+    dest_calibration = get_linear_camera_calibration(
+        AriaConfig.DEST_CALIBRATION_WIDTH_PX,
+        AriaConfig.DEST_CALIBRATION_HEIGHT_PX,
+        AriaConfig.DEST_CALIBRATION_FOCAL_LENGTH,
+        "camera-rgb",
+    )
 
     while not quit_event.is_set():
         try:
-            image = eye_queue.get(timeout=0.1)
+            image, capture_ns = eye_queue.get(timeout=0.1)   # capture_ns: glasses clock (T2.19)
         except Exception:
             continue
 
-        et_raw_publisher.publish_image(image)
+        et_raw_publisher.publish_image(image, capture_ns)
 
         gaze_estimate = eye_tracking.predict_eye_gaze(image)
         gaze_estimate = eye_tracking.project_gaze(gaze_estimate=gaze_estimate)
 
         if gaze_estimate is None:
             continue
+        # In the pixels of the published undistorted image, where its readers look (T2.9)
+        gaze_estimate = to_published_pixel(gaze_estimate, rgb_camera_calibration, dest_calibration)
+        if gaze_estimate is None:
+            continue
 
-        gaze_estimate_publisher.publish(
-            Point(x=gaze_estimate[0], y=gaze_estimate[1], z=0.0)
-        )
+        # Stamped with the eye frame's capture time, on the glasses clock (T2.19)
+        gaze_msg = PointStamped(point=Point(x=gaze_estimate[0], y=gaze_estimate[1], z=0.0))
+        gaze_msg.header.stamp = stamp_from_ns(capture_ns)
+        gaze_estimate_publisher.publish(gaze_msg)
 
 
 class ImageStreamingPipeline:
@@ -213,11 +227,11 @@ class ImageStreamingPipeline:
 
     def _on_rgb_frame(self, image: np.ndarray, record) -> None:
         """Rate-limit RGB frames before handing off to the worker process."""
-        _put_latest(self.rgb_queue, image)
+        _put_latest(self.rgb_queue, (image, record.capture_timestamp_ns))
 
     def _on_et_frame(self, image: np.ndarray, record) -> None:
         """Rate-limit eye-track frames before handing off to the worker process."""
-        _put_latest(self.eye_queue, image)
+        _put_latest(self.eye_queue, (image, record.capture_timestamp_ns))
 
     # --- Main run loop ---
 

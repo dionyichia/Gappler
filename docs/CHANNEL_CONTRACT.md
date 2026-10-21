@@ -74,15 +74,15 @@ These cross a subsystem boundary. They are the contract.
 | H3 | `/manipulation/start` | `Bool` | Nav, `object_approach_node.py:97` | Bot, `orchestrator.py:56` | Zongzhe | works. Today it launches a process. Becomes an arm and disarm gate, see B-4 in §6 |
 | H4 | `/goal_pose` | `PoseStamped`, `map` | Nav, `object_approach_node.py:90` | Nav2, via `goal_reached_publisher.py:29` | Zongzhe | works. Becomes a handover when the frontier layer writes it (M9) |
 | H5 | `/object_centroid_2d` | `PointStamped`, but x = pixel column, y = pixel row, z = depth in metres | Grasp, `grasp_segmentation_client.py` only (since 2026-10-08, `T2.1`). `object_recognition_pipeline.py:192` creates a publisher but its call site stays commented out. Stand-ins `dummy_mask_publisher.py` and the parked `grasp/tools/sam3_ros_node.py` are never run alongside | Bot, `grasp_state_machine.cpp:146` | Dion | works on the replay bench. One live publisher. Rename pending, §7 |
-| H5a | `/grasp/target` | `segmentation_interfaces/Target`: the prompt, plus an optional reference crop | Aria, `aria_segmentation_client.py` | Grasp, `grasp_segmentation_client.py` | Dion | new 2026-10-08 (`T2.1`). Word only until `T2.2`. An empty prompt stops segmentation |
+| H5a | `/grasp/target` | `segmentation_interfaces/Target`: the prompt, plus an optional reference crop | Aria, `aria_segmentation_client.py` | Grasp, `grasp_segmentation_client.py` | Dion | new 2026-10-08 (`T2.1`). An empty prompt stops segmentation. Since `T2.9` (PR #76): the word at once, then a second Target with the crop and mask of the object under the gaze. The grasp client ignores the reference so far (`T8.5`) |
 | H5b | `/segmentation/segment` (service) | `segmentation_interfaces/Segment` request/reply | Shared services, `segmentation_service.py`, one per channel (it refuses to start twice) | Grasp, `grasp_segmentation_client.py`. Aria, `aria_segmentation_client.py` after `T2.2`. Nav later | Dion | new 2026-10-08 (`T2.1`). PASS on the box with the real SAM 3 |
-| H6 | `/grasp_candidates` | `GraspCandidateArray` | Grasp, `anygrasp_detection_node.py:81` **and** `anygrasp_node.py:71` | Bot, `grasp_state_machine.cpp:142` | Dion | works. Two publishers. Nothing reaches the arm today, `CODE_AUDIT` A1 to A3 |
-| H7 | `/pipeline_state` | `String`: `IDLE`, `SELECTING`, `EXECUTING` | Bot, `grasp_state_machine.cpp:156` | Grasp, `anygrasp_detection_node.py:65`, `anygrasp_node.py:55`, `grasp_viz.py:61` | Dion | works. The gate that reads it is inverted, see G-4 in §6 |
+| H6 | `/grasp_candidates` | `GraspCandidateArray` | Grasp, `anygrasp_detection_node.py:81`. The second publisher, the tracker `anygrasp_node.py`, is parked in `grasp/tools/to-delete-after-anygrasp-is-up/` (`T1.10`, 2026-10-13) | Bot, `grasp_state_machine.cpp:142` | Dion | works, one publisher. Each pose is in `camera_color_optical_frame` with `grasp_frame`'s axes (approach along -z, fingers close along y) and its position where the fingertips go (`anygrasp_to_grasp_frame.py`, T1.17, PR #82 and #83). Reached the real arm 2026-10-14 (T1.17 step 7d). `width` is AnyGrasp's wanted opening, the state machine does not read it |
+| H7 | `/pipeline_state` | `String`: `IDLE`, `SELECTING`, `EXECUTING`, `STOPPED` (after E or S until R, T1.38) | Bot, `grasp_state_machine.cpp:156` | Grasp, `anygrasp_detection_node.py:65`, `anygrasp_node.py:55`, `grasp_viz.py:61` | Dion | works. The gate that reads it is inverted, see G-4 in §6 |
 | H8 | `/camera/camera/color/image_raw`, `/camera/camera/aligned_depth_to_color/image_raw`, `/camera/camera/color/camera_info` | `Image`, `Image`, `CameraInfo`. `BEST_EFFORT` | Wrist RealSense driver | Grasp, 5 nodes. Bot, `grasp_state_machine.cpp:138` | Dion | the wrist D435i is faulty. Replacement decided, T-3 in §6 |
-| H9 | `/manipulation/done` | `Empty` | **nobody** | Nav, `object_approach_node.py:83` | Dion | broken. The approach node stays latched without it (F1, observed) |
-| H10 | `/manipulator/release` | `Bool` | Aria, `audio_streaming_pipeline.py` (`T2.6`, 2026-10-13) | Nav, `object_approach_node.py:86`. Bot, `orchestrator.py:65` | Dion | live, ungated (see A-1 in §6). The state machine does not read it until `T1.14` |
+| H9 | `/manipulation/done` | `Empty` | Bot, `grasp_state_machine.cpp` `holdUntilRelease()`, at the return pose, before release (`T1.14`, branch `t1.14-multi-grasp-loop`) | Nav, `object_approach_node.py:93` | Dion | built 2026-10-13 `[code]`, sim run owed. Closes F1 once merged |
+| H10 | `/manipulator/release` | `Bool` | Aria, `audio_streaming_pipeline.py` (`T2.6`, 2026-10-13) | Nav, `object_approach_node.py:86`. Bot, `orchestrator.py:65` | Dion | live, ungated (see A-1 in §6). The state machine acts on `true` from the gripper closing until it opens, and ignores it otherwise (`T1.14`, branch `t1.14-multi-grasp-loop`) |
 | H10a | `/manipulator/grasp_request` | `Empty` | Aria, `aria_segmentation_client.py`, on every object word, a repeat too, never on the stop word (`T2.6`, 2026-10-13). By hand still works: `ros2 topic pub --once` | Bot, `grasp_state_machine.cpp:156` | Dion | new 2026-10-13 (`T1.25`). Opens the trigger gate: centroids count only from a request until EXECUTING takes its snapshot. A request lapses after `grasp_request_timeout_s` (10 s) with no centroid, and is refused outside IDLE. Simulated arm PASS, `bench-runs/2026-10-13-labbox-t1.25-grasp-request-gate.txt` |
-| H11 | `/aria/eye_tracking/gaze_estimate` | `Point` | Aria, `image_streaming_pipeline.py:153` | Grasp, the recognition pipeline | Dion | switched off. M2 and M8 need it, `T2.2` |
+| H11 | `/aria/eye_tracking/gaze_estimate` | `PointStamped`, stamped with the eye frame's capture time on the glasses clock (`T2.19`) | Aria, `image_streaming_pipeline.py:155` | Grasp, the recognition pipeline. Aria, `aria_segmentation_client.py` | Dion | switched off. M2 and M8 need it, `T2.2`. Was `Point` until `T2.19`. The glasses images (`/aria/rgb_camera/*`, `/aria/eye_tracking/raw`) carry the same capture-time stamps |
 | H12 | `/aria/rgb_camera/undistorted` | `CompressedImage`, `BEST_EFFORT` | Aria, `image_streaming_pipeline.py:85` | Nav, `aria_image_relay.py:27`, which decompresses to `/aria/rgb_camera/view` for viewing | Dion | switched off. The relay is kept, see A-4 in §6 |
 
 `[code]` The glasses image does **not** need to reach the arm workspace. Cross-camera matching
@@ -221,7 +221,7 @@ All of these were decided by Dion. Each names where the detail lives.
   ⚠️ **Do not trust either set.** Recalibrate and validate on the simulated arm before any powered
   run. Answers `CODE_AUDIT` open question 2.
   **Superseded 2026-09-23.** T1.3 kept `main`'s row after the simulated arm checks, and T1.7
-  validated it on the real arm: every joint within 0.02° (`dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`).
+  validated it on the real arm: every joint within 0.02° (`adb5466:docs/dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`).
   The tool sits slightly outside the base footprint at this pose, so it is not a rest pose for
   driving. A tucked pose inside the base is T1.18.
 - **B-3. `ros2_robot_ws/src/main.py` owns `background.launch.py`.** Delete the launch in
@@ -231,7 +231,8 @@ All of these were decided by Dion. Each names where the detail lives.
   The larger design is `NEXT_STEPS` §2.14.
 - **B-5. The state machine publishes `/manipulation/done`** at the end of each cycle. Closes H9 and
   the F1 latch. **Owned by `T1.14` since 2026-09-23**, moved out of `T1.9` so it is not gated by the
-  AnyGrasp work.
+  AnyGrasp work. **Built 2026-10-13 `[code]`:** the order is grasp, return pose, `/manipulator/return_to_user`,
+  `/manipulation/done`, then hold until release, open, home, IDLE (Dion). No timeout on the hold.
 - **B-6. Today's names are frozen, target names recorded.** One rename pass later. §7.
 
 ### Nav
@@ -378,3 +379,9 @@ Known problems inside subsystems, so they are not lost:
 | 2026-10-13 | Claude Opus 5.5 + Dion | H10a `/manipulator/grasp_request` added (`T1.25`), the trigger gate. Orphan by design until `T2.6`, re-baselined with `contracts.py snapshot`. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | `T2.6`: H10 live, the voice pipeline publishes `/manipulator/release`. A-1 notes the ungated choice and why release is not sent as a word. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | `T2.6`: H10a has its publisher, the aria segmentation client, one request per object word. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | `T1.10`: H6 down to one publisher, the detector. `T1.8`: G-4's gate fixed (`!= "EXECUTING"`). |
+| 2026-10-13 | Claude Opus 5.5 + Dion | `T1.14`: H9 has its publisher and H10 a state machine subscriber (B-5 order settled: done before release). Re-baselined with `contracts.py snapshot`. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | `T1.17`: H6 says which axes and which point a candidate pose uses (grasp_frame axes, fingertips), and that it reached the arm. |
+| 2026-10-15 | Claude Opus 5.5 + Dion | H5a: the aria client now sends a reference Target after the word (`T2.9`). |
+| 2026-10-17 | Claude Opus 5.5 + Dion | H11: gaze is `PointStamped` with the glasses capture time, and the glasses images carry their capture time (`T2.19`). Re-baselined with `contracts.py snapshot`. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | H7: `/pipeline_state` gains `STOPPED` (T1.38). Both readers handle it: AnyGrasp only acts on IDLE and EXECUTING, grasp_viz shows the text. |

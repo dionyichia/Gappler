@@ -20,9 +20,9 @@ session · `[inferred]` reasoning · `[unverified]` found by static analysis, no
 
 ## ▶ Start here — next session (updated 2026-09-22)
 
-**Dion's current work (2026-10-08) is the grasp bring-up, not the bench.** Cold start at
-[`dion_docs/GRASP_BRINGUP_STEPS.md`](dion_docs/GRASP_BRINGUP_STEPS.md), "Start here". Next is
-T1.24 step 3b. The rest of this section is the bench and CI state as of 2026-09-22.
+**Dion's current work (2026-10-14) is the grasp bring-up, not the bench.** Cold start at
+[`dion_docs/GRASP_BRINGUP_STEPS.md`](dion_docs/GRASP_BRINGUP_STEPS.md), "Start here". Steps 1 to 6
+pass (step 6: grasp, release by voice and a second grasp in one launch). Step 7 (AnyGrasp) passes on the real arm since 2026-10-20: 7d PASS, T1.17 2 of 3. T1.35 (box at random positions and angles) is designed but paused: **the E key did not stop the arm during a state machine run (T1.38, §3 rule history)**. Next: fix and test T1.38, then T1.35. See `dion_docs/GRASP_BRINGUP_STEPS.md` Start here. The rest of this section is the bench and CI state as of 2026-09-22.
 
 ### T0.11 is done (2026-09-22). The CI setup, for whoever maintains it
 
@@ -556,6 +556,42 @@ the driver-only boundary are in the runbook.
 7. **Don't fix code on the lab box during bench work.** Findings go into the docs as retagged
    entries; fixes happen in commits on a branch, reviewed by Dion.
 
+### Rule history: why the CLAUDE.md safety rules exist
+
+Moved out of `CLAUDE.md` on 2026-10-15 (T0.19) so that file holds only the current rules.
+
+- **Launcher names.** The two "never launch" launchers were `ros2_robot_ws/src/main.py` and
+  `orchestrator.py` until 2026-09-21. The first was then `start_grasp_pipeline.py` until 2026-10-06,
+  then `start_camera_arm_sam3_grasp.py` until 2026-10-08, now `launchers/start_camera_arm_grasp.py`.
+- **State machine exception** (Dion, 2026-09-11). `bench/state_machine_sim.sh` may launch the state
+  machine against the simulated arm: mock hardware, private channel, no `rm_driver`, preflight shows
+  the arm unreachable. The home pose was validated on the real arm by direct command in T1.7
+  (2026-09-23). The state machine itself has never run on the real arm.
+- **Check shared hardware first** (Dion, 2026-09-22, T0.12). `pkill -u rcp2026 -f rs_launch.py`
+  stopped another person's D455 driver (domain 88) mid-test. Since then: check who uses a device
+  before starting anything on it, and stop only your own process group.
+- **Never close a tmux session without asking** (Dion, 2026-10-07, T0.16). Test cleanup ran
+  `tmux kill-session -t grasp`, which matched and closed Dion's attached `grasp_t1_24` session by
+  name prefix.
+- **Scratch clones build venvs** (2026-10-13). In a throwaway `/tmp` clone every pane sourced
+  `grasp/grasp_env.sh`, found no AnyGrasp venv and started compiling MinkowskiEngine in each pane.
+  Load reached 54, SSH stopped answering and the box needed a restart. Before running from a scratch
+  clone, check what its env files build, and link `grasp/anygrasp_venv` and `assets/models` first.
+- **Fixes on branches** (Dion, 2026-09-19). Replaced the 2026-09-11 "no fixes yet" rule. Branch
+  names start with the task ID since 2026-09-22.
+- **Commands in tmux panes, moving commands typed only** (Dion, 2026-10-15, T0.19). During a robot
+  session the agent runs commands in the session's panes so the user can watch, types but never sends
+  anything that moves the arm, gripper or base, and names panes by row and column because pane
+  numbers are not visible. `.claude/hooks/lab_safety_guard.py` enforces the parts a script can check.
+- **The E key is not a stop for the state machine** (2026-10-20, T1.38). During T1.35 on the real
+  arm, Dion pressed `E` while the arm waited between retries. 4.5 s later the state machine sent a
+  new grasp move and the arm ran it. The state machine has no stop subscriber, and the controller's
+  behaviour after `rm_set_arm_emergency_stop` is not confirmed. Until T1.38 is fixed and tested at
+  the robot, the physical stop (power) is the only stop. Same session: an agent script read the
+  live ros2 bag file and crashed the recorder ("database is locked"). Read a copy of a bag that is
+  still recording, never the live file
+  (`bench-runs/2026-10-20-labbox-t1.17-t1.35-live.txt`).
+
 ---
 
 ## 4. What the bench is today
@@ -782,6 +818,11 @@ All established and written down elsewhere — trust these unless new evidence c
 - Arm needs host `192.168.1.10`, LiDAR needs host `192.168.1.5`, same `/24` (ORIENTATION §8.13,
   `[unverified]` whether the box has both).
 - The arm has never been commanded to move (startup guide §7).
+- The box answers on two tailscale nodes: `rcp2026@100.87.133.60` (`iot22-computer`) and
+  `rcp2026@100.98.10.50` (`iot22-computer-1`, registered under Sherman's account on 2026-09-16, also
+  reachable as `weejingjie24`). Dion confirmed they are the same machine. One or the other goes
+  offline from time to time (100.87 was down on 2026-10-09, 100.98's key expired on 2026-10-13), so
+  check `tailscale status` before declaring the box offline.
 - Local toolchain: macOS arm64, Python 3.10.9, uv, Docker 28.1.1 (8 CPU / 8 GB), **no ROS, no
   pyyaml, no pytest** — hence stdlib-only. `grep` on the Mac is **ugrep**, which silently returns
   nothing for `grep -rniE ... --include` with multiple path operands; pipe through `find | xargs grep`.
@@ -835,3 +876,9 @@ All established and written down elsewhere — trust these unless new evidence c
 | 2026-09-23 | OpenCode + Sherman | §3 links the unvalidated shared ARM_BRINGUP.md and corrects moved launch paths and the T1.2 single-launch result. |
 | 2026-09-23 | Claude Opus 5.5 + Dion | Rule 1: the home pose is validated on the real arm (T1.7), the unprompted-homing warning stays. |
 | 2026-10-08 | Claude Opus 5.5 + Dion | "Start here" points at GRASP_BRINGUP_STEPS.md for Dion's current work (T1.24 step 3b). |
+| 2026-10-13 | Claude Opus 5.5 + Dion | "Start here": steps 1 to 4 pass, next is step 5 (T1.12). |
+| 2026-10-14 | Claude Opus 5.5 + Dion | "Start here": steps 1 to 6 pass, next is step 7 (T1.17). |
+| 2026-10-14 | Claude Opus 5.5 + Dion | "Start here": step 7 status, first AnyGrasp grasp, next T1.33. |
+| 2026-10-15 | Claude Opus 5.5 + Dion | "Start here": T1.33 merged, T1.32 built, next at the robot T1.34 to T1.35. |
+| 2026-10-15 | Claude Opus 5.5 + Dion | T0.19: §3 gains "Rule history", the dated reasons and incidents moved out of CLAUDE.md. §7 gains the two tailscale nodes. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | §3 rule history: the E key did not stop the arm during a state machine run (T1.38), and do not read a live bag file. "Start here": step 7 passes, T1.35 paused on T1.38. |

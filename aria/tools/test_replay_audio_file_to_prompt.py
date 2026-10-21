@@ -9,7 +9,7 @@ import wave
 
 import numpy as np
 
-from replay_audio_file_to_prompt import read_wav, windows
+from replay_audio_file_to_prompt import next_wav, read_wav, windows
 
 
 class WindowsTest(unittest.TestCase):
@@ -38,6 +38,19 @@ class ReadWavTest(unittest.TestCase):
             audio = read_wav(path, 48000)
         self.assertEqual(audio.shape, (1, 48000))
         self.assertEqual(audio.dtype, np.int32)
+
+
+class NextWavTest(unittest.TestCase):
+    def test_enter_a_name_a_path_or_nothing_found(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            release = os.path.join(tmp, "release_command.wav")
+            other = os.path.join(tmp, "voice.wav")
+            for path in (release, other):
+                open(path, "w").close()
+            self.assertEqual(next_wav("", other, tmp), other)            # Enter: same file
+            self.assertEqual(next_wav(" release ", other, tmp), release)  # short name
+            self.assertEqual(next_wav(other, release, tmp), other)        # a path
+            self.assertIsNone(next_wav("pick", other, tmp))               # neither
 
 
 if __name__ == "__main__":

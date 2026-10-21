@@ -10,7 +10,7 @@ import rclpy.duration
 import tf2_geometry_msgs
 import tf2_ros
 import torch
-from geometry_msgs.msg import Point, PointStamped, PoseStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
@@ -20,8 +20,13 @@ from std_msgs.msg import String, UInt8MultiArray
 
 from config import VIDEO_QOS, AudioStreamingPipelineConfig, ModelPaths, ROS2Topics
 from gappler_common import config as gappler_config
-from services.feature_matching import FeatureMatcher
+from services.aria_segmentation_client.gaze_pick import pick_mask
+from memory_graph.clip_encoder import OpenClipEncoder
+from memory_graph.image_feature import l2_normalise
+# T8.7: LightGlue no longer runs (the CLIP rule replaced it). Kept in case it comes back.
+# from services.feature_matching import FeatureMatcher
 from services.object_recognition import SAM3Model
+from services.object_recognition.cross_camera_mask_match_rule import pick_mask_pair
 from services.ros import ImageHelper, ROSPublisher
 from services.visualizer.renderers.object_mask_visualizer import ObjectMaskVisualizer
 
@@ -29,6 +34,9 @@ logger = logging.getLogger(__name__)
 
 # Wrist camera values from shared/global_config.yaml
 DEPTH_SCALE = gappler_config()["wrist_camera"]["depth_scale_m"]  # metres per depth unit
+# Same gaze radius as the glasses' own pick (aria_config.yaml, shared section), so both agree on
+# what "looked at" means.
+GAZE_PICK_RADIUS_PX = gappler_config("aria")["pick_radius_px"]
 
 TOPIC_RGB = ROS2Topics.WRIST_CAMERA_COLOR.value
 TOPIC_DEPTH = ROS2Topics.WRIST_CAMERA_ALIGNED_DEPTH.value
@@ -82,6 +90,33 @@ class RealSenseFrame:
             return self._rgb.copy(), self._depth.copy(), self._header, self._frame_id
 
 
+# Pixels kept around each mask's bounding box. A bigger margin adds surrounding context, which may
+# help tell identical objects apart, but also adds background matches. Tune on the box.
+_CROP_MARGIN_PX = 20
+
+
+def _crop_to_mask(image: np.ndarray, mask: np.ndarray):
+    """Cut the image to the mask's bounding box plus the margin. Returns (crop, x0, y0), or None."""
+    ys, xs = np.nonzero(mask)
+    if len(ys) == 0:
+        return None
+    h, w = mask.shape
+    x0 = max(int(xs.min()) - _CROP_MARGIN_PX, 0)
+    y0 = max(int(ys.min()) - _CROP_MARGIN_PX, 0)
+    x1 = min(int(xs.max()) + _CROP_MARGIN_PX + 1, w)
+    y1 = min(int(ys.max()) + _CROP_MARGIN_PX + 1, h)
+    return image[y0:y1, x0:x1], x0, y0
+
+
+def _to_full_image(points: np.ndarray, x0: int, y0: int, shape) -> np.ndarray:
+    """Crop pixel coordinates back to whole-image ones, as ints inside the image.
+    Unused since T8.7 (LightGlue stopped). Consider deleting if LightGlue does not come back."""
+    full = points.round().astype(int).reshape(-1, 2) + (x0, y0)
+    full[:, 0] = full[:, 0].clip(0, shape[1] - 1)
+    full[:, 1] = full[:, 1].clip(0, shape[0] - 1)
+    return full
+
+
 class ObjectRecognitionPipeline:
     def __init__(self, quit_event: Event):
         self._quit_event = quit_event
@@ -90,13 +125,14 @@ class ObjectRecognitionPipeline:
 
         self.model = SAM3Model(
             checkpoint_path=ModelPaths.SAM3_PATH,
-            confidence_threshold=0.5,
+            confidence_threshold=0.3,  # T8.7: 0.5 missed the box, as T2.9 found for the glasses
         )
 
         self._aria_inference_state: Optional[Dict[str, Any]] = None
         self._aria_locked_image: Optional[np.ndarray] = None
 
-        self._feature_matcher = FeatureMatcher()
+        # self._feature_matcher = FeatureMatcher()
+        self._clip = OpenClipEncoder()
 
         self._aria_feed = CameraFeed()
         self._ros_feed = RealSenseFrame()
@@ -155,7 +191,7 @@ class ObjectRecognitionPipeline:
             callback_group=state_cb_group,
         )
         self._object_recognition_node.create_subscription(
-            Point,
+            PointStamped,
             ROS2Topics.EYE_TRACKING_GAZE_ESTIMATE.value,
             self._on_gaze,
             VIDEO_QOS,
@@ -183,6 +219,7 @@ class ObjectRecognitionPipeline:
             UInt8MultiArray,
             ROS2Topics.COMBINED_VISUALIZATION.value,
         )
+        # Nothing publishes here since T8.7 (it carried LightGlue results). Consider deleting.
         self._match_publisher = ROSPublisher(
             "match_publisher", UInt8MultiArray, ROS2Topics.FEATURE_MATCH_RESULTS.value
         )
@@ -245,9 +282,9 @@ class ObjectRecognitionPipeline:
         )
         self._ros_feed.update(rgb, depth, rgb_msg.header)
 
-    def _on_gaze(self, msg: Point) -> None:
+    def _on_gaze(self, msg: PointStamped) -> None:
         with self._state_lock:
-            self._gaze_point = (msg.x, msg.y)
+            self._gaze_point = (msg.point.x, msg.point.y)
 
     def _on_prompt(self, msg: String) -> None:
         command = msg.data.strip().lower()
@@ -330,13 +367,9 @@ class ObjectRecognitionPipeline:
         if inference_state is None:
             return
 
-        masks = inference_state.get("masks")
-        if len(masks) > 1:
-            # Pick the closest mask to the gaze point, return the idx of the closest mask
-            best = self._find_closest_mask(masks, gaze_point)
-            inference_state["masks"] = [masks[best]]
-            inference_state["scores"] = [inference_state["scores"][best]]
-            inference_state["boxes"] = [inference_state["boxes"][best]]
+        # All glasses masks are kept. The latest gaze at processing time is stored with them (not
+        # the gaze at the picture's capture time: the T2.9 client does that, this matcher does not).
+        inference_state["gaze_point"] = gaze_point
 
         with self._state_lock:
             if self.prompt != prompt:
@@ -500,6 +533,7 @@ class ObjectRecognitionPipeline:
         logger.debug(f"Found {len(masks)} object(s)")
         return inference_state
 
+    # Unused since T8.7: gaze_pick.pick_mask (with a radius) replaced it. Consider deleting.
     def _find_closest_mask(
         self,
         masks: list,
@@ -544,67 +578,39 @@ class ObjectRecognitionPipeline:
         if not len(aria_masks) or not len(ros_masks):
             return None, None, None
 
-        aria_mask_np = aria_masks[0].squeeze(0).cpu().numpy() > 0
-        aria_h, aria_w = aria_mask_np.shape
-
+        # Both feeds are RGB in memory: the glasses JPEG round trip keeps the order it was given
+        # (Aria SDK, RGB) and the wrist camera sends rgb8. The box replay checks this.
         try:
-            # Run feature matcher
-            match_result = self._feature_matcher.match_frames(aria_image, ros_image)
-            payload = pickle.dumps(match_result)
-            msg = UInt8MultiArray()
-            msg.data = payload
-            self._match_publisher.publish(msg)
-
-        except Exception as e:
-            logger.error(f"Feature matching failed: {e}", exc_info=True)
+            aria_vecs = self._embed_masks(aria_image, aria_masks)
+            ros_vecs = self._embed_masks(ros_image, ros_masks)
+        except Exception as e:  # e.g. CUDA out of memory on the shared box: skip this match, keep running
+            logger.error(f"CLIP embedding failed: {e}", exc_info=True)
             return None, None, None
+        scores = aria_vecs @ ros_vecs.T
+        logger.info(f"CLIP scores, glasses rows x wrist columns:\n{np.array2string(scores, precision=3)}")
 
-        kp0 = match_result["keypoints0"]
-        kp1 = match_result["keypoints1"]
-        matches = match_result["matches"]
+        gaze_point = aria_inference_state.get("gaze_point")
 
-        if len(matches) == 0:
-            logger.debug("No feature matches found between Aria and ROS frames")
+        def box_list(i):
+            return aria_inference_state["boxes"][i].cpu().numpy().round().astype(int).tolist()
+
+        def pick_glasses(candidates):
+            if gaze_point is None:
+                logger.info("No gaze stored with the glasses frame, no match")
+                return None
+            masks = [aria_masks[i].squeeze(0).cpu().numpy() > 0 for i in candidates]
+            i, dist = pick_mask(masks, gaze_point[0], gaze_point[1], GAZE_PICK_RADIUS_PX)
+            if i is None:
+                logger.info(f"Gaze {gaze_point} is {dist:.0f} px from the nearest candidate, boxes "
+                            f"{[box_list(c) for c in candidates]}")
+                return None
+            return candidates[i]
+
+        pair = pick_mask_pair(scores, pick_glasses)
+        if pair is None:
             return None, None, None
-
-        matched_kp0 = kp0[matches[:, 0]].round().astype(int)
-        matched_kp1 = kp1[matches[:, 1]].round().astype(int)
-
-        xs0, ys0 = matched_kp0[:, 0], matched_kp0[:, 1]
-        valid = (ys0 >= 0) & (ys0 < aria_h) & (xs0 >= 0) & (xs0 < aria_w)
-        valid[valid] = aria_mask_np[ys0[valid], xs0[valid]]
-
-        filtered_kp0 = matched_kp0[valid]
-        filtered_kp1 = matched_kp1[valid]
-
-        if len(filtered_kp1) == 0:
-            logger.debug("No feature matches fall within the Aria mask")
-            return None, None, None
-
-        logger.debug(
-            f"Feature matching: {len(filtered_kp1)}/{len(matches)} matches inside Aria mask"
-        )
-
-        best_idx = None
-        best_count = 0
-
-        for i, ros_mask in enumerate(ros_masks):
-            ros_mask_np = ros_mask.squeeze(0).cpu().numpy() > 0
-            ros_h, ros_w = ros_mask_np.shape
-            xs1, ys1 = filtered_kp1[:, 0], filtered_kp1[:, 1]
-            in_bounds = (ys1 >= 0) & (ys1 < ros_h) & (xs1 >= 0) & (xs1 < ros_w)
-            count = int(ros_mask_np[ys1[in_bounds], xs1[in_bounds]].sum())
-            if count > best_count:
-                best_count = count
-                best_idx = i
-
-        if best_idx is None or best_count == 0:
-            logger.debug("No ROS mask matched the Aria mask via feature matching")
-            return None, None, None
-
-        logger.info(
-            f"Matched ROS mask idx={best_idx} with {best_count}/{len(filtered_kp1)} hits"
-        )
+        g, best_idx = pair
+        logger.info(f"Matched glasses mask {g} (box {box_list(g)}, gaze {gaze_point}) to wrist mask {best_idx}, score {scores[g, best_idx]:.3f}")
 
         filtered_state = {
             **ros_inference_state,
@@ -612,7 +618,17 @@ class ObjectRecognitionPipeline:
             "scores": [ros_inference_state["scores"][best_idx]],
             "boxes": [ros_inference_state["boxes"][best_idx]],
         }
-        return filtered_state, filtered_kp0, filtered_kp1
+        # No keypoints any more: the combined view draws the two pictures side by side.
+        no_points = np.zeros((0, 2), dtype=int)
+        return filtered_state, no_points, no_points
+
+    def _embed_masks(self, image: np.ndarray, masks: list) -> np.ndarray:
+        """One L2-normalised CLIP vector per mask, from the mask's box plus the margin. An empty
+        mask gets a zero vector, so it scores 0 against everything."""
+        crops = [_crop_to_mask(image, m.squeeze(0).cpu().numpy() > 0) for m in masks]
+        vecs = l2_normalise(self._clip.encode([image if c is None else c[0] for c in crops]))
+        vecs[[c is None for c in crops]] = 0
+        return vecs
 
     # ---------------------------------------------------------------------------
     # Publishing
@@ -667,13 +683,15 @@ class ObjectRecognitionPipeline:
                 if k not in ("backbone_out", "masks_logits")
             }
 
-            # Rotate the raw gaze point (original camera space) to match the
-            # aria_locked_image which has already been rotated 90° CW.
-            rotated_gaze = None
-            if gaze_point is not None:
-                h = reference_image.shape[0]
-                gx, gy = gaze_point
-                rotated_gaze = (h - gy, gx)
+            # Gaze now arrives in the undistorted image's pixels, already rotated (T2.9), so it is
+            # passed on as is. The old rotation is commented out, not deleted (Dion, 2026-10-14).
+            # Delete once T2.9 passes end to end on the live glasses.
+            rotated_gaze = gaze_point
+            # rotated_gaze = None
+            # if gaze_point is not None:
+            #     h = reference_image.shape[0]
+            #     gx, gy = gaze_point
+            #     rotated_gaze = (h - gy, gx)
 
             payload = pickle.dumps(
                 {
@@ -721,6 +739,9 @@ def generate_mask(aria_streaming_started: Event, quit_event: Event) -> None:
 if __name__ == "__main__":
     import multiprocessing
 
+    import rclpy
+
+    rclpy.init()  # main.py:34 does this inside the glasses app. Run on its own, nobody else does.
     quit_event = multiprocessing.Event()
     pipeline = ObjectRecognitionPipeline(quit_event=quit_event)
     pipeline.run()

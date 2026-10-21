@@ -10,7 +10,8 @@ cleanup (masks.py).
 
 It does not import SAM 3 or torch. It takes any object with the method the
 repo's wrapper has, process_text_prompt(image, prompt)
-(aria/aria_app/services/object_recognition/sam3_model.py), so it is tested with
+(aria/aria_app/services/object_recognition/sam3_model.py), or with
+process_text_prompts(image, prompts) (sam3_batched.py), so it is tested with
 a stand-in and the model can be changed later.
 
 The result it reads is the processor's state dict (sam3_image_processor.py,
@@ -20,11 +21,14 @@ _forward_grounding), for N detections on an H x W image:
     "boxes"   float (N, 4), x0 y0 x1 y1 in pixels
     "scores"  float (N,), already cut at the processor's confidence threshold
 
+How the vocabulary maps to prompts (T6.3c): `detect` asks for every phrase of
+the vocabulary. A segmenter with process_text_prompts (sam3_batched.BatchedSam3)
+gets them all in one call, which encodes the image once. One with only
+process_text_prompt gets one call per phrase, which encodes the image every
+time. Both give the same Detections. Which is faster, by how much, is not
+measured yet.
+
 Not decided here, left to T6.3c:
-  - How the vocabulary maps to prompts. `detect` makes one call per phrase, the
-    plain reading of the wrapper. The wrapper encodes the image again on every
-    call. The processor can encode it once (set_image) and then take each phrase
-    (set_text_prompt), which would be cheaper. Not measured.
   - The processor's own threshold. The wrapper's default is 0.5, which is above
     cfg.confidence_threshold (0.3). S2 keeps a target class at any confidence,
     but it can only keep what SAM 3 hands over, so the wrapper has to be built
@@ -33,7 +37,7 @@ Not decided here, left to T6.3c:
 
 from __future__ import annotations
 
-from typing import AbstractSet, Any, List, Mapping, Protocol, Sequence, Tuple
+from typing import AbstractSet, Any, List, Mapping, Optional, Protocol, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -46,6 +50,12 @@ from memory_graph.stage_types import Detections
 class TextSegmenter(Protocol):
     def process_text_prompt(self, image: np.ndarray, prompt: str) -> Mapping[str, Any]:
         """RGB uint8 image and one phrase -> a dict with "masks", "boxes", "scores"."""
+        ...
+
+
+class BatchTextSegmenter(Protocol):
+    def process_text_prompts(self, image: np.ndarray, prompts: Sequence[str]) -> Sequence[Mapping[str, Any]]:
+        """RGB uint8 image and N phrases -> N dicts like process_text_prompt's, in order."""
         ...
 
 
@@ -86,17 +96,40 @@ def detections_from_state(
     )
 
 
-def detect(segmenter: TextSegmenter, rgb: np.ndarray, vocabulary: Sequence[str]) -> Detections:
-    """S1 and S4: every phrase of the vocabulary, one call each, in one Detections.
+def detect(
+    segmenter: Union[TextSegmenter, BatchTextSegmenter],
+    rgb: np.ndarray,
+    vocabulary: Sequence[str],
+    batched: Optional[bool] = None,
+) -> Detections:
+    """S1 and S4: every phrase of the vocabulary, in one Detections.
 
-    class_id is the phrase's position in `vocabulary`. Not sorted and not
-    filtered: that is S2.
+    batched=None asks for all phrases in one call if the segmenter has
+    process_text_prompts, else one call per phrase. True or False forces one
+    way, to compare the two on the same model.
+
+    class_id is the phrase's position in `vocabulary`. Pass a
+    vocabulary.Vocabulary, which only grows, so an id means the same phrase on
+    every photo (T6.7c). Not sorted and not filtered: that is S2.
     """
     image_shape = rgb.shape[:2]
+    vocabulary = list(vocabulary)
+    if batched is None:
+        batched = hasattr(segmenter, "process_text_prompts")
     parts: List[Detections] = []
-    for class_id, phrase in enumerate(vocabulary):
-        state = segmenter.process_text_prompt(rgb, phrase)
-        parts.append(detections_from_state(state, phrase, class_id, image_shape))
+    if batched and vocabulary:
+        states = list(segmenter.process_text_prompts(rgb, vocabulary))
+        if len(states) != len(vocabulary):
+            raise ValueError(f"asked for {len(vocabulary)} phrases, got {len(states)} results")
+        for class_id, (phrase, state) in enumerate(zip(vocabulary, states)):
+            parts.append(detections_from_state(state, phrase, class_id, image_shape))
+    elif not batched:
+        # Convert each result before the next call: a one-phrase result is SAM 3's whole
+        # state, image features included, so keeping them all fills the GPU (163 phrases
+        # ran out of 16 GB on the lab box, 2026-10-20).
+        for class_id, phrase in enumerate(vocabulary):
+            state = segmenter.process_text_prompt(rgb, phrase)
+            parts.append(detections_from_state(state, phrase, class_id, image_shape))
     parts = [p for p in parts if len(p)]
     if not parts:
         return Detections.empty(image_shape)
@@ -110,7 +143,7 @@ def detect(segmenter: TextSegmenter, rgb: np.ndarray, vocabulary: Sequence[str])
 
 
 def segment_photo(
-    segmenter: TextSegmenter,
+    segmenter: Union[TextSegmenter, BatchTextSegmenter],
     rgb: np.ndarray,
     vocabulary: Sequence[str],
     targets: AbstractSet[str],

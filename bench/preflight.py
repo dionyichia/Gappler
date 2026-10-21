@@ -405,19 +405,17 @@ def g_assets() -> list[Check]:
     else:
         cs.append(c.bad(f"missing: {p}", "copy it from the lab machine (docs/ASSETS.md)"))
 
-    # The two AnyGrasp nodes want DIFFERENT checkpoints. The hardware-verified
-    # run used the tracking one; launchers/start_camera_arm_grasp.py launches the
-    # detection one. Both are checked so the discrepancy is visible.
-    for fn, who in (("checkpoint_detection.tar", "anygrasp_detection_node.py (what start_camera_arm_grasp.py launches)"),
-                    ("checkpoint_tracking.tar", "anygrasp_node.py (what the 2026-08-25 session verified)")):
-        c = Check("assets", f"anygrasp-{fn.split('_')[1].split('.')[0]}", f"needed by {who}")
-        p = perception / "log" / fn
-        if p.exists():
-            cs.append(c.ok(f"{p.stat().st_size/1024**2:.0f} MB"))
-        elif not lab:
-            cs.append(c.skip(NOT_LAB))
-        else:
-            cs.append(c.bad(f"missing: log/{fn}", "gitignored; copy from the lab machine"))
+    # Only the detector is used since T1.10 (2026-10-13). The tracker node and its
+    # checkpoint_tracking.tar are parked in grasp/tools/to-delete-after-anygrasp-is-up/.
+    fn = "checkpoint_detection.tar"
+    c = Check("assets", "anygrasp-detection", "needed by anygrasp_detection_node.py")
+    p = perception / "log" / fn
+    if p.exists():
+        cs.append(c.ok(f"{p.stat().st_size/1024**2:.0f} MB"))
+    elif not lab:
+        cs.append(c.skip(NOT_LAB))
+    else:
+        cs.append(c.bad(f"missing: log/{fn}", "gitignored; copy from the lab machine"))
 
     c = Check("assets", "anygrasp-licence", "machine-locked; a new machine needs re-registration")
     lic = perception / "license"

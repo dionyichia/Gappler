@@ -224,11 +224,31 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
 - **Left alone for now.** `object_recognition_pipeline.py` keeps its own SAM 3 and its publishing
   line stays commented out. `dummy_mask_publisher.py` is kept (§2.3). `T2.4` (trigger, age limit,
   freeing the GPU) is paused.
-- **Found while designing, matters after `T2.2`.** The gaze pixel is in the raw glasses camera
-  image (`eye_tracking.py:147`, published by `image_streaming_pipeline.py:186`), but the published
-  glasses image is rotated 90° (`:132`) and undistorted (`:135`). The aria client must put the gaze
-  pixel through both before comparing it with masks. Today's code only handles the rotation
-  (`object_recognition_pipeline.py:675`) `[code]`.
+- **Gaze pixel, resolved 2026-10-14 (`T2.9`, PR #76).** The gaze was in the raw glasses camera's
+  pixels, but the published glasses image is undistorted and rotated 90°. `et_worker` now
+  publishes gaze in the published image's pixels (`undistortion_helper.to_published_pixel`), so
+  every reader compares it with masks directly. The old rotations in the visualizer and
+  `object_recognition_pipeline.py` are commented out. The image was also undistorted in the wrong
+  order, about 12.5 px off (`T2.13`, fixed in the same PR) `[code]`. The aria client now picks the
+  mask under the gaze and sends it as the Target's reference. End to end on a recording replayed
+  on the box: 4 of 4 words sent a reference once, 3 of 4 in two later runs (the replay started
+  before its workers were ready, fixed in the review), then 4 of 4 again with the fix
+  (`bench-runs/2026-10-15-labbox-t2.9-review-fixes.txt`). The grasp side does not use the reference
+  yet (`T8.5`), so which object the arm takes is unchanged. Write-up:
+  `adb5466:docs/dion_docs/T2.9_GAZE_PICK_ON_RECORDING.md`.
+- **Timing, open 2026-10-17 (`T2.19` to `T2.21`).** The aria client times the word, the gaze and
+  the image by when each reaches it, not when the glasses captured it, and guesses the gaps with
+  `speech_latency_s` (1.5 s, measured) and `image_wait_s` `[code]`. Those knobs measure how fast the
+  box is, so they need retuning whenever the box changes. The fix is the standard one: stamp each
+  glasses message with its capture time (glasses clock), keep a short history, look up the image
+  and gaze from when the word was said, and vote by gaze dwell. Plan and an independent review:
+  `adb5466:docs/dion_docs/T2.9_TIMING_REVIEW.md` sections 9.1 to 9.10.
+  **PR A built 2026-10-17 (`T2.19`, `T2.20`, branch `t2.19-glasses-capture-timestamps`):** images
+  and gaze carry the glasses capture time (gaze is `PointStamped`). The client keeps 20 s of both,
+  and the gaze from when you spoke picks the image taken then. Gaze near that image votes on the
+  mask, replacing the 1 s mean. `image_wait_s` is now `matching_image_wait_s`. Still by arrival
+  time: the word to the gaze, through `speech_latency_s`, until `T2.21` `[code]`. On the box: e2e
+  replay 4 of 4, stamps on the glasses clock (`bench-runs/2026-10-17-labbox-t2.19-t2.20-capture-timestamps.txt`).
 
 #### `[decided 2026-09-20]` Decision: retire `sam3_ros_node.py` (Option 2)
 
@@ -798,6 +818,41 @@ mask in the glasses image (`:572-573`), then votes for whichever robot-side mask
 in (`:587-596`). A keypoint on one apple can match either apple, and the background matches that
 would say which one is which are discarded. M8 as planned has the same blind spot: T8.1 and T8.2
 select by an image feature of the gazed region, and two identical objects give the same feature.
+
+**First measurement, 2026-10-19 (T8.4).** Before any of this, the old step has to work at all. Its
+first run, glasses recording c2cbafe8 against the wrist bag, chose a wrist mask in 0 of 15 attempts:
+only 8 to 19 matches per image pair, none on a wrist box `[measured]`
+(`bench-runs/2026-10-19-labbox-t8.4-old-matcher-baseline.txt`). Dion, 2026-10-18: diagnose and get a
+working baseline with the old method first. The methods below wait for it.
+
+A rerun that matches only inside each mask's crop chose a wrist mask in 11 of 11 pairs, with 1 to 7
+matches each, but the matches are wrong: all the glasses points sit on one spot of the box while
+their wrist partners spread over several edges `[measured]`.
+
+**Baseline, 2026-10-19: point matching does not find a plain box across these two views.** Four
+offline checks on the saved crops `[measured]`: LightGlue matches a crop against a half-size copy of
+itself 100% correctly, so it works. But its default resize (1024 px on the longer side, `[code]`)
+upscales a 90 px glasses crop about 11 times, and SuperPoint then fires on the JPEG block grid, not on
+the box. Without upscaling the box has too few features (16 to 40 points). Equal box size in both
+crops gives 4 to 5 matches, about half plausible. A dense matcher (LoFTR) fails the same way. So the
+limit is the input: a featureless box, seen far and front-on by the glasses and close and from above
+by the wrist `[inferred]`. Further diagnostics (a textured object, masking out the floor) are parked
+as `T8.6`. Details: the run record above.
+
+**Mask embeddings instead, 2026-10-20 (T8.7, built, box replay done).** One CLIP vector per
+SAM 3 mask (the memory graph's encoder), cosine between glasses and wrist masks. On the T8.4 frames
+CLIP ranked the brown box first in 25 of 25 glasses-vs-wrist pairs against 2 to 12 decoy masks (other
+boxes, a crate). SAM 3's own image features managed 15 of 25 and its decoder vectors 7 of 25
+`[measured]`. SAM 3's 0.5 cutoff hid the box in 7 of 10 glasses frames `[measured]`. The wrist view
+still holds one box, so choosing among wrist objects is untested. Identical objects still need
+geometry (this section). Built in `object_recognition_pipeline.py` with the rule in
+`cross_camera_mask_match_rule.py`: cutoff 0.56, keep within 0.01 of the best, the gaze must be within
+`pick_radius_px` (80, aria shared config) of the chosen glasses mask, a wrist tie returns no match.
+Box replay of the T8.4 setup: all 27 matches in the last run chose the brown box, gaze within 30 px
+(T8.4: 0 of 15). Not shown yet: choosing among two or more wrist objects (the wrist view still held
+one), and the gaze is the latest sample, not the one at the picture's capture time (the T2.9 client
+does that), which cost about 5 s of matching in one stretch `[measured]`. Record:
+`bench-runs/2026-10-20-labbox-t8.7-mask-embedding-offline.txt`.
 
 **Three candidate methods, cheapest first:**
 
@@ -1529,3 +1584,13 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-08 | Claude Opus 5.5 + Dion | §2.2: `T2.1` built (all six steps), start-once rule and its guard, results recorded. |
 | 2026-10-09 | Claude Opus 5.5 + Dion | §2.2: the service imports nothing from a subsystem. §2.8: SAM 3 weights moved to `assets/models/` (T2.1). The segmentation service builds SAM 3 itself, so `shared_services/` no longer imports aria. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | §2.2: start-once guard now looks for the node name, which appears before SAM 3 loads. It looked for the service, which appears only after, so a second start during the ~20 s load was not refused (found in the T2.1 review). |
+| 2026-10-14 | Claude Opus 5.5 + Dion | §2.2: gaze pixel finding resolved by T2.9 (PR #76): gaze published in the published image's pixels, undistort order fixed (T2.13). |
+| 2026-10-15 | Claude Opus 5.5 + Dion | §2.2: T2.9 result stated as all three runs, and that the grasp side does not use the reference yet (T8.5). |
+| 2026-10-15 | Claude Opus 5.5 + Dion | §2.2: T2.9 e2e 4 of 4 after the readiness fix. |
+| 2026-10-17 | Claude Opus 5.5 + Dion | §2.2: T2.9 timing is by arrival, not capture. Plan to fix it is T2.19 to T2.21. |
+| 2026-10-17 | Claude Opus 5.5 + Dion | §2.2: T2.19 and T2.20 (PR A) built, box checks owed. |
+| 2026-10-19 | Claude Opus 5.5 + Dion | §2.13: first run of the old matcher (T8.4), 0 of 15. Old method first, the geometric methods wait. |
+| 2026-10-19 | Claude Opus 5.5 + Dion | §2.13: crop rerun (T8.4), 11 of 11 chose a mask but every match is wrong. Upscaling inside LightGlue is a likely cause. Diagnose before calling it the baseline. |
+| 2026-10-19 | Claude Opus 5.5 + Dion | §2.13: baseline recorded (T8.4). Four offline checks: LightGlue works, upscaling turns JPEG noise into fake points, the plain box has too few features, LoFTR fails too. Further diagnostics parked as T8.6. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | §2.13: mask embeddings (T8.7) tested offline. CLIP picks the gazed box 25 of 25 against decoys, SAM 3 features weaker. Design agreed, build next. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | §2.13: T8.7 built (CLIP matcher, gaze within pick_radius_px) and replayed on the box: 27 of 27 matches on the brown box. Open: two or more wrist objects, gaze at capture time. `pick_radius_px` moved to aria's shared config section. |

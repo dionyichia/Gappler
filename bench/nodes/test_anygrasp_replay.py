@@ -6,8 +6,8 @@ client (.venv, T2.1) and anygrasp_detection_node (grasp/anygrasp_venv/.venv), th
 /pipeline_state the way grasp_state_machine does: EXECUTING for a while, then IDLE.
 
   control  segmentation      a mask and a centroid on the recorded frames
-  control  grasp detection   AnyGrasp publishes candidates in either state
-  xfail    gate (A1)         candidates during EXECUTING and none during IDLE
+  control  grasp detection   AnyGrasp publishes candidates
+  control  gate (A1)         candidates during EXECUTING and none during IDLE (fixed in T1.8)
 
 The numbers printed (mask size, candidates per second, top score) are the baseline to
 compare a perception change against. Exit 0 = no FAIL, 1 = a FAIL.
@@ -97,6 +97,12 @@ def main():
                                f"client exit {client.poll()}, anygrasp exit {ag.poll()}) "
                                f"-- see {LOG.name}")
         start(["ros2", "bag", "play", "--loop", BAG])
+        # The bag has no TF. Live, the camera driver publishes this frame. Without it RViz and
+        # grasp_viz cannot place the points or candidates (T1.34). D435 nominal values
+        # (realsense2_description _d435.urdf.xacro, color joint and color optical joint).
+        start(["ros2", "run", "tf2_ros", "static_transform_publisher", "--y", "0.015",
+               "--roll", "-1.5708", "--yaw", "-1.5708",
+               "--frame-id", "camera_link", "--child-frame-id", "camera_color_optical_frame"])
 
         t0 = time.time()
         hold("EXECUTING", PHASE_SEC)
@@ -129,7 +135,7 @@ def main():
         # the gate only means something if detection works at all
         if det_ok:
             gate_ok = n_exec > 0 and n_idle == 0
-            results.append(("XPASS" if gate_ok else "XFAIL", "gate (A1)",
+            results.append(("PASS " if gate_ok else "FAIL ", "gate (A1)",
                             f"EXECUTING {n_exec} sets, IDLE {n_idle} sets (want EXECUTING > 0, IDLE 0)"))
     except RuntimeError as e:
         results.append(("FAIL ", "setup", str(e)))
@@ -150,11 +156,9 @@ def main():
     for tag, name, detail in results:
         print(f"  [{tag}] {name:18s} {detail}")
     tags = [t for t, _, _ in results]
-    if "XPASS" in tags:
-        print("\n  XPASS: A1 did not reproduce -- retag it in CODE_AUDIT.")
     failed = "FAIL " in tags
     print("\nRESULT:", "FAIL (a control or the setup failed)" if failed
-          else "PASS (controls pass; XFAIL = known finding reproduced)")
+          else "PASS")
     return 1 if failed else 0
 
 

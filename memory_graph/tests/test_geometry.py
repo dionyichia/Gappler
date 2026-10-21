@@ -8,8 +8,8 @@ import numpy as np
 
 from memory_graph.config import MemoryGraphConfig
 from memory_graph.geometry import (
-    back_project, build_candidates, camera_rays, clean_cloud, fit_box, transform_points,
-    voxel_downsample,
+    back_project, build_candidates, camera_rays, clean_cloud, drop_occluded, fit_box, invert_rigid,
+    project_cloud_to_depth, transform_points, voxel_downsample,
 )
 from memory_graph.stage_types import Observation
 from memory_graph.tests._fixtures import K, dets, patch_centre_cam, patch_scene, pose, rot_y, rot_z
@@ -107,6 +107,95 @@ class CandidatesTest(unittest.TestCase):
         obs, _ = patch_scene([])
         with self.assertRaises(ValueError):
             build_candidates(obs, dets([[0, 0, 1, 1]], [0.9], ["x"]), CFG)
+
+
+class InvertRigidTest(unittest.TestCase):
+    def test_inverse_undoes_the_transform(self):
+        T = pose(rot_z(30) @ rot_y(10), t=(1.0, -2.0, 0.5))
+        np.testing.assert_allclose(invert_rigid(T) @ T, np.eye(4), atol=1e-12)
+
+
+class ProjectCloudToDepthTest(unittest.TestCase):
+    """The LiDAR depth path (T6.3b, option b): a world-frame cloud rendered to a
+    depth image aligned to the colour camera, the inverse of back_project."""
+
+    def _cam_points(self, pixels):
+        """Camera-frame points that land exactly on the given (u, v, depth)."""
+        fx, fy, cx, cy = K[0, 0], K[1, 1], K[0, 2], K[1, 2]
+        return np.array([[(u - cx) * z / fx, (v - cy) * z / fy, z] for u, v, z in pixels])
+
+    def test_round_trip_recovers_the_point_at_each_pixel(self):
+        """A cloud projected to depth, then back-projected, returns to where it
+        came from. This is the done-when: geometry in equals geometry out."""
+        T = pose(rot_z(20) @ rot_y(-15), t=(1.0, -2.0, 0.5))
+        pixels = [(40, 30, 2.0), (80, 60, 3.0), (120, 90, 1.5)]
+        world = transform_points(T, self._cam_points(pixels))
+        depth = project_cloud_to_depth(world, T, K, (120, 160))
+        for u, v, z in pixels:
+            self.assertAlmostEqual(depth[v, u], z, places=4)
+        self.assertEqual(depth[0, 0], 0.0)              # no point there
+
+    def test_same_surface_from_two_poses_lands_in_the_same_place(self):
+        """T6.3b's done-when on the LiDAR path: one wall seen from two camera
+        positions back-projects to the same world plane both times."""
+        R = np.array([[0, 0, 1], [-1, 0, 0], [0, -1, 0]], dtype=float)   # optical axes in world
+        wall = np.array([[3.0, y, z] for y in np.linspace(-0.3, 0.3, 7)
+                         for z in np.linspace(0.4, 1.0, 7)])
+        for cam_x in (0.0, 1.0):
+            T = pose(R, t=(cam_x, 0.0, 0.7))
+            depth = project_cloud_to_depth(wall, T, K, (120, 160))
+            recovered = transform_points(T, camera_rays(depth, K).reshape(-1, 3))
+            recovered = recovered[depth.reshape(-1) > 0]
+            self.assertGreater(len(recovered), 20)
+            self.assertLess(np.abs(recovered[:, 0] - 3.0).max(), 0.02)
+
+    def test_nearest_point_wins_the_pixel(self):
+        """Two points on one ray: the z-buffer keeps the closer one, so a near
+        surface is never painted over by something behind it."""
+        T = pose(t=(0.0, 0.0, 0.0))
+        world = self._cam_points([(80, 60, 2.0), (80, 60, 4.0)])
+        depth = project_cloud_to_depth(world, T, K, (120, 160))
+        self.assertAlmostEqual(depth[60, 80], 2.0, places=4)
+
+    def test_points_behind_the_camera_are_dropped(self):
+        T = pose(t=(0.0, 0.0, 0.0))
+        world = np.array([[0.1, 0.1, -2.0], [0.2, -0.1, -0.5]])   # z < 0 in the camera
+        depth = project_cloud_to_depth(world, T, K, (120, 160))
+        self.assertEqual(np.count_nonzero(depth), 0)
+
+    def test_empty_cloud_gives_an_empty_depth_image(self):
+        depth = project_cloud_to_depth(np.zeros((0, 3)), pose(), K, (120, 160))
+        self.assertEqual(depth.shape, (120, 160))
+        self.assertEqual(np.count_nonzero(depth), 0)
+
+
+class DropOccludedTest(unittest.TestCase):
+    def sparse_chair_on_wall(self):
+        """A wall at 3 m on every other pixel, a chair at 1 m on a sparser grid in
+        front of it: the wall shows through the chair's gaps, as sparse LiDAR does."""
+        depth = np.zeros((60, 80), dtype=np.float32)
+        depth[::2, ::2] = 3.0
+        depth[20:40:3, 30:50:3] = 1.0
+        return depth
+
+    def test_wall_behind_the_chair_is_cleared(self):
+        depth = self.sparse_chair_on_wall()
+        out = drop_occluded(depth, 7, 0.1)
+        inside = out[22:38, 32:48]
+        self.assertTrue(np.all((inside == 0) | (inside == 1.0)))   # only chair is left there
+        np.testing.assert_array_equal(out[out == 1.0], depth[depth == 1.0])
+        self.assertEqual(out[0, 0], 3.0)                             # wall far from the chair stays
+        self.assertEqual(out[10, 10], 3.0)
+
+    def test_a_flat_or_sloping_surface_keeps_its_points(self):
+        """Depth growing slowly across the image (a floor seen at an angle) is not
+        occlusion: neighbours within the margin keep each other."""
+        depth = np.tile(np.linspace(2.0, 2.15, 80, dtype=np.float32), (60, 1))
+        np.testing.assert_array_equal(drop_occluded(depth, 7, 0.1), depth)
+
+    def test_window_of_one_changes_nothing(self):
+        depth = self.sparse_chair_on_wall()
+        np.testing.assert_array_equal(drop_occluded(depth, 1, 0.1), depth)
 
 
 if __name__ == "__main__":

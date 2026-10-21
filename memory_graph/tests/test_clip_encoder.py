@@ -12,9 +12,9 @@ class below, named Use1 to Use4:
 
 Use 3's scores inside the graph are TaskContext in task.py and the task score
 ObjectStore keeps on each entry (T6.7a), tested here with the real model. The
-rest of use 3 and use 4 are tested at the encoder only: that text and images
-land in one space and rank the way those uses need. Their functions are not
-built yet (T6.7b, T6.7d). The averaging in use 2 is ObjectStore in
+rest of use 3 is tested at the encoder only: that text and images land in one
+space and rank the way that use needs. Its function is not built yet (T6.7b).
+Use 4 is PhotoScorer in photo_score.py (T6.7d), tested here with the real model. The averaging in use 2 is ObjectStore in
 object_store.py (T6.4c).
 
 These tests load the model, so they need open_clip, torch and the weights.
@@ -33,6 +33,7 @@ from memory_graph.config import MemoryGraphConfig
 from memory_graph.association import appearance_matrix, combined_scores
 from memory_graph.image_feature import image_features, l2_normalise
 from memory_graph.object_store import ObjectStore
+from memory_graph.photo_score import PhotoScorer
 from memory_graph.stage_types import Candidate, OrientedBox
 from memory_graph.task import TaskContext
 
@@ -77,6 +78,10 @@ class EncoderCase(unittest.TestCase):
         if EncoderCase.encoder is None:
             EncoderCase.encoder = OpenClipEncoder.from_config(CFG)
         cls.crops = [textured(0, 40, 60), textured(1, 200, 90), textured(2, 17, 300)]
+        # On a GPU the encoder runs in float16 (clip_encoder.py autocast), so a different batch
+        # can move an entry by one float16 step: 0.0039 for image vectors (length about 11),
+        # 0.001 for text, measured on the lab box GPU (T0.18). On a CPU, 1e-4 holds.
+        cls.batch_atol = 5e-3 if cls.encoder.device.type == "cuda" else 1e-4
 
     def unit_images(self, images):
         return l2_normalise(self.encoder.encode(images))
@@ -100,11 +105,11 @@ class Use1ObjectFeatureTest(EncoderCase):
     def test_vector_does_not_depend_on_the_batch(self):
         together = self.encoder.encode(self.crops)
         alone = np.concatenate([self.encoder.encode([c]) for c in self.crops])
-        np.testing.assert_allclose(together, alone, atol=1e-4)
+        np.testing.assert_allclose(together, alone, atol=self.batch_atol)
 
     def test_small_batches_give_the_same_vectors(self):
         one_at_a_time = OpenClipEncoder.from_config(MemoryGraphConfig(clip_batch_size=1))
-        np.testing.assert_allclose(one_at_a_time.encode(self.crops), self.encoder.encode(self.crops), atol=1e-4)
+        np.testing.assert_allclose(one_at_a_time.encode(self.crops), self.encoder.encode(self.crops), atol=self.batch_atol)
 
     def test_no_crops(self):
         self.assertEqual(len(self.encoder.encode([])), 0)
@@ -184,7 +189,7 @@ class Use3TaskRelevanceTest(EncoderCase):
     def test_same_text_gives_same_vector(self):
         a = self.encoder.encode_text(["find a chair"])
         b = self.encoder.encode_text(["sink", "find a chair"])
-        np.testing.assert_allclose(a[0], b[1], atol=1e-4)
+        np.testing.assert_allclose(a[0], b[1], atol=self.batch_atol)
 
     def test_no_texts(self):
         self.assertEqual(len(self.encoder.encode_text([])), 0)
@@ -239,6 +244,18 @@ class Use4FrontierScoreTest(EncoderCase):
         self.assertEqual(scores.shape, (3,))
         self.assertEqual(int(scores.argmax()), 1)
         self.assertGreater(scores[1], np.delete(scores, 1).max() + 0.05)
+
+    def test_a_photo_of_the_target_ranks_first(self):
+        """T6.7d's done-when with the real model: PhotoScorer ranks the chair
+        photo above the photos without a chair."""
+        from PIL import Image
+
+        names = (CHAIR_VIEWS[0],) + OTHER_OBJECTS
+        photos = [(n, np.asarray(Image.open(FIXTURES / n).convert("RGB"))) for n in names]
+        task = TaskContext.from_text("find a chair", self.encoder)
+        ranked = PhotoScorer(self.encoder).ranked(task, photos)
+        self.assertEqual(ranked[0][0], CHAIR_VIEWS[0])
+        self.assertGreater(ranked[0][1], ranked[1][1])
 
 
 if __name__ == "__main__":

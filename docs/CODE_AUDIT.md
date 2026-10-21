@@ -37,6 +37,12 @@ recorded wrist-camera bag, AnyGrasp published 154 candidate sets while `/pipelin
 and 0 while it was EXECUTING. The code is now at `grasp/anygrasp_node/anygrasp_detection_node.py:182`.
 Fixed by T1.8.
 
+**Fixed 2026-10-13 on branch `t1.8-t1.10-anygrasp-gate-and-pane` (`T1.8`) `[code]`.** The condition is now
+`!= "EXECUTING"`. The replay bench's gate case is a control check now, not an expected fail.
+
+**`[observed]` 2026-10-14** (`bench/anygrasp_replay.sh`, [`bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt`](bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt)): 41 candidate sets
+while EXECUTING, 0 while IDLE. The fix works.
+
 ```python
 def synced_callback(self, rgb_msg: Image, depth_msg: Image):
     if not self.intrinsics_received:
@@ -221,7 +227,7 @@ validated, and anyone who cleared space based on the guide cleared the wrong vol
 
 *Real arm 2026-09-23* `[observed]`: T1.3 kept `main`'s row. T1.7 sent it straight to the driver, one
 joint at a time at speed 1, and every joint landed within 0.02° of it
-(`dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`). The tool ends slightly outside the base footprint.
+(`adb5466:docs/dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`). The tool ends slightly outside the base footprint.
 The state machine itself has still never homed the real arm, so the unprompted-homing risk stands.
 
 ### B5. The orchestrator orphans the arm driver and state machine on exit
@@ -340,6 +346,10 @@ before the wait (`grasp_state_machine.cpp:628-632`). Same behaviour. Checked on 
 Declared `State state_;` (`:756`). Written by the worker thread in `publishState()` (`:206`), read
 by `graspCallback()` (`:171`) on the executor thread. Torn or stale reads are possible.
 
+**Fixed 2026-10-13 on branch `t1.8-t1.10-anygrasp-gate-and-pane` (`T1.9`) `[code]`:** `std::atomic<State> state_`.
+Both simulated-arm checks pass with it (2026-10-14, [`bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt`](bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt)). A torn read was never observed, so this is
+not a before-and-after test.
+
 ### C5. `shutdown_` is a plain `bool`
 
 Written in the destructor under `queue_mutex_`, read without any lock in `homeWithRetry()` (`:343`)
@@ -371,6 +381,16 @@ exactly **one** object per launch, despite the `while (true)` structure.
 (return pose reached, `/manipulator/return_to_user` published) `/pipeline_state` stays `EXECUTING` and the arm
 never re-homes. The candidate-queue growth itself was not measured (with `USE_SIMPLE_EXECUTE` on, nothing
 publishes candidates in the test).
+
+**Fixed 2026-10-13 on branch `t1.14-multi-grasp-loop` (`T1.14`) `[code]`.** After a
+grasp the worker holds the object at the return pose until `/manipulator/release`, opens the gripper, re-homes
+and goes back to IDLE (`holdUntilRelease()`). Both execute paths share this ending. EXECUTING empties
+`candidate_queue_` on entry, so a candidate from an earlier cycle is never used. The sim check that reproduced
+C7 is now a control check, plus a second request in the same launch.
+
+**`[observed]` 2026-10-14 on the simulated arm** ([`bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt`](bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt)): `/pipeline_state` returns to IDLE after the
+release and a second request reaches SELECTING, on both the simple and the candidates path. C7 no longer
+reproduces.
 
 ---
 
@@ -479,6 +499,17 @@ never went through a TF lookup, exists in exactly two places repo-wide, both in 
 (`:174`, `:204`). `object_approach_node.py:232` looks identical but is correct, because its values
 come from `do_transform_pose_stamped` (`:176`) after a real `lookup_transform` (`:167-174`).
 `pose_publisher.py:21` is correct for the same reason.
+
+### E6. 🟡 A late TF ends a grasp request during SELECTING `[observed]`
+
+`selectingStep()` (`grasp_state_machine.cpp:477-488`) transforms `getCurrentPose()` into
+`camera_color_optical_frame` with a 0.1 s timeout. The pose is stamped now. If the newest TF is a few ms
+older than that stamp, the lookup throws "extrapolation into the future", the step returns false and the
+whole request goes back to IDLE. The user has to ask again.
+
+**Seen once on the simulated arm 2026-10-14** ([`bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt`](bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt)), on the second request of the candidates run, 30 ms
+ahead of the latest TF. Not seen on the real arm yet. Fix not decided: look up the latest transform
+(stamp zero) or retry the step once. Task `T1.28`.
 
 ---
 
@@ -999,3 +1030,6 @@ publishers racing on the same three topics.
 | 2026-10-13 | Claude Opus 5.5 + Dion | C1 resolved in `T1.25`: not undefined behaviour with one waiting thread, the shutdown lost wake-up fixed. Note added, record kept. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | Execute result discarded in `moveToHome` (line 699): observed on the real arm in `T1.24` 3c, fix is `T1.26`. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | G3, G5 and J11 resolved by T2.7: `sam3_ros_node.py` deleted. Notes added, records kept. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | C7 fixed on branch `t1.14-multi-grasp-loop` (`T1.14`): hold until release, then home and IDLE. Sim run owed. |
+| 2026-10-13 | Claude Opus 5.5 + Dion | A1 and C4 fixed on branch `t1.8-t1.10-anygrasp-gate-and-pane` (`T1.8`, `T1.9`). Replay and sim runs owed. |
+| 2026-10-14 | Claude Opus 5.5 + Dion | A1, C7 now `[observed]` fixed, C4 checked in sim (box runs, [`bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt`](bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt)). New finding E6: a late TF ends a request in SELECTING, seen once in sim, task `T1.28`. |
