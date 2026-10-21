@@ -56,7 +56,7 @@ private:
   // /rm_driver/movej_cmd, the arm reached every joint within 0.0004 rad (0.02 deg) of
   // these values, so they stand unchanged. The tool ends up in front of the arm's base,
   // which was checked and accepted at the robot. Evidence:
-  // docs/dion_docs/T1.7_FIRST_COMMANDED_MOTION.md
+  // adb5466:docs/dion_docs/T1.7_FIRST_COMMANDED_MOTION.md
   const std::map<std::string, double> HOME_JOINTS = {
       {"joint1", 0.0},    // 0 degrees
       {"joint2", 0.0},    // 0 degrees

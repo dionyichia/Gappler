@@ -1,0 +1,12 @@
+#!/bin/sh
+# Refuse new files that stay local (plans, handoffs, diagnoses, experiments). Rule: CLAUDE.md.
+# ponytail: name-based guess, so a file called e.g. "notes.md" slips through. Add words to the list as needed.
+
+bad=$(git diff --cached --name-only --diff-filter=AR | grep -iE \
+  '^docs/[^/]+_docs/(local/|.*(plan|cold_start|handoff|diagnos|scratch|experiment|_logs/)[^/]*$)')
+
+if [ -n "$bad" ]; then
+  printf 'pre-commit: these stay local, not in git:\n%s\n' "$(echo "$bad" | sed 's/^/  /')" >&2
+  echo "Move them to docs/<firstname>_docs/local/ (main checkout), or bypass on purpose with --no-verify." >&2
+  exit 1
+fi

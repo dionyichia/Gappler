@@ -1,7 +1,0 @@
-source /home/rcp2026/rcp-Gappler/grasp/grasp_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1 && python /home/rcp2026/rcp-Gappler/grasp/grasp_segmentation_client/grasp_segmentation_client.py  
-rcp2026@iot22-Computer:~/rcp-Gappler$ source /home/rcp2026/rcp-Gappler/grasp/grasp_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1 && python /home/rcp2026/rcp-Gappler/grasp/grasp_segmentation_client/grasp_segmentation_client.py        
-[INFO] [1791887751.929008030] [grasp_segmentation_client]: Grasp segmentation client ready, looking for: default prompt 'box' (testing only)   
-[INFO] [1791887767.550691626] [grasp_segmentation_client]: Glasses client found: default prompt dropped       
-[INFO] [1791891338.465877196] [grasp_segmentation_client]: Target: 'box'                
-[INFO] [1791893194.226294219] [grasp_segmentation_client]: Target: 'box'                
-

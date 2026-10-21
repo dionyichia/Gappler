@@ -62,3 +62,6 @@ aria/aria_app/output/
 *.swo
 .claude/settings.local.json
 CLAUDE.local.md
+
+# ---- Personal local-only docs: plans, handoffs, diagnoses, one-off experiment output (CLAUDE.md)
+docs/*_docs/local/
