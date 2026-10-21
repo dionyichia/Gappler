@@ -251,11 +251,15 @@ def generate_launch_description():
             "params_file": nav2_params_file,
         }.items(),
     )
-    delayed_nav2 = TimerAction(period=25.0, actions=[nav2])
+    # nav2:=false starts the chain without any Nav2 server (the live runbook: nothing can be sent a goal). Default true, as before.
+    nav2_arg = DeclareLaunchArgument("nav2", default_value="true", choices=["true", "false"],
+                                     description="false: do not start Nav2 (the 25 s delayed start is skipped)")
+    delayed_nav2 = TimerAction(period=25.0, actions=[nav2], condition=IfCondition(LaunchConfiguration("nav2")))
 
     return LaunchDescription(
         [
             odom_source_arg,
+            nav2_arg,
             map_autosave,
             robot_state_publisher,
             joint_state_publisher,

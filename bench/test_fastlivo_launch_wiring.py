@@ -144,5 +144,30 @@ class LaunchWiringTests(unittest.TestCase):
         self.assertEqual(sum(h.endswith("ros2_interface.cpp") for h in vendor), 1, "the base driver declares it exactly once")
 
 
+    def test_nav2_switch_defaults_to_true_and_only_gates_the_delayed_nav2_start(self):
+        """nav2:=false lets the runbook run the chain with no Nav2 servers (nothing can be sent a goal). Default true: nothing changes."""
+        for relative in LAUNCHES:
+            with self.subTest(launch=relative):
+                tree = parse(relative)
+                arg = assigned(tree, "nav2_arg")
+                self.assertEqual(const(arg.args[0]), "nav2")
+                self.assertEqual(const(kw(arg, "default_value")), "true")
+                self.assertEqual([const(e) for e in kw(arg, "choices").elts], ["true", "false"])
+                delayed = assigned(tree, "delayed_nav2")
+                self.assertEqual(delayed.func.id, "TimerAction")
+                self.assertEqual(const(kw(delayed, "period")), 25.0, "the start delay is unchanged")
+                condition = kw(delayed, "condition")
+                self.assertEqual(condition.func.id, "IfCondition")
+                self.assertEqual(ast.unparse(condition.args[0]), "LaunchConfiguration('nav2')")
+                self.assertIn("nav2_arg", returned_names(tree))
+                self.assertIn("delayed_nav2", returned_names(tree))
+
+    def test_nothing_else_is_gated_on_the_nav2_switch(self):
+        for relative in LAUNCHES:
+            with self.subTest(launch=relative):
+                text = (REPO / relative).read_text()
+                self.assertEqual(text.count("LaunchConfiguration(\"nav2\")"), 1, "only the Nav2 start reads the switch")
+
+
 if __name__ == "__main__":
     unittest.main()
