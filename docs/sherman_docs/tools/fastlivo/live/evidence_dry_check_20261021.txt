@@ -1,7 +1,5 @@
-# Dry check of the T3.5f launch switches, 2026-10-21. Box (lab workstation), isolated domain 179, nothing started, no hardware, no sudo.
-# Stage used: ~/rcp-Gappler/log/t59-fastlivo/log/t35f-live-stage (robot_slam installed from this branch into its own prefix).
-# NOTE: assembled from the outputs saved from the real runs on the box earlier the same day. The box was unreachable when this file was committed,
-# so it could not be re-captured in one piece. The --show-args text is shortened as marked; launch_switch_check.py output is complete and unedited.
+# Dry check of the T3.5f launch switches, 2026-10-21. Box (lab workstation) over Tailscale, isolated domain 179, nothing started, no hardware, no sudo.
+# Stage: /home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35f-live-stage (robot_slam from this branch, installed into its own prefix).
 
 $ ros2 pkg prefix robot_slam
 /home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35f-live-stage/prefix
@@ -25,9 +23,39 @@ Arguments (pass arguments as '<name>:=<value>'):
         0 PointCloud2 (nav), 1 CustomMsg (FAST-LIVO2)
         (default: '0')
 
-    (further arguments of the included launches follow in the real output: namespace, use_sim_time, params_file)
+    'namespace':
+        Top-level namespace
+        (default: '')
 
-$ python3 launch_switch_check.py slam_mapping.launch.py   (exit status 0)
+    'use_sim_time':
+        Use simulation (Gazebo) clock if true
+        (default: 'false')
+
+    'params_file':
+        Full path to the ROS2 parameters file to use for all launched nodes
+        (default: '/opt/ros/humble/share/nav2_bringup/params/nav2_params.yaml')
+
+    'autostart':
+        Automatically startup the nav2 stack
+        (default: 'true')
+
+    'use_composition':
+        Use composed bringup if True
+        (default: 'False')
+
+    'container_name':
+        the name of conatiner that nodes will load in if use composition
+        (default: 'nav2_container')
+
+    'use_respawn':
+        Whether to respawn if a node crashes. Applied when composition is disabled.
+        (default: 'False')
+
+    'log_level':
+        log level
+        (default: 'info')
+
+$ python3 launch_switch_check.py slam_mapping.launch.py
 == wheel, defaults
    would start: arm_mount_tf, delayed_nav2, echo_launch, goal_reached_node, joint_state_publisher, livox_launch, map_autosave, pointcloud_to_laserscan, pose_publisher_node, qos_relay_node, robot_state_publisher, rviz, slam_toolbox, static_tf_node
    would NOT start (conditional): custom_to_cloud_node, echo_launch_fastlivo, odom_bridge_node
@@ -50,3 +78,4 @@ $ python3 launch_switch_check.py slam_mapping.launch.py   (exit status 0)
    SLAM Toolbox parameter file: slam_toolbox.yaml (expected ...slam_toolbox.yaml)
 
 ALL SWITCH EXPECTATIONS HOLD
+exit status: 0

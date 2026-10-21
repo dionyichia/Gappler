@@ -6,6 +6,8 @@
 # Safe to repeat: the stage directory is rebuilt.
 set -euo pipefail
 BOX=${T35_BOX:-rcp2026@10.91.242.76}
+# Tailscale route (campus route down): T35_BOX=rcp2026@100.87.133.60 T35_SSH_OPTS="-o HostKeyAlias=10.91.242.76"
+SSH_OPTS=${T35_SSH_OPTS:-}
 STAGE=${T35_STAGE:-rcp-Gappler/log/t59-fastlivo/log/t35f-live-stage}   # relative to the box home
 LIVE=docs/sherman_docs/tools/fastlivo/live
 [ -f "$LIVE/t35e_mapper_container.sh" ] || { echo "run from the repo root"; exit 1; }
@@ -15,9 +17,9 @@ cp -R nav/robot_slam "$tmp/stage/src/robot_slam"; find "$tmp/stage" -name __pyca
 cp "$LIVE/t35e_mapper_container.sh" "$LIVE/tf_edge_check.py" "$LIVE/t35e_replay_precheck.sh" "$LIVE/launch_switch_check.py" "$tmp/stage/"
 cp "$LIVE/config/t35c_stationary02_20261019_visual.yaml" "$LIVE/config/t35c_stationary02_20261019_camera.yaml" "$tmp/stage/config/"
 tar -C "$tmp" -czf "$tmp/stage.tgz" stage
-ssh "$BOX" "rm -rf ~/$STAGE && mkdir -p ~/$STAGE"
-scp -q "$tmp/stage.tgz" "$BOX:$STAGE.tgz"
-ssh "$BOX" bash -s <<REMOTE
+ssh $SSH_OPTS "$BOX" "rm -rf ~/$STAGE && mkdir -p ~/$STAGE"
+scp -q $SSH_OPTS "$tmp/stage.tgz" "$BOX:$STAGE.tgz"
+ssh $SSH_OPTS "$BOX" bash -s <<REMOTE
 set -euo pipefail
 cd ~ && tar -xzf $STAGE.tgz -C ~/$STAGE --strip-components=1 && rm $STAGE.tgz
 cd ~/$STAGE && chmod +x t35e_mapper_container.sh tf_edge_check.py t35e_replay_precheck.sh
