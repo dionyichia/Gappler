@@ -1,0 +1,46 @@
+T6.4 step 1: the whole handdriven1 drive through the gate, SAM 3 and CLIP once, saved for tuning
+2026-10-21, lab box (rcp2026@100.87.133.60, tailscale), NVIDIA GeForce RTX 4060 Ti 16 GB
+Run over SSH by Claude Opus 5.5 for Zongzhe. Scratch copy ~/zongzhe_t63 (branch t6.4-merge-tuning
+before its first commit), python ~/rcp-Gappler/.venv, SAM 3 ~/rcp-Gappler/assets/models/sam3/sam3.pt,
+CLIP weights ~/rcp-Gappler/assets/models/open_clip. GPU and files only: no camera, no ROS, no robot.
+
+Before start
+  GPU 404 MiB, 0 %, one 120 MiB process not ours. No realsense, ros2 launch, bench, runner job,
+  SAM 3 or AnyGrasp process. /home 12 GB free.
+
+Command
+  python -m memory_graph.run_drive --bag .../handdriven1/handdriven1_0.db3 --out drive_hd1
+  Started with setsid (process group 186050), exited on its own. A 3-photo trial (--limit 3)
+  ran first and matched.
+
+Settings
+  Gate, pose half first (D-MG12), saved at a fine gate: moved 0.25 m or turned 15 degrees. Each
+  saved photo also marks whether the real gate (1 m or 45 degrees, config) keeps it. A photo with
+  no detections after S2 is not saved. LiDAR window 1.0 s either side, occlusion filter 7 px,
+  10 percent (D-MG11). SAM 3 bfloat16, threshold 0.15, 30-phrase base vocabulary, batched 16 per
+  pass. CLIP ViT-B-32 float16 on every raw detection, stored as float16.
+
+Result
+  3536 frames in the bag, 103 photos saved (frames 0 to 3128, 0 to 104.3 s; the drive stands
+  still at its start point after that). 26 of them kept by the real gate.
+  Per photo, medians: 137 raw detections, 47 after S2 and S5, 28 objects, 1.85 s (all 103:
+  191 s). 41 MB on disk.
+  Stored outside git: lab box ~/zongzhe_t63/drive_hd1, and Zongzhe's Mac
+  docs/zongzhe_docs/local/t6.4/drive_hd1 (gitignored).
+
+Replay check (Zongzhe's Mac CPU, no GPU, no model)
+  Every saved photo loaded and run through S2 to S9 with the stored vectors (run_drive's
+  features_from_raw): object counts identical to the GPU run on all 103.
+  Through S10 and S11 with today's config (match radius 2.5 cm, phys_bias 0.5, greedy):
+    real gate, 26 photos:  677 sightings -> 228 objects
+    fine gate, 103 photos: 2792 sightings -> 361 objects
+  For scale: the ground truth (memory_graph/eval/lab_ground_truth_handdriven1.json) has 12
+  furniture objects. The graph also holds unscored small things (books, lights, paper), so the
+  numbers do not compare directly. Scoring is T6.4 step 2.
+  Replaying both passes took 68 s.
+
+Tests
+  memory_graph/tests/test_run_drive.py, 6 tests, pass on the Mac CPU (numpy, scipy, pillow).
+
+After
+  GPU back to 404 MiB.
