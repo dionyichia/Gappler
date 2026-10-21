@@ -645,7 +645,9 @@ procurement decision is the urgent one.
 reports an **offline Qwen3-VL-8B**. Online was faster (21.5 s vs 27.8 s) *because the evaluation
 machine's GPU was not also hosting the model*.
 
-`[open]` For this platform:
+**Decided 2026-10-21 (Zongzhe, T6.6): local and text only, for now.** The only model call Gappler plans is the once-per-task instruction decomposition (T6.7b), text in and class names out. Target verification uses CLIP (T6.8a), so no photo is sent to any model. The model is `Qwen/Qwen2.5-0.5B-Instruct`, which the voice path already loads (`aria/aria_app/services/prompt_extractor.py:32`), or the 1.5B model if its class lists are poor. The image policy check below is task T6.11, needed only if the subgraph reasoning of §4.5 is ever added.
+
+`[open]` before 2026-10-21, kept for the image case. For this platform:
 
 | Path | Consideration |
 |---|---|
@@ -787,6 +789,7 @@ productive than forcing the binary.
 |---|---|---|
 | 2026-10-05 | Claude (Opus 5.5) + Zongzhe | §6.5 and §6.7 (T6.1): ILP solver confirmed in code as PuLP (MIT) + CBC (EPL-2.0). Upstream uses no LKH: exact search or greedy for frontier ordering, OR-Tools imported but unused and unlisted. Upstream has no licence file. LKH decision flagged for revisit. |
 | 2026-09-23 | Claude (Opus 5.5) + Zongzhe | §6.5 and §6.7: LKH kept for the WTRP (academic use), not committed to the repo, fetched at build time. The ILP solver half of 6.5 stays open (T6.1). |
+| 2026-10-21 | Claude (Opus 5.5) + Zongzhe | §6.4: the endpoint is decided for the text-only call (T6.6, local Qwen2.5-0.5B or 1.5B). The image policy is T6.11. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Vendor paths updated after reorg step 3 (`aria/vendor/open_vins`, `nav/vendor/urdf`, `arm/vendor/rm_gazebo`). |
 | 2026-09-12 | Claude (Opus 5) + Dion | Added §5.6 (testing needs a simulator: upstream is a Habitat evaluation setup with no ROS, and what exists here for a robot simulation). New `[upstream]` tag. Updated the §2 limitation note, §6.7 register, §7.1 ROS question and §7.2 steps 2–3. |
 | 2026-09-10 | Claude (Opus 5) + Dion | Added §4.4a (the object-registration cascade — SAM runs on keyframes, not frames) and §5.5 (it answers `NEXT_STEPS` §2.1 and promotes that item's `[inferred]` two-stage row). |
