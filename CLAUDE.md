@@ -10,9 +10,17 @@ refactored toward one-folder-per-node modular code.
   `ARCHITECTURE`, `READING_GUIDE`, `CODE_AUDIT`, `ASSETS`, `CHANNEL_CONTRACT`, `MEMORY_GRAPH_DESIGN`,
   `NEXT_STEPS`, `PROJECT_PLAN`, `TESTBENCH_PLAN`, `hico-nav/`, `bench-runs/`, and the three published
   HTML pages (`task-tree.html`, `wiring-map.html`, `testbench-map.html`).
-- **Personal docs live in `docs/<firstname>_docs/`**: session notes, handoffs and evidence not yet
-  folded into the global docs. Write only in your own folder (ask the user's name if unknown). Never
-  edit another person's folder: write the correction in yours and tell them.
+- **Personal docs live in `docs/<firstname>_docs/`**: report material and evidence not yet folded
+  into the global docs. Write only in your own folder (ask the user's name if unknown). Never edit
+  another person's folder: write the correction in yours and tell them.
+- **What goes into git: only code that ships and report material.** Plans, cold-start handoffs,
+  diagnoses, scratch scripts and one-off experiment output (dumps, pictures, measurements) are never
+  committed. They go in `docs/<firstname>_docs/local/`, which is gitignored. Keep that folder in the
+  main checkout, not a worktree, so removing a worktree can't lose it. The pre-commit hook
+  `.githooks/pre-commit` refuses new files that look like these (turn it on once per clone:
+  `git config core.hooksPath .githooks`). Bench records that `/ship` writes to `docs/bench-runs/`
+  are still committed. A citation written `<commit>:<path>` points at a file removed from git: read
+  it with `git show <commit>:<path>`.
 - **Everyone starts at [`docs/START_HERE.md`](docs/START_HERE.md), then
   [`docs/ORIENTATION.md`](docs/ORIENTATION.md).**
 - **Keep the global docs current, in the same session.** If your work changes what a global doc says

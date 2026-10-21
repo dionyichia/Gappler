@@ -1,7 +1,7 @@
 # ARM Bring-Up: Driver Handshake and Joint Feedback
 
 > **VALIDATED 2026-10-13.** T1.6's attended driver-only session passed its seven
-> recorded checks on 2026-09-23 ([evidence](dion_docs/T1.6_FIRST_POWERED_SESSION.md)),
+> recorded checks on 2026-09-23 (evidence: `adb5466:docs/dion_docs/T1.6_FIRST_POWERED_SESSION.md`),
 > and the required independent UDP packet capture overlapping ROS feedback was
 > observed on 2026-10-13 ([evidence](bench-runs/2026-10-13-labbox-t1.5-validation.txt)):
 > 23,043 wire packets spanning the joint-feedback observation. T1.6 and T1.5 are

@@ -7,9 +7,9 @@ the session at the machine on 2026-10-07.
 **Tasks:** steps 1 to 7 are tasks in [`../task-tree.html`](../task-tree.html). That page is
 authoritative for status. This file holds the reasoning, the commands and the pass criteria.
 
-**Read with:** [`T1.6_FIRST_POWERED_SESSION.md`](T1.6_FIRST_POWERED_SESSION.md) for the cold start
+**Read with:** `adb5466:docs/dion_docs/T1.6_FIRST_POWERED_SESSION.md` for the cold start
 (stop, boot wait, environment, shutdown order) and
-[`T1.7_FIRST_COMMANDED_MOTION.md`](T1.7_FIRST_COMMANDED_MOTION.md) for how the first motion was
+`adb5466:docs/dion_docs/T1.7_FIRST_COMMANDED_MOTION.md` for how the first motion was
 sent. This file does not repeat them.
 
 ## Start here, cold start after 2026-10-14 (step 7, then step 8 = T1.35)
@@ -529,7 +529,7 @@ The wrist camera pointed at the ceiling, no box in view.
   check above).
 - **Depth on a real object.** Prompt `light` found the ceiling light panel (score 0.84), depth
   1.255 m. Dion checked the mask by eye: it fits the panel. Depth not checked against a tape.
-  Picture: [`t1.24_3b/2026-10-12-ceiling-light-mask.png`](t1.24_3b/2026-10-12-ceiling-light-mask.png).
+  Picture: `adb5466:docs/dion_docs/t1.24_3b/2026-10-12-ceiling-light-mask.png`.
 - **GPU (RTX 4060 Ti, 16 GB).** The service holds 5.8 GB. During back-to-back calls: 61% busy on
   average, 80 W of 165 W, 55 C, not throttled. So the GPU has room for AnyGrasp alongside.
 - **CPU (i5-13400F, 16 threads).** The service uses about 1.2 threads on average, 2.1 at peak.
