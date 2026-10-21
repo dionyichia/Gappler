@@ -148,3 +148,30 @@ Step 4, the sweep (2026-10-22, Zongzhe's Mac CPU, saved photos, final ground tru
     - min_points 32 helps a little (5 duplicates) by dropping small sightings, at the cost of
       small objects. Not recommended alone.
   Limits: one drive, 16 real objects, 8 baseline duplicates. Differences of 1 are noise.
+
+Step 5, check on a second drive (2026-10-22)
+  Drive: t35f-live-20261021/bag (76 s). Same command on the lab box GPU (free before: 405 MiB,
+  0 %): 55 photos saved, 14 kept by the real gate, 1.70 s each. Its LiDAR map exported with the
+  T6.4e tool (floor at the same height, -0.175; the drive ends 32 cm from its start).
+  Ground truth moved across with a scratch script (docs/zongzhe_docs/local/t6.4/align_maps.py):
+  both maps reduced to walls and furniture on a 5 cm grid, every heading tried in 3 degree
+  steps, refined by ICP. Fit: turned 3.58 degrees and shifted (-1.24, -0.33) m, so the second
+  drive started 1.2 m from the first. 81 % of the second drive's cells within 10 cm of the
+  first's, median 2.8 cm. A self-check (a map against itself) gives 0 degrees, 0 m, 100 %.
+  All 16 objects are seen by at least one of the second drive's photos within 6 m.
+    radius     real gate: dup fm miss extra    fine gate: dup fm miss extra
+    2.5 cm                 2   0  7    20                 4   0  6    26
+    5 cm                   1   0  7    15
+    7.5 cm                 1   0  7    14
+    10 cm                  1   0  8    14                 2   0  6    19
+    15 cm                  1   0  8    14                 2   0  6    19
+    20 cm                  1   0  8    14                 2   0  6    18
+  The extra miss from 10 cm up: at 10 cm chair 4 keeps its chair object but loses its
+  tv_monitor neighbour; at 15 cm chair 4 is left with only a desk object, so the chair has been
+  merged into the desk next to it. The sofa (5) only ever had cabinet and shelf objects on it in
+  this drive; they disappear from 10 cm. Merges of neighbours like these are not caught by the
+  false-merge rule (their points sit in overlapping or adjoining boxes).
+  This drive saw fewer things well: 7 of 16 missed already at 2.5 cm (14 photos at the real gate).
+  Reading: the gain on drive 1 holds on drive 2 (fewer duplicates at both gates), but 15 cm
+  starts merging a chair into its desk here. 10 cm keeps that chair as a chair. 7.5 to 10 cm is
+  the safer side.
