@@ -190,7 +190,11 @@ def generate_launch_description():
     )
 
     slam_toolbox_dir = get_package_share_directory("robot_slam")
-    slam_params_file = os.path.join(slam_toolbox_dir, "config", "slam_toolbox.yaml")
+    # fastlivo mode maps from the FAST-LIVO2 poses alone: scan matching and loop closing off (the fastlivo SLAM yaml, T3.5e).
+    slam_config_dir = os.path.join(slam_toolbox_dir, "config")
+    slam_params_file = PythonExpression(
+        ["'", slam_config_dir, "/slam_toolbox_fastlivo.yaml' if ", odom_is_fastlivo, " else '", slam_config_dir, "/slam_toolbox.yaml'"]
+    )
 
     slam_toolbox = Node(
         package="slam_toolbox",
