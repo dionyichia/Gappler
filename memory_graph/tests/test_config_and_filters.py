@@ -54,6 +54,8 @@ class BaseVocabularyTest(unittest.TestCase):
     def test_a_repeat_is_an_error_whatever_its_case_or_spaces(self):
         with self.assertRaises(ValueError):
             MemoryGraphConfig(base_vocabulary=("cup", " Cup"))
+        with self.assertRaises(ValueError):
+            MemoryGraphConfig(base_vocabulary=("power outlet", "power  outlet"))   # as Vocabulary sees it
 
     def test_a_background_class_is_an_error(self):
         with self.assertRaises(ValueError):

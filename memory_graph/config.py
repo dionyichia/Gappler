@@ -151,13 +151,15 @@ class MemoryGraphConfig:
             raise ValueError("cleanup_every_photos and prune_kappa must be at least 1")
         if self.anchor_height < 0 or self.anchor_width < 0:
             raise ValueError("anchor_height and anchor_width must be 0 or more")
-        phrases = [p.strip().lower() for p in self.base_vocabulary]
+        from memory_graph.vocabulary import normalise   # the spelling Vocabulary compares under
+
+        phrases = [normalise(p) for p in self.base_vocabulary]
         if any(not p for p in phrases):
             raise ValueError("base_vocabulary has an empty phrase")
         repeated = sorted({p for p in phrases if phrases.count(p) > 1})
         if repeated:
             raise ValueError(f"base_vocabulary repeats {repeated}")
-        background = sorted(set(phrases) & {b.strip().lower() for b in self.bg_classes})
+        background = sorted(set(phrases) & {normalise(b) for b in self.bg_classes})
         if background:
             raise ValueError(f"base_vocabulary has background classes {background}, which S2 drops")
         for name in ("voxel_size_m", "dbscan_eps_m", "match_radius_m", "gate_translation_m"):
