@@ -20,8 +20,30 @@ from dataclasses import dataclass, fields, replace
 from typing import Any, Mapping, Tuple
 
 
+# TENTATIVE (Zongzhe, 2026-10-20, T6.7c): 30 phrases, all ScanNet200 names as HiCo-Nav
+# spells them (data/scannet200_classes_ori.txt), so "tv_monitor" keeps upstream's spelling.
+# 23 fired at 0.5 or more on the lab test photos, the other 7 (bottle, computer tower,
+# keyboard, laptop, mouse, table, whiteboard) are things a lab or the grasp tasks hold.
+# Left out on purpose: umbrella words that fire on everything ("furniture", "seat"), one of
+# each synonym pair ("couch", "trash bin", "purse", "ceiling light"), and bg_classes.
+# 30 because batched SAM 3 costs about 0.2 s + 0.04 s per phrase per photo on the lab box
+# GPU: docs/bench-runs/2026-10-20-labbox-t6.3c-sam3-batched-timing.txt. Check it against
+# the lab's real objects once T6.2 records the lab and T6.4e lists them.
+BASE_VOCABULARY: Tuple[str, ...] = (
+    "bag", "bench", "book", "bottle", "box", "cabinet", "chair", "clothes",
+    "computer tower", "cup", "cushion", "desk", "door", "keyboard", "laptop", "light",
+    "mouse", "paper", "poster", "power outlet", "shelf", "sign", "sofa", "stool",
+    "table", "tissue box", "trash can", "tv_monitor", "whiteboard", "window",
+)
+
+
 @dataclass(frozen=True)
 class MemoryGraphConfig:
+    # ---- S1 detection -----------------------------------------------------
+    # The phrases SAM 3 is prompted with on every photo, before any task adds
+    # its own. A class id is a phrase's position, so only append to this list.
+    base_vocabulary: Tuple[str, ...] = BASE_VOCABULARY
+
     # ---- S2 detection filtering -------------------------------------------
     bg_classes: Tuple[str, ...] = ("wall", "floor", "ceiling", "carpet", "rug", "bath mat")
     skip_bg: bool = True
@@ -129,6 +151,17 @@ class MemoryGraphConfig:
             raise ValueError("cleanup_every_photos and prune_kappa must be at least 1")
         if self.anchor_height < 0 or self.anchor_width < 0:
             raise ValueError("anchor_height and anchor_width must be 0 or more")
+        from memory_graph.vocabulary import normalise   # the spelling Vocabulary compares under
+
+        phrases = [normalise(p) for p in self.base_vocabulary]
+        if any(not p for p in phrases):
+            raise ValueError("base_vocabulary has an empty phrase")
+        repeated = sorted({p for p in phrases if phrases.count(p) > 1})
+        if repeated:
+            raise ValueError(f"base_vocabulary repeats {repeated}")
+        background = sorted(set(phrases) & {normalise(b) for b in self.bg_classes})
+        if background:
+            raise ValueError(f"base_vocabulary has background classes {background}, which S2 drops")
         for name in ("voxel_size_m", "dbscan_eps_m", "match_radius_m", "gate_translation_m"):
             if getattr(self, name) <= 0:
                 raise ValueError(f"{name} must be positive")
@@ -140,8 +173,9 @@ class MemoryGraphConfig:
         if unknown:
             raise KeyError(f"unknown memory graph config keys: {unknown}")
         values = dict(values)
-        if "bg_classes" in values:
-            values["bg_classes"] = tuple(values["bg_classes"])
+        for name in ("bg_classes", "base_vocabulary"):
+            if name in values:
+                values[name] = tuple(values[name])
         return replace(cls(), **values)
 
     @classmethod
