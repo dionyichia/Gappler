@@ -1,0 +1,88 @@
+T6.4f: periodic clean-up tests on the lab box, from dev as merged   2026-10-21 17:21 CST
+=====================================================================================================
+Lab box (rcp2026@100.87.133.60, tailscale), RTX 4060 Ti. Run over SSH by Claude Opus 5.5 for
+Zongzhe, with Zongzhe's go-ahead. Asked for on the Orin first, but the Orin (nvidia-desktop,
+100.118.250.28) was offline on tailscale for about a day, so the lab box stands in.
+
+  RESULT: PASS for T6.4f. test_cleanup.py: 27 ran, 27 passed, 0 failed, 0 skipped.
+  All memory graph tests (bench/memory_graph_tests.sh): 281 ran, 281 passed, 0 skipped, exit 0.
+  The real CLIP model on the GPU is included.
+
+What this adds to the earlier lab box run (2026-10-21-labbox-t6.4f-kappa-3-tests.txt)
+  That run was the t6.4f-kappa-3 branch before it merged, 253 tests. This one is dev at 311b712,
+  after the kappa 3 merge and T6.7c's vocabulary, 281 tests. prune_kappa defaults to 3 here, and
+  test_the_defaults_are_upstreams_ten_and_a_tentative_kappa_of_three passes.
+
+  NOT covered: the Orin. Real point clouds and the recorded drive (kappa and the denoise settings
+  are still to check in T6.4). Not a full bench run: only the memory graph tests. No ROS, no
+  camera, no hardware.
+
+How it was run [observed]
+  Code: git archive of origin/dev at 311b712 (memory_graph/ and bench/memory_graph_tests.sh),
+        unpacked to /tmp/zongzhe_t64f_dev_20261021 on the box and deleted after the run.
+        ~/rcp-Gappler was not touched.
+  Python: ~/rcp-Gappler/.venv, read only. PYTHONDONTWRITEBYTECODE=1. Nothing installed.
+        OPEN_CLIP_CACHE_DIR=~/rcp-Gappler/assets/models/open_clip for the weights.
+        huggingface_hub printed an unauthenticated-request warning, so it may have checked the
+        hub for the weights. Nothing was downloaded into the cache. [inferred]
+  Before start: GPU 398 MiB, 0 %, only gnome-remote-desktop-daemon. No camera driver, ROS launch,
+        bench or runner job. rcp2026 was logged in through tmux and one ssh session from
+        10.91.217.96, not ours, left alone. GPU back at 398 MiB after the run.
+  To repeat, in a checkout of dev:
+        ~/rcp-Gappler/.venv/bin/python -m unittest -v memory_graph.tests.test_cleanup
+        ./bench/memory_graph_tests.sh ~/rcp-Gappler/.venv/bin/python
+
+Full output [observed]
+-----------------------------------------------------------------------------------------------------
+Wed Oct 21 05:21:56 PM CST 2026
+NVIDIA GeForce RTX 4060 Ti
+== the task tests
+test_a_revisit_still_matches_the_same_objects (memory_graph.tests.test_cleanup.AfterCleanupTest) ... ok
+test_each_entry_remembers_every_anchor_it_came_from (memory_graph.tests.test_cleanup.AfterCleanupTest)
+The D-MG9 hook: `anchor_ids` is a history, so it keeps the ids of ... ok
+test_every_target_still_has_a_stored_photo_and_a_box_on_it (memory_graph.tests.test_cleanup.AfterCleanupTest) ... ok
+test_a_clean_object_is_left_alone (memory_graph.tests.test_cleanup.DenoiseTest) ... ok
+test_dbscan_off_only_downsamples (memory_graph.tests.test_cleanup.DenoiseTest) ... ok
+test_denoise_drops_them_and_refits_the_box (memory_graph.tests.test_cleanup.DenoiseTest) ... ok
+test_denoise_objects_reports_what_changed (memory_graph.tests.test_cleanup.DenoiseTest) ... ok
+test_merging_alone_keeps_the_stray_points (memory_graph.tests.test_cleanup.DenoiseTest) ... ok
+test_sightings_and_edges_are_untouched (memory_graph.tests.test_cleanup.DenoiseTest) ... ok
+test_too_few_points_left_reverts (memory_graph.tests.test_cleanup.DenoiseTest)
+Upstream's guard (pointcloud.py:787), with the limit set high enough ... ok
+test_a_second_pass_does_not_grow_the_anchor_count (memory_graph.tests.test_cleanup.DoneWhenTest) ... ok
+test_every_object_keeps_enough_anchors (memory_graph.tests.test_cleanup.DoneWhenTest) ... ok
+test_more_kappa_keeps_more_photos (memory_graph.tests.test_cleanup.DoneWhenTest) ... ok
+test_no_kept_photo_is_covered_by_another (memory_graph.tests.test_cleanup.DoneWhenTest)
+Upstream's check for kappa 1: no kept photo's objects are a subset ... ok
+test_pruning_removes_photos (memory_graph.tests.test_cleanup.DoneWhenTest)
+Not just "keeps enough": with kappa 1, two photos of three objects ... ok
+test_the_room_is_six_objects (memory_graph.tests.test_cleanup.DoneWhenTest) ... ok
+test_without_the_clean_up_it_does_grow (memory_graph.tests.test_cleanup.DoneWhenTest)
+What the second-pass check is there to catch. ... ok
+test_equal_views_keep_the_older_photo (memory_graph.tests.test_cleanup.PruneChoiceTest) ... ok
+test_more_objects_beats_a_better_view (memory_graph.tests.test_cleanup.PruneChoiceTest)
+A sharp photo of two objects does not replace a poor photo of three. ... ok
+test_stores_must_share_a_graph (memory_graph.tests.test_cleanup.PruneChoiceTest) ... ok
+test_the_better_view_is_kept (memory_graph.tests.test_cleanup.PruneChoiceTest) ... ok
+test_view_cost_stays_in_its_narrow_range (memory_graph.tests.test_cleanup.PruneChoiceTest) ... ok
+test_a_manual_run_restarts_the_count (memory_graph.tests.test_cleanup.ScheduleTest) ... ok
+test_an_empty_graph_is_fine (memory_graph.tests.test_cleanup.ScheduleTest) ... ok
+test_bad_values_are_errors (memory_graph.tests.test_cleanup.ScheduleTest) ... ok
+test_runs_every_n_stored_photos (memory_graph.tests.test_cleanup.ScheduleTest) ... ok
+test_the_defaults_are_upstreams_ten_and_a_tentative_kappa_of_three (memory_graph.tests.test_cleanup.ScheduleTest) ... ok
+
+----------------------------------------------------------------------
+Ran 27 tests in 6.521s
+
+OK
+exit 0
+== every memory graph test
+................................................................................Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+WARNING:huggingface_hub.utils._http:Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+..........................................................................................[ WARN:0@13.007] global loadsave.cpp:278 findDecoder imread_('/tmp/tmpo3puexxb/depth/1.png'): can't open/read file: check file path/integrity
+...............................................................................................................
+----------------------------------------------------------------------
+Ran 281 tests in 16.405s
+
+OK
+exit 0
