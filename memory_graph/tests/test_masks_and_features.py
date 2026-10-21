@@ -8,7 +8,9 @@ import numpy as np
 
 from memory_graph.config import MemoryGraphConfig
 from memory_graph.image_feature import image_features, l2_normalise, padded_crops
-from memory_graph.masks import clean_masks, erode_one_pixel, filter_masks, subtract_contained
+from memory_graph.masks import (
+    clean_masks, erode_one_pixel, filter_masks, one_owner_per_pixel, subtract_contained,
+)
 from memory_graph.tests._fixtures import dets
 
 CFG = MemoryGraphConfig()
@@ -74,6 +76,31 @@ class MaskCleanupTest(unittest.TestCase):
         self.assertEqual(out.label, ["table"])
         self.assertEqual(idx.tolist(), [1])
         np.testing.assert_array_equal(out.masks[0], erode_one_pixel(table))
+
+    def desk_and_table(self):
+        """One desk found under two phrases: boxes close in size, so neither
+        containment nor the IoU rule fires (frame 1400 of the lab bag)."""
+        desk = rect(20, 50, 5, 75)
+        table = rect(25, 50, 10, 75)
+        return dets([[5, 20, 75, 50], [10, 25, 75, 50]], [0.83, 0.80], ["desk", "table"], [desk, table])
+
+    def test_upstream_rules_leave_the_overlap(self):
+        d = self.desk_and_table()
+        out = subtract_contained(filter_masks(d, CFG), CFG)
+        self.assertTrue((out.masks[0] & out.masks[1]).any())
+
+    def test_each_pixel_goes_to_the_most_confident_mask(self):
+        desk, table = one_owner_per_pixel(self.desk_and_table()).masks
+        self.assertFalse((desk & table).any())
+        self.assertTrue(desk[30, 30])                        # the shared pixels stay with the desk
+        self.assertFalse(table.any())                        # all of the table was inside it
+
+    def test_clean_masks_gives_no_pixel_two_owners(self):
+        out, _ = clean_masks(self.desk_and_table(), CFG)
+        self.assertLessEqual(out.masks.sum(axis=0).max(), 1)
+        off = MemoryGraphConfig(mask_one_owner_per_pixel=False)
+        out, _ = clean_masks(self.desk_and_table(), off)
+        self.assertEqual(out.masks.sum(axis=0).max(), 2)     # upstream's behaviour, kept as a switch
 
 
 class MeanColourEncoder:

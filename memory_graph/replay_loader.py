@@ -32,7 +32,7 @@ from typing import Iterator, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
-from memory_graph.geometry import invert_rigid, project_cloud_to_depth
+from memory_graph.geometry import drop_occluded, invert_rigid, project_cloud_to_depth
 from memory_graph.stage_types import Observation
 
 # ---------------------------------------------------------------- conversions
@@ -313,6 +313,8 @@ class FastLivoBag:
 
     and projects the world-frame /cloud_registered messages in a time window
     around the image into the colour frame, giving an ordinary RGB-D Observation.
+Pixels hidden behind a nearer point close by are then cleared (drop_occluded),
+because sparse LiDAR lets the background show through near objects.
 
     Only /cloud_registered is read (standard PointCloud2, already world-frame, no
     custom type). Poses and intrinsics are read up front, images and clouds per
@@ -326,6 +328,8 @@ class FastLivoBag:
         *,
         max_dt: float = 0.1,
         cloud_window_s: float = 0.1,
+        occlusion_window: int = 7,
+        occlusion_margin: float = 0.1,
         first_frame_id: int = 0,
         rcl: Sequence[float] = RCL,
         pcl: Sequence[float] = PCL,
@@ -336,10 +340,16 @@ class FastLivoBag:
             raise ValueError(f"first_frame_id must be 0 or more, got {first_frame_id}")
         if max_dt <= 0 or cloud_window_s < 0:
             raise ValueError("max_dt must be positive and cloud_window_s non-negative")
+        if occlusion_margin < 0:
+            raise ValueError(f"occlusion_margin must be 0 or more, got {occlusion_margin}")
         self.db3_path = Path(db3_path)
         self.first_frame_id = int(first_frame_id)
         self.max_dt = float(max_dt)
         self.cloud_window_s = float(cloud_window_s)
+        # Sparse LiDAR shows through near objects. geometry.drop_occluded clears the
+        # hidden pixels. Chosen 2026-10-21 (Zongzhe, T6.3): 7 px, 10 percent nearer.
+        self.occlusion_window = int(occlusion_window)
+        self.occlusion_margin = float(occlusion_margin)
         # camera-from-lidar, and the mount the camera pose needs: imu-from-lidar
         # times lidar-from-camera. inv(T_cam_lidar) is the step easy to drop.
         self._T_cam_lidar = _rigid_from_rowmajor(rcl, pcl)
@@ -396,6 +406,7 @@ class FastLivoBag:
         image = image[:, : int(img.width) * 3].reshape(int(img.height), int(img.width), 3)
         world = np.concatenate(clouds, axis=0) if clouds else np.zeros((0, 3))
         depth = project_cloud_to_depth(world, frame.T_world_cam, self.K, image.shape[:2])
+        depth = drop_occluded(depth, self.occlusion_window, self.occlusion_margin)
         return to_observation(
             image, depth, self.K, frame.T_world_cam, frame_id=self.first_frame_id + index,
             timestamp=frame.timestamp, depth_units_per_metre=1.0, bgr=False, T_base_cam=None,

@@ -111,8 +111,30 @@ def subtract_contained(dets: Detections, cfg: MemoryGraphConfig) -> Detections:
     return out
 
 
+def one_owner_per_pixel(dets: Detections) -> Detections:
+    """Give each pixel to one mask only: the most confident one that has it.
+
+    Not upstream. After the duplicate and containment rules, SAM 3's masks on lab
+    photos still shared 0 to 5 percent of their pixels: one thing under two
+    phrases (desk and table, paper and book), with boxes too close in size for
+    the containment rule (T6.3, 2026-10-21). A pixel shows one surface, so its
+    depth point should go to one object. Expects S2's confidence order.
+    """
+    if dets.masks is None:
+        raise ValueError("one_owner_per_pixel needs masks; run the segmenter (S4) first")
+    taken = np.zeros(dets.masks.shape[1:], dtype=bool)
+    masks = dets.masks.copy()
+    for i in range(len(dets)):
+        masks[i] &= ~taken
+        taken |= masks[i]
+    out = dets.take(np.arange(len(dets)))
+    out.masks = masks
+    return out
+
+
 def clean_masks(dets: Detections, cfg: MemoryGraphConfig) -> Tuple[Detections, np.ndarray]:
-    """S4 erosion then S5, in upstream's order.
+    """S4 erosion then S5, in upstream's order, then one owner per pixel if
+    cfg.mask_one_owner_per_pixel.
 
     Returns the cleaned detections and, for each one, its index in the input, so
     the caller can realign anything held outside Detections (image features).
@@ -123,4 +145,7 @@ def clean_masks(dets: Detections, cfg: MemoryGraphConfig) -> Tuple[Detections, n
     if cfg.erode_masks:
         work.masks = erode_one_pixel(work.masks)
     kept = kept_mask_indices(work, cfg)
-    return subtract_contained(work.take(kept), cfg), kept
+    out = subtract_contained(work.take(kept), cfg)
+    if cfg.mask_one_owner_per_pixel:
+        out = one_owner_per_pixel(out)
+    return out, kept

@@ -1,0 +1,917 @@
+{
+ "700": [
+  {
+   "label": "cabinet",
+   "points": 1767,
+   "centre": [
+    4.459,
+    1.1609,
+    0.8426
+   ]
+  },
+  {
+   "label": "chair",
+   "points": 736,
+   "centre": [
+    4.3913,
+    1.9779,
+    0.5849
+   ]
+  },
+  {
+   "label": "sofa",
+   "points": 81,
+   "centre": [
+    4.0617,
+    0.2134,
+    0.2319
+   ]
+  },
+  {
+   "label": "light",
+   "points": 12,
+   "centre": [
+    4.6627,
+    2.0789,
+    1.3899
+   ]
+  },
+  {
+   "label": "light",
+   "points": 22,
+   "centre": [
+    5.9407,
+    -1.9677,
+    2.5618
+   ]
+  },
+  {
+   "label": "light",
+   "points": 18,
+   "centre": [
+    4.3754,
+    0.9045,
+    1.3721
+   ]
+  },
+  {
+   "label": "light",
+   "points": 14,
+   "centre": [
+    4.354,
+    1.0771,
+    0.7299
+   ]
+  },
+  {
+   "label": "book",
+   "points": 97,
+   "centre": [
+    4.4939,
+    1.0666,
+    0.4134
+   ]
+  },
+  {
+   "label": "light",
+   "points": 23,
+   "centre": [
+    4.4307,
+    0.968,
+    0.9732
+   ]
+  },
+  {
+   "label": "tv_monitor",
+   "points": 1277,
+   "centre": [
+    4.6834,
+    2.0226,
+    1.4317
+   ]
+  },
+  {
+   "label": "book",
+   "points": 110,
+   "centre": [
+    4.4201,
+    0.7582,
+    0.482
+   ]
+  },
+  {
+   "label": "book",
+   "points": 46,
+   "centre": [
+    4.3319,
+    1.2879,
+    0.4255
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 50,
+   "centre": [
+    4.3705,
+    1.1048,
+    0.3473
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 190,
+   "centre": [
+    4.3769,
+    1.1598,
+    1.2446
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 32,
+   "centre": [
+    4.3498,
+    0.6778,
+    0.3515
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 140,
+   "centre": [
+    4.368,
+    0.7258,
+    1.2296
+   ]
+  },
+  {
+   "label": "paper",
+   "points": 156,
+   "centre": [
+    4.4624,
+    1.0837,
+    1.4417
+   ]
+  },
+  {
+   "label": "paper",
+   "points": 57,
+   "centre": [
+    4.343,
+    1.2969,
+    1.3858
+   ]
+  },
+  {
+   "label": "book",
+   "points": 100,
+   "centre": [
+    4.5032,
+    0.6251,
+    1.0653
+   ]
+  },
+  {
+   "label": "cushion",
+   "points": 32,
+   "centre": [
+    3.7538,
+    2.0509,
+    0.2973
+   ]
+  },
+  {
+   "label": "cushion",
+   "points": 334,
+   "centre": [
+    3.7509,
+    1.9772,
+    0.2488
+   ]
+  },
+  {
+   "label": "cushion",
+   "points": 140,
+   "centre": [
+    4.5416,
+    -0.8047,
+    0.5
+   ]
+  },
+  {
+   "label": "chair",
+   "points": 15,
+   "centre": [
+    4.6833,
+    -2.2921,
+    0.5232
+   ]
+  },
+  {
+   "label": "cushion",
+   "points": 1101,
+   "centre": [
+    4.056,
+    -0.4209,
+    0.1218
+   ]
+  },
+  {
+   "label": "cushion",
+   "points": 255,
+   "centre": [
+    4.2716,
+    1.9755,
+    0.3985
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 14,
+   "centre": [
+    4.3078,
+    0.7621,
+    0.8682
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 798,
+   "centre": [
+    4.5062,
+    2.0732,
+    0.8747
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 78,
+   "centre": [
+    4.3175,
+    0.9261,
+    -0.0369
+   ]
+  },
+  {
+   "label": "chair",
+   "points": 73,
+   "centre": [
+    4.6742,
+    -1.4795,
+    0.618
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 26,
+   "centre": [
+    4.2852,
+    1.1934,
+    0.8617
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 287,
+   "centre": [
+    4.3026,
+    0.9328,
+    0.8122
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 200,
+   "centre": [
+    4.3734,
+    1.1607,
+    1.5945
+   ]
+  },
+  {
+   "label": "book",
+   "points": 224,
+   "centre": [
+    4.3922,
+    1.1417,
+    1.0037
+   ]
+  },
+  {
+   "label": "cushion",
+   "points": 1098,
+   "centre": [
+    4.1904,
+    0.3542,
+    0.2457
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 93,
+   "centre": [
+    4.3674,
+    1.1298,
+    -0.0354
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 80,
+   "centre": [
+    4.3733,
+    0.7182,
+    -0.0294
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 228,
+   "centre": [
+    4.2677,
+    0.9155,
+    -0.0802
+   ]
+  },
+  {
+   "label": "book",
+   "points": 15,
+   "centre": [
+    4.4897,
+    1.0461,
+    1.5848
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 219,
+   "centre": [
+    4.3665,
+    1.0917,
+    1.102
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 487,
+   "centre": [
+    4.3641,
+    0.6481,
+    1.5228
+   ]
+  },
+  {
+   "label": "cushion",
+   "points": 22,
+   "centre": [
+    4.6388,
+    -1.5186,
+    0.4489
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 234,
+   "centre": [
+    4.4095,
+    0.5309,
+    1.0806
+   ]
+  },
+  {
+   "label": "door",
+   "points": 1300,
+   "centre": [
+    4.4028,
+    0.6465,
+    0.3525
+   ]
+  },
+  {
+   "label": "book",
+   "points": 12,
+   "centre": [
+    4.3228,
+    1.3024,
+    0.5585
+   ]
+  }
+ ],
+ "1500": [
+  {
+   "label": "desk",
+   "points": 862,
+   "centre": [
+    -1.0653,
+    0.0373,
+    0.4254
+   ]
+  },
+  {
+   "label": "box",
+   "points": 189,
+   "centre": [
+    -1.4689,
+    0.1123,
+    -0.0524
+   ]
+  },
+  {
+   "label": "tv_monitor",
+   "points": 106,
+   "centre": [
+    -1.0058,
+    0.1311,
+    0.9832
+   ]
+  },
+  {
+   "label": "light",
+   "points": 71,
+   "centre": [
+    -1.8053,
+    0.4079,
+    1.4184
+   ]
+  },
+  {
+   "label": "box",
+   "points": 288,
+   "centre": [
+    -1.6511,
+    -0.0455,
+    -0.008
+   ]
+  },
+  {
+   "label": "computer tower",
+   "points": 67,
+   "centre": [
+    -1.618,
+    -0.2414,
+    0.8856
+   ]
+  },
+  {
+   "label": "box",
+   "points": 35,
+   "centre": [
+    -0.7347,
+    0.5039,
+    0.5654
+   ]
+  },
+  {
+   "label": "power outlet",
+   "points": 8,
+   "centre": [
+    -0.6746,
+    0.5044,
+    0.2647
+   ]
+  },
+  {
+   "label": "table",
+   "points": 1338,
+   "centre": [
+    -0.5431,
+    0.4739,
+    0.2337
+   ]
+  },
+  {
+   "label": "sign",
+   "points": 10,
+   "centre": [
+    -1.741,
+    -0.0953,
+    -0.0367
+   ]
+  },
+  {
+   "label": "power outlet",
+   "points": 22,
+   "centre": [
+    -0.8141,
+    0.3307,
+    0.6423
+   ]
+  },
+  {
+   "label": "chair",
+   "points": 103,
+   "centre": [
+    -1.9731,
+    -0.2022,
+    0.27
+   ]
+  },
+  {
+   "label": "chair",
+   "points": 37,
+   "centre": [
+    -1.8474,
+    -0.2414,
+    0.0147
+   ]
+  },
+  {
+   "label": "cup",
+   "points": 20,
+   "centre": [
+    -0.8348,
+    -0.1243,
+    0.5925
+   ]
+  },
+  {
+   "label": "power outlet",
+   "points": 13,
+   "centre": [
+    -0.6562,
+    0.4985,
+    0.2661
+   ]
+  }
+ ],
+ "2200": [
+  {
+   "label": "sofa",
+   "points": 2070,
+   "centre": [
+    4.1917,
+    -0.1078,
+    0.1575
+   ]
+  },
+  {
+   "label": "tv_monitor",
+   "points": 1999,
+   "centre": [
+    4.6832,
+    2.1251,
+    1.6229
+   ]
+  },
+  {
+   "label": "chair",
+   "points": 489,
+   "centre": [
+    4.3803,
+    2.0041,
+    0.5066
+   ]
+  },
+  {
+   "label": "sofa",
+   "points": 425,
+   "centre": [
+    4.2923,
+    2.7825,
+    0.272
+   ]
+  },
+  {
+   "label": "cabinet",
+   "points": 1353,
+   "centre": [
+    4.4125,
+    0.9419,
+    1.2095
+   ]
+  },
+  {
+   "label": "light",
+   "points": 22,
+   "centre": [
+    5.8423,
+    -0.5733,
+    2.5531
+   ]
+  },
+  {
+   "label": "book",
+   "points": 218,
+   "centre": [
+    4.484,
+    0.8133,
+    0.459
+   ]
+  },
+  {
+   "label": "book",
+   "points": 72,
+   "centre": [
+    4.5428,
+    1.0648,
+    0.4209
+   ]
+  },
+  {
+   "label": "book",
+   "points": 44,
+   "centre": [
+    4.443,
+    1.2143,
+    1.491
+   ]
+  },
+  {
+   "label": "light",
+   "points": 23,
+   "centre": [
+    4.3977,
+    0.925,
+    1.5702
+   ]
+  },
+  {
+   "label": "light",
+   "points": 34,
+   "centre": [
+    4.5803,
+    0.7698,
+    1.1823
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 204,
+   "centre": [
+    4.5124,
+    2.3081,
+    0.8822
+   ]
+  },
+  {
+   "label": "book",
+   "points": 95,
+   "centre": [
+    4.5476,
+    1.2355,
+    0.4294
+   ]
+  },
+  {
+   "label": "book",
+   "points": 113,
+   "centre": [
+    4.4551,
+    0.7685,
+    1.0424
+   ]
+  },
+  {
+   "label": "book",
+   "points": 59,
+   "centre": [
+    4.4375,
+    1.343,
+    0.4226
+   ]
+  },
+  {
+   "label": "book",
+   "points": 38,
+   "centre": [
+    4.6308,
+    1.2157,
+    0.582
+   ]
+  },
+  {
+   "label": "light",
+   "points": 28,
+   "centre": [
+    4.4447,
+    0.8942,
+    0.9852
+   ]
+  },
+  {
+   "label": "paper",
+   "points": 123,
+   "centre": [
+    4.367,
+    1.3473,
+    1.4113
+   ]
+  },
+  {
+   "label": "cushion",
+   "points": 24,
+   "centre": [
+    3.8272,
+    1.7362,
+    0.2637
+   ]
+  },
+  {
+   "label": "paper",
+   "points": 137,
+   "centre": [
+    4.4906,
+    1.1076,
+    1.466
+   ]
+  },
+  {
+   "label": "cushion",
+   "points": 642,
+   "centre": [
+    4.5171,
+    -0.5779,
+    0.4937
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 226,
+   "centre": [
+    4.4133,
+    0.7731,
+    1.2271
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 32,
+   "centre": [
+    4.3374,
+    1.1888,
+    0.3407
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 31,
+   "centre": [
+    4.3633,
+    0.735,
+    0.3485
+   ]
+  },
+  {
+   "label": "book",
+   "points": 158,
+   "centre": [
+    4.4459,
+    1.1159,
+    1.0264
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 379,
+   "centre": [
+    4.3475,
+    0.9664,
+    -0.0991
+   ]
+  },
+  {
+   "label": "sign",
+   "points": 205,
+   "centre": [
+    4.582,
+    2.0405,
+    1.0604
+   ]
+  },
+  {
+   "label": "book",
+   "points": 154,
+   "centre": [
+    4.3874,
+    1.333,
+    1.0427
+   ]
+  },
+  {
+   "label": "book",
+   "points": 26,
+   "centre": [
+    4.3921,
+    1.2292,
+    1.0203
+   ]
+  },
+  {
+   "label": "chair",
+   "points": 22,
+   "centre": [
+    4.6879,
+    -1.2755,
+    0.6417
+   ]
+  },
+  {
+   "label": "paper",
+   "points": 240,
+   "centre": [
+    4.4251,
+    1.8492,
+    0.8397
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 191,
+   "centre": [
+    4.4099,
+    1.1934,
+    1.2379
+   ]
+  },
+  {
+   "label": "cushion",
+   "points": 239,
+   "centre": [
+    3.8195,
+    2.0038,
+    0.2359
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 107,
+   "centre": [
+    4.3958,
+    0.8047,
+    -0.0359
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 17,
+   "centre": [
+    4.556,
+    1.1195,
+    1.2341
+   ]
+  },
+  {
+   "label": "cushion",
+   "points": 246,
+   "centre": [
+    4.2751,
+    2.0157,
+    0.3755
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 297,
+   "centre": [
+    4.3255,
+    0.9605,
+    0.8258
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 98,
+   "centre": [
+    4.3886,
+    1.1792,
+    -0.0358
+   ]
+  },
+  {
+   "label": "paper",
+   "points": 111,
+   "centre": [
+    4.5246,
+    0.6448,
+    1.0647
+   ]
+  },
+  {
+   "label": "cabinet",
+   "points": 3211,
+   "centre": [
+    4.5184,
+    0.9764,
+    0.3555
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 183,
+   "centre": [
+    4.3824,
+    1.2104,
+    1.6288
+   ]
+  },
+  {
+   "label": "shelf",
+   "points": 34,
+   "centre": [
+    4.4109,
+    1.9933,
+    -0.1314
+   ]
+  }
+ ]
+}
