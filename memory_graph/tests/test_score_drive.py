@@ -29,6 +29,7 @@ GT = [
 
 
 def obj(oid, label, centre, points=None, sightings=1):
+    """A graph object: 50 points within 10 cm of its centre."""
     c = np.array(centre, dtype=float)
     if points is None:
         points = c + np.random.default_rng(oid).uniform(-0.1, 0.1, size=(50, 3))
@@ -48,13 +49,26 @@ class ScoreTest(unittest.TestCase):
 
     def test_two_objects_on_one_chair_is_a_duplicate(self):
         r = score(one_each() + [obj(5, "chair", (0.25, 0.1, 0.5))], GT, CLASSES)
-        self.assertEqual(r["duplicates"], 1)
-        self.assertEqual(r["duplicates_same_class"], 1)
+        self.assertEqual((r["duplicates"], r["parts"]), (1, 0))
 
-    def test_a_part_with_another_label_counts_only_in_the_wide_number(self):
-        """A shelf object on the desk: a duplicate in the wide count, not a same-class one."""
+    def test_another_label_on_an_object_is_not_a_duplicate(self):
+        """A shelf object on the desk: reported as another label, not a duplicate."""
         r = score(one_each() + [obj(5, "shelf", (4.2, 3.1, 0.5))], GT, CLASSES)
-        self.assertEqual((r["duplicates"], r["duplicates_same_class"]), (1, 0))
+        self.assertEqual((r["duplicates"], r["other_label"]), (0, 1))
+
+    def test_on_a_flagged_object_extra_pieces_are_parts(self):
+        """A bookcase marked many_parts, seen as four cells: three parts besides the
+        first, no duplicate, and found."""
+        case = GtObject(5, "shelf", square(6.0, 0.0, 0.5), 0.0, 1.8, many_parts=True)
+        cells = [obj(10 + k, "shelf", (6.0, -0.3 + 0.2 * k, 0.3 + 0.4 * k)) for k in range(4)]
+        r = score(one_each() + cells, GT + [case], CLASSES)
+        self.assertEqual((r["parts"], r["duplicates"], r["misses"]), (3, 0, 0))
+
+    def test_without_the_flag_the_same_pieces_are_duplicates(self):
+        case = GtObject(5, "shelf", square(6.0, 0.0, 0.5), 0.0, 1.8)
+        cells = [obj(10 + k, "shelf", (6.0, -0.3 + 0.2 * k, 0.3 + 0.4 * k)) for k in range(4)]
+        r = score(one_each() + cells, GT + [case], CLASSES)
+        self.assertEqual((r["parts"], r["duplicates"]), (0, 3))
 
     def test_one_object_over_both_chairs_is_a_false_merge(self):
         pts = np.vstack([np.random.default_rng(0).uniform(-0.2, 0.2, (40, 3)) + [0, 0, 0.4],
@@ -91,7 +105,7 @@ class LoadAndSettingsTest(unittest.TestCase):
     def test_ground_truth_file_reads_heights_from_the_floor(self):
         j = {"floor_z": -0.2, "classes": ["chair"], "objects": [
             {"id": 7, "class": "chair", "corners": square(1, 1, 0.3).tolist(),
-             "z_bottom_above_floor": 0.0, "z_top_above_floor": 0.9}]}
+             "z_bottom_above_floor": 0.0, "z_top_above_floor": 0.9, "many_parts": True}]}
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp) / "gt.json"
             p.write_text(json.dumps(j))
@@ -99,6 +113,7 @@ class LoadAndSettingsTest(unittest.TestCase):
         self.assertEqual(classes, ["chair"])
         self.assertAlmostEqual(gt[0].z_bottom, -0.2)
         self.assertAlmostEqual(gt[0].z_top, 0.7)
+        self.assertTrue(gt[0].many_parts)
 
     def test_settings_are_read_as_the_fields_type(self):
         cfg = with_settings(MemoryGraphConfig(), ["match_radius_m=0.05", "association_mode=one_to_one", "min_points=8"])
@@ -109,6 +124,7 @@ class LoadAndSettingsTest(unittest.TestCase):
     def test_the_committed_ground_truth_loads(self):
         gt, classes = load_ground_truth()
         self.assertEqual(len(gt), 12)
+        self.assertEqual([g.id for g in gt if g.many_parts], [2])     # the glass bookcase
         self.assertIn("chair", classes)
 
 

@@ -20,11 +20,20 @@ The class does not have to match: a "table" on a marked desk is placed on it, an
 the label is scored separately (`label_ok`). So a wrong label is not mistaken for
 a duplicate plus a miss.
 
-Duplicates are counted two ways. `duplicates` counts every extra graph object on a
-real object. `duplicates_same_class` only counts those whose label fits the real
-object's class (desk and table fit each other, so do shelf and cabinet). A
-bookcase marked as one shelf collects several graph "book" or "shelf" objects for
-its cells: the second number shows how many of those look like the object itself.
+Duplicates and parts. Only graph objects whose label fits the real object's class
+count here (desk and table fit each other, so do shelf and cabinet). Every one
+after the first is a duplicate, except on a real object flagged `many_parts` in
+the ground truth: there they are parts. That flag is for things the graph sees as
+several pieces that no merge should be expected to join, such as the glass
+bookcase whose cells each come out as a "shelf" (decided by Zongzhe, 2026-10-21).
+A real object with only parts on it is found, not missed. Objects of another
+label on a real object are reported as `other_label`: a wrong label, or something
+next to it that is not in the list.
+
+No automatic rule worked for parts on this drive. By size, real duplicates looked
+like parts, because graph boxes come out much smaller than marked ones (sparse
+LiDAR depth, partial views). By touching points, the bookcase cells looked like
+duplicates, because neighbouring cells share shelf boards.
 
 From the repo root, on the saved drive:
 
@@ -62,6 +71,7 @@ class GtObject:
     corners: np.ndarray      # (4, 2) outline on the floor, metres
     z_bottom: float          # world z, metres
     z_top: float
+    many_parts: bool = False # seen as pieces no merge should join: extra objects are parts
 
     @property
     def centre(self) -> np.ndarray:
@@ -73,7 +83,8 @@ def load_ground_truth(path=DEFAULT_GT):
     j = json.loads(Path(path).read_text())
     floor = float(j["floor_z"])
     objects = [GtObject(int(o["id"]), o["class"], np.array(o["corners"], dtype=float),
-                        floor + o["z_bottom_above_floor"], floor + o["z_top_above_floor"]) for o in j["objects"]]
+                        floor + o["z_bottom_above_floor"], floor + o["z_top_above_floor"],
+                        bool(o.get("many_parts", False))) for o in j["objects"]]
     return objects, list(j["classes"])
 
 
@@ -147,13 +158,16 @@ def score(objects: Sequence, gt: Sequence[GtObject], classes: Iterable[str],
     for gid, objs in on.items():
         g = by_id[gid]
         same = [o for o in objs if same_kind(o.label, g.cls)]
+        extra = max(0, len(same) - 1)
         per_gt.append({"gt": gid, "class": g.cls, "graph_objects": len(objs), "same_class": len(same),
-                       "labels": sorted(o.label for o in objs)})
+                       "duplicates": 0 if g.many_parts else extra, "parts": extra if g.many_parts else 0,
+                       "other_label": len(objs) - len(same), "labels": sorted(o.label for o in objs)})
     placed = sum(len(v) for v in on.values())
     return {
         "scored_objects": len(scored), "unscored_objects": len(objects) - len(scored), "ground_truth": len(gt),
-        "duplicates": sum(max(0, len(v) - 1) for v in on.values()),
-        "duplicates_same_class": sum(max(0, r["same_class"] - 1) for r in per_gt),
+        "duplicates": sum(r["duplicates"] for r in per_gt),
+        "parts": sum(r["parts"] for r in per_gt),
+        "other_label": sum(r["other_label"] for r in per_gt),
         "false_merges": len(false_merges),
         "misses": sum(1 for v in on.values() if not v),
         "misses_same_class": sum(1 for r in per_gt if r["same_class"] == 0),
@@ -213,7 +227,7 @@ def with_settings(cfg: MemoryGraphConfig, settings: Sequence[str]) -> MemoryGrap
 
 
 def summary_line(r: Dict) -> str:
-    return (f"duplicates {r['duplicates']} (same class {r['duplicates_same_class']})  "
+    return (f"duplicates {r['duplicates']}  parts {r['parts']}  other label {r['other_label']}  "
             f"false merges {r['false_merges']}  misses {r['misses']} (same class {r['misses_same_class']})  "
             f"extras {r['extras']}  label ok {r['label_ok']}  "
             f"[{r['scored_objects']} scored, {r['unscored_objects']} unscored objects]")
@@ -235,7 +249,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print(summary_line(report))
     for r in report["per_ground_truth"]:
         print(f"  gt {r['gt']:3d} {r['class']:<15} {r['graph_objects']:2d} graph objects "
-              f"({r['same_class']} same class)  {', '.join(r['labels'])}")
+              f"({r['duplicates']} duplicates, {r['parts']} parts)  {', '.join(r['labels'])}")
     if args.json:
         Path(args.json).write_text(json.dumps(report, indent=1) + "\n")
     return 0

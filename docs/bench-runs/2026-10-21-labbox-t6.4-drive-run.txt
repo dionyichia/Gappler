@@ -62,3 +62,18 @@ Step 2, the scorer, first baseline (Zongzhe's Mac CPU, same day)
   So the baseline mostly measures gaps in the ground truth and the bookcase cells, not merging.
   Tuning (step 4) waits on finishing the list.
   Scorer tests: memory_graph/tests/test_score_drive.py, 11 tests, pass on the Mac CPU.
+
+Step 2, scoring rule settled (Zongzhe, same day)
+  Parts: the glass bookcase (gt 2) is flagged many_parts in the ground truth file, so its
+  per-cell "shelf" objects count as parts. Everywhere else every extra same-kind object is a
+  duplicate. Two automatic rules were tried first and rejected: by size (graph boxes are much
+  smaller than marked ones, so chair 13's 4 copies became parts) and by touching points
+  (neighbouring bookcase cells share boards, so the cells became duplicates). Wide duplicates
+  across labels were dropped: other labels on a real object are reported as other_label.
+    gate   duplicates   parts   other label   false merges   misses (same class)   extras
+    real   5            10      13            0              3 (4)                26
+    fine   5            12      20            0              3 (3)                41
+  Real gate duplicates: chair 13 (4 copies), chair 1 (2), table 6 (2 desk objects).
+  Look-here hints for finishing the ground truth: the 7 extras seen 7 or more times, added to
+  Zongzhe's local marking page as places only (no label shown).
+  Scorer tests: 13, pass on the Mac CPU.

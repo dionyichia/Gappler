@@ -25,6 +25,7 @@ drive compare directly. Another drive has its own origin and needs its map lined
 | `centre` | middle of the box in the world frame (x, y, z). z counts from the frame's origin, not the floor: the floor is at `floor_z` (-0.175) |
 | `source` | `hand` drawn by Zongzhe, `proposal` a LiDAR proposal Zongzhe accepted |
 | `clip_suggested` | for proposals, CLIP's class guess, kept to see how often it was changed |
+| `many_parts` | present and true on the glass bookcase (2) only: the graph sees it as one "shelf" per cell, and no merge should be expected to join them, so the scorer counts those as parts, not duplicates (Zongzhe, 2026-10-21) |
 
 **Counts:** 12 objects. 5 chair, 2 computer tower, 1 each of shelf, sofa, table, door, tv_monitor.
 8 drawn by hand, 4 accepted from proposals.

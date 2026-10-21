@@ -97,7 +97,8 @@
    "note": "transparent shelf",
    "source": "hand",
    "proposal": null,
-   "clip_suggested": null
+   "clip_suggested": null,
+   "many_parts": true
   },
   {
    "id": 4,
