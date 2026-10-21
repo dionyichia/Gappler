@@ -44,15 +44,44 @@ Setup
    A first run with the words 1.5 to 2 s early: 105 matches, all target, 102 below cutoff
    (words 2 and 3). Crops not saved for that run.
 
-Finding: word 2's reference was the table, not the box. SAM 3 also called the stacked floor mats a
-"box" (score 0.34, above the client's 0.3 cutoff). The gaze sat on the small box, which lies inside
-that mask, so both masks contained the gaze. pick_mask breaks that tie by score order (the earlier,
-higher-score mask), and the vote then gave the table 80% of the gaze. CLIP scored the table crop
-about 0.51 against the wrist box, under 0.56, so the matcher refused. The matcher's cutoff caught a
-wrong reference; the client's checks (SAM 3 cutoff 0.3, vote share 0.5) did not.
-Proposed, not decided: prefer the smallest mask under the gaze (Dion to choose).
+Finding: word 2's reference was the mat stack under the box, not the box. SAM 3 also calls the
+mats a "box" (0.30 to 0.45, above the client's 0.3 cutoff). The gaze landed a few px off the box's
+edge, on the mat (see the correction below), and the vote gave the mat 80%. CLIP scored the mat
+crop about 0.51 against the wrist box, under 0.56, so the matcher refused. The matcher's cutoff
+caught a wrong reference; the client's checks (SAM 3 cutoff 0.3, vote share 0.5) did not.
+Follow-ups: T2.3 (gaze error, depends on distance), T2.23 (maximum distance and cutoff).
 
 Also made: ~/aria-recordings/5e5d6a91-...commands.wav on the Mac, silence with
 pick_up_box_command.wav placed so its "box" (2.59 s into the clip) lands at 61, 75, 100, 114 s,
 for the stamped-word replay once PR #91 merges. Louder audio for listening:
 ~/aria-recordings/5e5d6a91_louder.wav.
+
+Correction, same night: the tie-break is not the cause. At 75 s and 100 s the gaze samples land a
+few px off the right edge of the 40 x 60 px target, on the mat. Where a sample is inside both the
+box and the mat, the tie goes to the box (higher score). The mat wins because most samples are only
+inside the mat. Cause: gaze error at 1.5 m, not the pick rule (T2.3). Sheet with the four spots:
+~/aria-recordings/5e5d6a91-...pick/gaze_vs_table_sheet.jpg (Mac).
+
+4. Offline, every frame (replay_recording_gaze_pick.py stages 2 to 4; SAM 3 on the box, the client's
+   own gaze_pick.vote on the Mac, cutoff applied to the saved masks).
+   a. 5e5d6a91 at 0.4 to 1.6 m, 55 to 120 s (66 frames). Target = mask under 1% of the image,
+      mat = over 1.5%:
+        cutoff 0.30: target 31, mat 27, nothing 8
+        cutoff 0.35: target 46, mat 12, nothing 8
+        cutoff 0.40: target 55, mat 3, nothing 8
+        cutoff 0.45: target 57, mat 1, nothing 8
+        cutoff 0.50: target 58, mat 0, nothing 8
+      The mat scored 0.30 to 0.45 in every frame from 70 to 103 s (it persists, so a filter on
+      masks seen over 3 frames would keep it). The target scored 0.73 or more at every spot.
+   b. c2cbafe8 at about 1.4 to 2.4 m (60 frames, truth = the 0.3 pick, right in 60 of 61, T2.9):
+        cutoff 0.30: 60   0.35: 52   0.40: 38   0.45: 25   0.50: 14
+        per stop at 0.5: stop 1 4/15, stop 2 8/15, stop 3 1/17, stop 4 1/14 (box 0.30 to 0.59)
+
+5. Resolution, c2cbafe8 (60 frames), target box SAM 3 score (median, frames at 0.5 or more):
+        A today, 1408 px full frame (focal 609):           0.43 (14)
+        B 2816 px full frame (focal 1218):                 0.42 (14)
+        C 1008 px crop of the 2816 frame at the gaze:      0.00 to 0.33 per stop (1)
+   SAM 3 resizes every image to 1008 px (sam3_image_processor.py resolution=1008), so a bigger
+   frame changes nothing. The crop (checked by eye at 42 s: box centred and sharp) scored lower:
+   the low score is SAM 3 doubting this carton is a "box", not pixels. Wrist camera for comparison:
+   640 x 480 at focal about 610, the same pixels per degree as the glasses image.

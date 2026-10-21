@@ -90,7 +90,6 @@ class RealSenseFrame:
             return self._rgb.copy(), self._depth.copy(), self._header, self._frame_id
 
 
-
 def _crop_to_mask(image: np.ndarray, mask: np.ndarray):
     """Cut the image to the mask's bounding box plus the margin. Returns (crop, x0, y0), or None."""
     ys, xs = np.nonzero(mask)
