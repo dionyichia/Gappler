@@ -1,0 +1,24 @@
+T6.7c: vocabulary tests, and every memory graph test, on the lab box
+2026-10-21, lab box (rcp2026@100.87.133.60, tailscale), RTX 4060 Ti
+Run over SSH by Claude Opus 5.5 for Zongzhe. Scratch copy of branch t6.7c-vocabulary-round-trip
+at 24aa896 (git archive of memory_graph/ and bench/memory_graph_tests.sh) in
+/tmp/zongzhe_t67c_20261021. ~/rcp-Gappler was not touched (it holds someone's uncommitted
+changes). Python from ~/rcp-Gappler/.venv, CLIP weights from ~/rcp-Gappler/assets/models/open_clip
+(OPEN_CLIP_CACHE_DIR). No camera, no ROS, no robot.
+
+Before start
+  nvidia-smi 396 MiB, 0 %. Only GPU process: gnome-remote-desktop-daemon (120 MiB). No
+  realsense, ros2 launch, bench, runner job or SAM 3 process. /home 26 GB free.
+
+  RESULT: PASS.
+  test_vocabulary.py, system python3 (3.10.12): 22 ran, 22 passed, 0 skipped.
+  test_vocabulary.py, .venv:                     22 ran, 22 passed, 0 skipped.
+  bench/memory_graph_tests.sh with .venv:        281 ran, 281 passed, 0 skipped, exit 0.
+    This includes the real open_clip model on the GPU (test_clip_encoder.py) and the batched
+    SAM 3 stand-in tests. The script exits 3 on any skip, so exit 0 means nothing skipped.
+
+  Covered for T6.7c (proposed done-when): classes added in three orders, and a save then a
+  load, never change an existing id. Detections from a stand-in SAM 3, one call per phrase
+  and batched, carry the id of their label. A new task class is prompted from the next photo.
+  Not covered: the real SAM 3 with the Vocabulary (the batched path itself was run with the
+  real model on 2026-10-20, docs/bench-runs/2026-10-20-labbox-t6.3c-sam3-batched-timing.txt).
