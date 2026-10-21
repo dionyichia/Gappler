@@ -137,5 +137,33 @@ class LoadAndSettingsTest(unittest.TestCase):
         self.assertIn("chair", classes)
 
 
+FIXTURE = Path(__file__).resolve().parent / "fixtures" / "fastlivo_photo"
+
+
+@unittest.skipUnless((FIXTURE / "photo_0700.npz").exists(), "lab photo fixture not stored")
+class StoredPhotosTest(unittest.TestCase):
+    """The default merge settings on the three stored handdriven1 photos (T6.3's
+    fixture), scored against the drive's ground truth. A guard against merging
+    too much: too few photos to show duplicates, the full drive is needed for that
+    (docs/bench-runs/2026-10-21-labbox-t6.4-drive-run.txt)."""
+
+    def test_default_settings_keep_neighbours_apart(self):
+        from memory_graph.object_store import ObjectStore
+        from memory_graph.run_photo import load_photo, stages_after_detection
+
+        cfg = MemoryGraphConfig()
+        store = ObjectStore(cfg)
+        for fid in (700, 1500, 2200):
+            obs, raw, feats = load_photo(FIXTURE / f"photo_{fid:04d}.npz")
+            res = stages_after_detection(obs, raw, lambda d, f=feats: f, frozenset(), cfg)
+            store.integrate(res.candidates, anchor=fid)
+        gt, classes = load_ground_truth()
+        r = score(store.entries(), gt, classes)
+        self.assertEqual((r["duplicates"], r["false_merges"]), (0, 0))
+        found = {x["gt"] for x in r["per_ground_truth"] if x["same_class"]}
+        for gid in (1, 5, 14, 15):        # chair, sofa, wall TV, chair: seen and kept as themselves
+            self.assertIn(gid, found)
+
+
 if __name__ == "__main__":
     unittest.main()

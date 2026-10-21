@@ -175,3 +175,14 @@ Step 5, check on a second drive (2026-10-22)
   Reading: the gain on drive 1 holds on drive 2 (fewer duplicates at both gates), but 15 cm
   starts merging a chair into its desk here. 10 cm keeps that chair as a chair. 7.5 to 10 cm is
   the safer side.
+
+Step 6, settled (Zongzhe, 2026-10-22)
+  New default: match_radius_m 0.10 (was upstream's 0.025). phys_bias 0.5 and sim_threshold 0.6
+  stay upstream's, association stays greedy. D-MG2 settled in docs/MEMORY_GRAPH_DESIGN.md.
+  Effect, real gate: handdriven1 8 -> 3 duplicates, second drive 2 -> 1, no false merges.
+  Guard test: test_score_drive.StoredPhotosTest replays the three stored handdriven1 photos at
+  the default and checks no duplicates, no false merges, and chair 1, the sofa, the wall TV and
+  chair 15 kept as themselves. 302 memory graph tests pass on the Mac CPU (15 CLIP tests skip
+  there, no torch).
+  Not done in T6.4: kappa (D-MG1) was not checked on the drive, and the D455 depth stream
+  (T6.2) may want a different radius.
