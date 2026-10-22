@@ -26,9 +26,20 @@ record. Tags as elsewhere: `[code]` read from source · `[observed]` measured on
 Checksums `[observed]` 2026-09-11: identical in `~/rcp-github`, `~/rcp-desktop` and `~/rcp-Gappler`
 on the lab box, so every copy there is the same file.
 
-**In git, for comparison:** the AnyGrasp licence (`perception/license/Puneet.*`, machine-locked to
-the lab box) and its compiled binaries (`perception/*.so`, CPython 3.10). `lib_cxx.so` links
+**In git, for comparison:** two AnyGrasp licences in `grasp/anygrasp_node/`, both machine-locked to
+the lab box: `anygrasp2_license/` (Puneet, old SDK) and `anygrasp3_license/` (Dion, July 2026 SDK,
+T1.45). The SDK reads `license/`, a link to one of them. Point the link at the other folder to
+switch back. `[code]` and its compiled binaries (`perception/*.so`, CPython 3.10). `lib_cxx.so` links
 `libcrypto.so.1.1`, which the box has system-wide (`/lib/x86_64-linux-gnu/`) `[observed]`.
+
+**What "machine-locked" means for `anygrasp3_license/` (2026-10-22, T1.45):** the new `gsnet.so` hashes
+the MAC of every network interface that is up (`enp2s0`, `wlo1`, `docker0`). Hostname, interface names
+and IPs do not matter. Docker picks a random `docker0` MAC at each start, so the box's id changed at a
+reboot and the first licence (`N1303...`) failed. A systemd drop-in now pins it
+(`/etc/systemd/system/docker.service.d/override.conf`) and the id is `N43733607197350730141`, still
+`[unverified]` against a real licence (new one requested). Anything that adds an interface while it
+is up changes the id: Aria glasses over USB, the Orin USB cable, a container on `--network bridge`.
+The old `anygrasp2_license/` uses one physical MAC and survives all of this `[verified]`.
 
 **Ignore rules (2026-09-11):** the root `.gitignore` now ignores model weights by extension
 (`*.pt`, `*.pth`, `*.ckpt`, `*.onnx`, `*.safetensors`, `*.engine`, `*.h5`), `assets/models/`, the
@@ -111,3 +122,5 @@ one configurable path instead of hardcoded ones. Tracked as NEXT_STEPS §2.8. Wh
 | 2026-10-13 | Claude Opus 5.5 + Dion | open_clip weights fetched on the lab box (T0.18), checksum matches. Where they land and how the CI runner copy links them. |
 | 2026-10-14 | Claude Opus 5.5 + Dion | Wrist camera bag row links `grasp/tools/wrist_camera_bag_to_point_cloud_page.py`, which turns one frame into an interactive 3D point cloud page (T1.32). |
 | 2026-10-19 | Claude Opus 5.5 + Dion | SuperPoint and LightGlue weights row: fetched on first use into the box's torch cache (T8.4). |
+| 2026-10-22 | Claude Opus 5.5 + Dion | AnyGrasp licence split into `anygrasp2_license/` and `anygrasp3_license/`, with `license` a link to the one in use (T1.45). |
+| 2026-10-23 | Claude Sonnet 5.5 + Dion | Added what the AnyGrasp 3 licence id depends on and the docker0 pin (T1.45). |
