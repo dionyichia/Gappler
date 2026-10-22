@@ -161,16 +161,18 @@ def main() -> None:
                     deadline = time.monotonic() + 8
                     while time.monotonic() < deadline:
                         spin_for(0.1)
+                        # Graph-cache info (discovery) can lag DDS endpoint matching: poll both.
+                        info = node.get_publishers_info_by_topic("/t35_scan/relayed")
+                        inputs = [i for i in node.get_subscriptions_info_by_topic("/t35_scan/input") if i.node_name == "qos_relay"]
                         if (publisher.get_subscription_count() == (1 if through_relay else 2) and
                                 node.count_subscribers("/t35_scan/relayed") == (2 if through_relay else 1) and
-                                node.count_publishers("/t35_scan/scan") == 1):
+                                node.count_publishers("/t35_scan/scan") == 1 and
+                                len(info) == 1 and len(inputs) == 1):
                             break
                     else:
-                        raise RuntimeError(f"{profile}: cloud/scan connections not ready")
+                        raise RuntimeError(f"{profile}: cloud/scan connections not ready "
+                                           f"(relayed publishers={len(info)}, relay inputs={len(inputs)})")
                     assert relay.poll() is None and converter.poll() is None
-                    info = node.get_publishers_info_by_topic("/t35_scan/relayed")
-                    inputs = [info for info in node.get_subscriptions_info_by_topic("/t35_scan/input") if info.node_name == "qos_relay"]
-                    assert len(info) == 1 and len(inputs) == 1
                     for endpoint, reliability in ((info[0], ReliabilityPolicy.BEST_EFFORT), (inputs[0], ReliabilityPolicy.RELIABLE)):
                         qos = endpoint.qos_profile
                         assert qos.reliability == reliability and qos.durability == DurabilityPolicy.VOLATILE
