@@ -1,0 +1,52 @@
+T6.7: the reasoning layer on the frozen set of 22 instructions, on the lab box
+2026-10-23 15:33 CST, lab box (rcp2026@100.87.133.60, tailscale), NVIDIA GeForce RTX 4060 Ti
+Run over SSH by Claude Opus 5.5 for Zongzhe. Branch t6.7-reasoning-layer at 181dbb9, memory_graph/
+copied to /tmp/zongzhe_t67_check_20261023, deleted after. ~/rcp-Gappler was not touched. Python from
+~/rcp-Gappler/.venv (torch 2.10.0+cu128, transformers 5.2.0, open_clip 3.3.0), float16 on the GPU,
+greedy decoding. CLIP from ~/rcp-Gappler/assets/models/open_clip.
+Qwen2.5-1.5B-Instruct was downloaded for this run into ~/.cache/huggingface/hub (2.9 GB, left there
+for later runs). No camera, no ROS, no robot.
+
+Command
+  .venv/bin/python -m memory_graph.check_reasoning --out out
+  Set: memory_graph/eval/instructions_t6_7.json, frozen 2026-10-23 by Zongzhe before the run.
+  Base vocabulary of 30, each row on a fresh copy of it. Exit 0, 1 min 59 s with the download.
+
+Before start
+  nvidia-smi 390 MiB, 0 %. Only GPU process: gnome-remote-desktop-daemon. No realsense, ros2
+  launch, bench, runner job, SAM 3 or memory graph process. /home 39 GB free (36 GB after).
+
+  RESULT (a row passes if its first target is one the set accepts)
+                        pass    model replies used   round trip (ids kept)   vocabulary
+  Qwen2.5-0.5B          12/22   22/22                yes                     30 -> 43
+  Qwen2.5-1.5B          19/22   22/22                yes                     30 -> 37
+  CLIP fall-back alone  15/22   -                    yes                     30 -> 30
+
+  Reply time per instruction, model load not counted: 0.5B 0.11 to 0.35 s, 1.5B 0.28 to 0.32 s.
+  No reply was unusable, so the fall-back never ran inside a model run.
+
+  Failures by kind
+                        in list   synonym   attribute   indirect   relation   not in list
+                        (5)       (4)       (3)         (4)        (2)        (4)
+  0.5B                  0         4         3           2          0          1
+  1.5B                  0         2         0           0          0          1
+  fall-back             0         1         0           2          0          4
+
+  0.5B failures: couch, bin, tv, pc (synonyms kept as new classes), red bottle, wooden chair,
+    office chair (attributes kept as new classes), water, writing area, fire_extinguisher.
+  1.5B failures: couch, bin (synonyms kept as new classes), fire_extinguisher.
+  Fall-back failures: PC (gives laptop), throw this away (gives light), somewhere to write (gives
+    paper), and all four objects outside the list, which it cannot name by design.
+
+Observations [code], read from the replies in check_reasoning.json
+  - "fire extinguisher" comes back as fire_extinguisher from both models, likely copying the
+    underscore in tv_monitor from the list. The set accepts "fire extinguisher" only, so it fails
+    on spelling.
+  - 1.5B names related classes for 1 of 22 instructions (cup on the desk -> desk). 0.5B for 8.
+    With 1.5B the related list is nearly always empty.
+  - 1.5B wraps its JSON in a ```json fence every time. The parser finds it.
+  - The two models fail in different places from the fall-back: the fall-back gets couch and bin
+    right, where both models add them as new classes.
+
+Not decided here: the hand check of each row (T6.7 step 4) and any fix (step 5). The full tables
+are in Zongzhe's local folder, docs/zongzhe_docs/local/t6.7/out/ (not in git).
