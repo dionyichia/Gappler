@@ -12,8 +12,8 @@ class below, named Use1 to Use4:
 
 Use 3's scores inside the graph are TaskContext in task.py and the task score
 ObjectStore keeps on each entry (T6.7a), tested here with the real model. The
-rest of use 3 is tested at the encoder only: that text and images land in one
-space and rank the way that use needs. Its function is not built yet (T6.7b).
+rest of use 3, choosing target classes from the text, is fallback_targets in
+reasoning.py (T6.7b), tested with the real model in test_reasoning_model.py.
 Use 4 is PhotoScorer in photo_score.py (T6.7d), tested here with the real model. The averaging in use 2 is ObjectStore in
 object_store.py (T6.4c).
 

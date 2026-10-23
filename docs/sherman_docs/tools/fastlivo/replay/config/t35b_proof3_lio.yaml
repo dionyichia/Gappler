@@ -1,0 +1,153 @@
+# t35b_proof3 LiDAR-IMU diagnostic replay: offline, not hardware launch.
+# Consumer (pinned): U-AMC/FAST-LIVO2-ROS2 @ a09599a288c56b832114d7ad9e898248a4111d9e
+# Source facts and line references: docs/sherman_docs/T3.5_CONSUMER_CONTRACT.md
+# Baseline: the pinned fork's own Mid-360 LiDAR-only profile (config/mid360_only.yaml
+# at the pin), adapted to the recorded bag where the bag's types/values require it.
+# img_en=0 selects ONLY_LIO (LIVMapper.cpp:255): camera-LiDAR calibration (T5.5)
+# is unresolved, so this file makes no visual-fusion claim.
+laserMapping:
+  ros__parameters:
+    use_sim_time: true
+
+    # Topics and types verified against t35b_proof3 metadata.yaml and messages:
+    #   /livox/lidar                     livox_ros_driver2/msg/CustomMsg   740 msgs
+    #   /livox/imu                       sensor_msgs/msg/Imu             14807 msgs
+    #   /camera/camera/color/image_raw   sensor_msgs/msg/Image    2220 msgs (rgb8 640x480)
+    #   /camera/camera/color/camera_info sensor_msgs/msg/CameraInfo      2220 msgs
+    common.img_topic: "/camera/camera/color/image_raw"
+    common.lid_topic: "/livox/lidar"
+    common.imu_topic: "/livox/imu"
+    common.img_en: 0
+    common.lidar_en: 1
+    # No integer-second LiDAR/IMU timestamp offset was measured in this recording
+    # (T3.5b audit): keep the fork's rounding compensation (LIVMapper.cpp:996) off.
+    common.ros_driver_bug_fix: false
+    # The bag lidar type is CustomMsg. lidar_type 1 (AVIA) selects the CustomMsg
+    # subscription (LIVMapper.cpp:288-302); every CustomMsg then goes through
+    # avia_handler (preprocess.cpp:54-58). lidar_type 8 (MID360) would subscribe
+    # sensor_msgs/PointCloud2 and receive nothing from this bag.
+    common.livox_msg_type: "livox_ros_driver2"
+    preprocess.lidar_type: 1
+
+    # UNVERIFIED for our unit: the fork's Mid-360 LiDAR-to-IMU baseline, not a
+    # measured transform for this robot. p_imu = R * p_lidar + T (metres).
+    # Identity entries must be doubles: the mapper declares vector<double>.
+    extrin_calib.extrinsic_T: [0.011, 0.02329, -0.04412]
+    extrin_calib.extrinsic_R: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+    # PLACEHOLDER, NOT OURS: T5.5 (camera-LiDAR calibration) owns these values and
+    # its direction/frame questions are unresolved. Unused while img_en=0 (VIO does
+    # not run); kept non-empty because the mapper loads them unconditionally
+    # (LIVMapper.cpp:186-187, 218). Values below are the fork's own Mid-360 example.
+    extrin_calib.Rcl: [-0.99592574, 0.01558709, 0.08881982, -0.07711178, -0.65783989, -0.74919988, 0.04675138, -0.75299650, 0.65636163]
+    extrin_calib.Pcl: [-0.19803049, 0.12062488, 0.22892291]
+
+    # No timing correction is applied or claimed. Measured receipt-vs-header lags
+    # are host-side publish evidence and are NOT sensor sync offsets (T3.5b audit).
+    # Cross-modal timing remains unproven until T5.5.
+    time_offset.imu_time_offset: 0.0
+    time_offset.img_time_offset: 0.0
+    # The fork's CustomMsg callback never applies lidar_time_offset
+    # (LIVMapper.cpp:932); zero documents that no correction exists on this path.
+    time_offset.lidar_time_offset: 0.0
+    time_offset.exposure_time_init: 0.0
+
+    # Fork rolling-shutter / online time-delay extensions disabled: they belong to
+    # the image path, which this diagnostic does not use.
+    rolling_shutter.enable: false
+    rolling_shutter.tr_readout: 0.0
+    rolling_shutter.anchor_factor: 0.5
+    rolling_shutter.debug_print: false
+    rolling_shutter.td_estimate_enable: false
+    rolling_shutter.td_step_alpha: 0.1
+    rolling_shutter.td_step_cap: 0.0005
+    rolling_shutter.td_lambda: 100.0
+    rolling_shutter.td_min_jac_sq: 1.0
+
+    preprocess.point_filter_num: 1
+    preprocess.filter_size_surf: 0.1
+    # Mid-360 emits `line` 0..3 (20-scan sample, 400,032 points, max 3); avia_handler
+    # keeps points with line < scan_line (preprocess.cpp:172), so 4 is exact.
+    preprocess.scan_line: 4
+    # Drops returns closer than 0.1 m. Zero-range returns (x=y=z=0; 51.84% of this
+    # bag's points) fail any positive blind and are dropped by the range gate
+    # (preprocess.cpp:194), never entering the map.
+    preprocess.blind: 0.1
+    preprocess.hilti_en: false
+    preprocess.feature_extract_enabled: false
+
+    # Unused while img_en=0 (no VIO); values mirror the fork's Mid-360 profile so
+    # nothing else varies from the sensor-matched baseline.
+    vio.max_iterations: 5
+    vio.outlier_threshold: 1000
+    vio.img_point_cov: 100
+    vio.patch_size: 8
+    # 'pyrimid' is the actual upstream/fork parameter spelling.
+    vio.patch_pyrimid_level: 4
+    vio.grid_size: 5
+    vio.grid_n_height: 17
+    vio.normal_en: true
+    vio.raycast_en: false
+    vio.inverse_composition_en: false
+    vio.exposure_estimate_en: true
+    vio.inv_expo_cov: 0.1
+
+    imu.imu_en: true
+    # IMU initialisation averages imu_int_frame messages (IMU_Processing.cpp:107-152);
+    # 50 is the fork's Mid-360 profile (~0.25 s at the recorded ~200 Hz).
+    imu.imu_int_frame: 50
+    imu.acc_cov: 0.1
+    imu.gyr_cov: 0.1
+    # Retained metadata: the fork does not declare/read these two keys;
+    # initializeComponents hard-codes bias covariance 0.0001 (LIVMapper.cpp:246-247).
+    # Values below state that hard-coded truth, not a usable knob.
+    imu.b_acc_cov: 0.0001
+    imu.b_gyr_cov: 0.0001
+    imu.gravity_est_en: true
+    imu.ba_bg_est_en: true
+
+    # The fork reads lio.min_iterations (voxel_map.cpp:50); an 'lio.max_iterations'
+    # key would be silently unused in this fork, so it is omitted.
+    lio.min_iterations: 5
+    lio.dept_err: 0.02
+    lio.beam_err: 0.15
+    lio.min_eigen_value: 0.005
+    lio.voxel_size: 0.5
+    lio.max_layer: 2
+    lio.max_points_num: 50
+    lio.layer_init_num: [5, 5, 5, 5, 5]
+    lio.sigma_num: 3.0
+
+    local_map.map_sliding_en: false
+    local_map.half_map_size: 100
+    local_map.sliding_thresh: 8.0
+
+    uav.imu_rate_odom: false
+    # The fork's Mid-360 LiDAR-only profile enables gravity alignment (one-time
+    # posture rotation after IMU init, LIVMapper.cpp:342-357). The accepted public
+    # replay disabled it for a different rig; here the sensor-matched value is kept.
+    uav.gravity_align_en: true
+
+    publish.dense_map_en: true
+    publish.pub_effect_point_en: false
+    publish.pub_plane_en: false
+    publish.pub_scan_num: 1
+    publish.blind_rgb_points: 0.0
+
+    evo.seq_name: "t35b_proof3"
+    evo.pose_output_en: false
+
+    # ROOT_DIR is the compile-time source directory inside the replay image; the
+    # runner must provide a writable Log/ there (mat_pre/mat_out/imu.txt are always
+    # opened). Trajectory evidence is read from topics, not from these files.
+    pcd_save.pcd_save_en: false
+    pcd_save.type: 0
+    pcd_save.colmap_output_en: false
+    pcd_save.filter_size_pcd: 0.15
+    pcd_save.interval: -1
+    # Declared but not fetched by this fork; in-class defaults are already
+    # false/1, so disabling remains effective.
+    image_save.img_save_en: false
+    image_save.interval: 1
+
+    debug.plot_time: -10.0
+    debug.frame_cnt: 6

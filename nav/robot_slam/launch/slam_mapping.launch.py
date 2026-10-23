@@ -2,10 +2,11 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, GroupAction, IncludeLaunchDescription, TimerAction
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command, PathJoinSubstitution
-from launch_ros.actions import Node
+from launch.substitutions import Command, LaunchConfiguration, PathJoinSubstitution, PythonExpression
+from launch_ros.actions import Node, SetParameter
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
@@ -20,15 +21,7 @@ MAP_DIR = str(path("map_dir"))
 
 
 def generate_launch_description():
-    network_setup = ExecuteProcess(
-        cmd=[
-            "sudo",
-            "bash",
-            "-c",
-            "ip addr flush dev enp2s0 && ip addr add 192.168.1.5/24 dev enp2s0",
-        ],
-        output="screen",
-    )
+    # Network addresses are an operator prerequisite, not a launch side effect.
 
     # Auto-saves the map every 30 s during mapping so progress is not lost
     map_autosave = ExecuteProcess(
@@ -62,6 +55,24 @@ def generate_launch_description():
         output="screen",
     )
 
+    # odom_source: wheel (default, unchanged) or fastlivo. In fastlivo mode FAST-LIVO2 owns odom -> robot_base_link through
+    # fastlivo_odom_bridge, so the base driver must not publish that TF. The vendor launch starts the driver in a 15 s TimerAction
+    # and reads pub_tf once, so the SetParameter group must be unscoped or it closes before the timer fires (measured with stub nodes,
+    # T3.5e write-up). The vendor launch is included, not copied. /odom stays on the wheels either way (the mapper's twist is zero).
+    odom_source_arg = DeclareLaunchArgument(
+        "odom_source", default_value="wheel", choices=["wheel", "fastlivo"],
+        description="wheel: the base driver publishes odom -> robot_base_link. fastlivo: FAST-LIVO2 does, through fastlivo_odom_bridge.",
+    )
+    odom_is_fastlivo = PythonExpression(["'", LaunchConfiguration("odom_source"), "' == 'fastlivo'"])
+
+    # base_driver:=false starts no base driver at all (the live runbook pushes the base by hand and starts the driver once at the end,
+    # through base_driver_check.launch.py, to confirm it publishes no odom TF). Default true: both modes start it as before.
+    base_driver_arg = DeclareLaunchArgument(
+        "base_driver", default_value="true", choices=["true", "false"],
+        description="false: do not start the base driver (xnode_comm, xnode_vehicle)",
+    )
+    base_driver_on = PythonExpression(["'", LaunchConfiguration("base_driver"), "' == 'true'"])
+
     echo_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [
@@ -73,7 +84,28 @@ def generate_launch_description():
                     ]
                 )
             ]
-        )
+        ),
+        condition=IfCondition(PythonExpression(["not ", odom_is_fastlivo, " and ", base_driver_on])),
+    )
+    echo_launch_fastlivo = GroupAction(
+        scoped=False,
+        condition=IfCondition(PythonExpression([odom_is_fastlivo, " and ", base_driver_on])),
+        actions=[
+            SetParameter(name="pub_tf", value=False),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    [
+                        PathJoinSubstitution(
+                            [
+                                FindPackageShare("xpkg_demo"),
+                                "demo_vehicle/ROS2/launch",
+                                "bringup_basic_ctrl.launch.py",
+                            ]
+                        )
+                    ]
+                )
+            ),
+        ],
     )
 
     livox_launch = IncludeLaunchDescription(
@@ -81,13 +113,15 @@ def generate_launch_description():
             [
                 PathJoinSubstitution(
                     [
-                        FindPackageShare("livox_ros_driver2"),
-                        "launch_ROS2",
-                        "msg_MID360_launch.py",
+                        FindPackageShare("robot_slam"),
+                        "launch",
+                        "lidar_only.launch.py",
                     ]
                 )
             ]
-        )
+        ),
+        # CustomMsg for FAST-LIVO2, PointCloud2 for the SLAM Toolbox path otherwise.
+        launch_arguments={"xfer_format": PythonExpression(["1 if ", odom_is_fastlivo, " else 0"])}.items(),
     )
 
     # QoS relay: bridges RELIABLE livox → BEST_EFFORT for pointcloud_to_laserscan
@@ -96,6 +130,27 @@ def generate_launch_description():
         executable="qos_relay.py",
         name="qos_relay",
         output="screen",
+        condition=UnlessCondition(odom_is_fastlivo),
+    )
+
+    # fastlivo mode: the driver publishes CustomMsg, so this replaces qos_relay (/livox/lidar -> /cloud_relay, best effort).
+    custom_to_cloud_node = Node(
+        package="robot_slam",
+        executable="livox_custom_to_cloud.py",
+        name="livox_custom_to_cloud",
+        output="screen",
+        condition=IfCondition(odom_is_fastlivo),
+    )
+
+    # fastlivo mode: odom -> robot_base_link from the mapper's /aft_mapped_to_init. The mapper itself runs outside this launch
+    # and must have its own /tf remapped off the shared tree (-r /tf:=/fastlivo/tf -r /tf_static:=/fastlivo/tf_static).
+    odom_bridge_node = Node(
+        package="robot_slam",
+        executable="fastlivo_odom_bridge.py",
+        name="fastlivo_odom_bridge",
+        output="screen",
+        parameters=[os.path.join(get_package_share_directory("robot_slam"), "config", "fastlivo_bridge.yaml")],
+        condition=IfCondition(odom_is_fastlivo),
     )
 
     # Static TF: robot_base_link → livox_frame (LiDAR offset from robot centre)
@@ -143,7 +198,11 @@ def generate_launch_description():
     )
 
     slam_toolbox_dir = get_package_share_directory("robot_slam")
-    slam_params_file = os.path.join(slam_toolbox_dir, "config", "slam_toolbox.yaml")
+    # fastlivo mode maps from the FAST-LIVO2 poses alone: scan matching and loop closing off (the fastlivo SLAM yaml, T3.5e).
+    slam_config_dir = os.path.join(slam_toolbox_dir, "config")
+    slam_params_file = PythonExpression(
+        ["'", slam_config_dir, "/slam_toolbox_fastlivo.yaml' if ", odom_is_fastlivo, " else '", slam_config_dir, "/slam_toolbox.yaml'"]
+    )
 
     slam_toolbox = Node(
         package="slam_toolbox",
@@ -200,17 +259,25 @@ def generate_launch_description():
             "params_file": nav2_params_file,
         }.items(),
     )
-    delayed_nav2 = TimerAction(period=25.0, actions=[nav2])
+    # nav2:=false starts the chain without any Nav2 server (the live runbook: nothing can be sent a goal). Default true, as before.
+    nav2_arg = DeclareLaunchArgument("nav2", default_value="true", choices=["true", "false"],
+                                     description="false: do not start Nav2 (the 25 s delayed start is skipped)")
+    delayed_nav2 = TimerAction(period=25.0, actions=[nav2], condition=IfCondition(LaunchConfiguration("nav2")))
 
     return LaunchDescription(
         [
-            network_setup,
+            odom_source_arg,
+            nav2_arg,
+            base_driver_arg,
             map_autosave,
             robot_state_publisher,
             joint_state_publisher,
             echo_launch,
+            echo_launch_fastlivo,
             livox_launch,
             qos_relay_node,
+            custom_to_cloud_node,
+            odom_bridge_node,
             static_tf_node,
             arm_mount_tf,
             pointcloud_to_laserscan,

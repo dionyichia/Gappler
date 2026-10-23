@@ -1,0 +1,13 @@
+aa207af8ac82c3cc02b26bd8972743b7153522720b09c234731a1f4587c10997  log/visual-repair.xIOr2o/recipe/build-logs.LQAloY/commit.log
+e6dd9d59b101fea8658b3cab0eee81269d313acd136ef368819873f78867e3e9  log/visual-repair.xIOr2o/recipe/build-logs.LQAloY/post-inspect.json
+f83584984f3f9799ae53e9c9e33e54d99f38d372e49a673ce294b8fef6c096e2  log/visual-repair.xIOr2o/recipe/build-logs.LQAloY/base-image.json
+e88ea5df9771f964cdd31465fd8c5c7c6498024240a9d630008b8b441bcbc512  log/visual-repair.xIOr2o/recipe/build-logs.LQAloY/visual-fixes/source.patch
+34d1870d1c6491b86b3471e320e5083edc00d39f220c33021cfa4b9e73ad31ae  log/visual-repair.xIOr2o/recipe/build-logs.LQAloY/visual-fixes/visual-fixes.sha256
+541f002a43ee026f90d8729d2ac9ef2d0d18f810c63de492677fb2b83e5979ea  log/visual-repair.xIOr2o/recipe/build-logs.LQAloY/vio-diagnostic/binary.sha256
+9b46672cb170d9923eacbf49e8a52710188d09e3391a69cc7b4a102524c3e640  replays/t59-replay-20261018T090909Z-518313/evidence/result.json
+234f95a11962ca74b1263d8351533c6bf01e1eb881188c9833dc8b47caf499a1  replays/t59-replay-20261018T090909Z-518313/evidence/mapper.stdout.log
+965de62fe9e0521f63069c201b226e42d892ea2fcb5f09cbf365ee56706e7450  replays/t59-replay-20261018T090909Z-518313/evidence/mapper.stderr.log
+4b70e8d2f4bedb0d069fe480d9a0c3155a3421d999e541d9a5b7914bbcad3415  replays/t59-replay-20261018T090909Z-518313/inputs.json
+bbc736a413d041fa920adf8d390923110791e1401fdcc194d904a63b05989a81  replays/t59-replay-20261018T090909Z-518313/container.final.inspect.json
+4ca239988bef229c9f0922413ee6ab5420829ed9854a8c82907112703fcb6400  replays/t59-replay-20261018T090909Z-518313/source-Log/Log/mat_out.txt
+4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865  replays/t59-replay-20261018T090909Z-518313/host-runner.exit-code

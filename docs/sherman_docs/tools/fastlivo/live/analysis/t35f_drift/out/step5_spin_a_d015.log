@@ -1,0 +1,32 @@
+== corrected: 812 poses, 40.7 s, turn 2.6 s to 40.7 s, swept -358.0 deg
+  (a1) mapper start->end, raw IMU pose: dx -0.052 dy -0.062 dz -0.003 m (0.081 horizontal), yaw change -358.0 deg
+       same with the bridge constant removed (base): dx -0.050 dy -0.068 (0.084); yaw mismatch from a whole turn 2.01 deg x lever 0.19 m = 0.007 m
+       max excursion from the start: raw IMU 0.442 m (a circle of the lever arm), base 0.152 m
+       (a2) fixed pivot, no drift          lever (0.181, 0.081) m: residual rms 0.0324 m, max 0.0548 m  [translation not explained by a rigid turn about one point]
+       (a2) fixed pivot plus a steady slip lever (0.191, 0.077) m: residual rms 0.0135 m, max 0.0448 m  [translation not explained by a rigid turn about one point]
+  (a3) LiDAR check, 5-scan windows placed with recorded poses, registered onto the first window (delta 0.15 s). correction = what the pose chain is off by:
+       swept   +0.0 deg (t=  2.6 s): correction dx +0.000 dy +0.000 (0.000 m) dyaw +0.00 deg  inliers 1.000
+       swept  -44.7 deg (t=  9.4 s): correction dx +0.007 dy +0.010 (0.012 m) dyaw -0.28 deg  inliers 0.630
+       swept  -89.5 deg (t= 13.2 s): correction dx +0.007 dy +0.007 (0.010 m) dyaw -0.13 deg  inliers 0.628
+       swept -134.2 deg (t= 16.4 s): correction dx +0.017 dy +0.001 (0.017 m) dyaw +0.17 deg  inliers 0.530
+       swept -179.0 deg (t= 19.6 s): correction dx -0.009 dy -0.024 (0.025 m) dyaw +0.12 deg  inliers 0.480
+       swept -223.7 deg (t= 23.3 s): correction dx -0.013 dy -0.016 (0.021 m) dyaw -0.06 deg  inliers 0.618
+       swept -268.5 deg (t= 26.7 s): correction dx +0.002 dy -0.024 (0.024 m) dyaw +0.29 deg  inliers 0.586
+       swept -313.2 deg (t= 29.9 s): correction dx -0.007 dy -0.004 (0.008 m) dyaw +0.29 deg  inliers 0.726
+       swept -358.0 deg (t= 37.1 s): correction dx -0.003 dy -0.005 (0.006 m) dyaw -0.02 deg  inliers 0.825
+== precorrection: 671 poses, 33.5 s, turn 0.2 s to 33.5 s, swept -359.9 deg
+  (a1) mapper start->end, raw IMU pose: dx +0.103 dy +0.069 dz -0.003 m (0.124 horizontal), yaw change -359.9 deg
+       same with the bridge constant removed (base): dx +0.102 dy +0.066 (0.122); yaw mismatch from a whole turn 0.12 deg x lever 0.19 m = 0.000 m
+       max excursion from the start: raw IMU 0.307 m (a circle of the lever arm), base 0.130 m
+       (a2) fixed pivot, no drift          lever (0.184, 0.025) m: residual rms 0.0468 m, max 0.0706 m  [translation not explained by a rigid turn about one point]
+       (a2) fixed pivot plus a steady slip lever (0.177, 0.031) m: residual rms 0.0185 m, max 0.0495 m  [translation not explained by a rigid turn about one point]
+  (a3) LiDAR check, 5-scan windows placed with recorded poses, registered onto the first window (delta 0.15 s). correction = what the pose chain is off by:
+       swept   +0.0 deg (t=  4.0 s): correction dx +0.000 dy +0.000 (0.000 m) dyaw +0.00 deg  inliers 1.000
+       swept  -45.0 deg (t= 10.0 s): correction dx +0.030 dy -0.021 (0.037 m) dyaw -0.18 deg  inliers 0.662
+       swept  -90.0 deg (t= 12.1 s): correction dx -0.003 dy -0.023 (0.023 m) dyaw -1.41 deg  inliers 0.624
+       swept -135.0 deg (t= 14.2 s): correction dx -0.018 dy -0.063 (0.065 m) dyaw -1.40 deg  inliers 0.564
+       swept -179.9 deg (t= 16.3 s): correction dx -0.037 dy -0.115 (0.120 m) dyaw -0.04 deg  inliers 0.545
+       swept -224.9 deg (t= 18.2 s): correction dx -0.046 dy -0.109 (0.118 m) dyaw +0.34 deg  inliers 0.671
+       swept -269.9 deg (t= 20.5 s): correction dx -0.053 dy -0.056 (0.077 m) dyaw +0.25 deg  inliers 0.638
+       swept -314.9 deg (t= 22.7 s): correction dx -0.029 dy -0.019 (0.034 m) dyaw +0.23 deg  inliers 0.717
+       swept -359.9 deg (t= 33.5 s): correction dx -0.003 dy -0.010 (0.010 m) dyaw +0.16 deg  inliers 0.872

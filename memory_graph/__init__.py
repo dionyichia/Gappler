@@ -22,6 +22,8 @@ docs/hico-nav/hico-nav-github-docs/cmg_construction_pipeline.md:
     target_finder.py       the query: objects that answer the task, their best photo, rejections
     anchor_object_graph.py the graph: anchors, objects, the edges between them
     run_photo.py           S0 to S11 on recorded photos, a 3D view (Rerun), and test fixtures
+    run_drive.py           a whole drive through S3 and S1 to S6 once on the GPU, saved for T6.4's tuning
+    score_drive.py         replay a saved drive on a CPU and score it against the ground truth (T6.4)
 
 Only anchor_object_graph.py is stdlib-only. The stage modules need numpy and
 scipy, so this file imports nothing, and the graph stays usable without them.

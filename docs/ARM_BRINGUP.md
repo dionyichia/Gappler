@@ -28,13 +28,13 @@ The checks below must be performed by people at the robot, not by automation. `g
 `arm/arm_bringup/launch/arm_bringup.launch.py` also starts `rm_control` and MoveIt as well as the
 driver (`arm/arm_bringup/launch/arm_bringup.launch.py:18-60`), so use the driver-only launch below.
 Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergency stop
-(`sherman_docs/T1.2_SAFETY_FIXES.md` §B1; `CODE_AUDIT.md` §B3).
+(`sherman_docs/setup/T1.2_SAFETY_FIXES.md` §B1; `CODE_AUDIT.md` §B3).
 
 ## Before controller power
 
 1. **Physical setup, led by Sherman.** `[reported]` T1.4 was marked DONE on 2026-09-23 for
    *power-on with no motion* ([`task-tree.html`](task-tree.html), T1.4;
-   `sherman_docs/T1.4_PHYSICAL_SETUP.md:235-272`). Read its accepted visit record rather than
+   `sherman_docs/setup/T1.4_PHYSICAL_SETUP.md:235-272`). Read its accepted visit record rather than
    reopening its measurements: the 0.03 m rear overhang is recorded, D1 area figures were waived,
    and the physical-stop reach was confirmed verbally with its D3 number still owed. There is no
    fenced zone or table/cell. Before **this** session, confirm the arm remains in its as-found
@@ -134,9 +134,9 @@ Neither Ctrl+C in a launch terminal nor the spoken word "stop" is an arm emergen
 
 5. **Network and controller, computer operator and person at the robot.** Confirm the workstation's
    wired NIC `enp2s0` has `192.168.1.10/24` as well as the saved `.100` and `.5` addresses
-   (`sherman_docs/T0.2_SESSION.md:26-34,73-99`). The driver expects the controller at `.18:8080`
+   (`sherman_docs/setup/T0.2_SESSION.md:26-34,73-99`). The driver expects the controller at `.18:8080`
    and sends UDP feedback to `.10:8089` (`arm/vendor/rm_driver/config/rm_65_config.yaml:4-12`). Do not
-   run the old base startup scripts: they remove `.10` (`sherman_docs/T0.2_SESSION.md:116-119`).
+   run the old base startup scripts: they remove `.10` (`sherman_docs/setup/T0.2_SESSION.md:116-119`).
 
    ```bash
    ip -4 addr show enp2s0

@@ -1,0 +1,24 @@
+{
+  "bag": "hd1",
+  "duration_ns": 117893601164,
+  "message_count": 31830,
+  "schema": 1,
+  "topics": {
+    "/camera/camera/color/camera_info": {
+      "count": 3535,
+      "type": "sensor_msgs/msg/CameraInfo"
+    },
+    "/camera/camera/color/image_raw": {
+      "count": 3536,
+      "type": "sensor_msgs/msg/Image"
+    },
+    "/livox/imu": {
+      "count": 23580,
+      "type": "sensor_msgs/msg/Imu"
+    },
+    "/livox/lidar": {
+      "count": 1179,
+      "type": "livox_ros_driver2/msg/CustomMsg"
+    }
+  }
+}

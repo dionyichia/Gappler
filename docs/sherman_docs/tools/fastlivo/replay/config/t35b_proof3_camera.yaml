@@ -1,0 +1,41 @@
+# t35b_proof3 camera parameters served on the `parameter_blackboard` node.
+# Every value below is read directly from the bag's first CameraInfo message
+# (t35b_proof3, /camera/camera/color/camera_info, plumb_bob 640x480,
+# camera_color_optical_frame) at full precision -- none is estimated.
+#
+# The mapper fetches these over a remote GetParameters call to a node named
+# `parameter_blackboard` (vikit camera_loader.cpp:16-38, params_helper.h:104-129),
+# waiting at most 100 ms for the service; on failure it falls back to
+# `ros2 param get` and then to defaults. Start the parameter_blackboard server
+# and wait for its service BEFORE starting the mapper, or the camera silently
+# degrades.
+#
+# k3 = -0.021481290459632874 is NOT representable through the pinned loader:
+# it reads only cam_d0..cam_d3, and PinholeCamera's fifth coefficient defaults
+# to 0.0 (pinhole_camera.h:40, camera_loader.cpp:26-37). cam_d4 below records
+# the true k3 for reference only; the runtime camera model is 4-coefficient.
+# Residual impact is bounded: the dropped r^6 term is ~0.13 px at half-radius
+# and ~4 px in the extreme corner (fx ~ 385), before any yaw/mount error.
+parameter_blackboard:
+  ros__parameters:
+    use_sim_time: true
+    cam_model: "Pinhole"
+    # Must equal the delivered image geometry divided by the scale below:
+    # internal camera is 640x480 at scale 1.0, matching the rgb8 images exactly,
+    # so vio.cpp:1896 never takes its resize path.
+    cam_width: 640
+    cam_height: 480
+    scale: 1.0
+    # CameraInfo K, full precision.
+    cam_fx: 385.0851135253906
+    cam_fy: 384.5696105957031
+    cam_cx: 324.9161376953125
+    cam_cy: 248.54244995117188
+    # CameraInfo D = [k1, k2, p1, p2, k3] mapped as d0=k1, d1=k2, d2=p1, d3=p2
+    # (vikit pinhole_camera.cpp:100-102 uses the standard radial-tangential form).
+    cam_d0: -0.05590025335550308
+    cam_d1: 0.06613793224096298
+    cam_d2: 0.00020105774456169456
+    cam_d3: 0.0002285563386976719
+    # Reference only: the pinned loader does not read cam_d4 (see header note).
+    cam_d4: -0.021481290459632874

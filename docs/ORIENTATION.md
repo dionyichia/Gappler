@@ -929,7 +929,7 @@ MID-360 on port 2, and RM65 on port 3. NetworkManager profile `Wired connection 
 carries `192.168.1.100/24`, `192.168.1.10/24`, and `192.168.1.5/24`. After bringing that connection
 down and up, the RM65 replied to three pings sourced from `.10` and the MID-360 replied to three pings
 sourced from `.5`. No ROS nodes, arm commands, or base commands ran during this proof. Evidence:
-[`sherman_docs/T0.2_SESSION.md`](sherman_docs/T0.2_SESSION.md).
+[`sherman_docs/setup/T0.2_SESSION.md`](sherman_docs/setup/T0.2_SESSION.md).
 
 Why it was invisible: the arm was verified on the `realman_manip` clone, which has no
 `Navigation_Module` at all (§7), while navigation and LiDAR were previously brought up separately.
@@ -1260,7 +1260,7 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-09-19 | Claude (Opus 5) + Dion | Repointed citations of `RCP_NEW_USER_STARTUP_GUIDE.md` to its new home, `docs/archive/`, after T0.0 brought it onto `main`. |
 | 2026-09-19 | Claude (Opus 5) + Dion | New §8.18: the glasses pose chain explained. The glasses send no gaze and no pose. OpenVINS tracks the glasses only. The `kalibr_*.yaml` files are a hand copy of the live calibration, not a Kalibr run `[inferred]`. OpenVINS sits in `Navigation_Module` by accident. ArUco consumes intrinsics rather than producing them. §8.14: the two AnyGrasp nodes differ in method (tracker vs detector), not only checkpoint. |
 | 2026-09-19 | Claude (Opus 5) + Dion | §8.4 marked fixed by T0.3, pointing at NEXT_STEPS §2.5 for what is still open. |
-| 2026-09-19 | Claude (Opus 5) + Dion | §5 contract table: count corrected to eight topics. `/return_to_user/goal_reached` has no consumer today (orchestrator subscription commented out). `/manipulation/start` launches `main.py` as a process. Pointer to T0.7 as the future single source. Fixed the broken link to `sherman_docs/T0.2_SESSION.md`. |
+| 2026-09-19 | Claude (Opus 5) + Dion | §5 contract table: count corrected to eight topics. `/return_to_user/goal_reached` has no consumer today (orchestrator subscription commented out). `/manipulation/start` launches `main.py` as a process. Pointer to T0.7 as the future single source. Fixed the broken link to `sherman_docs/setup/T0.2_SESSION.md`. |
 | 2026-09-20 | Claude (Opus 5) + Dion | §8.11b: the double `background.launch.py` launch now names its owner. CODE_AUDIT open question 5 is answered: `ros2_robot_ws/src/main.py` owns it, delete `orchestrator.py:69-74`. Pointer to the new `NEXT_STEPS.md` §2.14 on whether anything should launch processes mid-task at all. |
 | 2026-09-20 | Claude (Opus 5) + Dion | §5's nav ↔ manipulation table replaced by a pointer to the new [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md), which is now the single source for channel ownership, types, frames and QoS (T0.7, decision T-5). A four-line summary stays here for reading the rest of §5. |
 | 2026-09-21 | Claude (Opus 5) + Dion | `estop.py` fixed (CODE_AUDIT B2, B2a, B2c, task T1.2): the description of it updated to match. |

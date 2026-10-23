@@ -1,0 +1,8 @@
+[INFO] [1792482683.579082842] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3' for READ_ONLY.
+[INFO] [1792482777.650838121] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/spin-corrected/bag/bag_0.db3' for READ_ONLY.
+config LEVEL 1 GRAV4 True FLAT_MAX 0.1 | query 3 s centroid in query frame: x 0.09 y -2.92 z 1.73
+profile row y -1.7 (centroid x 1.99 yaw -0.8, inl 0.975) -> origin pose x 1.937 y 1.223 yaw -0.84; ICP-polished: x 1.942 y 1.197 z -0.057 m | yaw 0.07 pitch -0.00 roll 0.00 deg | inliers 0.975 rms_p2p 0.050 rms_pl 0.027
+profile row y -1.8 (centroid x 1.94 yaw -1.9, inl 0.973) -> origin pose x 1.941 y 1.123 yaw -1.86; ICP-polished: x 1.942 y 1.197 z -0.057 m | yaw 0.07 pitch -0.00 roll 0.00 deg | inliers 0.975 rms_p2p 0.050 rms_pl 0.027
+profile row y -1.6 (centroid x 2.16 yaw 1.4, inl 0.965) -> origin pose x 1.995 y 1.319 yaw 1.43; ICP-polished: x 1.941 y 1.198 z -0.057 m | yaw 0.07 pitch -0.00 roll 0.00 deg | inliers 0.975 rms_p2p 0.050 rms_pl 0.027
+A^T A 4-DOF at polished best (N=2711): eigenvalues [0.01  0.038 0.746 0.933] condition 92.4; weakest: tx +0.99, yaw +0.16, ty +0.01
+normals among planar inliers: |nx|>0.7 2% |ny|>0.7 4% |nz|>0.7 94%

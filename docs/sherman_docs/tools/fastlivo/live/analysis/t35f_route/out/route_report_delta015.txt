@@ -1,0 +1,12 @@
+== run1 degeneracy: lam2_min median 0.128 p10 0.101 min 0.084 at t=58 s (x -0.7 y -0.0); share of scans below 0.11: 14 %; weak direction deg (10/50/90 pct) [ 81.  93. 164.]
+== run1: error vs route; accepted windows 25, max err 0.058 m at t=55 s, end err 0.001 m
+   rank correlation of |delta e| per 3 s interval with: glass distance -0.33, yaw rate +0.60, weak-share -0.28; mean |cos(delta e, weak dir)| 0.67 (0.64 = unrelated)
+   five largest 3 s error changes (t mid, |de| m, glass dist m, yaw rate deg/s, weak share): 41 s 0.042 1.41 8.0 0.181; 59 s 0.038 1.35 13.9 0.106; 35 s 0.036 1.30 5.0 0.105; 32 s 0.035 1.51 12.1 0.103; 53 s 0.034 1.04 5.6 0.117
+   error in 30 to 58 s windows: mean 0.028 m; outside them 0.006 m. Scans closer than 1.2 m to a glass plane: 18 % of the run, of which in 30 to 58 s 100 %
+== run2 degeneracy: lam2_min median 0.127 p10 0.106 min 0.090 at t=35 s (x 1.9 y 0.3); share of scans below 0.11: 19 %; weak direction deg (10/50/90 pct) [ 47.  88. 148.]
+== run2: error vs route; accepted windows 27, max err 0.074 m at t=37 s, end err 0.015 m
+   rank correlation of |delta e| per 3 s interval with: glass distance -0.30, yaw rate +0.42, weak-share -0.14; mean |cos(delta e, weak dir)| 0.74 (0.64 = unrelated)
+   five largest 3 s error changes (t mid, |de| m, glass dist m, yaw rate deg/s, weak share): 32 s 0.051 1.54 5.0 0.106; 53 s 0.045 1.05 5.8 0.131; 41 s 0.044 1.30 9.5 0.171; 35 s 0.035 1.58 1.4 0.105; 29 s 0.033 1.70 14.4 0.109
+   error in 30 to 58 s windows: mean 0.041 m; outside them 0.010 m. Scans closer than 1.2 m to a glass plane: 27 % of the run, of which in 30 to 58 s 74 %
+== hd1 degeneracy: lam2_min median 0.136 p10 0.122 min 0.111 at t=92 s (x -0.7 y -1.1); share of scans below 0.11: 0 %; weak direction deg (10/50/90 pct) [ 15.  54. 154.]
+wrote ../route_report_delta015.png

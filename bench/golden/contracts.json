@@ -12,7 +12,7 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:114"
     ],
     "~/Ros2Workspaces/OpenVINS": [
-      "shared/global_config.yaml:127"
+      "shared/global_config.yaml:132"
     ]
   },
   "divergent_constants": {
@@ -24,7 +24,7 @@
         "memory_graph/tests/test_cleanup.py:35"
       ],
       "np.full((H, W), 1500, dtype=np.uint16)": [
-        "memory_graph/tests/test_replay_loader.py:105"
+        "memory_graph/tests/test_replay_loader.py:182"
       ]
     },
     "DEPTH_SCALE": {
@@ -34,7 +34,7 @@
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:42"
       ],
       "gappler_config()[\"wrist_camera\"][\"depth_scale_m\"]": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:31"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:36"
       ]
     },
     "LABELS": {
@@ -42,7 +42,7 @@
         "memory_graph/tests/test_target_finder.py:28"
       ],
       "[\"chair\", \"cup\", \"sink\", \"wall\", \"chair\", \"table\"]": [
-        "memory_graph/tests/test_config_and_filters.py:44"
+        "memory_graph/tests/test_config_and_filters.py:73"
       ]
     },
     "PATCHES": {
@@ -63,7 +63,7 @@
     },
     "ROOT": {
       "FIXTURES / \"tum_fr1_xyz\"": [
-        "memory_graph/tests/test_replay_loader.py:258"
+        "memory_graph/tests/test_replay_loader.py:335"
       ],
       "Path(__file__).resolve().parent.parent": [
         "shared/gappler_common.py:24"
@@ -97,7 +97,7 @@
     },
     "TOPICS": {
       "CFG[\"topics\"]": [
-        "arm/estop/estop.py:36",
+        "arm/estop/estop.py:37",
         "grasp/anygrasp_node/anygrasp_detection_node.py:44",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:45",
         "grasp/grasp_viz/grasp_viz.py:33",
@@ -119,8 +119,11 @@
       ]
     },
     "TOPIC_CAMERA_INFO": {
+      "\"/camera/camera/color/camera_info\"": [
+        "memory_graph/replay_loader.py:251"
+      ],
       "ROS2Topics.WRIST_CAMERA_INFO.value": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:35"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:43"
       ],
       "TOPICS[\"wrist_camera_info\"]": [
         "grasp/anygrasp_node/anygrasp_detection_node.py:48",
@@ -132,7 +135,7 @@
         "grasp/tools/dummy_mask_publisher.py:36"
       ],
       "ROS2Topics.OBJECT_CENTROID_2D.value": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:37"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:45"
       ]
     },
     "TOPIC_DEPTH": {
@@ -140,7 +143,7 @@
         "grasp/tools/dummy_mask_publisher.py:34"
       ],
       "ROS2Topics.WRIST_CAMERA_ALIGNED_DEPTH.value": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:34"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:42"
       ],
       "TOPICS[\"wrist_camera_aligned_depth\"]": [
         "grasp/anygrasp_node/anygrasp_detection_node.py:46",
@@ -152,7 +155,7 @@
         "grasp/tools/dummy_mask_publisher.py:35"
       ],
       "ROS2Topics.WRIST_CAMERA_OBJECT_MASK.value": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:36"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:44"
       ],
       "TOPICS[\"wrist_camera_object_mask\"]": [
         "grasp/anygrasp_node/anygrasp_detection_node.py:47",
@@ -161,7 +164,7 @@
     },
     "TOPIC_RGB": {
       "ROS2Topics.WRIST_CAMERA_COLOR.value": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:33"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:41"
       ],
       "TOPICS[\"wrist_camera_color\"]": [
         "grasp/anygrasp_node/anygrasp_detection_node.py:45",
@@ -339,7 +342,7 @@
       "arm/vendor/rm_gazebo/config/gazebo_65_6fb_description.urdf.xacro(urdf)",
       "arm/vendor/rm_gazebo/config/gazebo_65_description.urdf.xacro(urdf)",
       "arm/vendor/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)",
-      "grasp/grasp_state_machine/src/grasp_state_machine.cpp:392",
+      "grasp/grasp_state_machine/src/grasp_state_machine.cpp:466",
       "grasp/grasp_state_machine/src/mtc_planner.cpp:43",
       "grasp/grasp_viz/grasp_viz.py:120",
       "grasp/grasp_viz/grasp_viz.py:152",
@@ -369,12 +372,12 @@
       "nav/vendor/urdf/xpkg_urdf_echo_plus/urdf/model.urdf(urdf)"
     ],
     "camera_color_optical_frame": [
-      "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:479",
-      "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:488",
+      "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:486",
+      "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:495",
       "grasp/anygrasp_node/anygrasp_detection_node.py:168",
       "grasp/grasp_segmentation_client/test_grasp_segmentation_client.py:67",
       "grasp/grasp_segmentation_client/test_grasp_segmentation_client.py:83",
-      "grasp/grasp_state_machine/src/grasp_state_machine.cpp:325",
+      "grasp/grasp_state_machine/src/grasp_state_machine.cpp:399",
       "grasp/tools/dummy_mask_publisher.py:79",
       "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:168"
     ],
@@ -469,15 +472,18 @@
       "nav/robot_slam/config/nav2_params.yaml:115",
       "nav/robot_slam/config/nav2_params.yaml:12",
       "nav/robot_slam/config/slam_toolbox.yaml:11",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:15",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:10"
     ],
     "odom": [
       "nav/robot_navigation/config/nav2_params.yaml:37",
       "nav/robot_navigation/config/nav2_params.yaml:6",
       "nav/robot_navigation/config/nav2_params.yaml:98",
+      "nav/robot_slam/config/fastlivo_bridge.yaml:12",
       "nav/robot_slam/config/nav2_params.yaml:166",
       "nav/robot_slam/config/nav2_params.yaml:72",
       "nav/robot_slam/config/slam_toolbox.yaml:10",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:14",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:9",
       "nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros1_interface.cpp:175",
       "nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros1_interface.cpp:185",
@@ -508,11 +514,13 @@
       "nav/object_approach/object_approach_node.py:177",
       "nav/object_approach/object_approach_node.py:221",
       "nav/pose_publisher/pose_publisher.py:22",
+      "nav/robot_slam/config/fastlivo_bridge.yaml:13",
       "nav/robot_slam/config/nav2_params.yaml:116",
       "nav/robot_slam/config/nav2_params.yaml:13",
       "nav/robot_slam/config/nav2_params.yaml:167",
       "nav/robot_slam/config/nav2_params.yaml:73",
       "nav/robot_slam/config/slam_toolbox.yaml:12",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:16",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:11",
       "nav/robot_slam/launch/slam_localization.launch.py(static_tf)",
       "nav/robot_slam/launch/slam_localization.launch.py(static_tf)",
@@ -556,7 +564,7 @@
       "arm/vendor/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "a3907f8-dirty",
+  "git": "a5348fe",
   "launch_includes": [
     {
       "from": "arm/arm_bringup/launch/arm_bringup.launch.py",
@@ -751,11 +759,51 @@
       "target": "bringup_basic_ctrl.launch.py"
     },
     {
+      "from": "nav/robot_navigation/launch/navigation.launch.py",
+      "target": "lidar_only.launch.py"
+    },
+    {
+      "from": "nav/robot_navigation/launch/navigation.launch.py",
+      "target": "lidar_only.launch.py"
+    },
+    {
+      "from": "nav/robot_slam/launch/base_driver_check.launch.py",
+      "target": "bringup_basic_ctrl.launch.py"
+    },
+    {
+      "from": "nav/robot_slam/launch/base_driver_check.launch.py",
+      "target": "bringup_basic_ctrl.launch.py"
+    },
+    {
       "from": "nav/robot_slam/launch/slam_localization.launch.py",
       "target": "bringup_basic_ctrl.launch.py"
     },
     {
       "from": "nav/robot_slam/launch/slam_localization.launch.py",
+      "target": "bringup_basic_ctrl.launch.py"
+    },
+    {
+      "from": "nav/robot_slam/launch/slam_localization.launch.py",
+      "target": "bringup_basic_ctrl.launch.py"
+    },
+    {
+      "from": "nav/robot_slam/launch/slam_localization.launch.py",
+      "target": "bringup_basic_ctrl.launch.py"
+    },
+    {
+      "from": "nav/robot_slam/launch/slam_localization.launch.py",
+      "target": "lidar_only.launch.py"
+    },
+    {
+      "from": "nav/robot_slam/launch/slam_localization.launch.py",
+      "target": "lidar_only.launch.py"
+    },
+    {
+      "from": "nav/robot_slam/launch/slam_mapping.launch.py",
+      "target": "bringup_basic_ctrl.launch.py"
+    },
+    {
+      "from": "nav/robot_slam/launch/slam_mapping.launch.py",
       "target": "bringup_basic_ctrl.launch.py"
     },
     {
@@ -765,6 +813,14 @@
     {
       "from": "nav/robot_slam/launch/slam_mapping.launch.py",
       "target": "bringup_basic_ctrl.launch.py"
+    },
+    {
+      "from": "nav/robot_slam/launch/slam_mapping.launch.py",
+      "target": "lidar_only.launch.py"
+    },
+    {
+      "from": "nav/robot_slam/launch/slam_mapping.launch.py",
+      "target": "lidar_only.launch.py"
     },
     {
       "from": "nav/vendor/urdf/xpkg_urdf_echo_plus/launch/ROS2/simulate.launch.py",
@@ -1148,6 +1204,20 @@
       "remappings": []
     },
     {
+      "executable": "fastlivo_odom_bridge.py",
+      "from": "nav/robot_slam/launch/slam_localization.launch.py",
+      "name": "fastlivo_odom_bridge",
+      "package": "robot_slam",
+      "remappings": []
+    },
+    {
+      "executable": "livox_custom_to_cloud.py",
+      "from": "nav/robot_slam/launch/slam_localization.launch.py",
+      "name": "livox_custom_to_cloud",
+      "package": "robot_slam",
+      "remappings": []
+    },
+    {
       "executable": "robot_state_publisher",
       "from": "nav/robot_slam/launch/slam_localization.launch.py",
       "name": "robot_state_publisher",
@@ -1234,6 +1304,20 @@
       "from": "nav/robot_slam/launch/slam_mapping.launch.py",
       "name": "qos_relay",
       "package": "qos_relay",
+      "remappings": []
+    },
+    {
+      "executable": "fastlivo_odom_bridge.py",
+      "from": "nav/robot_slam/launch/slam_mapping.launch.py",
+      "name": "fastlivo_odom_bridge",
+      "package": "robot_slam",
+      "remappings": []
+    },
+    {
+      "executable": "livox_custom_to_cloud.py",
+      "from": "nav/robot_slam/launch/slam_mapping.launch.py",
+      "name": "livox_custom_to_cloud",
+      "package": "robot_slam",
       "remappings": []
     },
     {
@@ -1391,8 +1475,8 @@
   ],
   "package_deps": [
     "gazebo_ros",
-    "livox_ros_driver2",
     "nav2_bringup",
+    "robot_slam",
     "xpkg_demo",
     "xpkg_power",
     "xpkg_urdf_echo_plus",
@@ -1406,7 +1490,7 @@
       "nav/robot_navigation/config/nav2_params.yaml:30"
     ],
     "ack_wait_s": [
-      "arm/arm_config.yaml:22"
+      "arm/arm_config.yaml:14"
     ],
     "allow_reversing": [
       "nav/robot_slam/config/nav2_params.yaml:62"
@@ -1448,7 +1532,7 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:4148"
     ],
     "arm_mount": [
-      "shared/global_config.yaml:110"
+      "shared/global_config.yaml:115"
     ],
     "arm_type": [
       "arm/vendor/rm_control/src/rm_control.cpp:258",
@@ -1462,8 +1546,11 @@
       "shared/global_config.yaml:55"
     ],
     "base_frame": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:13",
       "nav/robot_slam/config/slam_toolbox.yaml:12",
-      "nav/robot_slam/config/slam_toolbox_localization.yaml:11"
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:16",
+      "nav/robot_slam/config/slam_toolbox_localization.yaml:11",
+      "nav/robot_slam/scripts/fastlivo_odom_bridge.py:225"
     ],
     "base_frame_id": [
       "nav/robot_navigation/config/nav2_params.yaml:4"
@@ -1474,6 +1561,10 @@
     "behavior_plugins": [
       "nav/robot_navigation/config/nav2_params.yaml:91",
       "nav/robot_slam/config/nav2_params.yaml:157"
+    ],
+    "body_in_base_m": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:8",
+      "nav/robot_slam/scripts/fastlivo_odom_bridge.py:222"
     ],
     "bond_timeout": [
       "nav/robot_slam/config/nav2_params.yaml:7"
@@ -1495,22 +1586,27 @@
     ],
     "ceres_dogleg_type": [
       "nav/robot_slam/config/slam_toolbox.yaml:7",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:11",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:7"
     ],
     "ceres_linear_solver": [
       "nav/robot_slam/config/slam_toolbox.yaml:4",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:8",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:4"
     ],
     "ceres_loss_function": [
       "nav/robot_slam/config/slam_toolbox.yaml:8",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:12",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:8"
     ],
     "ceres_preconditioner": [
       "nav/robot_slam/config/slam_toolbox.yaml:5",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:9",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:5"
     ],
     "ceres_trust_strategy": [
       "nav/robot_slam/config/slam_toolbox.yaml:6",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:10",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:6"
     ],
     "clearing": [
@@ -1544,13 +1640,16 @@
       "nav/robot_slam/config/nav2_params.yaml:32"
     ],
     "correlation_search_space_dimension": [
-      "nav/robot_slam/config/slam_toolbox.yaml:31"
+      "nav/robot_slam/config/slam_toolbox.yaml:31",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:36"
     ],
     "correlation_search_space_resolution": [
-      "nav/robot_slam/config/slam_toolbox.yaml:32"
+      "nav/robot_slam/config/slam_toolbox.yaml:32",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:37"
     ],
     "correlation_search_space_smear_deviation": [
-      "nav/robot_slam/config/slam_toolbox.yaml:33"
+      "nav/robot_slam/config/slam_toolbox.yaml:33",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:38"
     ],
     "cost_scaling_factor": [
       "nav/robot_slam/config/nav2_params.yaml:127",
@@ -1564,7 +1663,7 @@
       "nav/robot_slam/config/nav2_params.yaml:156"
     ],
     "d455_bottom_screw": [
-      "shared/global_config.yaml:118"
+      "shared/global_config.yaml:123"
     ],
     "data_src": [
       "nav/vendor/livox_ros_driver2/src/livox_ros_driver2.cpp:133"
@@ -1583,6 +1682,7 @@
     ],
     "debug_logging": [
       "nav/robot_slam/config/slam_toolbox.yaml:16",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:21",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:20"
     ],
     "debug_sam_mask": [
@@ -1592,7 +1692,7 @@
       "grasp/grasp_config.yaml:26"
     ],
     "default_depth_m": [
-      "aria/aria_config.yaml:101"
+      "aria/aria_config.yaml:108"
     ],
     "default_prompt": [
       "grasp/grasp_config.yaml:39"
@@ -1604,7 +1704,7 @@
       "aria/aria_config.yaml:52"
     ],
     "depth_scale_m": [
-      "shared/global_config.yaml:98"
+      "shared/global_config.yaml:103"
     ],
     "desired_linear_vel": [
       "nav/robot_slam/config/nav2_params.yaml:45"
@@ -1613,7 +1713,8 @@
       "nav/vendor/base/xpkg_comm/src/ROS_INF/ros2_interface.cpp:114"
     ],
     "do_loop_closing": [
-      "nav/robot_slam/config/slam_toolbox.yaml:36"
+      "nav/robot_slam/config/slam_toolbox.yaml:36",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:41"
     ],
     "do_refinement": [
       "nav/robot_slam/config/nav2_params.yaml:150"
@@ -1624,7 +1725,7 @@
       "nav/robot_slam/config/nav2_params.yaml:87"
     ],
     "end_of_speech_silence_s": [
-      "aria/aria_config.yaml:86"
+      "aria/aria_config.yaml:93"
     ],
     "execute_depth_thresh_m": [
       "grasp/grasp_config.yaml:110"
@@ -1668,14 +1769,18 @@
     "frame_id": [
       "nav/vendor/livox_ros_driver2/src/livox_ros_driver2.cpp:136"
     ],
+    "freshness_window_s": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:15",
+      "nav/robot_slam/scripts/fastlivo_odom_bridge.py:226"
+    ],
     "fused_pose": [
       "shared/global_config.yaml:57"
     ],
     "gaze_to_image_max_s": [
-      "aria/aria_config.yaml:128"
+      "aria/aria_config.yaml:132"
     ],
     "gaze_window_s": [
-      "aria/aria_config.yaml:108"
+      "aria/aria_config.yaml:115"
     ],
     "glasses_marker": [
       "aria/aria_config.yaml:42"
@@ -1740,29 +1845,36 @@
       "nav/vendor/drivers/xpkg_power/src/ROS_INF/ros2_interface.cpp:119",
       "nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:123"
     ],
+    "input_topic": [
+      "nav/robot_slam/scripts/livox_custom_to_cloud.py:109",
+      "nav/robot_slam/scripts/livox_custom_to_cloud.py:113",
+      "nav/robot_slam/scripts/livox_custom_to_cloud.py:99"
+    ],
     "is_stationary": [
       "aria/aria_config.yaml:40"
     ],
     "iteration_interval_s": [
-      "aria/aria_config.yaml:77"
+      "aria/aria_config.yaml:84"
     ],
     "key_timeout": [
       "nav/simple_teleop/simple_teleop/teleop_node.py:42"
     ],
     "lidar_mount": [
-      "shared/global_config.yaml:113"
+      "shared/global_config.yaml:118"
     ],
     "link_match_minimum_response_fine": [
-      "nav/robot_slam/config/slam_toolbox.yaml:29"
+      "nav/robot_slam/config/slam_toolbox.yaml:29",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:34"
     ],
     "link_scan_maximum_distance": [
-      "nav/robot_slam/config/slam_toolbox.yaml:30"
+      "nav/robot_slam/config/slam_toolbox.yaml:30",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:35"
     ],
     "livox_lidar": [
       "nav/nav_config.yaml:32"
     ],
     "llm_model": [
-      "aria/aria_config.yaml:74"
+      "aria/aria_config.yaml:81"
     ],
     "lookahead_dist": [
       "nav/robot_slam/config/nav2_params.yaml:46"
@@ -1771,23 +1883,28 @@
       "nav/robot_slam/config/nav2_params.yaml:49"
     ],
     "loop_match_maximum_variance_coarse": [
-      "nav/robot_slam/config/slam_toolbox.yaml:38"
+      "nav/robot_slam/config/slam_toolbox.yaml:38",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:43"
     ],
     "loop_match_minimum_chain_size": [
-      "nav/robot_slam/config/slam_toolbox.yaml:37"
+      "nav/robot_slam/config/slam_toolbox.yaml:37",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:42"
     ],
     "loop_match_minimum_response_coarse": [
-      "nav/robot_slam/config/slam_toolbox.yaml:39"
+      "nav/robot_slam/config/slam_toolbox.yaml:39",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:44"
     ],
     "loop_match_minimum_response_fine": [
-      "nav/robot_slam/config/slam_toolbox.yaml:40"
+      "nav/robot_slam/config/slam_toolbox.yaml:40",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:45"
     ],
     "loop_rate": [
       "nav/robot_navigation/config/nav2_params.yaml:104",
       "nav/robot_slam/config/nav2_params.yaml:182"
     ],
     "loop_search_maximum_distance": [
-      "nav/robot_slam/config/slam_toolbox.yaml:35"
+      "nav/robot_slam/config/slam_toolbox.yaml:35",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:40"
     ],
     "lvx_file_path": [
       "nav/vendor/livox_ros_driver2/src/livox_ros_driver2.cpp:139"
@@ -1817,10 +1934,11 @@
       "nav/vendor/drivers/xpkg_power/src/ROS_INF/ros2_interface.cpp:121"
     ],
     "map_dir": [
-      "shared/global_config.yaml:130"
+      "shared/global_config.yaml:135"
     ],
     "map_frame": [
       "nav/robot_slam/config/slam_toolbox.yaml:11",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:15",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:10"
     ],
     "map_start_at_dock": [
@@ -1832,7 +1950,18 @@
     ],
     "map_update_interval": [
       "nav/robot_slam/config/slam_toolbox.yaml:19",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:24",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:23"
+    ],
+    "mapper_child_frame": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:11"
+    ],
+    "mapper_frame": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:10"
+    ],
+    "mapper_topic": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:9",
+      "nav/robot_slam/scripts/fastlivo_odom_bridge.py:223"
     ],
     "mark_threshold": [
       "nav/robot_slam/config/nav2_params.yaml:93"
@@ -1870,7 +1999,7 @@
       "nav/robot_slam/config/nav2_params.yaml:99"
     ],
     "matching_image_wait_s": [
-      "aria/aria_config.yaml:116"
+      "aria/aria_config.yaml:123"
     ],
     "max_accel": [
       "nav/robot_slam/config/nav2_params.yaml:198"
@@ -1888,7 +2017,7 @@
       "grasp/grasp_config.yaml:109"
     ],
     "max_buffer_s": [
-      "aria/aria_config.yaml:81"
+      "aria/aria_config.yaml:88"
     ],
     "max_decel": [
       "nav/robot_slam/config/nav2_params.yaml:199"
@@ -1906,8 +2035,13 @@
     "max_its": [
       "nav/robot_slam/config/nav2_params.yaml:149"
     ],
+    "max_jump_m": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:19",
+      "nav/robot_slam/scripts/fastlivo_odom_bridge.py:228"
+    ],
     "max_laser_range": [
       "nav/robot_slam/config/slam_toolbox.yaml:21",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:26",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:25"
     ],
     "max_lookahead_dist": [
@@ -1929,6 +2063,10 @@
     "max_rotational_vel": [
       "nav/robot_slam/config/nav2_params.yaml:171"
     ],
+    "max_startup_tilt_deg": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:17",
+      "nav/robot_slam/scripts/fastlivo_odom_bridge.py:227"
+    ],
     "max_vel_theta": [
       "nav/robot_navigation/config/nav2_params.yaml:29"
     ],
@@ -1949,6 +2087,7 @@
     ],
     "min_laser_range": [
       "nav/robot_slam/config/slam_toolbox.yaml:22",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:27",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:26"
     ],
     "min_lookahead_dist": [
@@ -1981,18 +2120,22 @@
     ],
     "minimum_time_interval": [
       "nav/robot_slam/config/slam_toolbox.yaml:23",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:28",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:27"
     ],
     "minimum_travel_distance": [
       "nav/robot_slam/config/slam_toolbox.yaml:27",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:32",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:31"
     ],
     "minimum_travel_heading": [
       "nav/robot_slam/config/slam_toolbox.yaml:28",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:33",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:32"
     ],
     "mode": [
       "nav/robot_slam/config/slam_toolbox.yaml:14",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:18",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:13"
     ],
     "mode_can_lock": [
@@ -2038,27 +2181,41 @@
       "nav/robot_slam/config/nav2_params.yaml:201"
     ],
     "odom_frame": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:12",
       "nav/robot_slam/config/slam_toolbox.yaml:10",
-      "nav/robot_slam/config/slam_toolbox_localization.yaml:9"
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:14",
+      "nav/robot_slam/config/slam_toolbox_localization.yaml:9",
+      "nav/robot_slam/scripts/fastlivo_odom_bridge.py:224"
     ],
     "odom_frame_id": [
       "nav/robot_navigation/config/nav2_params.yaml:6"
     ],
     "odom_topic": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:22",
       "nav/robot_slam/config/nav2_params.yaml:14",
-      "nav/robot_slam/config/nav2_params.yaml:200"
+      "nav/robot_slam/config/nav2_params.yaml:200",
+      "nav/robot_slam/scripts/fastlivo_odom_bridge.py:230"
     ],
     "open_width_m": [
       "grasp/grasp_config.yaml:92"
     ],
     "openvins_ws": [
-      "shared/global_config.yaml:127"
+      "shared/global_config.yaml:132"
     ],
     "origin_z": [
       "nav/robot_slam/config/nav2_params.yaml:89"
     ],
     "output_data_type": [
       "nav/vendor/livox_ros_driver2/src/livox_ros_driver2.cpp:135"
+    ],
+    "output_topic": [
+      "nav/robot_slam/scripts/livox_custom_to_cloud.py:100",
+      "nav/robot_slam/scripts/livox_custom_to_cloud.py:108",
+      "nav/robot_slam/scripts/livox_custom_to_cloud.py:113"
+    ],
+    "pair_window_s": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:27",
+      "nav/robot_slam/scripts/fastlivo_odom_bridge.py:232"
     ],
     "palm_length_m": [
       "grasp/grasp_config.yaml:87"
@@ -2067,7 +2224,7 @@
       "grasp/grasp_config.yaml:88"
     ],
     "pick_radius_px": [
-      "aria/aria_config.yaml:119"
+      "aria/aria_config.yaml:59"
     ],
     "pipeline_state": [
       "grasp/grasp_config.yaml:21"
@@ -2077,7 +2234,7 @@
       "nav/robot_slam/config/nav2_params.yaml:135"
     ],
     "playback_speed": [
-      "aria/aria_config.yaml:95"
+      "aria/aria_config.yaml:102"
     ],
     "plugin": [
       "nav/robot_navigation/config/nav2_params.yaml:18",
@@ -2135,6 +2292,10 @@
       "nav/robot_slam/config/nav2_params.yaml:114",
       "nav/robot_slam/config/nav2_params.yaml:71"
     ],
+    "publish_odom": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:21",
+      "nav/robot_slam/scripts/fastlivo_odom_bridge.py:229"
+    ],
     "publish_voxel_map": [
       "nav/robot_slam/config/nav2_params.yaml:88"
     ],
@@ -2161,7 +2322,7 @@
       "nav/robot_slam/config/nav2_params.yaml:102"
     ],
     "realsense_init_delay_s": [
-      "aria/aria_config.yaml:57"
+      "aria/aria_config.yaml:64"
     ],
     "rec_voltage": [
       "nav/vendor/drivers/xpkg_power/src/ROS_INF/ros2_interface.cpp:124"
@@ -2173,7 +2334,7 @@
       "nav/robot_slam/config/nav2_params.yaml:60"
     ],
     "release_phrases": [
-      "aria/aria_config.yaml:90"
+      "aria/aria_config.yaml:97"
     ],
     "reliability": [
       "aria/aria_config.yaml:50"
@@ -2193,6 +2354,7 @@
       "nav/robot_slam/config/nav2_params.yaml:119",
       "nav/robot_slam/config/nav2_params.yaml:78",
       "nav/robot_slam/config/slam_toolbox.yaml:20",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:25",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:24"
     ],
     "result_timeout_s": [
@@ -2217,10 +2379,10 @@
       "aria/aria_config.yaml:26"
     ],
     "rm_driver_emergency_stop_cmd": [
-      "arm/arm_config.yaml:15"
+      "shared/global_config.yaml:82"
     ],
     "rm_driver_move_stop_cmd": [
-      "arm/arm_config.yaml:17"
+      "shared/global_config.yaml:84"
     ],
     "rm_driver_set_gripper_pick_on_cmd": [
       "shared/global_config.yaml:79"
@@ -2266,7 +2428,7 @@
       "nav/robot_slam/config/nav2_params.yaml:173"
     ],
     "sam3_weights": [
-      "shared/global_config.yaml:134"
+      "shared/global_config.yaml:139"
     ],
     "scale_velocities": [
       "nav/robot_slam/config/nav2_params.yaml:194"
@@ -2274,17 +2436,22 @@
     "scan_topic": [
       "nav/robot_navigation/config/nav2_params.yaml:7",
       "nav/robot_slam/config/slam_toolbox.yaml:13",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:17",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:12"
     ],
     "segment_timeout_s": [
       "grasp/grasp_config.yaml:42"
     ],
     "segmentation_segment": [
-      "shared/global_config.yaml:85"
+      "shared/global_config.yaml:90"
+    ],
+    "select_final_pose": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:24",
+      "nav/robot_slam/scripts/fastlivo_odom_bridge.py:231"
     ],
     "serial": [
-      "shared/global_config.yaml:101",
-      "shared/global_config.yaml:94"
+      "shared/global_config.yaml:106",
+      "shared/global_config.yaml:99"
     ],
     "show_loc": [
       "nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:124"
@@ -2312,10 +2479,11 @@
     ],
     "solver_plugin": [
       "nav/robot_slam/config/slam_toolbox.yaml:3",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:7",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:3"
     ],
     "speech_latency_s": [
-      "aria/aria_config.yaml:113"
+      "aria/aria_config.yaml:120"
     ],
     "speed": [
       "nav/simple_teleop/simple_teleop/teleop_node.py:40"
@@ -2331,7 +2499,12 @@
     ],
     "stack_size_to_use": [
       "nav/robot_slam/config/slam_toolbox.yaml:26",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:31",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:30"
+    ],
+    "stamp_offset_s": [
+      "nav/robot_slam/config/fastlivo_bridge.yaml:31",
+      "nav/robot_slam/scripts/fastlivo_odom_bridge.py:233"
     ],
     "stateful": [
       "nav/robot_slam/config/nav2_params.yaml:42"
@@ -2340,14 +2513,14 @@
       "grasp/grasp_config.yaml:122"
     ],
     "stop_keyword": [
-      "aria/aria_config.yaml:87"
+      "aria/aria_config.yaml:94"
     ],
     "stop_on_failure": [
       "nav/robot_navigation/config/nav2_params.yaml:105",
       "nav/robot_slam/config/nav2_params.yaml:183"
     ],
     "streaming_profile_name": [
-      "aria/aria_config.yaml:62"
+      "aria/aria_config.yaml:69"
     ],
     "table_top_z_m": [
       "grasp/grasp_config.yaml:126"
@@ -2374,10 +2547,12 @@
     ],
     "tf_buffer_duration": [
       "nav/robot_slam/config/slam_toolbox.yaml:25",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:30",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:29"
     ],
     "throttle_scans": [
       "nav/robot_slam/config/slam_toolbox.yaml:17",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:22",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:21"
     ],
     "tolerance": [
@@ -2398,14 +2573,16 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:4127"
     ],
     "transcription_model": [
-      "aria/aria_config.yaml:73"
+      "aria/aria_config.yaml:80"
     ],
     "transform_publish_period": [
       "nav/robot_slam/config/slam_toolbox.yaml:18",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:23",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:22"
     ],
     "transform_timeout": [
       "nav/robot_slam/config/slam_toolbox.yaml:24",
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:29",
       "nav/robot_slam/config/slam_toolbox_localization.yaml:28"
     ],
     "transform_tolerance": [
@@ -2470,10 +2647,10 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:4106"
     ],
     "undistorted_focal_length_px": [
-      "aria/aria_config.yaml:66"
+      "aria/aria_config.yaml:73"
     ],
     "undistorted_image_size_px": [
-      "aria/aria_config.yaml:65"
+      "aria/aria_config.yaml:72"
     ],
     "update_frequency": [
       "nav/robot_navigation/config/nav2_params.yaml:36",
@@ -2496,7 +2673,7 @@
       "nav/robot_slam/config/nav2_params.yaml:58"
     ],
     "use_ephemeral_certs": [
-      "aria/aria_config.yaml:63"
+      "aria/aria_config.yaml:70"
     ],
     "use_fixed_curvature_lookahead": [
       "nav/robot_slam/config/nav2_params.yaml:57"
@@ -2506,6 +2683,9 @@
     ],
     "use_rotate_to_heading": [
       "nav/robot_slam/config/nav2_params.yaml:61"
+    ],
+    "use_scan_matching": [
+      "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:19"
     ],
     "use_sim_time": [
       "nav/robot_navigation/config/nav2_params.yaml:100",
@@ -2545,7 +2725,7 @@
       "aria/aria_config.yaml:38"
     ],
     "vote_min_share": [
-      "aria/aria_config.yaml:124"
+      "aria/aria_config.yaml:128"
     ],
     "waypoint_pause_duration": [
       "nav/robot_slam/config/nav2_params.yaml:188"
@@ -2660,6 +2840,19 @@
     }
   ],
   "topics": {
+    "/aft_mapped_to_init": {
+      "n_publishers": 0,
+      "n_subscribers": 0,
+      "owned": true,
+      "publishers": [],
+      "subscribers": [],
+      "types": [
+        "?"
+      ],
+      "yaml_refs": [
+        "nav/robot_slam/config/fastlivo_bridge.yaml:9"
+      ]
+    },
     "/aria/aruco_pose": {
       "n_publishers": 1,
       "n_subscribers": 1,
@@ -2686,7 +2879,7 @@
       ],
       "subscribers": [
         "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:89",
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:176",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:186",
         "nav/goto_glasses/goto_glasses.py:69",
         "nav/object_approach/object_approach_node.py:90"
       ],
@@ -2706,7 +2899,7 @@
       ],
       "subscribers": [
         "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:93",
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:183",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:193",
         "aria/aria_app/services/visualizer/ros_manager.py:77"
       ],
       "types": [
@@ -2815,7 +3008,7 @@
       "owned": true,
       "publishers": [
         "aria/aria_app/services/feature_matching.py:191",
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:212"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:223"
       ],
       "subscribers": [
         "aria/aria_app/services/visualizer/ros_manager.py:101"
@@ -2832,7 +3025,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:197"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:207"
       ],
       "subscribers": [
         "aria/aria_app/services/visualizer/ros_manager.py:89"
@@ -2871,7 +3064,7 @@
       "subscribers": [
         "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:91",
         "aria/aria_app/services/feature_matching.py:183",
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:159",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:169",
         "aria/aria_app/services/visualizer/ros_manager.py:71",
         "nav/aria_image_relay/aria_image_relay.py:31"
       ],
@@ -2948,7 +3141,7 @@
       "owned": true,
       "publishers": [],
       "subscribers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:169",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:179",
         "grasp/anygrasp_node/anygrasp_detection_node.py:102",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:70",
         "grasp/tools/dummy_mask_publisher.py:48",
@@ -2967,10 +3160,10 @@
       "owned": true,
       "publishers": [],
       "subscribers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:150",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:160",
         "grasp/anygrasp_node/anygrasp_detection_node.py:70",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:66",
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:146",
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:150",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:53"
       ],
       "types": [
@@ -2986,7 +3179,7 @@
       "owned": true,
       "publishers": [],
       "subscribers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:168",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:178",
         "grasp/anygrasp_node/anygrasp_detection_node.py:101",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:69",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:85"
@@ -3003,7 +3196,7 @@
       "n_subscribers": 3,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:217",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:228",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:78",
         "grasp/tools/dummy_mask_publisher.py:45"
       ],
@@ -3020,11 +3213,12 @@
       ]
     },
     "/cloud_relay": {
-      "n_publishers": 1,
+      "n_publishers": 2,
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "nav/qos_relay/qos_relay.py:43"
+        "nav/qos_relay/qos_relay.py:43",
+        "nav/robot_slam/scripts/livox_custom_to_cloud.py:108"
       ],
       "subscribers": [],
       "types": [
@@ -3067,7 +3261,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:207"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:217"
       ],
       "subscribers": [
         "aria/aria_app/services/visualizer/ros_manager.py:107"
@@ -3244,7 +3438,7 @@
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:75"
       ],
       "subscribers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:150",
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:154",
         "grasp/grasp_viz/grasp_viz.py:53"
       ],
       "types": [
@@ -3256,13 +3450,15 @@
     },
     "/livox/lidar": {
       "n_publishers": 0,
-      "n_subscribers": 1,
+      "n_subscribers": 2,
       "owned": true,
       "publishers": [],
       "subscribers": [
-        "nav/qos_relay/qos_relay.py:44"
+        "nav/qos_relay/qos_relay.py:44",
+        "nav/robot_slam/scripts/livox_custom_to_cloud.py:109"
       ],
       "types": [
+        "CustomMsg",
         "sensor_msgs/PointCloud2"
       ],
       "yaml_refs": [
@@ -3289,7 +3485,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:177"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:192"
       ],
       "subscribers": [
         "nav/object_approach/object_approach_node.py:93"
@@ -3306,7 +3502,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:232"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:243"
       ],
       "subscribers": [
         "nav/object_approach/object_approach_node.py:84"
@@ -3343,7 +3539,7 @@
         "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:96"
       ],
       "subscribers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:158"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:162"
       ],
       "types": [
         "std_msgs/Empty"
@@ -3360,7 +3556,7 @@
         "aria/aria_app/services/aria_device/stream/audio_streaming_pipeline.py:83"
       ],
       "subscribers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:162",
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:166",
         "launchers/grasp_orchestrator.py:68",
         "nav/object_approach/object_approach_node.py:96"
       ],
@@ -3376,7 +3572,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:175"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:190"
       ],
       "subscribers": [
         "nav/goto_glasses/goto_glasses.py:73"
@@ -3393,7 +3589,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:223",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:234",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:80"
       ],
       "subscribers": [
@@ -3411,12 +3607,12 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:220",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:231",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:79",
         "grasp/tools/dummy_mask_publisher.py:46"
       ],
       "subscribers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:154"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:158"
       ],
       "types": [
         "geometry_msgs/PointStamped"
@@ -3467,6 +3663,7 @@
         "nav_msgs/Odometry"
       ],
       "yaml_refs": [
+        "nav/robot_slam/config/fastlivo_bridge.yaml:22",
         "nav/robot_slam/config/nav2_params.yaml:14"
       ]
     },
@@ -3475,7 +3672,7 @@
       "n_subscribers": 3,
       "owned": true,
       "publishers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:172"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:187"
       ],
       "subscribers": [
         "grasp/anygrasp_node/anygrasp_detection_node.py:76",
@@ -3494,7 +3691,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:202"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:212"
       ],
       "subscribers": [
         "aria/aria_app/services/visualizer/ros_manager.py:95"
@@ -3549,17 +3746,19 @@
     },
     "/rm_driver/emergency_stop_cmd": {
       "n_publishers": 1,
-      "n_subscribers": 0,
+      "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "arm/estop/estop.py:44"
+        "arm/estop/estop.py:45"
       ],
-      "subscribers": [],
+      "subscribers": [
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:172"
+      ],
       "types": [
         "rm_ros_interfaces/Stop"
       ],
       "yaml_refs": [
-        "arm/arm_config.yaml:15"
+        "shared/global_config.yaml:82"
       ]
     },
     "/rm_driver/get_arm_software_version_cmd": {
@@ -3696,17 +3895,19 @@
     },
     "/rm_driver/move_stop_cmd": {
       "n_publishers": 1,
-      "n_subscribers": 0,
+      "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "arm/estop/estop.py:45"
+        "arm/estop/estop.py:46"
       ],
-      "subscribers": [],
+      "subscribers": [
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:177"
+      ],
       "types": [
         "std_msgs/Empty"
       ],
       "yaml_refs": [
-        "arm/arm_config.yaml:17"
+        "shared/global_config.yaml:84"
       ]
     },
     "/rm_driver/movec_cmd": {
@@ -3875,7 +4076,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:169"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:184"
       ],
       "subscribers": [],
       "types": [
@@ -3890,7 +4091,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:166",
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:181",
         "launchers/grasp_orchestrator.py:54"
       ],
       "subscribers": [],
@@ -3956,6 +4157,7 @@
       "yaml_refs": [
         "nav/robot_slam/config/nav2_params.yaml:96",
         "nav/robot_slam/config/slam_toolbox.yaml:13",
+        "nav/robot_slam/config/slam_toolbox_fastlivo.yaml:17",
         "nav/robot_slam/config/slam_toolbox_localization.yaml:12"
       ]
     },
@@ -3969,7 +4171,7 @@
         "?"
       ],
       "yaml_refs": [
-        "shared/global_config.yaml:85"
+        "shared/global_config.yaml:90"
       ]
     },
     "/vehicle_path": {

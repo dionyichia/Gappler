@@ -1,0 +1,26 @@
+rank correlation (Spearman) of horizontal error with route features, windows of 1 s:
+  run1 d015: n=75  speed +0.75 | |yaw rate| +0.53 | glass dist -0.60 | clearance +0.45 | lam_min -0.26
+  run1 d000: n=75  speed +0.80 | |yaw rate| +0.66 | glass dist -0.52 | clearance +0.45 | lam_min -0.14
+  run2 d015: n=79  speed +0.61 | |yaw rate| +0.34 | glass dist -0.65 | clearance +0.23 | lam_min -0.03
+  run2 d000: n=79  speed +0.74 | |yaw rate| +0.40 | glass dist -0.55 | clearance +0.45 | lam_min +0.15
+10 s table (delta 0.15 error, mean per 10 s; lam_min = smallest horizontal eigenvalue; weak = weak direction deg in run 1 frame):
+  run1
+   t(s)  path(m) err_h(m) err_h_stamp(m) speed yawrate glass clear lam_min weak
+     0- 10   0.1  0.002  0.007   0.00   -0.1  1.80  0.06  0.128   89
+    10- 20   0.2  0.003  0.007   0.01   -0.3  1.80  0.06  0.130   90
+    20- 30   3.4  0.015  0.054   0.30   +3.3  1.99  0.17  0.129  115
+    30- 40   6.8  0.027  0.060   0.37   +8.3  1.40  0.25  0.119   93
+    40- 50  10.1  0.017  0.057   0.31  +11.7  1.09  0.28  0.163  102
+    50- 60  13.0  0.033  0.086   0.27  +10.2  1.11  0.25  0.109  155
+    60- 70  14.0  0.004  0.020   0.07   +1.8  1.95  0.09  0.129   87
+    70- 80  14.1  0.001  0.010   0.02   +0.1  2.05  0.12  0.131   91
+  run2
+   t(s)  path(m) err_h(m) err_h_stamp(m) speed yawrate glass clear lam_min weak
+     0- 10   0.6  0.005  0.013   0.02   -0.7  2.04  0.14  0.124   86
+    10- 20   2.1  0.011  0.032   0.15   -8.9  2.25  0.11  0.127   89
+    20- 30   4.8  0.014  0.047   0.25  +15.7  1.69  0.19  0.135   55
+    30- 40   8.0  0.049  0.078   0.33   +2.8  1.32  0.24  0.111   97
+    40- 50  10.9  0.031  0.083   0.28  +14.0  1.02  0.26  0.163   87
+    50- 60  13.8  0.023  0.073   0.26   +8.8  1.09  0.24  0.126   95
+    60- 70  15.6  0.013  0.009   0.11   +5.2  1.56  0.08  0.122   87
+    70- 80  16.7  0.012  0.012   0.05   -0.4  1.81  0.08  0.122   90

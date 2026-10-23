@@ -1,0 +1,25 @@
+# Mapper uses reliable subscriptions; explicitly override recorded sensor QoS.
+# Every reviewed image topic is listed by name: the public bag records no offer,
+# and our RealSense colour topic is recorded TRANSIENT_LOCAL (T3.5c). The mapper
+# subscribes volatile and the readiness gate requires a RELIABLE/VOLATILE input
+# publisher, so a new recording's image topic must be added here too.
+/livox/lidar:
+  history: keep_last
+  depth: 100
+  reliability: reliable
+  durability: volatile
+/livox/imu:
+  history: keep_last
+  depth: 1000
+  reliability: reliable
+  durability: volatile
+/left_camera/image:
+  history: keep_last
+  depth: 100
+  reliability: reliable
+  durability: volatile
+/camera/camera/color/image_raw:
+  history: keep_last
+  depth: 100
+  reliability: reliable
+  durability: volatile

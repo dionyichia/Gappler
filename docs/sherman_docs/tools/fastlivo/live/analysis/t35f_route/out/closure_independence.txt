@@ -1,0 +1,31 @@
+run1: window 3 s | first 31 scans 13532 voxels, odom max excursion inside window 0.001 m | last 31 scans 13388 voxels, excursion 0.004 m
+run2: window 3 s | first 31 scans 13179 voxels, odom max excursion inside window 0.007 m | last 30 scans 13547 voxels, excursion 0.010 m
+
+=== Part 1: within a run, last 3 s onto first 3 s (sensor frame) ===
+run1: odometry first-to-last (window edges, first window start to last window end): x +0.246 y -0.202 z +0.004 (horizontal 0.318) yaw -0.73 deg
+   from IDENTITY          start x +0.000 y +0.000 z +0.000 (horizontal 0.000) yaw +0.00 deg
+                            unoptimised: inliers 0.622 rms_plane 0.039 | converged: x +0.247 y -0.202 z +0.003 (horizontal 0.319) yaw -0.74 deg | inliers 0.953 rms_plane 0.016
+   from ODOMETRY          start x +0.246 y -0.202 z +0.004 (horizontal 0.318) yaw -0.73 deg
+                            unoptimised: inliers 0.953 rms_plane 0.016 | converged: x +0.247 y -0.202 z +0.003 (horizontal 0.319) yaw -0.74 deg | inliers 0.953 rms_plane 0.016
+   identity-start vs odometry-start converged: 0.000 m apart, 0.00 deg
+   CLOSURE (odometry minus LiDAR-only, better fit): x -0.001 y -0.000 z +0.001 m, horizontal 0.001 m, yaw +0.01 deg
+
+run2: odometry first-to-last (window edges, first window start to last window end): x -0.235 y +0.205 z -0.002 (horizontal 0.312) yaw -0.88 deg
+   from IDENTITY          start x +0.000 y +0.000 z +0.000 (horizontal 0.000) yaw +0.00 deg
+                            unoptimised: inliers 0.614 rms_plane 0.046 | converged: x -0.243 y +0.210 z -0.001 (horizontal 0.321) yaw -0.94 deg | inliers 0.917 rms_plane 0.017
+   from ODOMETRY          start x -0.235 y +0.205 z -0.002 (horizontal 0.312) yaw -0.88 deg
+                            unoptimised: inliers 0.917 rms_plane 0.017 | converged: x -0.243 y +0.210 z -0.001 (horizontal 0.321) yaw -0.94 deg | inliers 0.917 rms_plane 0.017
+   identity-start vs odometry-start converged: 0.000 m apart, -0.00 deg
+   CLOSURE (odometry minus LiDAR-only, better fit): x +0.008 y -0.005 z -0.001 m, horizontal 0.009 m, yaw +0.06 deg
+
+=== Part 2: cross-run, robot not moved between runs ===
+run 2 first 3 s onto run 1 last 3 s
+   from IDENTITY          start x +0.000 y +0.000 z +0.000 (horizontal 0.000) yaw +0.00 deg
+                            unoptimised: inliers 0.946 rms_plane 0.046 | converged: x -0.006 y +0.010 z -0.001 (horizontal 0.012) yaw +1.74 deg | inliers 0.987 rms_plane 0.015
+   ring of 8 starts 0.5 m out: inliers 0.987..0.987, worst distance of a converged fit from the identity-start fit 0.000 m, best-inlier fit: x -0.006 y +0.010 z -0.001 (horizontal 0.012) yaw +1.74 deg
+
+run 2 last 3 s onto run 1 first 3 s
+   from IDENTITY          start x +0.000 y +0.000 z +0.000 (horizontal 0.000) yaw +0.00 deg
+                            unoptimised: inliers 0.994 rms_plane 0.016 | converged: x -0.007 y +0.013 z +0.000 (horizontal 0.014) yaw +0.07 deg | inliers 0.994 rms_plane 0.014
+   ring of 8 starts 0.5 m out: inliers 0.994..0.994, worst distance of a converged fit from the identity-start fit 0.000 m, best-inlier fit: x -0.007 y +0.013 z +0.000 (horizontal 0.014) yaw +0.07 deg
+

@@ -101,6 +101,12 @@ def walk(*suffixes: str):
         # /joint_states etc. and would otherwise read as contract changes.
         if r.parts[:1] == ("bench",):
             continue
+        # docs/sherman_docs/tools/ is preserved lab scratch tooling (T3.5
+        # FAST-LIVO2 recipe/replay/analyser): it runs on the lab box against
+        # external processes, so its /clock subscription, replay config keys
+        # and box paths are not contract changes on our side.
+        if r.parts[:3] == ("docs", "sherman_docs", "tools"):
+            continue
         if p.is_file() and p.suffix in suffixes and not is_excluded(r):
             yield p
 

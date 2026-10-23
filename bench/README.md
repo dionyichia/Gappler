@@ -75,8 +75,10 @@ refused, 3 skipped — never a pass.
 | `sim_moveit.sh` | MoveIt plans and executes to both home poses and zero on a `mock_components` arm | installed config must be mock hardware |
 | `estop_delivery.sh` | `estop.py` under a pseudo-terminal: do keys `e`/`r`/`s` sent back to back, the Ctrl+C key and SIGINT (5 trials) all deliver? Every case is required since the 2026-09-21 fix | — |
 | `state_machine_sim.sh` | `grasp_state_machine` runs a full grasp cycle on the simulated arm; the test plays camera, detector and gripper | mock hardware; preflight's `arm-ping`/`arm-port` must not pass (Dion's exception in `CLAUDE.md`) |
-| `velocity_smoother.sh` | T3.4: installed Nav2 smoother plus the owned keyboard node under scripted pseudo-terminals; direction/caps, silence, explicit stop, quit, Ctrl+C, SIGINT, teleop crash and terminal restoration. No base driver | fixed domain 127, localhost only; nodes and hidden topics empty; discovery errors/timeouts refuse |
 | `nav_nodes.sh` | the five nav nodes (`object_approach_node`, `goal_reached_publisher`, `goto_glasses`, `qos_relay`, `pose_publisher`) from source, against synthetic poses, TF and clouds, and a mock `navigate_to_pose` that records goals. 16 cases, 7 expected-fail (F1 ×3, F5, F2, E1, F4). The F1, F4 and F5 fixes landed 2026-10-05 and 2026-10-07 (T3.8), so those five should now report XPASS. Doesn't need the nav build | channel must be empty **including hidden (action) topics** |
+| `velocity_smoother.sh` | T3.4: installed Nav2 smoother plus the owned keyboard node under scripted pseudo-terminals; direction/caps, silence, explicit stop, quit, Ctrl+C, SIGINT, teleop crash and terminal restoration. No base driver | fixed domain 127, localhost only; nodes and hidden topics empty; discovery errors/timeouts refuse |
+| `cloud_scan.sh` | T3.5: synthetic PointCloud2, owned QoS relay and installed laser-scan converter; geometry, nearest beam, height/range bounds, invalid/empty input, metadata and relay payload/QoS for all three launch profiles | fixed domain 127 and localhost only, same fail-closed guard as T3.4; no sensors, drivers or navigation controllers |
+| `slam_persistence.sh` | T3.5: installed synthetic scan/TF mapping, graph/image saving, fresh-process reload and localization against biased odometry; missing-load reply and corrupt-load abort recorded, not safe rejection | domain 127/localhost, same guard; private topics/TF, no hardware or Nav2 controller |
 | `memory_graph_tests.sh [PYTHON]` | every test in `memory_graph/tests`, including `test_clip_encoder.py`, which loads open_clip ViT-B-32 and checks it for upstream's four uses of CLIP: object features, matching, task relevance from text, and scoring a whole photo. Default env: `.venv`. Needs no ROS. One skipped test makes the step SKIPPED. None is skipped by design since 2026-10-07, when the feature merge test was written (T6.4c). The step still reports SKIPPED where open_clip or the weights are missing. Weights: `.venv/bin/python -m memory_graph.clip_encoder` | nothing to isolate: no ROS, no network |
 | `anygrasp_env.sh [PYTHON]` | every AnyGrasp dependency imports in that env, then the SDK demo runs with our licence and checkpoint. Default env: `grasp/anygrasp_venv/.venv`, built by `./grasp/anygrasp_venv/build_anygrasp_venv.sh` | GPU only, no ROS |
 | `anygrasp_replay.sh` | a recorded wrist-camera bag (`WRIST_CAMERA_BAG`, default `assets/recordings/wrist_camera`, made by `grasp/tools/record_wrist_camera.sh`) through the segmentation service, the grasp segmentation client (T2.1, default prompt "box") and `anygrasp_detection_node`, with `/pipeline_state` played as EXECUTING then IDLE. 2 controls (a mask with a centroid, candidates) and the A1 gate case, expected-fail. SKIPPED with no recording | channel must be empty **including hidden topics**. No camera, no state machine |
@@ -89,7 +91,8 @@ bug is there, **XPASS** once it isn't — then retag the finding.
 
 L0 also checks command ownership (`test_command_ownership.py`) and preserves both
 T3.4 and existing dev suites (`test_t34_bench_coverage.py`). Ownership assertions
-come from source commit `7b01820`; T3.5 scan/persistence changes are not included.
+come from source commit `7b01820`; that T3.4 ownership-check scope excludes
+T3.5 scan/persistence. The combined runner includes those T3.5 suites separately.
 
 Run `bash bench/velocity_smoother.sh` individually on an idle ROS box; it needs the installed
 `nav2_velocity_smoother`, not a new workspace build. It uses only `/t34_probe/keyboard_input`
@@ -107,14 +110,66 @@ not established. SIGKILL cannot restore a terminal or publish a final zero.
 Logs go to `log/t34-smoother.log` and `log/t34-teleop-*.log`. Capture the runner's output for
 measured timings. Its cleanup signals only owned process groups and verifies domain emptiness
 after a successful run. L0 also runs stdlib guard and LiDAR launch-wiring tests.
+`python3 bench/test_command_ownership.py` pins the teleop defaults and smoother
+arguments to the same caps and timeouts, the `keyboard_input → output` remap chain
+under `/t34_probe`, and single-publisher ownership of each link.
+`python3 bench/test_bench_coverage.py` keeps navigation and shared-service suites
+in the runner together, including the union of both L4 lists without duplicates (L0).
 `python3 bench/test_t34_launch.py --runtime` constructs the real ROS LiDAR launch without
 executing its actions; source an existing nav overlay for that check. No LiDAR is opened.
+
+`python3 bench/test_navigation_launches.py` checks all three owned navigation entry points
+for network mutation and returned owned LiDAR includes (L0). With `--runtime`, it constructs
+real ROS launch descriptions using temporary source-backed package shares for the candidate
+and the existing overlay for external packages. It resolves includes and checks PointCloud2
+settings without executing actions. This is not installed-overlay or live-hardware proof.
+
+Run `python3 bench/test_slam_maps.py` for localization map-file prerequisites (L0).
+The ROS constructor check in `test_navigation_launches.py --runtime` also verifies
+missing-map refusal before hardware actions are constructed; fake files used for
+successful construction do not prove deserialization. See
+[`T3.5_MAP_PREP.md`](../docs/sherman_docs/t3.5/T3.5_MAP_PREP.md).
+
+`python3 bench/test_slam_fixture.py` checks synthetic room geometry (L0).
+`bash bench/slam_persistence.sh` exercises installed SLAM persistence (L4), not
+the full candidate launches. An exit-0 valid round trip still reports a known
+corrupt-file localizer abort; it does not establish safe hardware readiness.
+Details: [`T3.5_SLAM_PERSISTENCE.md`](../docs/sherman_docs/t3.5/T3.5_SLAM_PERSISTENCE.md).
+
+`python3 bench/test_map_saver.py` checks the explicit snapshot tool. The synthetic
+SLAM bench additionally tests its actual saving/reload, stale-raster refresh without
+prior subscribers, interruption after pause and localization-mode refusal. See
+[`T3.5_MAP_SAVING.md`](../docs/sherman_docs/t3.5/T3.5_MAP_SAVING.md). The local PyYAML
+validation skip is explicit; box tests exercise it.
+
+`python3 bench/check_installed.py --install-root ~/rcp-Gappler/install_nav`
+compares candidate source against the installed overlay, read-only (SHA256 table,
+exit 1 on drift/missing). Drift is the expected result until a reviewed candidate
+is deployed; it proves the checker works, not that anything is broken. Use it
+before any lab session to confirm what the installed launches actually contain.
+No installed-overlay proof — it reports the gap.
+
+Run `python3 bench/test_cloud_scan.py` for stdlib fixture/oracle checks (L0) and
+`bash bench/cloud_scan.sh` for the isolated ROS conversion bench (L4). The latter reads actual
+converter parameters from launch source and uses the relay for the SLAM profiles and the
+direct-cloud route for AMCL. Twelve small-fixture cases check bin/range geometry, filtering,
+metadata and payload/QoS preservation; no physical TF, live sensor or navigation proof.
+Run serially with the keyboard bench because both reserve domain 127. Details:
+[`T3.5_CLOUD_SCAN.md`](../docs/sherman_docs/t3.5/T3.5_CLOUD_SCAN.md).
 
 ### Changelog
 
 | Date | Who | Change |
 |---|---|---|
 | 2026-10-06 | OpenCode + Sherman | Added maintained T3.4 isolated controls and LiDAR launch checks; physical acceptance remains separate. |
+| 2026-10-07 | OpenCode + Sherman | Added navigation entry-point wiring and source-backed real launch construction checks. |
+| 2026-10-07 | OpenCode + Sherman | Added maintained synthetic cloud-to-scan L0/L4 checks for the current SLAM and AMCL profiles. |
+| 2026-10-07 | OpenCode + Sherman | Added map-file prerequisites and missing-map refusal before hardware action construction; no graph-load proof. |
+| 2026-10-07 | OpenCode + Sherman | Added synthetic installed SLAM persistence L0/L4 checks, keeping corrupt-load abort and physical-proof limits explicit. |
+| 2026-10-07 | OpenCode + Sherman | Added owned snapshot tests, stale-raster/pause restoration and repeated-signal cleanup controls. |
+| 2026-10-07 | OpenCode + Sherman | Added command-ownership L0 pin and read-only installed-overlay drift check; drift is the expected result until deployment. |
+| 2026-10-07 | OpenCode + Sherman | Added T3.4 command-ownership check: teleop defaults, smoother arguments, remap chain and single-publisher gates share one L0 test. |
+| 2026-10-13 | OpenCode + Sherman | Combined current dev and navigation bench lists without dropping either side; added an L0 suite-coverage regression check. |
 
 ---
 

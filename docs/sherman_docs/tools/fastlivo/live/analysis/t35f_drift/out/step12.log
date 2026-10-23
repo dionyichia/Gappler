@@ -1,0 +1,6 @@
+run1: 1393 non-empty /cloud_registered msgs, 110479 voxels at 5 cm, 32672 in band 0.2-1.5 m above floor (floor z -0.154 in levelled frame)
+run2: 1464 non-empty /cloud_registered msgs, 125435 voxels at 5 cm, 35932 in band 0.2-1.5 m above floor (floor z -0.150 in levelled frame)
+hd1: 2186 non-empty /cloud_registered msgs, 224059 voxels at 5 cm, 72656 in band 0.2-1.5 m above floor (floor z -0.148 in levelled frame)
+run1 -> run2: points 32672 vs 35932; cells 98 (of 99 with source points); median 0.026 p90 0.034 max 0.313 | >0.10 m: 3% | cells within 1.2 m of glass: n=81 median 0.025 ; interior: n=4 median 0.031
+run1 -> hd1: points 32672 vs 72656; cells 99 (of 99 with source points); median 0.031 p90 0.106 max 0.375 | >0.10 m: 11% | cells within 1.2 m of glass: n=82 median 0.028 ; interior: n=4 median 0.035
+run2 -> hd1: points 35932 vs 72656; cells 102 (of 104 with source points); median 0.035 p90 0.097 max 0.377 | >0.10 m: 9% | cells within 1.2 m of glass: n=84 median 0.033 ; interior: n=4 median 0.034

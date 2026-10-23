@@ -1,0 +1,42 @@
+corrected: 372 scans inside the turn (2.9 to 40.7 s)
+precorrection: 323 scans inside the turn (0.5 to 33.4 s)
+150 scans per run (evenly spaced inside the turn), every 4th point, range 0.5-8 m, 0.2 m cells, >= 30 points, planar if lambda1/lambda2 < 0.2
+thickness = sqrt(smallest covariance eigenvalue) in mm: wall cells / floor+ceiling cells / all planar cells (lambda1/lambda2 < 0.6); n = wall cells, tight = share of those passing lambda1/lambda2 < 0.2
+delta = pose-time offset added to header stamp + point offset_time (0.15 = the pose-stamp lag of the route note)
+-- corrected, placed with its own extrinsic_T [-0.011   -0.02329  0.04412]
+   delta 0.000 s: wall 18.34  floor/ceil 8.54  all 12.22  (n 1025, tight 0.53)
+   delta 0.025 s: wall 17.63  floor/ceil 8.04  all 11.65  (n 1038, tight 0.56)
+   delta 0.050 s: wall 16.38  floor/ceil 8.47  all 11.89  (n 1039, tight 0.62)
+   delta 0.075 s: wall 15.69  floor/ceil 9.11  all 11.69  (n 1063, tight 0.65)
+   delta 0.100 s: wall 14.48  floor/ceil 8.98  all 11.50  (n 1077, tight 0.69)
+   delta 0.125 s: wall 13.12  floor/ceil 8.05  all 10.85  (n 1086, tight 0.73)
+   delta 0.150 s: wall 13.49  floor/ceil 8.17  all 10.84  (n 1080, tight 0.72)
+   delta 0.175 s: wall 14.66  floor/ceil 8.42  all 11.48  (n 1076, tight 0.65)
+   delta 0.200 s: wall 16.21  floor/ceil 8.51  all 11.79  (n 1058, tight 0.60)
+   delta 0.225 s: wall 16.83  floor/ceil 8.06  all 11.77  (n 1003, tight 0.58)
+   delta 0.250 s: wall 17.62  floor/ceil 8.29  all 12.20  (n 1010, tight 0.57)
+   delta 0.275 s: wall 17.85  floor/ceil 8.68  all 12.50  (n 1018, tight 0.55)
+   delta 0.300 s: wall 18.25  floor/ceil 8.91  all 12.89  (n 1023, tight 0.56)
+   delta 0.325 s: wall 18.11  floor/ceil 8.32  all 12.87  (n 1017, tight 0.56)
+   delta 0.350 s: wall 18.82  floor/ceil 8.68  all 13.35  (n 1008, tight 0.55)
+   sharpest by tight-planar share 0.73 at delta 0.125 s (wall 13.12 mm); at delta 0.15: share 0.72 wall 13.49 mm; at 0: share 0.53 wall 18.34 mm
+-- precorrection, placed with its own extrinsic_T [ 0.011    0.02329 -0.04412]
+   delta 0.000 s: wall 20.00  floor/ceil 8.89  all 11.92  (n 953, tight 0.52)
+   delta 0.025 s: wall 19.85  floor/ceil 9.00  all 11.97  (n 954, tight 0.50)
+   delta 0.050 s: wall 19.60  floor/ceil 8.50  all 11.77  (n 957, tight 0.51)
+   delta 0.075 s: wall 18.11  floor/ceil 8.28  all 11.40  (n 961, tight 0.53)
+   delta 0.100 s: wall 16.35  floor/ceil 8.41  all 11.06  (n 965, tight 0.58)
+   delta 0.125 s: wall 15.47  floor/ceil 8.12  all 10.95  (n 968, tight 0.60)
+   delta 0.150 s: wall 15.97  floor/ceil 7.90  all 11.25  (n 1011, tight 0.58)
+   delta 0.175 s: wall 17.66  floor/ceil 8.21  all 11.84  (n 1005, tight 0.61)
+   delta 0.200 s: wall 18.63  floor/ceil 8.88  all 11.80  (n 1026, tight 0.55)
+   delta 0.225 s: wall 19.57  floor/ceil 9.11  all 11.71  (n 994, tight 0.51)
+   delta 0.250 s: wall 19.76  floor/ceil 8.59  all 11.76  (n 983, tight 0.51)
+   delta 0.275 s: wall 19.52  floor/ceil 8.29  all 11.54  (n 965, tight 0.53)
+   delta 0.300 s: wall 18.55  floor/ceil 8.44  all 11.35  (n 952, tight 0.55)
+   delta 0.325 s: wall 18.36  floor/ceil 8.37  all 10.85  (n 907, tight 0.56)
+   delta 0.350 s: wall 18.94  floor/ceil 8.22  all 11.07  (n 944, tight 0.53)
+   sharpest by tight-planar share 0.61 at delta 0.175 s (wall 17.66 mm); at delta 0.15: share 0.58 wall 15.97 mm; at 0: share 0.52 wall 20.00 mm
+-- cross placement (the other run's extrinsic) at each run's best delta, sanity:
+   corrected bag with precorrection T: wall 25.72 floor/ceil 8.48 all 14.01 mm, tight share 0.30
+   precorrection bag with corrected T: wall 24.34 floor/ceil 8.24 all 14.13 mm, tight share 0.36
