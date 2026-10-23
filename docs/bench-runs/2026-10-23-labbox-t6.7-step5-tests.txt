@@ -27,3 +27,8 @@ Before start
 
   Not run here: the rerun of check_reasoning on the frozen set and the held-out set (step 5f),
   which waits for Zongzhe's held-out instructions.
+
+Rerun after the six fixes from the T6.7 quiz (docs/zongzhe_docs/quizzes/T6.7_QUIZ.md)
+  Same box and environment, scratch copy /tmp/zongzhe_t67_quizfix_20261023, deleted after.
+  nvidia-smi 390 MiB, 0 %, no other GPU user. RESULT: PASS, 399 ran, 399 passed, 0 skipped.
+  Mac scratch env: 367 ran, the same 3 PIL errors, 16 skipped.

@@ -190,8 +190,9 @@ class ClassExpanderTest(unittest.TestCase):
 
     def test_ranked_keeps_the_models_order_in_the_vocabulary_spelling(self):
         """The task holds its targets as a set, so the order lives in `ranked`."""
-        result = self.expand(FakeModel('{"targets": ["Sofa", "chair"]}'))
+        result = self.expand(FakeModel('{"targets": ["Sofa", "chair"], "related": ["Table", "desk", "cup"]}'))
         self.assertEqual(result.ranked, ("sofa", "chair"))
+        self.assertEqual(result.ranked_related, ("table", "desk", "cup"))
 
     def test_the_model_gets_the_prompt_and_the_limits(self):
         model = FakeModel('{"targets": ["chair"]}')
@@ -274,6 +275,7 @@ class ClassExpanderTest(unittest.TestCase):
         self.assertEqual(result.source, "fallback")
         self.assertEqual((result.task.targets, result.task.related), ({"chair"}, {"sofa"}))
         self.assertEqual(result.ranked, ("chair",))
+        self.assertEqual(result.ranked_related, ("sofa",))
 
     def test_the_fall_backs_related_are_cut_to_the_maximum(self):
         from memory_graph.reasoning import ClassExpander
@@ -330,7 +332,8 @@ class ConfigTest(unittest.TestCase):
                 MemoryGraphConfig.from_dict(bad)
 
     def test_bad_synonyms_are_refused(self):
-        for bad in [[("chair", "sofa")],                       # renames a class in the list
+        for bad in [[("couch", "settee")],                     # not a class in the list: a typo
+                    [("chair", "sofa")],                       # renames a class in the list
                     [("couch", "sofa"), ("Couch", "chair")],   # the same name twice
                     [("", "sofa")]]:
             with self.subTest(bad=bad), self.assertRaises(ValueError):

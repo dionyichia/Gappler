@@ -4,7 +4,9 @@ Once, at the start of a task, a small local text model reads the instruction
 and the vocabulary and names two sets of classes:
 
     targets   what the instruction asks for, "find a chair" -> chair
-    related   classes likely to be near a target, chair -> table, desk
+    related   from the model: classes often found near a target, chair -> table, desk.
+              From the CLIP fall-back: the other list classes the instruction is
+              close to in text, "take me to the door" -> window. Not "near" at all.
 
     expander = ClassExpander(QwenModel(cfg), encoder, cfg)
     result = expander.expand(TaskContext.from_text("find a chair", encoder), vocab)
@@ -222,6 +224,7 @@ class Expansion:
     added: Tuple[str, ...] = ()      # phrases appended to the vocabulary
     seconds: float = 0.0             # time spent waiting for the model
     ranked: Tuple[str, ...] = ()     # the targets best first: the model's order, or the fall-back's
+    ranked_related: Tuple[str, ...] = ()  # the related classes in the same order, most useful first
 
 
 class ClassExpander:
@@ -276,15 +279,17 @@ class ClassExpander:
         if parsed is not None:
             source, targets, related = "model", parsed.targets, parsed.related
         else:
-            # The best class is the target, the rest of upstream's list is related
-            # (config: fallback_ratio).
+            # The best class is the target. The rest of upstream's list is related:
+            # classes the instruction is also close to in text, not classes found
+            # near the target (config: fallback_ratio).
             source = "fallback"
             ranked = fallback_targets(task, vocab, self.encoder,
                                       self.cfg.fallback_ratio, self.cfg.fallback_top_k)
             targets, related = ranked[:1], ranked[1:1 + self.cfg.reasoning_max_related]
         new_task, added = extend_for_task(vocab, task.with_classes(targets, related))
         ranked = tuple(normalise(t) for t in targets)
-        return Expansion(new_task, source, why, reply, tuple(added), seconds, ranked)
+        ranked_related = tuple(normalise(r) for r in related)
+        return Expansion(new_task, source, why, reply, tuple(added), seconds, ranked, ranked_related)
 
 
 class QwenModel:

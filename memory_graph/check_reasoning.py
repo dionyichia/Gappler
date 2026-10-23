@@ -6,8 +6,9 @@ For every instruction in the set (memory_graph/eval/instructions_t6_7.json):
     result = expander.expand(task, fresh base vocabulary)   # T6.7b, and T6.7c's extend_for_task
 
 once per model and once with no model, so the CLIP fall-back alone. A row
-passes if the first target is one the set accepts. Related classes are shown
-for a person to judge, not scored.
+passes if the first target is one the set accepts, compared with "_" read as
+a space. Related classes are shown in the model's order for a person to judge,
+not scored.
 
 Then the vocabulary round trip (T6.7c): every instruction in order on one
 shared vocabulary, as a long run would see them. No phrase's class id may
@@ -16,6 +17,9 @@ change, and a save then a load must give the same list.
 On the lab box, from the repo root (check the GPU is free first):
 
     .venv/bin/python -m memory_graph.check_reasoning --out <dir>
+
+runs the config's model (reasoning_model) and the fall-back. To compare models:
+--models Qwen/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-1.5B-Instruct.
 
 writes <dir>/check_reasoning.md, a table per model to check by hand, and
 <dir>/check_reasoning.json with every raw reply.
@@ -33,10 +37,9 @@ from typing import Callable, Dict, List, Optional, Sequence
 from memory_graph.config import MemoryGraphConfig
 from memory_graph.reasoning import ClassExpander, Expansion
 from memory_graph.task import TaskContext, TextEncoder
-from memory_graph.vocabulary import Vocabulary, normalise
+from memory_graph.vocabulary import Vocabulary, name_key
 
 DEFAULT_SET = Path(__file__).resolve().parent / "eval" / "instructions_t6_7.json"
-DEFAULT_MODELS = ("Qwen/Qwen2.5-0.5B-Instruct", "Qwen/Qwen2.5-1.5B-Instruct")
 FALLBACK = "fallback only"
 
 
@@ -52,8 +55,8 @@ def load_set(path) -> tuple:
     """(status, items) from an instruction set file."""
     data = json.loads(Path(path).read_text())
     items = tuple(
-        Item(d["instruction"], d.get("kind", ""), tuple(normalise(a) for a in d["accept"]),
-             tuple(normalise(r) for r in d.get("related_expected", ())))
+        Item(d["instruction"], d.get("kind", ""), tuple(name_key(a) for a in d["accept"]),
+             tuple(name_key(r) for r in d.get("related_expected", ())))
         for d in data["instructions"])
     if not items:
         raise ValueError(f"{path}: no instructions")
@@ -64,20 +67,21 @@ def run_one(expander: ClassExpander, encoder: TextEncoder, item: Item, vocab: Vo
     """One instruction through T6.7a to T6.7c on `vocab`, judged against the set."""
     result: Expansion = expander.expand(TaskContext.from_text(item.instruction, encoder), vocab)
     targets = list(result.ranked)
+    related_keys = {name_key(r) for r in result.ranked_related}
     return {
         "instruction": item.instruction,
         "kind": item.kind,
         "source": result.source,
         "why": result.why,
         "targets": targets,
-        "related": sorted(result.task.related),
+        "related": list(result.ranked_related),
         "added": list(result.added),
         "seconds": round(result.seconds, 3),
         "reply": result.reply,
         "accept": list(item.accept),
-        "passed": bool(targets) and targets[0] in item.accept,
-        "related_expected_found": [r for r in item.related_expected if r in result.task.related],
-        "related_expected_missing": [r for r in item.related_expected if r not in result.task.related],
+        "passed": bool(targets) and name_key(targets[0]) in item.accept,
+        "related_expected_found": [r for r in item.related_expected if r in related_keys],
+        "related_expected_missing": [r for r in item.related_expected if r not in related_keys],
     }
 
 
@@ -164,7 +168,7 @@ def _free_gpu() -> None:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--set", default=str(DEFAULT_SET), help="instruction set file")
-    ap.add_argument("--models", nargs="*", default=list(DEFAULT_MODELS))
+    ap.add_argument("--models", nargs="*", help="models to compare, default the config's reasoning_model")
     ap.add_argument("--out", required=True, help="folder for the report")
     args = ap.parse_args(argv)
 
@@ -179,7 +183,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         model_cfg = dataclasses.replace(cfg, reasoning_model=name)
         return lambda: ClassExpander(QwenModel(model_cfg), encoder, model_cfg)
 
-    expanders = {name: with_model(name) for name in args.models}
+    expanders = {name: with_model(name) for name in (args.models or [cfg.reasoning_model])}
     expanders[FALLBACK] = lambda: ClassExpander(None, encoder, cfg)
     runs = check(expanders, encoder, items, cfg)
 

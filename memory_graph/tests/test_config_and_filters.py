@@ -50,22 +50,29 @@ class BaseVocabularyTest(unittest.TestCase):
         self.assertFalse(set(CFG.base_vocabulary) & set(CFG.bg_classes))
 
     def test_override_from_a_list(self):
-        cfg = MemoryGraphConfig.from_dict({"base_vocabulary": ["cup", "box"]})
+        cfg = MemoryGraphConfig.from_dict({"base_vocabulary": ["cup", "box"], "class_synonyms": {}})
         self.assertEqual(cfg.base_vocabulary, ("cup", "box"))
+
+    def test_a_new_base_list_needs_synonyms_that_match(self):
+        """The default synonyms point at sofa, trash can ..., not in this list (T6.7)."""
+        with self.assertRaisesRegex(ValueError, "class_synonyms points at classes"):
+            MemoryGraphConfig.from_dict({"base_vocabulary": ["cup", "box"]})
 
     def test_a_repeat_is_an_error_whatever_its_case_or_spaces(self):
         with self.assertRaises(ValueError):
-            MemoryGraphConfig(base_vocabulary=("cup", " Cup"))
+            MemoryGraphConfig(base_vocabulary=("cup", " Cup"), class_synonyms=())
         with self.assertRaises(ValueError):
-            MemoryGraphConfig(base_vocabulary=("power outlet", "power  outlet"))   # as Vocabulary sees it
+            MemoryGraphConfig(base_vocabulary=("power outlet", "power  outlet"), class_synonyms=())   # as Vocabulary sees it
+        with self.assertRaisesRegex(ValueError, "repeats"):   # T6.7: "_" reads as a space
+            MemoryGraphConfig(base_vocabulary=("tv_monitor", "tv monitor"), class_synonyms=())
 
     def test_a_background_class_is_an_error(self):
         with self.assertRaises(ValueError):
-            MemoryGraphConfig(base_vocabulary=("cup", "floor"))
+            MemoryGraphConfig(base_vocabulary=("cup", "floor"), class_synonyms=())
 
     def test_an_empty_phrase_is_an_error(self):
         with self.assertRaises(ValueError):
-            MemoryGraphConfig(base_vocabulary=("cup", " "))
+            MemoryGraphConfig(base_vocabulary=("cup", " "), class_synonyms=())
 
 
 class DetectionFilterTest(unittest.TestCase):

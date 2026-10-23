@@ -171,8 +171,9 @@ class MemoryGraphConfig:
     reasoning_max_related: int = 5
     # A name the model gives that means a class already in the list is read as that
     # class, so one kind of object keeps one name (T6.7: 1.5B added couch and bin as
-    # new classes). name -> list class. A name may not be a list class itself. A
-    # class not in the list is added like any new target.
+    # new classes). name -> list class. The class must be in base_vocabulary, so a
+    # typo is an error, not a silent new class. A name may not be a list class itself.
+    # A config that changes base_vocabulary sets this to match, () for none.
     class_synonyms: Tuple[Tuple[str, str], ...] = (
         ("couch", "sofa"), ("settee", "sofa"),
         ("bin", "trash can"), ("trash bin", "trash can"), ("rubbish bin", "trash can"),
@@ -200,12 +201,15 @@ class MemoryGraphConfig:
             raise ValueError("cleanup_every_photos and prune_kappa must be at least 1")
         if self.anchor_height < 0 or self.anchor_width < 0:
             raise ValueError("anchor_height and anchor_width must be 0 or more")
-        from memory_graph.vocabulary import normalise   # the spelling Vocabulary compares under
+        from memory_graph.vocabulary import name_key, normalise   # the spellings Vocabulary compares under
 
         phrases = [normalise(p) for p in self.base_vocabulary]
         if any(not p for p in phrases):
             raise ValueError("base_vocabulary has an empty phrase")
-        repeated = sorted({p for p in phrases if phrases.count(p) > 1})
+        # Compared with "_" read as a space, as a model's reply is: "tv monitor" and
+        # "tv_monitor" in one list would leave a reply unable to tell them apart.
+        keys = [name_key(p) for p in phrases]
+        repeated = sorted({k for k in keys if keys.count(k) > 1})
         if repeated:
             raise ValueError(f"base_vocabulary repeats {repeated}")
         background = sorted(set(phrases) & {normalise(b) for b in self.bg_classes})
@@ -218,12 +222,14 @@ class MemoryGraphConfig:
                              "reasoning_max_related at least 0")
         if not 0.0 < self.fallback_ratio <= 1.0:
             raise ValueError("fallback_ratio must be in (0, 1]")
-        from memory_graph.vocabulary import name_key
-
-        base_keys = {name_key(p) for p in phrases}
+        base_keys = set(keys)
         names = [name_key(name) for name, _ in self.class_synonyms]
         if any(not n for n in names) or len(set(names)) != len(names):
             raise ValueError("class_synonyms has an empty or repeated name")
+        missing = sorted({cls for _, cls in self.class_synonyms if name_key(cls) not in base_keys})
+        if missing:
+            raise ValueError(f"class_synonyms points at classes not in base_vocabulary: {missing}. "
+                             "A config that changes base_vocabulary must set class_synonyms to match")
         shadowed = sorted(set(names) & base_keys)
         if shadowed:
             raise ValueError(f"class_synonyms renames classes that are in base_vocabulary: {shadowed}")

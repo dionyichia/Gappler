@@ -51,7 +51,7 @@ ITEMS = (
 REPLIES = {
     "find a chair": '{"targets": ["chair"], "related": ["desk"]}',
     "find the couch": '{"targets": ["couch", "sofa"], "related": []}',   # first target not accepted
-    "find a mug on the desk": '{"targets": ["cup"], "related": ["desk", "sofa"]}',
+    "find a mug on the desk": '{"targets": ["cup"], "related": ["sofa", "desk"]}',
     "find a lamp": '{"targets": ["Lamp"], "related": ["desk"]}',
 }
 
@@ -78,8 +78,22 @@ class CheckReasoningTest(unittest.TestCase):
         self.assertEqual([r["passed"] for r in rows], [True, False, True, True])
         self.assertEqual(rows[1]["targets"], ["couch", "sofa"])
         self.assertEqual(rows[2]["related_expected_found"], ["desk"])
+        self.assertEqual(rows[2]["related"], ["sofa", "desk"])   # the model's order, not sorted
         self.assertEqual(rows[3]["added"], ["lamp"])
         self.assertEqual({r["source"] for r in rows}, {"model"})
+
+    def test_accept_lists_compare_with_underscore_as_a_space(self):
+        """A set may write "TV monitor" for the list's tv_monitor (quiz issue 2)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp, "set.json")
+            path.write_text(json.dumps({"status": "test", "instructions": [
+                {"instruction": "find the tv", "accept": ["TV monitor"]}]}))
+            _, items = load_set(path)
+        cfg = MemoryGraphConfig(base_vocabulary=BASE + ("tv_monitor",), class_synonyms=())
+        model = ScriptedModel({"find the tv": '{"targets": ["tv_monitor"]}'})
+        rows = run_set(ClassExpander(model, self.encoder, cfg), self.encoder, items, cfg)
+        self.assertEqual(rows[0]["targets"], ["tv_monitor"])
+        self.assertTrue(rows[0]["passed"])
 
     def test_each_row_starts_from_the_base_vocabulary(self):
         """A class added by one row is new again in the next run of it."""
