@@ -1,0 +1,10 @@
+[INFO] [1792475970.569251602] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3' for READ_ONLY.
+odom msgs 2356 invalid poses 0 frames {('camera_init', 'aft_mapped')}
+clouds {'ok_coloured': 2186, 'heartbeat_default_empty': 2356, 'fielded_zero_point': 170} coloured points median 1157 min 1 max 2978
+odom backward stamps 0 cloud backward stamps 0
+odom gap max 0.098 s, >0.2 s: 0
+path length 29.93 m, max step 0.050 m, max speed 3.93 m/s, median speed 0.20
+start xyz 0.003 0.002 -0.003 yaw -0.0 deg
+end   xyz 0.012 0.010 0.001 yaw -2.4 deg
+return error: horizontal 0.012 m, vertical 0.004 m, yaw -2.4 deg
+max distance from start 3.47 m, z range 0.094 m

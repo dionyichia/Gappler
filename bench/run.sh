@@ -85,8 +85,53 @@ s=$(step "L0  T3.4 LiDAR-only wiring" python3 bench/test_t34_launch.py)
 row L0 "T3.4 LiDAR-only wiring" "$s" ""
 s=$(step "L0  T3.4 command ownership" python3 bench/test_command_ownership.py)
 row L0 "T3.4 command ownership" "$s" ""
+s=$(step "L0  Bench suite coverage" python3 bench/test_bench_coverage.py)
+row L0 "Bench suite coverage" "$s" ""
+s=$(step "L0  Navigation launch wiring" python3 bench/test_navigation_launches.py)
+row L0 "Navigation launch wiring" "$s" ""
+s=$(step "L0  Synthetic cloud fixtures" python3 bench/test_cloud_scan.py)
+row L0 "Synthetic cloud fixtures" "$s" ""
+s=$(step "L0  SLAM map prerequisites" python3 bench/test_slam_maps.py)
+row L0 "SLAM map prerequisites" "$s" ""
+s=$(step "L0  Synthetic SLAM fixture" python3 bench/test_slam_fixture.py)
+row L0 "Synthetic SLAM fixture" "$s" ""
+s=$(step "L0  Map snapshot saver" python3 bench/test_map_saver.py)
+row L0 "Map snapshot saver" "$s" ""
+s=$(step "L0  FAST-LIVO2 odom bridge transform" python3 bench/test_fastlivo_odom_bridge.py)
+row L0 "FAST-LIVO2 odom bridge transform" "$s" ""
+s=$(step "L0  Livox CustomMsg to PointCloud2 converter" python3 bench/test_livox_custom_to_cloud.py)
+row L0 "Livox CustomMsg to PointCloud2 converter" "$s" "numpy fast-path check skipped where numpy is missing"
+s=$(step "L0  FAST-LIVO2 odom_source launch wiring" python3 bench/test_fastlivo_launch_wiring.py)
+row L0 "FAST-LIVO2 odom_source launch wiring" "$s" ""
+s=$(step "L0  FAST-LIVO2 mapper /tf remap" python3 bench/test_fastlivo_mapper_remap.py)
+row L0 "FAST-LIVO2 mapper /tf remap" "$s" ""
+s=$(step "L0  FAST-LIVO2 mode SLAM config" python3 bench/test_fastlivo_slam_config.py)
+row L0 "FAST-LIVO2 mode SLAM config" "$s" ""
+s=$(step "L0  FAST-LIVO2 live mapper config" python3 bench/test_fastlivo_live_config.py)
+row L0 "FAST-LIVO2 live mapper config" "$s" ""
+s=$(step "L0  FAST-LIVO2 live TF edge check" python3 bench/test_tf_edge_check.py)
+row L0 "FAST-LIVO2 live TF edge check" "$s" ""
+s=$(step "L0  T3.5f live runbook" python3 bench/test_fastlivo_runbook.py)
+row L0 "T3.5f live runbook" "$s" ""
 s=$(step "L0  T3.4 bench coverage" python3 bench/test_t34_bench_coverage.py)
 row L0 "T3.4 bench coverage" "$s" ""
+s=$(step "L0  FAST-LIVO diagnostic patch" python3 docs/sherman_docs/tools/fastlivo/recipe/test_diagnostics.py)
+row L0 "FAST-LIVO diagnostic patch" "$s" "source transformation additionally needs preserved pinned source"
+s=$(step "L0  FAST-LIVO visual fixes" python3 docs/sherman_docs/tools/fastlivo/recipe/test_visual_fixes.py)
+row L0 "FAST-LIVO visual fixes" "$s" "standalone C++ checks; real-source test additionally needs preserved pinned source"
+s=$(step "L0  FAST-LIVO blind_sqr patch" python3 docs/sherman_docs/tools/fastlivo/recipe/test_blind_sqr.py)
+row L0 "FAST-LIVO blind_sqr patch" "$s" "real-source test additionally needs preserved pinned source"
+s=$(step "L0  FAST-LIVO combined mode" python3 docs/sherman_docs/tools/fastlivo/recipe/test_combined.py)
+row L0 "FAST-LIVO combined mode" "$s" "real-source gate additionally needs preserved pinned source"
+# The tool tests that need no ROS: audit logic, projection math, live-preview rendering, config
+# checks. test_analyze_bag.py needs rosbag2_py, so it stays box-only.
+s=$(step "L0  FAST-LIVO capture tools" bash -c 'cd docs/sherman_docs/tools/fastlivo &&
+  exec python3 -B -m unittest test_project_scan test_check_replay_configs test_live_preview')
+row L0 "FAST-LIVO capture tools" "$s" "staged-pair checks additionally need PyYAML"
+# The user-run wrappers' tests (run_replay/run_build/debug_shutdown argument and lock logic).
+s=$(step "L0  FAST-LIVO replay harness" bash -c 'cd docs/sherman_docs/tools/fastlivo/replay &&
+  exec python3 -B -m unittest discover -p "test_*.py"')
+row L0 "FAST-LIVO replay harness" "$s" "wrapper-runtime tests additionally need GNU timeout and flock"
 s=$(step "L0  Geometry runtime" python3 bench/test_geometry.py --runtime)
 row L0 "Geometry runtime" "$s" "requires existing PyYAML"
 # xacro and realsense2_description come from ROS, which CI does not source. Source it here when present.
@@ -118,7 +163,7 @@ else
   if [ "$arm" != PASS ]; then
     row L4 "Simulation" SKIPPED "arm build did not pass (see L3)"
   else
-    for t in sim_moveit estop_delivery state_machine_sim nav_nodes velocity_smoother anygrasp_env anygrasp_replay segmentation_service; do
+    for t in sim_moveit estop_delivery state_machine_sim nav_nodes velocity_smoother cloud_scan slam_persistence anygrasp_env anygrasp_replay segmentation_service fastlivo_bridge; do
       s=$(step "L4  Simulation: $t" ./bench/$t.sh)
       row L4 "Sim: $t" "$s" ""
     done

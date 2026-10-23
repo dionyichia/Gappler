@@ -20,8 +20,30 @@ from dataclasses import dataclass, fields, replace
 from typing import Any, Mapping, Tuple
 
 
+# TENTATIVE (Zongzhe, 2026-10-20, T6.7c): 30 phrases, all ScanNet200 names as HiCo-Nav
+# spells them (data/scannet200_classes_ori.txt), so "tv_monitor" keeps upstream's spelling.
+# 23 fired at 0.5 or more on the lab test photos, the other 7 (bottle, computer tower,
+# keyboard, laptop, mouse, table, whiteboard) are things a lab or the grasp tasks hold.
+# Left out on purpose: umbrella words that fire on everything ("furniture", "seat"), one of
+# each synonym pair ("couch", "trash bin", "purse", "ceiling light"), and bg_classes.
+# 30 because batched SAM 3 costs about 0.2 s + 0.04 s per phrase per photo on the lab box
+# GPU: docs/bench-runs/2026-10-20-labbox-t6.3c-sam3-batched-timing.txt. Check it against
+# the lab's real objects once T6.2 records the lab and T6.4e lists them.
+BASE_VOCABULARY: Tuple[str, ...] = (
+    "bag", "bench", "book", "bottle", "box", "cabinet", "chair", "clothes",
+    "computer tower", "cup", "cushion", "desk", "door", "keyboard", "laptop", "light",
+    "mouse", "paper", "poster", "power outlet", "shelf", "sign", "sofa", "stool",
+    "table", "tissue box", "trash can", "tv_monitor", "whiteboard", "window",
+)
+
+
 @dataclass(frozen=True)
 class MemoryGraphConfig:
+    # ---- S1 detection -----------------------------------------------------
+    # The phrases SAM 3 is prompted with on every photo, before any task adds
+    # its own. A class id is a phrase's position, so only append to this list.
+    base_vocabulary: Tuple[str, ...] = BASE_VOCABULARY
+
     # ---- S2 detection filtering -------------------------------------------
     bg_classes: Tuple[str, ...] = ("wall", "floor", "ceiling", "carpet", "rug", "bath mat")
     skip_bg: bool = True
@@ -48,6 +70,9 @@ class MemoryGraphConfig:
     # Upstream hardcodes 0.8 and 0.7 (map_utils.py:295).
     contain_inner_ratio: float = 0.8
     contain_outer_ratio: float = 0.7
+    # Then a pixel still in two masks stays only in the more confident one.
+    # Not upstream. Chosen 2026-10-21 (Zongzhe, T6.3), see masks.one_owner_per_pixel.
+    mask_one_owner_per_pixel: bool = True
 
     # ---- S6 image feature -------------------------------------------------
     # Crop padding per side as a fraction of the box's width and height.
@@ -86,8 +111,13 @@ class MemoryGraphConfig:
 
     # ---- S10 association --------------------------------------------------
     # A candidate point "overlaps" an object if the object has a point this close.
-    # Upstream hardcodes 2.5 cm (pointcloud.py:672).
-    match_radius_m: float = 0.025
+    # Upstream hardcodes 2.5 cm (pointcloud.py:672). 10 cm since 2026-10-22 (Zongzhe,
+    # T6.4): with sparse LiDAR depth and two views of one object 4 to 9 cm apart, 2.5 cm
+    # left most real objects as several entries. On the handdriven1 drive 10 cm cut
+    # duplicates from 8 to 3 with no false merges and no new misses. On a second drive
+    # it also cut them, and 15 cm started merging a chair into the desk beside it.
+    # docs/bench-runs/2026-10-21-labbox-t6.4-drive-run.txt, D-MG2.
+    match_radius_m: float = 0.10
     # score = (1 + phys_bias) * overlap + (1 - phys_bias) * appearance
     phys_bias: float = 0.5
     # A candidate merges into its best object only above this score.
@@ -111,12 +141,37 @@ class MemoryGraphConfig:
     # (map.py:899).
     cleanup_every_photos: int = 10
     # kappa: how many photos to keep per object when pruning, if it has that
-    # many. Upstream's 1 keeps a single view of each object. D-MG1 in
-    # docs/MEMORY_GRAPH_DESIGN.md.
-    prune_kappa: int = 1
+    # many. Upstream's 1 keeps a single view of each object, so one bad view
+    # leaves the object with no usable photo. TENTATIVE 3 (Zongzhe, 2026-10-21,
+    # D-MG1 in docs/MEMORY_GRAPH_DESIGN.md): about 2.6 times the photos of
+    # kappa 1 on the section 6 benchmark. Check it on the recorded drive (T6.4).
+    prune_kappa: int = 3
     # An object's cloud is left as it was if denoising would leave fewer points
     # than this (pointcloud.py:787).
     denoise_min_points: int = 4
+
+    # ---- Reasoning layer: instruction -> target and related classes (T6.7b)
+    # A local text model, decided in T6.6. The 0.5B model is the one the voice
+    # path already loads (aria/aria_app/services/prompt_extractor.py). T6.7's hand
+    # check decides whether to step up to Qwen/Qwen2.5-1.5B-Instruct.
+    reasoning_model: str = "Qwen/Qwen2.5-0.5B-Instruct"
+    # "auto" is cuda if torch sees a GPU, else cpu.
+    reasoning_device: str = "auto"
+    # How long to wait for the reply before falling back to CLIP. Upstream waits
+    # with no limit. TENTATIVE 10 s (Zongzhe, 2026-10-22): the call runs once, at
+    # the start of a task, so a few seconds is fine. A hang is not.
+    reasoning_timeout_s: float = 10.0
+    reasoning_max_new_tokens: int = 96
+    # At most this many classes are taken from the reply. Every class added to
+    # the vocabulary costs SAM 3 about 0.04 s per photo (T6.3c), so a reply that
+    # lists the whole vocabulary must not be taken as it is.
+    reasoning_max_targets: int = 3
+    reasoning_max_related: int = 5
+    # The fall-back when the reply is unusable, upstream's rule (map/map.py:193):
+    # the vocabulary classes within this fraction of the best text similarity to
+    # the instruction, at most top_k of them, become the targets.
+    fallback_ratio: float = 0.95
+    fallback_top_k: int = 5
 
     def __post_init__(self) -> None:
         if self.association_mode not in ("greedy", "one_to_one"):
@@ -129,6 +184,24 @@ class MemoryGraphConfig:
             raise ValueError("cleanup_every_photos and prune_kappa must be at least 1")
         if self.anchor_height < 0 or self.anchor_width < 0:
             raise ValueError("anchor_height and anchor_width must be 0 or more")
+        from memory_graph.vocabulary import normalise   # the spelling Vocabulary compares under
+
+        phrases = [normalise(p) for p in self.base_vocabulary]
+        if any(not p for p in phrases):
+            raise ValueError("base_vocabulary has an empty phrase")
+        repeated = sorted({p for p in phrases if phrases.count(p) > 1})
+        if repeated:
+            raise ValueError(f"base_vocabulary repeats {repeated}")
+        background = sorted(set(phrases) & {normalise(b) for b in self.bg_classes})
+        if background:
+            raise ValueError(f"base_vocabulary has background classes {background}, which S2 drops")
+        if self.reasoning_timeout_s <= 0 or self.reasoning_max_new_tokens < 1:
+            raise ValueError("reasoning_timeout_s and reasoning_max_new_tokens must be positive")
+        if self.reasoning_max_targets < 1 or self.reasoning_max_related < 0 or self.fallback_top_k < 1:
+            raise ValueError("reasoning_max_targets and fallback_top_k must be at least 1, "
+                             "reasoning_max_related at least 0")
+        if not 0.0 < self.fallback_ratio <= 1.0:
+            raise ValueError("fallback_ratio must be in (0, 1]")
         for name in ("voxel_size_m", "dbscan_eps_m", "match_radius_m", "gate_translation_m"):
             if getattr(self, name) <= 0:
                 raise ValueError(f"{name} must be positive")
@@ -140,8 +213,9 @@ class MemoryGraphConfig:
         if unknown:
             raise KeyError(f"unknown memory graph config keys: {unknown}")
         values = dict(values)
-        if "bg_classes" in values:
-            values["bg_classes"] = tuple(values["bg_classes"])
+        for name in ("bg_classes", "base_vocabulary"):
+            if name in values:
+                values[name] = tuple(values[name])
         return replace(cls(), **values)
 
     @classmethod

@@ -1,0 +1,4 @@
+run1 DELTA=0.15: 75 windows, 75 accepted at gate 0.9, 0 dropped; error vs handdriven1 reference: median 0.008 m, p90 0.030, max 0.067 at t=57 s; end (last 5 accepted) mean 0.001 m
+   inliers min 0.936 median 0.984 ; |e_along|/|e_cross| medians 0.005 / 0.005 ; first window error 0.003 m
+run2 DELTA=0.15: 79 windows, 79 accepted at gate 0.9, 0 dropped; error vs handdriven1 reference: median 0.015 m, p90 0.046, max 0.065 at t=37 s; end (last 5 accepted) mean 0.012 m
+   inliers min 0.922 median 0.983 ; |e_along|/|e_cross| medians 0.010 / 0.007 ; first window error 0.003 m

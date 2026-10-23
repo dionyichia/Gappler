@@ -1,0 +1,4 @@
+handdriven1 | 117183 pts in 1 s, 52227 at body height
+  10th-pct range (m) by azimuth deg (0=forward/+x, 90=left/+y): -180:  --  -150: 1.10 -120: 0.88  -90: 2.39  -60: 2.12  -30: 5.08    0: 2.27   30: 2.10   60: 1.72   90: 0.70  120: 0.54  150: 0.85
+spin-corrected | 116413 pts in 1 s, 46622 at body height
+  10th-pct range (m) by azimuth deg (0=forward/+x, 90=left/+y): -180:  --  -150: 2.65 -120: 4.07  -90: 4.30  -60: 3.73  -30: 2.34    0: 2.34   30: 2.05   60: 2.21   90: 2.28  120: 2.30  150: 1.81

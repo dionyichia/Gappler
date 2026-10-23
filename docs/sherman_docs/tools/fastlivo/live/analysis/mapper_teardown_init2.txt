@@ -1,0 +1,10 @@
+MAPPER TEARDOWN CRASH, init2 (hand-driven stage), Tue Oct 20 02:08:27 PM CST 2026
+trigger: Ctrl-C (SIGINT) sent to the container pane while LiDAR, IMU and camera were still streaming
+mapper.stderr tail:
+[INFO] [1792476460.596958174] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+terminate called after throwing an instance of 'rclcpp::exceptions::RCLError'
+  what():  could not create publisher: rcl node's context is invalid, at ./src/rcl/node.c:428
+container pane: Aborted (core dumped), i.e. SIGABRT (exit 134); no core file on the host
+contrast: the sensor-free replay probe (bag at EOF) shut down on SIGINT with no terminate line
+hypothesis, not proven: a callback tries to create a publisher after rclcpp shutdown while data is in flight
+effect: after all recorded data; the bag was stopped before the mapper

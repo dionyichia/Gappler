@@ -108,8 +108,9 @@ def detect(
     process_text_prompts, else one call per phrase. True or False forces one
     way, to compare the two on the same model.
 
-    class_id is the phrase's position in `vocabulary`. Not sorted and not
-    filtered: that is S2.
+    class_id is the phrase's position in `vocabulary`. Pass a
+    vocabulary.Vocabulary, which only grows, so an id means the same phrase on
+    every photo (T6.7c). Not sorted and not filtered: that is S2.
     """
     image_shape = rgb.shape[:2]
     vocabulary = list(vocabulary)

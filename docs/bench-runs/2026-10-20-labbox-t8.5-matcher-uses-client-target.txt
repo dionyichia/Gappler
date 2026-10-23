@@ -49,7 +49,7 @@ mats a "box" (0.30 to 0.45, above the client's 0.3 cutoff). The gaze landed a fe
 edge, on the mat (see the correction below), and the vote gave the mat 80%. CLIP scored the mat
 crop about 0.51 against the wrist box, under 0.56, so the matcher refused. The matcher's cutoff
 caught a wrong reference; the client's checks (SAM 3 cutoff 0.3, vote share 0.5) did not.
-Follow-ups: T2.3 (gaze error, depends on distance), T2.23 (maximum distance and cutoff).
+Follow-ups: T2.3 (gaze error, depends on distance), T2.24 (maximum distance and cutoff, was T2.23).
 
 Also made: ~/aria-recordings/5e5d6a91-...commands.wav on the Mac, silence with
 pick_up_box_command.wav placed so its "box" (2.59 s into the clip) lands at 61, 75, 100, 114 s,

@@ -1,0 +1,15 @@
+0a self-test run1[0:3] onto itself from (0.3,-0.2,10deg), identity expected: dx -0.000 dy +0.000 dz -0.000 m, dyaw +0.00 deg | inliers 1.000 rms_p2p 0.000 rms_plane 0.000
+0a run2[0:3 s] -> run1[0:3 s]: dx +0.287 dy -0.221 dz -0.002 m, dyaw +0.81 deg | inliers 0.935 rms_p2p 0.055 rms_plane 0.022
+0a basin: 6 other starts agree within 1.123 m / 34.46 deg at worst
+0a first-pose gap: run1 odom0 [ 0.001 -0.     0.001] ; run2 odom0 [-0.042  0.037  0.006]
+0b hd1 map: 88237 voxels (60473 planar)
+0b query: run1 first 20 s, 201 scans, 17976 voxels (4895 at 0.2 m for the sweep)
+0b global sweep: 1176 starts (24 yaws x 49 offsets, 40 iterations, 0.2 m voxels); 30 distinct coarse candidates refined at full resolution, then merged when they converge to the same pose:
+  #1 run1->hd1: dx +1.363 dy +0.159 dz +0.001 m, dyaw -1.43 deg | inliers 0.972 rms_p2p 0.052 rms_plane 0.030
+  #2 run1->hd1: dx -0.135 dy +0.077 dz -0.004 m, dyaw +5.76 deg | inliers 0.740 rms_p2p 0.065 rms_plane 0.039
+  #3 run1->hd1: dx -0.268 dy +0.283 dz +0.000 m, dyaw +13.48 deg | inliers 0.724 rms_p2p 0.065 rms_plane 0.040
+0b decision: best inliers 0.972, second 0.740 -> ACCEPT
+0b reverse check, 62219 hd1 voxels within 1 m of the run1 early map, hd1->run1: dx -1.331 dy -0.197 dz -0.010 m, dyaw +1.34 deg | inliers 0.461 rms_p2p 0.079 rms_plane 0.055
+0b reverse minus inverse(forward): 0.028 m, -0.09 deg
+0b hd1 -> run1 frame (used downstream): dx -1.358 dy -0.193 dz -0.001 m, dyaw +1.43 deg | inliers 0.972 rms_p2p 0.052 rms_plane 0.030
+frames written: ['hd1', 'run1', 'run2']

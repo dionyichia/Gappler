@@ -1,0 +1,8 @@
+LEVEL 1 GRAV4 True | flat percentiles 10/50/90: [0.051 0.358 0.712]
+FLAT_MAX | kept  | walls(|nx|or|ny|>0.7) | self-test err (m, deg) | query polished from (2.0,1.2,0): pose | inliers | rms_pl | A^T A cond, weakest
+     0.1 |   17% |    13% | 0.003 m, -0.02 deg | x 1.942 y 1.197 yaw 0.07 | 0.975 | 0.027 | cond 93, tx +0.99
+     0.2 |   29% |    20% | 0.002 m, 0.00 deg | x 1.951 y 1.188 yaw 0.30 | 0.975 | 0.027 | cond 45, tx +0.99
+     0.3 |   42% |    27% | 0.002 m, 0.00 deg | x 1.932 y 1.183 yaw -0.76 | 0.974 | 0.026 | cond 30, tx +0.99
+     0.5 |   69% |    36% | 0.001 m, 0.01 deg | x 1.934 y 1.182 yaw -0.82 | 0.974 | 0.025 | cond 23, tx +0.99
+       1 |  100% |    42% | 0.082 m, 2.77 deg | x 1.937 y 1.181 yaw -0.89 | 0.974 | 0.025 | cond 18, tx +0.99
+   1e+09 |  100% |    42% | 0.082 m, 2.77 deg | x 1.937 y 1.181 yaw -0.89 | 0.974 | 0.025 | cond 18, tx +0.99

@@ -1,0 +1,94 @@
+T6.3: four lab photos through every memory graph stage on the lab box GPU, plus T6.3f's GPU run
+2026-10-21, lab box (rcp2026@100.87.133.60, tailscale), NVIDIA GeForce RTX 4060 Ti 16 GB
+Run over SSH by Claude Opus 5.5 for Zongzhe. Scratch copy ~/zongzhe_t63 (branch
+t6.3-end-to-end-photo before its first commit), python ~/rcp-Gappler/.venv (torch 2.10.0+cu128, open_clip
+3.3.0), SAM 3 weights ~/rcp-Gappler/assets/models/sam3/sam3.pt, CLIP weights
+~/rcp-Gappler/assets/models/open_clip (OPEN_CLIP_CACHE_DIR). GPU and files only: no camera, no
+ROS, no robot.
+
+Before start
+  17:47 a grasp session (arm_bringup, realsense, anygrasp, segmentation service, grasp state
+  machine) held 15.6 of 16 GB at 100 %. Not ours. CPU-only work until it ended. At 18:2x the GPU
+  was back to 404 MiB, 0 %, none of those processes left. ~/rcp-Gappler has someone's branch
+  (t1.44) with uncommitted changes, so it was not used as a checkout.
+
+1. T6.3f on the GPU
+  ./bench/memory_graph_tests.sh ~/rcp-Gappler/.venv/bin/python
+    Ran 299 tests, OK, 5 skipped. The 5 are test_run_photo.py's lab photo tests, run before the
+    fixture existed (see 5). No T6.4c skip any more. Exit 3 (SKIPPED) for that reason only.
+  test_clip_encoder.py alone: 18 tests OK, device cuda, float16.
+  Done-when photos on the GPU (float16): chair view a vs b 0.934, chair vs sofa, shelf, bench
+  0.563, 0.562, 0.562. Same as the Mac CPU in float32 (0.934, 0.53 to 0.59).
+  Same suite with CUDA hidden (CPU): 299 tests OK, same 5 skipped.
+
+2. The recording and the photos
+  Bag t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3 (FAST-LIVO hand
+  drive, T6.2 stand-in). Every 100th frame surveyed. Picked 700 (chair, bookcase, sofa at about
+  2 m), 1400 (office chairs, desks), 1500 (desk with a cup), 2200 (TV, bookcase, bench, sofa:
+  the bookcase of 700 seen from 1.17 m away). LiDAR window 1.0 s either side: depth covers
+  13.8, 13.0, 12.8, 14.4 % of the image.
+
+3. LiDAR depth over the colour image (frames 700, 1400, 1500, 2200)
+  Depth edges sit on object edges (chair legs, table edge, table leg) to about 10 px by eye.
+  But sparse LiDAR shows through: background points fill the pixels between foreground points,
+  and the depth image has no occlusion. See 4.
+
+4. Every stage, real SAM 3 (bfloat16, threshold 0.15, 30-phrase base vocabulary, batched 16
+   per pass) and CLIP (float16):
+  python -m memory_graph.run_photo --bag ... --frames 700 1400 1500 2200 --room ... --rrd
+    frame   raw   after S2+S5   objects
+    700     151   60            46
+    1400    238   62            34
+    1500     79   26            15
+    2200    171   63            44
+    Object store after 4 photos: 103 objects. Rerun file verified with rerun 0.30.0.
+  Masks look right by eye (chair, cushion, bookcase cells, sofa, desk, monitor).
+
+  Finding A, see-through depth puts near objects on the floor. Frame 700 chair: mask depth
+  1.08 to 2.08 m (10th to 90th percentile), chair plus wall and floor behind it. S8's largest
+  cluster is a floor patch: centre z -0.02, height 0.30 m, 1.95 m away. A scratch occlusion
+  filter (drop a depth pixel if one more than 10 % nearer lies in its 7x7 window) gives chair
+  z 0.58, 1.79 m, coverage 13.8 to 12.3 %. Frame 1400's second chair moves from 1.86 m to
+  1.40 m. Applied after the first run, chosen by Zongzhe (section 7).
+
+  Finding B, S5 leaves overlapping masks. Pixels in more than one mask after S5: frame 700
+  7666 px (5.4 % of masked pixels), 1400 3129 (3.2 %), 1500 0, 2200 491 (0.4 %). Almost all are
+  one thing under two phrases or a part inside a whole, with the smaller mask 90 to 100 %
+  inside the bigger one: shelf/shelf, paper/book, desk/table. The box containment rule does not
+  fire because the boxes are close in size, and the mask IoU stays under 0.9. So T6.3d's
+  done-when (no pixel in two masks) fails on real output. It passed on the stand-in.
+  In frame 1500 SAM 3's own desk mask already leaves the cup out, so the cut-out rule was not
+  needed there. Fixed after the first run, chosen by Zongzhe (section 7).
+
+5. Two views of one bookcase (frames 700 and 2200, cameras 1.17 m apart)
+  25 objects merged across the two photos. Centre gap median 8.8 cm. Books and shelf cells
+  seen whole in both: 3.8 to 9 cm, height within 2.5 cm. Large gaps come from objects cut by
+  the image edge in one view (cabinet 52 cm, TV 21 cm, sofa 34 cm), whose centre moves with
+  what is visible. So pose plus extrinsic error looks below about 10 cm here. [inferred]: no
+  tape measurement, and partial views mix into the gap.
+
+6. First-run fixture
+  --save-fixture wrote the 4 photos with SAM 3's raw output and the CLIP vectors, 1.2 MB in
+  all. Not used: findings A and B changed what it should hold.
+
+7. Second run, after both fixes (Zongzhe's choices)
+  A: FastLivoBag clears a depth pixel if one more than 10 % nearer lies in its 7x7 block
+     (geometry.drop_occluded, occlusion_window 7, occlusion_margin 0.1).
+  B: S5 ends with masks.one_owner_per_pixel (config mask_one_owner_per_pixel, default on).
+  Same command, frames 700 1400 1500 2200:
+    frame   raw   after S2+S5   objects
+    700     151   60            44
+    1400    238   62            35
+    1500     79   26            15
+    2200    171   63            42
+    Object store: 102 objects.
+  Frame 700 chair: centre z 0.58 (was -0.02), 1.79 m away. Frame 2200 sees it at
+  [4.38, 2.00, 0.51] against [4.39, 1.98, 0.58]: 7 cm apart, and the two sightings now merge
+  into one object (before the fix they did not).
+  Frames 700, 1500, 2200 copied to memory_graph/tests/fixtures/fastlivo_photo (840 KB) with
+  their expected.json.
+  ./bench/memory_graph_tests.sh ~/rcp-Gappler/.venv/bin/python, GPU visible:
+    Ran 305 tests, OK, none skipped. Exit 0 (PASS).
+
+After
+  GPU back to 404 MiB. Every run was a foreground process that exited on its own.

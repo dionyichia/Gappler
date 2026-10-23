@@ -227,7 +227,7 @@ validated, and anyone who cleared space based on the guide cleared the wrong vol
 
 *Real arm 2026-09-23* `[observed]`: T1.3 kept `main`'s row. T1.7 sent it straight to the driver, one
 joint at a time at speed 1, and every joint landed within 0.02° of it
-(`dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`). The tool ends slightly outside the base footprint.
+(`adb5466:docs/dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`). The tool ends slightly outside the base footprint.
 The state machine itself has still never homed the real arm, so the unprompted-homing risk stands.
 
 ### B5. The orchestrator orphans the arm driver and state machine on exit

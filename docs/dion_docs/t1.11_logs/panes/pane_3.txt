@@ -1,5 +1,0 @@
-source /home/rcp2026/rcp-Gappler/shared_services/shared_services_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1 && python /home/rcp2026/rcp-Gappler/shared_services/segmentation/segmentation_service.py            
-rcp2026@iot22-Computer:~/rcp-Gappler$ source /home/rcp2026/rcp-Gappler/shared_services/shared_services_env.sh && export ROS_DOMAIN_ID=91 ROS_LOCALHOST_ONLY=1 && python /home/rcp2026/rcp-Gappler/shared_services/segmentation/segmentation_service.py                  
-[INFO] [1791887754.872130995] [segmentation_service]: Loading SAM 3...                  
-[INFO] [1791887803.545698560] [segmentation_service]: Segmentation service ready on /segmentation/segment     
-

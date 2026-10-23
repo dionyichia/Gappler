@@ -7,19 +7,96 @@ fixtures/tum_fr1_xyz/ (see fixtures/README.md).
 
 from memory_graph.tests import _requires_numpy  # noqa: F401  (skips without numpy)
 
+import struct
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from memory_graph.geometry import camera_rays, transform_points
+from memory_graph.geometry import camera_rays, invert_rigid, transform_points
 from memory_graph.replay_loader import (
-    TUM_DEPTH_UNITS_PER_METRE, TumSequence, depth_to_metres, nearest_in_time, read_tum_list,
+    EXTRINSIC_R, EXTRINSIC_T, PCL, RCL, TUM_DEPTH_UNITS_PER_METRE, FastLivoBag, TumSequence,
+    _cloud_xyz, _rigid_from_rowmajor, depth_to_metres, nearest_in_time, read_tum_list,
     rigid_transform, to_observation,
 )
 from memory_graph.tests._fixtures import pose, rot_z
+
+
+def _pc2(points, *, with_rgb=True):
+    """A stand-in PointCloud2 message with float32 xyz (and optional rgb)."""
+    step = 16 if with_rgb else 12
+    buf = bytearray()
+    for x, y, z in points:
+        buf += struct.pack("<fff", x, y, z)
+        if with_rgb:
+            buf += struct.pack("<f", 0.0)
+    fields = [types.SimpleNamespace(name=n, offset=o, datatype=7, count=1)
+              for n, o in (("x", 0), ("y", 4), ("z", 8))]
+    if with_rgb:
+        fields.append(types.SimpleNamespace(name="rgb", offset=12, datatype=7, count=1))
+    return types.SimpleNamespace(width=len(points), height=1, point_step=step,
+                                 is_bigendian=False, fields=fields,
+                                 data=np.frombuffer(bytes(buf), dtype=np.uint8))
+
+
+class CloudXyzTest(unittest.TestCase):
+    """_cloud_xyz pulls xyz out of a PointCloud2, ignoring rgb, and treats the
+    empty clouds FAST-LIVO interleaves as no points rather than an error."""
+
+    def test_empty_cloud_gives_no_points(self):
+        empty = types.SimpleNamespace(width=0, height=1, point_step=0, is_bigendian=False,
+                                      fields=[], data=np.zeros(0, dtype=np.uint8))
+        self.assertEqual(_cloud_xyz(empty).shape, (0, 3))
+
+    def test_reads_xyz_and_ignores_rgb(self):
+        pts = [(1.0, 2.0, 3.0), (4.0, 5.0, 6.0)]
+        np.testing.assert_allclose(_cloud_xyz(_pc2(pts)), pts)
+
+    def test_drops_non_finite_points(self):
+        pts = [(1.0, 2.0, 3.0), (float("nan"), 0.0, 0.0), (7.0, 8.0, 9.0)]
+        np.testing.assert_allclose(_cloud_xyz(_pc2(pts)), [(1.0, 2.0, 3.0), (7.0, 8.0, 9.0)])
+
+
+def _odom(position=(0.0, 0.0, 0.0), quat_xyzw=(0.0, 0.0, 0.0, 1.0)):
+    """A stand-in nav_msgs/Odometry with just the pose fields the loader reads."""
+    x, y, z = position
+    qx, qy, qz, qw = quat_xyzw
+    return types.SimpleNamespace(pose=types.SimpleNamespace(pose=types.SimpleNamespace(
+        position=types.SimpleNamespace(x=x, y=y, z=z),
+        orientation=types.SimpleNamespace(x=qx, y=qy, z=qz, w=qw))))
+
+
+class PoseCompositionTest(unittest.TestCase):
+    """T_world_cam = T_world_imu @ T_imu_lidar @ inv(T_cam_lidar), the step the
+    loader warns is easy to get wrong."""
+
+    def _bag(self):
+        bag = object.__new__(FastLivoBag)
+        bag._T_cam_lidar = _rigid_from_rowmajor(RCL, PCL)
+        bag._T_imu_lidar = _rigid_from_rowmajor(EXTRINSIC_R, EXTRINSIC_T)
+        bag._T_imu_cam = bag._T_imu_lidar @ invert_rigid(bag._T_cam_lidar)
+        return bag
+
+    def test_lidar_point_reads_back_as_rcl_pcl_in_the_camera(self):
+        """With identity odometry (world == imu), a LiDAR point put into the world
+        and read back in camera coordinates equals Rcl @ p + Pcl. Fails if the
+        inv(T_cam_lidar) step is dropped or the mount is applied the wrong way."""
+        bag = self._bag()
+        T_world_cam = bag._pose_to_world_cam(_odom())
+        p_lidar = np.array([[1.0, 2.0, 3.0], [-0.5, 0.4, 2.0]])
+        p_world = transform_points(bag._T_imu_lidar, p_lidar)
+        p_cam = transform_points(invert_rigid(T_world_cam), p_world)
+        np.testing.assert_allclose(p_cam, transform_points(bag._T_cam_lidar, p_lidar), atol=1e-9)
+
+    def test_moving_the_body_moves_the_camera_by_the_same_amount(self):
+        """The odometry pose is used forward: a 1 m body shift is a 1 m camera shift."""
+        bag = self._bag()
+        a = bag._pose_to_world_cam(_odom(position=(0.0, 0.0, 0.0)))[:3, 3]
+        b = bag._pose_to_world_cam(_odom(position=(1.0, 0.0, 0.0)))[:3, 3]
+        np.testing.assert_allclose(b - a, [1.0, 0.0, 0.0], atol=1e-9)
 
 try:
     import cv2

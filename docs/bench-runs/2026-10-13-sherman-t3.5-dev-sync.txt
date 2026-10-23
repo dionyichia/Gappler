@@ -1,0 +1,83 @@
+T3.5 shared-safe dev update, 2026-10-13
+Feature parent: c1ca85c9f6a2f48384f26fec38c84119b62e4d07
+Incoming dev: 49d80f789182e2e12a8e1b4459f3a4bac1178521
+Operation: merge dev into t3.5-launch-prep, NOT rebase/force-push/deployment.
+
+Conflict resolution:
+- bench/run.sh: union of navigation pipelines and segmentation_service; keep
+  current dev memory-graph/segmentation L0 checks and all feature L0 checks.
+- bench/README.md: current navigation-node description plus both sets of rows.
+- docs/task-tree.html: both changelog histories; task data had no conflict.
+- Runbook prohibited launcher updated to start_camera_arm_grasp.py.
+- T3.9 reconciled as source-only PROGRESS; installed-overlay approval still owed.
+
+Regression: bench/test_bench_coverage.py, 2 tests. First run failed because
+unresolved runner had two L4 loops; after resolution both tests passed. Check
+requires both L4 suite sets, no duplicate suite, existing scripts and inherited
+navigation/shared-service L0 steps. Wired into L0. No production node changed.
+
+Mac: ./bench/run.sh quick exit 0; all executed rows PASS. Explicit skips:
+memory graph stages/segmentation logic (no .venv), ROS/PyYAML checks, L3-L6.
+Preflight disk warning: 13 GB free; 2 existing vendor dependency findings.
+Candidate delta against dev passes git diff --check. Incoming dev raw bench
+logs contain pre-existing trailing whitespace, preserved rather than rewritten.
+
+Fresh box source snapshot: log/t35-dev-sync-990aa111
+Indexed tree matches local tested tree exactly:
+990aa11145bbd47a7dcd50e21a10c14f37046733
+Constructed from exact lab dev archive plus 54-file feature delta. Earlier
+full archive transfer timed out; partial archive was NOT used as source.
+Snapshot has its own index, no committed HEAD; contract output says -dirty.
+Original lab checkout (dev) and earlier dirty detached snapshot left unchanged.
+
+Box focused checks: exit 0, source-only and construction-only.
+- Static: 12 checks clean for owned code; 2 existing vendor findings.
+- Contracts self-test/check: PASS, 0 warnings, 15 informational changes.
+- Suite coverage 2; isolation guard 4; keyboard burst 1; ownership 5;
+  cloud fixtures 5; map prerequisites 8; map saver 5; SLAM fixture 5;
+  geometry wiring 3/runtime 4/camera model 1; camera navigation 4: all OK.
+- Real owned LiDAR launch construction: PASS, no actions executed.
+- Missing-map/pose/manifest refusals before Node/Include construction: PASS.
+- Three navigation launches/owned includes constructed: PASS, no execution.
+
+Installed-file checker self-test: exit 0 (4 cases).
+Actual comparison against original install_nav: exit 1, EXPECTED drift:
+4 match, 3 drift, 1 missing, 1 skipped. Three launches differ; owned LiDAR
+wrapper missing; four config files match; shared/slam_maps.py not installed.
+This does not prove complete deployment integrity or authorize hardware use.
+
+Runtime pipelines: NOT RUN. Shared-box guard refused before launching any
+test when another session's real arm launch/driver appeared:
+REFUSED: shared-box process present
+6196 /usr/bin/python3 /opt/ros/humble/bin/ros2 launch rm_driver rm_65_driver.launch.py
+6197 /home/rcp2026/rcp-Gappler/install/rm_driver/lib/rm_driver/rm_driver ...
+Exit 1 is a safety refusal, not a pipeline behavior result. No guard bypass,
+process stop or real robot command. These PIDs had exited at subsequent
+read-only custody inspection; another user's bring-up session remained open.
+Wait for coordination before retrying nav_nodes, velocity_smoother, cloud_scan
+and slam_persistence serially on fixed domain 127 with fail-closed guards.
+Read-only review of merge resolution and evidence: PASS. Branch push is a
+source checkpoint for visibility, NOT completed runtime/deployment acceptance.
+
+No installed-overlay change, build, hardware launch, completion PR or merge
+into dev/main. T3.4/T3.5/T3.9 stay PROGRESS. Physical battery/charging readiness
+remains blocked by last reported 19.3 V; no fresh hardware measurement today.
+
+Follow-up dev advance, same day:
+After checkpoint 3bac347 was pushed, the ancestry check found that origin/dev
+had advanced to 4cbb56e3429e5088c28f10db2aacb679b4fbb443. A second shared-safe
+merge incorporates that revision without conflicts. Imported delta: six files,
+task status/history and Orin backup documentation/script, plus the grasp-layout
+wrist-camera profile set to 640x480x15 with point-cloud generation no longer
+explicitly enabled. No change to nav/, shared/, bench/, launchers/, grasp/, arm/
+or aria/ in this second merge. Backup setup script was NOT executed.
+
+Mac quick rerun: exit 0, available checks PASS, same environment skips and
+map-saver subtest skip; disk warning now 11 GB free. Both imported shell files
+pass bash -n. Task-tree inline JavaScript/status preservation checked separately.
+The earlier box tree/constructor evidence applies ONLY to tree 990aa111 above,
+not this newer whole-source revision. Box runtime remains held; no deployment,
+camera run or new box verification is claimed for the second merge.
+Read-only follow-up merge review: PASS. Navigation --print lists panes and
+exits without tmux or launching nodes. Suite coverage: 2 tests PASS; task-tree
+syntax check preserves imported DONE statuses and T3.4/T3.5/T3.9 PROGRESS.

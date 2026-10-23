@@ -12,11 +12,14 @@ each handled in one place:
     a frame conversion applied twice     the pose is composed once, in
                                          to_observation: T_world_base @ T_base_cam
 
-The lab recording (T6.2) does not exist yet, so the one reader here is for the
-TUM RGB-D benchmark's file layout (Sturm et al., IROS 2012), which is also what
-ICL-NUIM ships in. A reader for the lab recording needs to do three things:
-find the frames, read the files, and hand each frame to to_observation with the
-D455's depth scale (1000 units per metre) and the camera mount transform.
+There are two readers. TumSequence is for the TUM RGB-D benchmark's file layout
+(Sturm et al., IROS 2012), which is also what ICL-NUIM ships in, and was how the
+later stages were tested before any lab recording existed. FastLivoBag is for the
+lab recording, which arrived as a FAST-LIVO hand-driven rosbag with colour, poses
+and LiDAR but no depth image: it renders depth by projecting the registered LiDAR
+cloud into the colour frame, so the frame still reaches to_observation as RGB-D.
+The frames, directions and extrinsic it uses are recorded in
+docs/zongzhe_docs/NOTE_fastlivo_bag_facts.md.
 
 Poses are taken as given. Nothing here filters, smooths or interpolates them.
 """
@@ -29,6 +32,7 @@ from typing import Iterator, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
+from memory_graph.geometry import drop_occluded, invert_rigid, project_cloud_to_depth
 from memory_graph.stage_types import Observation
 
 # ---------------------------------------------------------------- conversions
@@ -232,3 +236,223 @@ class TumSequence:
             image, depth, self.K, frame.T_world_cam, frame_id=self.first_frame_id + index, timestamp=frame.timestamp,
             depth_units_per_metre=self.depth_units_per_metre, bgr=True, T_base_cam=self.T_base_cam,
         )
+
+
+# ---------------------------------------------------------------- FAST-LIVO bag
+
+# The lab recording came as a FAST-LIVO hand-driven bag with no depth image, so
+# depth is synthesised by projecting the registered LiDAR cloud into the colour
+# frame. The frames, directions and numbers below are read off the bag and its
+# config in docs/zongzhe_docs/NOTE_fastlivo_bag_facts.md. The three extrinsic
+# arrays are defaults, not calibrated values (tape-level, 34 cm lever arm), so a
+# later calibration overrides them through the constructor without a code change.
+
+TOPIC_COLOR = "/camera/camera/color/image_raw"
+TOPIC_CAMERA_INFO = "/camera/camera/color/camera_info"
+TOPIC_ODOM = "/aft_mapped_to_init"           # body (aft_mapped) in world (camera_init)
+TOPIC_CLOUD = "/cloud_registered"            # registered LiDAR, already in the world frame
+
+# p_colour_optical = Rcl @ p_lidar + Pcl, so this 4x4 is camera-from-lidar.
+RCL = (0.0, -1.0, 0.0, 0.0, 0.0, -1.0, 1.0, 0.0, 0.0)
+PCL = (-0.0115, 0.3425, -0.03915)
+# p_imu = R @ p_lidar + T, imu-from-lidar. R is identity here.
+EXTRINSIC_R = (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+EXTRINSIC_T = (-0.011, -0.02329, 0.04412)
+
+
+def _rigid_from_rowmajor(r9: Sequence[float], t3: Sequence[float]) -> np.ndarray:
+    """A 4x4 transform from a row-major 3x3 rotation and a 3-vector translation."""
+    T = np.eye(4)
+    T[:3, :3] = np.asarray(r9, dtype=np.float64).reshape(3, 3)
+    T[:3, 3] = np.asarray(t3, dtype=np.float64)
+    return T
+
+
+def _cloud_xyz(msg) -> np.ndarray:
+    """(N, 3) float64 xyz from a PointCloud2, dropping non-finite points.
+
+    Reads the x, y, z fields by their byte offsets, so extra fields (rgb here)
+    are ignored. Assumes float32 xyz and little-endian, which the Livox driver
+    and FAST-LIVO both emit; anything else is refused rather than misread.
+    """
+    n = int(msg.width) * int(msg.height)
+    offsets = {f.name: (f.offset, f.datatype) for f in msg.fields}
+    # FAST-LIVO publishes an empty cloud between every registered scan; it simply
+    # carries no depth, so skip it rather than treat it as malformed.
+    if n == 0 or not {"x", "y", "z"} <= set(offsets):
+        return np.zeros((0, 3))
+    for name in ("x", "y", "z"):
+        if offsets[name][1] != 7:   # 7 is FLOAT32
+            raise ValueError(f"cloud field {name!r} is not float32")
+    if msg.is_bigendian:
+        raise ValueError("big-endian point clouds are not supported")
+    raw = np.frombuffer(msg.data, dtype=np.uint8).reshape(n, int(msg.point_step))
+
+    def column(name: str) -> np.ndarray:
+        off = offsets[name][0]
+        return raw[:, off:off + 4].copy().view(np.float32).reshape(-1).astype(np.float64)
+
+    xyz = np.stack([column("x"), column("y"), column("z")], axis=1)
+    return xyz[np.isfinite(xyz).all(axis=1)]
+
+
+@dataclass(frozen=True)
+class FastLivoFrame:
+    timestamp: float            # bag reception time of the colour image, seconds
+    color_rowid: int            # the colour message's row, read on demand
+    T_world_cam: np.ndarray     # camera-to-world, mount already composed in
+
+
+class FastLivoBag:
+    """A FAST-LIVO rosbag2 recording, read as Observations (T6.3b, LiDAR path).
+
+    No depth is recorded, so for each colour image the loader takes the nearest
+    odometry pose, composes the camera-to-world transform
+
+        T_world_cam = T_world_imu @ T_imu_lidar @ inv(T_cam_lidar)
+
+    and projects the world-frame /cloud_registered messages in a time window
+    around the image into the colour frame, giving an ordinary RGB-D Observation.
+Pixels hidden behind a nearer point close by are then cleared (drop_occluded),
+because sparse LiDAR lets the background show through near objects.
+
+    Only /cloud_registered is read (standard PointCloud2, already world-frame, no
+    custom type). Poses and intrinsics are read up front, images and clouds per
+    frame, so a multi-gigabyte bag is never all in memory. frame_id follows the
+    TumSequence rule (first_frame_id, never reset). Needs `rosbags`.
+    """
+
+    def __init__(
+        self,
+        db3_path: Union[str, Path],
+        *,
+        max_dt: float = 0.1,
+        cloud_window_s: float = 0.1,
+        occlusion_window: int = 7,
+        occlusion_margin: float = 0.1,
+        first_frame_id: int = 0,
+        rcl: Sequence[float] = RCL,
+        pcl: Sequence[float] = PCL,
+        extrinsic_r: Sequence[float] = EXTRINSIC_R,
+        extrinsic_t: Sequence[float] = EXTRINSIC_T,
+    ) -> None:
+        if first_frame_id < 0:
+            raise ValueError(f"first_frame_id must be 0 or more, got {first_frame_id}")
+        if max_dt <= 0 or cloud_window_s < 0:
+            raise ValueError("max_dt must be positive and cloud_window_s non-negative")
+        if occlusion_margin < 0:
+            raise ValueError(f"occlusion_margin must be 0 or more, got {occlusion_margin}")
+        self.db3_path = Path(db3_path)
+        self.first_frame_id = int(first_frame_id)
+        self.max_dt = float(max_dt)
+        self.cloud_window_s = float(cloud_window_s)
+        # Sparse LiDAR shows through near objects. geometry.drop_occluded clears the
+        # hidden pixels. Chosen 2026-10-21 (Zongzhe, T6.3): 7 px, 10 percent nearer.
+        self.occlusion_window = int(occlusion_window)
+        self.occlusion_margin = float(occlusion_margin)
+        # camera-from-lidar, and the mount the camera pose needs: imu-from-lidar
+        # times lidar-from-camera. inv(T_cam_lidar) is the step easy to drop.
+        self._T_cam_lidar = _rigid_from_rowmajor(rcl, pcl)
+        self._T_imu_lidar = _rigid_from_rowmajor(extrinsic_r, extrinsic_t)
+        self._T_imu_cam = self._T_imu_lidar @ invert_rigid(self._T_cam_lidar)
+
+        db = _BagDB(self.db3_path)
+        try:
+            cam = db.rows(TOPIC_CAMERA_INFO)
+            if not cam:
+                raise ValueError(f"no messages on {TOPIC_CAMERA_INFO}")
+            self.K = db.deserialize(cam[0][1], TOPIC_CAMERA_INFO).k.reshape(3, 3).astype(np.float64)
+            odom = db.rows(TOPIC_ODOM)
+            odom_times = np.array([t for t, _ in odom], dtype=np.float64)
+            odom_T = [self._pose_to_world_cam(db.deserialize(rowid, TOPIC_ODOM)) for _, rowid in odom]
+            colour = db.rows(TOPIC_COLOR)
+        finally:
+            db.close()
+
+        colour_times = np.array([t for t, _ in colour], dtype=np.float64)
+        pick = nearest_in_time(odom_times, colour_times, max_dt)
+        self.frames: List[FastLivoFrame] = []
+        for (t, rowid), p in zip(colour, pick):
+            if p < 0:
+                continue
+            self.frames.append(FastLivoFrame(timestamp=t, color_rowid=rowid, T_world_cam=odom_T[p]))
+
+    def _pose_to_world_cam(self, odom) -> np.ndarray:
+        """Odometry (body in world) composed with the camera mount, camera-to-world."""
+        p = odom.pose.pose.position
+        q = odom.pose.pose.orientation
+        T_world_imu = rigid_transform((p.x, p.y, p.z), (q.x, q.y, q.z, q.w))
+        return T_world_imu @ self._T_imu_cam
+
+    def __len__(self) -> int:
+        return len(self.frames)
+
+    def __iter__(self) -> Iterator[Observation]:
+        return (self.observation(i) for i in range(len(self.frames)))
+
+    def observation(self, index: int) -> Observation:
+        frame = self.frames[index]
+        db = _BagDB(self.db3_path)
+        try:
+            img = db.deserialize(frame.color_rowid, TOPIC_COLOR)
+            if img.encoding != "rgb8":
+                raise ValueError(f"expected rgb8 colour, got {img.encoding!r}")
+            rows = db.rows(TOPIC_CLOUD, frame.timestamp - self.cloud_window_s,
+                           frame.timestamp + self.cloud_window_s)
+            clouds = [_cloud_xyz(db.deserialize(rowid, TOPIC_CLOUD)) for _, rowid in rows]
+        finally:
+            db.close()
+        image = np.frombuffer(img.data, dtype=np.uint8).reshape(int(img.height), int(img.step))
+        image = image[:, : int(img.width) * 3].reshape(int(img.height), int(img.width), 3)
+        world = np.concatenate(clouds, axis=0) if clouds else np.zeros((0, 3))
+        depth = project_cloud_to_depth(world, frame.T_world_cam, self.K, image.shape[:2])
+        depth = drop_occluded(depth, self.occlusion_window, self.occlusion_margin)
+        return to_observation(
+            image, depth, self.K, frame.T_world_cam, frame_id=self.first_frame_id + index,
+            timestamp=frame.timestamp, depth_units_per_metre=1.0, bgr=False, T_base_cam=None,
+        )
+
+
+class _BagDB:
+    """A thin reader over a rosbag2 sqlite3 file. Range and single-row queries by
+    topic, with CDR deserialisation handed to the `rosbags` typestore."""
+
+    def __init__(self, db3_path: Path) -> None:
+        import sqlite3
+
+        self._con = sqlite3.connect(f"file:{db3_path}?mode=ro", uri=True)
+        self._topic_id = {name: tid for tid, name in self._con.execute("SELECT id, name FROM topics")}
+        self._type = {name: typ for name, typ in self._con.execute("SELECT name, type FROM topics")}
+        self._store = None
+
+    def _store_(self):
+        if self._store is None:
+            from rosbags.typesys import Stores, get_typestore
+
+            self._store = get_typestore(Stores.ROS2_HUMBLE)
+        return self._store
+
+    def rows(self, topic: str, t0: Optional[float] = None, t1: Optional[float] = None) -> List[Tuple[float, int]]:
+        """(timestamp seconds, rowid) for `topic`, time-ordered. With t0 and/or t1
+        given, only messages in that closed time window (seconds)."""
+        sql = "SELECT timestamp, id FROM messages WHERE topic_id = ?"
+        params: List[int] = [self._require(topic)]
+        if t0 is not None:
+            sql, params = sql + " AND timestamp >= ?", params + [int(t0 * 1e9)]
+        if t1 is not None:
+            sql, params = sql + " AND timestamp <= ?", params + [int(t1 * 1e9)]
+        return [(ts * 1e-9, rowid) for ts, rowid in self._con.execute(sql + " ORDER BY timestamp", params)]
+
+    def deserialize(self, rowid: int, topic: str):
+        row = self._con.execute("SELECT data FROM messages WHERE id = ?", (rowid,)).fetchone()
+        if row is None:
+            raise ValueError(f"no message with row id {rowid}")
+        return self._store_().deserialize_cdr(bytes(row[0]), self._type[topic])
+
+    def _require(self, topic: str) -> int:
+        if topic not in self._topic_id:
+            raise ValueError(f"{topic} is not in the bag (has {sorted(self._topic_id)})")
+        return self._topic_id[topic]
+
+    def close(self) -> None:
+        self._con.close()

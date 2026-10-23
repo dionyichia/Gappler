@@ -1,0 +1,27 @@
+T3.5 historical-map compatibility: LOADABLE, 2026-10-15
+Isolated check only; no deployment, live-use, or accuracy claim.
+
+Source (read-only, never written): /home/iot22/maps/, dated 2026-04-10:
+completed_map.posegraph 25,065,182; completed_map.data 2,536,948;
+current_map.pgm 212,565; current_map.yaml 129.
+Source hashes verified identical before and after; copies to a private temp dir
+matched exactly. Provenance is untrusted historical (5 months old, different
+workspace); nothing was copied into any map directory.
+
+Isolated run (sole verifier, serial, domain127/localhost-only, fresh guards):
+only the installed localization_slam_toolbox_node, private namespace,
+map_file_name=<copydir>/completed_map, map_start_pose=[0,0,0].
+No scans, drivers, Nav2, or saver. Owned process group; full stdout preserved
+(local ignored copy: log/t35-historical-map-load.log).
+
+Result: clean deserialization, no abort or exception; dynamic_map served
+frame map, 545x390 @0.05 m, origin (-9.6121,-12.2625,0), matching the
+historical YAML. Raster mostly unknown with ~5k occupied / ~29k free cells.
+Cleanup verified: owned PIDs reaped, domain127 empty, original checkout
+(3 teammate grasp modifications + 2 untracked paths) and both overlays unchanged.
+
+Outcome: the April graph is technically loadable in the installed Humble
+SLAM Toolbox. Whether it matches today's lab, calibration, and localization
+accuracy is unproven and needs attended relocalization against independent
+physical references. Live mapping decision (reuse vs remap) still owed with
+the team. T3.5 remains PROGRESS.

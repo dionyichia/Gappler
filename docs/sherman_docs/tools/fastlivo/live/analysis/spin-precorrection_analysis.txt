@@ -1,0 +1,13 @@
+msgs 671 duration 33.5 s total yaw change -359.8 deg, min -360.2 max 0.8
+turn segment 0.2 s to 33.5 s (33.4 s long), yaw swept -359.9 deg
+reconstructed base with corrected_constant    : xy spread max radius 0.074 m, std 0.021 m, peak-to-peak x 0.113 y 0.094, z p2p 0.057
+reconstructed base with precorrection_constant: xy spread max radius 0.084 m, std 0.013 m, peak-to-peak x 0.136 y 0.139, z p2p 0.058
+raw mapper pose (IMU) circle: radius mean 0.152 m, max 0.267, min 0.037
+before turn (still): n=2, position std 0.0009 m
+after turn (still): n=2, position std 0.0036 m
+--- fit: p_xy(t) = smooth drift (poly of given order) + Rz(yaw)(t)·t_xy ; t_xy = effective IMU position in the base frame
+order 1: t_xy = (0.177, 0.031) m, |t_xy| 0.180, fit rms 0.0131 m
+order 2: t_xy = (0.179, 0.035) m, |t_xy| 0.182, fit rms 0.0127 m
+order 3: t_xy = (0.175, 0.033) m, |t_xy| 0.178, fit rms 0.0117 m
+order 4: t_xy = (0.172, 0.041) m, |t_xy| 0.177, fit rms 0.0108 m
+candidates: corrected (0.191, 0.023) |0.192|; pre-correction (0.169, -0.023) |0.171|

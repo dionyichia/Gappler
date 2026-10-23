@@ -1,0 +1,17 @@
+[INFO] [1792482839.472982763] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3' for READ_ONLY.
+[INFO] [1792482925.781039106] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/spin-corrected/bag/bag_0.db3' for READ_ONLY.
+config LEVEL 1 GRAV4 True FLAT_MAX 1e+09 | reference solution: x 1.937 y 1.181 z -0.056 m | yaw -0.89 pitch -0.00 roll 0.00 deg | inliers 0.974 rms_pl 0.025
+position offsets (8 directions, yaw offset 0): fraction returning to the reference
+  radius 0.3 m: 8 of 8 | worst dpos 0.00 m
+  radius 0.5 m: 8 of 8 | worst dpos 0.00 m
+  radius 1.0 m: 8 of 8 | worst dpos 0.00 m
+  radius 1.5 m: 7 of 8 | worst dpos 1.57 m
+  radius 2.0 m: 5 of 8 | worst dpos 1.79 m
+yaw offsets (position offset 0):
+  +/-5 deg: same(0.00m,0.0deg) same(0.00m,-0.0deg)
+  +/-10 deg: same(0.00m,0.0deg) same(0.00m,-0.0deg)
+  +/-15 deg: same(0.00m,0.0deg) same(0.00m,-0.0deg)
+  +/-20 deg: same(0.01m,0.3deg) same(0.00m,-0.0deg)
+  +/-30 deg: DIFF(0.52m,28.6deg) same(0.00m,-0.0deg)
+  +/-45 deg: DIFF(0.55m,29.0deg) DIFF(0.15m,-39.6deg)
+  +/-60 deg: DIFF(0.97m,66.6deg) DIFF(0.19m,-46.0deg)

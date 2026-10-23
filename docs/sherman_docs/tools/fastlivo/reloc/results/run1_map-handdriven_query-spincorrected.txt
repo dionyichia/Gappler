@@ -1,0 +1,20 @@
+[INFO] [1792477237.312767926] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/run/bag/handdriven1/handdriven1_0.db3' for READ_ONLY.
+[INFO] [1792477306.435874279] [rosbag2_storage]: Opened database '/home/rcp2026/rcp-Gappler/log/t59-fastlivo/log/t35d-attended-20261020.raLTgE/spin-corrected/bag/bag_0.db3' for READ_ONLY.
+map: 589 scans -> 87737 voxels (0.10 m), extent [29.9 46.5  9.6] m
+query: 30 scans in first 3.0 s -> 12150 voxels
+registration from identity:  x 0.458 y 0.380 z -0.074 m | yaw -2.31 pitch 0.12 roll -1.42 deg | inliers 0.60 rms 0.067 m
+basin test (initial guess offsets -> converged pose):
+  init (0.0,0.0,  0 deg) -> same | dpos 0.000 m dyaw 0.00 deg | inl 0.60 
+  init (0.3,0.0,  0 deg) -> DIFFERENT | dpos 0.086 m dyaw 0.83 deg | inl 0.61 
+  init (0.0,0.3,  0 deg) -> DIFFERENT | dpos 0.437 m dyaw 1.50 deg | inl 0.66 
+  init (-0.3,-0.3,  0 deg) -> DIFFERENT | dpos 0.468 m dyaw 1.57 deg | inl 0.57 
+  init (0.0,0.0, 15 deg) -> DIFFERENT | dpos 0.306 m dyaw 14.59 deg | inl 0.66 
+  init (0.0,0.0,-15 deg) -> DIFFERENT | dpos 0.198 m dyaw -15.43 deg | inl 0.62 
+  init (0.0,0.0, 30 deg) -> DIFFERENT | dpos 0.305 m dyaw 27.97 deg | inl 0.62 
+  init (0.0,0.0,-30 deg) -> DIFFERENT | dpos 0.345 m dyaw -28.90 deg | inl 0.60 
+  init (0.5,0.5, 20 deg) -> DIFFERENT | dpos 0.573 m dyaw 18.71 deg | inl 0.68 
+  init (-0.5,0.5,-20 deg) -> DIFFERENT | dpos 0.555 m dyaw -20.57 deg | inl 0.61 
+  init (0.0,0.0, 60 deg) -> DIFFERENT | dpos 0.441 m dyaw 63.52 deg | inl 0.58 
+  init (0.0,0.0,120 deg) -> DIFFERENT | dpos 0.701 m dyaw 121.22 deg | inl 0.55 
+  init (0.0,0.0,180 deg) -> DIFFERENT | dpos 0.958 m dyaw 182.00 deg | inl 0.42 
+converged to the same solution in 1 of 13 starts

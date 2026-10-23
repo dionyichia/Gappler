@@ -1,0 +1,42 @@
+========== T35d poses 2356
+ path bbox x[-0.72,3.30] y[-1.57,2.44]; signed area -13.46 m2 (+ = counter-clockwise); unwrapped yaw: final -722.4 deg, min -722.9, max +69.2
+ total turning (sum |dyaw|) 1297 deg; roll/pitch deg at start -0.73/0.04, end -0.79/0.14, max |roll| 1.93 max |pitch| 1.44
+  t=  0.0 s  x  +0.00 y  +0.00 z +0.000  yaw    +0.0 deg  roll -0.73 pitch +0.04
+  t= 11.7 s  x  +0.51 y  +0.44 z -0.001  yaw   +47.4 deg  roll -1.36 pitch +0.11
+  t= 23.5 s  x  +2.65 y  +2.20 z +0.033  yaw   -31.3 deg  roll -0.52 pitch +0.43
+  t= 35.3 s  x  +2.58 y  -0.59 z +0.040  yaw  -118.2 deg  roll -0.31 pitch -0.01
+  t= 47.1 s  x  -0.18 y  -1.39 z +0.021  yaw  -194.7 deg  roll -0.60 pitch +0.48
+  t= 58.9 s  x  +0.62 y  -0.51 z +0.005  yaw  -386.4 deg  roll -0.57 pitch +0.05
+  t= 70.7 s  x  +1.37 y  +1.19 z +0.010  yaw  -320.6 deg  roll -1.07 pitch +0.11
+  t= 82.5 s  x  +1.78 y  -0.74 z +0.021  yaw  -475.9 deg  roll -1.16 pitch +0.36
+  t= 94.2 s  x  -0.64 y  -0.52 z +0.036  yaw  -635.2 deg  roll -0.62 pitch +0.10
+  t=106.0 s  x  +0.01 y  +0.01 z -0.001  yaw  -722.7 deg  roll -0.73 pitch +0.01
+  t=117.8 s  x  +0.01 y  +0.01 z +0.004  yaw  -722.4 deg  roll -0.79 pitch +0.14
+========== F_run1 poses 1502
+ path bbox x[-0.92,2.25] y[-2.05,2.60]; signed area 10.19 m2 (+ = counter-clockwise); unwrapped yaw: final +359.4 deg, min -78.6, max +371.9
+ total turning (sum |dyaw|) 604 deg; roll/pitch deg at start -0.33/0.29, end -0.55/0.28, max |roll| 1.26 max |pitch| 1.61
+  t=  0.0 s  x  +0.00 y  +0.00 z +0.000  yaw    +0.0 deg  roll -0.33 pitch +0.29
+  t=  7.5 s  x  +0.00 y  +0.00 z -0.000  yaw    +0.0 deg  roll -0.34 pitch +0.29
+  t= 15.0 s  x  +0.00 y  +0.00 z -0.000  yaw    +0.0 deg  roll -0.33 pitch +0.30
+  t= 22.5 s  x  +0.23 y  -0.40 z +0.004  yaw   -61.9 deg  roll -0.27 pitch +0.39
+  t= 30.0 s  x  +1.68 y  -1.88 z -0.001  yaw   +23.0 deg  roll -0.67 pitch +0.62
+  t= 37.5 s  x  +2.24 y  +0.42 z -0.008  yaw   +90.0 deg  roll -0.32 pitch +0.69
+  t= 45.0 s  x  +0.95 y  +2.57 z +0.003  yaw  +158.3 deg  roll -0.32 pitch +0.94
+  t= 52.6 s  x  -0.71 y  +1.43 z -0.022  yaw  +243.3 deg  roll +0.31 pitch +0.98
+  t= 60.2 s  x  -0.26 y  -0.24 z -0.001  yaw  +334.5 deg  roll -0.04 pitch +0.46
+  t= 67.7 s  x  +0.27 y  -0.22 z +0.005  yaw  +353.6 deg  roll -0.53 pitch +0.36
+  t= 75.2 s  x  +0.24 y  -0.20 z +0.005  yaw  +359.4 deg  roll -0.55 pitch +0.28
+========== F_run2 poses 1582
+ path bbox x[-1.27,2.04] y[-2.03,2.85]; signed area 9.86 m2 (+ = counter-clockwise); unwrapped yaw: final +359.2 deg, min -87.4, max +364.9
+ total turning (sum |dyaw|) 693 deg; roll/pitch deg at start 1.14/2.99, end 1.28/3.03, max |roll| 4.08 max |pitch| 4.17
+  t=  0.0 s  x  +0.00 y  +0.00 z +0.000  yaw    +0.0 deg  roll +1.14 pitch +2.99
+  t=  7.9 s  x  -0.00 y  +0.01 z +0.003  yaw    -0.1 deg  roll +1.16 pitch +3.04
+  t= 15.8 s  x  +0.28 y  -0.23 z -0.009  yaw   -39.8 deg  roll -0.30 pitch +3.60
+  t= 23.7 s  x  +0.90 y  -1.97 z -0.097  yaw   -39.6 deg  roll -0.59 pitch +3.87
+  t= 31.6 s  x  +2.01 y  -0.85 z -0.109  yaw   +80.4 deg  roll +2.31 pitch -0.86
+  t= 39.5 s  x  +1.82 y  +1.55 z -0.030  yaw   +98.9 deg  roll +1.96 pitch -1.24
+  t= 47.6 s  x  +0.25 y  +2.82 z +0.060  yaw  +181.0 deg  roll -2.03 pitch -1.51
+  t= 55.6 s  x  -1.04 y  +1.15 z +0.054  yaw  +235.0 deg  roll -2.96 pitch +0.65
+  t= 63.5 s  x  -0.59 y  +0.22 z +0.029  yaw  +364.7 deg  roll +2.21 pitch +3.10
+  t= 71.8 s  x  -0.24 y  +0.20 z +0.013  yaw  +359.1 deg  roll +1.42 pitch +2.90
+  t= 79.3 s  x  -0.23 y  +0.20 z +0.020  yaw  +359.2 deg  roll +1.28 pitch +3.03

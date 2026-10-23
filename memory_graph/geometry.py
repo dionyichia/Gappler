@@ -38,6 +38,78 @@ def transform_points(T: np.ndarray, points: np.ndarray) -> np.ndarray:
     return points @ T[:3, :3].T + T[:3, 3]
 
 
+def invert_rigid(T: np.ndarray) -> np.ndarray:
+    """The inverse of a 4x4 rotation-plus-translation, without a general solve.
+
+    For T = [[R, t], [0, 1]] the inverse is [[R.T, -R.T @ t], [0, 1]].
+    """
+    R = T[:3, :3]
+    t = T[:3, 3]
+    out = np.eye(4)
+    out[:3, :3] = R.T
+    out[:3, 3] = -R.T @ t
+    return out
+
+
+def project_cloud_to_depth(
+    points_world: np.ndarray,
+    T_world_cam: np.ndarray,
+    K: np.ndarray,
+    image_hw: Tuple[int, int],
+) -> np.ndarray:
+    """A depth image in the colour frame, rendered from a world-frame cloud: the
+    inverse of back_project, so a LiDAR recording reaches the pipeline as RGB-D.
+
+    Each point is moved into the camera frame, dropped if at or behind the optical
+    plane, projected with K and rounded to a pixel; where several land on one
+    pixel the nearest wins (a z-buffer). Returns float32 metres along the optical
+    axis, 0 where no point landed. Expect it sparse: a LiDAR scan fills far fewer
+    pixels than a depth camera, so accumulate a window of scans if one is too thin.
+    """
+    h, w = int(image_hw[0]), int(image_hw[1])
+    pts = np.asarray(points_world, dtype=np.float64).reshape(-1, 3)
+    depth = np.zeros((h, w), dtype=np.float32)
+    if len(pts) == 0:
+        return depth
+    cam = transform_points(invert_rigid(np.asarray(T_world_cam, dtype=np.float64)), pts)
+    z = cam[:, 2]
+    infront = z > 0
+    if not np.any(infront):
+        return depth
+    cam, z = cam[infront], z[infront]
+    fx, fy, cx, cy = K[0, 0], K[1, 1], K[0, 2], K[1, 2]
+    u = np.round(cam[:, 0] * fx / z + cx).astype(np.int64)
+    v = np.round(cam[:, 1] * fy / z + cy).astype(np.int64)
+    on = (u >= 0) & (u < w) & (v >= 0) & (v < h)
+    if not np.any(on):
+        return depth
+    flat = v[on] * w + u[on]
+    nearest = np.full(h * w, np.inf)
+    np.minimum.at(nearest, flat, z[on])          # the closest point at each pixel
+    nearest[~np.isfinite(nearest)] = 0.0
+    return nearest.reshape(h, w).astype(np.float32)
+
+
+def drop_occluded(depth: np.ndarray, window: int, margin: float) -> np.ndarray:
+    """Clear depth pixels that are hidden behind a nearer point close by.
+
+    A projected LiDAR cloud is sparse, so the z-buffer alone lets the wall behind
+    an object show through the gaps between the object's own points. A pixel is
+    cleared if some pixel within its window x window block is more than `margin`
+    (a fraction) nearer. Without this a chair's mask held its own points and the
+    floor's, and S8 kept the floor (frame 700 of the FAST-LIVO bag, T6.3).
+    window <= 1 returns the depth unchanged.
+    """
+    from scipy.ndimage import minimum_filter
+
+    depth = np.asarray(depth, dtype=np.float32)
+    if window <= 1:
+        return depth
+    valid = depth > 0
+    nearest = minimum_filter(np.where(valid, depth, np.inf), size=int(window), mode="constant", cval=np.inf)
+    return np.where(valid & (depth > nearest * (1.0 + margin)), 0.0, depth).astype(np.float32)
+
+
 def back_project(obs: Observation, masks: np.ndarray, cfg: MemoryGraphConfig) -> List[Optional[Cloud]]:
     """One world-frame cloud per mask, or None if the mask has fewer than
     cfg.min_points pixels with valid depth (pointcloud.py:138).

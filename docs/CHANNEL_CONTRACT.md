@@ -221,7 +221,7 @@ All of these were decided by Dion. Each names where the detail lives.
   ⚠️ **Do not trust either set.** Recalibrate and validate on the simulated arm before any powered
   run. Answers `CODE_AUDIT` open question 2.
   **Superseded 2026-09-23.** T1.3 kept `main`'s row after the simulated arm checks, and T1.7
-  validated it on the real arm: every joint within 0.02° (`dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`).
+  validated it on the real arm: every joint within 0.02° (`adb5466:docs/dion_docs/T1.7_FIRST_COMMANDED_MOTION.md`).
   The tool sits slightly outside the base footprint at this pose, so it is not a rest pose for
   driving. A tucked pose inside the base is T1.18.
 - **B-3. `ros2_robot_ws/src/main.py` owns `background.launch.py`.** Delete the launch in
