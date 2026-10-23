@@ -109,9 +109,86 @@ therefore have **no owner** until that changes. They are not deleted, they are p
 | # | What passes | From | To | Owner | Decided |
 |---|---|---|---|---|---|
 | P1 | Base camera stream, `/base_camera/...` | D455 driver on the base | Nav, the memory graph. Dion, calibration | Dion | Dion brings it up first for the calibration in `T5.5`. Sherman owns the mount and the hardware |
-| P2 | Graph query: sentence in, object position out | Nav, the memory graph, `T6.8` | Dion's C++ node, `T7.1`, which then writes H2 | Zongzhe | A ROS service, see N-3 in §6 |
+| P2 | Graph query: sentence in, object position out | Nav, the memory graph, `T6.8` | Dion's C++ node, `T7.1`, which then writes H2 | Zongzhe | A ROS service, see N-3 in §6. Shape drafted below (`T6.8b`), waiting for Dion |
 | P3 | Gaze image feature into the graph query | Aria, `T8.1` | Nav, the graph query, `T8.2` | Dion | Can ride inside P2's request |
 | P4 | Segmentation trigger | Phase logic | the segmentation service, `shared_services/` (G-1, G-2) | Dion | Dion owns the service and the trigger, see G-5 in §6 |
+
+### P2 in detail: the graph query (proposed, `T6.8b`)
+
+**Status: proposed by Zongzhe on 2026-10-23, not yet agreed with Dion. Nothing is built.** The
+names and the package are proposals too. Once Dion agrees, this section is the contract `T7.1`
+codes against, and `T6.8` builds the Python side to match.
+
+**Two services, both served by the memory graph (Zongzhe), both called by `T7.1` (Dion).**
+
+1. **Query**, proposed name `/memory_graph/query`. A sentence in, a ranked list of objects out.
+   Called once per task, at the start (N-3).
+2. **Reject**, proposed name `/memory_graph/reject`. The robot went to an object and close-range
+   perception says it is not the one. The graph leaves it out of later answers for the same
+   instruction. Without it the robot goes back to the same wrong object forever (`T6.8a`).
+
+**Proposed types**, in a new package `memory_graph_interfaces` (where it lives is Nav's call):
+
+```
+# srv/QueryGraph.srv
+string instruction          # the sentence, as spoken: "find the small wooden chair"
+bool include_related        # false (default): target objects only. true: related objects after them
+uint32 max_hits             # 0 means all
+---
+bool ok                     # false: the graph could not answer (message says why)
+string message
+std_msgs/Header header      # frame_id: the frame every position is in. stamp: when answered
+string source               # "model" or "fallback": who chose the classes
+string[] targets            # the classes searched for, after synonyms ("couch" comes back as sofa)
+string[] related
+GraphHit[] hits             # best first
+
+# msg/GraphHit.msg
+uint64 object_id            # the graph's id. Stable while the graph runs. The id Reject takes
+string label                # the object's class
+string kind                 # "target" or "related"
+float32 task_score          # how well the object's photos match the sentence, -1 to 1
+geometry_msgs/Point position    # centre of the object's 3D box, metres, in header.frame_id
+geometry_msgs/Vector3 size      # full side lengths of that box, metres
+uint32 sightings            # how many photos the object was seen in
+
+# srv/RejectObject.srv
+uint64 object_id
+---
+bool ok                     # false: no object with that id
+string message
+```
+
+**What the answer means.**
+
+- **Ranked, best first.** Target objects come first, ordered by task score, so when several
+  objects share a class (seven chairs), the one whose photos best match the sentence ("the small
+  wooden chair") leads. If the first is wrong, `T7.1` rejects it and takes the next, without a new
+  query. The list is `TargetFinder.find` (`memory_graph/target_finder.py`).
+- **Targets only by default.** A related object (a desk, for "find the cup") is a place to look,
+  not the answer. `T7.1` should not drive to it as if it were the cup. `include_related` asks for
+  them after the targets, each marked `kind: related`.
+- **An empty list with `ok: true`** means the graph holds nothing of that class yet, for example
+  "find a plant" when no plant was ever seen. What `T7.1` does then (explore, ask, give up) is
+  `T7.1`'s and M9's call, not the graph's.
+- **The position is the object's centre, not a goal pose.** Turning it into a pose the base can
+  reach, standing off from the object and facing it, is `T7.1`'s job, as
+  `object_approach_node.py` does today for H2.
+- **The frame.** `header.frame_id` is the frame the graph's camera poses were in. Offline, on the
+  recorded drive, that is FAST-LIVO's `camera_init`. On the robot it must be the frame Nav2 drives
+  in, `map`. Making that true when the graph is built live is `T7.2`. `[inferred]`
+- **Time.** The query may wait up to `reasoning_timeout_s` (10 s, `memory_graph/config.py`) for
+  the class model, then falls back to CLIP. A client timeout under about 12 s would give up on
+  answers the graph is still able to give. `[inferred]`
+- **Rejects** last for one instruction: a new instruction clears them. A rejected object stays
+  rejected if the graph later merges it with another entry (`T6.8a`).
+- **Not in this version:** the stored photo of each hit, and P3's gaze image feature. P3 can add a
+  field to the request later without changing the meaning of the rest.
+
+**Open for Dion:** the service names and the package, whether `uint64` ids suit the C++ side,
+whether `T7.1` wants a hard cap on `max_hits`, and the frame of H2. H2 carries the object in
+`base_link` today (§3), while the graph answers in `map`. Either `T7.1` converts through TF before
+writing H2, or H2's frame changes, which is Dion's call as its owner (rule 1, §2).
 
 ---
 
@@ -386,3 +463,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-10-17 | Claude Opus 5.5 + Dion | H11: gaze is `PointStamped` with the glasses capture time, and the glasses images carry their capture time (`T2.19`). Re-baselined with `contracts.py snapshot`. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | H7: `/pipeline_state` gains `STOPPED` (T1.38). Both readers handle it: AnyGrasp only acts on IDLE and EXECUTING, grasp_viz shows the text. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | `T8.5`: the matcher reads H5a's reference instead of the glasses image, the word and the gaze. H5a reference crop gains a `crop_margin_px` margin. H11 reader updated. Re-baselined with `contracts.py snapshot`. |
+| 2026-10-23 | Claude Opus 5.5 + Zongzhe | `T6.8b`: P2 drafted in §4, the query and reject services with proposed types, for Dion to agree. Nothing built. |
