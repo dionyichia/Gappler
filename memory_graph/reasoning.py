@@ -200,6 +200,7 @@ class Expansion:
     reply: Optional[str] = None      # the raw reply, None if there was none
     added: Tuple[str, ...] = ()      # phrases appended to the vocabulary
     seconds: float = 0.0             # time spent waiting for the model
+    ranked: Tuple[str, ...] = ()     # the targets best first: the model's order, or the fall-back's
 
 
 class ClassExpander:
@@ -258,7 +259,8 @@ class ClassExpander:
             targets = fallback_targets(task, vocab, self.encoder,
                                        self.cfg.fallback_ratio, self.cfg.fallback_top_k)
         new_task, added = extend_for_task(vocab, task.with_classes(targets, related))
-        return Expansion(new_task, source, why, reply, tuple(added), seconds)
+        ranked = tuple(normalise(t) for t in targets)
+        return Expansion(new_task, source, why, reply, tuple(added), seconds, ranked)
 
 
 class QwenModel:

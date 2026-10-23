@@ -1,0 +1,26 @@
+T6.7: the reasoning check script's tests, and every memory graph test, on the lab box
+2026-10-23, lab box (rcp2026@100.87.133.60, tailscale), NVIDIA GeForce RTX 4060 Ti
+Run over SSH by Claude Opus 5.5 for Zongzhe. Scratch copy of memory_graph/ from the working tree
+of branch t6.7-reasoning-layer (on origin/dev 352e1e2, changes not yet committed) in
+/tmp/zongzhe_t67_20261023, deleted after. ~/rcp-Gappler was not touched (it is on someone's
+branch, t1.44-grasp-min-score). Python from ~/rcp-Gappler/.venv (torch 2.10.0+cu128,
+transformers 5.2.0, open_clip 3.3.0). CLIP weights from ~/rcp-Gappler/assets/models/open_clip
+(OPEN_CLIP_CACHE_DIR). Qwen2.5-0.5B weights from the Hugging Face cache. HF_HUB_OFFLINE=1, so
+nothing was downloaded. No camera, no ROS, no robot.
+
+Before start
+  nvidia-smi 390 MiB of 16380 MiB, 0 %. Only GPU process: gnome-remote-desktop-daemon (120 MiB).
+  No realsense, ros2 launch, bench, runner job, SAM 3 or memory graph process. /home 39 GB free.
+
+  RESULT: PASS.
+  All memory graph tests, discovered from memory_graph/tests, .venv:  388 ran, 388 passed, 0 skipped.
+  test_check_reasoning.py (new, stand-in model and encoder):          6 ran, 6 passed.
+  test_reasoning_model.py (real Qwen2.5-0.5B + open_clip, GPU):       3 ran, 3 passed.
+
+  On a Mac the same suite skips 43 tests (no torch, open_clip or OpenCV there) and 3 error for
+  lack of PIL. Here nothing is skipped, so the real CLIP, SAM 3 wrapper, Qwen and OpenCV tests ran.
+
+  Not run here: the check itself (python -m memory_graph.check_reasoning), which waits for the
+  instruction set (memory_graph/eval/instructions_t6_7.json) to be frozen. One OpenCV warning
+  (imread of a missing depth/1.png in a temp folder) comes from
+  test_replay_loader.py's test_a_missing_image_file_is_an_error, which deletes that file on purpose.

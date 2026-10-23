@@ -158,6 +158,11 @@ class ClassExpanderTest(unittest.TestCase):
         self.assertEqual(result.added, ())
         self.assertEqual(len(self.vocab), len(BASE))
 
+    def test_ranked_keeps_the_models_order_in_the_vocabulary_spelling(self):
+        """The task holds its targets as a set, so the order lives in `ranked`."""
+        result = self.expand(FakeModel('{"targets": ["Sofa", "chair"]}'))
+        self.assertEqual(result.ranked, ("sofa", "chair"))
+
     def test_the_model_gets_the_prompt_and_the_limits(self):
         model = FakeModel('{"targets": ["chair"]}')
         self.expand(model)
@@ -181,6 +186,7 @@ class ClassExpanderTest(unittest.TestCase):
         self.assertEqual(result.reply, "I think you should look for a chair.")
         self.assertEqual((result.task.targets, result.task.related), ({"chair"}, frozenset()))
         self.assertEqual(result.added, ())
+        self.assertEqual(result.ranked, ("chair",))
 
     def test_a_model_error_falls_back(self):
         result = self.expand(FakeModel(error=RuntimeError("CUDA out of memory")))
