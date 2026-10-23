@@ -8,6 +8,9 @@ Rule agreed with Dion, 2026-10-20 (docs/bench-runs/2026-10-20-labbox-t8.7-mask-e
      them (pick_glasses gives None): no match, so looking away does not match another object;
   e. one wrist mask left for it: that is the match. More than one (identical wrist objects): None.
 
+T8.5: the matcher passes one glasses row, the aria client's reference crop (already picked with
+the gaze from when you spoke), so d. always picks that row and only e. can refuse.
+
 No ROS or torch here, so the check below runs anywhere:
     python aria/aria_app/services/object_recognition/cross_camera_mask_match_rule.py
 """

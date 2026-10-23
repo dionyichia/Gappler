@@ -1,0 +1,87 @@
+T8.5: the cross-camera matcher takes its glasses side from the aria client's /grasp/target
+Lab box, 2026-10-20 late, Claude Opus 5.5 + Dion. Domain 86, localhost only, nothing moved.
+
+Question: with the matcher reading the client's reference crop (picked with the gaze from when
+you spoke) instead of its own glasses SAM 3 and the latest gaze, does it still find the target in
+the wrist view, and what happens when the reference is wrong?
+
+Setup
+- Code: branch t8.5-matcher-uses-glasses-target (from dev 8f39b5e), copied to /tmp/dion_t8.5/repo
+  (.venv, install, assets/models linked from ~/rcp-Gappler).
+- Running: segmentation service, aria segmentation client, the matcher
+  (object_recognition_pipeline.py), wrist bag looping, glasses VRS replayed onto ROS, "box" sent
+  on /aria/audio/prompt at set times (dev has no stamped word yet, PR #91). Script:
+  run_t85.sh (local scratch, not in git), same shape as the T2.9 e2e.
+- Scored by the matched wrist mask's box in the log line.
+
+1. Client unit tests on the box (crop margin 20 px): Ran 28 tests, OK.
+
+2. Glasses c2cbafe8 (about 3 m), "box" at 22, 46, 70, 95 s. 4 of 4 words sent a reference.
+   a. wrist_camera_three_boxes_2026-10-20: 245 of 245 matches on the target [269, 377, 410, 480],
+      0 ties, 0 below cutoff. Saved pictures: the reference crop is the target box.
+   b. wrist_camera_two_cardboard_boxes_2026-10-20, per word:
+        word 1: 44 target
+        word 2: 12 target, 22 tall box, 18 wrist ties
+        word 3: 34 target, 5 tall box, 4 other, 13 ties
+        word 4: 58 target, 2 other, 9 ties
+      148 of 180 matches on the target. The tall same-colour box still wins some frames: CLIP
+      alone does not separate look-alike boxes (T8.7, T8.8).
+   Matches now run on every wrist frame while a reference stands (until the next Target), so the
+   counts are per wrist frame, not comparable one to one with T8.7's 29 and 12.
+
+3. Fair redo: glasses 5e5d6a91 (Dion at four spots) with wrist bag
+   wrist_camera_two_cardboard_boxes_2026-10-20_v2. Target: the small box standing on its end,
+   wrist box about [270, 240, 370, 430].
+   Word times: Dion listened, "box" at 61 s (1 m), 75 s (1.5 m), 100 s (1.6 m diagonal),
+   114 s (0.4 m). Whisper alone found them 0.3 to 2 s early and missed some: the voice is soft
+   and one bang at 25.5 s set the peak. "box" sent 2.2 s after each (word end + 1.5 s speech
+   latency the client assumes).
+   Reference crops saved (scratch save_refs.py):
+        word 1 (1 m):   the target box         24 of 24 target
+        word 2 (1.5 m): THE WHOLE TABLE        7 target, 55 below cutoff
+        word 3 (1.6 m): the target box         20 target, 7 below, 1 tie, 1 other
+        word 4 (0.4 m): the target box         76 target, 1 tie, 1 other
+   A first run with the words 1.5 to 2 s early: 105 matches, all target, 102 below cutoff
+   (words 2 and 3). Crops not saved for that run.
+
+Finding: word 2's reference was the mat stack under the box, not the box. SAM 3 also calls the
+mats a "box" (0.30 to 0.45, above the client's 0.3 cutoff). The gaze landed a few px off the box's
+edge, on the mat (see the correction below), and the vote gave the mat 80%. CLIP scored the mat
+crop about 0.51 against the wrist box, under 0.56, so the matcher refused. The matcher's cutoff
+caught a wrong reference; the client's checks (SAM 3 cutoff 0.3, vote share 0.5) did not.
+Follow-ups: T2.3 (gaze error, depends on distance), T2.24 (maximum distance and cutoff, was T2.23).
+
+Also made: ~/aria-recordings/5e5d6a91-...commands.wav on the Mac, silence with
+pick_up_box_command.wav placed so its "box" (2.59 s into the clip) lands at 61, 75, 100, 114 s,
+for the stamped-word replay once PR #91 merges. Louder audio for listening:
+~/aria-recordings/5e5d6a91_louder.wav.
+
+Correction, same night: the tie-break is not the cause. At 75 s and 100 s the gaze samples land a
+few px off the right edge of the 40 x 60 px target, on the mat. Where a sample is inside both the
+box and the mat, the tie goes to the box (higher score). The mat wins because most samples are only
+inside the mat. Cause: gaze error at 1.5 m, not the pick rule (T2.3). Sheet with the four spots:
+~/aria-recordings/5e5d6a91-...pick/gaze_vs_table_sheet.jpg (Mac).
+
+4. Offline, every frame (replay_recording_gaze_pick.py stages 2 to 4; SAM 3 on the box, the client's
+   own gaze_pick.vote on the Mac, cutoff applied to the saved masks).
+   a. 5e5d6a91 at 0.4 to 1.6 m, 55 to 120 s (66 frames). Target = mask under 1% of the image,
+      mat = over 1.5%:
+        cutoff 0.30: target 31, mat 27, nothing 8
+        cutoff 0.35: target 46, mat 12, nothing 8
+        cutoff 0.40: target 55, mat 3, nothing 8
+        cutoff 0.45: target 57, mat 1, nothing 8
+        cutoff 0.50: target 58, mat 0, nothing 8
+      The mat scored 0.30 to 0.45 in every frame from 70 to 103 s (it persists, so a filter on
+      masks seen over 3 frames would keep it). The target scored 0.73 or more at every spot.
+   b. c2cbafe8 at about 1.4 to 2.4 m (60 frames, truth = the 0.3 pick, right in 60 of 61, T2.9):
+        cutoff 0.30: 60   0.35: 52   0.40: 38   0.45: 25   0.50: 14
+        per stop at 0.5: stop 1 4/15, stop 2 8/15, stop 3 1/17, stop 4 1/14 (box 0.30 to 0.59)
+
+5. Resolution, c2cbafe8 (60 frames), target box SAM 3 score (median, frames at 0.5 or more):
+        A today, 1408 px full frame (focal 609):           0.43 (14)
+        B 2816 px full frame (focal 1218):                 0.42 (14)
+        C 1008 px crop of the 2816 frame at the gaze:      0.00 to 0.33 per stop (1)
+   SAM 3 resizes every image to 1008 px (sam3_image_processor.py resolution=1008), so a bigger
+   frame changes nothing. The crop (checked by eye at 42 s: box centred and sharp) scored lower:
+   the low score is SAM 3 doubting this carton is a "box", not pixels. Wrist camera for comparison:
+   640 x 480 at focal about 610, the same pixels per degree as the glasses image.

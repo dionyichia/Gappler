@@ -234,7 +234,8 @@ becomes the service. The 2026-09-20 decision below is kept as the record of how 
   on the box: 4 of 4 words sent a reference once, 3 of 4 in two later runs (the replay started
   before its workers were ready, fixed in the review), then 4 of 4 again with the fix
   (`bench-runs/2026-10-15-labbox-t2.9-review-fixes.txt`). The grasp side does not use the reference
-  yet (`T8.5`), so which object the arm takes is unchanged. Write-up:
+  yet (`T8.9`; `T8.5` made only the cross-camera matcher use it), so which object the arm takes is
+  unchanged. Write-up:
   `adb5466:docs/dion_docs/T2.9_GAZE_PICK_ON_RECORDING.md`.
 - **Timing, open 2026-10-17 (`T2.19` to `T2.21`).** The aria client times the word, the gaze and
   the image by when each reaches it, not when the glasses captured it, and guesses the gaps with
@@ -849,9 +850,14 @@ geometry (this section). Built in `object_recognition_pipeline.py` with the rule
 `cross_camera_mask_match_rule.py`: cutoff 0.56, keep within 0.01 of the best, the gaze must be within
 `pick_radius_px` (80, aria shared config) of the chosen glasses mask, a wrist tie returns no match.
 Box replay of the T8.4 setup: all 27 matches in the last run chose the brown box, gaze within 30 px
-(T8.4: 0 of 15). Not shown yet: choosing among two or more wrist objects (the wrist view still held
-one), and the gaze is the latest sample, not the one at the picture's capture time (the T2.9 client
-does that), which cost about 5 s of matching in one stretch `[measured]`. Record:
+(T8.4: 0 of 15). With several wrist objects: three different colours 29 of 29 on the target, two
+same-colour cardboard boxes 6 of 12, so look-alike objects need the geometry methods below
+(`bench-runs/2026-10-20-labbox-t8.7-wrist-multi-box-replay.txt`) `[measured]`. The gaze was the latest sample, not the one at the picture's capture time, which cost about 5 s
+of matching in one stretch `[measured]`. Fixed by `T8.5` (PR #100): the matcher now takes the
+client's reference crop, picked with the gaze from when you spoke. Box replays: three boxes 245 of
+245, two same-colour boxes 148 of 180, fair redo every match on the target; one wrong reference
+(the mat stack at 1.5 m, gaze a few px off the box) refused by the 0.56 cutoff
+(`bench-runs/2026-10-20-labbox-t8.5-matcher-uses-client-target.txt`) `[measured]`. Record:
 `bench-runs/2026-10-20-labbox-t8.7-mask-embedding-offline.txt`.
 
 **Three candidate methods, cheapest first:**
@@ -1594,3 +1600,5 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-19 | Claude Opus 5.5 + Dion | §2.13: baseline recorded (T8.4). Four offline checks: LightGlue works, upscaling turns JPEG noise into fake points, the plain box has too few features, LoFTR fails too. Further diagnostics parked as T8.6. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | §2.13: mask embeddings (T8.7) tested offline. CLIP picks the gazed box 25 of 25 against decoys, SAM 3 features weaker. Design agreed, build next. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | §2.13: T8.7 built (CLIP matcher, gaze within pick_radius_px) and replayed on the box: 27 of 27 matches on the brown box. Open: two or more wrist objects, gaze at capture time. `pick_radius_px` moved to aria's shared config section. |
+| 2026-10-20 | Claude Opus 5.5 + Dion | §2.13: T8.7 with several wrist boxes: three colours 29 of 29, two same-colour cardboard boxes 6 of 12. Gaze fix moved to T8.5. |
+| 2026-10-21 | Claude Opus 5.5 + Dion | §2.2: the grasp side using the reference is now `T8.9`. §2.13: the matcher's gaze fixed by `T8.5` (PR #100), with the box replay results. |

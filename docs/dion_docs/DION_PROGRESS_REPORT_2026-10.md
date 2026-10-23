@@ -337,7 +337,7 @@ Plan settled with Dion for T8.8:
 3. 3 or more objects, not in a line (two objects always give two answers 180 deg apart).
 4. Object centres from the two cameras differ by 5 to 10 cm (front faces vs top), so use them to
    start ICP, not as the answer.
-5. One recording session serves T8.8, gaze error (T2.3) and the distance limit (T2.23).
+5. One recording session serves T8.8, gaze error (T2.3) and the distance limit (T2.24).
 
 Status: Phase 0. Aria MPS (cloud SLAM) login works. Tags not printed. The glasses RGB in the
 recordings is 1 fps, thin for matching.
@@ -601,7 +601,7 @@ mask right) needs only the existing pipeline and a display node.
 | 2 | New AnyGrasp SDK once the licence arrives, rerun the offline checks | T1.45 |
 | 3 | Choose the grasp strategy (section 7), then the 12-trial validation, pass bar 9 of 12 | T1.35 |
 | 4 | Merge the stamped spoken word and the cross-camera reference | T2.21 (PR #91), T8.5 (PR #100) |
-| 5 | One recording session: ArUco ground truth, gaze error, distance limit | T8.8, T2.3, T2.23 |
+| 5 | One recording session: ArUco ground truth, gaze error, distance limit | T8.8, T2.3, T2.24 |
 | 6 | Glasses-to-robot transform, then pick by gaze ray for look-alikes | T8.8 |
 | 7 | Two boxes on a table, pick the one you looked at, on hardware | T2.5 |
 | 8 | Graph-driven approach goal, in C++ | T7.1 |

@@ -192,10 +192,13 @@ class AriaSegmentationClient(Node):
                                    "the word alone stands")
             return
         det = response.detections[i]
-        x, y, w, h = det.bbox.x_offset, det.bbox.y_offset, det.bbox.width, det.bbox.height
+        # The box plus crop_margin_px, the same crop the T8.5 matcher embeds on the wrist side
+        m = CFG["crop_margin_px"]
+        x0, y0 = max(det.bbox.x_offset - m, 0), max(det.bbox.y_offset - m, 0)
+        x1, y1 = det.bbox.x_offset + det.bbox.width + m, det.bbox.y_offset + det.bbox.height + m
         target = Target(prompt=prompt, header=header,
-                        reference=image_msg(rgb[y:y + h, x:x + w], "rgb8", header),
-                        reference_mask=image_msg(masks[i][y:y + h, x:x + w], "mono8", header))
+                        reference=image_msg(rgb[y0:y1, x0:x1], "rgb8", header),
+                        reference_mask=image_msg(masks[i][y0:y1, x0:x1], "mono8", header))
         self.target_pub.publish(target)
         self.get_logger().info(f"Looked at: {prompt!r} #{i + 1} of {len(masks)}, score "
                                f"{det.score:.2f}, {share:.0%} of {len(gaze)} gaze samples, "

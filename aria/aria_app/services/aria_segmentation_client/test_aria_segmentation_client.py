@@ -144,7 +144,9 @@ class AriaClientTest(unittest.TestCase):
         self.reply(box(0, 0, 9, 9, 0.9), box(25, 15, 34, 24, 0.5))
         first, second = self.node.target_pub.sent
         self.assertEqual((first.prompt, first.reference.width), ("box", 0))
-        self.assertEqual((second.prompt, second.reference.width, second.reference.height), ("box", 10, 10))
+        # the 10 x 10 box plus crop_margin_px (20), cut at the 60 x 40 image's edges
+        self.assertEqual((second.prompt, second.reference.width, second.reference.height), ("box", 50, 40))
+        self.assertEqual(second.reference_mask.width, 50)
         self.assertEqual(second.reference_mask.encoding, "mono8")
         self.assertEqual(second.header.stamp.sec, 10)  # the glasses frame it came from
         self.assertEqual(self.requests(), 1)            # one grasp request per word
@@ -172,7 +174,7 @@ class AriaClientTest(unittest.TestCase):
         old.finish(Segment.Response(success=True, detections=[box(25, 15, 34, 24, 0.5)]))
         self.assertEqual(len(self.node.target_pub.sent), 3)   # box, stop, box: no reference
         new.finish(Segment.Response(success=True, detections=[box(25, 15, 34, 24, 0.5)]))
-        self.assertEqual(self.node.target_pub.sent[-1].reference.width, 10)
+        self.assertEqual(self.node.target_pub.sent[-1].reference.width, 50)
 
     def test_old_gaze_is_not_used(self):
         self.image()

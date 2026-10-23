@@ -1,0 +1,54 @@
+T8.7 CLIP matcher, wrist view with two or more objects. Lab box, 2026-10-20, Claude Opus 5.5 + Dion.
+
+Question: does the merged T8.7 matcher (dev 8f39b5e) pick the target box when the wrist camera
+sees several boxes? The T8.7 replay had one box in the wrist view, so the wrist-side choice was
+untested.
+
+Setup
+- Code: git archive of origin/dev 8f39b5e in /tmp/dion_t8.7_replay2/repo. One scratch-only edit:
+  the "Matched" log line also prints the wrist mask's box, to score each match by position.
+- Glasses: recording c2cbafe8 (old session, about 3 m away, target box about 35 x 75 px), 0 to
+  118 s, prompt "box" once. Domain 84, localhost only.
+- Wrist: two new 10 s bags, wrist RealSense 640x480x15, colour + aligned depth + both camera_info
+  (same topics as wrist_camera_box_at_home_2026-10-13). Mac: assets/recordings/wrist_camera/.
+  a. wrist_camera_three_boxes_2026-10-20: target (small brown), large navy box, small white LED box.
+  b. wrist_camera_two_cardboard_boxes_2026-10-20: target plus a taller cardboard box of the same
+     colour, and an opened navy box with a brown lid in the corner.
+  In both the target is cut off at the bottom edge and seen mostly from the top.
+- Scored by the wrist box in the log: target box is [269..270, 377, 410, 480].
+
+Results [measured]
+| wrist bag            | matches | target | other            | wrist ties | no match: gaze too far / below 0.56 |
+| a. three colours     | 29      | 29     | 0                | 0          | 51 / 18 |
+| b. two cardboard     | 12      | 6      | 2 tall, 3 lid, 1 near the clear case | 1 | 82 / 1 |
+
+- b: wrong picks win by 0.02 or more (example: tall box 0.684 vs target 0.663), so outside the
+  0.01 tie margin. CLIP does not separate two plain cardboard boxes of one colour.
+- Wider tie margin, re-run offline on the logged score tables (the gaze-chosen glasses row held
+  fixed, so an estimate) [measured]:
+    margin 0.01: b 6 right / 6 wrong / 0 tie.  0.02: 5 / 6 / 1.  0.03 and 0.05: 2 / 3 / 7.
+    a stays 29 / 0 / 0 at every margin.
+  A wider margin turns wrong wrist picks into wrist ties (no pick). Gaze cannot break a wrist tie:
+  it lives in the glasses picture. Dion asked for 0.05 so gaze catches ranking errors; that works
+  on the glasses side only. Open.
+- The two views differ a lot: a small, far, side view in the glasses against a close top view in
+  the wrist. Not a fair test of same-colour boxes. New recordings below.
+
+New recordings for the fair redo (not yet replayed)
+- Wrist: wrist_camera_two_cardboard_boxes_2026-10-20_v2 (both boxes whole, side faces visible,
+  target is the smaller box standing on its end, lid box still in the corner).
+- Glasses: ~/aria-recordings/5e5d6a91-2bd0-41fd-8400-129958ae2056.vrs on the Mac (about 142 s,
+  758 MB, RGB 1 frame a second). Same scene untouched. Dion stood at about 0.4, 1, 1.5 and 1.6 m
+  and said "box" at each spot once steady, so the word times in the audio mark each distance.
+
+Gaze timing (found while reviewing)
+- The matcher stores only the latest gaze (object_recognition_pipeline.py _on_gaze), not the gaze
+  from when the word was said, which T2.9 decided and the glasses client does. Dion chose to take
+  the glasses side from the client's /grasp/target (reference crop + mask). Tracked under T8.5.
+
+Gotcha: the recording script's first readiness check, `ros2 topic echo --once <topic>` without
+the message type, exits at once when the topic does not exist yet. Pass the type so it waits.
+
+Scripts and logs (local only): docs/dion_docs/local/t8.7_wrist3_2026-10-20/ (frames, replay/
+run_replay.sh, per-run logs and match pictures). Box scratch: /tmp/dion_t8.7_wrist3 (record.sh,
+bags) and /tmp/dion_t8.7_replay2 (repo copy, runs). Nothing left running.

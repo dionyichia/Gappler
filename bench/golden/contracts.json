@@ -16,6 +16,14 @@
     ]
   },
   "divergent_constants": {
+    "BASE": {
+      "(\"chair\", \"table\", \"cup\")": [
+        "memory_graph/tests/test_vocabulary.py:22"
+      ],
+      "(\"chair\", \"table\", \"desk\", \"sofa\", \"plant\", \"cup\")": [
+        "memory_graph/tests/test_reasoning.py:25"
+      ]
+    },
     "DEPTH": {
       "\"/camera/camera/aligned_depth_to_color/image_raw\"": [
         "grasp/tools/wrist_camera_bag_to_point_cloud_page.py:25"
@@ -42,7 +50,7 @@
         "memory_graph/tests/test_target_finder.py:28"
       ],
       "[\"chair\", \"cup\", \"sink\", \"wall\", \"chair\", \"table\"]": [
-        "memory_graph/tests/test_config_and_filters.py:73"
+        "memory_graph/tests/test_config_and_filters.py:75"
       ]
     },
     "PATCHES": {
@@ -55,7 +63,8 @@
     },
     "REPO": {
       "Path(__file__).resolve().parent.parent": [
-        "memory_graph/clip_encoder.py:36"
+        "memory_graph/clip_encoder.py:36",
+        "memory_graph/score_drive.py:61"
       ],
       "Path(__file__).resolve().parents[2]": [
         "aria/tools/replay_recording_gaze_pick.py:44"
@@ -372,8 +381,8 @@
       "nav/vendor/urdf/xpkg_urdf_echo_plus/urdf/model.urdf(urdf)"
     ],
     "camera_color_optical_frame": [
-      "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:486",
-      "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:495",
+      "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:473",
+      "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:482",
       "grasp/anygrasp_node/anygrasp_detection_node.py:168",
       "grasp/grasp_segmentation_client/test_grasp_segmentation_client.py:67",
       "grasp/grasp_segmentation_client/test_grasp_segmentation_client.py:83",
@@ -564,7 +573,7 @@
       "arm/vendor/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "a5348fe",
+  "git": "673a7eb-dirty",
   "launch_includes": [
     {
       "from": "arm/arm_bringup/launch/arm_bringup.launch.py",
@@ -1658,6 +1667,9 @@
     "costmap_topic": [
       "nav/robot_slam/config/nav2_params.yaml:154"
     ],
+    "crop_margin_px": [
+      "aria/aria_config.yaml:65"
+    ],
     "cycle_frequency": [
       "nav/robot_navigation/config/nav2_params.yaml:90",
       "nav/robot_slam/config/nav2_params.yaml:156"
@@ -1692,7 +1704,7 @@
       "grasp/grasp_config.yaml:26"
     ],
     "default_depth_m": [
-      "aria/aria_config.yaml:108"
+      "aria/aria_config.yaml:114"
     ],
     "default_prompt": [
       "grasp/grasp_config.yaml:39"
@@ -1725,7 +1737,7 @@
       "nav/robot_slam/config/nav2_params.yaml:87"
     ],
     "end_of_speech_silence_s": [
-      "aria/aria_config.yaml:93"
+      "aria/aria_config.yaml:99"
     ],
     "execute_depth_thresh_m": [
       "grasp/grasp_config.yaml:110"
@@ -1777,10 +1789,10 @@
       "shared/global_config.yaml:57"
     ],
     "gaze_to_image_max_s": [
-      "aria/aria_config.yaml:132"
+      "aria/aria_config.yaml:138"
     ],
     "gaze_window_s": [
-      "aria/aria_config.yaml:115"
+      "aria/aria_config.yaml:121"
     ],
     "glasses_marker": [
       "aria/aria_config.yaml:42"
@@ -1854,7 +1866,7 @@
       "aria/aria_config.yaml:40"
     ],
     "iteration_interval_s": [
-      "aria/aria_config.yaml:84"
+      "aria/aria_config.yaml:90"
     ],
     "key_timeout": [
       "nav/simple_teleop/simple_teleop/teleop_node.py:42"
@@ -1874,7 +1886,7 @@
       "nav/nav_config.yaml:32"
     ],
     "llm_model": [
-      "aria/aria_config.yaml:81"
+      "aria/aria_config.yaml:87"
     ],
     "lookahead_dist": [
       "nav/robot_slam/config/nav2_params.yaml:46"
@@ -1999,7 +2011,7 @@
       "nav/robot_slam/config/nav2_params.yaml:99"
     ],
     "matching_image_wait_s": [
-      "aria/aria_config.yaml:123"
+      "aria/aria_config.yaml:129"
     ],
     "max_accel": [
       "nav/robot_slam/config/nav2_params.yaml:198"
@@ -2017,7 +2029,7 @@
       "grasp/grasp_config.yaml:109"
     ],
     "max_buffer_s": [
-      "aria/aria_config.yaml:88"
+      "aria/aria_config.yaml:94"
     ],
     "max_decel": [
       "nav/robot_slam/config/nav2_params.yaml:199"
@@ -2234,7 +2246,7 @@
       "nav/robot_slam/config/nav2_params.yaml:135"
     ],
     "playback_speed": [
-      "aria/aria_config.yaml:102"
+      "aria/aria_config.yaml:108"
     ],
     "plugin": [
       "nav/robot_navigation/config/nav2_params.yaml:18",
@@ -2322,7 +2334,7 @@
       "nav/robot_slam/config/nav2_params.yaml:102"
     ],
     "realsense_init_delay_s": [
-      "aria/aria_config.yaml:64"
+      "aria/aria_config.yaml:70"
     ],
     "rec_voltage": [
       "nav/vendor/drivers/xpkg_power/src/ROS_INF/ros2_interface.cpp:124"
@@ -2334,7 +2346,7 @@
       "nav/robot_slam/config/nav2_params.yaml:60"
     ],
     "release_phrases": [
-      "aria/aria_config.yaml:97"
+      "aria/aria_config.yaml:103"
     ],
     "reliability": [
       "aria/aria_config.yaml:50"
@@ -2483,7 +2495,7 @@
       "nav/robot_slam/config/slam_toolbox_localization.yaml:3"
     ],
     "speech_latency_s": [
-      "aria/aria_config.yaml:120"
+      "aria/aria_config.yaml:126"
     ],
     "speed": [
       "nav/simple_teleop/simple_teleop/teleop_node.py:40"
@@ -2513,14 +2525,14 @@
       "grasp/grasp_config.yaml:122"
     ],
     "stop_keyword": [
-      "aria/aria_config.yaml:94"
+      "aria/aria_config.yaml:100"
     ],
     "stop_on_failure": [
       "nav/robot_navigation/config/nav2_params.yaml:105",
       "nav/robot_slam/config/nav2_params.yaml:183"
     ],
     "streaming_profile_name": [
-      "aria/aria_config.yaml:69"
+      "aria/aria_config.yaml:75"
     ],
     "table_top_z_m": [
       "grasp/grasp_config.yaml:126"
@@ -2573,7 +2585,7 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:4127"
     ],
     "transcription_model": [
-      "aria/aria_config.yaml:80"
+      "aria/aria_config.yaml:86"
     ],
     "transform_publish_period": [
       "nav/robot_slam/config/slam_toolbox.yaml:18",
@@ -2647,10 +2659,10 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:4106"
     ],
     "undistorted_focal_length_px": [
-      "aria/aria_config.yaml:73"
+      "aria/aria_config.yaml:79"
     ],
     "undistorted_image_size_px": [
-      "aria/aria_config.yaml:72"
+      "aria/aria_config.yaml:78"
     ],
     "update_frequency": [
       "nav/robot_navigation/config/nav2_params.yaml:36",
@@ -2673,7 +2685,7 @@
       "nav/robot_slam/config/nav2_params.yaml:58"
     ],
     "use_ephemeral_certs": [
-      "aria/aria_config.yaml:70"
+      "aria/aria_config.yaml:76"
     ],
     "use_fixed_curvature_lookahead": [
       "nav/robot_slam/config/nav2_params.yaml:57"
@@ -2725,7 +2737,7 @@
       "aria/aria_config.yaml:38"
     ],
     "vote_min_share": [
-      "aria/aria_config.yaml:128"
+      "aria/aria_config.yaml:134"
     ],
     "waypoint_pause_duration": [
       "nav/robot_slam/config/nav2_params.yaml:188"
@@ -2872,14 +2884,13 @@
     },
     "/aria/audio/prompt": {
       "n_publishers": 1,
-      "n_subscribers": 4,
+      "n_subscribers": 3,
       "owned": true,
       "publishers": [
         "aria/aria_app/services/aria_device/stream/audio_streaming_pipeline.py:73"
       ],
       "subscribers": [
         "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:89",
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:186",
         "nav/goto_glasses/goto_glasses.py:69",
         "nav/object_approach/object_approach_node.py:90"
       ],
@@ -2892,14 +2903,13 @@
     },
     "/aria/eye_tracking/gaze_estimate": {
       "n_publishers": 1,
-      "n_subscribers": 3,
+      "n_subscribers": 2,
       "owned": true,
       "publishers": [
         "aria/aria_app/services/aria_device/stream/image_streaming_pipeline.py:156"
       ],
       "subscribers": [
         "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:93",
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:193",
         "aria/aria_app/services/visualizer/ros_manager.py:77"
       ],
       "types": [
@@ -3008,7 +3018,7 @@
       "owned": true,
       "publishers": [
         "aria/aria_app/services/feature_matching.py:191",
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:223"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:232"
       ],
       "subscribers": [
         "aria/aria_app/services/visualizer/ros_manager.py:101"
@@ -3025,7 +3035,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:207"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:216"
       ],
       "subscribers": [
         "aria/aria_app/services/visualizer/ros_manager.py:89"
@@ -3056,7 +3066,7 @@
     },
     "/aria/rgb_camera/undistorted": {
       "n_publishers": 1,
-      "n_subscribers": 5,
+      "n_subscribers": 4,
       "owned": true,
       "publishers": [
         "aria/aria_app/services/aria_device/stream/image_streaming_pipeline.py:86"
@@ -3064,7 +3074,6 @@
       "subscribers": [
         "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:91",
         "aria/aria_app/services/feature_matching.py:183",
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:169",
         "aria/aria_app/services/visualizer/ros_manager.py:71",
         "nav/aria_image_relay/aria_image_relay.py:31"
       ],
@@ -3141,7 +3150,7 @@
       "owned": true,
       "publishers": [],
       "subscribers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:179",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:180",
         "grasp/anygrasp_node/anygrasp_detection_node.py:102",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:70",
         "grasp/tools/dummy_mask_publisher.py:48",
@@ -3160,7 +3169,7 @@
       "owned": true,
       "publishers": [],
       "subscribers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:160",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:158",
         "grasp/anygrasp_node/anygrasp_detection_node.py:70",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:66",
         "grasp/grasp_state_machine/src/grasp_state_machine.cpp:150",
@@ -3179,7 +3188,7 @@
       "owned": true,
       "publishers": [],
       "subscribers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:178",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:179",
         "grasp/anygrasp_node/anygrasp_detection_node.py:101",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:69",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:85"
@@ -3196,7 +3205,7 @@
       "n_subscribers": 3,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:228",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:237",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:78",
         "grasp/tools/dummy_mask_publisher.py:45"
       ],
@@ -3261,7 +3270,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:217"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:226"
       ],
       "subscribers": [
         "aria/aria_app/services/visualizer/ros_manager.py:107"
@@ -3399,12 +3408,13 @@
     },
     "/grasp/target": {
       "n_publishers": 1,
-      "n_subscribers": 1,
+      "n_subscribers": 2,
       "owned": true,
       "publishers": [
         "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:95"
       ],
       "subscribers": [
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:187",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:67"
       ],
       "types": [
@@ -3502,7 +3512,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:243"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:252"
       ],
       "subscribers": [
         "nav/object_approach/object_approach_node.py:84"
@@ -3589,7 +3599,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:234",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:243",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:80"
       ],
       "subscribers": [
@@ -3607,7 +3617,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:231",
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:240",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:79",
         "grasp/tools/dummy_mask_publisher.py:46"
       ],
@@ -3691,7 +3701,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:212"
+        "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:221"
       ],
       "subscribers": [
         "aria/aria_app/services/visualizer/ros_manager.py:95"
