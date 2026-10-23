@@ -44,6 +44,14 @@ class PromptTest(unittest.TestCase):
         self.assertEqual(why, "")
         self.assertEqual(parsed.targets, ("pen",))
 
+    def test_the_synonym_example_maps_to_the_list_and_related_is_asked_for(self):
+        """T6.7: 1.5B kept "couch" as a new class and left related empty."""
+        _, user = build_messages("find a chair", vocab())
+        parsed, _ = parse_reply(user["content"].split("Example, with sofa in the list.")[1], vocab())
+        self.assertEqual(parsed.targets, ("sofa",))
+        self.assertIn("2 to 5 objects", user["content"])
+        self.assertNotIn("Leave it empty", user["content"])
+
 
 class ParseReplyTest(unittest.TestCase):
     def parse(self, reply, **kwargs):
@@ -77,6 +85,28 @@ class ParseReplyTest(unittest.TestCase):
     def test_a_target_is_not_also_related(self):
         parsed, _ = self.parse('{"targets": ["chair"], "related": ["chair", "table"]}')
         self.assertEqual(parsed.related, ("table",))
+
+    def test_a_synonym_becomes_the_list_class(self):
+        """T6.7: "couch" with sofa in the list. Related names are mapped too, and a
+        synonym that lands on a class already named is a repeat."""
+        synonyms = [("couch", "sofa"), ("bin", "trash can")]
+        parsed, _ = self.parse('{"targets": ["Couch", "sofa"], "related": ["couch", "table"]}',
+                               synonyms=synonyms)
+        self.assertEqual((parsed.targets, parsed.related), (("sofa",), ("table",)))
+        parsed, _ = self.parse('{"targets": ["bin"]}', synonyms=synonyms)
+        self.assertEqual(parsed.targets, ("trash can",))   # not in this list, so a new class
+
+    def test_without_synonyms_a_synonym_is_a_new_class(self):
+        parsed, _ = self.parse('{"targets": ["couch"]}')
+        self.assertEqual(parsed.targets, ("couch",))
+
+    def test_underscore_and_space_match_the_lists_spelling(self):
+        """T6.7: both models wrote fire_extinguisher. The list keeps its own spelling."""
+        v = Vocabulary(BASE + ("tv_monitor",), BG)
+        parsed, _ = parse_reply('{"targets": ["TV monitor", "Fire_Extinguisher"], '
+                                '"related": ["tv monitor", "trash_can"]}', v)
+        self.assertEqual(parsed.targets, ("tv_monitor", "fire extinguisher"))
+        self.assertEqual(parsed.related, ())   # tv_monitor is a target, trash can not in the list
 
     def test_repeats_background_and_rambling_names_are_dropped(self):
         reply = ('{"targets": ["wall", "a chair that is next to the big table", "chair!", "chair", "Chair"],'
@@ -158,6 +188,12 @@ class ClassExpanderTest(unittest.TestCase):
         self.assertEqual(result.added, ())
         self.assertEqual(len(self.vocab), len(BASE))
 
+    def test_ranked_keeps_the_models_order_in_the_vocabulary_spelling(self):
+        """The task holds its targets as a set, so the order lives in `ranked`."""
+        result = self.expand(FakeModel('{"targets": ["Sofa", "chair"], "related": ["Table", "desk", "cup"]}'))
+        self.assertEqual(result.ranked, ("sofa", "chair"))
+        self.assertEqual(result.ranked_related, ("table", "desk", "cup"))
+
     def test_the_model_gets_the_prompt_and_the_limits(self):
         model = FakeModel('{"targets": ["chair"]}')
         self.expand(model)
@@ -181,6 +217,7 @@ class ClassExpanderTest(unittest.TestCase):
         self.assertEqual(result.reply, "I think you should look for a chair.")
         self.assertEqual((result.task.targets, result.task.related), ({"chair"}, frozenset()))
         self.assertEqual(result.added, ())
+        self.assertEqual(result.ranked, ("chair",))
 
     def test_a_model_error_falls_back(self):
         result = self.expand(FakeModel(error=RuntimeError("CUDA out of memory")))
@@ -224,6 +261,28 @@ class ClassExpanderTest(unittest.TestCase):
         from memory_graph.task import TaskContext
         task = TaskContext.from_text("find a chair", self.encoder, targets={"plant"}, related={"cup"})
         result = ClassExpander(FakeModel('{"targets": ["chair"]}'), self.encoder, self.cfg).expand(task, vocab())
+        self.assertEqual((result.task.targets, result.task.related), ({"chair"}, frozenset()))
+
+    def test_the_config_synonyms_are_used(self):
+        result = self.expand(FakeModel('{"targets": ["couch"], "related": ["chair"]}'))
+        self.assertEqual((result.task.targets, result.task.related), ({"sofa"}, {"chair"}))
+        self.assertEqual(result.added, ())
+
+    def test_the_fall_back_makes_only_the_best_class_a_target(self):
+        """T6.7: the rest of upstream's list becomes related. The stand-in encoder
+        puts "chair sofa" equally near chair and sofa, and the tie keeps list order."""
+        result = self.expand(None, instruction="chair sofa")
+        self.assertEqual(result.source, "fallback")
+        self.assertEqual((result.task.targets, result.task.related), ({"chair"}, {"sofa"}))
+        self.assertEqual(result.ranked, ("chair",))
+        self.assertEqual(result.ranked_related, ("sofa",))
+
+    def test_the_fall_backs_related_are_cut_to_the_maximum(self):
+        from memory_graph.reasoning import ClassExpander
+        from memory_graph.task import TaskContext
+        cfg = MemoryGraphConfig(reasoning_max_related=0)
+        task = TaskContext.from_text("chair sofa", self.encoder)
+        result = ClassExpander(None, self.encoder, cfg).expand(task, vocab())
         self.assertEqual((result.task.targets, result.task.related), ({"chair"}, frozenset()))
 
 
@@ -271,6 +330,20 @@ class ConfigTest(unittest.TestCase):
                     {"fallback_ratio": 1.5}, {"fallback_top_k": 0}]:
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 MemoryGraphConfig.from_dict(bad)
+
+    def test_bad_synonyms_are_refused(self):
+        for bad in [[("couch", "settee")],                     # not a class in the list: a typo
+                    [("chair", "sofa")],                       # renames a class in the list
+                    [("couch", "sofa"), ("Couch", "chair")],   # the same name twice
+                    [("", "sofa")]]:
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                MemoryGraphConfig.from_dict({"class_synonyms": bad})
+
+    def test_synonyms_load_from_a_mapping_or_pairs(self):
+        a = MemoryGraphConfig.from_dict({"class_synonyms": {"couch": "sofa", "tv": "tv monitor"}})
+        b = MemoryGraphConfig.from_dict({"class_synonyms": [["couch", "sofa"], ["tv", "tv monitor"]]})
+        self.assertEqual(a.class_synonyms, (("couch", "sofa"), ("tv", "tv monitor")))
+        self.assertEqual(a, b)
 
 
 if __name__ == "__main__":
