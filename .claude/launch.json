@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "t64e-marker",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["docs/zongzhe_docs/local/t6.4e/serve.py", "docs/zongzhe_docs/local/t6.4e/gt_hd1", "8765"],
+      "port": 8765
+    }
+  ]
+}
