@@ -12,7 +12,7 @@ and the vocabulary and names two sets of classes:
     dets = detect(segmenter, rgb, vocab)           # new targets prompted from here on
 
 Upstream is VLM.parse_target_objects (vlm/vlm.py:55) with the prompt from
-format_prefiltering_prompt (vlm/vlm_offline.py:69). Three differences:
+format_prefiltering_prompt (vlm/vlm_offline.py:69). Four differences:
 
 - The reply is one JSON object, not four lines. A small model drifts from a
   line count, and JSON can be found inside a chatty reply.
@@ -20,7 +20,10 @@ format_prefiltering_prompt (vlm/vlm_offline.py:69). Three differences:
   one stuck reply hangs the task.
 - When the reply is unusable, the fall-back is upstream's CLIP rule
   (Map.set_target_object_with_clip, map/map.py:193), which upstream has but
-  calls elsewhere.
+  calls elsewhere. Upstream makes every class it keeps a target. Here only the
+  best is, and the rest are related (T6.7).
+- A name that means a class already in the list is read as that class
+  (config class_synonyms), and "_" matches a space (T6.7).
 
 As upstream, related classes must already be in the vocabulary (vlm.py:96), and
 a target may be new: that is how the vocabulary grows (T6.7c, extend_for_task).
@@ -38,7 +41,7 @@ import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, List, Optional, Protocol, Sequence, Tuple
 
-from memory_graph.vocabulary import Vocabulary, extend_for_task, normalise
+from memory_graph.vocabulary import Vocabulary, extend_for_task, name_key, normalise
 
 if TYPE_CHECKING:  # only for the type hints, so the parser stays stdlib-only
     from memory_graph.config import MemoryGraphConfig
@@ -48,18 +51,24 @@ Message = Dict[str, str]
 
 SYSTEM_PROMPT = "You are the planner of a robot that searches a building for objects."
 
-# Upstream's prompt, cut down for a 0.5B model: one example, a JSON reply.
+# Upstream's prompt, cut down for a small model: two examples, a JSON reply. The
+# second example and the "2 to 5" come from T6.7's check: 1.5B added "couch" as a
+# new class with sofa in the list, and named related classes for 1 instruction of 22
+# while the prompt said "Leave it empty if none are".
 PROMPT = """Read the instruction and pick object classes for the search.
 
-"targets": the object the instruction asks for. Use a name from the list if one fits. \
-If none fits, give a short common name for it.
-"related": objects from the list that are often near the target, most useful first. \
-Use only names from the list. Leave it empty if none are.
+"targets": the object the instruction asks for. If a name in the list means the same \
+thing, use that name. If none fits, give a short common name for it.
+"related": 2 to 5 objects from the list that are often near the target, most useful \
+first. Use only names from the list.
 
 Reply with one JSON object and nothing else.
 
 Example. Instruction: "get me a pen"
 {{"targets": ["pen"], "related": ["desk", "table", "cup"]}}
+
+Example, with sofa in the list. Instruction: "find the couch"
+{{"targets": ["sofa"], "related": ["cushion", "table"]}}
 
 List: {classes}
 
@@ -116,11 +125,15 @@ def parse_reply(
     vocab: Vocabulary,
     max_targets: int = 3,
     max_related: int = 5,
+    synonyms: Sequence[Tuple[str, str]] = (),
 ) -> Tuple[Optional[ParsedReply], str]:
     """Read the model's reply. Returns (classes, "") if it is usable, else
     (None, why it is not).
 
-    Names are put in the vocabulary's spelling. A name that is not a short
+    Names are put in the vocabulary's spelling, with "_" and a space read alike
+    ("tv monitor" is tv_monitor), and a name in `synonyms` (name, list class)
+    becomes that class ("couch" is sofa). A name not in the list is kept with
+    spaces ("fire_extinguisher" becomes fire extinguisher). A name that is not a short
     plain phrase, a background class, or a repeat is dropped. A related name
     must already be in the vocabulary (upstream, vlm.py:96), and a name that is
     a target is not also related. The reply is usable if one target is left.
@@ -131,8 +144,16 @@ def parse_reply(
     obj = _first_json_object(reply)
     if obj is None:
         return None, "no JSON object in the reply"
-    raw_targets = _names(obj.get("targets", obj.get("target")))
-    raw_related = _names(obj.get("related", obj.get("relevant")))
+    spelling = {name_key(p): p for p in vocab}
+    renamed = {name_key(name): name_key(cls) for name, cls in synonyms}
+
+    def canonical(name: str) -> str:
+        key = name_key(name)
+        key = renamed.get(key, key)
+        return spelling.get(key, key)
+
+    raw_targets = [canonical(n) for n in _names(obj.get("targets", obj.get("target")))]
+    raw_related = [canonical(n) for n in _names(obj.get("related", obj.get("relevant")))]
 
     def keep(names: List[str], seen: set, in_vocab_only: bool, limit: int) -> List[str]:
         kept = []
@@ -251,13 +272,16 @@ class ClassExpander:
         parsed = None
         if not why:
             parsed, why = parse_reply(reply, vocab, self.cfg.reasoning_max_targets,
-                                      self.cfg.reasoning_max_related)
+                                      self.cfg.reasoning_max_related, self.cfg.class_synonyms)
         if parsed is not None:
             source, targets, related = "model", parsed.targets, parsed.related
         else:
-            source, related = "fallback", ()
-            targets = fallback_targets(task, vocab, self.encoder,
-                                       self.cfg.fallback_ratio, self.cfg.fallback_top_k)
+            # The best class is the target, the rest of upstream's list is related
+            # (config: fallback_ratio).
+            source = "fallback"
+            ranked = fallback_targets(task, vocab, self.encoder,
+                                      self.cfg.fallback_ratio, self.cfg.fallback_top_k)
+            targets, related = ranked[:1], ranked[1:1 + self.cfg.reasoning_max_related]
         new_task, added = extend_for_task(vocab, task.with_classes(targets, related))
         ranked = tuple(normalise(t) for t in targets)
         return Expansion(new_task, source, why, reply, tuple(added), seconds, ranked)

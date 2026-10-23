@@ -46,6 +46,13 @@ def normalise(phrase: str) -> str:
     return " ".join(str(phrase).split()).lower()
 
 
+def name_key(phrase: str) -> str:
+    """normalise, with "_" read as a space. For matching a name a model wrote
+    against the list: "tv monitor" and "TV_Monitor" both find "tv_monitor". The
+    list itself keeps its own spelling, so class ids do not change."""
+    return normalise(str(phrase).replace("_", " "))
+
+
 class Vocabulary(Sequence[str]):
     """An ordered list of phrases. A phrase's position is its class id.
 

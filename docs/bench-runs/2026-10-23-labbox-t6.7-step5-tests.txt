@@ -1,0 +1,29 @@
+T6.7 step 5: the five reasoning fixes, every memory graph test on the lab box
+2026-10-23, lab box (rcp2026@100.87.133.60, tailscale), NVIDIA GeForce RTX 4060 Ti
+Run over SSH by Claude Opus 5.5 for Zongzhe. Working tree of branch t6.7-reasoning-layer (on
+ce13981, step 5 not yet committed), memory_graph/ copied to /tmp/zongzhe_t67_step5_20261023,
+deleted after. ~/rcp-Gappler was not touched. Python from ~/rcp-Gappler/.venv (torch
+2.10.0+cu128, transformers 5.2.0, open_clip 3.3.0). HF_HUB_OFFLINE=1: Qwen2.5-1.5B-Instruct was
+already in the Hugging Face cache from the T6.7 check run. No camera, no ROS, no robot.
+
+What changed (approved by Zongzhe 2026-10-23)
+  5a config class_synonyms (couch -> sofa, bin -> trash can, tv -> tv_monitor, pc -> computer
+     tower, ...), applied by parse_reply. A second prompt example maps couch to sofa.
+  5b vocabulary.name_key: "_" and a space match when reading the reply. The list keeps its
+     spelling (tv_monitor), a new name gets spaces (fire extinguisher).
+  5c the prompt asks for 2 to 5 related classes instead of "Leave it empty if none are".
+  5d the CLIP fall-back makes only its best class the target, the rest related.
+  5e reasoning_model is Qwen/Qwen2.5-1.5B-Instruct.
+
+Before start
+  nvidia-smi 390 MiB, 0 %. No realsense, ros2 launch, bench, runner job, SAM 3 or memory graph
+  process.
+
+  RESULT: PASS.
+  All memory graph tests, .venv:                                   397 ran, 397 passed, 0 skipped.
+  test_reasoning_model.py (real Qwen2.5-1.5B + open_clip, GPU):     3 ran, 3 passed.
+  On a Mac scratch env (numpy, scipy only): 365 ran, 3 errors for missing PIL (run_photo,
+  score_drive, not touched), 16 skipped.
+
+  Not run here: the rerun of check_reasoning on the frozen set and the held-out set (step 5f),
+  which waits for Zongzhe's held-out instructions.

@@ -31,14 +31,15 @@ class WordEncoder:
 
 
 class ScriptedModel:
-    """Stand-in chat model: a fixed reply per instruction, found in the prompt."""
+    """Stand-in chat model: a fixed reply per instruction, the prompt's last one
+    (the prompt's examples have instructions too)."""
 
     def __init__(self, replies):
         self.replies = replies
 
     def reply(self, messages, max_new_tokens, max_time):
-        prompt = messages[-1]["content"]
-        return next(r for i, r in self.replies.items() if f'Instruction: "{i}"' in prompt)
+        instruction = messages[-1]["content"].rsplit('Instruction: "', 1)[1].split('"')[0]
+        return self.replies[instruction]
 
 
 ITEMS = (
@@ -57,7 +58,8 @@ REPLIES = {
 
 class CheckReasoningTest(unittest.TestCase):
     def setUp(self):
-        self.cfg = MemoryGraphConfig(base_vocabulary=BASE, reasoning_timeout_s=1.0)
+        # No synonyms, so "couch" stays a model mistake the check must catch.
+        self.cfg = MemoryGraphConfig(base_vocabulary=BASE, reasoning_timeout_s=1.0, class_synonyms=())
         self.encoder = WordEncoder()
 
     def expander(self, model):
