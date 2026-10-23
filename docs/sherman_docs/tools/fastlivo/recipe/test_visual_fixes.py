@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 
@@ -28,6 +29,13 @@ class VisualFixTests(unittest.TestCase):
         if compiler is None:
             self.skipTest('standalone C++ regression needs a compiler')
         with tempfile.TemporaryDirectory() as directory:
+            # A host that cannot compile <cmath> has a broken toolchain (stale macOS
+            # Command Line Tools), not a defect here: skip, so --no-skips still fails the box.
+            probe = Path(directory) / 'probe.cpp'
+            probe.write_text('#include <cmath>\nint main() { return 0; }\n')
+            if subprocess.run([compiler, '-std=c++17', str(probe), '-o', str(Path(directory) / 'probe')],
+                              capture_output=True).returncode != 0:
+                self.skipTest('host C++ toolchain cannot compile <cmath>; fix the compiler setup')
             source = Path(directory) / 'regression.cpp'
             binary = Path(directory) / 'regression'
             source.write_text(program)
@@ -36,6 +44,15 @@ class VisualFixTests(unittest.TestCase):
                                    capture_output=True, text=True)
             self.assertEqual(built.returncode, 0, built.stderr)
             return subprocess.run([str(binary)], capture_output=True, text=True)
+
+    def test_broken_toolchain_skips_not_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fake = Path(directory) / 'c++'
+            fake.write_text("#!/bin/sh\necho \"fatal error: 'cmath' file not found\" >&2\nexit 1\n")
+            fake.chmod(0o755)
+            with mock.patch('shutil.which', return_value=str(fake)):
+                with self.assertRaises(unittest.SkipTest):
+                    self.compile_run('int main() { return 0; }\n')
 
     def test_camera_visibility_before_projection(self):
         self.assertTrue((HERE / 'visual_geometry.h').is_file(), 'camera-depth predicate missing')
