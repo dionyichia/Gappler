@@ -49,21 +49,24 @@ file. Nothing here goes beyond those two sources. Where a fact is missing, a pla
 
 | Section | Slides | Presenter | Time |
 |---|---|---|---|
-| 1. Problem, objectives, intended system, approach | 1 to 5 | Dion | 4:45 |
-| 2. Phase 1: intent capture | 6 | Dion | 1:20 |
-| 3. Phase 2: map and frames | 7 to 8 | Sherman | 2:45 |
-| 4. Phases 2 and 3: memory graph and search | 9 to 11 | Zongzhe | 3:10 |
-| 5. Phases 4 and 5: cross-camera match and grasp | 12 to 14 | Dion | 3:45 |
-| 6. Integration status and schedule | 15 to 16 | Sherman | 2:15 |
-| 7. Budget, risks, next steps | 17 to 18 | Zongzhe | 1:35 |
-| Handover pauses (5 changes of presenter, about 5 s each) | | | 0:25 |
+| 1. Problem and objectives | 1 to 3 | Dion | 2:30 |
+| 2. Intended system, five phases | 4 | Zongzhe | 1:15 |
+| 3. Starting point and approach | 5 | Sherman | 0:45 |
+| 4. Phase 1: intent capture | 6 | Dion | 1:20 |
+| 5. Phase 2: map and frames | 7 to 8 | Sherman | 2:45 |
+| 6. Phases 2 and 3: memory graph and search | 9 to 11 | Zongzhe | 3:10 |
+| 7. Phases 4 and 5: cross-camera match and grasp | 12 to 14 | Dion | 3:45 |
+| 8. Full flow, links still to join, and schedule | 15 to 16 | Sherman | 2:15 |
+| 9. Budget, risks, next steps | 17 to 18 | Zongzhe | 1:35 |
+| Handover pauses (8 changes of presenter, about 5 s each) | | | 0:40 |
 | **Total** | | | **20:00** |
 
 **Why this order works for the assessment.** It follows the problem, objectives, approach,
 implementation, evidence, limitations, next steps chain the assessors grade. The implementation
 part follows the robot's own sequence (user, then exploring and mapping, then search, then confirm and
 grasp), so each presenter speaks once about their own subsystem and the audience never has to
-reassemble the pipeline. The plan material (schedule and budget) comes last, where it can be judged
+reassemble the pipeline. The opening is split across all three presenters (2026-10-24) so speaking
+time is close to even. The plan material (schedule and budget) comes last, where it can be judged
 against the progress just shown.
 
 **Rules for the slide-generation session**
@@ -317,7 +320,7 @@ CR§7 (status per capability).
 
 **Placeholders.** None.
 
-**Presenter.** Dion
+**Presenter.** Zongzhe
 
 **Transition.** "Before the results, a word on where we started and how we work."
 
@@ -356,21 +359,16 @@ method, open_clip, Qwen2.5) and the milestones they lead. A thin band across the
 contract + 7-level test bench + CI" as the shared base the three columns stand on.
 
 **Proposed speaker script.**
-"We did not start from zero, but we did not start from a working system either. The code we
-inherited had no tests and no CI, and none of it ran from a fresh copy. One program homed the real
-arm within seconds of starting, with no prompt. Navigation ran only from another user's workspace, and
-our copy did not build. There was no memory graph.
+"We did not start from a working system. The inherited code had no tests and no CI, and none of it
+ran from a fresh copy. One program homed the real arm within seconds, with no prompt. Navigation ran
+only from another user's workspace, and our copy did not build. There was no memory graph.
 
-So the first weeks went into foundations. We split the work by subsystem: Dion on the glasses and
-the arm, Sherman on the base and mapping, Zongzhe on the memory graph. A written channel contract
-says who owns every message and coordinate frame, so we can work in parallel without breaking each
-other. A seven-level test bench runs on every pull request, from static checks up to a simulated
-arm.
+So we built foundations first. Dion took the glasses and the arm, I took the base and mapping, and
+Zongzhe the memory graph. A channel contract says who owns every message and frame, and a
+seven-level test bench runs on every pull request. We measure a baseline before replacing anything,
+and on the real robot we move one step at a time, with two people present."
 
-Two habits run through everything that follows. We measure a baseline before replacing anything,
-and on the real robot we move one step at a time, with a written pass rule and two people present."
-
-**Estimated duration.** 1:00
+**Estimated duration.** 0:45
 
 **Evidence and source notes.** CR§0.3 (starting point), CR§0.4 (practices, open-source parts table,
 hardware), CR§0.5 (team and ownership), CR§1 accomplishment 1. Navigation wording: `ORIENTATION.md`
@@ -379,7 +377,7 @@ hardware), CR§0.5 (team and ownership), CR§1 accomplishment 1. Navigation word
 
 **Placeholders.** None.
 
-**Presenter.** Dion
+**Presenter.** Sherman
 
 **Transition.** "Phase one: turning a sentence and a glance into a target."
 
@@ -1483,8 +1481,11 @@ table (M1 8 Nov, M4 31 Jan, M7 28 Feb, M8 14 Mar).
 | 1 | Title | Dion | 0:20 | 0:20 |
 | 2 | Problem | Dion | 1:10 | 1:30 |
 | 3 | Objectives | Dion | 1:00 | 2:30 |
-| 4 | Five phases | Dion | 1:15 | 3:45 |
-| 5 | Approach and team | Dion | 1:00 | 4:45 |
+| | *Handover to Zongzhe* | | 0:05 | 2:35 |
+| 4 | Five phases | Zongzhe | 1:15 | 3:50 |
+| | *Handover to Sherman* | | 0:05 | 3:55 |
+| 5 | Approach and team | Sherman | 0:45 | 4:40 |
+| | *Handover to Dion* | | 0:05 | 4:45 |
 | 6 | Phase 1: intent capture | Dion | 1:20 | 6:05 |
 | | *Handover to Sherman* | | 0:05 | 6:10 |
 | 7 | Phase 2: map | Sherman | 1:35 | 7:45 |
@@ -1504,19 +1505,25 @@ table (M1 8 Nov, M4 31 Jan, M7 28 Feb, M8 14 Mar).
 | 17 | Budget and risks | Zongzhe | 0:45 | 19:10 |
 | 18 | Next steps and conclusion | Zongzhe | 0:50 | 20:00 |
 
-**Total: 20:00**, including five handovers of about 5 s. No video runs longer than its slide's
+**Total: 20:00**, including eight handovers of about 5 s. No video runs longer than its slide's
 time: the orbit video on slide 7 and the grasp video on slide 13 play while the presenter talks.
-Trim each video to 15 s or less. If rehearsal runs long, cut first from slide 5 (drop the
-open-source list from the script) and slide 10 (drop the second-drive sentence).
+Trim each video to 15 s or less. Slide 5 was already cut to 0:45 to fit the
+three extra handovers. If rehearsal runs long, cut next from slide 10 (drop the second-drive
+sentence).
 
-**Speaking time per person:** Dion about 9:50, Sherman about 5:00, Zongzhe about 4:45. Dion still
-has the largest share because he leads 5 of the 11 milestones and the critical path. Sherman takes
-integration and the schedule, where his M3 and M5 are the two slips he can explain first-hand.
+**Speaking time per person (slides only, handovers 0:40 on top):** Dion 7:35, Zongzhe 6:00, Sherman
+5:45. Dion still has the largest share because he leads 5 of the 11 milestones and the critical path.
+Zongzhe opens the system with slide 4 and Sherman covers the starting point (slide 5), so all three
+speak in the first five minutes. Sherman takes the full flow and the schedule, where his M3 and M5 are
+the two slips he can explain first-hand.
 
 **Handover lines** (the outgoing presenter says the first half, the incoming one picks up):
 
 | From, to | Line |
 |---|---|
+| Dion to Zongzhe (after 3) | "Here is the full behaviour we are building towards. Zongzhe will walk through it." |
+| Zongzhe to Sherman (after 4) | "Before the results, Sherman covers where we started and how we work." |
+| Sherman to Dion (after 5) | "Phase one: turning a sentence and a glance into a target. Over to Dion." |
 | Dion to Sherman (after 6) | "That crop now has to be found by a robot that has never seen this view. Sherman will show how the robot knows where it is." |
 | Sherman to Zongzhe (after 8) | "With poses and camera images from that drive, Zongzhe builds the robot's memory of the room." |
 | Zongzhe to Dion (after 11) | "Dion now picks up the object at close range." |
@@ -1593,4 +1600,4 @@ do not exist yet.
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Created (T10.4). 18 core slides and 9 appendix slides from `COMBINED_PROGRESS_REPORT_2026-10.md` and the approved budget proposal (5 Oct 2026). T8.9a and the teammates' media left as placeholders. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | T8.9a results in (slides 12, 15, 18, PR #129, 600 of 602 on replay). Sherman now presents slides 15 and 16 (Dion 9:50, Sherman 5:00, Zongzhe 4:45). Budget in SGD, API credits for AI services. Wrist camera to arm calibrated (slide 8). |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Framing fix (T10.5, Dion). No research claim, no protected M8, no ablation. Exploration is core, finding the user speeds it up, the gaze target is the match that ends exploration, gaze is the base case and without gaze is a stretch. Overview, slides 2, 3, 4, 9, 11, 15, 16, 17, 18, sections C and E rewritten to match. Phase strip label 2 is now "Explore and map". |
-| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is set by construction, flush on vertical aluminium extrusions, not measured with a tool (Sherman), instead of "estimated by eye". Status now "Mount measured, not calibrated". Base origin checked against the vendor manual. Camera chain: tape to the D455 mounting hole, Intel published geometry from there (Sherman). Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). Slide 7 now shows the six-step port work (ROS 1 original, ROS 2 port, build, authors' data, our sensors, three silent defects, live loop, Nav2) as a flow strip, and drops the "plan proposed 2D, I built that first" lines. Step 6 adds the start-tilt fix (bridge measures from the first pose, floor tilt under 0.5 degrees). Script says the defects were found by reading the source and confirmed against controls, not by camera on and off runs. Slide 7 visuals now point at clean renders with no text baked in (build-up GIF, orbit, iso still, 10 cm closure zoom, top-down path), linked from Sherman's local report_media. Slide 15 kept as written, with additions: recorded voice not spoken, Nav2 shown as never driven (not "works"), T7.6 and T3.7 added to missing link 1, T8.8 marked look-alike only, explore loop added to the visual idea. Final visual still to draw. Slide 15 then reframed: "Where each part sits in the full flow, and the links still to join", same facts and task IDs. Slide 15 visual: explicit spec added, 9 parts with status colours and 12 links with style, label and task IDs. Camera calibration dropped as a missing link (wrist camera already calibrated, base camera T5.5 stays as a note on link 6, slide 8 covers it). Final check: rule 1 updated for the new slide 15, audit row 10 corrected (scripts run about 23:40 at 140 words a minute). |
+| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is set by construction, flush on vertical aluminium extrusions, not measured with a tool (Sherman), instead of "estimated by eye". Status now "Mount measured, not calibrated". Base origin checked against the vendor manual. Camera chain: tape to the D455 mounting hole, Intel published geometry from there (Sherman). Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). Slide 7 now shows the six-step port work (ROS 1 original, ROS 2 port, build, authors' data, our sensors, three silent defects, live loop, Nav2) as a flow strip, and drops the "plan proposed 2D, I built that first" lines. Step 6 adds the start-tilt fix (bridge measures from the first pose, floor tilt under 0.5 degrees). Script says the defects were found by reading the source and confirmed against controls, not by camera on and off runs. Slide 7 visuals now point at clean renders with no text baked in (build-up GIF, orbit, iso still, 10 cm closure zoom, top-down path), linked from Sherman's local report_media. Slide 15 kept as written, with additions: recorded voice not spoken, Nav2 shown as never driven (not "works"), T7.6 and T3.7 added to missing link 1, T8.8 marked look-alike only, explore loop added to the visual idea. Final visual still to draw. Slide 15 then reframed: "Where each part sits in the full flow, and the links still to join", same facts and task IDs. Slide 15 visual: explicit spec added, 9 parts with status colours and 12 links with style, label and task IDs. Camera calibration dropped as a missing link (wrist camera already calibrated, base camera T5.5 stays as a note on link 6, slide 8 covers it). Final check: rule 1 updated for the new slide 15, audit row 10 corrected (scripts run about 23:40 at 140 words a minute). Presenter split (team, 2026-10-24): slide 4 to Zongzhe, slide 5 to Sherman and cut to 0:45, three handovers added, elapsed times and per-person totals corrected (Dion 7:35, Zongzhe 6:00, Sherman 5:45, handovers 0:40, total 20:00). |
