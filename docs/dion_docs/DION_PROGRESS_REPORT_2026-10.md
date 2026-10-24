@@ -600,7 +600,7 @@ mask right) needs only the existing pipeline and a display node.
 | 1 | Retest multi-view fusion at the arm | T1.47 |
 | 2 | New AnyGrasp SDK once the licence arrives, rerun the offline checks | T1.45 |
 | 3 | Choose the grasp strategy (section 7), then the 12-trial validation, pass bar 9 of 12 | T1.35 |
-| 4 | Merge the stamped spoken word and the cross-camera reference | T2.21 (PR #91), T8.5 (PR #100) |
+| 4 | Merge the stamped spoken word (the cross-camera reference, T8.5, merged in PR #100 on 2026-10-23) | T2.21 (PR #91) |
 | 5 | One recording session: ArUco ground truth, gaze error, distance limit | T8.8, T2.3, T2.24 |
 | 6 | Glasses-to-robot transform, then pick by gaze ray for look-alikes | T8.8 |
 | 7 | Two boxes on a table, pick the one you looked at, on hardware | T2.5 |
@@ -642,3 +642,4 @@ drawn in 3D.
 |---|---|---|
 | 2026-10-23 | Claude (Opus 5.5) + Dion | Created from the task tree, run records, handoffs, worktrees and the lab box, for the progress presentation. |
 | 2026-10-23 | Claude (Opus 5.5) + Dion | Expanded into a full info dump for merging with Sherman's and Zongzhe's reports. Added FAM-HRI framing, groundwork, arm bring-up, all grasp bugs and open defects, media inventory with video stubs. Media moved to `local/report_media/`. |
+| 2026-10-24 | Claude (Opus 5.5) + Dion | Next step 4: T8.5 (PR #100) is merged, only T2.21 (PR #91) is left. |

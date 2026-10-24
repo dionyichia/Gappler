@@ -322,7 +322,7 @@ Channels that a topic list does not show. Each says whether it is assigned.
 | Edge | Published by | Owner |
 |---|---|---|
 | `map` → `odom` | SLAM Toolbox | Sherman |
-| `odom` → `robot_base_link` | base driver, `ros2_interface.cpp:165` | Sherman |
+| `odom` → `robot_base_link` | `odom_source:=wheel` (default): base driver, `ros2_interface.cpp:165`. `odom_source:=fastlivo`: `nav/robot_slam/scripts/fastlivo_odom_bridge.py`, with the driver's `pub_tf` set false (`slam_localization.launch.py:57-65`, `T3.5f`) | Sherman |
 | `robot_base_link` → `base_link` | static, both SLAM launch files (`T3.3` DONE 2026-09-26) | Sherman |
 | `robot_base_link` → `livox_frame` | static, both SLAM launch files | Sherman |
 | `base_link` → `Link1…Link6` → `camera_link` | the arm's robot model | Dion |
@@ -386,3 +386,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-10-17 | Claude Opus 5.5 + Dion | H11: gaze is `PointStamped` with the glasses capture time, and the glasses images carry their capture time (`T2.19`). Re-baselined with `contracts.py snapshot`. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | H7: `/pipeline_state` gains `STOPPED` (T1.38). Both readers handle it: AnyGrasp only acts on IDLE and EXECUTING, grasp_viz shows the text. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | `T8.5`: the matcher reads H5a's reference instead of the glasses image, the word and the gaze. H5a reference crop gains a `crop_margin_px` margin. H11 reader updated. Re-baselined with `contracts.py snapshot`. |
+| 2026-10-24 | Claude Opus 5.5 + Dion | TF table: `odom` → `robot_base_link` names both publishers, the base driver in wheel mode and `fastlivo_odom_bridge.py` in fastlivo mode (`T3.5f`). Doc only, no contract change. |
