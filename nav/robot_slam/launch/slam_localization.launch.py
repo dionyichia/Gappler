@@ -228,12 +228,15 @@ def generate_launch_description():
         output="screen",
     )
 
-    goto_glasses_node = Node(
-        package="goto_glasses",
-        executable="goto_glasses.py",
-        name="goto_glasses",
-        output="screen",
-    )
+    # Scoped out (CHANNEL_CONTRACT N-1): the return-to-user leg is out of scope, and goto_glasses
+    # is a second navigate_to_pose client that drives to the user on any spoken word (CODE_AUDIT E5).
+    # Kept, not deleted, so it can come back with the return leg.
+    # goto_glasses_node = Node(
+    #     package="goto_glasses",
+    #     executable="goto_glasses.py",
+    #     name="goto_glasses",
+    #     output="screen",
+    # )
 
     aria_image_relay = Node(
         package="aria_image_relay",
@@ -306,7 +309,7 @@ def generate_launch_description():
             delayed_nav2,
             pose_publisher_node,
             goal_reached_node,
-            goto_glasses_node,
+            # goto_glasses_node,  # scoped out, see above
             aria_image_relay,
             object_approach_node,
             rviz,

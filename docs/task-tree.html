@@ -1,4 +1,6 @@
 <title>Gappler Task Tree</title>
+<!-- Changelog 2026-10-24 (T10.4 slide content): T10.4 progress note names the combined report and the slide content spec. -->
+<!-- Changelog 2026-10-24 (T10.4 combined report): the milestone map, the milestone table and the MS dates now show actual progress to 24 Oct and a forecast, replacing the September plan (in git at 1cde0ec). Interim presentation 28 Oct. M3 lead shown as Sherman. -->
 <!-- Changelog 2026-10-24 (T10.4 prep): removed the stale duplicate rows of T6.7b (no Built note) and T6.7c (no DONE prefix), a merge artifact from 19f14b4. T8.5 says PR #100 merged 2026-10-23. T10.4 names Sherman's and Zongzhe's reports. Marked DONE (Dion, their code is all on dev and each done-when holds): T0.14, T1.8, T1.38, T2.19, T2.20, T6.7b, T8.7. Added T1.47 (multi-view fusion experiment) and T2.12 (restored from 4880c75, never merged). -->
 <!-- Changelog 2026-10-23: T0.21b added and DONE (pre-commit hook skips files a merge brings in unchanged). -->
 <!-- Changelog 2026-10-22 (T3.5 DONE): FAST-LIVO2 is the T3.5 implementation (option 2, odom_source:=wheel|fastlivo, default wheel). T3.5a-d and f DONE, T3.5e DEFERRED to S10. Residuals: camera-LiDAR rotation eye-estimated (T5.5), LiDAR-IMU extrinsic sign documented not measured, stamp_offset_s unset, mapper teardown aborts intermittently, floor-mark procedure (T5.8). Not proven: physical stopping accuracy (T3.6), mid-route accuracy below the ~7 cm reference floor. T3.5f note: L1 contract baseline re-baselined e531095; T3.6 prerequisites added (stamp_offset_s, timed physical stop). Not pushed, no PR. Hosted Artifact republish owed, after the branch merges. -->
@@ -294,7 +296,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <div class="facts">
     <span class="fact">Week 1 starts <b>14 Sep 2026</b></span>
     <span class="fact">Plan &amp; Gantt due <b>5 Oct 2026</b></span>
-    <span class="fact">Interim presentation <b>10&ndash;13 Nov 2026</b></span>
+    <span class="fact">Interim presentation <b>28 Oct 2026</b></span>
     <span class="fact">Final report due <b>28 Mar 2027</b></span>
     <span class="fact">Oral presentation <b>5&ndash;16 Apr 2027</b></span>
     <span class="fact">Milestones <b>11</b></span>
@@ -336,7 +338,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <span class="ct">What changed on 16 September &mdash; the schedule is now the real one</span>
   <p>This page used to plan in a straight 20 weeks ending 31 January. That was never the actual
   deadline. The capstone has four fixed dates: the project plan and Gantt chart are due
-  <strong>5 October 2026</strong>, the interim presentation falls <strong>10&ndash;13 November
+  <strong>5 October 2026</strong>, the interim presentation is on <strong>28 October
   2026</strong>, the final report is due <strong>28 March 2027</strong>, and the oral presentation
   and demonstration run <strong>5&ndash;16 April 2027</strong>. None of that time was free either:
   the last week of September is a recess, the last three weeks of November plus the first few days
@@ -547,8 +549,8 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </section>
 <section id="map">
   <h2><span class="sn">Section 3</span>The milestone map</h2>
-  <p class="sub">Eleven milestones, coloured by who leads them, drawn against the real capstone
-  calendar rather than a plain week count. Four dates are fixed by the university, not by us &mdash;
+  <p class="sub">Eleven milestones, coloured by who leads them: what actually happened to 24 October
+  2026, then a forecast, drawn against the real capstone calendar. Four dates are fixed by the university, not by us &mdash;
   they are marked in red below &mdash; and four spans of the calendar are not working time at all:
   a recess, an exam period, and half the winter break. Milestones overlap because their tasks
   interleave, so the exact blocking is in the tree below, not here. What this picture is for is
@@ -558,7 +560,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <div class="callout c-warn" style="margin-bottom:22px">
     <span class="ct">Four dates we do not control</span>
     <p><strong>5 October 2026</strong> &mdash; project plan, Gantt chart and budget due to the
-    supervisor. <strong>10&ndash;13 November 2026</strong> &mdash; interim presentation (university
+    supervisor. <strong>28 October 2026</strong> &mdash; interim presentation (university
     window: 26 October to 13 November). <strong>28 March 2027</strong> &mdash; final report, softcopy
     plus similarity report, due to the main supervisor and the REP Office (Ms Yang Huixin); get the
     finished copy to the supervisor a week or two earlier for review and amendments. <strong>5&ndash;16
@@ -579,16 +581,17 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .hol{fill:var(--surface-3);opacity:.8}
   .buf{fill:var(--surface-3);opacity:.4}
   .win{fill:var(--broken-soft);opacity:.6}
+  .fc{fill-opacity:.28;stroke-width:1.5;stroke-dasharray:4 3}
   .bandtext{fill:var(--ink-3);font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase}
   </style>
   <figure><div class="chart">
-  <svg viewBox="0 0 1000 494" role="img" aria-label="Milestone schedule across 31 calendar weeks, 14 September 2026 to 18 April 2027, with the recess, exam period, winter break and four fixed capstone deadlines marked">
+  <svg viewBox="0 0 1000 494" role="img" aria-label="Milestone schedule, actual to 24 October 2026 and forecast after, across 31 calendar weeks, 14 September 2026 to 18 April 2027, with the recess, exam period, winter break and four fixed capstone deadlines marked">
     <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="var(--all)"/></marker></defs>
     <rect class="hol" x="263" y="42" width="24" height="386"/>
     <rect class="hol" x="407" y="42" width="96" height="386"/>
     <rect class="hol" x="503" y="42" width="48" height="386"/>
     <rect class="buf" x="551" y="42" width="48" height="386"/>
-    <rect class="win" x="410" y="42" width="11" height="386"/>
+    <line class="cpline" x1="365.9" y1="26" x2="365.9" y2="428"/>
     <rect class="win" x="911" y="42" width="38" height="386"/>
     <line class="gridm" x1="215" y1="42" x2="215" y2="428"/>
     <line class="grid" x1="273" y1="42" x2="273" y2="428"/>
@@ -613,64 +616,70 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <text class="bandtext" x="575" y="442" text-anchor="middle">buffer</text>
     <line class="cpline" x1="287" y1="26" x2="287" y2="428"/>
     <text class="cptext" x="283" y="458" text-anchor="end">5 OCT PLAN DUE</text>
-    <text class="cptext" x="425" y="472">10&ndash;13 NOV INTERIM PRES.</text>
+    <text class="cptext" x="369.9" y="472">28 OCT INTERIM PRES.</text>
     <line class="cpline" x1="887" y1="26" x2="887" y2="428"/>
     <text class="cptext" x="883" y="458" text-anchor="end">28 MAR REPORT DUE</text>
     <text class="cptext" x="915" y="472">5&ndash;16 APR ORAL PRES.</text>
-    <rect class="g-A" x="215" y="59" width="48" height="22" rx="3"/>
-    <line class="critrule" x1="215" y1="84" x2="263" y2="84"/>
+    <rect class="g-A" x="215.0" y="59" width="34.3" height="22" rx="3"/>
+    <text class="barlabel" x="221.0" y="74">DONE</text>
+    <line class="critrule" x1="215.0" y1="84" x2="249.3" y2="84"/>
+    <rect class="g-S" x="221.9" y="95" width="130.2" height="22" rx="3"/>
+    <rect class="g-S fc" x="352.1" y="95" width="315.5" height="22" rx="3" stroke="var(--sherman)"/>
+    <line class="critrule" x1="221.9" y1="120" x2="667.6" y2="120"/>
+    <rect class="g-D" x="239.0" y="131" width="113.1" height="22" rx="3"/>
+    <rect class="g-D fc" x="352.1" y="131" width="51.5" height="22" rx="3" stroke="var(--dion)"/>
+    <line class="critrule" x1="239.0" y1="156" x2="403.6" y2="156"/>
+    <rect class="g-S" x="215.0" y="167" width="137.1" height="22" rx="3"/>
+    <rect class="g-S fc" x="352.1" y="167" width="267.5" height="22" rx="3" stroke="var(--sherman)"/>
+    <rect class="g-D" x="297.3" y="203" width="54.8" height="22" rx="3"/>
+    <rect class="g-D fc" x="352.1" y="203" width="267.5" height="22" rx="3" stroke="var(--dion)"/>
+    <line class="critrule" x1="297.3" y1="228" x2="619.6" y2="228"/>
+    <rect class="g-Z fc" x="647.0" y="239" width="116.6" height="22" rx="3" stroke="var(--zz)"/>
+    <rect class="g-D fc" x="623.0" y="275" width="68.6" height="22" rx="3" stroke="var(--dion)"/>
+    <rect class="g-Z" x="239.0" y="311" width="113.1" height="22" rx="3"/>
+    <rect class="g-Z fc" x="352.1" y="311" width="339.5" height="22" rx="3" stroke="var(--zz)"/>
+    <line class="critrule" x1="239.0" y1="336" x2="691.6" y2="336"/>
+    <rect class="g-D fc" x="647.0" y="347" width="140.6" height="22" rx="3" stroke="var(--dion)"/>
+    <line class="critrule" x1="647.0" y1="372" x2="787.6" y2="372"/>
+    <rect class="g-D" x="335.0" y="383" width="17.1" height="22" rx="3"/>
+    <rect class="g-D fc" x="352.1" y="383" width="483.5" height="22" rx="3" stroke="var(--dion)"/>
+    <line class="critrule" x1="335.0" y1="408" x2="835.6" y2="408"/>
+    <rect class="g-A fc" x="791.0" y="419" width="68.6" height="22" rx="3" stroke="var(--all)"/>
+    <line class="critrule" x1="791.0" y1="444" x2="859.6" y2="444"/>
     <text class="gid" x="14" y="74">M0</text>
     <text class="gl" x="48" y="74">Everyone can build and run</text>
-    <rect class="g-S" x="287" y="95" width="360" height="22" rx="3"/>
-    <line class="critrule" x1="287" y1="120" x2="647" y2="120"/>
     <text class="gid" x="14" y="110">M5</text>
     <text class="gl" x="48" y="110">A calibrated camera on the base</text>
-    <rect class="g-D" x="287" y="131" width="96" height="22" rx="3"/>
-    <line class="critrule" x1="287" y1="156" x2="383" y2="156"/>
     <text class="gid" x="14" y="146">M1</text>
     <text class="gl" x="48" y="146">The arm picks something up</text>
-    <rect class="g-Z" x="311" y="167" width="264" height="22" rx="3"/>
     <text class="gid" x="14" y="182">M3</text>
     <text class="gl" x="48" y="182">The base navigates</text>
-    <rect class="g-D" x="359" y="203" width="240" height="22" rx="3"/>
-    <line class="critrule" x1="359" y1="228" x2="599" y2="228"/>
     <text class="gid" x="14" y="218">M2</text>
     <text class="gl" x="48" y="218">Voice and gaze reach the arm</text>
-    <rect class="g-Z" x="383" y="239" width="384" height="22" rx="3" stroke-dasharray="4 3" stroke="var(--zz)" stroke-width="1.5" fill-opacity="0.28"/>
     <text class="gid" x="14" y="254">M9</text>
     <text class="gl" x="48" y="254">Frontier scoring, visit ordering</text>
-    <text class="gt" x="700" y="254" fill="var(--caution)">OPTIONAL</text>
-    <rect class="g-D" x="575" y="275" width="72" height="22" rx="3"/>
     <text class="gid" x="14" y="290">M4</text>
     <text class="gl" x="48" y="290">The current system, closed loop</text>
-    <rect class="g-Z" x="575" y="311" width="144" height="22" rx="3"/>
-    <line class="critrule" x1="575" y1="336" x2="719" y2="336"/>
     <text class="gid" x="14" y="326">M6</text>
     <text class="gl" x="48" y="326">The memory graph, offline</text>
-    <rect class="g-D" x="695" y="347" width="96" height="22" rx="3"/>
-    <line class="critrule" x1="695" y1="372" x2="791" y2="372"/>
     <text class="gid" x="14" y="362">M7</text>
     <text class="gl" x="48" y="362">The graph drives the robot</text>
-    <rect class="g-D" x="719" y="383" width="120" height="22" rx="3"/>
-    <line class="critrule" x1="719" y1="408" x2="839" y2="408"/>
     <text class="gid" x="14" y="398">M8</text>
     <text class="gl" x="48" y="398">Gaze picks the instance</text>
-    <rect class="g-A" x="791" y="419" width="72" height="22" rx="3"/>
-    <line class="critrule" x1="791" y1="444" x2="863" y2="444"/>
     <text class="gid" x="14" y="434">M10</text>
     <text class="gl" x="48" y="434">Demonstration and paper</text>
-    <path class="conn" d="M 263 70 V 142 H 287" marker-end="url(#ah)"/>
-    <path class="conn" d="M 263 70 V 178 H 311" marker-end="url(#ah)"/>
-    <path class="conn" d="M 263 70 V 106 H 287" marker-end="url(#ah)"/>
+    <text class="gt" x="700" y="254" fill="var(--caution)">OPTIONAL, LIKELY CUT</text>
   </svg>
   </div>
-  <figcaption>Bar colour is the lead: blue Dion, violet Zongzhe, teal Sherman, grey all three. A dark
+  <figcaption>Bar colour is the lead: blue Dion, violet Zongzhe, teal Sherman, grey all three. <strong>Solid is what happened up to 24 October 2026. Faded and dashed is the
+  forecast</strong>, re-estimated on 24 October from where each milestone stands (the original plan is
+  in git, <code>1cde0ec:docs/task-tree.html</code>). M9 is optional and likely cut. A dark
   rule under a bar means the milestone is on the critical path to the research result. M9 is dashed
   because it is optional and the first thing we cut. The grey bands are the recess (last week of
   September), the November exam period through early December, and the winter break &mdash; its first
   two weeks off, its last two kept as half-speed buffer. The red dashed lines and the two red bands
   are the four dates the university sets: the plan and Gantt chart due 5 October, the interim
-  presentation 10&ndash;13 November, the final report due 28 March, and the oral presentation
+  presentation on 28 October, the final report due 28 March, and the oral presentation
   5&ndash;16 April. A milestone bar that runs through a grey band is elapsed calendar time, not
   working time &mdash; M2, M3, M5 and M9 all cross the exam period or the winter break.</figcaption>
   </figure>
@@ -684,19 +693,19 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
   <h3>What each milestone means by "done"</h3>
   <div class="scroller"><table>
-    <thead><tr><th>ID</th><th>Milestone</th><th>Done means</th><th>Dates</th><th>Lead</th></tr></thead>
+    <thead><tr><th>ID</th><th>Milestone</th><th>Done means</th><th>Actual and forecast (24 Oct 2026)</th><th>Lead</th></tr></thead>
     <tbody>
-      <tr><td>M0</td><td>Everyone can build and run</td><td>Two people who are not Dion have cloned the repository on their own machine, built it, run the bench and got the same result. The arm and the LiDAR answer on the network in the same session</td><td class="num">14&ndash;27 Sep 2026</td><td><span class="who w-Z">Zongzhe</span></td></tr>
-      <tr><td>M1</td><td>The arm picks something up</td><td>With the emergency stop verified and a validated home pose, the arm grasps a box using a mask from its own camera. Five attempts, success rate recorded</td><td class="num">5 Oct&ndash;1 Nov 2026</td><td><span class="who w-D">Dion</span></td></tr>
-      <tr><td>M2</td><td>Voice and gaze reach the arm</td><td>You say "grab the box", you look at one of two boxes, and the arm picks the one you looked at. Three times out of four</td><td class="num">26 Oct 2026&ndash;3 Jan 2027</td><td><span class="who w-D">Dion</span></td></tr>
-      <tr><td>M3</td><td>The base navigates</td><td>A map of the lab exists, the robot localises in it, and it drives to a commanded point and reports arrival. Ten runs, position error recorded</td><td class="num">12 Oct&ndash;27 Dec 2026</td><td><span class="who w-Z">Zongzhe</span></td></tr>
-      <tr><td>M4</td><td>The current system, closed loop</td><td>One recorded run: speak, look, the base drives, the arm grasps. Per-stage timing recorded at the 99th percentile</td><td class="num">28 Dec 2026&ndash;17 Jan 2027</td><td><span class="who w-D">Dion</span></td></tr>
-      <tr><td>M5</td><td>A calibrated camera on the base</td><td>A RealSense D455 is mounted forward facing on the base, LiDAR points projected into its image land on the right objects, and the camera-pose error is written down as a number</td><td class="num">5 Oct 2026&ndash;17 Jan 2027</td><td><span class="who w-S">Sherman</span> <span class="who w-D">Dion</span></td></tr>
-      <tr><td>M6</td><td>The memory graph, offline</td><td>From a recorded drive, the system produces object entries with a 3D position and an image feature each, the same object is not registered twice, and a sentence query returns it</td><td class="num">28 Dec 2026&ndash;7 Feb 2027</td><td><span class="who w-Z">Zongzhe</span></td></tr>
-      <tr><td>M7</td><td>The graph drives the robot</td><td>A spoken instruction with the object not in view produces an approach goal read out of the graph, the base drives there, and close-range perception takes over</td><td class="num">1&ndash;28 Feb 2027</td><td><span class="who w-D">Dion</span></td></tr>
-      <tr><td>M8</td><td>Gaze picks the instance</td><td>The gaze-cropped image feature is carried into the graph query. Ablation with and without, N trials each, success rates side by side</td><td class="num">8 Feb&ndash;14 Mar 2027</td><td><span class="who w-D">Dion</span></td></tr>
-      <tr><td>M9</td><td>Frontier scoring, visit ordering</td><td>The robot's chosen exploration order beats a nearest-first baseline on a measured metric. Optional</td><td class="num">2 Nov 2026&ndash;21 Feb 2027</td><td><span class="who w-Z">Zongzhe</span></td></tr>
-      <tr><td>M10</td><td>Demonstration and paper</td><td>A recorded end-to-end run, and a draft whose central table is M8's ablation</td><td class="num">1&ndash;21 Mar 2027</td><td><span class="who w-A">all</span></td></tr>
+      <tr><td>M0</td><td>Everyone can build and run</td><td>Two people who are not Dion have cloned the repository on their own machine, built it, run the bench and got the same result. The arm and the LiDAR answer on the network in the same session</td><td class="num">Done. 14 Sep to 24 Sep 2026</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td>M1</td><td>The arm picks something up</td><td>With the emergency stop verified and a validated home pose, the arm grasps a box using a mask from its own camera. Five attempts, success rate recorded</td><td class="num">Started 21 Sep. Forecast end 8 Nov 2026</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M2</td><td>Voice and gaze reach the arm</td><td>You say "grab the box", you look at one of two boxes, and the arm picks the one you looked at. Three times out of four</td><td class="num">Started 8 Oct. Forecast end 10 Jan 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M3</td><td>The base navigates</td><td>A map of the lab exists, the robot localises in it, and it drives to a commanded point and reports arrival. Ten runs, position error recorded</td><td class="num">Started 14 Sep. Forecast end 10 Jan 2027</td><td><span class="who w-S">Sherman</span></td></tr>
+      <tr><td>M4</td><td>The current system, closed loop</td><td>One recorded run: speak, look, the base drives, the arm grasps. Per-stage timing recorded at the 99th percentile</td><td class="num">Forecast start 11 Jan 2027. Forecast end 31 Jan 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M5</td><td>A calibrated camera on the base</td><td>A RealSense D455 is mounted forward facing on the base, LiDAR points projected into its image land on the right objects, and the camera-pose error is written down as a number</td><td class="num">Started 16 Sep. Forecast end 24 Jan 2027</td><td><span class="who w-S">Sherman</span> <span class="who w-D">Dion</span></td></tr>
+      <tr><td>M6</td><td>The memory graph, offline</td><td>From a recorded drive, the system produces object entries with a 3D position and an image feature each, the same object is not registered twice, and a sentence query returns it</td><td class="num">Started 21 Sep. Forecast end 31 Jan 2027</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td>M7</td><td>The graph drives the robot</td><td>A spoken instruction with the object not in view produces an approach goal read out of the graph, the base drives there, and close-range perception takes over</td><td class="num">Forecast start 18 Jan 2027. Forecast end 28 Feb 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M8</td><td>Gaze picks the instance</td><td>The gaze-cropped image feature is carried into the graph query. Ablation with and without, N trials each, success rates side by side</td><td class="num">Started 19 Oct. Forecast end 14 Mar 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M9</td><td>Frontier scoring, visit ordering</td><td>The robot's chosen exploration order beats a nearest-first baseline on a measured metric. Optional</td><td class="num">Forecast start 18 Jan 2027. Forecast end 21 Feb 2027</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td>M10</td><td>Demonstration and paper</td><td>A recorded end-to-end run, and a draft whose central table is M8's ablation</td><td class="num">Forecast start 1 Mar 2027. Forecast end 21 Mar 2027</td><td><span class="who w-A">all</span></td></tr>
     </tbody>
   </table></div>
 
@@ -705,7 +714,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <thead><tr><th>Deliverable</th><th>Due</th><th>Goes to</th></tr></thead>
     <tbody>
       <tr><td>Project plan, Gantt chart and budget</td><td class="num">Mon 5 Oct 2026</td><td>Supervisor</td></tr>
-      <tr><td>Interim presentation</td><td class="num">10&ndash;13 Nov 2026</td><td>Panel (university window 26 Oct&ndash;13 Nov)</td></tr>
+      <tr><td>Interim presentation</td><td class="num">28 Oct 2026</td><td>Panel (university window 26 Oct&ndash;13 Nov)</td></tr>
       <tr><td>Final report, softcopy plus similarity report</td><td class="num">Sun 28 Mar 2027</td><td>Main supervisor and the REP Office (Ms Yang Huixin)</td></tr>
       <tr><td>Oral presentation and demonstration</td><td class="num">5&ndash;16 Apr 2027</td><td>Panel</td></tr>
     </tbody>
@@ -1406,17 +1415,17 @@ var WT = {build:"build", fix:"fix", wire:"rewire", bringup:"bring-up",
 var WT_ORDER = ["build","fix","wire","bringup","measure","plan"];
 
 var MS = [
- ["M0","Everyone can build and run","14\u201327 Sep 2026","Z","Two people who are not Dion can clone, build and run the bench, and the arm and the LiDAR answer together",""],
- ["M1","The arm picks something up","5 Oct\u20131 Nov 2026","D","Five grasp attempts on a box, success rate recorded, with the stop verified first",""],
- ["M2","Voice and gaze reach the arm","26 Oct 2026\u20133 Jan 2027","D","Two boxes on the table, the arm picks the one you looked at, three times in four",""],
- ["M3","The base navigates","12 Oct\u201327 Dec 2026","S","A map exists, the robot localises, and ten drives to a point have their error recorded",""],
- ["M4","The current system, closed loop","28 Dec 2026\u201317 Jan 2027","D","One recorded run: speak, look, drive, grasp, with per-stage timing",""],
- ["M5","A calibrated camera on the base","5 Oct 2026\u201317 Jan 2027","SD","LiDAR points projected into the camera image land on the right objects, and the camera-pose error is written down as a number. Sherman owns the mount, Dion owns the calibration",""],
- ["M6","The memory graph, offline","28 Dec 2026\u20137 Feb 2027","Z","Object entries from a recorded drive, no duplicates, and a sentence query returns the right one",""],
- ["M7","The graph drives the robot","1\u201328 Feb 2027","D","A spoken instruction with the object out of view gets the robot there, then close-range perception takes over",""],
- ["M8","Gaze picks the instance","8 Feb\u201314 Mar 2027","D","The ablation: N trials with the gaze feature and N without, success rates side by side","prot"],
- ["M9","Frontier scoring, visit ordering","2 Nov 2026\u201321 Feb 2027","Z","Exploration order beats a nearest-first baseline on a measured metric","opt"],
- ["M10","Demonstration and paper","1\u201321 Mar 2027","A","A recorded end-to-end run and a draft whose central table is M8's number",""]
+ ["M0","Everyone can build and run","Done. 14 Sep to 24 Sep 2026","Z","Two people who are not Dion can clone, build and run the bench, and the arm and the LiDAR answer together",""],
+ ["M1","The arm picks something up","Started 21 Sep. Forecast end 8 Nov 2026","D","Five grasp attempts on a box, success rate recorded, with the stop verified first",""],
+ ["M2","Voice and gaze reach the arm","Started 8 Oct. Forecast end 10 Jan 2027","D","Two boxes on the table, the arm picks the one you looked at, three times in four",""],
+ ["M3","The base navigates","Started 14 Sep. Forecast end 10 Jan 2027","S","A map exists, the robot localises, and ten drives to a point have their error recorded",""],
+ ["M4","The current system, closed loop","Forecast start 11 Jan 2027. Forecast end 31 Jan 2027","D","One recorded run: speak, look, drive, grasp, with per-stage timing",""],
+ ["M5","A calibrated camera on the base","Started 16 Sep. Forecast end 24 Jan 2027","SD","LiDAR points projected into the camera image land on the right objects, and the camera-pose error is written down as a number. Sherman owns the mount, Dion owns the calibration",""],
+ ["M6","The memory graph, offline","Started 21 Sep. Forecast end 31 Jan 2027","Z","Object entries from a recorded drive, no duplicates, and a sentence query returns the right one",""],
+ ["M7","The graph drives the robot","Forecast start 18 Jan 2027. Forecast end 28 Feb 2027","D","A spoken instruction with the object out of view gets the robot there, then close-range perception takes over",""],
+ ["M8","Gaze picks the instance","Started 19 Oct. Forecast end 14 Mar 2027","D","The ablation: N trials with the gaze feature and N without, success rates side by side","prot"],
+ ["M9","Frontier scoring, visit ordering","Forecast start 18 Jan 2027. Forecast end 21 Feb 2027","Z","Exploration order beats a nearest-first baseline on a measured metric","opt"],
+ ["M10","Demonstration and paper","Forecast start 1 Mar 2027. Forecast end 21 Mar 2027","A","A recorded end-to-end run and a draft whose central table is M8's number",""]
 ];
 
 var T = [
@@ -1623,7 +1632,7 @@ var T = [
  ["T10.1","M10","A",8,"lab","Full demonstration run, recorded",["T8.3"],"measure"],
  ["T10.2","M10","A",24,"off","Paper draft. The central table is the ablation from T8.3",["T8.3"],"plan"],
  ["T10.3","M10","D",6,"off","Reproducibility artifacts: the bench, the recorded data, this plan, the defect log",["T10.2"],"plan"],
- ["T10.4","M10","D",2,"off","Added 2026-10-23 (Dion). Progress reports for the October presentation, one per person, merged and cut down later. Dion's is docs/dion_docs/DION_PROGRESS_REPORT_2026-10.md. Sherman's is docs/sherman_docs/SHERMAN_PROGRESS_REPORT_2026-10.md (PR #127). Zongzhe's is docs/zongzhe_docs/ZONGZHE_PROGRESS_REPORT_2026-10.md (PR #125). Both were written from the prompt in docs/dion_docs/PROGRESS_REPORT_PROMPT_FOR_TEAMMATES.md. Next: merge the three and cut them down. Pictures and videos stay in docs/<name>_docs/local/report_media/, never in git",[],"plan"]
+ ["T10.4","M10","D",2,"off","Added 2026-10-23 (Dion). Progress reports for the October presentation, one per person, merged and cut down later. Dion's is docs/dion_docs/DION_PROGRESS_REPORT_2026-10.md. Sherman's is docs/sherman_docs/SHERMAN_PROGRESS_REPORT_2026-10.md (PR #127). Zongzhe's is docs/zongzhe_docs/ZONGZHE_PROGRESS_REPORT_2026-10.md (PR #125). Both were written from the prompt in docs/dion_docs/PROGRESS_REPORT_PROMPT_FOR_TEAMMATES.md. Merged 2026-10-24 into docs/COMBINED_PROGRESS_REPORT_2026-10.md (checked against the code on dev, T8.9a results in). Slide-by-slide content, scripts and timing for the 28 Oct talk in docs/INTERIM_PRESENTATION_SLIDE_CONTENT_2026-10.md. Next: build the slides from it. Pictures and videos stay in docs/<name>_docs/local/report_media/, never in git",[],"plan"]
 ];
 
 var byId = {}, kids = {};
