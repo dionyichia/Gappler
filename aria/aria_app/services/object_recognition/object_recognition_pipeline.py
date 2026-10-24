@@ -26,7 +26,8 @@ from memory_graph.image_feature import l2_normalise
 # T8.7: LightGlue no longer runs (the CLIP rule replaced it). Kept in case it comes back.
 # from services.feature_matching import FeatureMatcher
 from services.object_recognition import SAM3Model
-from services.object_recognition.cross_camera_mask_match_rule import pick_mask_pair
+# T8.9a: the matcher moved to grasp, which uses it. This pipeline keeps it for its replay view.
+from grasp.grasp_segmentation_client.cross_camera_mask_match_rule import crop_to_mask, pick_mask_pair
 from services.ros import ImageHelper, ROSPublisher
 from services.visualizer.renderers.object_mask_visualizer import ObjectMaskVisualizer
 
@@ -34,9 +35,6 @@ logger = logging.getLogger(__name__)
 
 # Wrist camera values from shared/global_config.yaml
 DEPTH_SCALE = gappler_config()["wrist_camera"]["depth_scale_m"]  # metres per depth unit
-# Pixels around each wrist mask's box, the same margin as the aria client's reference crop
-# (aria_config.yaml, shared section), so CLIP compares like with like.
-_CROP_MARGIN_PX = gappler_config("aria")["crop_margin_px"]
 
 TOPIC_RGB = ROS2Topics.WRIST_CAMERA_COLOR.value
 TOPIC_DEPTH = ROS2Topics.WRIST_CAMERA_ALIGNED_DEPTH.value
@@ -88,19 +86,6 @@ class RealSenseFrame:
             if self._rgb is None:
                 return None, None, None, -1
             return self._rgb.copy(), self._depth.copy(), self._header, self._frame_id
-
-
-def _crop_to_mask(image: np.ndarray, mask: np.ndarray):
-    """Cut the image to the mask's bounding box plus the margin. Returns (crop, x0, y0), or None."""
-    ys, xs = np.nonzero(mask)
-    if len(ys) == 0:
-        return None
-    h, w = mask.shape
-    x0 = max(int(xs.min()) - _CROP_MARGIN_PX, 0)
-    y0 = max(int(ys.min()) - _CROP_MARGIN_PX, 0)
-    x1 = min(int(xs.max()) + _CROP_MARGIN_PX + 1, w)
-    y1 = min(int(ys.max()) + _CROP_MARGIN_PX + 1, h)
-    return image[y0:y1, x0:x1], x0, y0
 
 
 def _to_full_image(points: np.ndarray, x0: int, y0: int, shape) -> np.ndarray:
@@ -592,7 +577,7 @@ class ObjectRecognitionPipeline:
     def _embed_masks(self, image: np.ndarray, masks: list) -> np.ndarray:
         """One L2-normalised CLIP vector per mask, from the mask's box plus the margin. An empty
         mask gets a zero vector, so it scores 0 against everything."""
-        crops = [_crop_to_mask(image, m.squeeze(0).cpu().numpy() > 0) for m in masks]
+        crops = [crop_to_mask(image, m.squeeze(0).cpu().numpy() > 0) for m in masks]
         vecs = l2_normalise(self._clip.encode([image if c is None else c[0] for c in crops]))
         vecs[[c is None for c in crops]] = 0
         return vecs
