@@ -336,7 +336,8 @@ change, and split the work by subsystem with one written contract between them.
 - Title: *We inherited code that did not run, so we built a test bench and a contract first*
 - **September 2026 starting point:** a year of code from an earlier team. No tests, no CI. One
   program moved the real arm within seconds of starting, unprompted. The AnyGrasp path was
-  unreachable. Navigation never built. No memory graph code
+  unreachable. Navigation ran only from another user's private workspace, and the repo copy did not
+  build. No memory graph code
 - **How we work**
   - One subsystem per person, one channel contract naming the owner of every topic and frame
   - Test bench, 7 levels (L0 static checks to L6 real robot). CI on every PR, plus a GPU runner on
@@ -357,8 +358,8 @@ contract + 7-level test bench + CI" as the shared base the three columns stand o
 **Proposed speaker script.**
 "We did not start from zero, but we did not start from a working system either. The code we
 inherited had no tests and no CI, and none of it ran from a fresh copy. One program homed the real
-arm within seconds of starting, with no prompt. Navigation had never been built, and there was no
-memory graph.
+arm within seconds of starting, with no prompt. Navigation ran only from another user's workspace, and
+our copy did not build. There was no memory graph.
 
 So the first weeks went into foundations. We split the work by subsystem: Dion on the glasses and
 the arm, Sherman on the base and mapping, Zongzhe on the memory graph. A written channel contract
@@ -372,7 +373,9 @@ and on the real robot we move one step at a time, with a written pass rule and t
 **Estimated duration.** 1:00
 
 **Evidence and source notes.** CR§0.3 (starting point), CR§0.4 (practices, open-source parts table,
-hardware), CR§0.5 (team and ownership), CR§1 accomplishment 1.
+hardware), CR§0.5 (team and ownership), CR§1 accomplishment 1. Navigation wording: `ORIENTATION.md`
+§8.6 and §8.15 (the stack that ran came from `~iot22/Ros2Workspaces`, the repo copy needed the missing
+`xpkg_demo` and had no `livox_ros_driver2` manifest), S§2.1. CR§0.3 still says "never been built".
 
 **Placeholders.** None.
 
@@ -452,8 +455,10 @@ will show how the robot knows where it is."
 **Purpose.** Show the mapping and localisation result, the engineering work behind it, and its
 current limit.
 
-**Key takeaway.** FAST-LIVO2 now runs correctly on our own sensors, after three silent defects in
-its ROS 2 port were found and fixed, and its pose is handed to the navigation stack.
+**Key takeaway.** We chose 3D SLAM over the 2D SLAM in the plan, because the memory graph needs a
+full camera pose to place objects in 3D. FAST-LIVO2 now runs correctly on our own sensors, after
+three silent defects in its ROS 2 port were found and fixed, and its pose is handed to the navigation
+stack.
 
 **On-slide content**
 
@@ -461,6 +466,11 @@ its ROS 2 port were found and fixed, and its pose is handed to the navigation st
 - Title: *The base builds a coloured 3D map that closes within 12 mm over a 26 m loop*
 - What it is: FAST-LIVO2 fuses the Livox MID-360 LiDAR, its IMU and the base D455 colour camera into
   a pose and a coloured map
+- **Why 3D, not the 2D SLAM in the plan:** 2D SLAM (SLAM Toolbox) gives only x, y and heading. The
+  memory graph places every object in 3D from the camera pose, so it also needs height, pitch and
+  roll (1 degree of pitch moves an object 4 m away by about 7 cm). FAST-LIVO2 gives the full,
+  camera-fused pose that object positions for HiCo-Nav need. Nav2 still drives on a 2D grid, fed by
+  this pose
 - Results (hand-pushed loop, recording `handdriven1`, 20 Oct):
   - **26.05 m loop, back to start within 12 mm** (4 mm LiDAR-only, 7 mm odometry error, 0.03 %)
   - Mid-route error at most 6.7 cm, at the floor of our reference (about 7 cm)
@@ -468,40 +478,47 @@ its ROS 2 port were found and fixed, and its pose is handed to the navigation st
 - Engineering: **three silent defects found in the ROS 2 port and repaired** (a range gate, the
   LiDAR-to-IMU offset sign, a voxel key mismatch)
 - Handed on: pose bridged into the frame tree Nav2 uses
-- Limits: pushed by hand, not driven. Nav2 has never driven the base. Glass walls create ghost
-  points (about 42 % of 5 cm map points outside the glass box)
+- Limit: pushed by hand, not driven. Nav2 has never driven the base
 
 **Recommended visualisation.** Main: the orbiting coloured map with the orange path,
 `nav_fastlivo_map_orbit_handdriven1_2026-10-20.gif` (or the `.mp4`, or the iso still if the venue
 cannot play video). Inset bottom right: `nav_fastlivo_trajectory_closure_handdriven1_2026-10-20.png`,
 the 10 cm zoom on start and end, labelled "12 mm". Results as three numbers in a column. A small
-"three defects fixed" badge. Do not show the full sensor-to-Nav2 wiring here.
+"three defects fixed" badge. A small "2D: x, y, heading" against "3D: full pose" label beside the
+"why 3D" line. Do not show the full sensor-to-Nav2 wiring here.
 
 **Proposed speaker script.**
 "Before the robot can remember where objects are, it needs to know where it is. We use FAST-LIVO2,
 an open-source method from the University of Hong Kong. It fuses the LiDAR, its motion sensor and
 the colour camera into one pose, and paints a coloured 3D map as it goes.
 
-Getting it to work on our sensors took most of the effort. I first built a 2D pipeline with SLAM
-Toolbox, then switched on 15 October because HiCo-Nav needs a pose fused with the camera. The ROS 2
-port we use had three defects that fail silently: no crash, just a wrong map. One was the sign of the
-offset between the LiDAR and its motion sensor. Each was found by reading the source and running a
-control.
+Our plan proposed 2D SLAM, and I built that first. On 15 October I switched to 3D. 2D SLAM knows
+only where the base is on the floor and which way it faces. The memory graph places each object in
+3D from the camera's pose, so an unmeasured tilt moves objects by centimetres and one chair gets
+stored twice. Nav2 still drives on a 2D grid built from the 3D pose.
 
-This is the result. I pushed the base by hand around a 26-metre loop in the lab. The map is
-coloured by the camera, and the path returns to its start within 12 millimetres. Along the route,
-the error is within about 7 centimetres, which is the limit of what our reference can measure. It
-runs in about 12 milliseconds a frame on the CPU.
+Getting it to work took most of the effort. The ROS 2 port we use had three defects that fail
+silently: no crash, just a wrong map. One was the sign of the offset between the LiDAR and its
+motion sensor.
 
-Two limits. The base was pushed, not driven, and Nav2 has not driven it yet. That is the next test.
-And the lab's glass walls create ghost points outside the room."
+This is the result. I pushed the base by hand around a 26-metre loop in the lab. The path returns to
+its start within 12 millimetres. Along the route, the error is within about 7 centimetres, the limit
+of what our reference can measure.
+
+The limit: the base was pushed, not driven. Nav2 driving it is the next test."
 
 **Estimated duration.** 1:35
 
 **Evidence and source notes.** CR§8.4 (closure 12 / 4 / 7 mm and 0.03 %, mid-route 6.7 and 6.5 cm vs
 about 7 cm reference, compute 11 to 14 ms, three port defects), CR§4 FAST-LIVO2 and bridge rows,
-CR§9.2 (glass ghosts 42 %), Sherman's report S§6.4 (reason for the switch: a coloured,
-camera-fused pose for HiCo-Nav, decided 2026-10-15), CR§13.2 X10 (use all three closure numbers).
+Sherman's report S§6.4 (reason for the switch: a coloured, camera-fused pose for HiCo-Nav, decided
+2026-10-15), CR§13.2 X10 (use all three closure numbers). Why 3D: `MEMORY_GRAPH_DESIGN.md` (merge
+test depends on camera pose, 2D localisation has no reliable pitch or roll, appearance alone cannot
+merge), `hico-nav/PAPER_REPORT.md` (2D SLAM option, no reliable pitch or roll), 1 degree at 4 m =
+4 x 0.01745 = 0.07 m. Option 2 (FAST-LIVO2 pose, SLAM Toolbox only draws the Nav2 grid): S§11. For
+questions only, measured after the decision (S§12.2, same bags): restart inside the SLAM Toolbox map
+0.25 to 0.30 m from the tape, 3D prototype 0.070 m. Glass ghost points (CR§9.2, about 42 %) left off
+this slide as a known LiDAR effect. They stay in appendix A6.
 
 **Placeholders.** `[ARTEFACT NEEDED: nav_fastlivo_map_orbit_handdriven1_2026-10-20.gif or .mp4, and nav_fastlivo_trajectory_closure_handdriven1_2026-10-20.png, from docs/sherman_docs/local/report_media/ (Sherman)]`
 `[VERIFY: the venue can play the 71 MB MP4. Fall back to the GIF or the iso still]`
@@ -530,7 +547,7 @@ the glasses are not yet, and each missing calibration blocks a specific later st
 | Link | Used for | State |
 |---|---|---|
 | Base to arm | Arm grasps in the base's map | **Measured**: (0.18, 0, 0.48) m, yaw 180 degrees, matched on the robot |
-| Base camera to LiDAR | Object positions and depth in the memory graph | **Nominal only**: mount geometry checked (12 checks pass), rotation estimated by eye. About 6.7 px of error per degree. Calibration rig planned (T5.5) |
+| Base camera to LiDAR | Object positions and depth in the memory graph | **Nominal only**: mount values wired and unit-tested (12 software checks), rotation estimated by eye. About 6.7 px of error per degree. Calibration rig planned (T5.5) |
 | Wrist camera to arm | Turning a grasp seen by the camera into an arm goal | **Calibrated** |
 | Glasses to robot | A gaze ray in the robot's own 3D frame, for look-alike objects | **Planned** (T8.8). Three methods ranked |
 
@@ -562,7 +579,7 @@ The arm on the base is measured. We set the transform from the mount drawings an
 robot.
 
 The base camera relative to the LiDAR is only nominal. I designed and fitted the mount, and twelve
-geometry checks pass, but the rotation is estimated by eye. On this camera one degree of error moves
+software checks pass on its values, but the rotation is estimated by eye. On this camera one degree of error moves
 a point by about seven pixels. The memory graph uses this transform for every object position, so a
 proper calibration is planned, with a rig still to be built.
 
@@ -578,7 +595,10 @@ None of these blocks today's results, but each one blocks a specific later step.
 **Estimated duration.** 1:10
 
 **Evidence and source notes.** CR§5.4 "Frames" table (four problems and their status), CR§4 base
-D455 and mount row (12 geometry checks, eye-estimated rotation), CR§9.1 (6.7 px per degree,
+D455 and mount row (12 geometry checks, eye-estimated rotation). The 12 are software unit tests
+from T5.4, 8 in `bench/test_geometry.py` (mount values single-sourced and reach the TF) and 4 in
+`bench/test_camera_navigation.py` (camera-referenced stand-off maths, refusal when TF is lost). They
+prove consistency, not physical accuracy (`sherman_docs/t5/T5.4_D455_TF.md`), CR§9.1 (6.7 px per degree,
 S§13.1), CR§6.7 (TF tree, for appendix A2), CR§0.2 M5 (calibration not built).
 
 **Placeholders.** `[ARTEFACT NEEDED: nav_lidar_on_camera_overlay_stationary02_t0s_2026-10-19.png (Sherman)]`
@@ -1455,3 +1475,4 @@ do not exist yet.
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Created (T10.4). 18 core slides and 9 appendix slides from `COMBINED_PROGRESS_REPORT_2026-10.md` and the approved budget proposal (5 Oct 2026). T8.9a and the teammates' media left as placeholders. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | T8.9a results in (slides 12, 15, 18, PR #129, 600 of 602 on replay). Sherman now presents slides 15 and 16 (Dion 9:50, Sherman 5:00, Zongzhe 4:45). Budget in SGD, API credits for AI services. Wrist camera to arm calibrated (slide 8). |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Framing fix (T10.5, Dion). No research claim, no protected M8, no ablation. Exploration is core, finding the user speeds it up, the gaze target is the match that ends exploration, gaze is the base case and without gaze is a stretch. Overview, slides 2, 3, 4, 9, 11, 15, 16, 17, 18, sections C and E rewritten to match. Phase strip label 2 is now "Explore and map". |
+| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. |
