@@ -30,7 +30,7 @@ file. Nothing here goes beyond those two sources. Where a fact is missing, a pla
 | Central message | Each stage of the pipeline now works on its own and has a measured result, and the links between stages are scheduled milestones. The gaze target, which will tell the exploring robot when it has found the object, already steers the grasp at close range on replay. |
 | Audience | Supervisor(s) and examiner(s). Technically literate, not familiar with our ROS 2, perception or grasping stack. One judge is a visualisation professor (CR§12), so the visuals must carry real information |
 | Core time | 20 minutes, then 10 minutes of questions (not counted here) |
-| Slides | 18 core slides, plus 9 appendix slides for questions |
+| Slides | 18 core slides, plus 10 appendix slides for questions |
 
 **Three key takeaways**
 
@@ -108,7 +108,7 @@ against the progress just shown.
 - Title: *High-Readiness Mobile Manipulation via Gaze-Speech Interaction and Continuous Pre-Alignment*
 - Subtitle: *Look at it, name it, and the robot fetches that one*
 - Team: Dion, Sherman, Zongzhe
-- Supervisor(s): see placeholder
+- Supervisor(s): Prof Yuan Shenghai, Prof Xie Lihua
 - Interim assessment, 28 October 2026
 
 **Recommended visualisation.** One real photo of the robot (RealMan RM65 arm on the Hexman
@@ -124,8 +124,7 @@ start."
 
 **Evidence and source notes.** Title from the approved budget proposal. Hardware list CR§0.4.
 
-**Placeholders.** `[TEAM INPUT REQUIRED: supervisor and examiner names for the title slide]`
-`[ARTEFACT NEEDED: one photo of the full robot with the glasses beside it (any member, take at the lab)]`
+**Placeholders.** `[ARTEFACT NEEDED: one photo of the full robot with the glasses beside it (any member, take at the lab)]`
 Note: the approved title says "Continuous Pre-Alignment", a term the report never uses. Keep the title. Dion explains it if asked in Q&A.
 
 **Presenter.** Dion
@@ -136,11 +135,11 @@ Note: the approved title says "Continuous Pre-Alignment", a term the report neve
 
 ## Slide 2: The user can see the object. The robot sees neither the user nor the object
 
-**Purpose.** Establish the core problem and why it is hard. Answer "why is this not solved
-already?"
+**Purpose.** Establish the core problem and why it is hard. The two papers and why they do not
+already solve it come on slide 3.
 
 **Key takeaway.** The target's identity has to survive a move between three very different
-viewpoints, and existing systems avoid that problem.
+viewpoints.
 
 **On-slide content**
 
@@ -150,105 +149,99 @@ viewpoints, and existing systems avoid that problem.
   - **Robot base camera:** knee height
   - **Robot wrist camera:** 0.2 to 0.5 m, from above
 - Strip under the panels: *Same object, three viewpoints, almost nothing in common pixel for pixel*
-- Two short lines on existing work:
-  - FAM-HRI (Lai et al., 2025): gaze and speech pick an object, **if it is already in front of the arm**
-  - HiCo-Nav (Xu et al., ICRA 2026): a robot searches a room by memory, **for a class, not the one you mean**
 - Why it matters: assistive use, where a user can look but cannot easily point or speak, in a scene
   full of similar mugs, pill bottles and cans
 
 **Recommended visualisation.** Three photos of the same box side by side, equal size, each labelled
 with its camera and distance. The glasses and wrist crops exist in Dion's
-`clip_glasses_vs_wrist_crops_2026-10-20.jpg`. Below them, two thin cards for FAM-HRI and HiCo-Nav,
-each with its assumption in bold. Omit any architecture here.
+`clip_glasses_vs_wrist_crops_2026-10-20.jpg`. Omit any architecture and any mention of the papers
+here.
 
 **Proposed speaker script.**
-"Picture a user wearing Meta's Aria glasses. They look at a box on a table and say 'find the box'.
+"Picture a user wearing Meta's Aria glasses. They look at a box on a table and say 'pick up that box'.
 The robot is somewhere else in the room. It has never seen the user's view.
 
 These three images show why that is hard. On the left is what the glasses see: the box from a
 metre or two away, front on. In the middle, the robot's base camera, at knee height. On the right,
 the wrist camera on the arm, looking down from twenty centimetres. Same object, but the images have
-almost nothing in common.
+almost nothing in common. Yet the robot has to find, and pick up, exactly the box the user looked
+at."
 
-Two published systems each solve half of this. FAM-HRI uses gaze and speech from the same glasses to
-tell an arm what to pick, but it assumes the object is already in front of the arm. HiCo-Nav lets a
-robot search a room using a memory of what it has seen, but it finds a class, any box, not the one
-you looked at. Our project joins the two: the robot explores like HiCo-Nav, and the user's gaze tells
-it which object to stop for."
+**Estimated duration.** 0:50
 
-**Estimated duration.** 1:10
-
-**Evidence and source notes.** CR§1 (core challenge, viewpoints and distances), CR§0.3 (two systems,
-assistive case, D§5.5), CR§13.6 (references).
+**Evidence and source notes.** CR§1 (core challenge, viewpoints and distances), CR§0.3 (assistive
+case, D§5.5). The two papers moved to slide 3 on 2026-10-24 (Dion).
 
 **Placeholders.** `[ARTEFACT NEEDED: a base-camera frame from knee height. The memory graph answer key has no box, so a frame of the box may not exist. Use a frame from Zongzhe's mg_handdriven1_survey_every_100th_frame_2026-10-21.jpg or Sherman's nav_camera_frames_along_t35f_run1_2026-10-21.jpg, captioned "the lab from the base camera", or take one frame of the box with the D455 at the lab (Sherman or Zongzhe)]`
 
 **Presenter.** Dion
 
-**Transition.** "So what exactly are we building, and how will we know it works?"
+**Transition.** "Two published systems each solve half of this."
 
 ---
 
-## Slide 3: Objective: find, reach and grasp the object the user looked at, in a room the robot cannot see
+## Slide 3: Objective: join FAM-HRI's gaze and speech with HiCo-Nav's exploration and memory
 
-**Purpose.** State the main objective, how gaze and exploration fit together, and the measurable
-milestones.
+**Purpose.** State the main objective and show what each of the two papers does, what it cannot
+do for our task, what we take from it, and what we add to join them. This is the overview. The pipeline itself comes on slide 4,
+the milestones on slide 16.
 
-**Key takeaway.** One objective, gaze as the base case, and eleven milestones that each have a
-concrete "done means".
+**Key takeaway.** Each paper solves half of the task. We take the user side from FAM-HRI and the
+robot side from HiCo-Nav, and add the link between them.
 
 **On-slide content**
 
-- Title: *Objective: find, reach and grasp the object the user looked at*
+- Title: *Objective: join FAM-HRI's gaze and speech with HiCo-Nav's exploration and memory*
 - **Main objective:** a mobile manipulator that takes a spoken command and the user's gaze,
-  explores a room it cannot see at the start to find the user and then the object they looked at,
-  drives to it, confirms it with the wrist camera and grasps it
-- **How gaze is used:** the CLIP feature of what the user looked at is the robot's target. While
-  exploring, a match tells the robot to stop and approach. Without it, the robot cannot tell it has
-  found the object
-- **Evaluation:** end-to-end trials of this base case, success per phase. A without-gaze comparison
-  is a stretch goal
-- **Milestones, each with a test** (short form):
+  explores a room it cannot see at the start, finds the object the user looked at, drives to it and
+  grasps it
+- Two columns, one per paper:
 
-| | Milestone | Done means |
+| | FAM-HRI (Lai et al., 2025) | HiCo-Nav (Xu et al., ICRA 2026) |
 |---|---|---|
-| M1 | Arm picks something up | 5 grasp attempts, success rate recorded |
-| M2 | Voice and gaze reach the arm | Two boxes, picks the one you looked at, 3 times in 4 |
-| M3 | Base navigates | Ten drives to a point, error recorded |
-| M6 | Memory graph | A sentence query returns the right object |
-| M7 | Graph drives the robot | Explores, finds the user, reaches the object out of view |
-| M8 | Gaze picks the instance | A gaze match ends exploration. N end-to-end trials |
-| M10 | Demonstration and paper | End-to-end run, paper with the trial results |
+| What it does | Meta Aria glasses: gaze and speech tell a robot arm which object to pick | A robot explores an unseen room, builds a memory graph of every object it sees, and answers language queries |
+| What it cannot do for us | **The object must already be in front of the arm** | **It finds a class ("a box"), not the one you mean** |
+| What we take | Speech to an object word, gaze to pick the object, the arm grasp | 3D pose from FAST-LIVO2, the memory graph (3D position and CLIP image feature per object), sentence to object classes, exploration |
 
-- Footer: *Also M0 (everyone can build and run), M4 (closed loop), M5 (calibrated base camera), M9 (optional: the paper's smarter exploration order)*
+- Not taken from HiCo-Nav: its own motion planner (we send goals to Nav2). Its smarter exploration
+  order is optional (M9)
 
-**Recommended visualisation.** Left third: a bridge diagram. Two blocks, "HiCo-Nav: explore and
-remember every object" and "FAM-HRI: gaze and speech pick the object", joined by a highlighted
-connector labelled "gaze target: the match that ends exploration". Right two thirds: the milestone
-table, seven rows, with M7 and M8 marked as where the two systems meet. Keep M0, M4, M5, M9 in the
-footer to keep the table readable.
+- **What we add to join them:** the robot compares each object it finds with the object the user
+  looked at, drives to the match, and confirms it with the wrist camera before grasping
+- **Evaluation:** end-to-end trials, success counted per phase
+
+**Recommended visualisation.** Two blocks side by side, FAM-HRI on the left (glasses icon or photo)
+and HiCo-Nav on the right (map or robot photo). In each block, the parts we take in solid colour,
+the parts we leave out greyed, and its limit in bold at the bottom. A highlighted bridge between them labelled "what we add: match the
+user's object, drive, confirm". The main objective as one line above both blocks. No milestone table
+here.
 
 **Proposed speaker script.**
-"Our main objective is a mobile manipulator that takes what the user says and where they look,
-explores a room it cannot see at the start, finds the user and then the object they looked at,
-drives to it, checks it with the wrist camera and grasps it.
+"Our objective is a mobile manipulator that takes what the user says and where they look, explores
+a room it cannot see at the start, finds that object, drives to it and grasps it.
 
-Gaze is what ties this together. From the glasses we cut out the object the user looked at and turn
-it into a CLIP image feature. While the robot explores, it compares every object it sees with that
-feature. A good enough match is the signal to stop exploring and go to that object. Without it, the
-robot has no way to know it has found the right one. We will measure the whole pipeline end to end,
-with gaze, phase by phase. A comparison without gaze is a stretch goal.
+Two published systems each solve half of this. FAM-HRI uses the same Aria glasses: speech gives the
+object word, gaze picks which object, and an arm grasps it. But it assumes the object is already in
+front of the arm. We take its user side: speech, gaze and the grasp.
 
-To make progress measurable we broke the project into eleven milestones. Each has a written test.
-For example, M2 is done when, with two boxes on the table, the arm picks the one you looked at
-three times out of four."
+HiCo-Nav is a robot that explores an unseen room and builds a memory graph of every object it sees,
+each with a 3D position and an image feature. But you query it with a sentence, so it finds a class,
+any box, not the one you looked at. We take its pose estimation, its memory graph, its sentence
+reasoning and its exploration. We leave out its own motion planner and send goals to Nav2 instead.
+Its smarter way of choosing where to explore next is optional.
 
-**Estimated duration.** 1:00
+What we add is the join. The robot compares each object it finds with the one the user looked at,
+drives to the match, and checks it with the wrist camera before grasping."
 
-**Evidence and source notes.** CR§0.2 (objective, how the parts fit, milestone table with "done
-means"), CR§1 (solution in outline), PP §1 (the five-phase base case).
+**Estimated duration.** 1:20
 
-**Placeholders.** None.
+**Evidence and source notes.** CR§0.2 (objective), CR§13.6 (references), CR§0.3 (two-system table: what each does, what it
+assumes, how it enters Gappler), CR§1 (solution in outline, how they join), `hico-nav/PAPER_REPORT.md`
+§1.1 (HiCo-Nav runs its own planner and controller, a goal-emitting partial port is recommended)
+and §6.2 (FAST-LIVO2 is the paper's pose source). Milestones and their "done means" moved to slide 16
+and appendix A10 (2026-10-24, Dion): they name subsystems the audience has not met yet on slide 3.
+
+**Placeholders.** `[VERIFY: FAM-HRI's full title and author list (D§1.1 flags it unverified), in case it goes on the slide]`
 
 **Presenter.** Dion
 
@@ -475,7 +468,7 @@ its pose is now handed to the navigation stack.
   2. **Prove on the authors' data:** their ROS 1 recording converted to ROS 2, 14,850 of 14,850
      messages, every input and output counted
   3. **Record our sensors:** LiDAR 10 Hz, IMU 200 Hz, colour 30 Hz, every message audited
-  4. **Find silent defects:** runs with and without the camera, each against a control. A range gate
+  4. **Find silent defects:** runs with and without the camera, each against a control. A range filter
      that dropped nothing, the LiDAR-to-IMU offset sign (about 10 cm off), a voxel key mismatch
   5. **Live, pushed by hand:** 26 m loop
   6. **Hand to Nav2:** pose bridged into the frame tree. Start tilt from the gravity estimate removed:
@@ -541,7 +534,7 @@ ROS 1 parent `hku-mars/FAST-LIVO2`, ROS 2 port `U-AMC/FAST-LIVO2-ROS2` pinned at
 network, AddressSanitizer one-byte over-read at `vio.cpp:1679`, shutdown crash from `-march=native`
 alignment against prebuilt PCL), S§10.1 (Sophus and vikit absent on the box). 2 Authors' data, S§7.2
 and `t3.5/T3.5_FASTLIVO_REPLAY.md` (ROS 1 to ROS 2 conversion, 14,850 of 14,850). 3 Our sensors,
-S§8.2 (`t35b_proof3`, `stationary02`, audited with `rosbag2_py`). 4 Silent defects, S§9.3 (range gate
+S§8.2 (`t35b_proof3`, `stationary02`, audited with `rosbag2_py`). 4 Silent defects, S§9.3 (range filter
 F2 dropped nothing, 52 % zero-range points passed. Offset sign F3, about 10.2 cm. Voxel key mismatch,
 retrieval missed real map points). 5 Live, S§10 (20 Oct). 6 Nav2, S§11.1 (bridge, converter 110.6 ms
 to 0.38 ms). Dates 15 Oct (switch) to 22 Oct (Nav2 pipeline figure). Defects were found by reading the source,
@@ -709,7 +702,7 @@ T7.5)."
 **Estimated duration.** 1:20
 
 **Evidence and source notes.** CR§5.2 "What the memory graph represents", CR§4 memory graph rows
-(S0 loader, anchor gate, batched SAM 3, lifting and CLIP), CR§8.5 (29 photos, 99.2 %, 1.69 vs 9.70 s,
+(S0 loader, photo selection, batched SAM 3, lifting and CLIP), CR§8.5 (29 photos, 99.2 %, 1.69 vs 9.70 s,
 399 tests), CR§1 accomplishment 5 (nine upstream problems), Zongzhe's report Z§2.2 (the nine
 problems), CR§0.4 (upstream has no licence, read not copied).
 
@@ -747,7 +740,7 @@ duplicates safely. Merging by appearance alone does not, because similar objects
 - Footnote: two drives, 16 objects. A difference of one is noise
 
 **Recommended visualisation.** A line chart: x axis match radius (1, 2.5, 5, 7.5, 10, 15, 20 cm),
-y axis duplicates. Two lines, first drive (real gate) and second drive. A second, lighter line or
+y axis duplicates. Two lines, first drive (photo kept every 1 m or 45 degrees) and second drive. A second, lighter line or
 markers for false merges, flat at 0 from 2.5 cm upwards. A vertical marker at 10 cm labelled "chosen",
 and a callout at 15 cm "chair merges into desk (drive 2)". Data:
 
@@ -931,8 +924,7 @@ So we compared whole-object features, and CLIP ranked the right box first in all
 
 This week we put it where it matters, inside the grasp client. The arm now goes for the box you
 looked at, not the box SAM 3 is most confident about. On a scene with two cardboard boxes, the old
-pick took the wrong box in every one of 114 frames. With the glasses crop, 266 of 268 targets were
-the right box. With three boxes, 334 of 334. If nothing matches well enough, the arm waits.
+pick took the wrong box in all 114 frames. With the glasses crop, 266 of 268 targets were the right box. With three boxes, 334 of 334. If nothing matches well enough, the arm waits.
 
 The two misses are instructive. They came at 1.5 metres, where gaze landed on the mat. The crop was
 wrong before the matcher ever saw it. So the next step is to refuse weak gaze picks at the glasses.
@@ -1002,22 +994,20 @@ stateDiagram-v2
 ```
 
 **Proposed speaker script.**
-"Grasping is a state machine. A grasp request opens a short gate. The arm then steps the wrist camera
+"Grasping is a state machine. The arm only accepts a target after a grasp request, and only when idle. It then steps the wrist camera
 towards the target mask, two centimetres at a time, re-checking at each step, until it is 21
 centimetres away. This is a simple form of visual servoing: small corrections absorb calibration and
 depth errors. Then it grasps, lifts, returns home, and holds the object until the user says
 'release'.
 
 Our first real grasp was on 13 October. Started from a recorded spoken command, the arm made 5 of 8
-grasps. Both failures at 54.5 centimetres were out of reach, so within reach it was 5 of 6. In one
-run it grasped, held, refused two requests while busy, released, and grasped again.
+grasps. Both failures at 54.5 centimetres were out of reach, so within reach it was 5 of 6.
 
 Safety came first. The arm's hardware stop is rejected by its controller, so we wrote a software
 stop. On the real arm it cancels motion within a millisecond. Every motion test still
 has two people and a hand on the power button.
 
-These grasps used a simple path, one blind step and close. The learned grasp model is the harder
-part."
+These grasps used a simple grasping method, one blind step and close. Next we will look at the learned grasp model we used to propose more complicated grasps."
 
 **Estimated duration.** 1:10
 
@@ -1262,6 +1252,8 @@ dates hold.
   - **Actual: M0 done. M1 met on the simple path. M3 map and localisation done**
   - **Started early:** M2 (voice and gaze to arm), M6 (memory graph), M8 (gaze picks the instance)
   - **Behind:** base camera calibration (M5) and drive-to-point (M3), one to two weeks
+- Each milestone has a written test, for example **M2: two boxes, the arm picks the one you looked
+  at, 3 times in 4**. Full list in appendix A10
 - Progress: 97 of 171 task rows done
 - Key dates: interim 28 Oct (week 7), final report 28 Mar 2027 (week 28), oral presentation weeks 30
   and 31
@@ -1292,8 +1284,10 @@ Week spans are read from the ASCII chart in CR§0.6, which already counts calend
 cross exam and break weeks are calendar time, not working time). Say this in a footnote on the chart.
 
 **Proposed speaker script.**
-"This chart shows every milestone by week. Solid bars are work done so far, light bars are our
-forecast, and the grey bands are recess, exams and the winter break, when we are not working.
+"This chart shows every milestone by week. Each one has a written test. For example, M2 is done
+when, with two boxes on the table, the arm picks the one you looked at three times out of four.
+Solid bars are work done so far, light bars are our forecast, and the grey bands are recess, exams
+and the winter break, when we are not working.
 
 Our September plan expected, at this point, only the build milestone finished and the arm and base
 under way. We have that. The build milestone closed in week two. The arm picks up a box on the simple
@@ -1347,14 +1341,13 @@ table), CR§0.6 "Why each forecast" (M3 bring-up doubled its estimate, PP §8.3)
 
 | Risk | Status |
 |---|---|
-| Critical path runs almost entirely through one person (Dion) | Cut list fixed in advance: M9 first. Exploration and the gaze match are core |
 | AnyGrasp licence bound to a hardware ID | New licence requested, network ID pinned |
 | Shared, throttled lab machine | Ongoing: CPU throttling, two silent hangs, disk 89 % full |
 | No hardware stop on arm or base | Software stop tested, two people and the power button at every test |
 | Graph duplicates from poor camera poses | Controlled: 8 to 3 duplicates, 0 false merges |
 
 **Recommended visualisation.** Two panels. Left: the budget as a clean two-row table with a total
-row, and an "Approved" tag. Right: the risk table as five rows with a coloured status dot (green
+row, and an "Approved" tag. Right: the risk table as four rows with a coloured status dot (green
 controlled, amber ongoing). Keep the cut list as a one-line footer: "Cut order if late: M9 (smarter
 exploration order), without-gaze comparison, reasoning layer, graph pruning, two-stage trigger,
 fewer end-to-end trials."
@@ -1366,18 +1359,17 @@ three of us and by the CI runner. Segmentation, grasping, CLIP, speech and two l
 need it, and the memory graph's segmentation alone peaks at over 10 gigabytes. We have never run
 them all at once.
 
-The main risks are about schedule and shared hardware. The critical path runs almost entirely
-through one person, so we fixed a cut list in advance. The paper's smarter exploration order goes
-first. Exploration itself and the gaze match stay, because the system does not work without them. The grasp model's licence is tied to a machine ID, and a new one is
-requested. The lab machine is shared and has hung twice. And neither the arm nor the base has a
+The main risks are about schedule and shared hardware. If time runs short, we have a cut list fixed
+in advance, and the paper's smarter exploration order goes first. The grasp model's licence is tied
+to a machine ID, and a new one is requested. The lab machine is shared and has hung twice. And neither the arm nor the base has a
 working hardware stop, so every motion test has two people and a hand on the power button."
 
 **Estimated duration.** 0:45
 
 **Evidence and source notes.** Budget: the approved budget proposal, 5 Oct 2026 (supplied by Dion).
 Compute justification: CR§2.4 (one 16 GB RTX 4060 Ti shared by three users and CI), CR§9.3 risk 5
-(GPU contention, never run together), CR§6.2 (10.3 GiB peak). Risks: CR§0.7 (risk table, critical
-path, cut list).
+(GPU contention, never run together), CR§6.2 (10.3 GiB peak). Risks: CR§0.7 (risk table, cut list). The
+critical-path risk was dropped on 2026-10-24 (Dion: mostly resolved).
 
 **Placeholders.** Note: currency confirmed SGD by Dion. The API credits are for AI services in general. The team explains the detail if asked.
 `[TEAM INPUT REQUIRED: whether the GPU has been bought yet and any spend to date, in case an examiner asks]`
@@ -1449,8 +1441,8 @@ table (M1 8 Nov, M4 31 Jan, M7 28 Feb, M8 14 Mar).
 
 | Assessment item | Slide(s) | Evidence strength and gaps |
 |---|---|---|
-| Background and motivation | 2 | Strong. Two published systems and their assumptions. Base-camera view of the box may need a new frame |
-| Main project objectives | 3 | Strong. Objective, how gaze and exploration fit, milestones with tests |
+| Background and motivation | 2, 3 | Strong. The viewpoint problem (2), two published systems and their limits (3). Base-camera view of the box may need a new frame |
+| Main project objectives | 3, 16 | Strong. Objective and what we take from each paper (3). Milestones with tests on the schedule (16) and in appendix A10 |
 | Proposed technical approach | 4, 5 | Strong. Five phases, scope decisions, method, team split |
 | End-to-end system architecture | 4 (intended), 15 (actual) | Strong. Kept to two simple diagrams. Topic-level wiring in appendix A1 |
 | Actual implementation progress | 6 to 15 | Strong per subsystem. No end-to-end run, stated on slide 15 |
@@ -1479,8 +1471,8 @@ table (M1 8 Nov, M4 31 Jan, M7 28 Feb, M8 14 Mar).
 | Slide | Section | Presenter | Duration | Elapsed |
 |---|---|---|---|---|
 | 1 | Title | Dion | 0:20 | 0:20 |
-| 2 | Problem | Dion | 1:10 | 1:30 |
-| 3 | Objectives | Dion | 1:00 | 2:30 |
+| 2 | Problem | Dion | 0:50 | 1:10 |
+| 3 | Objectives and the two papers | Dion | 1:20 | 2:30 |
 | | *Handover to Zongzhe* | | 0:05 | 2:35 |
 | 4 | Five phases | Zongzhe | 1:15 | 3:50 |
 | | *Handover to Sherman* | | 0:05 | 3:55 |
@@ -1512,7 +1504,7 @@ three extra handovers. If rehearsal runs long, cut next from slide 10 (drop the 
 sentence).
 
 **Speaking time per person (slides only, handovers 0:40 on top):** Dion 7:35, Zongzhe 6:00, Sherman
-5:45. Dion still has the largest share because he leads 5 of the 11 milestones and the critical path.
+5:45. Dion still has the largest share because he leads 5 of the 11 milestones.
 Zongzhe opens the system with slide 4 and Sherman covers the starting point (slide 5), so all three
 speak in the first five minutes. Sherman takes the full flow and the schedule, where his M3 and M5 are
 the two slips he can explain first-hand.
@@ -1545,6 +1537,23 @@ the two slips he can explain first-hand.
 | A7 | September plan vs actual | "How does this compare with your original plan?" | September plan in git at `1cde0ec:docs/PROJECT_PLAN.md` §5.3, against CR§0.6 actual and forecast |
 | A8 | Why gaze, not just a class name | "Isn't identical-object picking niche?" | CR§0.3 "Why gaze matters beyond look-alike objects": partly hidden objects, uncertain features, a robot that does not see what the user sees, assistive use |
 | A9 | End-to-end evaluation plan | "How will you measure the final system?" | CR§11.2 metrics table: target accuracy, false acceptance per stage, gaze-match accuracy, user discovery and search distance, handover success, without gaze as a stretch, end-to-end success counted only when the intended object is lifted |
+| A10 | Milestone tests | "How do you know a milestone is done?" | The table below, from CR§0.2 (moved off slide 3 on 2026-10-24) |
+
+**A10 content: milestones and their tests** (CR§0.2)
+
+| | Milestone | Done means |
+|---|---|---|
+| M0 | Everyone can build and run | Two people other than Dion clone, build and pass the bench |
+| M1 | Arm picks something up | 5 grasp attempts on a box, success rate recorded, stop verified first |
+| M2 | Voice and gaze reach the arm | Two boxes, the arm picks the one you looked at, 3 times in 4 |
+| M3 | Base navigates | Map, localisation, ten drives to a point with error recorded |
+| M4 | Closed loop | One recorded run: speak, look, drive, grasp, per-stage timing |
+| M5 | Calibrated base camera | LiDAR points land on the right objects in the camera image, pose error as a number |
+| M6 | Memory graph offline | Objects from a recorded drive, no duplicates, a sentence query returns the right one |
+| M7 | Graph drives the robot | Object out of view: the robot explores, finds the user, builds the graph live, drives to the object |
+| M8 | Gaze picks the instance | A gaze match ends exploration. N end-to-end trials, success per phase |
+| M9 | Smarter exploration order (optional) | The paper's exploration order beats our nearest-first exploration |
+| M10 | Demonstration and paper | Recorded end-to-end run, paper whose central table is the end-to-end trials |
 
 ---
 
@@ -1560,7 +1569,7 @@ the two slips he can explain first-hand.
 | 6 | One purpose and a useful visual per slide? | Yes. Each technical slide has its own visual. No single giant architecture slide |
 | 7 | Scripts add value beyond bullets? | Yes. They explain why (why CLIP over keypoints, why 10 cm not 15, why AnyGrasp fails up close) and link slides (the mat stack from slide 6 returns on slide 12) |
 | 8 | Limitations stated plainly? | Yes, on each slide and gathered on slide 15. No slide implies an end-to-end result |
-| 9 | Objectives, schedule and budget addressed? | Yes: slides 3, 16, 17 |
+| 9 | Objectives, schedule and budget addressed? | Yes: slides 3, 16, 17. Milestone tests on 16 and A10 |
 | 10 | Fits 20 minutes? | Slot times sum to 20:00 including handovers. Checked 2026-10-24: the scripts total about 3,260 words, which is about 23:40 at 140 words a minute and about 20:50 at 160. Over 165 words a minute: slides 3, 5, 8, 10, 11, 14, 17, 18 (11 and 17 near 240). Each presenter trims their own script or speeds up at rehearsal. Cut points named in section D |
 | 11 | Contributions fair and accurate? | Each member presents their own work. Sherman also presents integration and the schedule, so speaking time is closer to even (section D) |
 | 12 | Concise enough for layout? | Yes. On-slide content is short, with tables kept to four or five rows except the milestone and Gantt data, which are drawn as charts |
@@ -1601,3 +1610,6 @@ do not exist yet.
 | 2026-10-24 | Claude (Opus 5.5) + Dion | T8.9a results in (slides 12, 15, 18, PR #129, 600 of 602 on replay). Sherman now presents slides 15 and 16 (Dion 9:50, Sherman 5:00, Zongzhe 4:45). Budget in SGD, API credits for AI services. Wrist camera to arm calibrated (slide 8). |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Framing fix (T10.5, Dion). No research claim, no protected M8, no ablation. Exploration is core, finding the user speeds it up, the gaze target is the match that ends exploration, gaze is the base case and without gaze is a stretch. Overview, slides 2, 3, 4, 9, 11, 15, 16, 17, 18, sections C and E rewritten to match. Phase strip label 2 is now "Explore and map". |
 | 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is set by construction, flush on vertical aluminium extrusions, not measured with a tool (Sherman), instead of "estimated by eye". Status now "Mount measured, not calibrated". Base origin checked against the vendor manual. Camera chain: tape to the D455 mounting hole, Intel published geometry from there (Sherman). Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). Slide 7 now shows the six-step port work (ROS 1 original, ROS 2 port, build, authors' data, our sensors, three silent defects, live loop, Nav2) as a flow strip, and drops the "plan proposed 2D, I built that first" lines. Step 6 adds the start-tilt fix (bridge measures from the first pose, floor tilt under 0.5 degrees). Script says the defects were found by reading the source and confirmed against controls, not by camera on and off runs. Slide 7 visuals now point at clean renders with no text baked in (build-up GIF, orbit, iso still, 10 cm closure zoom, top-down path), linked from Sherman's local report_media. Slide 15 kept as written, with additions: recorded voice not spoken, Nav2 shown as never driven (not "works"), T7.6 and T3.7 added to missing link 1, T8.8 marked look-alike only, explore loop added to the visual idea. Final visual still to draw. Slide 15 then reframed: "Where each part sits in the full flow, and the links still to join", same facts and task IDs. Slide 15 visual: explicit spec added, 9 parts with status colours and 12 links with style, label and task IDs. Camera calibration dropped as a missing link (wrist camera already calibrated, base camera T5.5 stays as a note on link 6, slide 8 covers it). Final check: rule 1 updated for the new slide 15, audit row 10 corrected (scripts run about 23:40 at 140 words a minute). Presenter split (team, 2026-10-24): slide 4 to Zongzhe, slide 5 to Sherman and cut to 0:45, three handovers added, elapsed times and per-person totals corrected (Dion 7:35, Zongzhe 6:00, Sherman 5:45, handovers 0:40, total 20:00). |
+| 2026-10-24 | Claude (Opus 5.5) + Dion | Slide 3 is now the overview of the two papers: what FAM-HRI and HiCo-Nav each do, what we take, what we leave out, and the link we add. The gaze paragraph and the milestone table are gone from it. Milestones moved later because they name subsystems not yet introduced: one example test on slide 16 (on slide and in the script), the full "done means" table in new appendix A10. Slide 17: critical-path risk row removed (mostly resolved), script and visual now four risks. |
+| 2026-10-24 | Claude (Opus 5.5) + Dion | Slide 2 now shows only the problem (three viewpoints). FAM-HRI and HiCo-Nav moved to slide 3, which gains a "what it cannot do for us" row. Slide 2 to 0:50, slide 3 to 1:20, section total unchanged. |
+| 2026-10-24 | Claude (Opus 5.5) + Dion | Final pass before slide generation: "gate" wording removed (slides 7, 9, 10, 13), slide 12 script grammar fixed. |
