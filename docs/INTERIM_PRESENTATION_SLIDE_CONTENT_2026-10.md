@@ -550,7 +550,7 @@ the glasses are not yet, and each missing calibration blocks a specific later st
 | Link | Used for | State |
 |---|---|---|
 | Base to arm | Arm grasps in the base's map | **Measured**: (0.18, 0, 0.48) m, yaw 180 degrees, matched on the robot |
-| Base camera to LiDAR | Object positions and depth in the memory graph | **Nominal only**: mount values wired and unit-tested (12 software checks). Camera sits flush on the square frame, so its rotation is zero by design, not yet measured. About 6.7 px of error per degree. Calibration rig planned (T5.5) |
+| Base camera to LiDAR | Object positions and depth in the memory graph | **Mount measured, not calibrated**: camera flush on the square frame, measured pointing straight. Mount values wired and unit-tested (12 software checks). Camera to LiDAR not yet calibrated, about 6.7 px of error per degree. Calibration rig planned (T5.5) |
 | Wrist camera to arm | Turning a grasp seen by the camera into an arm goal | **Calibrated** |
 | Glasses to robot | A gaze ray in the robot's own 3D frame, for look-alike objects | **Planned** (T8.8). Three methods ranked |
 
@@ -559,7 +559,7 @@ the glasses are not yet, and each missing calibration blocks a specific later st
 **Recommended visualisation.** A side-view line drawing of the robot: base, LiDAR on top, D455 at
 the front, arm with the wrist D435i, and a small figure of the user with glasses to one side.
 Draw the four links as coloured arrows using the status scale: solid green (measured or
-calibrated), amber (nominal), grey dashed (planned). Each arrow labelled with
+calibrated), amber (measured, not calibrated), grey dashed (planned). Each arrow labelled with
 its use, not its frame name. Beside it, one small inset: the LiDAR-on-camera overlay before
 calibration, `nav_lidar_on_camera_overlay_stationary02_t0s_2026-10-19.png`, captioned "before
 calibration: LiDAR points over the camera image". Frame names (`robot_base_link`, `base_link`,
@@ -569,7 +569,7 @@ calibration: LiDAR points over the camera image". Frame names (`robot_base_link`
              user + glasses
                   :  (4) planned, T8.8
                   :
-   [D455]--(2) nominal--[LiDAR]
+   [D455]--(2) measured, not calibrated--[LiDAR]
       |                    |
    [ base ]==(1) measured==[ arm ]==(3) calibrated==[wrist D435i]
 ```
@@ -581,9 +581,10 @@ and they are at different stages.
 The arm on the base is measured. We set the transform from the mount drawings and checked it on the
 robot.
 
-The base camera relative to the LiDAR is only nominal. I designed and fitted the mount. The camera sits
-flush on the square frame, so it should point straight, but that is not measured yet. On this camera one degree of error moves
-a point by about seven pixels. The memory graph uses this transform for every object position, so a
+The base camera relative to the LiDAR is measured but not calibrated. I designed and fitted the mount.
+The camera sits flush on the square frame, and I measured it pointing straight. What is left is a
+calibration against the LiDAR itself, because on this camera one degree of error moves a point by
+about seven pixels. The memory graph uses this transform for every object position, so a
 proper calibration is planned, with a rig still to be built.
 
 The wrist camera relative to the arm is calibrated, which is what lets a grasp seen by the camera
@@ -599,16 +600,18 @@ None of these blocks today's results, but each one blocks a specific later step.
 
 **Evidence and source notes.** CR§5.4 "Frames" table (four problems and their status), CR§4 base
 D455 and mount row (12 geometry checks, eye-estimated rotation). Rotation wording from Sherman,
-2026-10-24: the camera sits flush on the top rectangular frame, so zero rotation is set by the mount
-design, not judged by eye. Still unmeasured: frame squareness, screw play, the LiDAR's own mount and
-the sensor's alignment inside the camera body. `T5.3_D455_FIT.md`, `T5.4_D455_TF.md` and CR§4 still
-say "estimated visually". The 12 are software unit tests
+2026-10-24: the camera sits flush on the top rectangular frame and Sherman measured it pointing
+straight. That checks the camera body against the frame. The calibration (T5.5) still measures what
+a body check cannot: the LiDAR's own mount and the image sensor's alignment inside the camera body.
+`T5.3_D455_FIT.md`, `T5.4_D455_TF.md` and CR§4 still say "estimated visually" and need the
+measurement written in. The 12 are software unit tests
 from T5.4, 8 in `bench/test_geometry.py` (mount values single-sourced and reach the TF) and 4 in
 `bench/test_camera_navigation.py` (camera-referenced stand-off maths, refusal when TF is lost). They
 prove consistency, not physical accuracy (`sherman_docs/t5/T5.4_D455_TF.md`), CR§9.1 (6.7 px per degree,
 S§13.1), CR§6.7 (TF tree, for appendix A2), CR§0.2 M5 (calibration not built).
 
 **Placeholders.** `[ARTEFACT NEEDED: nav_lidar_on_camera_overlay_stationary02_t0s_2026-10-19.png (Sherman)]`
+`[TEAM INPUT REQUIRED: how the base camera was measured pointing straight (tool and resolution, for example square or inclinometer, within X degrees), in case an examiner asks (Sherman)]`
 `[TEAM INPUT REQUIRED: one phrase on how the wrist camera was calibrated (method, residual), in case an examiner asks. Dion confirmed on 2026-10-24 that it is calibrated]`
 `[VERIFY: who presents the glasses-to-robot row. It is Dion's task (T8.8). Sherman can present it as written, or Dion can add one sentence in his later block]`
 
@@ -1482,4 +1485,4 @@ do not exist yet.
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Created (T10.4). 18 core slides and 9 appendix slides from `COMBINED_PROGRESS_REPORT_2026-10.md` and the approved budget proposal (5 Oct 2026). T8.9a and the teammates' media left as placeholders. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | T8.9a results in (slides 12, 15, 18, PR #129, 600 of 602 on replay). Sherman now presents slides 15 and 16 (Dion 9:50, Sherman 5:00, Zongzhe 4:45). Budget in SGD, API credits for AI services. Wrist camera to arm calibrated (slide 8). |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Framing fix (T10.5, Dion). No research claim, no protected M8, no ablation. Exploration is core, finding the user speeds it up, the gaze target is the match that ends exploration, gaze is the base case and without gaze is a stretch. Overview, slides 2, 3, 4, 9, 11, 15, 16, 17, 18, sections C and E rewritten to match. Phase strip label 2 is now "Explore and map". |
-| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is zero by mount design (flush on the square frame, Sherman), not measured, instead of "estimated by eye". Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). |
+| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera sits flush on the square frame and was measured pointing straight (Sherman), instead of "estimated by eye". Status now "Mount measured, not calibrated". Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). |
