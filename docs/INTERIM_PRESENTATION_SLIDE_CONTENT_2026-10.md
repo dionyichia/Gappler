@@ -488,10 +488,19 @@ its pose is now handed to the navigation stack.
   - 11 to 14 ms per frame on the CPU, inside the 100 ms scan period
 - Limit: pushed by hand, not driven. Nav2 has never driven the base
 
-**Recommended visualisation.** Main: the orbiting coloured map with the orange path,
-`nav_fastlivo_map_orbit_handdriven1_2026-10-20.gif` (or the `.mp4`, or the iso still if the venue
-cannot play video). Inset: `nav_fastlivo_trajectory_closure_handdriven1_2026-10-20.png`, the 10 cm
-zoom on start and end, labelled "12 mm". Results as three numbers in a column. Along the bottom, the
+**Recommended visualisation.** Use the clean renders (no text baked in, 2026-10-24), so all labels
+live on the slide. Main: the map building up as the base is pushed,
+[`nav_fastlivo_map_buildup_clean_handdriven1_2026-10-24.gif`](sherman_docs/local/report_media/nav_fastlivo_map_buildup_clean_handdriven1_2026-10-24.gif) (10 s at about 12x real time,
+holds 2 s on the closed loop, 0.9 MB. `.mp4` beside it). Alternative main: the orbiting map,
+[`nav_fastlivo_map_orbit_clean_handdriven1_2026-10-24.gif`](sherman_docs/local/report_media/nav_fastlivo_map_orbit_clean_handdriven1_2026-10-24.gif) (14 s, 15 MB, or the 51 MB `.mp4`).
+Still fallback if the venue cannot play video: [`nav_fastlivo_map_iso_clean_handdriven1_2026-10-24.png`](sherman_docs/local/report_media/nav_fastlivo_map_iso_clean_handdriven1_2026-10-24.png).
+Inset: [`nav_fastlivo_path_closure_zoom_clean_handdriven1_2026-10-24.png`](sherman_docs/local/report_media/nav_fastlivo_path_closure_zoom_clean_handdriven1_2026-10-24.png), the 10 cm by 10 cm
+zoom on start (green dot) and end (white square). Slide caption: "10 cm zoom, bar = 2 cm, start to
+end 12 mm". In all map renders the orange line is the path, the green dot the start, the white
+square the end. Optional second inset or appendix A5: the top-down path coloured by time,
+[`nav_fastlivo_path_top_clean_handdriven1_2026-10-24.png`](sherman_docs/local/report_media/nav_fastlivo_path_top_clean_handdriven1_2026-10-24.png) (dark purple early, yellow late).
+Renders: `sherman_docs/local/presentation/scripts/clean_*.py` from `handdriven1`, same camera, crop
+and colours as the 2026-10-22 set, far ghost points cropped. Results as three numbers in a column. Along the bottom, the
 six steps as a thin flow strip of six small boxes, one short label and one number each (Build,
 Authors' data 14,850/14,850, Our sensors, 3 silent defects, Live 26 m, Nav2 tilt under 0.5 degrees), with a "ROS 1
 to ROS 2 port" tag at its left end. A small "2D: x, y, heading" against "3D: full pose" label beside
@@ -543,8 +552,8 @@ from the accelerometer at start, off by up to about a degree each launch. The br
 from the first pose, so on a level start that error cancels (floor tilt 0.10 to 0.37 degrees on
 `handdriven1`, against up to 1.2). It refuses to start above 2 degrees of start tilt.
 
-**Placeholders.** `[ARTEFACT NEEDED: nav_fastlivo_map_orbit_handdriven1_2026-10-20.gif or .mp4, and nav_fastlivo_trajectory_closure_handdriven1_2026-10-20.png, from docs/sherman_docs/local/report_media/ (Sherman)]`
-`[VERIFY: the venue can play the 71 MB MP4. Fall back to the GIF or the iso still]`
+**Placeholders.** `[VERIFY: the clean renders are in Sherman's gitignored docs/sherman_docs/local/report_media/, so the links above work on his machine only. Sherman copies them to whoever builds the slides]`
+`[VERIFY: the venue can play video. Fall back to the GIF or the iso still]`
 
 **Presenter.** Sherman
 
@@ -1499,7 +1508,7 @@ do not exist yet.
 | Owner | Files | Slides |
 |---|---|---|
 | Dion | `aria_gaze_pick_vs_distance_2026-10-20.jpg`, `lightglue_baseline_wrong_matches_2026-10-19.jpg`, `clip_glasses_vs_wrist_crops_2026-10-20.jpg`, `fit_check_edge_grasp_75mm_face_measured_56mm_passes_wrongly.png`, optional `anygrasp_8_best_grasps_angles_2026-10-20.png`. **Stub:** `grasp_real_arm_<date>.mp4` (exists on Dion's phone, copy it in). Optional stub: `rviz_grasp_<date>.mp4` for A4. T8.9a numbers are in `docs/bench-runs/2026-10-24-labbox-t8.9a-grasp-matches-reference.txt`, charts drawn from them | 2, 6, 12, 13, 14 |
-| Sherman | `nav_fastlivo_map_orbit_handdriven1_2026-10-20.gif` or `.mp4` (or the iso still), `nav_fastlivo_trajectory_closure_handdriven1_2026-10-20.png`, `nav_lidar_on_camera_overlay_stationary02_t0s_2026-10-19.png`, `nav_t35f_drift_step3_error_vs_time_2026-10-21.png` for A5. Possibly a base-camera frame for slide 2 | 2, 7, 8, A5 |
+| Sherman | Clean renders, no text baked in (2026-10-24): `nav_fastlivo_map_buildup_clean_handdriven1_2026-10-24.gif` (or `nav_fastlivo_map_orbit_clean_handdriven1_2026-10-24.gif`, `.mp4`, or `nav_fastlivo_map_iso_clean_handdriven1_2026-10-24.png`), `nav_fastlivo_path_closure_zoom_clean_handdriven1_2026-10-24.png`, optional `nav_fastlivo_path_top_clean_handdriven1_2026-10-24.png`. `nav_lidar_on_camera_overlay_stationary02_t0s_2026-10-19.png` (already clean), `nav_t35f_drift_step3_error_vs_time_2026-10-21.png` for A5. Possibly a base-camera frame for slide 2 | 2, 7, 8, A5 |
 | Zongzhe | Rerun 3D screenshot from `mg_t6.3_four_photos_rerun_3d_2026-10-21.rrd`. **Stub:** `mg_graph_3d_flythrough_<date>.mp4` (recordable any time). `mg_frame700_masks_and_3d_objects_2026-10-21.png`, optional `mg_ground_truth_12_objects_on_lidar_map_2026-10-21.png`, the 22-instruction grid from `check_reasoning.json`, the real "find the chair" output | 9, 10, 11 |
 | Any member | Photo of the full robot with the glasses, for the title slide | 1 |
 
@@ -1512,4 +1521,4 @@ do not exist yet.
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Created (T10.4). 18 core slides and 9 appendix slides from `COMBINED_PROGRESS_REPORT_2026-10.md` and the approved budget proposal (5 Oct 2026). T8.9a and the teammates' media left as placeholders. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | T8.9a results in (slides 12, 15, 18, PR #129, 600 of 602 on replay). Sherman now presents slides 15 and 16 (Dion 9:50, Sherman 5:00, Zongzhe 4:45). Budget in SGD, API credits for AI services. Wrist camera to arm calibrated (slide 8). |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Framing fix (T10.5, Dion). No research claim, no protected M8, no ablation. Exploration is core, finding the user speeds it up, the gaze target is the match that ends exploration, gaze is the base case and without gaze is a stretch. Overview, slides 2, 3, 4, 9, 11, 15, 16, 17, 18, sections C and E rewritten to match. Phase strip label 2 is now "Explore and map". |
-| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is set by construction, flush on vertical aluminium extrusions, not measured with a tool (Sherman), instead of "estimated by eye". Status now "Mount measured, not calibrated". Base origin checked against the vendor manual. Camera chain: tape to the D455 mounting hole, Intel published geometry from there (Sherman). Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). Slide 7 now shows the six-step port work (ROS 1 original, ROS 2 port, build, authors' data, our sensors, three silent defects, live loop, Nav2) as a flow strip, and drops the "plan proposed 2D, I built that first" lines. Step 6 adds the start-tilt fix (bridge measures from the first pose, floor tilt under 0.5 degrees). Script says the defects were found by reading the source and confirmed against controls, not by camera on and off runs. |
+| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is set by construction, flush on vertical aluminium extrusions, not measured with a tool (Sherman), instead of "estimated by eye". Status now "Mount measured, not calibrated". Base origin checked against the vendor manual. Camera chain: tape to the D455 mounting hole, Intel published geometry from there (Sherman). Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). Slide 7 now shows the six-step port work (ROS 1 original, ROS 2 port, build, authors' data, our sensors, three silent defects, live loop, Nav2) as a flow strip, and drops the "plan proposed 2D, I built that first" lines. Step 6 adds the start-tilt fix (bridge measures from the first pose, floor tilt under 0.5 degrees). Script says the defects were found by reading the source and confirmed against controls, not by camera on and off runs. Slide 7 visuals now point at clean renders with no text baked in (build-up GIF, orbit, iso still, 10 cm closure zoom, top-down path), linked from Sherman's local report_media. |
