@@ -89,6 +89,13 @@
       #   aria: aria_segmentation_client
       segmentation_segment: "/segmentation/segment"
 
+    # Pixels kept around a mask's box when it is cropped for matching (T8.9a). The aria client sends
+    # this crop as the Target's reference, and the grasp client crops each wrist mask the same way,
+    # so CLIP compares like with like (cutoff 0.56 was tuned on 20, T8.7).
+    # read by: aria: aria_segmentation_client (reference crop). grasp: grasp_segmentation_client
+    #   (wrist crops, cross_camera_mask_match_rule.py). aria: object_recognition_pipeline (replay view)
+    crop_margin_px: 20
+
     # ---- Cameras. Two RealSense cameras are plugged into the box, so every launch names the one
     # ---- it wants by serial (T1.13). Without a serial the driver opens whichever it finds first.
     # ---- Read through gappler_common.camera_serial(). Override per machine with

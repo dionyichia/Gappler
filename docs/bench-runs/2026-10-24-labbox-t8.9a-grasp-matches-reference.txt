@@ -1,0 +1,64 @@
+T8.9a: the grasp client picks its wrist mask by CLIP against the glasses reference
+Lab box, 2026-10-24, Claude Opus 5.5 + Dion. Domain 87, localhost only, nothing moved.
+
+Question: with the aria client sending one Target per word (word + reference crop, after the gaze
+pick) and the grasp client choosing the mask by CLIP cosine against that crop, does the grasp
+client publish the centroid of the box you looked at?
+
+Setup
+- Code: branch t8.9a-grasp-matches-reference (from dev 1cde0ec), copied to /tmp/dion_t8.9a/repo
+  (.venv, install, assets/models linked from ~/rcp-Gappler). Box was idle (GPU 390 MiB, no camera
+  or bench in use).
+- Running: segmentation service, aria segmentation client, grasp segmentation client, wrist bag
+  looping, glasses VRS replayed onto ROS, "box" sent on /aria/audio/prompt at set times. A
+  listener wrote every /object_centroid_2d. Script: run_t89a.sh (local scratch, not in git).
+- Scored by the centroid pixel: inside the target box or not.
+  three boxes: target [269, 377, 410, 480]. two cardboard v2: target about [270, 240, 370, 430].
+
+1. Unit tests on the box (real rclpy): aria client 28 OK, grasp client 24 OK, matcher self-check OK.
+
+2. Baseline, the old pick (grasp client alone, default prompt "box", best SAM 3 score), 40 s:
+     three boxes:      105 of 115 centroids on the target (10 at 228,207, another box)
+     two cardboard v2:   0 of 114 on the target (all on the other box, 407,184)
+
+3. T8.9a, glasses c2cbafe8 + three boxes, "box" at 22, 46, 70, 95 s:
+     4 of 4 words sent one Target with a reference and one grasp request.
+     334 of 334 centroids on the target. 0 refused.
+
+4. T8.9a, glasses 5e5d6a91 + two cardboard v2, "box" at 63.2, 77.2, 102.2, 116.2 s (1, 1.5,
+   1.6, 0.4 m):
+     word 1 (1 m):    44 centroids, all on the target
+     word 2 (1.5 m):   0 centroids. Every frame refused: best score about 0.51, under 0.56.
+                       This is the known wrong reference (the gaze lands on the mat, T8.5, T2.3),
+                       so refusing is right: the arm waits instead of taking the wrong object.
+     word 3 (1.6 m):  41 centroids, all on the target. Some frames refused as a tie
+                       (target 0.579 vs the other box 0.575, within 0.01).
+     word 4 (0.4 m):  48 centroids, all on the target
+   133 of 133 centroids on the target. Where the old pick took the wrong box in every frame.
+
+5. Rerun of 4 after a review fix: each word now first sends an empty Target, which clears the old
+   target, so the grasp request cannot catch a last centroid of the old object. Unit tests on the
+   box again: aria 28 OK, grasp 24 OK.
+     4 clears, each before its Target. 135 centroids: 133 on the target, 2 on the other box.
+     The 2 wrong ones came in word 2 (1.5 m). The gaze pick took a slightly different mat crop than
+     in run 4 (glasses mask #6 of 7, SAM 3 score 0.31, vs #8 of 9). The other box then scored 0.54
+     to 0.57 against it and crossed 0.56 twice. Words 1, 3, 4: every centroid on the target.
+
+Findings
+- 600 of 602 published centroids on the looked-at box over runs 3 to 5. The old pick: wrong box in
+  114 of 114 frames on the same cardboard scene. [measured]
+- A wrong reference is not always caught. With the gaze on the mat (1.5 m, T2.3), the CLIP cutoff
+  refused every frame in run 4 but let 2 frames through in run 5. With a grasp request open, the
+  arm would take the wrong box. Raising the cutoff does not fix it: in word 3 the right match was
+  only 0.579. The fix is to refuse weak gaze picks before the Target goes out: T2.24, next, before
+  any arm test with the glasses. [measured]
+- The 0.01 tie margin did its job in word 3 (run 4): two boxes 0.004 apart were refused, not guessed.
+  Wider margins would refuse more frames here without changing any pick. [measured]
+- Not tested: the real arm (L6), the first two-cardboard bag (side views, unfair, T8.7), and
+  timing with stamped words (PR #91 words were sent by hand at set times).
+- CLIP loads at grasp client start (a few seconds). The HF Hub prints an unauthenticated-request
+  warning at load, harmless with the weights already in assets/models/open_clip.
+- A shutdown RCLError appeared once in 4 runs, when the client was stopped. Old: it is in the
+  2026-09-22 and 09-24 replay bench logs too. Not from T8.9a.
+
+Scratch: /tmp/dion_t8.9a on the box (repo copy, bags, runs). Nothing left running.
