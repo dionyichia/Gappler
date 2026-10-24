@@ -37,7 +37,7 @@ are in `docs/bench-runs/`. Pictures and videos are in `docs/dion_docs/local/repo
 
 ### 1.1 The two papers
 
-Gappler joins two research systems and adds something neither has.
+Gappler joins two research systems into one pipeline.
 
 | | FAM-HRI | HiCo-Nav |
 |---|---|---|
@@ -45,9 +45,11 @@ Gappler joins two research systems and adds something neither has.
 | Where it comes in | The original authors of this repo were recreating FAM-HRI. The glasses pipeline (voice, gaze, SAM 3, the cross-camera matcher) and the grasp state machine are that recreation | Sherman (navigation) and Zongzhe (memory graph) are integrating it |
 | Gap we fill | FAM-HRI assumes the object is already in front of the arm | HiCo-Nav's graph is queried with a sentence, so it finds a class ("a box"), not an instance ("that box") |
 
-**The research claim.** Carry a gaze-cropped image feature from the glasses into the memory graph
-query, so the robot finds the specific object the user looked at, then drives to it and grasps it.
-One ablation (with gaze vs without) gives the number (M8, T8.1 to T8.3).
+**How gaze fits.** The robot explores with its base camera and builds the memory graph as it goes,
+looking for the user first to speed up the search. The CLIP feature of the glasses crop is compared
+with each object it sees. A match above a cutoff is the trigger to stop exploring and drive to that
+object, and the wrist camera confirms it (M8, T8.2). Gaze is the base case. A without-gaze version is
+a stretch (T8.11). The evaluation is end-to-end trials, success per phase (T8.3).
 
 ### 1.2 Open-source parts we build on
 
@@ -605,7 +607,7 @@ mask right) needs only the existing pipeline and a display node.
 | 6 | Glasses-to-robot transform, then pick by gaze ray for look-alikes | T8.8 |
 | 7 | Two boxes on a table, pick the one you looked at, on hardware | T2.5 |
 | 8 | Graph-driven approach goal, in C++ | T7.1 |
-| 9 | Gaze-cropped feature into the memory graph query, then the ablation (the research claim) | T8.1, T8.2, T8.3 |
+| 9 | Gaze-target trigger: match graph objects against the glasses crop while exploring, then the end-to-end trials. Find the user while exploring | T8.2, T8.3, T7.6 |
 | 10 | When the object is not found, follow the gaze ray to look for it | T7.4 |
 
 **Live demo ideas for next semester** (Dion): find the user's beer even when partly hidden, show the
@@ -643,3 +645,4 @@ drawn in 3D.
 | 2026-10-23 | Claude (Opus 5.5) + Dion | Created from the task tree, run records, handoffs, worktrees and the lab box, for the progress presentation. |
 | 2026-10-23 | Claude (Opus 5.5) + Dion | Expanded into a full info dump for merging with Sherman's and Zongzhe's reports. Added FAM-HRI framing, groundwork, arm bring-up, all grasp bugs and open defects, media inventory with video stubs. Media moved to `local/report_media/`. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Next step 4: T8.5 (PR #100) is merged, only T2.21 (PR #91) is left. |
+| 2026-10-24 | Claude (Opus 5.5) + Dion | Framing fix (T10.5): §1.1 and next step 9 no longer call the gaze feature a research claim. It is the trigger from exploring to approaching, gaze is the base case, without gaze is a stretch. |
