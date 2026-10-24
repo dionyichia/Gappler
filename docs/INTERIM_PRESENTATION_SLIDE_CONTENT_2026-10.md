@@ -480,7 +480,8 @@ its pose is now handed to the navigation stack.
   4. **Find silent defects:** runs with and without the camera, each against a control. A range gate
      that dropped nothing, the LiDAR-to-IMU offset sign (about 10 cm off), a voxel key mismatch
   5. **Live, pushed by hand:** 26 m loop
-  6. **Hand to Nav2:** pose bridged into the frame tree. LiDAR converter 110 ms down to 0.38 ms a scan
+  6. **Hand to Nav2:** pose bridged into the frame tree. Start tilt from the gravity estimate removed:
+     floor tilt up to 1.2 degrees down to under 0.5
 - Results (hand-pushed loop, recording `handdriven1`, 20 Oct):
   - **26.05 m loop, back to start within 12 mm** (4 mm LiDAR-only, 7 mm odometry error, 0.03 %)
   - Mid-route error at most 6.7 cm, at the floor of our reference (about 7 cm)
@@ -492,7 +493,7 @@ its pose is now handed to the navigation stack.
 cannot play video). Inset: `nav_fastlivo_trajectory_closure_handdriven1_2026-10-20.png`, the 10 cm
 zoom on start and end, labelled "12 mm". Results as three numbers in a column. Along the bottom, the
 six steps as a thin flow strip of six small boxes, one short label and one number each (Build,
-Authors' data 14,850/14,850, Our sensors, 3 silent defects, Live 26 m, Nav2 0.38 ms), with a "ROS 1
+Authors' data 14,850/14,850, Our sensors, 3 silent defects, Live 26 m, Nav2 tilt under 0.5 degrees), with a "ROS 1
 to ROS 2 port" tag at its left end. A small "2D: x, y, heading" against "3D: full pose" label beside
 the "why 3D" line. Do not show the full sensor-to-Nav2 wiring here.
 
@@ -507,8 +508,8 @@ Nav2 still drives on a 2D grid built from this pose.
 
 FAST-LIVO2 is published for ROS 1. We run a community ROS 2 port, and getting it to work was most of
 the effort. The strip along the bottom shows the steps. I proved it on the authors' own recording
-first, then on our sensors with every message checked. Comparing runs with and without the camera, I
-found three defects that fail silently: no crash, just a wrong map.
+first, then on our sensors with every message checked. I found three defects that fail silently: no
+crash, just a wrong map. Each was found by reading the source and confirmed against a control run.
 
 The result: I pushed the base by hand around a 26-metre loop. The path returns to its start within
 12 millimetres, and the mid-route error is within about 7 centimetres, the limit of our reference.
@@ -536,7 +537,11 @@ and `t3.5/T3.5_FASTLIVO_REPLAY.md` (ROS 1 to ROS 2 conversion, 14,850 of 14,850)
 S§8.2 (`t35b_proof3`, `stationary02`, audited with `rosbag2_py`). 4 Silent defects, S§9.3 (range gate
 F2 dropped nothing, 52 % zero-range points passed. Offset sign F3, about 10.2 cm. Voxel key mismatch,
 retrieval missed real map points). 5 Live, S§10 (20 Oct). 6 Nav2, S§11.1 (bridge, converter 110.6 ms
-to 0.38 ms). Dates 15 Oct (switch) to 22 Oct (Nav2 pipeline figure).
+to 0.38 ms). Dates 15 Oct (switch) to 22 Oct (Nav2 pipeline figure). Defects were found by reading the source,
+each confirmed against a control run (S§9.3). Start tilt, step 6 (S§11.7): FAST-LIVO2 takes 'down'
+from the accelerometer at start, off by up to about a degree each launch. The bridge measures motion
+from the first pose, so on a level start that error cancels (floor tilt 0.10 to 0.37 degrees on
+`handdriven1`, against up to 1.2). It refuses to start above 2 degrees of start tilt.
 
 **Placeholders.** `[ARTEFACT NEEDED: nav_fastlivo_map_orbit_handdriven1_2026-10-20.gif or .mp4, and nav_fastlivo_trajectory_closure_handdriven1_2026-10-20.png, from docs/sherman_docs/local/report_media/ (Sherman)]`
 `[VERIFY: the venue can play the 71 MB MP4. Fall back to the GIF or the iso still]`
@@ -1507,4 +1512,4 @@ do not exist yet.
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Created (T10.4). 18 core slides and 9 appendix slides from `COMBINED_PROGRESS_REPORT_2026-10.md` and the approved budget proposal (5 Oct 2026). T8.9a and the teammates' media left as placeholders. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | T8.9a results in (slides 12, 15, 18, PR #129, 600 of 602 on replay). Sherman now presents slides 15 and 16 (Dion 9:50, Sherman 5:00, Zongzhe 4:45). Budget in SGD, API credits for AI services. Wrist camera to arm calibrated (slide 8). |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Framing fix (T10.5, Dion). No research claim, no protected M8, no ablation. Exploration is core, finding the user speeds it up, the gaze target is the match that ends exploration, gaze is the base case and without gaze is a stretch. Overview, slides 2, 3, 4, 9, 11, 15, 16, 17, 18, sections C and E rewritten to match. Phase strip label 2 is now "Explore and map". |
-| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is set by construction, flush on vertical aluminium extrusions, not measured with a tool (Sherman), instead of "estimated by eye". Status now "Mount measured, not calibrated". Base origin checked against the vendor manual. Camera chain: tape to the D455 mounting hole, Intel published geometry from there (Sherman). Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). Slide 7 now shows the six-step port work (ROS 1 original, ROS 2 port, build, authors' data, our sensors, three silent defects, live loop, Nav2) as a flow strip, and drops the "plan proposed 2D, I built that first" lines. |
+| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is set by construction, flush on vertical aluminium extrusions, not measured with a tool (Sherman), instead of "estimated by eye". Status now "Mount measured, not calibrated". Base origin checked against the vendor manual. Camera chain: tape to the D455 mounting hole, Intel published geometry from there (Sherman). Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). Slide 7 now shows the six-step port work (ROS 1 original, ROS 2 port, build, authors' data, our sensors, three silent defects, live loop, Nav2) as a flow strip, and drops the "plan proposed 2D, I built that first" lines. Step 6 adds the start-tilt fix (bridge measures from the first pose, floor tilt under 0.5 degrees). Script says the defects were found by reading the source and confirmed against controls, not by camera on and off runs. |
