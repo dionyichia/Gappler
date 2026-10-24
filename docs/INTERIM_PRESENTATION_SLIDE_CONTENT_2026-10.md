@@ -1127,8 +1127,6 @@ a task, and no end-to-end run exists yet, as planned for this stage: the first f
      gaze match that ends it (T6.8, T7.1, T7.5, T8.2), finding the user (T7.6), and the handover from
      base to arm on arrival (T3.7)
   2. Nav2 driving the base (T3.6, starts after this presentation)
-  3. Camera calibrations: base camera to LiDAR (T5.5), glasses to robot (T8.8, needed only for
-     look-alike objects)
 - Footer: first full run (speak, look, drive, grasp) is **M4, January 2027**, as planned. The plan's
   target for this interim was "M0 done, M1 and M3 under way"
 
@@ -1190,8 +1188,8 @@ Arrow labels are the words in the "Label" column, kept that short.
 | 12 | H | C | Dashed red | reject: explore again | Not built, no task yet (CR§5.4) |
 
 *Reading order on the slide.* The solid links first (1 to 5), which is "built and connected today".
-Then the dashed red chain 6 to 11, which is the three links still to join: Nav2 driving (6), the
-exploration loop with the gaze match (6 to 10), and the handover (11). Link 12 closes the loop.
+Then the dashed red chain 6 to 11, which is the two links still to join: Nav2 driving (6), and
+exploring through the gaze match to the handover (6 to 11). Link 12 closes the loop.
 
 *Legend.* The four colours used (green, amber, blue, grey outline) with their names, plus one solid
 and one dashed red line ("works today", "still to join").
@@ -1220,9 +1218,9 @@ Built and connected today: a recorded voice command starts a real grasp on the r
 this week the glasses crop also chooses which object the arm goes for, on replayed recordings. My map
 feeds the navigation frame tree, and the memory graph is built from my recorded drive.
 
-Three links are still to join. The robot has to explore with a live memory graph,
+Two links are still to join. The robot has to explore with a live memory graph,
 match what it sees against the gaze target, and turn a match into a navigation goal. Nav2 has to drive the base, which I start right after this
-presentation. And the cameras need calibrating.
+presentation.
 
 So there is no end-to-end run yet. That matches the plan: the first closed-loop run is milestone M4,
 in January. Here is how we stand against that schedule."
@@ -1466,7 +1464,7 @@ table (M1 8 Nov, M4 31 Jan, M7 28 Feb, M8 14 Mar).
 | Phase 3, search | 11 | Reasoning tested. Full query not run (T6.8). Gaze match planned (T8.2) |
 | Phase 4, approach and confirm | 12, 15 | Strong on replay: 600 of 602 inside the grasp loop (T8.9a). Not yet on the real arm. Navigation to object never tested |
 | Phase 5, grasp | 13, 14 | Real arm results, small sample (8 and 3 trials). AnyGrasp blocker diagnosed |
-| Integration status | 15 | Explicit. Each part placed on the full flow, three links still to join, each with a task |
+| Integration status | 15 | Explicit. Each part placed on the full flow, two links still to join, each with a task |
 | Experimental methodology and conditions | 6, 7, 10, 12, 13 | Conditions kept with every number. Sample sizes are small, say so if asked |
 | Quantitative and qualitative results | 6, 7, 9 to 14 | Strong. All per stage, none end to end |
 | Limitations and failure cases | 6, 7, 10, 12, 13, 14, 15 | Shown on each slide, plus slide 15. Full list in appendix A6 |
@@ -1595,4 +1593,4 @@ do not exist yet.
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Created (T10.4). 18 core slides and 9 appendix slides from `COMBINED_PROGRESS_REPORT_2026-10.md` and the approved budget proposal (5 Oct 2026). T8.9a and the teammates' media left as placeholders. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | T8.9a results in (slides 12, 15, 18, PR #129, 600 of 602 on replay). Sherman now presents slides 15 and 16 (Dion 9:50, Sherman 5:00, Zongzhe 4:45). Budget in SGD, API credits for AI services. Wrist camera to arm calibrated (slide 8). |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Framing fix (T10.5, Dion). No research claim, no protected M8, no ablation. Exploration is core, finding the user speeds it up, the gaze target is the match that ends exploration, gaze is the base case and without gaze is a stretch. Overview, slides 2, 3, 4, 9, 11, 15, 16, 17, 18, sections C and E rewritten to match. Phase strip label 2 is now "Explore and map". |
-| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is set by construction, flush on vertical aluminium extrusions, not measured with a tool (Sherman), instead of "estimated by eye". Status now "Mount measured, not calibrated". Base origin checked against the vendor manual. Camera chain: tape to the D455 mounting hole, Intel published geometry from there (Sherman). Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). Slide 7 now shows the six-step port work (ROS 1 original, ROS 2 port, build, authors' data, our sensors, three silent defects, live loop, Nav2) as a flow strip, and drops the "plan proposed 2D, I built that first" lines. Step 6 adds the start-tilt fix (bridge measures from the first pose, floor tilt under 0.5 degrees). Script says the defects were found by reading the source and confirmed against controls, not by camera on and off runs. Slide 7 visuals now point at clean renders with no text baked in (build-up GIF, orbit, iso still, 10 cm closure zoom, top-down path), linked from Sherman's local report_media. Slide 15 kept as written, with additions: recorded voice not spoken, Nav2 shown as never driven (not "works"), T7.6 and T3.7 added to missing link 1, T8.8 marked look-alike only, explore loop added to the visual idea. Final visual still to draw. Slide 15 then reframed: "Where each part sits in the full flow, and the links still to join", same facts and task IDs. Slide 15 visual: explicit spec added, 9 parts with status colours and 12 links with style, label and task IDs. |
+| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is set by construction, flush on vertical aluminium extrusions, not measured with a tool (Sherman), instead of "estimated by eye". Status now "Mount measured, not calibrated". Base origin checked against the vendor manual. Camera chain: tape to the D455 mounting hole, Intel published geometry from there (Sherman). Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). Slide 7 now shows the six-step port work (ROS 1 original, ROS 2 port, build, authors' data, our sensors, three silent defects, live loop, Nav2) as a flow strip, and drops the "plan proposed 2D, I built that first" lines. Step 6 adds the start-tilt fix (bridge measures from the first pose, floor tilt under 0.5 degrees). Script says the defects were found by reading the source and confirmed against controls, not by camera on and off runs. Slide 7 visuals now point at clean renders with no text baked in (build-up GIF, orbit, iso still, 10 cm closure zoom, top-down path), linked from Sherman's local report_media. Slide 15 kept as written, with additions: recorded voice not spoken, Nav2 shown as never driven (not "works"), T7.6 and T3.7 added to missing link 1, T8.8 marked look-alike only, explore loop added to the visual idea. Final visual still to draw. Slide 15 then reframed: "Where each part sits in the full flow, and the links still to join", same facts and task IDs. Slide 15 visual: explicit spec added, 9 parts with status colours and 12 links with style, label and task IDs. Camera calibration dropped as a missing link (wrist camera already calibrated, base camera T5.5 stays as a note on link 6, slide 8 covers it). |
