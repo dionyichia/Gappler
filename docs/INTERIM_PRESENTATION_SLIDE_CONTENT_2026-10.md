@@ -491,7 +491,7 @@ its pose is now handed to the navigation stack.
 **Recommended visualisation.** Use the clean renders (no text baked in, 2026-10-24), so all labels
 live on the slide. Main: the map building up as the base is pushed,
 [`nav_fastlivo_map_buildup_clean_handdriven1_2026-10-24.gif`](sherman_docs/local/report_media/nav_fastlivo_map_buildup_clean_handdriven1_2026-10-24.gif) (10 s at about 12x real time,
-holds 2 s on the closed loop, 0.9 MB. `.mp4` beside it). Alternative main: the orbiting map,
+holds 2 s on the closed loop, 1.1 MB, viewed from above at 50 degrees. `.mp4` beside it). Alternative main: the orbiting map,
 [`nav_fastlivo_map_orbit_clean_handdriven1_2026-10-24.gif`](sherman_docs/local/report_media/nav_fastlivo_map_orbit_clean_handdriven1_2026-10-24.gif) (14 s, 15 MB, or the 51 MB `.mp4`).
 Still fallback if the venue cannot play video: [`nav_fastlivo_map_iso_clean_handdriven1_2026-10-24.png`](sherman_docs/local/report_media/nav_fastlivo_map_iso_clean_handdriven1_2026-10-24.png).
 Inset: [`nav_fastlivo_path_closure_zoom_clean_handdriven1_2026-10-24.png`](sherman_docs/local/report_media/nav_fastlivo_path_closure_zoom_clean_handdriven1_2026-10-24.png), the 10 cm by 10 cm
