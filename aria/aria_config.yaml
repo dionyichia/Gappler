@@ -58,12 +58,6 @@
     # needs the gaze on the chosen glasses mask), tools/replay_recording_gaze_pick.py
     pick_radius_px: 80
 
-    # Pixels kept around a mask's box when it is cropped for matching. The aria client sends this
-    # crop as the Target's reference, and the T8.5 matcher crops each wrist mask the same way, so
-    # CLIP compares like with like (cutoff 0.56 was tuned on 20, T8.7).
-    # read by: aria_segmentation_client (reference crop), object_recognition_pipeline (wrist crops)
-    crop_margin_px: 20
-
 # read by: aria/aria_app/config/base.py (Settings)
 app:
   ros__parameters:
