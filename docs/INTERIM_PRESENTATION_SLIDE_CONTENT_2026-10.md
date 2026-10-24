@@ -49,27 +49,30 @@ file. Nothing here goes beyond those two sources. Where a fact is missing, a pla
 
 | Section | Slides | Presenter | Time |
 |---|---|---|---|
-| 1. Problem, objectives, intended system, approach | 1 to 5 | Dion | 4:45 |
-| 2. Phase 1: intent capture | 6 | Dion | 1:20 |
-| 3. Phase 2: map and frames | 7 to 8 | Sherman | 2:45 |
-| 4. Phases 2 and 3: memory graph and search | 9 to 11 | Zongzhe | 3:10 |
-| 5. Phases 4 and 5: cross-camera match and grasp | 12 to 14 | Dion | 3:45 |
-| 6. Integration status and schedule | 15 to 16 | Sherman | 2:15 |
-| 7. Budget, risks, next steps | 17 to 18 | Zongzhe | 1:35 |
-| Handover pauses (5 changes of presenter, about 5 s each) | | | 0:25 |
+| 1. Problem and objectives | 1 to 3 | Dion | 2:30 |
+| 2. Intended system, five phases | 4 | Zongzhe | 1:15 |
+| 3. Starting point and approach | 5 | Sherman | 0:45 |
+| 4. Phase 1: intent capture | 6 | Dion | 1:20 |
+| 5. Phase 2: map and frames | 7 to 8 | Sherman | 2:45 |
+| 6. Phases 2 and 3: memory graph and search | 9 to 11 | Zongzhe | 3:10 |
+| 7. Phases 4 and 5: cross-camera match and grasp | 12 to 14 | Dion | 3:45 |
+| 8. Full flow, links still to join, and schedule | 15 to 16 | Sherman | 2:15 |
+| 9. Budget, risks, next steps | 17 to 18 | Zongzhe | 1:35 |
+| Handover pauses (8 changes of presenter, about 5 s each) | | | 0:40 |
 | **Total** | | | **20:00** |
 
 **Why this order works for the assessment.** It follows the problem, objectives, approach,
 implementation, evidence, limitations, next steps chain the assessors grade. The implementation
 part follows the robot's own sequence (user, then exploring and mapping, then search, then confirm and
 grasp), so each presenter speaks once about their own subsystem and the audience never has to
-reassemble the pipeline. The plan material (schedule and budget) comes last, where it can be judged
+reassemble the pipeline. The opening is split across all three presenters (2026-10-24) so speaking
+time is close to even. The plan material (schedule and budget) comes last, where it can be judged
 against the progress just shown.
 
 **Rules for the slide-generation session**
 
 1. **No single giant architecture slide.** The global flow appears twice, both times simple: slide
-   4 (the five intended phases, five boxes) and slide 15 (what is wired today, with gaps marked).
+   4 (the five intended phases, five boxes) and slide 15 (each part placed on that flow, with the links still to join).
    Target matching (slide 12), camera frames and calibration (slide 8), the memory graph (slides 9
    to 11) and grasp execution (slides 13 and 14) each get their own visual.
 2. **A recurring phase strip.** A thin strip of five labelled boxes (1 Intent, 2 Explore and map, 3
@@ -317,7 +320,7 @@ CR§7 (status per capability).
 
 **Placeholders.** None.
 
-**Presenter.** Dion
+**Presenter.** Zongzhe
 
 **Transition.** "Before the results, a word on where we started and how we work."
 
@@ -336,7 +339,8 @@ change, and split the work by subsystem with one written contract between them.
 - Title: *We inherited code that did not run, so we built a test bench and a contract first*
 - **September 2026 starting point:** a year of code from an earlier team. No tests, no CI. One
   program moved the real arm within seconds of starting, unprompted. The AnyGrasp path was
-  unreachable. Navigation never built. No memory graph code
+  unreachable. Navigation ran only from another user's private workspace, and the repo copy did not
+  build. No memory graph code
 - **How we work**
   - One subsystem per person, one channel contract naming the owner of every topic and frame
   - Test bench, 7 levels (L0 static checks to L6 real robot). CI on every PR, plus a GPU runner on
@@ -355,28 +359,25 @@ method, open_clip, Qwen2.5) and the milestones they lead. A thin band across the
 contract + 7-level test bench + CI" as the shared base the three columns stand on.
 
 **Proposed speaker script.**
-"We did not start from zero, but we did not start from a working system either. The code we
-inherited had no tests and no CI, and none of it ran from a fresh copy. One program homed the real
-arm within seconds of starting, with no prompt. Navigation had never been built, and there was no
-memory graph.
+"We did not start from a working system. The inherited code had no tests and no CI, and none of it
+ran from a fresh copy. One program homed the real arm within seconds, with no prompt. Navigation ran
+only from another user's workspace, and our copy did not build. There was no memory graph.
 
-So the first weeks went into foundations. We split the work by subsystem: Dion on the glasses and
-the arm, Sherman on the base and mapping, Zongzhe on the memory graph. A written channel contract
-says who owns every message and coordinate frame, so we can work in parallel without breaking each
-other. A seven-level test bench runs on every pull request, from static checks up to a simulated
-arm.
+So we built foundations first. Dion took the glasses and the arm, I took the base and mapping, and
+Zongzhe the memory graph. A channel contract says who owns every message and frame, and a
+seven-level test bench runs on every pull request. We measure a baseline before replacing anything,
+and on the real robot we move one step at a time, with two people present."
 
-Two habits run through everything that follows. We measure a baseline before replacing anything,
-and on the real robot we move one step at a time, with a written pass rule and two people present."
-
-**Estimated duration.** 1:00
+**Estimated duration.** 0:45
 
 **Evidence and source notes.** CR§0.3 (starting point), CR§0.4 (practices, open-source parts table,
-hardware), CR§0.5 (team and ownership), CR§1 accomplishment 1.
+hardware), CR§0.5 (team and ownership), CR§1 accomplishment 1. Navigation wording: `ORIENTATION.md`
+§8.6 and §8.15 (the stack that ran came from `~iot22/Ros2Workspaces`, the repo copy needed the missing
+`xpkg_demo` and had no `livox_ros_driver2` manifest), S§2.1. CR§0.3 still says "never been built".
 
 **Placeholders.** None.
 
-**Presenter.** Dion
+**Presenter.** Sherman
 
 **Transition.** "Phase one: turning a sentence and a glance into a target."
 
@@ -449,62 +450,108 @@ will show how the robot knows where it is."
 
 ## Slide 7: The base builds a coloured 3D map that closes within 12 mm over a 26 m loop
 
-**Purpose.** Show the mapping and localisation result, the engineering work behind it, and its
+**Purpose.** Show the mapping and localisation result, the porting work it took to get there, and its
 current limit.
 
-**Key takeaway.** FAST-LIVO2 now runs correctly on our own sensors, after three silent defects in
-its ROS 2 port were found and fixed, and its pose is handed to the navigation stack.
+**Key takeaway.** We adopted the HiCo-Nav paper's 3D method, FAST-LIVO2, because the memory graph
+needs a full camera pose to place objects in 3D. It is published for ROS 1. Getting its ROS 2 port to
+run correctly on our sensors took a week of staged work and three silent defects found and fixed, and
+its pose is now handed to the navigation stack.
 
 **On-slide content**
 
 - Phase strip: **2 Explore and map** highlighted
 - Title: *The base builds a coloured 3D map that closes within 12 mm over a 26 m loop*
 - What it is: FAST-LIVO2 fuses the Livox MID-360 LiDAR, its IMU and the base D455 colour camera into
-  a pose and a coloured map
+  a pose and a coloured map. It is what the HiCo-Nav paper uses for its camera poses, with the same
+  LiDAR
+- **Why 3D, not 2D SLAM:** 2D SLAM gives only x, y and heading. The memory graph places every object
+  in 3D from the camera pose, so it also needs height, pitch and roll (1 degree of pitch moves an
+  object 4 m away by about 7 cm). Nav2 still drives on a 2D grid, fed by this pose
+- **Getting it to work** (FAST-LIVO2 is published for ROS 1, we run a community ROS 2 port), six
+  steps, 15 to 22 Oct:
+  1. **Build:** the port pinned and built in a sealed container (its libraries are not on the lab
+     machine). A memory over-read and a shutdown crash fixed
+  2. **Prove on the authors' data:** their ROS 1 recording converted to ROS 2, 14,850 of 14,850
+     messages, every input and output counted
+  3. **Record our sensors:** LiDAR 10 Hz, IMU 200 Hz, colour 30 Hz, every message audited
+  4. **Find silent defects:** runs with and without the camera, each against a control. A range gate
+     that dropped nothing, the LiDAR-to-IMU offset sign (about 10 cm off), a voxel key mismatch
+  5. **Live, pushed by hand:** 26 m loop
+  6. **Hand to Nav2:** pose bridged into the frame tree. Start tilt from the gravity estimate removed:
+     floor tilt up to 1.2 degrees down to under 0.5
 - Results (hand-pushed loop, recording `handdriven1`, 20 Oct):
   - **26.05 m loop, back to start within 12 mm** (4 mm LiDAR-only, 7 mm odometry error, 0.03 %)
   - Mid-route error at most 6.7 cm, at the floor of our reference (about 7 cm)
   - 11 to 14 ms per frame on the CPU, inside the 100 ms scan period
-- Engineering: **three silent defects found in the ROS 2 port and repaired** (a range gate, the
-  LiDAR-to-IMU offset sign, a voxel key mismatch)
-- Handed on: pose bridged into the frame tree Nav2 uses
-- Limits: pushed by hand, not driven. Nav2 has never driven the base. Glass walls create ghost
-  points (about 42 % of 5 cm map points outside the glass box)
+- Limit: pushed by hand, not driven. Nav2 has never driven the base
 
-**Recommended visualisation.** Main: the orbiting coloured map with the orange path,
-`nav_fastlivo_map_orbit_handdriven1_2026-10-20.gif` (or the `.mp4`, or the iso still if the venue
-cannot play video). Inset bottom right: `nav_fastlivo_trajectory_closure_handdriven1_2026-10-20.png`,
-the 10 cm zoom on start and end, labelled "12 mm". Results as three numbers in a column. A small
-"three defects fixed" badge. Do not show the full sensor-to-Nav2 wiring here.
+**Recommended visualisation.** Use the clean renders (no text baked in, 2026-10-24), so all labels
+live on the slide. Main: the map building up as the base is pushed,
+[`nav_fastlivo_map_buildup_clean_handdriven1_2026-10-24.gif`](sherman_docs/local/report_media/nav_fastlivo_map_buildup_clean_handdriven1_2026-10-24.gif) (10 s at about 12x real time,
+holds 2 s on the closed loop, 1.1 MB, viewed from above at 50 degrees. `.mp4` beside it). Alternative main: the orbiting map,
+[`nav_fastlivo_map_orbit_clean_handdriven1_2026-10-24.gif`](sherman_docs/local/report_media/nav_fastlivo_map_orbit_clean_handdriven1_2026-10-24.gif) (14 s, 15 MB, or the 51 MB `.mp4`).
+Still fallback if the venue cannot play video: [`nav_fastlivo_map_iso_clean_handdriven1_2026-10-24.png`](sherman_docs/local/report_media/nav_fastlivo_map_iso_clean_handdriven1_2026-10-24.png).
+Inset: [`nav_fastlivo_path_closure_zoom_clean_handdriven1_2026-10-24.png`](sherman_docs/local/report_media/nav_fastlivo_path_closure_zoom_clean_handdriven1_2026-10-24.png), the 10 cm by 10 cm
+zoom on start (green dot) and end (white square). Slide caption: "10 cm zoom, bar = 2 cm, start to
+end 12 mm". In all map renders the orange line is the path, the green dot the start, the white
+square the end. Optional second inset or appendix A5: the top-down path coloured by time,
+[`nav_fastlivo_path_top_clean_handdriven1_2026-10-24.png`](sherman_docs/local/report_media/nav_fastlivo_path_top_clean_handdriven1_2026-10-24.png) (dark purple early, yellow late).
+Renders: `sherman_docs/local/presentation/scripts/clean_*.py` from `handdriven1`, same camera, crop
+and colours as the 2026-10-22 set, far ghost points cropped. Results as three numbers in a column. Along the bottom, the
+six steps as a thin flow strip of six small boxes, one short label and one number each (Build,
+Authors' data 14,850/14,850, Our sensors, 3 silent defects, Live 26 m, Nav2 tilt under 0.5 degrees), with a "ROS 1
+to ROS 2 port" tag at its left end. A small "2D: x, y, heading" against "3D: full pose" label beside
+the "why 3D" line. Do not show the full sensor-to-Nav2 wiring here.
 
 **Proposed speaker script.**
 "Before the robot can remember where objects are, it needs to know where it is. We use FAST-LIVO2,
-an open-source method from the University of Hong Kong. It fuses the LiDAR, its motion sensor and
-the colour camera into one pose, and paints a coloured 3D map as it goes.
+the method the HiCo-Nav paper uses, from the University of Hong Kong. It fuses the LiDAR, its motion
+sensor and the colour camera into one pose, and paints a coloured 3D map.
 
-Getting it to work on our sensors took most of the effort. I first built a 2D pipeline with SLAM
-Toolbox, then switched on 15 October because HiCo-Nav needs a pose fused with the camera. The ROS 2
-port we use had three defects that fail silently: no crash, just a wrong map. One was the sign of the
-offset between the LiDAR and its motion sensor. Each was found by reading the source and running a
-control.
+Why 3D? 2D SLAM knows only where the base is on the floor and which way it faces. The memory graph
+places each object in 3D from the camera's pose, so an unmeasured tilt moves objects by centimetres.
+Nav2 still drives on a 2D grid built from this pose.
 
-This is the result. I pushed the base by hand around a 26-metre loop in the lab. The map is
-coloured by the camera, and the path returns to its start within 12 millimetres. Along the route,
-the error is within about 7 centimetres, which is the limit of what our reference can measure. It
-runs in about 12 milliseconds a frame on the CPU.
+FAST-LIVO2 is published for ROS 1. We run a community ROS 2 port, and getting it to work was most of
+the effort. The strip along the bottom shows the steps. I proved it on the authors' own recording
+first, then on our sensors with every message checked. I found three defects that fail silently: no
+crash, just a wrong map. Each was found by reading the source and confirmed against a control run.
 
-Two limits. The base was pushed, not driven, and Nav2 has not driven it yet. That is the next test.
-And the lab's glass walls create ghost points outside the room."
+The result: I pushed the base by hand around a 26-metre loop. The path returns to its start within
+12 millimetres, and the mid-route error is within about 7 centimetres, the limit of our reference.
+The pose now feeds Nav2's frame tree. Nav2 driving the base is the next test."
 
 **Estimated duration.** 1:35
 
 **Evidence and source notes.** CR§8.4 (closure 12 / 4 / 7 mm and 0.03 %, mid-route 6.7 and 6.5 cm vs
 about 7 cm reference, compute 11 to 14 ms, three port defects), CR§4 FAST-LIVO2 and bridge rows,
-CR§9.2 (glass ghosts 42 %), Sherman's report S§6.4 (reason for the switch: a coloured,
-camera-fused pose for HiCo-Nav, decided 2026-10-15), CR§13.2 X10 (use all three closure numbers).
+Sherman's report S§6.4 (reason for the switch: a coloured, camera-fused pose for HiCo-Nav, decided
+2026-10-15), CR§13.2 X10 (use all three closure numbers). Why 3D: `MEMORY_GRAPH_DESIGN.md` (merge
+test depends on camera pose, 2D localisation has no reliable pitch or roll, appearance alone cannot
+merge), `hico-nav/PAPER_REPORT.md` (2D SLAM option, no reliable pitch or roll. §6.2: the paper, §III-B(a),
+takes its camera poses from FAST-LIVO2 on a Livox MID-360, so we adopted its method rather than
+inventing one), 1 degree at 4 m =
+4 x 0.01745 = 0.07 m. Option 2 (FAST-LIVO2 pose, SLAM Toolbox only draws the Nav2 grid): S§11. For
+questions only, measured after the decision (S§12.2, same bags): restart inside the SLAM Toolbox map
+0.25 to 0.30 m from the tape, 3D prototype 0.070 m. Glass ghost points (CR§9.2, about 42 %) left off
+this slide as a known LiDAR effect. They stay in appendix A6. Six steps, from Sherman's report:
+ROS 1 parent `hku-mars/FAST-LIVO2`, ROS 2 port `U-AMC/FAST-LIVO2-ROS2` pinned at `a09599a` (S§1.2,
+`sherman_docs/t3.5/T3.5_CONFIG_SWEEP_20261019.md`). 1 Build, S§7.1 and §7.3 (container with no
+network, AddressSanitizer one-byte over-read at `vio.cpp:1679`, shutdown crash from `-march=native`
+alignment against prebuilt PCL), S§10.1 (Sophus and vikit absent on the box). 2 Authors' data, S§7.2
+and `t3.5/T3.5_FASTLIVO_REPLAY.md` (ROS 1 to ROS 2 conversion, 14,850 of 14,850). 3 Our sensors,
+S§8.2 (`t35b_proof3`, `stationary02`, audited with `rosbag2_py`). 4 Silent defects, S§9.3 (range gate
+F2 dropped nothing, 52 % zero-range points passed. Offset sign F3, about 10.2 cm. Voxel key mismatch,
+retrieval missed real map points). 5 Live, S§10 (20 Oct). 6 Nav2, S§11.1 (bridge, converter 110.6 ms
+to 0.38 ms). Dates 15 Oct (switch) to 22 Oct (Nav2 pipeline figure). Defects were found by reading the source,
+each confirmed against a control run (S§9.3). Start tilt, step 6 (S§11.7): FAST-LIVO2 takes 'down'
+from the accelerometer at start, off by up to about a degree each launch. The bridge measures motion
+from the first pose, so on a level start that error cancels (floor tilt 0.10 to 0.37 degrees on
+`handdriven1`, against up to 1.2). It refuses to start above 2 degrees of start tilt.
 
-**Placeholders.** `[ARTEFACT NEEDED: nav_fastlivo_map_orbit_handdriven1_2026-10-20.gif or .mp4, and nav_fastlivo_trajectory_closure_handdriven1_2026-10-20.png, from docs/sherman_docs/local/report_media/ (Sherman)]`
-`[VERIFY: the venue can play the 71 MB MP4. Fall back to the GIF or the iso still]`
+**Placeholders.** `[VERIFY: the clean renders are in Sherman's gitignored docs/sherman_docs/local/report_media/, so the links above work on his machine only. Sherman copies them to whoever builds the slides]`
+`[VERIFY: the venue can play video. Fall back to the GIF or the iso still]`
 
 **Presenter.** Sherman
 
@@ -529,8 +576,8 @@ the glasses are not yet, and each missing calibration blocks a specific later st
 
 | Link | Used for | State |
 |---|---|---|
-| Base to arm | Arm grasps in the base's map | **Measured**: (0.18, 0, 0.48) m, yaw 180 degrees, matched on the robot |
-| Base camera to LiDAR | Object positions and depth in the memory graph | **Nominal only**: mount geometry checked (12 checks pass), rotation estimated by eye. About 6.7 px of error per degree. Calibration rig planned (T5.5) |
+| Base to arm | Arm grasps in the base's map | **Measured**: (0.18, 0, 0.48) m, yaw 180 degrees, matched on the robot. Base origin (floor, under the drive axle) checked against the vendor manual |
+| Base camera to LiDAR | Object positions and depth in the memory graph | **Mount measured, not calibrated**: measured to the camera's mounting hole, Intel's published dimensions from there to the sensors. Rotation set by construction: flush on vertical aluminium extrusions, square by design. Angle not measured with a tool. Mount values wired and unit-tested (12 software checks). Camera to LiDAR not yet calibrated, about 6.7 px of error per degree. Calibration rig planned (T5.5) |
 | Wrist camera to arm | Turning a grasp seen by the camera into an arm goal | **Calibrated** |
 | Glasses to robot | A gaze ray in the robot's own 3D frame, for look-alike objects | **Planned** (T8.8). Three methods ranked |
 
@@ -539,7 +586,7 @@ the glasses are not yet, and each missing calibration blocks a specific later st
 **Recommended visualisation.** A side-view line drawing of the robot: base, LiDAR on top, D455 at
 the front, arm with the wrist D435i, and a small figure of the user with glasses to one side.
 Draw the four links as coloured arrows using the status scale: solid green (measured or
-calibrated), amber (nominal), grey dashed (planned). Each arrow labelled with
+calibrated), amber (measured, not calibrated), grey dashed (planned). Each arrow labelled with
 its use, not its frame name. Beside it, one small inset: the LiDAR-on-camera overlay before
 calibration, `nav_lidar_on_camera_overlay_stationary02_t0s_2026-10-19.png`, captioned "before
 calibration: LiDAR points over the camera image". Frame names (`robot_base_link`, `base_link`,
@@ -549,25 +596,24 @@ calibration: LiDAR points over the camera image". Frame names (`robot_base_link`
              user + glasses
                   :  (4) planned, T8.8
                   :
-   [D455]--(2) nominal--[LiDAR]
+   [D455]--(2) measured, not calibrated--[LiDAR]
       |                    |
    [ base ]==(1) measured==[ arm ]==(3) calibrated==[wrist D435i]
 ```
 
 **Proposed speaker script.**
-"There are four places where we need to know how one part of the robot sits relative to another,
-and they are at different stages.
+"There are four places where we need to know how one part of the robot sits relative to another.
 
 The arm on the base is measured. We set the transform from the mount drawings and checked it on the
-robot.
+robot. The base's own origin, on the floor under the drive axle, matches the vendor's manual.
 
-The base camera relative to the LiDAR is only nominal. I designed and fitted the mount, and twelve
-geometry checks pass, but the rotation is estimated by eye. On this camera one degree of error moves
-a point by about seven pixels. The memory graph uses this transform for every object position, so a
-proper calibration is planned, with a rig still to be built.
+The base camera relative to the LiDAR is measured but not calibrated. I designed and fitted the mount,
+measured to the camera's mounting hole, and took the rest from Intel's published camera dimensions.
+It sits flush on vertical aluminium extrusions, so it points straight by construction. What is left is a calibration
+against the LiDAR itself, because one degree of error moves a point by about seven pixels. The rig
+for that is planned.
 
-The wrist camera relative to the arm is calibrated, which is what lets a grasp seen by the camera
-become a goal for the arm.
+The wrist camera relative to the arm is calibrated, so a grasp it sees becomes an arm goal.
 
 The last one is different in kind. To use gaze to separate two identical objects, the robot needs
 the user's gaze ray in its own frame, which means locating the glasses relative to the robot. That
@@ -578,10 +624,28 @@ None of these blocks today's results, but each one blocks a specific later step.
 **Estimated duration.** 1:10
 
 **Evidence and source notes.** CR§5.4 "Frames" table (four problems and their status), CR§4 base
-D455 and mount row (12 geometry checks, eye-estimated rotation), CR§9.1 (6.7 px per degree,
+D455 and mount row (12 geometry checks, eye-estimated rotation). Rotation wording from Sherman,
+2026-10-24: the camera sits flush on the top rectangular frame, mounted on aluminium extrusions that run
+vertically, so zero rotation comes from the extrusions being square. No angle was measured with a
+tool, so the residual is the extrusions' squareness plus screw play. The calibration (T5.5) still measures what
+a body check cannot: the LiDAR's own mount and the image sensor's alignment inside the camera body.
+`T5.3_D455_FIT.md`, `T5.4_D455_TF.md` and CR§4 still say "estimated visually" and should say
+"set by construction". How the chain was built (`T5.4_D455_TF.md`): base origin `robot_base_link`
+sits on the floor under the drive-axle midpoint, centred. The vendor model puts the wheel joints at
+z = 0.065 m (`nav/vendor/urdf/xpkg_urdf_echo_plus/urdf/model.urdf:90-94`), the measured axle height
+is 65 mm, so the origin is at floor height. Sherman checked this origin against the vendor's online
+manual (2026-10-24). Camera: tape from the chassis midpoint to the platform front-top edge (+195 mm
+forward, 558 mm up), then edge to the D455 bottom mounting hole (+13 mm, −30 mm), giving
+(0.208, 0, 0.528) m to the hole. From the hole to `camera_link` and each sensor, Intel's published
+geometry (`realsense2_description` `_d455.urdf.xacro`, offset (0.01115, 0.0475, 0.0145) m), and the
+driver applies the factory fine extrinsics live. The 12 are software unit tests
+from T5.4, 8 in `bench/test_geometry.py` (mount values single-sourced and reach the TF) and 4 in
+`bench/test_camera_navigation.py` (camera-referenced stand-off maths, refusal when TF is lost). They
+prove consistency, not physical accuracy (`sherman_docs/t5/T5.4_D455_TF.md`), CR§9.1 (6.7 px per degree,
 S§13.1), CR§6.7 (TF tree, for appendix A2), CR§0.2 M5 (calibration not built).
 
 **Placeholders.** `[ARTEFACT NEEDED: nav_lidar_on_camera_overlay_stationary02_t0s_2026-10-19.png (Sherman)]`
+`[VERIFY: optional before the talk, a phone inclinometer on the camera top would turn "straight by construction" into a measured pitch and roll (Sherman)]`
 `[TEAM INPUT REQUIRED: one phrase on how the wrist camera was calibrated (method, residual), in case an examiner asks. Dion confirmed on 2026-10-24 that it is calibrated]`
 `[VERIFY: who presents the glasses-to-robot row. It is Dion's task (T8.8). Sherman can present it as written, or Dion can add one sentence in his later block]`
 
@@ -1037,70 +1101,142 @@ today."
 
 ---
 
-## Slide 15: Each phase runs on its own. The links between them are the next milestones
+## Slide 15: Where each part sits in the full flow, and the links still to join
 
-**Purpose.** Show the actual wiring against the intended flow, so the assessors see exactly what is
-integrated and what is not. This is where the presentation is most explicit about gaps.
+**Purpose.** Place every part shown in slides 6 to 14 on the full flow from slide 4, so the assessors
+see how the pieces fit together, which ones already connect, and which links are still to join. This
+is where the presentation is most explicit about gaps.
 
-**Key takeaway.** No end-to-end run exists yet, as planned for this stage. The glasses now steer the
-grasp on replay, and three links remain, each with a task and a date.
+**Key takeaway.** Every phase has a working part. Some already connect. The remaining links each have
+a task, and no end-to-end run exists yet, as planned for this stage: the first full run is January.
 
 **On-slide content**
 
-- Title: *Each phase runs on its own. The links between them are the next milestones*
-- What runs together today:
-  - **Voice to grasp on the real arm:** spoken word, SAM 3 on the wrist camera, approach, grasp
+- Title: *Where each part sits in the full flow, and the links still to join*
+- Built and connected today:
+  - **Voice to grasp on the real arm:** recorded voice command, SAM 3 on the wrist camera, approach, grasp
   - **Glasses to grasp target on replay:** the gaze crop picks the wrist target (600 of 602). Real
     arm run next
-  - **Map to the navigation frame tree:** pose from FAST-LIVO2 handed to Nav2's frames
-  - **Recorded drive to memory graph:** offline
-- Three missing links:
+  - **Map to the navigation frame tree:** pose and 2D map from FAST-LIVO2 handed to Nav2's frames,
+    checked live. Nav2 has not run on it yet
+  - **Recorded drive to memory graph:** offline, built from the base's recorded drive
+- Links still to join:
   1. Exploration to a navigation goal: query service, goal node, exploring with a live graph and the
-     gaze match that ends it (T6.8, T7.1, T7.5, T8.2)
+     gaze match that ends it (T6.8, T7.1, T7.5, T8.2), finding the user (T7.6), and the handover from
+     base to arm on arrival (T3.7)
   2. Nav2 driving the base (T3.6, starts after this presentation)
-  3. Camera calibrations: base camera to LiDAR (T5.5), glasses to robot (T8.8)
-- First closed-loop run (speak, look, drive, grasp) is **M4, January 2027**, as in the plan. The
-  plan's target for this interim was "M0 done, M1 and M3 under way"
+- Footer: first full run (speak, look, drive, grasp) is **M4, January 2027**, as planned. The plan's
+  target for this interim was "M0 done, M1 and M3 under way"
 
 **Recommended visualisation.** Reuse slide 4's five boxes in the same positions, so the audience
-recognises them. Inside each box, the status colour. Between boxes, draw the actual links: solid
+recognises them, and place each part from slides 6 to 14 under the phase it belongs to. Inside each box, the status colour. Between boxes, draw the actual links: solid
 where data flows today, dashed red with a task ID where a link is missing. Add the two side inputs
 below the row (map from slide 7, memory graph from slide 9) with their real connection state. This
 is the simplified version of the report's "implemented pipeline today" diagram. Do not show topic
 names or node names. Topic-level wiring goes to appendix slide A1.
 
+Additions (2026-10-24), since this slide shows how every part connects:
+
+- Phases 2 and 3 are a loop, not a straight line: Nav2 explores, the memory graph grows, a match
+  with the gaze target becomes the next goal. Draw it as a return arrow between the two.
+- The map feeds both Nav2 (pose, checked live) and the memory graph (offline, from the recorded
+  drive). Nav2 itself is amber: built, never driven.
+- The sketch below is the idea only. The final visual is still to be drawn.
+
+**Explicit graph specification (the main explanation on this slide).** The tables below are the
+full spec. The Mermaid sketch after them is a rough idea only, and the tables win where they differ.
+
+*Layout.* Five columns, left to right, in slide 4's order and positions: 1 Intent capture, 2 Explore
+and find the user, 3 Search, 4 Approach and confirm, 5 Grasp. Each column has its phase name as a
+header, with that phase's parts stacked under it as boxes. The FAST-LIVO2 box sits at the bottom of
+column 2, below the others, because it feeds two parts. Leave space above the columns for one long
+arrow (link 1 below).
+
+*Parts (boxes).* Colour from the one status scale (Rules, item 3). Box text is the label plus the
+short status line, nothing else.
+
+| ID | Column | Label | Status line | Colour |
+|---|---|---|---|---|
+| A | 1 Intent | Voice and gaze to a reference crop | Tested on replay | Green (tested) |
+| B | 2 Explore | FAST-LIVO2 map and pose | Tested, pushed by hand | Green (tested) |
+| C | 2 Explore | Nav2 drives the base | Built, never driven | Amber (built, not validated) |
+| D | 2 Explore | Memory graph | Works alone, offline | Blue (isolated) |
+| E | 2 Explore | Find the user | Planned | Grey outline (planned) |
+| F | 3 Search | Gaze match against graph objects | Planned | Grey outline (planned) |
+| G | 4 Approach | Drive to the object, hand over to the arm | Planned | Grey outline (planned) |
+| H | 4 Approach | Wrist camera confirms the object | Tested on replay | Green (tested) |
+| I | 5 Grasp | Grasp on the real arm | Tested on the real arm | Green (tested) |
+
+*Links (arrows).* Solid dark = works today. Dashed red = still to join, labelled with its task IDs.
+Arrow labels are the words in the "Label" column, kept that short.
+
+| # | From | To | Style | Label | Basis |
+|---|---|---|---|---|---|
+| 1 | A | I | Solid | recorded voice word | Real arm, replayed WAV (T1.11, T1.12). Route above the columns |
+| 2 | A | H | Solid | gaze reference crop | Replay (T8.9a) |
+| 3 | H | I | Solid | target mask, 600 of 602 | Replay (T8.9a) |
+| 4 | B | C | Solid | pose and 2D map, checked live | T3.5f. Nav2 itself has not run on it |
+| 5 | B | D | Solid | recorded drive, offline | `handdriven1` (CR§3.3) |
+| 6 | C | D | Dashed red | explore, graph grows live (T3.6, T7.5, T7.2) | Needs the base camera calibrated (T5.5) |
+| 7 | C | E | Dashed red | find the user (T7.6) | Speeds up the search |
+| 8 | A | F | Dashed red | gaze target (T8.2) | CLIP feature of the reference crop |
+| 9 | D | F | Dashed red | each new object (T8.2) | |
+| 10 | F | G | Dashed red | match becomes the goal (T7.1, T6.8) | |
+| 11 | G | H | Dashed red | arrive, hand over (T3.7) | |
+| 12 | H | C | Dashed red | reject: explore again | Not built, no task yet (CR§5.4) |
+
+*Reading order on the slide.* The solid links first (1 to 5), which is "built and connected today".
+Then the dashed red chain 6 to 11, which is the two links still to join: Nav2 driving (6), and
+exploring through the gaze match to the handover (6 to 11). Link 12 closes the loop.
+
+*Legend.* The four colours used (green, amber, blue, grey outline) with their names, plus one solid
+and one dashed red line ("works today", "still to join").
+
+*Keep off this slide.* Topic and node names (appendix A1). Glasses to robot (T8.8), which is only for
+look-alike objects and is not a link in this flow. The frame conversion on link 10 (graph frame to
+Nav2's `map` frame), which is for questions (CR§9.3).
+
 ```mermaid
 flowchart LR
-  P1["1 Intent<br/>tested on replay"] -->|word: works on real arm| P5["5 Grasp<br/>tested on real arm"]
+  P1["1 Intent<br/>tested on replay"] -->|recorded word: real arm| P5["5 Grasp<br/>tested on real arm"]
   P1 -->|crop: works on replay| P4["4 Confirm<br/>tested on replay"]
   P4 -->|"target mask: replay (T8.9a)"| P5
-  MAP["Map and pose<br/>tested, hand-pushed"] -->|works| NAV["Nav2<br/>never driven"]
+  MAP["Map and pose<br/>tested, hand-pushed"] -->|pose: checked live| NAV["Nav2<br/>never driven"]
+  MAP -->|offline, recorded drive| MG
   MG["Memory graph<br/>offline"] -.->|"T6.8, T7.1"| NAV
   NAV -.->|"T3.6, T3.7"| P4
+  NAV -.->|"explore: T7.5"| MG
+  P1 -.->|"gaze match: T8.2"| MG
 ```
 
 **Proposed speaker script.**
-"Here are the same five phases, now drawn with the links that exist today.
+"Here is the full flow from slide 4 again, with each part we have just shown placed where it sits.
 
-A spoken word starts a real grasp on the real arm. Since this week the glasses crop also chooses
-which object the arm goes for, on replayed recordings, and the real arm run is next. My pose reaches
-the navigation frame tree. The memory graph is built from a recorded drive.
+Built and connected today: a recorded voice command starts a real grasp on the real arm, and since
+this week the glasses crop also chooses which object the arm goes for, on replayed recordings. My map
+feeds the navigation frame tree, and the memory graph is built from my recorded drive.
 
-Three links are missing, and each has a task. The robot has to explore with a live memory graph,
+Two links are still to join. The robot has to explore with a live memory graph,
 match what it sees against the gaze target, and turn a match into a navigation goal. Nav2 has to drive the base, which I start right after this
-presentation. And the cameras need calibrating.
+presentation.
 
 So there is no end-to-end run yet. That matches the plan: the first closed-loop run is milestone M4,
-in January. The September plan expected only the build milestone done at this point, with the arm and
-the base under way. Here is how we stand against that schedule."
+in January. Here is how we stand against that schedule."
 
 **Estimated duration.** 1:05
 
 **Evidence and source notes.** CR§3.3 (implemented pipeline and "what the second diagram shows"),
 CR§7 (status table), CR§9.1 (limitations), CR§1 (integration status, interim target from PP §5.2),
-CR§0.2 (M4 forecast 11 to 31 Jan 2027), CR§5.4 (T8.9a results).
+CR§0.2 (M4 forecast 11 to 31 Jan 2027), CR§5.4 (T8.9a results). Added 2026-10-24: CR§3.3 draws
+Nav2 as "never run on this" and the memory graph as built from the recorded drive `handdriven1`.
+Real-arm voice was a replayed WAV (`bench-runs/2026-10-13-labbox-t1.11-step4-voice-grasp.txt`,
+`2026-10-14-labbox-t1.12-t1.14-real-arm.txt`). PP §1: phase 4 reject goes back to exploring. T8.8 is
+not a dependency of the end-to-end trials (T8.3). For questions: the graph stores positions in
+FAST-LIVO2's world frame and Nav2 plans in SLAM Toolbox's `map` frame, so the goal step needs a
+frame conversion (CR§9.3, appendix A6).
 
-**Placeholders.** `[VERIFY: CR§1 says M4 is "scheduled 28 Dec 2026 to 17 Jan 2027 (PP §5.1)" but CR§0.2 and §0.6 forecast it 11 to 31 Jan 2027, re-estimated 24 Oct. This slide uses "January 2027", which fits both. Use the CR§0.6 dates on slide 16]`
+**Placeholders.** `[VERIFY: CR§1 says M4 is "scheduled 28 Dec 2026 to 17 Jan 2027 (PP §5.1)" but CR§0.2 and §0.6 forecast it 11 to 31 Jan 2027, re-estimated 24 Oct. This slide uses "January 2027", which fits both. Use the CR§0.6 dates on slide 16. The project plan also disagrees with itself: PROJECT_PLAN.md:414 forecasts 11 to 31 Jan, its §6.6 heading still says 28 Dec to 17 Jan]`
+`[ARTEFACT NEEDED: the final slide 15 diagram, drawn from the idea above (any member)]`
 
 **Presenter.** Sherman
 
@@ -1326,7 +1462,7 @@ table (M1 8 Nov, M4 31 Jan, M7 28 Feb, M8 14 Mar).
 | Phase 3, search | 11 | Reasoning tested. Full query not run (T6.8). Gaze match planned (T8.2) |
 | Phase 4, approach and confirm | 12, 15 | Strong on replay: 600 of 602 inside the grasp loop (T8.9a). Not yet on the real arm. Navigation to object never tested |
 | Phase 5, grasp | 13, 14 | Real arm results, small sample (8 and 3 trials). AnyGrasp blocker diagnosed |
-| Integration status | 15 | Explicit. Three missing links, each with a task |
+| Integration status | 15 | Explicit. Each part placed on the full flow, two links still to join, each with a task |
 | Experimental methodology and conditions | 6, 7, 10, 12, 13 | Conditions kept with every number. Sample sizes are small, say so if asked |
 | Quantitative and qualitative results | 6, 7, 9 to 14 | Strong. All per stage, none end to end |
 | Limitations and failure cases | 6, 7, 10, 12, 13, 14, 15 | Shown on each slide, plus slide 15. Full list in appendix A6 |
@@ -1345,8 +1481,11 @@ table (M1 8 Nov, M4 31 Jan, M7 28 Feb, M8 14 Mar).
 | 1 | Title | Dion | 0:20 | 0:20 |
 | 2 | Problem | Dion | 1:10 | 1:30 |
 | 3 | Objectives | Dion | 1:00 | 2:30 |
-| 4 | Five phases | Dion | 1:15 | 3:45 |
-| 5 | Approach and team | Dion | 1:00 | 4:45 |
+| | *Handover to Zongzhe* | | 0:05 | 2:35 |
+| 4 | Five phases | Zongzhe | 1:15 | 3:50 |
+| | *Handover to Sherman* | | 0:05 | 3:55 |
+| 5 | Approach and team | Sherman | 0:45 | 4:40 |
+| | *Handover to Dion* | | 0:05 | 4:45 |
 | 6 | Phase 1: intent capture | Dion | 1:20 | 6:05 |
 | | *Handover to Sherman* | | 0:05 | 6:10 |
 | 7 | Phase 2: map | Sherman | 1:35 | 7:45 |
@@ -1360,25 +1499,31 @@ table (M1 8 Nov, M4 31 Jan, M7 28 Feb, M8 14 Mar).
 | 13 | Phase 5: grasp | Dion | 1:10 | 15:00 |
 | 14 | AnyGrasp blocker | Dion | 1:00 | 16:00 |
 | | *Handover to Sherman* | | 0:05 | 16:05 |
-| 15 | Integration status | Sherman | 1:05 | 17:10 |
+| 15 | Full flow and links still to join | Sherman | 1:05 | 17:10 |
 | 16 | Schedule | Sherman | 1:10 | 18:20 |
 | | *Handover to Zongzhe* | | 0:05 | 18:25 |
 | 17 | Budget and risks | Zongzhe | 0:45 | 19:10 |
 | 18 | Next steps and conclusion | Zongzhe | 0:50 | 20:00 |
 
-**Total: 20:00**, including five handovers of about 5 s. No video runs longer than its slide's
+**Total: 20:00**, including eight handovers of about 5 s. No video runs longer than its slide's
 time: the orbit video on slide 7 and the grasp video on slide 13 play while the presenter talks.
-Trim each video to 15 s or less. If rehearsal runs long, cut first from slide 5 (drop the
-open-source list from the script) and slide 10 (drop the second-drive sentence).
+Trim each video to 15 s or less. Slide 5 was already cut to 0:45 to fit the
+three extra handovers. If rehearsal runs long, cut next from slide 10 (drop the second-drive
+sentence).
 
-**Speaking time per person:** Dion about 9:50, Sherman about 5:00, Zongzhe about 4:45. Dion still
-has the largest share because he leads 5 of the 11 milestones and the critical path. Sherman takes
-integration and the schedule, where his M3 and M5 are the two slips he can explain first-hand.
+**Speaking time per person (slides only, handovers 0:40 on top):** Dion 7:35, Zongzhe 6:00, Sherman
+5:45. Dion still has the largest share because he leads 5 of the 11 milestones and the critical path.
+Zongzhe opens the system with slide 4 and Sherman covers the starting point (slide 5), so all three
+speak in the first five minutes. Sherman takes the full flow and the schedule, where his M3 and M5 are
+the two slips he can explain first-hand.
 
 **Handover lines** (the outgoing presenter says the first half, the incoming one picks up):
 
 | From, to | Line |
 |---|---|
+| Dion to Zongzhe (after 3) | "Here is the full behaviour we are building towards. Zongzhe will walk through it." |
+| Zongzhe to Sherman (after 4) | "Before the results, Sherman covers where we started and how we work." |
+| Sherman to Dion (after 5) | "Phase one: turning a sentence and a glance into a target. Over to Dion." |
 | Dion to Sherman (after 6) | "That crop now has to be found by a robot that has never seen this view. Sherman will show how the robot knows where it is." |
 | Sherman to Zongzhe (after 8) | "With poses and camera images from that drive, Zongzhe builds the robot's memory of the room." |
 | Zongzhe to Dion (after 11) | "Dion now picks up the object at close range." |
@@ -1416,7 +1561,7 @@ integration and the schedule, where his M3 and M5 are the two slips he can expla
 | 7 | Scripts add value beyond bullets? | Yes. They explain why (why CLIP over keypoints, why 10 cm not 15, why AnyGrasp fails up close) and link slides (the mat stack from slide 6 returns on slide 12) |
 | 8 | Limitations stated plainly? | Yes, on each slide and gathered on slide 15. No slide implies an end-to-end result |
 | 9 | Objectives, schedule and budget addressed? | Yes: slides 3, 16, 17 |
-| 10 | Fits 20 minutes? | Yes, 20:00 including handovers. Scripts are about 140 words a minute. Cut points named in section D |
+| 10 | Fits 20 minutes? | Slot times sum to 20:00 including handovers. Checked 2026-10-24: the scripts total about 3,260 words, which is about 23:40 at 140 words a minute and about 20:50 at 160. Over 165 words a minute: slides 3, 5, 8, 10, 11, 14, 17, 18 (11 and 17 near 240). Each presenter trims their own script or speeds up at rehearsal. Cut points named in section D |
 | 11 | Contributions fair and accurate? | Each member presents their own work. Sherman also presents integration and the schedule, so speaking time is closer to even (section D) |
 | 12 | Concise enough for layout? | Yes. On-slide content is short, with tables kept to four or five rows except the milestone and Gantt data, which are drawn as charts |
 
@@ -1442,7 +1587,7 @@ do not exist yet.
 | Owner | Files | Slides |
 |---|---|---|
 | Dion | `aria_gaze_pick_vs_distance_2026-10-20.jpg`, `lightglue_baseline_wrong_matches_2026-10-19.jpg`, `clip_glasses_vs_wrist_crops_2026-10-20.jpg`, `fit_check_edge_grasp_75mm_face_measured_56mm_passes_wrongly.png`, optional `anygrasp_8_best_grasps_angles_2026-10-20.png`. **Stub:** `grasp_real_arm_<date>.mp4` (exists on Dion's phone, copy it in). Optional stub: `rviz_grasp_<date>.mp4` for A4. T8.9a numbers are in `docs/bench-runs/2026-10-24-labbox-t8.9a-grasp-matches-reference.txt`, charts drawn from them | 2, 6, 12, 13, 14 |
-| Sherman | `nav_fastlivo_map_orbit_handdriven1_2026-10-20.gif` or `.mp4` (or the iso still), `nav_fastlivo_trajectory_closure_handdriven1_2026-10-20.png`, `nav_lidar_on_camera_overlay_stationary02_t0s_2026-10-19.png`, `nav_t35f_drift_step3_error_vs_time_2026-10-21.png` for A5. Possibly a base-camera frame for slide 2 | 2, 7, 8, A5 |
+| Sherman | Clean renders, no text baked in (2026-10-24): `nav_fastlivo_map_buildup_clean_handdriven1_2026-10-24.gif` (or `nav_fastlivo_map_orbit_clean_handdriven1_2026-10-24.gif`, `.mp4`, or `nav_fastlivo_map_iso_clean_handdriven1_2026-10-24.png`), `nav_fastlivo_path_closure_zoom_clean_handdriven1_2026-10-24.png`, optional `nav_fastlivo_path_top_clean_handdriven1_2026-10-24.png`. `nav_lidar_on_camera_overlay_stationary02_t0s_2026-10-19.png` (already clean), `nav_t35f_drift_step3_error_vs_time_2026-10-21.png` for A5. Possibly a base-camera frame for slide 2 | 2, 7, 8, A5 |
 | Zongzhe | Rerun 3D screenshot from `mg_t6.3_four_photos_rerun_3d_2026-10-21.rrd`. **Stub:** `mg_graph_3d_flythrough_<date>.mp4` (recordable any time). `mg_frame700_masks_and_3d_objects_2026-10-21.png`, optional `mg_ground_truth_12_objects_on_lidar_map_2026-10-21.png`, the 22-instruction grid from `check_reasoning.json`, the real "find the chair" output | 9, 10, 11 |
 | Any member | Photo of the full robot with the glasses, for the title slide | 1 |
 
@@ -1455,3 +1600,4 @@ do not exist yet.
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Created (T10.4). 18 core slides and 9 appendix slides from `COMBINED_PROGRESS_REPORT_2026-10.md` and the approved budget proposal (5 Oct 2026). T8.9a and the teammates' media left as placeholders. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | T8.9a results in (slides 12, 15, 18, PR #129, 600 of 602 on replay). Sherman now presents slides 15 and 16 (Dion 9:50, Sherman 5:00, Zongzhe 4:45). Budget in SGD, API credits for AI services. Wrist camera to arm calibrated (slide 8). |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Framing fix (T10.5, Dion). No research claim, no protected M8, no ablation. Exploration is core, finding the user speeds it up, the gaze target is the match that ends exploration, gaze is the base case and without gaze is a stretch. Overview, slides 2, 3, 4, 9, 11, 15, 16, 17, 18, sections C and E rewritten to match. Phase strip label 2 is now "Explore and map". |
+| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is set by construction, flush on vertical aluminium extrusions, not measured with a tool (Sherman), instead of "estimated by eye". Status now "Mount measured, not calibrated". Base origin checked against the vendor manual. Camera chain: tape to the D455 mounting hole, Intel published geometry from there (Sherman). Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). Slide 7 now shows the six-step port work (ROS 1 original, ROS 2 port, build, authors' data, our sensors, three silent defects, live loop, Nav2) as a flow strip, and drops the "plan proposed 2D, I built that first" lines. Step 6 adds the start-tilt fix (bridge measures from the first pose, floor tilt under 0.5 degrees). Script says the defects were found by reading the source and confirmed against controls, not by camera on and off runs. Slide 7 visuals now point at clean renders with no text baked in (build-up GIF, orbit, iso still, 10 cm closure zoom, top-down path), linked from Sherman's local report_media. Slide 15 kept as written, with additions: recorded voice not spoken, Nav2 shown as never driven (not "works"), T7.6 and T3.7 added to missing link 1, T8.8 marked look-alike only, explore loop added to the visual idea. Final visual still to draw. Slide 15 then reframed: "Where each part sits in the full flow, and the links still to join", same facts and task IDs. Slide 15 visual: explicit spec added, 9 parts with status colours and 12 links with style, label and task IDs. Camera calibration dropped as a missing link (wrist camera already calibrated, base camera T5.5 stays as a note on link 6, slide 8 covers it). Final check: rule 1 updated for the new slide 15, audit row 10 corrected (scripts run about 23:40 at 140 words a minute). Presenter split (team, 2026-10-24): slide 4 to Zongzhe, slide 5 to Sherman and cut to 0:45, three handovers added, elapsed times and per-person totals corrected (Dion 7:35, Zongzhe 6:00, Sherman 5:45, handovers 0:40, total 20:00). |
