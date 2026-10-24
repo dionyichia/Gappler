@@ -508,8 +508,7 @@ Nav2 still drives on a 2D grid built from this pose.
 FAST-LIVO2 is published for ROS 1. We run a community ROS 2 port, and getting it to work was most of
 the effort. The strip along the bottom shows the steps. I proved it on the authors' own recording
 first, then on our sensors with every message checked. Comparing runs with and without the camera, I
-found three defects that fail silently: no crash, just a wrong map. One was the sign of the offset
-between the LiDAR and its motion sensor.
+found three defects that fail silently: no crash, just a wrong map.
 
 The result: I pushed the base by hand around a 26-metre loop. The path returns to its start within
 12 millimetres, and the mid-route error is within about 7 centimetres, the limit of our reference.
