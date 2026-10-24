@@ -703,10 +703,10 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <tr><td>M4</td><td>The current system, closed loop</td><td>One recorded run: speak, look, the base drives, the arm grasps. Per-stage timing recorded at the 99th percentile</td><td class="num">Forecast start 11 Jan 2027. Forecast end 31 Jan 2027</td><td><span class="who w-D">Dion</span></td></tr>
       <tr><td>M5</td><td>A calibrated camera on the base</td><td>A RealSense D455 is mounted forward facing on the base, LiDAR points projected into its image land on the right objects, and the camera-pose error is written down as a number</td><td class="num">Started 16 Sep. Forecast end 24 Jan 2027</td><td><span class="who w-S">Sherman</span> <span class="who w-D">Dion</span></td></tr>
       <tr><td>M6</td><td>The memory graph, offline</td><td>From a recorded drive, the system produces object entries with a 3D position and an image feature each, the same object is not registered twice, and a sentence query returns it</td><td class="num">Started 21 Sep. Forecast end 31 Jan 2027</td><td><span class="who w-Z">Zongzhe</span></td></tr>
-      <tr><td>M7</td><td>The graph drives the robot</td><td>A spoken instruction with the object not in view produces an approach goal read out of the graph, the base drives there, and close-range perception takes over</td><td class="num">Forecast start 18 Jan 2027. Forecast end 28 Feb 2027</td><td><span class="who w-D">Dion</span></td></tr>
-      <tr><td>M8</td><td>Gaze picks the instance</td><td>The gaze-cropped image feature is carried into the graph query. Ablation with and without, N trials each, success rates side by side</td><td class="num">Started 19 Oct. Forecast end 14 Mar 2027</td><td><span class="who w-D">Dion</span></td></tr>
-      <tr><td>M9</td><td>Frontier scoring, visit ordering</td><td>The robot's chosen exploration order beats a nearest-first baseline on a measured metric. Optional</td><td class="num">Forecast start 18 Jan 2027. Forecast end 21 Feb 2027</td><td><span class="who w-Z">Zongzhe</span></td></tr>
-      <tr><td>M10</td><td>Demonstration and paper</td><td>A recorded end-to-end run, and a draft whose central table is M8's ablation</td><td class="num">Forecast start 1 Mar 2027. Forecast end 21 Mar 2027</td><td><span class="who w-A">all</span></td></tr>
+      <tr><td>M7</td><td>The graph drives the robot</td><td>A spoken instruction with the object not in view: the robot explores, finds the user, builds the graph as it drives, and when the gaze target matches an object it drives there. Close-range perception takes over</td><td class="num">Forecast start 18 Jan 2027. Forecast end 28 Feb 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M8</td><td>Gaze picks the instance</td><td>The CLIP feature of the glasses crop is matched against objects in the graph while the robot explores. A good enough match is the trigger to stop exploring and drive to that object. N end-to-end trials of this base case, success recorded per phase. A without-gaze comparison is a stretch extension</td><td class="num">Started 19 Oct. Forecast end 14 Mar 2027</td><td><span class="who w-D">Dion</span></td></tr>
+      <tr><td>M9</td><td>Frontier scoring, visit ordering</td><td>The paper's frontier scoring and visit ordering beat our simple nearest-first exploration on a measured metric. Optional, first to cut. Exploration itself is core (M7)</td><td class="num">Forecast start 18 Jan 2027. Forecast end 21 Feb 2027</td><td><span class="who w-Z">Zongzhe</span></td></tr>
+      <tr><td>M10</td><td>Demonstration and paper</td><td>A recorded end-to-end run, and a draft whose central table is the end-to-end trials, success per phase</td><td class="num">Forecast start 1 Mar 2027. Forecast end 21 Mar 2027</td><td><span class="who w-A">all</span></td></tr>
     </tbody>
   </table></div>
 
@@ -725,13 +725,15 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
   <div class="callout c-note">
     <span class="ct">Two things to notice about this shape</span>
-    <p><strong>The critical path to a result does not run through navigation.</strong> It runs M0, M1,
-    M2, M5, M6, M7, M8. M3 has to happen for the demonstration, and M9 is the part of the HiCo-Nav
-    paper with the largest reported benefit, and neither is on the path to our own claim. That is why
-    M9 is the first thing we cut.</p>
-    <p><strong>M8 is protected.</strong> It is the only milestone that produces a claim rather than a
-    system. Everything before it exists to make it measurable. If M8 cannot run, the right move is to
-    say so early rather than late.</p>
+    <p><strong>Exploration is the robot's core search behaviour.</strong> The robot explores with
+    its base camera, builds the memory graph as it goes, and looks for the user and then the object.
+    M9 is only the paper's smarter exploration order. It is the first thing we cut, because a simple
+    nearest-first order still finds the object, just more slowly.</p>
+    <p><strong>The gaze target is the switch from exploring to approaching.</strong> M8 matches the
+    CLIP feature of what the user looked at against the objects the robot sees. Without that match
+    the robot has no reason to stop exploring and drive to an object. So M8 is a pipeline component,
+    not a separate research result. Gaze is the base case. A without-gaze comparison is a stretch
+    extension (T8.11).</p>
   </div>
 </section>
 
@@ -797,8 +799,8 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <div id="tree-root"></div>
 
   <h3>The critical path, written out</h3>
-  <p>The longest chain of dependent tasks between today and the ablation, and it is almost all
-  Dion:</p>
+  <p>The longest chain of dependent tasks between today and the end-to-end trials, and it is almost
+  all Dion:</p>
   <div class="scroller"><table>
     <thead><tr><th>Chain</th><th>Tasks</th></tr></thead>
     <tbody>
@@ -837,13 +839,14 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <div class="lanes">
     <div class="lane L-D">
       <h4>Dion</h4>
-      <p class="role">Perception, the arm, and the research claim</p>
+      <p class="role">Perception, the arm, and the gaze target</p>
       <p><strong>Owns</strong> everything between a camera frame and the arm closing on an object,
-      plus the contribution itself. Arm bring-up through to a working grasp, one segmentation service
+      plus the gaze target. Arm bring-up through to a working grasp, one segmentation service
       instead of two competing ones, the glasses stream reaching the arm, the calibration of the base
-      camera and what its accuracy costs, and the gaze-conditioned query that M8 measures.</p>
+      camera and what its accuracy costs, and the gaze-target match that tells the exploring robot
+      to approach (M8).</p>
       <p><strong>Takeaway.</strong> An end-to-end perception system on real hardware, from raw frames
-      to an executed motion, and a measured result with an ablation table behind it. Production
+      to an executed motion, and measured end-to-end trials behind it. Production
       ROS&nbsp;2 in both Python and C++, since T7.1 is written with rclcpp against a working Python
       reference.</p>
       <p><strong>Why it fits.</strong> The most vision-heavy and the most systems-heavy stream in the
@@ -944,7 +947,7 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <section id="scope">
   <h2><span class="sn">Section 6</span>In scope, and out</h2>
   <p class="sub">We are not rebuilding the whole original demonstration. We are building what the
-  HiCo-Nav integration and the research claim need. Writing that down here means it is not relitigated
+  five-phase base case needs: intent, exploration, search, approach and confirm, grasp. Writing that down here means it is not relitigated
   in week 16, and a supervisor cannot reasonably expect both.</p>
 
   <h3>In scope</h3>
@@ -952,14 +955,17 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
     <thead><tr><th>Capability</th><th>Why it is needed</th></tr></thead>
     <tbody>
       <tr><td>Speech to an object word</td><td>The instruction input. Already works</td></tr>
-      <tr><td>Gaze published from the glasses</td><td>The contribution depends on it. Currently switched off</td></tr>
+      <tr><td>Gaze published from the glasses</td><td>Gaze picks the target object. Gaze is the base case</td></tr>
       <tr><td>Glasses colour image published</td><td>The gaze crop comes from this frame. Currently switched off</td></tr>
       <tr><td>One segmentation service on the wrist camera</td><td>Feeds the grasp predictor at close range</td></tr>
       <tr><td>Grasp prediction and execution on the real arm</td><td>Without it there is no task to navigate for</td></tr>
       <tr><td>Navigation: map, localise, drive, report arrival</td><td>The graph produces a place, something has to drive there</td></tr>
       <tr><td>A forward-facing camera on the base, calibrated</td><td>The memory graph is built from its images and depth</td></tr>
       <tr><td>The memory graph and the reasoning layer</td><td>This is the integration</td></tr>
-      <tr><td>The gaze-conditioned instance query and its ablation</td><td>This is the claim</td></tr>
+      <tr><td>Exploration with the base camera, building the memory graph live</td><td>The robot's core search behaviour. It cannot see the user or the object at the start</td></tr>
+      <tr><td>Finding the user while exploring</td><td>Speeds up exploration: the object the user looked at is somewhere the user can see</td></tr>
+      <tr><td>The gaze-target match (glasses crop CLIP feature against graph objects)</td><td>The trigger to stop exploring and drive to the object. Without it the robot does not know it has found the target</td></tr>
+      <tr><td>Wrist-camera confirmation before the grasp</td><td>Checks the object in front of the arm is the one the user looked at</td></tr>
     </tbody>
   </table></div>
 
@@ -967,13 +973,14 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <div class="scroller"><table>
     <thead><tr><th>Capability</th><th>Why it is out</th></tr></thead>
     <tbody>
-      <tr><td>Return to the user after grasping</td><td>Needs the pose fusion node, the marker path and the glasses localised in the map. Three separate broken things, for a leg the claim does not use</td></tr>
+      <tr><td>Return to the user after grasping</td><td>Needs the pose fusion node, the marker path and the glasses localised in the map. Three separate broken things, for a leg the base case does not use</td></tr>
       <tr><td>The pose fusion node as documented</td><td>Its code and its documentation describe different programs. Fixing it only matters for the return leg</td></tr>
-      <tr><td>Cross-camera feature matching as a requirement</td><td>The contribution proposes replacing it. It stays as the comparison baseline, not as a dependency</td></tr>
-      <tr><td>The HiCo-Nav motion layer, its own planner and controller</td><td>Nav2 already does this and is tuned for this chassis. Swapping it means retuning the part that can drive a robot into a wall, for no benefit to the claim</td></tr>
+      <tr><td>Keypoint matching between cameras</td><td>Replaced by CLIP matching (T8.7). It stays as the measured baseline (T8.4), not as a dependency</td></tr>
+      <tr><td>A without-gaze comparison (voice only)</td><td>Stretch extension (T8.11). Gaze is the base case</td></tr>
+      <tr><td>The HiCo-Nav motion layer, its own planner and controller</td><td>Nav2 already does this and is tuned for this chassis. Swapping it means retuning the part that can drive a robot into a wall, for no benefit to the task</td></tr>
       <tr><td>FAST-LIVO2 localisation</td><td>A bring-up project of its own. Start with the existing 2D localisation and measure whether it is good enough</td></tr>
       <tr><td><s>The full repository reorganisation</s></td><td><strong>Moved into scope and done, 22 September.</strong> Four subsystem folders, one folder per node, third-party code under each subsystem's <code>vendor/</code>. Specified and verified in <code>NEXT_STEPS.md</code> &sect;2.15</td></tr>
-      <tr><td>The simulator baseline</td><td>Only needed to evaluate goal ordering, which is the optional milestone</td></tr>
+      <tr><td>The simulator baseline</td><td>Only needed to evaluate the paper's exploration order, which is the optional milestone M9</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -985,12 +992,12 @@ button.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <div class="scroller"><table>
     <thead><tr><th>Order</th><th>What we cut</th><th>What we lose</th><th>What survives</th></tr></thead>
     <tbody>
-      <tr><td class="num">1</td><td>M9 entirely, frontier scoring and visit ordering</td><td>The paper's largest reported benefit, which is not ours anyway</td><td>Everything. M9 is not on the path to the claim</td></tr>
-      <tr><td class="num">2</td><td>The reasoning layer, T6.7</td><td>Instruction expansion into related objects</td><td>Direct sentence query of the graph, which is what M8 needs</td></tr>
-      <tr><td class="num">3</td><td>Graph pruning and the solver work</td><td>The graph grows without bound over a long run</td><td>Correctness over a lab-sized run</td></tr>
-      <tr><td class="num">4</td><td>The two-stage trigger, T6.5</td><td>Speed</td><td>Correctness, provided the age limit from T2.4 stays</td></tr>
-      <tr><td class="num">5</td><td>Live graph building, T7.2</td><td>The robot building its object map as it goes</td><td>A graph built from a recorded drive of the same room, which still supports the ablation</td></tr>
-      <tr><td class="num">6</td><td>Reduce N in the ablation, T8.3</td><td>Statistical strength</td><td>A number, which beats no number</td></tr>
+      <tr><td class="num">1</td><td>M9 entirely, the paper's frontier scoring and visit ordering</td><td>The paper's largest reported benefit, and faster exploration</td><td>Exploration itself. The robot explores nearest-first (T7.5)</td></tr>
+      <tr><td class="num">2</td><td>The without-gaze comparison, T8.11</td><td>A number for how much gaze helps</td><td>The base case with gaze, end to end</td></tr>
+      <tr><td class="num">3</td><td>The reasoning layer, T6.7</td><td>Instruction expansion into related objects</td><td>The target word goes straight into the graph's vocabulary</td></tr>
+      <tr><td class="num">4</td><td>Graph pruning and the solver work</td><td>The graph grows without bound over a long run</td><td>Correctness over a lab-sized run</td></tr>
+      <tr><td class="num">5</td><td>The two-stage trigger, T6.5</td><td>Speed</td><td>Correctness, provided the age limit from T2.4 stays</td></tr>
+      <tr><td class="num">6</td><td>Reduce N in the end-to-end trials, T8.3</td><td>Statistical strength</td><td>A number, which beats no number</td></tr>
     </tbody>
   </table></div>
 
@@ -1405,6 +1412,7 @@ tell us what the estimates were worth.</p>
 <!-- Changelog 2026-10-21: T6.4 progress: step 1 done, the whole handdriven1 drive saved after SAM 3 and CLIP (memory_graph/run_drive.py). Republish owed after merge. -->
 <!-- Changelog 2026-10-21: T6.4 progress: step 2 done, the scorer (memory_graph/score_drive.py) and its baseline. Republish owed after merge. -->
 <!-- Changelog 2026-10-22: T6.4 DONE (Zongzhe): match radius 10 cm, D-MG2 settled on two drives. Republish owed after merge. -->
+<!-- Changelog 2026-10-24: T10.5 framing fix: exploration is core, the gaze target is the trigger from exploring to approaching (M8 not protected), finding the user in scope, without-gaze is stretch T8.11. M7 to M10 done-means, scope, cut list, lanes rewritten. New T7.5, T7.6, T8.11, T10.5. -->
 <script>
 (function(){
 "use strict";
@@ -1423,10 +1431,10 @@ var MS = [
  ["M4","The current system, closed loop","Forecast start 11 Jan 2027. Forecast end 31 Jan 2027","D","One recorded run: speak, look, drive, grasp, with per-stage timing",""],
  ["M5","A calibrated camera on the base","Started 16 Sep. Forecast end 24 Jan 2027","SD","LiDAR points projected into the camera image land on the right objects, and the camera-pose error is written down as a number. Sherman owns the mount, Dion owns the calibration",""],
  ["M6","The memory graph, offline","Started 21 Sep. Forecast end 31 Jan 2027","Z","Object entries from a recorded drive, no duplicates, and a sentence query returns the right one",""],
- ["M7","The graph drives the robot","Forecast start 18 Jan 2027. Forecast end 28 Feb 2027","D","A spoken instruction with the object out of view gets the robot there, then close-range perception takes over",""],
- ["M8","Gaze picks the instance","Started 19 Oct. Forecast end 14 Mar 2027","D","The ablation: N trials with the gaze feature and N without, success rates side by side","prot"],
- ["M9","Frontier scoring, visit ordering","Forecast start 18 Jan 2027. Forecast end 21 Feb 2027","Z","Exploration order beats a nearest-first baseline on a measured metric","opt"],
- ["M10","Demonstration and paper","Forecast start 1 Mar 2027. Forecast end 21 Mar 2027","A","A recorded end-to-end run and a draft whose central table is M8's number",""]
+ ["M7","The graph drives the robot","Forecast start 18 Jan 2027. Forecast end 28 Feb 2027","D","With the object out of view, the robot explores, finds the user, builds the graph as it goes and drives to the object, then close-range perception takes over",""],
+ ["M8","Gaze picks the instance","Started 19 Oct. Forecast end 14 Mar 2027","D","While exploring, the robot matches what it sees against the gaze target and stops to approach the object the user looked at. N end-to-end trials, success per phase",""],
+ ["M9","Frontier scoring, visit ordering","Forecast start 18 Jan 2027. Forecast end 21 Feb 2027","Z","The paper's exploration order beats our simple nearest-first exploration on a measured metric","opt"],
+ ["M10","Demonstration and paper","Forecast start 1 Mar 2027. Forecast end 21 Mar 2027","A","A recorded end-to-end run and a draft whose central table is the end-to-end trials",""]
 ];
 
 var T = [
@@ -1612,7 +1620,9 @@ var T = [
 
  ["T7.1","M7","D",16,"box","Publish the approach goal from the graph instead of from live perception. The channel and its meaning do not change, only who writes to it. Written in C++ with rclcpp, not Python. object_approach_node.py is a working reference for the same behaviour, so you can diff against it and know when the C++ one is right",["T3.7","T6.8"],"build","Publish the approach goal from the graph instead of from live perception. The channel and its meaning do not change, only who writes to it. **Write this node in C++ with rclcpp**, not Python. `object_approach_node.py` is a working reference for the same behaviour, so you can diff against it and know when the C++ one is right"],
  ["T7.2","M7","Z",10,"lab","Build the graph while the robot drives, rather than from a recording",["T5.7","T7.1"],"build"],
- ["T7.3","M7","A",8,"lab","Spoken instruction to arrival at the right object, on hardware, with the object not in view when the instruction is given",["T7.2"],"measure"],
+ ["T7.3","M7","A",8,"lab","Spoken instruction to arrival at the right object, on hardware, with the object not in view when the instruction is given",["T7.2","T7.5","T7.6"],"measure"],
+ ["T7.5","M7","Z",12,"box","Added 2026-10-24 (Dion, T10.5). Core exploration. The robot drives to the nearest unexplored area, again and again, building the memory graph as it goes (T7.2), until the user and then the target are found. Simple nearest-first order. M9 is the paper's smarter order and is cut first. Hours are a guess",["T3.6","T7.2"],"build"],
+ ["T7.6","M7","D",8,"box","Added 2026-10-24 (Dion, T10.5). Find the user while exploring: spot the person in the base camera and record where they are in the map. Purpose: speed up exploration, since the object the user looked at is somewhere the user can see, so the robot searches near the user first. Not the return-to-user leg, which stays out of scope. Hours are a guess. Design goes to Dion before code",["T7.5"],"build"],
  ["T7.4","M7","D",10,"off","Added 2026-10-13 by Dion (T2.9). When the gazed object cannot be found (no mask near the gaze), go back to navigation and follow the user's gaze ray, glasses position through the gaze point, to look for it, then retry from closer. A clarifying question (the box on that table, or the one next to it?) is a later fallback. Design goes to Dion before code. Related: NEXT_STEPS 2.13, the robot cannot always see what the user sees",["T2.9","T7.1"],"build"],
 
  ["T8.1","M8","D",8,"off","Produce an image feature from the gaze-cropped region of the glasses frame",["T2.3"],"build"],
@@ -1623,8 +1633,9 @@ var T = [
  ["T8.9","M8","D",6,"mix","Added 2026-10-21 (T8.5 option 1b, deferred by Dion). The grasp client uses the Target reference so the arm takes the object you looked at (M2 done-means). Today grasp_segmentation_client.py:49 takes the best SAM 3 score and ignores the reference. Options from T8.5: the grasp client matches the reference crop to its wrist detections with CLIP (needs CLIP on the grasp side), or the segmentation service scores each detection against an optional reference (Segment.srv change, both clients reuse it). Also T2.9 timing review 9.6: send one Target after the gaze pick (or a timeout), then the grasp request, so the arm never starts on the best score first. Gate it on T2.24 (cutoff and distance) so a wrong reference is rare. Tie margin: the matcher keeps 0.01 until this task, then decide (Dion wanted 0.05; offline on two same-colour boxes, 0.01 gave 6 right, 6 wrong, 0 refused and 0.05 gave 2 right, 3 wrong, 7 refused). No single match: today the matcher falls back to every SAM 3 outline (object_recognition_pipeline.py:410), fine for the viewer only. Before the arm uses it, return only the outlines above the cutoff and within the tie margin, and send nothing when none pass (Dion, 2026-10-23). Design goes to Dion before code",["T8.5","T2.24"],"build"],
  ["T8.9a","M8","D",4,"mix","DONE 2026-10-24. Box replay: 600 of 602 published centroids on the looked-at box, where the old best-score pick took the wrong cardboard box in 114 of 114 frames (bench-runs/2026-10-24-labbox-t8.9a-grasp-matches-reference.txt). The 2 wrong ones came from a wrong reference (gaze on the mat at 1.5 m, glasses SAM 3 score 0.31): the other box scored just over 0.56. T2.24 is next, before any arm test with the glasses. Real arm not run. Added 2026-10-24 by Dion: the first part of T8.9, just connect it. The aria client clears the old target at each word, then sends one Target after the gaze pick: word, reference crop (box + crop_margin_px) and reference mask, then the grasp request (the clear closes a race where the request caught a last centroid of the old object). No pick, no Target. The grasp client embeds the reference once with CLIP, crops and embeds each wrist mask the same way, and takes the mask the T8.7 rule picks (cutoff 0.56, tie within 0.01 refused). None passes: no mask published, the arm waits. A word without a reference: the grasp client waits. The test-only default prompt keeps the best SAM 3 score. The matcher moved from aria to grasp/grasp_segmentation_client/cross_camera_mask_match_rule.py (Dion: matching does not belong in the glasses, long term its own module), crop_margin_px moved to global_config.yaml. Left in T8.9: the T2.24 gate, the tie margin decision, taking the matcher out of the aria pipeline. Branch t8.9a-grasp-matches-reference",["T8.5"],"build"],
  ["T8.10","M8","D",8,"mix","Added 2026-10-24 by Dion, future work, not now. Make the target a proper data structure, a TargetDescriptor, instead of a word plus a crop. Today (T8.9a) the CLIP vector of the crop does all the work of linking what you looked at to what the arm searches for, and nothing says where the target came from. Bundle the vector with its context, for example: request_id, clip_embedding, reference_crop, gaze_selection_confidence (vote share), source_camera, capture_timestamp, optional gaze_ray, calibration_version. Not every field is needed. The point is to keep where the target came from, when it was taken and how sure the gaze pick was. Give every request a unique id and carry it on every result downstream (mask, centroid, grasp). Why: the robot can refuse a stale or incomplete target, a wrong grasp can be traced back to the glasses frame, a late result from an old request cannot replace a newer target (T8.9a uses a counter in the grasp client for this today), and nav or the memory graph can read the same target without knowing SAM 3 or Aria. Also room for geometry (object size in metres from depth, position), so matching does not rely on looks alone: two look-alike boxes defeat CLIP (T8.8). Design goes to Dion before code",["T8.9a","T8.8"],"build"],
- ["T8.2","M8","D",10,"off","Carry that feature into the graph query so it selects an instance rather than a class",["T6.8","T8.1"],"build"],
- ["T8.3","M8","DS",18,"lab","Run the ablation. N trials with the feature and N without, same objects, same start positions, using the fixture",["T5.8","T7.3","T8.2"],"measure"],
+ ["T8.2","M8","D",10,"off","Rewritten 2026-10-24 (Dion, T10.5). The exploration-to-approach trigger. While the robot explores, compare each new graph object's CLIP feature with the gaze target's (the glasses crop). A good enough match stops exploration and sends that object as the approach goal (T7.1). The wrist camera confirms it on arrival (T8.9). Decided with Dion: a score cutoff, tuned for base-camera views (the wrist uses 0.56). Above it, drive to the object. The wrist camera confirms or rejects it, and on a reject the object is rejected in the graph (T6.8a) and the robot goes back to exploring. The cutoff value is open until measured. Earlier brief: carry that feature into the graph query so it selects an instance rather than a class",["T6.8","T8.1","T7.5"],"build"],
+ ["T8.3","M8","DS",18,"lab","Rewritten 2026-10-24 (Dion, T10.5). Run N end-to-end trials of the base case, with gaze: two or more objects of the target's class, same start positions, using the fixture. Record success per phase (intent, user found, target matched, arrival, wrist confirm, grasp). Earlier brief: the with-and-without-gaze ablation, now the stretch T8.11",["T5.8","T7.3","T8.2"],"measure"],
+ ["T8.11","M8","DS",8,"lab","Added 2026-10-24 (Dion, T10.5). Stretch extension: the without-gaze version. The same trials as T8.3 with voice only (the sentence query, no glasses crop), success rates side by side. Cut second, after M9",["T8.3"],"measure"],
  ["T8.4","M8","D",4,"box","DONE 2026-10-20. Baseline recorded: point matching (LightGlue, LoFTR) does not find a plain box between the glasses and wrist views. Record: bench-runs/2026-10-19-labbox-t8.4-old-matcher-baseline.txt. First run of the old matcher (SuperPoint + LightGlue in object_recognition_pipeline.py), glasses recording c2cbafe8 replayed against the wrist bag: it runs end to end but chose a wrist mask in 0 of 15 attempts. Only 8 to 19 matches per image pair, at most 2 inside the gazed box, none on a wrist box. One fix: the file's own __main__ never called rclpy.init(). Crop rerun (match only inside each mask's box plus 20 px): 11 of 11 chose a wrist mask with 1 to 7 matches, but every match is wrong (glasses points on one spot, wrist partners spread over several edges). Baseline (Dion, 2026-10-19): point matching does not find a plain box across these two views. Four offline checks on the saved crops: LightGlue matches a crop against itself 100% correctly, so it works. Its default resize upscales a 90 px glasses crop about 11 times and SuperPoint then fires on JPEG noise. Without upscaling the box has 16 to 40 points, and equal box size in both crops gives 4 to 5 matches, about half plausible. LoFTR fails the same way. The limit is the input: a featureless box seen from two very different angles and distances. Further diagnostics parked as T8.6. Next idea: T8.7. Record: bench-runs/2026-10-19-labbox-t8.4-old-matcher-baseline.txt. Dion 2026-10-18: the old method first, geometric methods (NEXT_STEPS 2.13) and the M8 image feature wait for a working baseline. Re-measure the cross-camera matching baseline so the comparison number is ours rather than remembered",["T2.1"],"measure"],
 
  ["T9.1","M9","Z",8,"off","Get the upstream simulator evaluation running as a baseline",["T6.1"],"bringup","**Note from T6.1 (2026-10-05):** `planner/wtrp.py:4` imports OR-Tools at module level and `habitat/policy.py` imports that file, but OR-Tools is in neither `requirements.txt` nor `environment.yml`. Install it by hand (`pip install ortools`) or upstream will not start."],
@@ -1633,7 +1644,8 @@ var T = [
  ["T9.4","M9","ZD",8,"box","A node that emits drive goals, sitting beside the existing bridge, with Nav2 unchanged",["T9.3"],"build"],
 
  ["T10.1","M10","A",8,"lab","Full demonstration run, recorded",["T8.3"],"measure"],
- ["T10.2","M10","A",24,"off","Paper draft. The central table is the ablation from T8.3",["T8.3"],"plan"],
+ ["T10.5","M10","D",2,"off","DONE 2026-10-24. Framing fix across the docs (Dion). Exploration is the core search behaviour. The gaze target (CLIP feature of the glasses crop) is the trigger to stop exploring and approach, not a separate research claim, and M8 is no longer protected. Finding the user is in scope, to speed up exploration. Gaze is the base case, without gaze is a stretch (T8.11). M9 stays first to cut. New tasks T7.5, T7.6, T8.11. T8.2, T8.3 rewritten. Edited: task-tree.html, PROJECT_PLAN, COMBINED_PROGRESS_REPORT, INTERIM_PRESENTATION_SLIDE_CONTENT, CHANNEL_CONTRACT P3, DION_PROGRESS_REPORT. Sherman and Zongzhe told to fix their own reports",[],"plan"],
+ ["T10.2","M10","A",24,"off","Paper draft. The central table is the end-to-end trials from T8.3, success per phase",["T8.3"],"plan"],
  ["T10.3","M10","D",6,"off","Reproducibility artifacts: the bench, the recorded data, this plan, the defect log",["T10.2"],"plan"],
  ["T10.4","M10","D",2,"off","Added 2026-10-23 (Dion). Progress reports for the October presentation, one per person, merged and cut down later. Dion's is docs/dion_docs/DION_PROGRESS_REPORT_2026-10.md. Sherman's is docs/sherman_docs/SHERMAN_PROGRESS_REPORT_2026-10.md (PR #127). Zongzhe's is docs/zongzhe_docs/ZONGZHE_PROGRESS_REPORT_2026-10.md (PR #125). Both were written from the prompt in docs/dion_docs/PROGRESS_REPORT_PROMPT_FOR_TEAMMATES.md. Merged 2026-10-24 into docs/COMBINED_PROGRESS_REPORT_2026-10.md (checked against the code on dev, T8.9a results in). Slide-by-slide content, scripts and timing for the 28 Oct talk in docs/INTERIM_PRESENTATION_SLIDE_CONTENT_2026-10.md. Next: build the slides from it. Pictures and videos stay in docs/<name>_docs/local/report_media/, never in git",[],"plan"]
 ];

@@ -110,7 +110,7 @@ therefore have **no owner** until that changes. They are not deleted, they are p
 |---|---|---|---|---|---|
 | P1 | Base camera stream, `/base_camera/...` | D455 driver on the base | Nav, the memory graph. Dion, calibration | Dion | Dion brings it up first for the calibration in `T5.5`. Sherman owns the mount and the hardware |
 | P2 | Graph query: sentence in, object position out | Nav, the memory graph, `T6.8` | Dion's C++ node, `T7.1`, which then writes H2 | Zongzhe | A ROS service, see N-3 in §6 |
-| P3 | Gaze image feature into the graph query | Aria, `T8.1` | Nav, the graph query, `T8.2` | Dion | Can ride inside P2's request |
+| P3 | Gaze image feature to the graph: the trigger from exploring to approaching (2026-10-24, T10.5) | Aria, `T8.1` | Nav, the graph, `T8.2` | Dion | Can ride inside P2's request |
 | P4 | Segmentation trigger | Phase logic | the segmentation service, `shared_services/` (G-1, G-2) | Dion | Dion owns the service and the trigger, see G-5 in §6 |
 
 ---
@@ -389,3 +389,4 @@ Known problems inside subsystems, so they are not lost:
 | 2026-10-24 | Claude Opus 5.5 + Dion | TF table: `odom` → `robot_base_link` names both publishers, the base driver in wheel mode and `fastlivo_odom_bridge.py` in fastlivo mode (`T3.5f`). Doc only, no contract change. |
 | 2026-10-24 | Claude Opus 5.5 + Dion | H2: no live publisher (the call site was commented out in the inherited code), found while combining the T10.4 reports. N-1 carried out: `goto_glasses` commented out of `slam_localization.launch.py` with the reason. |
 | 2026-10-24 | Claude Opus 5.5 + Dion | `T8.9a`: H5a is a clear at each word, then one Target after the gaze pick, and the grasp client picks its mask by CLIP against the reference. H10a follows the Target. `crop_margin_px` moved to global_config.yaml. |
+| 2026-10-24 | Claude Opus 5.5 + Dion | P3 reworded (T10.5): the gaze feature is the trigger from exploring to approaching, not a query term for a research claim. |

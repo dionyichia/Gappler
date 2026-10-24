@@ -66,13 +66,24 @@ team by the supervisor(s) and examiner(s).
 
 ### 0.2 Objectives
 
-**Main objective.** Build a mobile manipulator that fetches the specific object a user looked at and
-named, even when the object is out of the robot's view at the start, and measure whether the user's
-gaze improves finding the right instance.
+**Main objective.** Build a mobile manipulator that takes a spoken command and the user's gaze,
+explores a room it cannot see at the start to find the user and then the object they looked at,
+drives to it, confirms it with the wrist camera and grasps it.
 
-**Research claim** (M8, protected, never cut, PP §8.1). Carrying a gaze-cropped image feature from
-the glasses into the memory graph query lets the robot find the instance the user looked at, not
-just any object of that class. Measured by an ablation: N trials with the gaze feature, N without.
+**How the parts fit** (Dion, 2026-10-24, PP §1).
+
+- **Exploration is core.** The robot explores with its base camera and builds the memory graph as it
+  goes. That is how it searches. M9, the paper's smarter exploration order, is optional and first to
+  be cut. Without it the robot explores nearest-first (T7.5).
+- **Finding the user speeds up exploration.** The object the user looked at is somewhere the user
+  can see, so the robot looks for the user first (T7.6).
+- **The gaze target is the trigger to approach.** The CLIP feature of the glasses crop is compared
+  with each object the robot sees. A match above a cutoff stops exploration and sends the robot to
+  that object. The wrist camera confirms or rejects it, and on a reject the robot goes back to
+  exploring (T8.2). Without this check the robot has no reason to stop exploring. It also makes
+  search faster, since the robot looks for one object, not every object of the class.
+- **Gaze is the base case.** A without-gaze version (voice only, the sentence query) is a stretch
+  extension (T8.11). The evaluation is end-to-end trials of the base case, success per phase (T8.3).
 
 **Milestones.** Eleven, from the task tree's milestone list (`docs/task-tree.html`, `MS`) and
 PP §5.1. Row counts are from the task tree on `dev` at `1cde0ec` on 2026-10-24. The rows T1.44 to
@@ -87,10 +98,10 @@ T1.46 exist only on PR #99's branch and are not counted.
 | M4 | The current system, closed loop | One recorded run: speak, look, drive, grasp, per-stage timing | Forecast 11 to 31 Jan 2027 | Dion | 0 of 3 | Not started, as scheduled |
 | M5 | A calibrated camera on the base | LiDAR points land on the right objects in the camera image, pose error as a number | Started 16 Sep. Forecast end 24 Jan 2027 | Sherman mount, Dion calibration | 4 of 9 | Mount fitted and geometry done. Calibration (T5.5) not built |
 | M6 | The memory graph, offline | Objects from a recorded drive, no duplicates, a sentence query returns the right one | Started 21 Sep. Forecast end 31 Jan 2027 | Zongzhe | 25 of 32 | Ahead of the September plan, which started it on 28 Dec. Graph built and tuned. Query acceptance run (T6.8) left |
-| M7 | The graph drives the robot | Spoken instruction, object out of view, robot gets there, close-range perception takes over | Forecast 18 Jan to 28 Feb 2027 | Dion | 0 of 4 | Not started, as scheduled |
-| M8 | Gaze picks the instance | The ablation, with and without the gaze feature | Started 19 Oct. Forecast end 14 Mar 2027 | Dion | 3 of 9 | Groundwork done early: CLIP matcher (T8.7), matcher uses the gaze pick (T8.5), baseline (T8.4) |
-| M9 | Frontier scoring, visit ordering | Exploration order beats a nearest-first baseline | Optional. Forecast 18 Jan to 21 Feb 2027 if kept | Zongzhe | 0 of 4 | Optional, first on the cut list |
-| M10 | Demonstration and paper | Recorded end-to-end run, paper draft with M8's number | Forecast 1 to 21 Mar 2027 | All | 0 of 4 | Not started, as scheduled. T10.4 is this report |
+| M7 | The graph drives the robot | Spoken instruction, object out of view: the robot explores, finds the user, builds the graph live and drives to the object. Close-range perception takes over | Forecast 18 Jan to 28 Feb 2027 | Dion | 0 of 4 | Not started, as scheduled |
+| M8 | Gaze picks the instance | The gaze target matched against what the robot sees triggers the approach. N end-to-end trials, success per phase | Started 19 Oct. Forecast end 14 Mar 2027 | Dion | 3 of 9 | Groundwork done early: CLIP matcher (T8.7), matcher uses the gaze pick (T8.5), baseline (T8.4) |
+| M9 | Frontier scoring, visit ordering | The paper's exploration order beats our nearest-first exploration | Optional. Forecast 18 Jan to 21 Feb 2027 if kept | Zongzhe | 0 of 4 | Optional, first on the cut list. Exploration itself is core (M7) |
+| M10 | Demonstration and paper | Recorded end-to-end run, paper draft whose central table is the end-to-end trials | Forecast 1 to 21 Mar 2027 | All | 0 of 4 | Not started, as scheduled. T10.4 is this report |
 | | **Total** | | | | **97 of 171** | |
 
 ### 0.3 Background
@@ -254,8 +265,8 @@ gantt
 | M4 | 31 Jan 2027 | Needs M1, the T8.9a grasp, M3's drive and the handover T3.7. Two weeks later than the plan |
 | M6 | 31 Jan 2027 | Query acceptance run (T6.8) in weeks 7 and 8. The re-recording with D455 depth (T6.2) waits for the calibration (M5). One week earlier than the plan |
 | M7 | 28 Feb 2027 | Can start on 18 Jan, earlier than planned, because the graph is ahead. Needs the query service (P2), T7.1 and the live graph (T7.2). End unchanged |
-| M8 | 14 Mar 2027 | Groundwork done early (T8.4, T8.5, T8.7). Glasses-to-robot calibration (T8.8) in January, feature into the query (T8.1, T8.2) and the ablation (T8.3) in Feb and March. End unchanged. Protected |
-| M9 | 21 Feb 2027, if kept | Not started. First on the cut list (PP §8.1). Likely cut |
+| M8 | 14 Mar 2027 | Groundwork done early (T8.4, T8.5, T8.7). Glasses-to-robot calibration (T8.8) in January, the gaze-target trigger (T8.1, T8.2) and the end-to-end trials (T8.3) in Feb and March. End unchanged |
+| M9 | 21 Feb 2027, if kept | Not started. First on the cut list (PP §8.1). Likely cut. The core exploration (T7.5) stays |
 | M10 | 21 Mar 2027 | Unchanged. One week of margin before the report is due |
 
 **What happened, week by week** (DONE dates from the task tree and the reports).
@@ -274,7 +285,7 @@ gantt
 way" at the interim. Actual: M0 done, M1 met on the simple path, M3's map and localisation done, and
 M2, M6 and M8 started well ahead of their planned windows. Behind: the base camera calibration (M5,
 T5.5) and the drive-to-point test (T3.6). Net effect in the forecast: M3, M4 and M5 slip one to two
-weeks, M6 finishes a week early, and the protected M8 and the final dates hold.
+weeks, M6 finishes a week early, and M8 and the final dates hold.
 
 **Next on the schedule** (from section 10 and the three reports' next steps).
 
@@ -287,18 +298,19 @@ weeks, M6 finishes a week early, and the protected M8 and the final dates hold.
 | Weeks 9 to 14 | Exams and winter break, no work | |
 | Weeks 15 to 17 | Ten drives finish (M3), two-box gaze grasp on hardware (M2), calibration rig built | T3.6, T2.5, T5.5 |
 | Weeks 18 to 20 | Calibration verified (M5), closed loop (M4), D455 depth recording (M6), glasses-to-robot calibration | T5.6, M4, T6.2, T8.8 |
-| Weeks 19 to 24 | Graph-driven goal, live graph, gaze feature into the query (M7) | T7.1, T7.2, T8.1, T8.2 |
-| Weeks 22 to 26 | The ablation (M8), then demonstration run and paper (M10) | T8.3, M10 |
+| Weeks 19 to 24 | Exploration with a live graph, finding the user, graph-driven goal, gaze-target trigger (M7, M8) | T7.2, T7.5, T7.6, T7.1, T8.2 |
+| Weeks 22 to 26 | End-to-end trials (M8), then demonstration run and paper (M10) | T8.3, M10 |
 
 ### 0.7 Critical path and risk management
 
 **Critical path** (PP §6.13). The chain through Dion: grasp working (M1), segmentation and gaze
-(M2), navigation-to-arm handover (T3.7), graph-driven goal (T7.1), gaze feature into the query
-(T8.2), ablation (T8.3). Almost every task on it is Dion's, which is the schedule risk in one line.
+(M2), navigation-to-arm handover (T3.7), graph-driven goal (T7.1), gaze-target trigger (T8.2),
+end-to-end trials (T8.3). Almost every task on it is Dion's, which is the schedule risk in one line.
 
-**Cut list, decided in advance** (PP §8.1). If the schedule slips, cut in this order: M9 entirely,
-the reasoning layer, graph pruning, the two-stage trigger, live graph building (use a recorded drive),
-then fewer ablation trials. M8 is never cut.
+**Cut list, decided in advance** (PP §8.1). If the schedule slips, cut in this order: M9 entirely
+(exploration stays, nearest-first), the without-gaze comparison (T8.11), the reasoning layer, graph
+pruning, the two-stage trigger, then fewer end-to-end trials. Exploration, live graph building,
+finding the user and the gaze-target trigger are not on the list: the base case needs them.
 
 **Risks seen so far.**
 
@@ -326,7 +338,7 @@ height, wrist camera at 0.2 to 0.5 m from above) share almost nothing pixel for 
 identity has to survive the move from the user's viewpoint into the robot's perception and
 manipulation.
 
-**Solution in outline.** Two published research systems joined, plus one added link.
+**Solution in outline.** Two published research systems joined into one five-phase pipeline.
 
 - FAM-HRI (Lai et al., arXiv 2503.16492): glasses gaze and speech tell an arm which object to pick.
   It assumes the object is already in front of the arm. The inherited code in this repo is a
@@ -334,9 +346,10 @@ manipulation.
 - HiCo-Nav (Xu et al., ICRA 2026, extended journal version): a robot explores a room and builds a
   cognitive memory graph of objects, each with 3D points and a CLIP image feature, then answers
   language queries. It finds a class ("a box"), not the instance the user looked at.
-- The added link, which is the research claim: carry a gaze-cropped image feature from the glasses
-  into the memory graph query, so the robot finds the instance the user looked at (M8, T8.1 to
-  T8.3). Not built yet.
+- How they join: the robot explores like HiCo-Nav, and the CLIP feature of the glasses crop is
+  compared with each object it sees. A good match is the trigger to stop exploring and drive to that
+  object, and the wrist camera confirms it (M8, T8.2). The wrist half of this match works on replay
+  (T8.9a). The exploration half is not built yet.
 
 **Integration status on 2026-10-23.** As planned for this stage, no end-to-end run exists yet. Each
 subsystem works in parts, on its own hardware or on recordings. The first planned closed-loop run
@@ -375,7 +388,7 @@ target in the plan is "M0 done, M1 and M3 under way, a progress report, not a wo
    (T1.44). This is the main open technical problem on the grasp side.
 5. No calibration between any two cameras yet: base camera to LiDAR (T5.5, M5) and glasses to robot
    (T8.8). Look-alike objects need the second.
-6. Exploration and finding the user are not in the current plan (section 5.2).
+6. Exploration, finding the user and the gaze-target trigger are planned (T7.5, T7.6, T8.2) but not built (section 5.2).
 
 ---
 
@@ -404,13 +417,14 @@ robot is elsewhere. It has never seen this user's view. It must:
 
 ### 2.3 How this differs from the plan the team is executing
 
-The team's plan (PP §4, §5, and CC §6, decided 2026-09-20) differs from the brief in four places.
-These are recorded decisions, not omissions.
+The team's plan (PP §1, §4, §5, CC §6) follows this pipeline. Since the 2026-10-24 framing fix
+(T10.5) exploration and finding the user are in the plan again. Three differences remain in how the
+parts are built today.
 
 | Brief | Team's plan | Source |
 |---|---|---|
-| The robot explores and finds the user | **Out of scope.** The return-to-user leg and the pose fusion it needs are parked. Autonomous exploration is M9 (frontier scoring), optional and first to be cut. For M6 to M8 the graph is built from a recorded or live drive, not from exploration | PP §4.2, §5.1, CC A-2 |
-| Base-camera candidates compared with the cached glasses embedding | The memory graph stores one CLIP image feature per object. It is queried with a **sentence** (CLIP text vector) today. The glasses image feature joins the query in M8 (T8.1 to T8.3, P3) | Z§3.7, CC P2, P3 |
+| The robot explores and finds the user | **In the plan, not built.** Exploration nearest-first with a live graph (T7.5, T7.2), finding the user (T7.6). M9's frontier scoring is optional and first to be cut. The return-to-user leg after the grasp stays out of scope | PP §1, §4, §8.1, CC A-2 |
+| Base-camera candidates compared with the cached glasses embedding | The memory graph stores one CLIP image feature per object. Today it is queried with a **sentence** (CLIP text vector). Comparing graph objects with the glasses feature, as the trigger to approach, is T8.2 (P3) | Z§3.7, CC P2, P3 |
 | The cached target is a CLIP embedding | The aria client sends a **reference crop image**, not a vector. The wrist matcher re-encodes it with CLIP on every wrist frame | [code 10-24] `object_recognition_pipeline.py:570` |
 | Stop streaming after the utterance | Not implemented and not planned. The phase table keeps the glasses on in both phases. The stop word `end` clears the target | CC §6 phase table, `aria_config.yaml:100` |
 
@@ -461,9 +475,9 @@ flowchart TD
 
   BASE["Base drive, base camera and LiDAR [async]"] --> LOC["FAST-LIVO2 pose and map"]
   LOC --> MG["Memory graph: objects with 3D points and CLIP features [async]"]
-  BASE -.-> EXP["Exploration and finding the user [future, out of scope]"]
+  BASE -.-> EXP["Exploration and finding the user [future: T7.5, T7.6]"]
 
-  EMB -.-> Q["Graph query with sentence plus gaze feature [future: M8]"]
+  EMB -.-> Q["Match graph objects against the gaze target, trigger to approach [future: T8.2]"]
   V --> Q
   MG --> Q
   Q --> GOAL["Object position to approach goal [future: T7.1]"]
@@ -561,7 +575,7 @@ What the second diagram shows that the first hides:
 | Query (`TaskContext`, `TargetFinder`) | Ranked hits with 3D centre and best photo | Classes, sentence, object store | Hit list | | Zongzhe | Isolated (stand-ins and a few photos) | Never run on the drive (T6.8) | Z§3.7 |
 | Query service (P2) | Sentence in, ranked positions out, reject service | | | ROS | Zongzhe | Planned (shape drafted, no ROS code) | | Z§3.8, CC P2 |
 | Graph-driven goal node (T7.1) | Graph hit to `/manipulation/goal_pose` | P2 | H2 | | Dion | Planned | | D§10, CC N-2 |
-| Gaze feature into the query (P3) | The research claim | Reference crop feature | Query term | | Dion | Planned | | CC P3, T8.1 to T8.3 |
+| Gaze-target trigger (P3) | Match graph objects against the gaze target, stop exploring and approach | Reference crop feature | Approach goal | | Dion | Planned | | CC P3, T8.1 to T8.3 |
 | Camera-to-LiDAR calibration | Measured base camera pose | Rig, target | Extrinsic with error | | Sherman rig, Dion procedure | Planned | Nominal transform only | S§13, T5.5 |
 | Glasses-to-robot calibration | Gaze ray in the robot frame | ArUco, shared scene | Transform | Aria MPS | Dion | Planned, Phase 0 | MPS login works | D§5.5, T8.8 |
 | Test bench and CI | L0 to L6 checks, CI on a GPU runner | Repo | Pass or fail | | Dion, all contribute | Tested | Every simulation test refuses a non-private ROS domain | D§2, S§2.3 |
@@ -628,14 +642,15 @@ reference crop reaches only the wrist matcher. Nothing carries it to the memory 
 **Intended.** The robot explores with the base camera, builds the memory graph as it goes, and finds
 the user.
 
-**Current implementation: none of the three steps runs autonomously.**
+**Current implementation: none of the three steps runs autonomously.** All three are in the plan
+(2026-10-24 framing fix, T10.5).
 
 | Step | Status | Evidence |
 |---|---|---|
-| Autonomous exploration | **Planned, optional.** M9 frontier scoring is P2 priority and first on the cut list. Upstream photo scoring is built (T6.7d) but nothing uses it | PP §5.1, Z§3.7 |
+| Autonomous exploration | **Planned, core.** Nearest-first exploration with a live graph (T7.5, T7.2). M9 frontier scoring is optional and first on the cut list. Upstream photo scoring is built (T6.7d) but nothing uses it | PP §1, §8.1, Z§3.7 |
 | Driving at all | Manual only. Keyboard teleop (T3.4) and hand-pushing with the wheel driver off (T3.5d, T3.5f). Nav2 has never driven the base | S§0 |
 | Building the memory graph | **Offline**, from `handdriven1` (Sherman, 2026-10-20, 117.9 s, 4.5 GB, 43,610 messages). Building it while the robot drives is T7.2 | Z§3.1, S§10, S§14 |
-| Finding the user | **Out of scope.** No component looks for the user in camera data | PP §4.2, CC A-2 |
+| Finding the user | **Planned (T7.6), not built.** Its purpose is to speed up exploration. No component looks for the user in camera data yet | PP §1, §4.1 |
 
 **What exists for "go to the user".** The inherited `goto_glasses.py` drives the base to 0.6 m left
 of the user on any word on `/aria/audio/prompt`. It takes the user's position from
@@ -661,7 +676,9 @@ start-up. Restart inside a saved map is deferred to stretch S10 (S§12).
 ### 5.3 Phase 3: target search and candidate localisation
 
 **Intended.** Compare base-camera candidates against the cached glasses embedding, accept a match,
-go to phase 4.
+go to phase 4. This match is the trigger that ends exploration (T8.2). Rule decided 2026-10-24
+(Dion): a cutoff tuned for base-camera views, the wrist confirms or rejects, a reject sends the robot
+back to exploring. The cutoff value is not measured yet.
 
 **Implemented path: a sentence query over the graph** (Z§3.7, status per step).
 
@@ -682,9 +699,9 @@ go to phase 4.
 | CLIP on candidate crops? | Yes, during graph building (S6), with padding relative to the box. Upstream used a fixed 20 px |
 | Similarity and threshold | Cosine, text vector against image feature. Ranking, no acceptance threshold |
 | Highest score or evidence accumulation? | Highest-ranked hit first. Evidence accumulates through merging: the feature is averaged over sightings |
-| Multiple similar objects | Not separable by appearance: two chairs of one model score 0.81 to 0.85 vs 0.934 for the same chair (Z§3.4). The gaze feature (M8) and geometry (T8.8) are the planned answers |
+| Multiple similar objects | Not separable by appearance: two chairs of one model score 0.81 to 0.85 vs 0.934 for the same chair (Z§3.4). The gaze target (M8) and geometry (T8.8) are the planned answers |
 | Location representation | 3D box centre in the frame of the graph's poses (FAST-LIVO2 world frame on the recording). P2 requires this to be the frame Nav2 drives in. Not yet reconciled (section 6.7) |
-| Role of the memory graph | It is the search. There is no live base-camera search loop |
+| Role of the memory graph | It is the search. It is meant to be built live while exploring (T7.2, T7.5). Today it is built offline, so there is no live search loop |
 | Gaze as a spatial prior | Not implemented. T7.4 (follow the gaze ray when the object is not found) is planned |
 
 **Example query for slides.** The answer key has no box (Z§8 question 5). "Find the chair" can be
@@ -858,7 +875,7 @@ geometric route (T8.8).
 ### 6.4 CLIP embeddings and target representation
 
 Both the matcher and the memory graph use open_clip ViT-B-32 `laion2b_s34b_b79k`, 512-dimensional,
-L2-normalised. Two differences matter when the gaze feature joins the graph query (P3):
+L2-normalised. Two differences matter when the gaze feature is matched against graph objects (P3, T8.2):
 
 - **Crop padding.** Glasses and wrist: box plus fixed 20 px. Graph: padding relative to the box.
   The same object cropped two ways gives two vectors.
@@ -962,10 +979,10 @@ measured together.
 | Graph query on the drive | Isolated | T6.8a | T6.8 acceptance run |
 | Graph query service | Planned (shape drafted) | T6.8b | Dion's agreement, ROS code |
 | Graph-driven goal | Planned | T7.1 | |
-| Gaze feature in the query | Planned | T8.1 to T8.3 | All |
+| Gaze-target trigger (graph objects vs glasses crop) | Planned | T8.1, T8.2 | All |
 | Nav bridge nodes | Built, not validated | T3.8 | Lab box run of `bench/nav_nodes.sh` |
 | Navigation-to-arm handover | Planned, never tested | T3.7 | Standoff vs reach check |
-| Exploration, finding the user | Out of scope or optional | PP §4.2, M9 | |
+| Exploration, finding the user | Planned, core | T7.5, T7.6 (M9 optional) | All |
 | Closed loop: speak, look, drive, grasp | Planned | M4 | |
 
 ---
@@ -1081,7 +1098,7 @@ presentation states them accurately.
 | A wrong gaze pick becomes a confident reference (T8.9a replay: at 1.5 m the reference was the mat, and the other box scored just over 0.56 twice) | The arm would go for the wrong box if a grasp request were open. T2.24 refuses weak gaze picks |
 | `/manipulation/goal_pose` has no live publisher (inherited) | Nothing can start navigation to an object yet. T7.1 will publish it |
 | No graph query service, no T7.1 node | The graph cannot drive the robot |
-| Gaze feature not in the graph query | The research claim (instance, not class) is untested |
+| No gaze-target trigger on graph objects | The exploring robot cannot yet tell it has found the target. Glasses crop vs base-camera features is untested |
 | Graph built offline from a hand-pushed recording | No live graph. No depth camera data |
 | No calibration between any cameras | Graph positions and the gaze ray carry unknown rotation error. About 6.7 px per degree on the base camera (S§13.1) |
 | Software-only stops on arm and base | Every hardware test needs two people and the power button |
@@ -1137,7 +1154,7 @@ Future questions, answered as the parts are connected (next steps, not gaps):
 
 4. How graph positions reach the `map` frame Nav2 drives in (P2, T7.1).
 5. Whether the base standoff puts the object in arm reach (first nav-to-object test, T3.7).
-6. How the robot gets near enough to the target region to start, given no exploration (M7, M9).
+6. The base-camera cutoff for the gaze-target trigger (T8.2).
 
 Settled: the grasp uses the matcher's choice and waits on "no match" (T8.9a, done 2026-10-24). The
 wrist camera is calibrated to the arm (Dion, 2026-10-24).
@@ -1197,7 +1214,7 @@ These are recommendations, not existing functionality. Each names the finding be
 | # | Recommendation |
 |---|---|
 | 17 | Live graph building while driving (T7.2) |
-| 18 | Exploration (M9) and, if the claim needs it, a user-finding step |
+| 18 | M9 frontier scoring on top of the core exploration, if time allows |
 | 19 | Restart in a saved map (T3.5e, S10) |
 | 20 | Closed-loop grasp tracking (D§7 option D) |
 
@@ -1219,7 +1236,9 @@ per-stage. None end to end.
 | Wrist confirmation accuracy | Matcher picks the intended object, with look-alikes and without. Count refusals separately from wrong picks | P0 item 1 | M2 |
 | False acceptance rate | Wrong object accepted, per stage (glasses, graph, wrist) | Labelled trials | M2, M8 |
 | Graph target retrieval | First hit lands on the intended marked object, and distance to it | T6.8 | M6 |
-| Instance retrieval with and without gaze | Same as above, ablation | P3 | M8 |
+| Gaze-target trigger accuracy | The robot stops exploring at the intended object, with look-alikes and without. Wrong stops and wrist rejects counted | T8.2 | M8 |
+| User discovery rate and search distance | User found, and distance driven before the target is matched | T7.5, T7.6 | M7 |
+| Without gaze (stretch) | Same trials, voice only | T8.11 | M8 |
 | Drive-to-point repeatability | Ten drives, landing error, 10 cm circle | T3.6, T5.8 fixture | M3 |
 | Handover success | Base stops with the object inside the grasp band | T3.7 | M4 |
 | Grasp success | 12-trial grid, pass bar 9 of 12 | T1.35 | M1 |
@@ -1227,8 +1246,7 @@ per-stage. None end to end.
 | Per-stage timing | 99th percentile per stage | T4.2 | M4 |
 | Recovery | Fraction of failures that end safely (refusal, ask, reject and retry) instead of a wrong grasp | P1 items | M4 |
 
-User discovery rate and search distance apply only if exploration and user finding come back into
-scope. They are not measurable on the current system.
+User discovery and search distance are not measurable on the current system, since nothing explores yet.
 
 ---
 
@@ -1273,7 +1291,7 @@ other (0.4), what gets cut if time runs out (0.7).
 7. **What has been demonstrated.** Per-stage results, section 8. State that no end-to-end run exists.
 8. **What remains.** Section 9.1, as a short list: Nav2 must drive, the graph must answer a query
    and feed a goal, the cameras must be calibrated, and AnyGrasp must work off the ideal spot.
-9. **Next.** Section 10 P0, then M8 as the research claim.
+9. **Next.** Section 10 P0, then exploration with the gaze-target trigger (M7, M8).
 
 A single architecture diagram (section 3.3, with greyed future parts from 3.2) should appear early
 and be reused as a progress map.
@@ -1382,3 +1400,4 @@ All of section 9.4, plus:
 | 2026-10-24 | Claude (Opus 5.5) + Dion | New section 0 for the interim assessment criteria: objectives, background, means, team, weekly schedule (Gantt, week-by-week log, milestone progress from the task tree, 97 of 171 rows done), critical path and risks. Section 12 gains the 20 plus 10 minute format. Budget is a separate document. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Schedule in 0.2 and 0.6 replaced with actual progress plus a forecast (Dion: M1 by 8 Nov, the rest estimated). The September plan stays in git. Same change in `PROJECT_PLAN` §5.1, §5.3 and `task-tree.html`. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | T8.9a results written in (PR #129, 600 of 602 on replay, T2.24 next). Wrist camera to arm is calibrated (Dion). Sections 1, 3.3, 4, 5.1, 5.4, 6.2, 6.6, 7, 9.1, 9.4, 10, 12, 13.2 and the week 7 schedule rows updated to match. |
+| 2026-10-24 | Claude (Opus 5.5) + Dion | **Framing fix (T10.5, Dion).** No more "research claim". Exploration is core, finding the user speeds it up, the gaze target is the trigger from exploring to approaching, gaze is the base case and without gaze is a stretch (T8.11). New main objective in 0.2. Sections 0.2, 0.6, 0.7, 1, 2.3, 3.2, 4, 5.2, 5.3, 7, 9.1, 9.4, 10, 11.2 and 12 updated. |
