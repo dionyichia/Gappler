@@ -469,7 +469,8 @@ stack.
 - **Why 3D, not the 2D SLAM in the plan:** 2D SLAM (SLAM Toolbox) gives only x, y and heading. The
   memory graph places every object in 3D from the camera pose, so it also needs height, pitch and
   roll (1 degree of pitch moves an object 4 m away by about 7 cm). FAST-LIVO2 gives the full,
-  camera-fused pose that object positions for HiCo-Nav need. Nav2 still drives on a 2D grid, fed by
+  camera-fused pose that object positions for HiCo-Nav need, and it is what the HiCo-Nav paper
+  itself uses for its camera poses, with the same Livox MID-360. Nav2 still drives on a 2D grid, fed by
   this pose
 - Results (hand-pushed loop, recording `handdriven1`, 20 Oct):
   - **26.05 m loop, back to start within 12 mm** (4 mm LiDAR-only, 7 mm odometry error, 0.03 %)
@@ -489,7 +490,7 @@ the 10 cm zoom on start and end, labelled "12 mm". Results as three numbers in a
 
 **Proposed speaker script.**
 "Before the robot can remember where objects are, it needs to know where it is. We use FAST-LIVO2,
-an open-source method from the University of Hong Kong. It fuses the LiDAR, its motion sensor and
+the open-source method the HiCo-Nav paper uses, from the University of Hong Kong. It fuses the LiDAR, its motion sensor and
 the colour camera into one pose, and paints a coloured 3D map as it goes.
 
 Our plan proposed 2D SLAM, and I built that first. On 15 October I switched to 3D. 2D SLAM knows
@@ -514,7 +515,9 @@ about 7 cm reference, compute 11 to 14 ms, three port defects), CR§4 FAST-LIVO2
 Sherman's report S§6.4 (reason for the switch: a coloured, camera-fused pose for HiCo-Nav, decided
 2026-10-15), CR§13.2 X10 (use all three closure numbers). Why 3D: `MEMORY_GRAPH_DESIGN.md` (merge
 test depends on camera pose, 2D localisation has no reliable pitch or roll, appearance alone cannot
-merge), `hico-nav/PAPER_REPORT.md` (2D SLAM option, no reliable pitch or roll), 1 degree at 4 m =
+merge), `hico-nav/PAPER_REPORT.md` (2D SLAM option, no reliable pitch or roll. §6.2: the paper, §III-B(a),
+takes its camera poses from FAST-LIVO2 on a Livox MID-360, so we adopted its method rather than
+inventing one), 1 degree at 4 m =
 4 x 0.01745 = 0.07 m. Option 2 (FAST-LIVO2 pose, SLAM Toolbox only draws the Nav2 grid): S§11. For
 questions only, measured after the decision (S§12.2, same bags): restart inside the SLAM Toolbox map
 0.25 to 0.30 m from the tape, 3D prototype 0.070 m. Glass ghost points (CR§9.2, about 42 %) left off
@@ -1479,4 +1482,4 @@ do not exist yet.
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Created (T10.4). 18 core slides and 9 appendix slides from `COMBINED_PROGRESS_REPORT_2026-10.md` and the approved budget proposal (5 Oct 2026). T8.9a and the teammates' media left as placeholders. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | T8.9a results in (slides 12, 15, 18, PR #129, 600 of 602 on replay). Sherman now presents slides 15 and 16 (Dion 9:50, Sherman 5:00, Zongzhe 4:45). Budget in SGD, API credits for AI services. Wrist camera to arm calibrated (slide 8). |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Framing fix (T10.5, Dion). No research claim, no protected M8, no ablation. Exploration is core, finding the user speeds it up, the gaze target is the match that ends exploration, gaze is the base case and without gaze is a stretch. Overview, slides 2, 3, 4, 9, 11, 15, 16, 17, 18, sections C and E rewritten to match. Phase strip label 2 is now "Explore and map". |
-| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is zero by mount design (flush on the square frame, Sherman), not measured, instead of "estimated by eye". |
+| 2026-10-24 | Claude (Opus 5.5) + Sherman | Slide 7: why 3D SLAM over the 2D SLAM in the plan (the memory graph needs the full camera pose to place objects for HiCo-Nav, Nav2 still drives on a 2D grid), glass ghost points moved off the slide to appendix A6 as a known LiDAR effect, script trimmed to stay at 1:35. Slide 5: navigation ran from another user's workspace and the repo copy did not build (was "never built"). Slide 8: the 12 checks are software unit tests, not physical measurements. The camera rotation is zero by mount design (flush on the square frame, Sherman), not measured, instead of "estimated by eye". Slide 7 credits FAST-LIVO2 as the HiCo-Nav paper's own pose source (PAPER_REPORT §6.2). |
