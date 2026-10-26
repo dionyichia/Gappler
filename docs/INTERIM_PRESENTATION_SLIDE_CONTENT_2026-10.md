@@ -1021,67 +1021,121 @@ reported with live glasses).
 
 **Presenter.** Dion
 
-**Transition.** "The learned grasp model, AnyGrasp, is where the current blocker sits."
+**Transition.** "The learned grasp model, AnyGrasp, is what we use for harder grasps."
 
 ---
 
-## Slide 14: AnyGrasp works at one ideal spot because, up close, the camera sees only one face
+## Slide 14a: AnyGrasp proposes full grasps from one point cloud, and grasped 2 of 3 at the ideal spot
 
-**Purpose.** Explain the main open technical problem on the grasp side, its diagnosed cause and the
-options. Show engineering judgement on a failure.
+**Purpose.** Show what the learned grasp model does and what already works with it, before the
+challenges. Let the audience see it propose grasps live.
 
-**Key takeaway.** The failure is diagnosed: close-range views hide the box's shape, so the
-confident grasps are the wrong ones. The fix is to grasp from further back or from fused views.
+**Key takeaway.** AnyGrasp turns one depth view into many ranked grasps with no training on our
+objects. With four fixes between its output and our arm, it grasped 2 of 3 on the real arm.
 
 **On-slide content**
 
 - Phase strip: **5 Grasp** highlighted
-- Title: *AnyGrasp works at one ideal spot because, up close, the camera sees only one face*
-- AnyGrasp: a learned model that proposes 6-DoF grasps on a point cloud
-- Result: **2 of 3 at the ideal spot** (44.5 cm, centred, square). Fails elsewhere: a recipe from
-  OK-Robot gave more grasps offline (132 vs 97) but **0 of 4 live**
-- Cause, diagnosed:
-  - At 0.21 m the wrist camera sees mostly one face of the 75 x 60 x 143 mm box
-  - The confident grasps go across the 75 mm face, wider than the 71 mm gripper
-  - Our fit check measures width from visible points, so edge and corner grasps pass it wrongly
-    (369 of 369 passed on replay)
-  - The good top-down grasp is proposed in 49 of 75 frames but scores at most 0.25, under our 0.3
-    floor
-- Next, cheapest first: grasp once from 0.4 to 0.5 m with the whole box in view (A), grasp on
-  several fused views (B, retest owed), new AnyGrasp SDK (C, waiting on a licence)
+- Title: *AnyGrasp proposes full grasps from one point cloud, and grasped 2 of 3 at the ideal spot*
+- What AnyGrasp does: takes a point cloud (the 3D points the depth camera sees) and proposes
+  hundreds of grasps. Each grasp is a gripper position, an angle and an opening width, with a
+  confidence score. It was not trained on our objects
+- What we built around it: keep only grasps on the target mask, then four fixes before any motion
+  - Gripper axis turned 90 deg to match our arm
+  - Grasp point moved 2 to 3 cm forward to the fingertips
+  - Of the two mirror-image grasps, take the one with the smaller wrist turn (was 180 deg, now 11
+    to 29 deg)
+  - RViz redrawn to the real gripper, so what we see at the robot is what the arm will do
+- Result on the real arm: **2 of 3 grasps at the ideal spot** (44.5 cm, centred, box square to the
+  arm)
+- It already proposes the grasp we want: straight down across the 60 mm top, in 49 of 75 frames
 
-**Recommended visualisation.** Main: Dion's fit-check figure
-`fit_check_edge_grasp_75mm_face_measured_56mm_passes_wrongly.png`, captioned "a 75 mm face measured
-as 56 mm: the check passes a grasp the gripper cannot make". Beside it, a simple dimensioned sketch:
-the box with 75 and 60 mm marked, the gripper's 71 mm opening drawn against both, a red cross on
-75, a green tick on 60. A small strip at the bottom with the three options as A, B, C chips. Optional:
-`anygrasp_8_best_grasps_angles_2026-10-20.png` if space allows. Leave the RViz recording for the
-appendix.
+**Recommended visualisation.** Main, large: the RViz GIF at the stop point, 21 cm from the box, just
+outside the depth camera's minimum range. It shows the arm model, the live point cloud and
+AnyGrasp's proposed grippers appearing on the box. Caption: "AnyGrasp's proposals on the live wrist
+camera cloud, 21 cm from the box". Beside it, the four fixes as a short numbered list and the
+"2 of 3" result as a badge. Keep the text light so the GIF carries the slide.
 
 **Proposed speaker script.**
-"AnyGrasp is a learned model that looks at a point cloud and proposes grasps: where to put the
-gripper and at what angle. At the ideal spot it worked twice in three tries. Anywhere else it failed.
+"AnyGrasp is a learned grasp model. It looks at the 3D points from the depth camera and proposes
+hundreds of grasps: where to put the gripper, at what angle, how wide to open, and how confident it
+is. It was never trained on our box.
 
-We traced why. The arm runs AnyGrasp when the camera is 21 centimetres from the box, and from there
-it sees mostly one face. AnyGrasp's most confident grasps go across the 75-millimetre face, but our
-gripper opens to 71. Our own fit check should catch that, but it measures width from the points it
-can see, so a grasp on an edge looks narrow enough and passes. On replay every one of 369 grasps
-passed it. The grasp we want, from the top across 60 millimetres, is proposed in most frames, but
-scores 0.25, under our floor.
+This is it running on the robot. The arm stops 21 centimetres from the box, the camera takes one
+view, and the grippers you see are AnyGrasp's proposals.
 
-So the problem is not the model. It is where we ask it. The cheapest fix is to run AnyGrasp once from
-further back, 40 to 50 centimetres, with the whole box in view, then make one planned move. The
-second is to fuse several views into one cloud, which is built and needs a retest. This decides when
-M1 closes."
+Its output does not drop straight into our arm. We found and fixed four mismatches before any
+motion: the gripper axis, the fingertip offset, a 180 degree wrist spin, and how RViz drew the
+grasps. With those fixed, it grasped 2 of 3 at the ideal spot. And it does propose the grasp we
+want, straight down across the top, in most frames."
 
-**Estimated duration.** 1:00
+**Estimated duration.** 0:40
+
+**Evidence and source notes.** D§6.4 (four fixes, wrist turn 11 to 29 deg, RViz redraw T1.34), CR§8.3
+and D§6.4 "Result" (2 of 3 at the ideal spot, T1.17), CR§5.5 (top-down grasp in 49 of 75 frames, top
+59 mm rounded to 60). The 21 cm stop point is the approach stop distance on slide 13.
+
+**Placeholders.** `[ARTEFACT NEEDED: rviz_anygrasp_proposals_21cm_<date>.gif, RViz at the 21 cm stop point with the arm model, live cloud and AnyGrasp grippers. Trim to 15 s or less (Dion)]`
+
+**Presenter.** Dion
+
+**Transition.** "Two of three is at one spot. Moving the box is where the challenges start."
+
+---
+
+## Slide 14b: Off the ideal spot, the challenge is the close-up view: the camera sees one face
+
+**Purpose.** State what does not work yet and why, as diagnosed challenges with a plan, not as a
+list of failures.
+
+**Key takeaway.** The model is not the limit. Up close, the camera sees one face, so the confident
+grasps are the wrong ones. The fix is to ask AnyGrasp from further back or on fused views.
+
+**On-slide content**
+
+- Phase strip: **5 Grasp** highlighted
+- Title: *Off the ideal spot, the challenge is the close-up view: the camera sees one face*
+- Off the ideal spot: a recipe from OK-Robot gave more grasps offline (132 vs 97) but **0 of 4 live**
+- Three challenges, all from the close-up view:
+  1. **One face visible.** At 21 cm the wrist camera sees mostly one face of the 75 x 60 x 143 mm
+     box. The confident grasps go across the 75 mm face, wider than the 71 mm gripper
+  2. **Our fit check is fooled.** It measures width from the points it can see, so edge and corner
+     grasps look narrow enough (369 of 369 passed on replay)
+  3. **The right grasp scores low.** The top-down grasp is proposed in 49 of 75 frames but scores at
+     most 0.25, under our 0.3 floor
+- Next, cheapest first:
+  - **A.** Run AnyGrasp once from 0.4 to 0.5 m, with the whole box in view
+  - **B.** Fuse several views into one cloud (built, retest owed)
+  - **C.** New AnyGrasp SDK that steers grasps to a region (waiting on a licence)
+
+**Recommended visualisation.** Main: the point cloud GIF, rotating the wrist camera's cloud so the
+audience sees that only one face of the box is there. Beside it, a simple dimensioned sketch: the box
+with 75 and 60 mm marked, the gripper's 71 mm opening drawn against both, a red cross on 75, a green
+tick on 60. A strip at the bottom with A, B, C as chips. Optional, if space allows: Dion's fit-check
+figure `fit_check_edge_grasp_75mm_face_measured_56mm_passes_wrongly.png`, captioned "a 75 mm face
+measured as 56 mm: the check passes a grasp the gripper cannot make".
+
+**Proposed speaker script.**
+"When we moved the box, the grasps stopped working. We traced it to the view, not the model.
+
+Here is what the camera sees at 21 centimetres. As the cloud turns, you can see it is mostly one face
+of the box. From that, AnyGrasp's most confident grasps go across the 75 millimetre face, and our
+gripper opens to 71. Our fit check should catch that, but it measures width from the visible points,
+so an edge looks narrow enough. On replay all 369 grasps passed it. The grasp we want, from the top,
+is there in most frames but scores just under our floor.
+
+So the challenge is where we ask AnyGrasp, not AnyGrasp itself. The cheapest fix is to ask once from
+40 to 50 centimetres, with the whole box in view. The second is to fuse several views, which is built
+and needs a retest. This decides when M1 closes."
+
+**Estimated duration.** 0:45
 
 **Evidence and source notes.** CR§5.5 "Why AnyGrasp fails off the ideal spot" (one face, 75 x 60 x 143
-mm, 71 mm gripper, 369 of 369, 49 of 75 frames, 0.25 vs 0.3), CR§8.3 (2 of 3 at ideal spot, OK-Robot
-132 vs 97 offline, 0 of 4 live), CR§9.4 item 2 (strategy choice open), Dion's report D§7 options A to
-E. CR§5.5 gives the top as "59 mm". The slide rounds it to 60 mm to match the box size.
+mm, 71 mm gripper, 369 of 369, 49 of 75 frames, 0.25 vs 0.3), CR§8.3 (OK-Robot 132 vs 97 offline, 0 of
+4 live), CR§9.4 item 2 (strategy choice open), Dion's report D§7 options A to E. CR§5.5 gives the top
+as "59 mm". The slide rounds it to 60 mm to match the box size.
 
-**Placeholders.** `[ARTEFACT NEEDED: fit_check_edge_grasp_75mm_face_measured_56mm_passes_wrongly.png, optional anygrasp_8_best_grasps_angles_2026-10-20.png (Dion)]`
+**Placeholders.** `[ARTEFACT NEEDED: anygrasp_point_cloud_one_face_<date>.gif, made from Dion's point-cloud-anygrasp.mov. Trim to 15 s or less (Dion)]`
 `[VERIFY: if the new SDK licence (T1.45) or the fusion retest (T1.47) has a result before 28 Oct, add one line. Otherwise keep as is]`
 
 **Presenter.** Dion
@@ -1461,11 +1515,11 @@ parking within reach).
 | Phase 2, exploration and finding the user | 4 | Planned (T7.5, T7.6). Stated on slide 4 |
 | Phase 3, search | 11 | Reasoning tested. Full query not run (T6.8). Gaze match planned (T8.2) |
 | Phase 4, approach and confirm | 12, 15 | Strong on replay: 600 of 602 inside the grasp loop (T8.9a). Not yet on the real arm. Navigation to object never tested |
-| Phase 5, grasp | 13, 14 | Real arm results, small sample (8 and 3 trials). AnyGrasp blocker diagnosed |
+| Phase 5, grasp | 13, 14a, 14b | Real arm results, small sample (8 and 3 trials). What AnyGrasp does and what works (14a), challenges diagnosed with a plan (14b) |
 | Integration status | 15 | Explicit. Each part placed on the full flow, two links still to join, each with a task |
 | Experimental methodology and conditions | 6, 7, 10, 12, 13 | Conditions kept with every number. Sample sizes are small, say so if asked |
 | Quantitative and qualitative results | 6, 7, 9 to 14 | Strong. All per stage, none end to end |
-| Limitations and failure cases | 6, 7, 10, 12, 13, 14, 15 | Shown on each slide, plus slide 15. Full list in appendix A6 |
+| Limitations and failure cases | 6, 7, 10, 12, 13, 14b, 15 | Shown on each slide, plus slide 15. Full list in appendix A6 |
 | Remaining work and risk mitigation | 15, 17, 18 | Strong. Cut list and risk table |
 | Weekly schedule in chart form | 16 | Present. Actual plus forecast by week. The September plan is in git if asked |
 | Budget proposal | 17 | Present and approved, SGD. API credits explained by the team if asked |
@@ -1497,21 +1551,22 @@ parking within reach).
 | | *Handover to Dion* | | 0:05 | 12:15 |
 | 12 | Phase 4: cross-camera match in the grasp loop | Dion | 1:35 | 13:50 |
 | 13 | Phase 5: grasp | Dion | 1:10 | 15:00 |
-| 14 | AnyGrasp blocker | Dion | 1:00 | 16:00 |
-| | *Handover to Sherman* | | 0:05 | 16:05 |
-| 15 | Full flow and links still to join | Sherman | 1:05 | 17:10 |
-| 16 | Schedule | Sherman | 1:10 | 18:20 |
-| | *Handover to Zongzhe* | | 0:05 | 18:25 |
-| 17 | Budget and risks | Zongzhe | 0:45 | 19:10 |
-| 18 | Next steps and conclusion | Zongzhe | 0:50 | 20:00 |
+| 14a | AnyGrasp: what it does and what works | Dion | 0:40 | 15:40 |
+| 14b | AnyGrasp: challenges and next steps | Dion | 0:45 | 16:25 |
+| | *Handover to Sherman* | | 0:05 | 16:30 |
+| 15 | Full flow and links still to join | Sherman | 1:05 | 17:35 |
+| 16 | Schedule | Sherman | 1:10 | 18:45 |
+| | *Handover to Zongzhe* | | 0:05 | 18:50 |
+| 17 | Budget and risks | Zongzhe | 0:45 | 19:35 |
+| 18 | Next steps and conclusion | Zongzhe | 0:50 | 20:25 |
 
-**Total: 20:00**, including eight handovers of about 5 s. No video runs longer than its slide's
+**Total: 20:25**, including eight handovers of about 5 s. Splitting slide 14 into 14a and 14b (2026-10-26) added 0:25. Trim it at rehearsal, first from Dion's slides 12 to 14b. No video runs longer than its slide's
 time: the orbit video on slide 7 and the grasp video on slide 13 play while the presenter talks.
 Trim each video to 15 s or less. Slide 5 was already cut to 0:45 to fit the
 three extra handovers. If rehearsal runs long, cut next from slide 10 (drop the second-drive
 sentence).
 
-**Speaking time per person (slides only, handovers 0:40 on top):** Dion 7:35, Zongzhe 6:00, Sherman
+**Speaking time per person (slides only, handovers 0:40 on top):** Dion 8:00, Zongzhe 6:00, Sherman
 5:45. Dion still has the largest share because he leads 5 of the 11 milestones.
 Zongzhe opens the system with slide 4 and Sherman covers the starting point (slide 5), so all three
 speak in the first five minutes. Sherman takes the full flow and the schedule, where his M3 and M5 are
@@ -1527,7 +1582,7 @@ the two slips he can explain first-hand.
 | Dion to Sherman (after 6) | "That crop now has to be found by a robot that has never seen this view. Sherman will show how the robot knows where it is." |
 | Sherman to Zongzhe (after 8) | "With poses and camera images from that drive, Zongzhe builds the robot's memory of the room." |
 | Zongzhe to Dion (after 11) | "Dion now picks up the object at close range." |
-| Dion to Sherman (after 14) | "Sherman will now step back from the parts and show what is connected today." |
+| Dion to Sherman (after 14b) | "Sherman will now step back from the parts and show what is connected today." |
 | Sherman to Zongzhe (after 16) | "Zongzhe will cover what the plan costs and what could go wrong." |
 
 ---
@@ -1539,7 +1594,7 @@ the two slips he can explain first-hand.
 | A1 | Topic-level wiring today | "What exactly is connected?" | CR§3.3 diagram, with topic names (`/aria/audio/prompt`, `/grasp/target`, `/object_centroid_2d`, `/grasp_candidates`) |
 | A2 | Coordinate frames | "How do grasp poses reach the arm?" | CR§6.7 TF tree: `map` to `odom` to `robot_base_link` to `base_link` through the arm links to `camera_color_optical_frame`. Base-to-arm (0.18, 0, 0.48) m, yaw 180 deg |
 | A3 | Matching rule and thresholds | "Why 0.56? Is CLIP cosine a probability?" | CR§5.4 rule (cutoff 0.56 tuned on 20 pairs, tie margin 0.01, wrist tie means no match), CR§6.4 (not a calibrated probability, float16 drift up to 0.0039), CR§6.6 (no confidence crosses a stage) |
-| A4 | Grasp filters and the five options | "Why not just lower the score floor?" | CR§5.5 filters (mask, cone, 0.3 floor, 68 mm width, 45 mm fingertip depth, 5-frame stability), the 30 deg cone against the 44 deg camera axis, D§7 options A to E. RViz grasp recording if Dion records it |
+| A4 | Grasp filters and the five options | "Why not just lower the score floor?" | CR§5.5 filters (mask, cone, 0.3 floor, 68 mm width, 45 mm fingertip depth, 5-frame stability), the 30 deg cone against the 44 deg camera axis, D§7 options A to E. The RViz recording is now on slide 14a |
 | A5 | FAST-LIVO2 port defects and mid-route accuracy | "How do you know the map is right?" | CR§8.4 (three defects with before and after counts, mid-route error vs reference, 0.15 s stamp lag, floor marks that did not close). Sherman's `nav_t35f_drift_step3_error_vs_time_2026-10-21.png` |
 | A6 | Full limitations and failure list | "What fails today?" | CR§9.1 and CR§9.2 tables, plus the architectural risks in CR§9.3 (crop mismatch, graph frame vs Nav2 frame, standoff 0.6 m vs the 35 to 46 cm tested grasp band, GPU contention, viewpoint change glasses to base camera untested) |
 | A7 | September plan vs actual | "How does this compare with your original plan?" | September plan in git at `1cde0ec:docs/PROJECT_PLAN.md` §5.3, against CR§0.6 actual and forecast |
@@ -1593,7 +1648,7 @@ the two slips he can explain first-hand.
   published targets only). Slide 12 uses only the second. See its placeholder.
 - `handdriven1` size: Sherman's 4.5 GB, 117.9 s is used (CR§13.2 X3). It does not appear on the
   slides.
-- Box top width: 59 mm in CR§5.5, rounded to 60 mm on slide 14.
+- Box top width: 59 mm in CR§5.5, rounded to 60 mm on slides 14a and 14b.
 - Commit counts use different bases and are not shown (CR§8.6).
 
 ---
@@ -1605,7 +1660,7 @@ do not exist yet.
 
 | Owner | Files | Slides |
 |---|---|---|
-| Dion | `aria_gaze_pick_vs_distance_2026-10-20.jpg`, `lightglue_baseline_wrong_matches_2026-10-19.jpg`, `clip_glasses_vs_wrist_crops_2026-10-20.jpg`, `fit_check_edge_grasp_75mm_face_measured_56mm_passes_wrongly.png`, optional `anygrasp_8_best_grasps_angles_2026-10-20.png`. **Stub:** `grasp_real_arm_<date>.mp4` (exists on Dion's phone, copy it in). Optional stub: `rviz_grasp_<date>.mp4` for A4. T8.9a numbers are in `docs/bench-runs/2026-10-24-labbox-t8.9a-grasp-matches-reference.txt`, charts drawn from them | 2, 6, 12, 13, 14 |
+| Dion | `aria_gaze_pick_vs_distance_2026-10-20.jpg`, `lightglue_baseline_wrong_matches_2026-10-19.jpg`, `clip_glasses_vs_wrist_crops_2026-10-20.jpg`, `fit_check_edge_grasp_75mm_face_measured_56mm_passes_wrongly.png`, optional `anygrasp_8_best_grasps_angles_2026-10-20.png`. **Stub:** `grasp_real_arm_<date>.mp4` (exists on Dion's phone, copy it in). **Stub:** `rviz_anygrasp_proposals_21cm_<date>.gif` for 14a. **Stub:** `anygrasp_point_cloud_one_face_<date>.gif` for 14b, from `point-cloud-anygrasp.mov` on Dion's Mac. T8.9a numbers are in `docs/bench-runs/2026-10-24-labbox-t8.9a-grasp-matches-reference.txt`, charts drawn from them | 2, 6, 12, 13, 14a, 14b |
 | Sherman | Clean renders, no text baked in (2026-10-24): `nav_fastlivo_map_buildup_clean_handdriven1_2026-10-24.gif` (or `nav_fastlivo_map_orbit_clean_handdriven1_2026-10-24.gif`, `.mp4`, or `nav_fastlivo_map_iso_clean_handdriven1_2026-10-24.png`), `nav_fastlivo_path_closure_zoom_clean_handdriven1_2026-10-24.png`, optional `nav_fastlivo_path_top_clean_handdriven1_2026-10-24.png`. `nav_lidar_on_camera_overlay_stationary02_t0s_2026-10-19.png` (already clean), `nav_t35f_drift_step3_error_vs_time_2026-10-21.png` for A5. Possibly a base-camera frame for slide 2 | 2, 7, 8, A5 |
 | Zongzhe | Rerun 3D screenshot from `mg_t6.3_four_photos_rerun_3d_2026-10-21.rrd`. **Stub:** `mg_graph_3d_flythrough_<date>.mp4` (recordable any time). `mg_frame700_masks_and_3d_objects_2026-10-21.png`, optional `mg_ground_truth_12_objects_on_lidar_map_2026-10-21.png`, the 22-instruction grid from `check_reasoning.json`, the real "find the chair" output | 9, 10, 11 |
 | Any member | Photo of the full robot with the glasses, for the title slide | 1 |
@@ -1624,3 +1679,4 @@ do not exist yet.
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Slide 2 now shows only the problem (three viewpoints). FAM-HRI and HiCo-Nav moved to slide 3, which gains a "what it cannot do for us" row. Slide 2 to 0:50, slide 3 to 1:20, section total unchanged. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Final pass before slide generation: "gate" wording removed (slides 7, 9, 10, 13), slide 12 script grammar fixed. |
 | 2026-10-26 | Claude (Opus 5.5) + Dion | Slide 18 rewritten (Dion): four steps in order (reliable grasp, drive and park within reach, explore until the gaze match, one orchestration layer), then the end-to-end trials. No dates, no two-week list. Slide 16 data gains M11 and M12, row count 97 of 188. Appendix A10 gains M11 and M12. |
+| 2026-10-26 | Claude (Opus 5.5) + Dion | Slide 14 split in two and reframed (Dion): 14a shows what AnyGrasp does and what works (2 of 3, the four fixes, the top grasp proposed in 49 of 75 frames) with the RViz GIF at the 21 cm stop point. 14b states the close-up view as three diagnosed challenges with options A to C, with the point cloud GIF. Slides 15 to 18 keep their numbers. Total now 20:25, Dion 8:00. |
