@@ -13,16 +13,21 @@ import sys
 
 import numpy as np
 import rclpy
+import rclpy.time
 import tf2_ros
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.node import Node
 from grasp_interfaces.msg import GraspCandidate, GraspCandidateArray
+from geometry_msgs.msg import Pose, Quaternion
+from moveit_msgs.msg import CollisionObject
+from shape_msgs.msg import SolidPrimitive
 from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, Image
 from sensor_msgs_py import point_cloud2
 from std_msgs.msg import String
 from gappler_common import config
 from anygrasp_to_grasp_frame import fingertip_position, fits_gripper, nearer_twin, to_grasp_frame
+from target_box import target_box
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -75,6 +80,9 @@ SCENE_MARGIN = float(CFG["scene_margin_m"])  # anygrasp3: scene kept around the 
 # Does the object fit the real gripper (T1.32, anygrasp_to_grasp_frame.py fits_gripper)
 FIT = dict(max_width=CFG["max_object_width_m"], max_depth=CFG["max_grasp_depth_m"],
            finger_height=CFG["finger_height_m"], percentile=CFG["fit_percentile"])
+# The target as a box for MoveIt's planning scene (T1.48, target_box.py)
+TABLE_TOP_Z = float(CFG["table_top_z_m"])
+TARGET_PAD = float(CFG["target_box_pad_m"])
 
 
 class AnyGraspDetectionNode(Node):
@@ -119,6 +127,12 @@ class AnyGraspDetectionNode(Node):
         self.points_pub = self.create_publisher(
             point_cloud2.PointCloud2, TOPICS["debug_anygrasp_points"], 1
         )
+        # The target as a box in base_link, for MoveIt's planning scene (T1.48)
+        self.target_pub = self.create_publisher(
+            CollisionObject, TOPICS["grasp_target_object"], 10
+        )
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # Synchronized RGB + depth
         self.rgb_sub = Subscriber(self, Image, TOPIC_RGB)
@@ -185,6 +199,36 @@ class AnyGraspDetectionNode(Node):
     def rotation_to_quaternion(self, rot_matrix: np.ndarray):
         return Rotation.from_matrix(rot_matrix).as_quat()
 
+    def publish_target_box(self, points, header):
+        """Measure the object as a box standing on the table and publish it in base_link."""
+        try:
+            # Latest, not the frame's stamp: the arm holds still while EXECUTING
+            tf = self.tf_buffer.lookup_transform("base_link", header.frame_id, rclpy.time.Time())
+        except tf2_ros.TransformException as e:
+            self.get_logger().warn(f"No transform for the target box: {e}", throttle_duration_sec=5.0)
+            return
+        t, q = tf.transform.translation, tf.transform.rotation
+        rot = Rotation.from_quat([q.x, q.y, q.z, q.w])
+        box = target_box(rot.apply(points) + [t.x, t.y, t.z], TABLE_TOP_Z, TARGET_PAD)
+        if box is None:
+            self.get_logger().warn("Target box: no object point above the table",
+                                   throttle_duration_sec=5.0)
+            return
+        centre, yaw, size = box
+        obj = CollisionObject()
+        obj.header.frame_id = "base_link"
+        obj.header.stamp = header.stamp
+        obj.id = "grasp_target"
+        obj.operation = CollisionObject.ADD
+        obj.primitives.append(SolidPrimitive(type=SolidPrimitive.BOX, dimensions=size.tolist()))
+        # MoveIt needs one pose per shape, relative to obj.pose
+        obj.primitive_poses.append(Pose(orientation=Quaternion(w=1.0)))
+        obj.pose.position.x, obj.pose.position.y, obj.pose.position.z = centre.tolist()
+        qz = Rotation.from_euler("z", yaw).as_quat()
+        obj.pose.orientation.x, obj.pose.orientation.y = float(qz[0]), float(qz[1])
+        obj.pose.orientation.z, obj.pose.orientation.w = float(qz[2]), float(qz[3])
+        self.target_pub.publish(obj)
+
     def build_grasp_msg(self, gg) -> GraspCandidateArray:
         msg = GraspCandidateArray()
         msg.header.stamp = self.get_clock().now().to_msg()
@@ -248,6 +292,7 @@ class AnyGraspDetectionNode(Node):
         header = depth_msg.header
         header.stamp = self.get_clock().now().to_msg()
         self.points_pub.publish(point_cloud2.create_cloud_xyz32(header, points))
+        self.publish_target_box(points, header)
 
         # Per-frame stateless detection
         try:

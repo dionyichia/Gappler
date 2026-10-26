@@ -146,6 +146,7 @@ private:
     STABILITY_N_FRAMES = static_cast<int>(param("stability_n_frames").as_int());
     STABILITY_TRANS_MM = param("stability_trans_mm").as_double();
     STABILITY_ROT_DEG = param("stability_rot_deg").as_double();
+    MAX_GRASP_ATTEMPTS = static_cast<int>(param("max_grasp_attempts").as_int());
 
     camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
         topic("wrist_camera_info"), 1,
@@ -154,6 +155,15 @@ private:
     grasp_sub_ = this->create_subscription<grasp_interfaces::msg::GraspCandidateArray>(
         topic("grasp_candidates"), 10,
         std::bind(&GraspStateMachine::graspCallback, this, std::placeholders::_1));
+
+    // The detector's measured box around the object, added to MoveIt's scene on lock (T1.48)
+    target_sub_ = this->create_subscription<moveit_msgs::msg::CollisionObject>(
+        topic("grasp_target_object"), 10,
+        [this](const moveit_msgs::msg::CollisionObject::SharedPtr msg)
+        {
+          std::lock_guard<std::mutex> lock(target_mutex_);
+          latest_target_ = msg;
+        });
 
     centroid_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
         topic("object_centroid_2d"), 10,
@@ -540,6 +550,7 @@ private:
     if (shutdown_ || stopped_)
       return;
     openGripper();
+    mtc_planner_->removeTarget();
   }
   // =========================================================================
   // SELECTING — iterative approach step (called once per loop iteration)
@@ -676,6 +687,12 @@ private:
                      approachAngleDeg(pose_base.orientation), MIN_APPROACH_ANGLE_DEG);
         continue;
       }
+      // A grasp that already failed to plan fails again: take the next one (T1.48). It used to
+      // retry the same grasp forever (2026-10-26)
+      if (std::any_of(failed_poses_.begin(), failed_poses_.end(), [&](const geometry_msgs::msg::Pose &f)
+                      { return transDist(f.position, pose_base.position) <= STABILITY_TRANS_MM &&
+                               angleBetweenQuats(f.orientation, pose_base.orientation) <= STABILITY_ROT_DEG; }))
+        continue;
       found_valid = true;
       best_pose_base = pose_base;
       break;
@@ -729,31 +746,49 @@ private:
         exec_pose.orientation = slerpQuat(cur.pose.orientation, stable_pose_base.orientation, t);
       }
 
-      RCLCPP_INFO(this->get_logger(),
-                  "EXECUTING: pose locked, depth=%.3fm — executing final Cartesian move%s",
-                  object_depth, USE_SLERP_EXECUTE ? " (slerp)" : "");
-      bool moved = mtc_planner_->moveToPose(exec_pose);
-      if (stopped_)
-        return true; // the stop cancelled or refused the move: no retreat, no retry
-      if (moved)
+      // MoveIt must know where the object is, or its path goes through it (CODE_AUDIT A4)
+      moveit_msgs::msg::CollisionObject::SharedPtr target;
       {
-        RCLCPP_INFO(this->get_logger(), "EXECUTING: Cartesian move succeeded");
-        closeGripper();
-        grasped_ = true;
+        std::lock_guard<std::mutex> lock(target_mutex_);
+        target = latest_target_;
       }
-      else
+      if (!target || !mtc_planner_->addTarget(*target))
       {
-        RCLCPP_WARN(this->get_logger(), "EXECUTING: Cartesian move failed — retreating");
-        auto cur = mtc_planner_->getCurrentPose();
-        geometry_msgs::msg::Pose fallback = cur.pose;
-        fallback.position.z += APPROACH_STEP_M;
-        fallback.position.x += APPROACH_STEP_M;
-        mtc_planner_->moveCartesianStep(fallback);
+        RCLCPP_WARN(this->get_logger(), "EXECUTING: no target box in the planning scene, not moving. "
+                                        "The AnyGrasp node log says why (T1.48)");
         resetStability();
         pose_locked = false;
-        return false; // retry
+        return false;
       }
-      return true; // done
+
+      RCLCPP_INFO(this->get_logger(),
+                  "EXECUTING: pose locked, depth=%.3fm — approaching the grasp%s",
+                  object_depth, USE_SLERP_EXECUTE ? " (slerp)" : "");
+      bool moved = mtc_planner_->approachGrasp(exec_pose);
+      if (stopped_)
+        return true; // the stop cancelled or refused the move: no retry
+      if (moved)
+      {
+        RCLCPP_INFO(this->get_logger(), "EXECUTING: approach succeeded");
+        closeGripper();
+        // So the move to the return pose plans with the object in hand
+        if (!stopped_ && !mtc_planner_->attachTarget())
+          RCLCPP_WARN(this->get_logger(), "EXECUTING: could not attach the target in the planning scene");
+        grasped_ = true;
+        return true; // done
+      }
+      // Planning failed, so the arm has not moved: no retreat needed
+      failed_poses_.push_back(stable_pose_base);
+      if (static_cast<int>(failed_poses_.size()) >= MAX_GRASP_ATTEMPTS)
+      {
+        RCLCPP_WARN(this->get_logger(), "EXECUTING: %d grasps failed to plan, back to IDLE", MAX_GRASP_ATTEMPTS);
+        return true;
+      }
+      RCLCPP_WARN(this->get_logger(), "EXECUTING: approach failed, trying the next grasp (%zu of %d failed)",
+                  failed_poses_.size(), MAX_GRASP_ATTEMPTS);
+      resetStability();
+      pose_locked = false;
+      return false; // next candidate
     }
 
     return false; // keep looping
@@ -836,6 +871,9 @@ private:
           continue;
       }
 
+      // A target left by the last cycle (failed, stopped, or this node restarted: move_group keeps
+      // the scene) would block the arm around where the object used to be (T1.48)
+      mtc_planner_->removeTarget();
       // Re-home beore each approach cycle
       homeWithRetry();
       if (stopped_)
@@ -956,6 +994,7 @@ private:
         bool pose_locked = false;
         geometry_msgs::msg::Pose stable_pose_base;
         resetStability();
+        failed_poses_.clear();
 
         bool executing_done = false;
         while (!executing_done && !stopped_)
@@ -985,6 +1024,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_sub_;
   rclcpp::Subscription<grasp_interfaces::msg::GraspCandidateArray>::SharedPtr grasp_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr centroid_sub_;
+  rclcpp::Subscription<moveit_msgs::msg::CollisionObject>::SharedPtr target_sub_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr grasp_request_sub_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr release_sub_;
   rclcpp::Subscription<rm_ros_interfaces::msg::Stop>::SharedPtr estop_sub_;
@@ -1036,6 +1076,12 @@ private:
 
   // Stability window
   std::deque<geometry_msgs::msg::Pose> stability_window_;
+  // Grasps that failed to plan this cycle, skipped from then on (worker thread only, T1.48)
+  std::vector<geometry_msgs::msg::Pose> failed_poses_;
+
+  // The newest target box from the detector (T1.48)
+  moveit_msgs::msg::CollisionObject::SharedPtr latest_target_;
+  std::mutex target_mutex_;
 
   // Flags
   bool debug_flag_ = false;
@@ -1061,6 +1107,7 @@ private:
   int STABILITY_N_FRAMES;
   double STABILITY_TRANS_MM;
   double STABILITY_ROT_DEG;
+  int MAX_GRASP_ATTEMPTS; // grasps tried per cycle before giving up (T1.48)
 };
 
 // ===========================================================================

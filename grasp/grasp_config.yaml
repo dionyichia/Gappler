@@ -26,9 +26,18 @@
       debug_state_marker: "/debug/state_marker"
       # anygrasp_detection_node -> RViz (debug): the masked points AnyGrasp was given (T1.34)
       debug_anygrasp_points: "/debug/anygrasp_points"
+      # anygrasp_detection_node -> grasp_state_machine: the target as a box in base_link, for
+      # MoveIt's planning scene (T1.48). moveit_msgs/CollisionObject, id grasp_target
+      grasp_target_object: "/grasp/target_object"
     # How many grasp candidates AnyGrasp publishes per frame.
     # read by: anygrasp_node, anygrasp_detection_node
     num_grasp_candidates: 5
+    # Top of the table, in metres above the arm's base_link. The planner's "table" collision box
+    # sits just under it, and the target box stands on it (T1.48). Measured 2026-10-13 (T1.24 3c):
+    # 0.68 m from the floor, 0.12 m above the arm base. Was hard-coded at 0.195 m, 7.5 cm too high,
+    # which stopped the approach short.
+    # read by: grasp_state_machine, anygrasp_detection_node
+    table_top_z_m: 0.12
 
 # grasp/grasp_segmentation_client/grasp_segmentation_client.py
 grasp_segmentation_client:
@@ -91,6 +100,9 @@ anygrasp_detection_node:
     # camera mixes near and far depth at an edge. 0 uses the extreme points (strays then make
     # objects look wider). Raise if stray points still widen objects.
     fit_percentile: 2
+    # T1.48: added to every side of the target box (and its top) for MoveIt's planning scene, metres.
+    # Depth noise must never make the box smaller than the object. Raise if the arm still brushes it.
+    target_box_pad_m: 0.01
 
 # grasp/grasp_viz/grasp_viz.py. Size of the gripper drawn in RViz, metres.
 grasp_visualizer:
@@ -118,9 +130,15 @@ grasp_state_machine:
     # the camera's view of the object. The 3c grasp (T1.24, 2026-10-13) ended at 0.077 m
     approach_step_final_m: 0.12
     max_approach_steps: 50           # 50 x 0.02 m = 1 m of approach, the object starts about 0.46 m away
-    # Was 0.21. AnyGrasp's grasp is one joint-space move from here, so it needs room to turn the
-    # wrist away from the object (T1.45, 2026-10-26). The camera sees down to 0.182 m.
+    # Was 0.21. Raised so the wrist could turn away from the object (T1.45, 2026-10-26). It also
+    # leaves room for the pre-grasp below. The camera sees down to 0.182 m.
     execute_depth_thresh_m: 0.30     # stop approaching when the object is this close
+    # T1.48: AnyGrasp's grasp is reached in two moves. A path search around the target box to this
+    # far back along the approach, then straight in. The MTC pick-and-place tutorial uses 0.10.
+    pregrasp_distance_m: 0.10
+    # T1.48: grasps tried per cycle. One that fails to plan is skipped, then the next is tried.
+    # Matches num_grasp_candidates. After this many, back to IDLE.
+    max_grasp_attempts: 5
     # Refuse a move to AnyGrasp's grasp if joint 4, 5 or 6 would turn further than this (T1.45)
     max_wrist_turn_deg: 90.0
     # End the approach if the newest centroid is older than this. Age counts from the camera
@@ -135,10 +153,6 @@ grasp_state_machine:
     # With no wait the second approach step was rejected, "start point deviates from current
     # robot state more than 0.01" (T1.24 3c, 2026-10-13)
     step_settle_s: 0.5
-    # Top of the table, in metres above the arm's base_link. The planner's "table" collision box
-    # sits just under it. Measured 2026-10-13 (T1.24 3c): 0.68 m from the floor, 0.12 m above the
-    # arm base. Was hard-coded at 0.195 m, 7.5 cm too high, which stopped the approach short
-    table_top_z_m: 0.12
     final_exec_thresh_m: 0.25
     centroid_target_offset_x_px: 55.0   # where the object should sit in the image, from centre
     centroid_target_offset_y_px: 0.0
