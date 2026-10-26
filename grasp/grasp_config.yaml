@@ -48,8 +48,13 @@ grasp_segmentation_client:
 # grasp/anygrasp_node/anygrasp_detection_node.py
 anygrasp_detection_node:
   ros__parameters:
-    # Workspace box in the camera frame, metres: [x_min, x_max, y_min, y_max, z_min, z_max].
-    # Wide on purpose: the SAM mask does the spatial filtering.
+    # Which AnyGrasp SDK to run: a folder in grasp/anygrasp_node/ with its gsnet .so and licence
+    # (T1.45). anygrasp3 (July 2026 SDK) gets the whole scene and is steered to the SAM mask.
+    # anygrasp2 (old SDK) gets only the masked points. Keep anygrasp2 until anygrasp3 passes
+    # Dion's 24-trial validation, then delete it and workspace_limits_m.
+    anygrasp_sdk: anygrasp3
+    # anygrasp2 only (AnyGrasp 3 has no lims). Workspace box in the camera frame, metres:
+    # [x_min, x_max, y_min, y_max, z_min, z_max]. Wide on purpose: the SAM mask does the filtering.
     workspace_limits_m: [-1.0, 1.0, -1.0, 1.0, 0.0, 1.5]
     # AnyGrasp's gripper model, not the real opening (the real gripper opens about 71 mm).
     # AnyGrasp reports every grasp at this width and needs clearance around the object: told
@@ -57,8 +62,8 @@ anygrasp_detection_node:
     # (T1.17, bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt). It does not check the
     # object fits in 71 mm (T1.32).
     max_gripper_width_m: 0.10
-    # Drop grasps whose approach is further than this from the wrist camera's view axis. A
-    # first-run safety limit (Dion, 2026-10-14), not a measured one: the candidate path moves to
+    # Keep grasps whose approach is within this angle of the wrist camera's view axis. anygrasp3
+    # is steered to it (approach_steering), anygrasp2 drops the rest afterwards. A first-run safety limit (Dion, 2026-10-14), not a measured one: the candidate path moves to
     # the grasp's full pose, so larger angles may work. Raise it once RViz and a few real grasps
     # show they do. Without it, most grasps came from the side or across the top face.
     max_approach_deg: 30

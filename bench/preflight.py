@@ -417,18 +417,20 @@ def g_assets() -> list[Check]:
     else:
         cs.append(c.bad(f"missing: log/{fn}", "gitignored; copy from the lab machine"))
 
-    c = Check("assets", "anygrasp-licence", "machine-locked; a new machine needs re-registration")
-    lic = perception / "license"
-    files = sorted(x.name for x in lic.glob("*")) if lic.exists() else []
-    if files:
-        cs.append(c.ok(f"{len(files)} file(s): {', '.join(files)} "
-                       f"(lock can only be verified by running the node)"))
-    else:
-        cs.append(c.bad("no licence files", "re-register with the vendor -- ~2 working days"))
+    # One folder per SDK, each with its .so and licence; grasp_config.yaml anygrasp_sdk picks (T1.45)
+    for sdk in ("anygrasp2", "anygrasp3"):
+        c = Check("assets", f"{sdk}-licence", "machine-locked; a new machine needs re-registration")
+        lic = perception / sdk / "license"
+        files = sorted(x.name for x in lic.glob("*")) if lic.exists() else []
+        if files:
+            cs.append(c.ok(f"{len(files)} file(s): {', '.join(files)} "
+                           f"(lock can only be verified by running the node)"))
+        else:
+            cs.append(c.bad("no licence files", "re-register with the vendor -- ~2 working days"))
 
-    c = Check("assets", "anygrasp-so", "compiled binaries built against a pinned torch")
-    sos = sorted(p.name for p in perception.glob("*.so"))
-    cs.append(c.ok(", ".join(sos)) if sos else c.bad("no .so files in grasp/anygrasp_node/"))
+        c = Check("assets", f"{sdk}-so", "compiled binaries built against a pinned torch")
+        sos = sorted(p.name for p in (perception / sdk).glob("*.so"))
+        cs.append(c.ok(", ".join(sos)) if sos else c.bad(f"no .so files in grasp/anygrasp_node/{sdk}/"))
 
     c = Check("assets", "slam-map", "slam_localization reads a prebuilt map")
     ref = REPO / "nav/robot_slam/config/slam_toolbox_localization.yaml"
