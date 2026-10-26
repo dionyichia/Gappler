@@ -71,6 +71,7 @@ cfgs.max_gripper_width = CFG["max_gripper_width_m"]
 # A grasp's approach is its rotation's x column. Kept if within max_approach_deg of the camera's z.
 MAX_APPROACH_RAD = float(np.radians(CFG["max_approach_deg"]))
 MIN_APPROACH_COS = float(np.cos(MAX_APPROACH_RAD))
+SCENE_MARGIN = float(CFG["scene_margin_m"])  # anygrasp3: scene kept around the object's box
 # Does the object fit the real gripper (T1.32, anygrasp_to_grasp_frame.py fits_gripper)
 FIT = dict(max_width=CFG["max_object_width_m"], max_depth=CFG["max_grasp_depth_m"],
            finger_height=CFG["finger_height_m"], percentile=CFG["fit_percentile"])
@@ -251,10 +252,14 @@ class AnyGraspDetectionNode(Node):
         # Per-frame stateless detection
         try:
             if SDK == "anygrasp3":
-                # The whole scene, so the collision check sees the table and neighbours. Grasps
-                # only on the SAM mask, approaching along the camera's view (T1.45).
-                gg = self.detector.get_grasp(points_full[depth_mask].astype(np.float32), {
-                    "region_steering": sam_mask[depth_mask],
+                # The scene near the object, so the collision check sees the table and neighbours.
+                # Points further than the margin cannot touch a gripper on the object, and the whole
+                # scene took 2.3 s a frame (T1.45). Grasps only on the SAM mask, approaching along
+                # the camera's view.
+                lo, hi = points.min(axis=0) - SCENE_MARGIN, points.max(axis=0) + SCENE_MARGIN
+                near = depth_mask & np.all((points_full >= lo) & (points_full <= hi), axis=2)
+                gg = self.detector.get_grasp(points_full[near].astype(np.float32), {
+                    "region_steering": sam_mask[near],
                     "approach_steering": [0.0, 0.0, 1.0],
                     "approach_thresh": MAX_APPROACH_RAD,
                     "dense_grasp": False,

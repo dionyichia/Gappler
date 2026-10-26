@@ -54,6 +54,10 @@ anygrasp_detection_node:
     # anygrasp2 (old SDK) gets only the masked points. Keep anygrasp2 until anygrasp3 passes
     # Dion's 24-trial validation, then delete it and workspace_limits_m.
     anygrasp_sdk: anygrasp3
+    # anygrasp3 only. Scene points kept around the object's 3D box for the collision check, metres.
+    # The gripper model is 0.10 m open, so a grasp on the object reaches about 0.10 m past it.
+    # Smaller is faster: the whole scene took 2.3 s a frame on the wrist bag (T1.45).
+    scene_margin_m: 0.15
     # anygrasp2 only (AnyGrasp 3 has no lims). Workspace box in the camera frame, metres:
     # [x_min, x_max, y_min, y_max, z_min, z_max]. Wide on purpose: the SAM mask does the filtering.
     workspace_limits_m: [-1.0, 1.0, -1.0, 1.0, 0.0, 1.5]
@@ -64,8 +68,9 @@ anygrasp_detection_node:
     # object fits in 71 mm (T1.32).
     max_gripper_width_m: 0.10
     # Keep grasps whose approach is within this angle of the wrist camera's view axis. anygrasp3
-    # is steered to it (approach_steering), anygrasp2 drops the rest afterwards. A first-run safety limit (Dion, 2026-10-14), not a measured one: the candidate path moves to
-    # the grasp's full pose, so larger angles may work. Raise it once RViz and a few real grasps
+    # is steered to it (approach_steering), anygrasp2 drops the rest afterwards. A first-run safety
+    # limit (Dion, 2026-10-14), not a measured one: the candidate path moves to the grasp's full
+    # pose, so larger angles may work. Raise it once RViz and a few real grasps
     # show they do. Without it, most grasps came from the side or across the top face.
     max_approach_deg: 30
     # T1.32: does the object fit the REAL gripper? AnyGrasp cannot tell (it is told 0.10 m above),
