@@ -271,9 +271,9 @@ grasp/
 ├── anygrasp_node/                   plain folder, run by path in the AnyGrasp env
 │   ├── anygrasp_detection_node.py   ★ RGB+depth+mask → /grasp_candidates
 │   ├── anygrasp_node.py             older tracking-based variant
-│   ├── license/                     AnyGrasp licence — MACHINE-LOCKED (§9)
-│   ├── log/                         checkpoints, gitignored
-│   └── *.so                         compiled AnyGrasp binaries, loaded from this folder
+│   ├── anygrasp2/                   old SDK: gsnet, lib_cxx, tracker .so + license/, MACHINE-LOCKED (§9)
+│   ├── anygrasp3/                   July 2026 SDK: gsnet .so + license/. grasp_config.yaml anygrasp_sdk picks
+│   └── log/                         checkpoints (one file serves both SDKs), gitignored
 ├── segmentation/sam3_ros_node.py    SAM3 on RealSense only, HARDCODED prompt "box"  (see §6)
 ├── grasp_viz/                       grasp_viz.py (RViz markers) + rviz_config.rviz
 ├── tools/dummy_mask_publisher.py    CONSIDER DELETING: broken since the topic rename (NEXT_STEPS §2.3, T2.1)
@@ -1277,3 +1277,5 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-10-06 | Claude (Opus 5.5) + Dion | T0.14: §2 rows for `global_config.yaml` and `gappler_common.py`, the aria `config/` line and reading-order row 1 now describe the two config levels. §8.17 marked resolved. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | §8.8: the centroid staleness check is back (`T1.24`, PR #57). |
 | 2026-10-20 | Claude Opus 5.5 + Dion | Topic table: the state machine now listens to both stop topics and publishes `STOPPED` (T1.38, branch `t1.38-estop-state-machine`). |
+| 2026-10-22 | Claude Opus 5.5 + Dion | Tree: `license` is now a link to `anygrasp2_license/` or `anygrasp3_license/` (T1.45). |
+| 2026-10-26 | Claude Opus 5.5 + Dion | Tree: one folder per AnyGrasp SDK, `anygrasp2/` and `anygrasp3/`, picked by `anygrasp_sdk` (T1.45). |

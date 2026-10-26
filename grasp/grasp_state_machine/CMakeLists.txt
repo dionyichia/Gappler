@@ -15,6 +15,7 @@ find_package(geometry_msgs REQUIRED)
 # further dependencies manually.
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_eigen REQUIRED)          # grasp pose to pre-grasp pose (T1.48)
 find_package(rm_ros_interfaces REQUIRED)   # the gripper messages (RealMan's)
 find_package(grasp_interfaces REQUIRED)    # GraspCandidate(Array), ours
 find_package(std_msgs REQUIRED)
@@ -35,6 +36,7 @@ ament_target_dependencies(grasp_state_machine
   geometry_msgs
   tf2_ros
   tf2_geometry_msgs
+  tf2_eigen
   rm_ros_interfaces
   grasp_interfaces
   std_msgs

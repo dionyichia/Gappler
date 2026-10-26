@@ -50,7 +50,7 @@ GOLDEN = REPO / "bench" / "golden" / "contracts.json"
 EXCLUDE_DIRS = {
     ".git", "install", "build", "log", "install_nav", "build_nav", "log_nav",
     "__pycache__", ".venv", "node_modules",
-    "open_vins", "MinkowskiEngine", "moveit_task_constructor", "anygrasp_sdk",
+    "open_vins", "MinkowskiEngine", "moveit_task_constructor", "anygrasp_sdk", "anygrasp3_sdk",
     "archive",
 }
 

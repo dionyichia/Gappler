@@ -11,10 +11,13 @@ private, no rm_driver exists and the real arm is unreachable. This test plays ev
   gripper     records /rm_driver/set_gripper_{position,pick_on}_cmd -- nothing acts on them
   e-stop pane /rm_driver/emergency_stop_cmd (E, R) and /rm_driver/move_stop_cmd (S), at the end:
               the state machine must stop until R (T1.38). No driver listens on this channel
-  AnyGrasp    in candidates mode only: /grasp_candidates, one fixed grasp at the gripper's pose
-              1 cm up, sent in the camera frame as anygrasp_detection_node does. It is built in
+  AnyGrasp    in candidates mode only: /grasp_candidates, one fixed grasp 12 cm ahead of the
+              gripper along its approach, sent in the camera frame as anygrasp_detection_node does. It is built in
               AnyGrasp's axes from where the gripper's links are, then turned into grasp_frame's
-              by the node's own to_grasp_frame (T1.17)
+              by the node's own to_grasp_frame (T1.17). With it, /grasp/target_object: a 3 cm
+              cube at the grasp point, as the node measures the object (T1.48). The state
+              machine does not move to a grasp without one. First the grasp jumps 5 cm
+              between frames, so nothing locks and EXECUTING must give up (lock_timeout_s, T1.48).
 and watches /pipeline_state, /joint_states, /manipulator/return_to_user, /manipulation/done and
 the launch log.
 
@@ -41,6 +44,8 @@ try:
     from tf2_ros import Buffer, StaticTransformBroadcaster, TransformListener
     from tf2_geometry_msgs import do_transform_pose
     from grasp_interfaces.msg import GraspCandidate, GraspCandidateArray
+    from moveit_msgs.msg import CollisionObject
+    from shape_msgs.msg import SolidPrimitive
     from rm_ros_interfaces.msg import Gripperpick, Gripperset, Stop
     import numpy as np
     from scipy.spatial.transform import Rotation
@@ -58,10 +63,11 @@ HOME_REALMAN = [-0.0175, -0.1745, 0.7854, -3.0718, -1.6930, -1.6057]
 RETURN = HOME_MAIN  # mtc_planner.hpp RETURN_JOINTS is HOME_JOINTS since 2026-10-05 (T1.7)
 FX, FY, CX, CY, W, H = 607.18, 606.92, 331.95, 250.13, 640, 480
 OFFSET_X = 55.0        # CENTROID_TARGET_OFFSET_X: a centroid here means "no lateral error"
-FAR, NEAR = 0.30, 0.15  # m; the code switches to EXECUTING below execute_depth_thresh_m, 0.21 since T1.11
+FAR, NEAR = 0.30, 0.15  # m; the code switches to EXECUTING below execute_depth_thresh_m, 0.30 since T1.45
 CY_OFF = float(os.environ.get("SM_CY", "0"))    # lateral px added to the fake centroid
-FAR = float(os.environ.get("SM_FAR", "0.30"))   # start depth (m); keep above 0.21
+FAR = float(os.environ.get("SM_FAR", "0.30"))   # start depth (m); keep at or above 0.30
 OPT = "camera_color_optical_frame"
+GRASP_AHEAD = 0.12  # m; the fake grasp's distance ahead of the gripper (candidates mode)
 CANDIDATES = os.environ.get("BENCH_SM_PATH") == "candidates"  # use_simple_execute false (T1.17)
 TOL = 0.02  # rad
 
@@ -86,9 +92,11 @@ class Actors(Node):
         self.req_pub = self.create_publisher(Empty, "/manipulator/grasp_request", 10)
         self.rel_pub = self.create_publisher(Bool, "/manipulator/release", 10)
         self.cand_pub = self.create_publisher(GraspCandidateArray, "/grasp_candidates", 10)
+        self.target_pub = self.create_publisher(CollisionObject, "/grasp/target_object", 10)
         self.estop_pub = self.create_publisher(Stop, "/rm_driver/emergency_stop_cmd", 1)
         self.soft_pub = self.create_publisher(Empty, "/rm_driver/move_stop_cmd", 1)
         self.cand_base = None  # Pose in base_link; published in the camera frame while set
+        self.jitter = 0.0      # m; random offset added to each published grasp, so it never locks
         self.depth = None
         self.create_timer(0.2, self._camera)
         self.create_timer(0.1, self._centroid)
@@ -143,8 +151,21 @@ class Actors(Node):
             return
         m = GraspCandidateArray()
         m.header.frame_id, m.header.stamp = OPT, self.get_clock().now().to_msg()
-        m.grasps = [GraspCandidate(score=0.9, width=0.05, depth=0.02, pose=do_transform_pose(self.cand_base, to_opt))]
+        pose = Pose(position=self.cand_base.position, orientation=self.cand_base.orientation)
+        if self.jitter:
+            pose.position = type(pose.position)(**{k: getattr(pose.position, k) + float(np.random.uniform(
+                -self.jitter, self.jitter)) for k in "xyz"})
+        m.grasps = [GraspCandidate(score=0.9, width=0.05, depth=0.02, pose=do_transform_pose(pose, to_opt))]
         self.cand_pub.publish(m)
+        # The object between the open fingers, centred on the grasp point (T1.48)
+        box = CollisionObject(id="grasp_target", operation=CollisionObject.ADD)
+        box.header.frame_id, box.header.stamp = "base_link", m.header.stamp
+        box.primitives = [SolidPrimitive(type=SolidPrimitive.BOX, dimensions=[0.03, 0.03, 0.03])]
+        box.primitive_poses = [Pose()]
+        box.primitive_poses[0].orientation.w = 1.0
+        box.pose.position = pose.position
+        box.pose.orientation.w = 1.0
+        self.target_pub.publish(box)
 
     def request(self):
         self.req_pub.publish(Empty())
@@ -348,19 +369,44 @@ def main():
         check("gripper told to open", opened,
               next((d for t, k, d in n.grip if k == "set_position" and t >= t2), "no set_gripper_position_cmd"))
         if CANDIDATES:
+            # A grasp that never holds still never locks. EXECUTING must give up, not wait in
+            # silence (86 s on the real arm, 2026-10-26, T1.48)
             try:
-                # moveToPose aims grasp_frame, not Link6, at the candidate (mtc_planner.cpp setIKFrame)
+                eef = n.tf.lookup_transform("base_link", "grasp_frame", Time()).transform
+            except Exception as e:
+                return check("gripper pose for the jumping candidate", False, f"no base_link -> grasp_frame: {e}")
+            n.cand_base = Pose()
+            n.cand_base.position.x, n.cand_base.position.y = eef.translation.x, eef.translation.y
+            n.cand_base.position.z = eef.translation.z
+            n.cand_base.orientation = eef.rotation
+            n.jitter = 0.05
+            t_jit = time.time()
+            gave_up = n.spin_until(lambda: n.seen("IDLE", t_jit) and log_has(r"no grasp locked"), 40)
+            n.cand_base, n.jitter = None, 0.0
+            if not check("a grasp that never locks -> EXECUTING gives up, back to IDLE", gave_up,
+                         f"'no grasp locked' logged, IDLE after {time.time() - t_jit:.0f} s" if gave_up else
+                         "no 'no grasp locked' line and IDLE in 40 s (lock_timeout_s is 15)"):
+                return
+            t_again = time.time()
+            n.request()
+            if not n.spin_until(lambda: n.seen("EXECUTING", t_again), 120):
+                return check("new request after the give-up -> EXECUTING", False, "no EXECUTING in 120 s")
+            try:
+                # approachGrasp aims grasp_frame, not Link6, at the candidate (mtc_planner.cpp setIKFrame)
                 eef = n.tf.lookup_transform("base_link", "grasp_frame", Time()).transform
             except Exception as e:
                 return check("gripper pose for the fake candidate", False, f"no base_link -> grasp_frame: {e}")
-            n.cand_base = Pose()
-            n.cand_base.position.x, n.cand_base.position.y = eef.translation.x, eef.translation.y
-            n.cand_base.position.z = eef.translation.z + 0.01
             # The grasp in AnyGrasp's axes (x approach, y closing), then the node's conversion.
             # Closing is the gripper's own line turned 180 degrees, the twin that made the wrist
             # flip in step 7d (T1.33). nearer_twin gets the gripper's live y, as the node's camera
             # frame constant stands for it on the robot
             a, c = n.gripper_axes()
+            # GRASP_AHEAD along the approach, as on the robot, where the grasp lies ahead of the
+            # stopped gripper. The pre-grasp then sits 2 cm ahead of it. At 1 cm (before T1.48)
+            # the pre-grasp fell 9 cm back and up, out of the arm's reach (2026-10-26)
+            n.cand_base = Pose()
+            p = np.array([eef.translation.x, eef.translation.y, eef.translation.z]) + GRASP_AHEAD * a
+            n.cand_base.position.x, n.cand_base.position.y, n.cand_base.position.z = (float(v) for v in p)
             want = np.column_stack([a, -c, np.cross(a, -c)])
             r = eef.rotation
             gripper_y = Rotation.from_quat([r.x, r.y, r.z, r.w]).as_matrix()[:, 1]
@@ -375,7 +421,7 @@ def main():
                   f"no lock in 30 s; approach angle {angle:.1f} deg (min_approach_angle_deg rejects below 20)")
             if not log_has(r"EXECUTING: pose stable"):
                 return
-        fail_re = (r"EXECUTING: (Cartesian move failed|no candidates received)" if CANDIDATES
+        fail_re = (r"EXECUTING: (approach failed|grasps failed to plan|no target box|no candidates)" if CANDIDATES
                    else r"EXECUTING: final Cartesian step failed")
         closed = n.spin_until(lambda: any(k == "pick_on" for t, k, _ in n.grip) or log_has(fail_re), 90)
         if CANDIDATES:

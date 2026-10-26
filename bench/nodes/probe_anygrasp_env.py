@@ -3,8 +3,9 @@
 Stdlib only; drives the target interpreter in subprocesses so one broken import cannot hide
 the others. Stage 1 imports every dependency separately. Stage 2 runs the SDK's own
 grasp_detection/demo.py on its example frame, in a scratch folder (log/anygrasp_probe/) that
-links in exactly what the robot's node uses: the anygrasp_node folder's gsnet / lib_cxx builds,
-its license/ folder and log/checkpoint_detection.tar. Headless (no --debug), GPU only.
+links in exactly what the robot's node uses: the SDK folder grasp_config.yaml picks
+(anygrasp_sdk, T1.45) with its gsnet build and license/, and log/checkpoint_detection.tar.
+Headless (no --debug), GPU only.
 """
 import os
 import re
@@ -15,7 +16,10 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 PERCEPTION = REPO / "grasp/anygrasp_node"
-SDK_DET = REPO / "grasp/vendor/anygrasp_sdk/grasp_detection"
+# The SDK the node runs (grasp_config.yaml anygrasp_sdk), read without a YAML library
+SDK = re.search(r"anygrasp_sdk:\s*(\S+)", (REPO / "grasp/grasp_config.yaml").read_text()).group(1)
+SDK_DET = REPO / ("grasp/vendor/anygrasp3_sdk/grasp_detection" if SDK == "anygrasp3"
+                  else "grasp/vendor/anygrasp_sdk/grasp_detection")
 SCRATCH = REPO / "log/anygrasp_probe"
 # grasp/anygrasp_venv/.venv is built by grasp/anygrasp_venv/build_anygrasp_venv.sh. The 2026-09-11 scratch env (log/w5/venv)
 # is no longer a candidate: the bench tests the env the repo can rebuild. Pass it explicitly to probe it.
@@ -33,9 +37,10 @@ IMPORTS = [
     ("sklearn", "scikit-learn (pinned 1.3.2)", "import sklearn;print(sklearn.__version__)"),
     ("scipy", "scipy (pinned 1.10.1)", "import scipy;print(scipy.__version__)"),
     ("PIL", "Pillow", "import PIL;print(PIL.__version__)"),
-    ("lib_cxx", "vendor licence binary (links libcrypto.so.1.1)", "import lib_cxx;print('ok')"),
     ("gsnet", "vendor AnyGrasp binary", "import gsnet;print('ok')"),
 ]
+if SDK == "anygrasp2":  # AnyGrasp 3 checks its licence inside gsnet
+    IMPORTS.insert(-1, ("lib_cxx", "vendor licence binary (links libcrypto.so.1.1)", "import lib_cxx;print('ok')"))
 
 
 def pick_python(argv):
@@ -59,9 +64,9 @@ def prepare_scratch():
         shutil.rmtree(SCRATCH)
     (SCRATCH / "log").mkdir(parents=True)
     shutil.copy(SDK_DET / "demo.py", SCRATCH / "demo.py")
-    for so in PERCEPTION.glob("*.so"):
+    for so in (PERCEPTION / SDK).glob("*.so"):
         (SCRATCH / so.name).symlink_to(so)
-    (SCRATCH / "license").symlink_to(PERCEPTION / "license")
+    (SCRATCH / "license").symlink_to(PERCEPTION / SDK / "license")
     (SCRATCH / "example_data").symlink_to(SDK_DET / "example_data")
     (SCRATCH / "log/checkpoint_detection.tar").symlink_to(PERCEPTION / "log/checkpoint_detection.tar")
 
@@ -78,7 +83,7 @@ def main(argv):
     prepare_scratch()
     env = dict(os.environ, PYTHONNOUSERSITE="")   # never set it (ORIENTATION 8.5); empty = unset
     env.pop("PYTHONNOUSERSITE")
-    print(f"interpreter: {py}\nscratch:     {SCRATCH.relative_to(REPO)}\n\nStage 1 -- imports, each in its own process")
+    print(f"interpreter: {py}\nsdk:         {SDK}\nscratch:     {SCRATCH.relative_to(REPO)}\n\nStage 1 -- imports, each in its own process")
     failed = []
     for mod, what, code in IMPORTS:
         r = subprocess.run([str(py), "-c", code], cwd=SCRATCH, env=env,
@@ -97,8 +102,9 @@ def main(argv):
         verdict = 1
     else:
         try:
+            extra = ["--top_down_grasp"] if SDK == "anygrasp2" else []
             r = subprocess.run([str(py), "demo.py", "--checkpoint_path", "log/checkpoint_detection.tar",
-                                "--top_down_grasp"], cwd=SCRATCH, env=env,
+                                *extra], cwd=SCRATCH, env=env,
                                capture_output=True, text=True, timeout=900)
             out = r.stdout + r.stderr
             rc = r.returncode
@@ -106,7 +112,11 @@ def main(argv):
             out, rc = (e.stdout or "") + (e.stderr or "") if isinstance(e.stdout, str) else "", 124
         (SCRATCH / "demo_output.txt").write_text(out)
         lic = [l.strip() for l in out.splitlines() if re.search(r"licen[cs]e", l, re.I)]
-        score = next((l.strip() for l in out.splitlines() if l.startswith("grasp score:")), None)
+        # anygrasp2's demo prints "grasp score: x", anygrasp3's "Top 20 scores:" then the scores
+        lines = out.splitlines() + [""]
+        score = next((f"{l.strip()} {lines[i + 1].strip()}" if l.startswith("Top 20") else l.strip()
+                      for i, l in enumerate(lines) if l.startswith(("grasp score:", "Top 20 scores:"))),
+                     None)
         for l in lic[:4]:
             print(f"  licence line: {l[:140]}")
         ok = rc == 0 and score is not None

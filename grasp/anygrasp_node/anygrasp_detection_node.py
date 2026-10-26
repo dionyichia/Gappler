@@ -8,20 +8,26 @@ Publishes top 5 grasp candidates to /grasp_candidates as GraspCandidateArray.
 """
 
 import argparse
+import os
+import sys
 
 import numpy as np
 import rclpy
+import rclpy.time
 import tf2_ros
-from gsnet import AnyGrasp  # Compiled binary, must be in conda env
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from rclpy.node import Node
 from grasp_interfaces.msg import GraspCandidate, GraspCandidateArray
+from geometry_msgs.msg import Pose, Quaternion
+from moveit_msgs.msg import CollisionObject
+from shape_msgs.msg import SolidPrimitive
 from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, Image
 from sensor_msgs_py import point_cloud2
 from std_msgs.msg import String
 from gappler_common import config
 from anygrasp_to_grasp_frame import fingertip_position, fits_gripper, nearer_twin, to_grasp_frame
+from target_box import target_box
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -36,11 +42,25 @@ cfgs, _ = parser.parse_known_args()
 cfgs.gripper_height = 0.04
 cfgs.top_down_grasp = False
 
+# shared/global_config.yaml and grasp/grasp_config.yaml
+CFG = config("grasp", "anygrasp_detection_node")
+
+# Load the chosen SDK from its folder (T1.45). Both SDKs read ./license, so run from that folder.
+SDK = CFG["anygrasp_sdk"]
+SDK_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), SDK)
+cfgs.checkpoint_path = os.path.abspath(cfgs.checkpoint_path)
+os.chdir(SDK_DIR)
+sys.path.insert(0, SDK_DIR)
+if SDK == "anygrasp3":
+    from gsnet import create_detector  # noqa: E402  compiled binary, needs the anygrasp venv
+elif SDK == "anygrasp2":
+    from gsnet import AnyGrasp  # noqa: E402
+else:
+    raise ValueError(f"anygrasp_sdk must be anygrasp2 or anygrasp3, got {SDK!r}")
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-# shared/global_config.yaml and grasp/grasp_config.yaml
-CFG = config("grasp", "anygrasp_detection_node")
 TOPICS = CFG["topics"]
 TOPIC_RGB = TOPICS["wrist_camera_color"]
 TOPIC_DEPTH = TOPICS["wrist_camera_aligned_depth"]
@@ -50,14 +70,19 @@ TOPIC_CAMERA_INFO = TOPICS["wrist_camera_info"]
 DEPTH_SCALE = CFG["wrist_camera"]["depth_scale_m"]  # metres per depth unit
 NUM_CANDIDATES = CFG["num_grasp_candidates"]
 
-# Wide lims — SAM mask handles spatial filtering
+# Wide lims (anygrasp2 only), SAM mask handles spatial filtering
 LIMS = CFG["workspace_limits_m"]
 cfgs.max_gripper_width = CFG["max_gripper_width_m"]
 # A grasp's approach is its rotation's x column. Kept if within max_approach_deg of the camera's z.
-MIN_APPROACH_COS = float(np.cos(np.radians(CFG["max_approach_deg"])))
+MAX_APPROACH_RAD = float(np.radians(CFG["max_approach_deg"]))
+MIN_APPROACH_COS = float(np.cos(MAX_APPROACH_RAD))
+SCENE_MARGIN = float(CFG["scene_margin_m"])  # anygrasp3: scene kept around the object's box
 # Does the object fit the real gripper (T1.32, anygrasp_to_grasp_frame.py fits_gripper)
 FIT = dict(max_width=CFG["max_object_width_m"], max_depth=CFG["max_grasp_depth_m"],
            finger_height=CFG["finger_height_m"], percentile=CFG["fit_percentile"])
+# The target as a box for MoveIt's planning scene (T1.48, target_box.py)
+TABLE_TOP_Z = float(CFG["table_top_z_m"])
+TARGET_PAD = float(CFG["target_box_pad_m"])
 
 
 class AnyGraspDetectionNode(Node):
@@ -78,9 +103,15 @@ class AnyGraspDetectionNode(Node):
         )
 
         # AnyGrasp detector (stateless)
-        self.detector = AnyGrasp(cfgs)
-        self.detector.load_net()
-        self.get_logger().info("AnyGrasp detection model loaded")
+        if SDK == "anygrasp3":
+            # Licence checked here only, not per grasp: plug in USB devices (Aria) after this (T1.45)
+            self.detector = create_detector(cfgs)
+            if self.detector is None:
+                raise RuntimeError(f"AnyGrasp 3 licence failed, see {SDK_DIR}/license (docs/ASSETS.md)")
+        else:
+            self.detector = AnyGrasp(cfgs)
+            self.detector.load_net()
+        self.get_logger().info(f"AnyGrasp detection model loaded ({SDK})")
 
         # Latest mask cache — decoupled from RGB/depth sync
         self.latest_mask = None
@@ -96,6 +127,12 @@ class AnyGraspDetectionNode(Node):
         self.points_pub = self.create_publisher(
             point_cloud2.PointCloud2, TOPICS["debug_anygrasp_points"], 1
         )
+        # The target as a box in base_link, for MoveIt's planning scene (T1.48)
+        self.target_pub = self.create_publisher(
+            CollisionObject, TOPICS["grasp_target_object"], 10
+        )
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # Synchronized RGB + depth
         self.rgb_sub = Subscriber(self, Image, TOPIC_RGB)
@@ -162,6 +199,35 @@ class AnyGraspDetectionNode(Node):
     def rotation_to_quaternion(self, rot_matrix: np.ndarray):
         return Rotation.from_matrix(rot_matrix).as_quat()
 
+    def publish_target_box(self, points, header):
+        """Measure the object as a box standing on the table and publish it in base_link."""
+        try:
+            # Latest, not the frame's stamp: the arm holds still while EXECUTING
+            tf = self.tf_buffer.lookup_transform("base_link", header.frame_id, rclpy.time.Time())
+        except tf2_ros.TransformException as e:
+            self.get_logger().warn(f"No transform for the target box: {e}", throttle_duration_sec=5.0)
+            return
+        t, q = tf.transform.translation, tf.transform.rotation
+        rot = Rotation.from_quat([q.x, q.y, q.z, q.w])
+        box = target_box(rot.apply(points) + [t.x, t.y, t.z], TABLE_TOP_Z, TARGET_PAD)
+        if box is None:
+            self.get_logger().warn("Target box: no object point above the table",
+                                   throttle_duration_sec=5.0)
+            return
+        centre, yaw, size = box
+        obj = CollisionObject()
+        obj.header.frame_id = "base_link"
+        obj.header.stamp = header.stamp
+        obj.id = "grasp_target"
+        obj.operation = CollisionObject.ADD
+        obj.primitives.append(SolidPrimitive(type=SolidPrimitive.BOX, dimensions=size.tolist()))
+        # MoveIt needs one pose per shape, relative to obj.pose
+        obj.primitive_poses.append(Pose(orientation=Quaternion(w=1.0)))
+        obj.pose.position.x, obj.pose.position.y, obj.pose.position.z = centre.tolist()
+        x, y, z, w = Rotation.from_euler("z", yaw).as_quat().tolist()
+        obj.pose.orientation = Quaternion(x=x, y=y, z=z, w=w)
+        self.target_pub.publish(obj)
+
     def build_grasp_msg(self, gg) -> GraspCandidateArray:
         msg = GraspCandidateArray()
         msg.header.stamp = self.get_clock().now().to_msg()
@@ -219,23 +285,39 @@ class AnyGraspDetectionNode(Node):
             self.get_logger().warn("Combined mask empty, skipping frame")
             return
 
+        # The object's points: fits_gripper and RViz use them with either SDK
         points = points_full[combined_mask].astype(np.float32)
-        colors_masked = colors[combined_mask].astype(np.float32)
         # Stamped now, like the candidates (build_grasp_msg), so RViz can place a replayed bag's frames
         header = depth_msg.header
         header.stamp = self.get_clock().now().to_msg()
         self.points_pub.publish(point_cloud2.create_cloud_xyz32(header, points))
+        self.publish_target_box(points, header)
 
         # Per-frame stateless detection
         try:
-            gg, _ = self.detector.get_grasp(
-                points,
-                colors_masked,
-                lims=LIMS,
-                apply_object_mask=True,
-                dense_grasp=False,
-                collision_detection=True,
-            )
+            if SDK == "anygrasp3":
+                # The scene near the object, so the collision check sees the table and neighbours.
+                # Points further than the margin cannot touch a gripper on the object, and the whole
+                # scene took 2.3 s a frame (T1.45). Grasps only on the SAM mask, approaching along
+                # the camera's view.
+                lo, hi = points.min(axis=0) - SCENE_MARGIN, points.max(axis=0) + SCENE_MARGIN
+                near = depth_mask & np.all((points_full >= lo) & (points_full <= hi), axis=2)
+                gg = self.detector.get_grasp(points_full[near].astype(np.float32), {
+                    "region_steering": sam_mask[near],
+                    "approach_steering": [0.0, 0.0, 1.0],
+                    "approach_thresh": MAX_APPROACH_RAD,
+                    "dense_grasp": False,
+                    "collision_detection": True,
+                })
+            else:
+                gg, _ = self.detector.get_grasp(
+                    points,
+                    colors[combined_mask].astype(np.float32),
+                    lims=LIMS,
+                    apply_object_mask=True,
+                    dense_grasp=False,
+                    collision_detection=True,
+                )
         except Exception as e:
             self.get_logger().warn(f"Detection failed: {e}")
             return
@@ -245,10 +327,11 @@ class AnyGraspDetectionNode(Node):
             return
 
         gg = gg.nms().sort_by_score()
-        gg = gg[gg.rotation_matrices[:, 2, 0] >= MIN_APPROACH_COS]
-        if len(gg) == 0:
-            self.get_logger().warn("No grasp along the camera's view", throttle_duration_sec=5.0)
-            return
+        if SDK == "anygrasp2":  # anygrasp3 was steered to this cone already
+            gg = gg[gg.rotation_matrices[:, 2, 0] >= MIN_APPROACH_COS]
+            if len(gg) == 0:
+                self.get_logger().warn("No grasp along the camera's view", throttle_duration_sec=5.0)
+                return
         fit = [fits_gripper(points, t, r, d, **FIT)
                for t, r, d in zip(gg.translations, gg.rotation_matrices, gg.depths)]
         keep = np.array([f[0] for f in fit])

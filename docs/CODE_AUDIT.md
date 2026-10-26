@@ -92,6 +92,32 @@ purely from the SAM3 centroid. The 3.4 GB model, the licence, the conda environm
 **To check:** run the arm driver and camera, publish a fake `/pipeline_state` of `EXECUTING`, and
 watch whether `/grasp_candidates` produces anything. Prediction: silence.
 
+### A4. The AnyGrasp move ignores the target and curves into it
+
+`[observed]` on the real arm 2026-10-26 (T1.45, `use_simple_execute: false`, AnyGrasp 3). The grasps
+were good, but the arm pushed the box away before closing, twice. Two causes in `MtcPlanner::moveToPose`:
+
+- **The target is not in the planning scene** `[code]`. Only the arm, three safety walls and the
+  table slab are (`grasp_state_machine.cpp:455`). MoveIt treats the box's space as empty.
+- **The move interpolates joints** `[code]` (`JointInterpolationPlanner`, `mtc_planner.cpp:27`), so the
+  gripper travels on a curve. Earlier the same day, IK took a flipped-wrist solution (joint 4 and
+  joint 6 turned about 180°) and the curve swung the gripper through the box.
+
+Also seen: after a failed plan the state machine backs off 2 cm and retries the same grasp forever
+(`grasp_state_machine.cpp:746`). The fix is planned as `T1.48` (target in the planning scene,
+pre-grasp, contact allowed for the gripper links only, straight final approach). The plan is in
+Dion's local `plans/T1.48_TARGET_IN_PLANNING_SCENE_PLAN.md`.
+
+**Status: fixed by `T1.48`.** `[observed]` 2026-10-26 on the real arm: grasped on the first plan
+with no push, three times at the 10° cone. The detector measures the target as a box and publishes it (`target_box.py`,
+`/grasp/target_object`). `MtcPlanner::approachGrasp` replaces `moveToPose`: OMPL to a pre-grasp
+0.10 m back, contact allowed for the gripper links only, then a straight Cartesian move in. The
+pre-grasp IK starts from the current joints, because unseeded IK chose a 360° joint 6 turn on the
+simulated arm. A grasp that fails to plan is skipped, up to 5, and the 2 cm back-off is gone.
+Simulated arm: `state_machine_sim.sh candidates` PASS. Kept as permanent limits (Dion):
+`max_wrist_turn_deg: 90` and `max_approach_deg: 10` (20° and 30° failed to plan most grasps).
+New: `lock_timeout_s: 25` ends EXECUTING when no grasp locks.
+
 ---
 
 ## B. 🔴 Safety-relevant
@@ -1033,3 +1059,5 @@ publishers racing on the same three topics.
 | 2026-10-13 | Claude Opus 5.5 + Dion | C7 fixed on branch `t1.14-multi-grasp-loop` (`T1.14`): hold until release, then home and IDLE. Sim run owed. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | A1 and C4 fixed on branch `t1.8-t1.10-anygrasp-gate-and-pane` (`T1.8`, `T1.9`). Replay and sim runs owed. |
 | 2026-10-14 | Claude Opus 5.5 + Dion | A1, C7 now `[observed]` fixed, C4 checked in sim (box runs, [`bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt`](bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt)). New finding E6: a late TF ends a request in SELECTING, seen once in sim, task `T1.28`. |
+| 2026-10-26 | Claude Opus 5.5 + Dion | New finding A4, `[observed]` on the real arm: the AnyGrasp move ignores the target (not in the planning scene) and curves into it (joint interpolation), plus the retry loop on an unreachable grasp. Fix planned as `T1.48`. |
+| 2026-10-26 | Claude Opus 5.5 + Dion | A4 fixed by `T1.48`, `[observed]` on the real arm (three grasps at the 10° cone, no push) and in sim. Wrist and cone limits kept for good. |

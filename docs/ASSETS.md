@@ -26,9 +26,27 @@ record. Tags as elsewhere: `[code]` read from source · `[observed]` measured on
 Checksums `[observed]` 2026-09-11: identical in `~/rcp-github`, `~/rcp-desktop` and `~/rcp-Gappler`
 on the lab box, so every copy there is the same file.
 
-**In git, for comparison:** the AnyGrasp licence (`perception/license/Puneet.*`, machine-locked to
-the lab box) and its compiled binaries (`perception/*.so`, CPython 3.10). `lib_cxx.so` links
-`libcrypto.so.1.1`, which the box has system-wide (`/lib/x86_64-linux-gnu/`) `[observed]`.
+**In git, for comparison:** two AnyGrasp SDKs in `grasp/anygrasp_node/`, one folder each, both
+licences machine-locked to the lab box (T1.45). `anygrasp2/` holds the old SDK's `gsnet`, `lib_cxx`
+and `tracker` `.so` files (CPython 3.10) and Puneet's `license/`. `anygrasp3/` holds the July 2026
+SDK's `gsnet.so` and the `license/` registered for `N43733607197350730141` (files named
+`ShermanWee.*`). `anygrasp_sdk` in `grasp/grasp_config.yaml` picks one. The node changes into that
+folder before loading it, because both SDKs read `./license` from the working folder `[verified]`.
+Both use the same `log/checkpoint_detection.tar` (md5 `965580a1...`, `[verified]` 2026-10-26).
+`lib_cxx.so` links `libcrypto.so.1.1`, which the box has system-wide (`/lib/x86_64-linux-gnu/`)
+`[observed]`. AnyGrasp 3's demo files are vendored in `grasp/vendor/anygrasp3_sdk/` for the bench.
+
+**What "machine-locked" means for `anygrasp3/license/` (2026-10-22, T1.45):** the new `gsnet.so` hashes
+the MAC of every network interface that is up (`enp2s0`, `wlo1`, `docker0`). Hostname, interface names
+and IPs do not matter. Docker picks a random `docker0` MAC at each start, so the box's id changed at a
+reboot and the first licence (`N1303...`) failed. A systemd drop-in now pins it
+(`/etc/systemd/system/docker.service.d/override.conf`) and the id is `N43733607197350730141`. Its
+licence passes on the box `[verified]` 2026-10-26. Anything that adds an interface while it
+is up changes the id: Aria glasses over USB, the Orin USB cable, a container on `--network bridge`.
+**The licence is checked only when the detector is created, not per grasp** `[verified]` 2026-10-26:
+a running detector kept finding grasps for 104 calls after Aria USB streaming changed the id to
+`N12036839199735463936`. So start AnyGrasp 3 before Aria streams over USB.
+The old `anygrasp2/license/` uses one physical MAC and survives all of this `[verified]`.
 
 **Ignore rules (2026-09-11):** the root `.gitignore` now ignores model weights by extension
 (`*.pt`, `*.pth`, `*.ckpt`, `*.onnx`, `*.safetensors`, `*.engine`, `*.h5`), `assets/models/`, the
@@ -111,3 +129,6 @@ one configurable path instead of hardcoded ones. Tracked as NEXT_STEPS §2.8. Wh
 | 2026-10-13 | Claude Opus 5.5 + Dion | open_clip weights fetched on the lab box (T0.18), checksum matches. Where they land and how the CI runner copy links them. |
 | 2026-10-14 | Claude Opus 5.5 + Dion | Wrist camera bag row links `grasp/tools/wrist_camera_bag_to_point_cloud_page.py`, which turns one frame into an interactive 3D point cloud page (T1.32). |
 | 2026-10-19 | Claude Opus 5.5 + Dion | SuperPoint and LightGlue weights row: fetched on first use into the box's torch cache (T8.4). |
+| 2026-10-22 | Claude Opus 5.5 + Dion | AnyGrasp licence split into `anygrasp2_license/` and `anygrasp3_license/`, with `license` a link to the one in use (T1.45). |
+| 2026-10-23 | Claude Sonnet 5.5 + Dion | Added what the AnyGrasp 3 licence id depends on and the docker0 pin (T1.45). |
+| 2026-10-26 | Claude Opus 5.5 + Dion | One folder per AnyGrasp SDK (`anygrasp2/`, `anygrasp3/`) picked by `anygrasp_sdk` in the config. New licence passes, checked only at detector creation (T1.45). |

@@ -434,8 +434,9 @@ consumer's gate are mutually exclusive, so no candidate can ever be used. CODE_A
 
 ### 3.4 `mtc_planner.hpp` — 64 lines
 
-The entire arm-motion API in five methods: `moveToPose`, `moveToHome`, `moveToReturn`,
-`getCurrentPose`, `moveCartesianStep`. Plus `HOME_JOINTS` (`:46-53`) and `RETURN_JOINTS` (`:56-63`).
+The arm-motion API: `approachGrasp` (was `moveToPose` until T1.48: OMPL to a pre-grasp 0.10 m
+back, then straight in), `moveToHome`, `moveToReturn`, `getCurrentPose`, `moveCartesianStep`, and the
+target box in MoveIt's scene: `addTarget`, `attachTarget`, `removeTarget` (T1.48, CODE_AUDIT A4). Plus `HOME_JOINTS` (`:46-53`) and `RETURN_JOINTS` (`:56-63`).
 Home is joint3 45°, joint5 and joint6 90°, the rest zero — the pose the arm swings to unprompted at
 launch, never validated on hardware (§8.1).
 
@@ -511,3 +512,4 @@ might that `return` at `:721` have been put there deliberately? ⬜ **open**
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
 | 2026-10-13 | Claude Opus 5.5 + Dion | Audio paragraph: note that `T2.10` replaced the once-a-second loop with one publish per finished sentence. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | §3.1: the state machine also listens to E, S and R (T1.38). |
+| 2026-10-26 | Claude Opus 5.5 + Dion | §3.4: `moveToPose` is now `approachGrasp`, plus the target box functions (T1.48). |

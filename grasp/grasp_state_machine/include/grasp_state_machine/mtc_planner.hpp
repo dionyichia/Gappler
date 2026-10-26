@@ -7,6 +7,8 @@
 #include <moveit/task_constructor/stages.h>
 #include <moveit/task_constructor/solvers.h>
 #include <moveit/move_group_interface/move_group_interface.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include <moveit_msgs/msg/collision_object.hpp>
 
 using namespace moveit::task_constructor;
 
@@ -22,9 +24,16 @@ public:
     if (mtc_spin_thread_.joinable())
       mtc_spin_thread_.join();
   }
-  // Moves arm to the given target_pose (in base_link frame).
+  // Moves the gripper to grasp_pose (base_link): a collision-free path to pregrasp_distance_m
+  // back along the approach, then straight in (T1.48). Only the gripper may touch TARGET_ID.
   // Returns true on success, false on planning or execution failure.
-  bool moveToPose(const geometry_msgs::msg::Pose &target_pose);
+  bool approachGrasp(const geometry_msgs::msg::Pose &grasp_pose);
+
+  // The grasp target in MoveIt's planning scene (T1.48). add puts it in the world, attach moves
+  // it onto the gripper after closing, remove takes it out of both. Each returns once applied.
+  bool addTarget(moveit_msgs::msg::CollisionObject target);
+  bool attachTarget();
+  void removeTarget();
 
   // Moves arm back to the defined home joint configuration.
   // Returns true on success, false on planning or execution failure.
@@ -45,11 +54,20 @@ private:
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_;
   std::thread mtc_spin_thread_;
   double step_settle_s_; // step_settle_s in grasp/grasp_config.yaml
+  double max_wrist_turn_deg_; // max_wrist_turn_deg in grasp/grasp_config.yaml
+  double pregrasp_distance_m_; // pregrasp_distance_m in grasp/grasp_config.yaml
+  moveit::planning_interface::PlanningSceneInterface psi_;
   const std::atomic<bool> &stopped_;
 
   bool refuseIfStopped(const char *what);
 
   const std::string ARM_GROUP = "rm_group";
+  // The target's id in the planning scene. The detector publishes it under this id too.
+  const std::string TARGET_ID = "grasp_target";
+  // The links that may touch the target: the gripper, not the arm or the camera. The SRDF has no
+  // gripper group (rm_65_description.srdf), so they are listed here. The target attaches to the first.
+  const std::vector<std::string> GRIPPER_LINKS = {
+      "gripper_base_link", "gripper_Link1", "gripper_Link2", "gripper_Link3", "gripper_Link4"};
 
   // Home pose joint values (radians)
   // Validated on the real arm 2026-09-23 (T1.7): commanded one joint at a time through
