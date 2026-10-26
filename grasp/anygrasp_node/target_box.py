@@ -3,7 +3,8 @@
 MoveIt avoids only what its planning scene holds, and the target was never in it, so the path to a
 grasp pushed the box away (CODE_AUDIT A4). The wrist camera looks down at about 45 deg, so it sees
 the top face and the front face but never the bottom. The box is therefore:
-  footprint  the smallest turned rectangle around the points seen from above
+  footprint  the smallest turned rectangle around the points seen from above, with its edges at the
+             2nd and 98th percentile so a few stray points beside the box can't widen it
   height     from just above the table top up to the highest points. The table height is known.
   pad        added on every side, so depth noise never makes the box smaller than the object
   gap        the box starts TABLE_GAP above the table. Touching counts as a collision in MoveIt, so
@@ -23,10 +24,11 @@ _ANGLES = np.radians(np.arange(0.0, 90.0, 1.0))
 TABLE_GAP = 0.005
 
 
-def target_box(points, table_top_z, pad, top_percentile=99.0):
+def target_box(points, table_top_z, pad, top_percentile=99.0, edge_percentile=2.0):
     """Return (centre xyz, yaw in radians, size xyz) of the box, or None if no point is above the table.
 
-    top_percentile ignores the highest few points: flying pixels at the edges can sit far above."""
+    top_percentile ignores the highest few points: flying pixels at the edges can sit far above.
+    edge_percentile does the same for the footprint's sides (the same idea as fit_percentile)."""
     above = points[points[:, 2] > table_top_z]
     if len(above) == 0:
         return None
@@ -36,7 +38,7 @@ def target_box(points, table_top_z, pad, top_percentile=99.0):
         c, s = np.cos(a), np.sin(a)
         # The points in a frame turned by a: its axes are the rectangle's sides
         u = xy @ np.array([[c, -s], [s, c]])
-        lo, hi = u.min(axis=0), u.max(axis=0)
+        lo, hi = np.percentile(u, [edge_percentile, 100 - edge_percentile], axis=0)
         area = np.prod(hi - lo)
         if best is None or area < best[0]:
             best = (area, a, lo, hi)
@@ -68,7 +70,9 @@ if __name__ == "__main__":
     world = local @ np.array([[c, s, 0], [-s, c, 0], [0, 0, 1]]) + [-0.5, 0.1, table]
 
     centre, yaw, size = target_box(world, table, pad=0.0)
-    assert np.allclose(sorted(size[:2]), [l, w], atol=0.003), ("footprint must be 6 x 7.5 cm", size)
+    # The edge trim also drops real edge points, so a clean box comes out about 3 mm small. The pad
+    # (1 cm on each side) covers that.
+    assert np.allclose(sorted(size[:2]), [l, w], atol=0.005), ("footprint must be 6 x 7.5 cm", size)
     assert abs(size[2] - (h - TABLE_GAP)) < 0.003, ("height from the gap above the table", size)
     assert np.allclose(centre, [-0.5, 0.1, table + (TABLE_GAP + h) / 2], atol=0.003), ("centre", centre)
     # A box's footprint repeats every 90 deg, so compare the turn modulo 90
@@ -80,6 +84,13 @@ if __name__ == "__main__":
     # Flying pixels far above the box must not raise it
     stray = np.vstack([world, [[-0.5, 0.1, table + 0.5]] * 5])
     assert abs(target_box(stray, table, pad=0.0)[2][2] - (h - TABLE_GAP)) < 0.005, "stray points raised the box"
+
+    # Stray points beside the box (a mask that leaks onto the table, depth noise at the edges) must
+    # not widen it. 20 of 1000 points is 2%, the most the trim can drop.
+    beside = np.column_stack([rng.uniform(-0.60, -0.40, 20), rng.uniform(0.0, 0.2, 20),
+                              np.full(20, table + 0.01)])
+    _, _, wide = target_box(np.vstack([world, beside]), table, pad=0.0)
+    assert np.all(wide[:2] < size[:2] + 0.005), ("stray points beside the box widened it", wide, size)
 
     assert target_box(world[world[:, 2] < table], table, pad=0.01) is None, "nothing above the table"
     print("target_box: all checks pass")

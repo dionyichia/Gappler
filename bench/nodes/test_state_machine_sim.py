@@ -16,7 +16,8 @@ private, no rm_driver exists and the real arm is unreachable. This test plays ev
               AnyGrasp's axes from where the gripper's links are, then turned into grasp_frame's
               by the node's own to_grasp_frame (T1.17). With it, /grasp/target_object: a 3 cm
               cube at the grasp point, as the node measures the object (T1.48). The state
-              machine does not move to a grasp without one.
+              machine does not move to a grasp without one. First the grasp jumps 5 cm
+              between frames, so nothing locks and EXECUTING must give up (lock_timeout_s, T1.48).
 and watches /pipeline_state, /joint_states, /manipulator/return_to_user, /manipulation/done and
 the launch log.
 
@@ -95,6 +96,7 @@ class Actors(Node):
         self.estop_pub = self.create_publisher(Stop, "/rm_driver/emergency_stop_cmd", 1)
         self.soft_pub = self.create_publisher(Empty, "/rm_driver/move_stop_cmd", 1)
         self.cand_base = None  # Pose in base_link; published in the camera frame while set
+        self.jitter = 0.0      # m; random offset added to each published grasp, so it never locks
         self.depth = None
         self.create_timer(0.2, self._camera)
         self.create_timer(0.1, self._centroid)
@@ -149,7 +151,11 @@ class Actors(Node):
             return
         m = GraspCandidateArray()
         m.header.frame_id, m.header.stamp = OPT, self.get_clock().now().to_msg()
-        m.grasps = [GraspCandidate(score=0.9, width=0.05, depth=0.02, pose=do_transform_pose(self.cand_base, to_opt))]
+        pose = Pose(position=self.cand_base.position, orientation=self.cand_base.orientation)
+        if self.jitter:
+            pose.position = type(pose.position)(**{k: getattr(pose.position, k) + float(np.random.uniform(
+                -self.jitter, self.jitter)) for k in "xyz"})
+        m.grasps = [GraspCandidate(score=0.9, width=0.05, depth=0.02, pose=do_transform_pose(pose, to_opt))]
         self.cand_pub.publish(m)
         # The object between the open fingers, centred on the grasp point (T1.48)
         box = CollisionObject(id="grasp_target", operation=CollisionObject.ADD)
@@ -157,7 +163,7 @@ class Actors(Node):
         box.primitives = [SolidPrimitive(type=SolidPrimitive.BOX, dimensions=[0.03, 0.03, 0.03])]
         box.primitive_poses = [Pose()]
         box.primitive_poses[0].orientation.w = 1.0
-        box.pose.position = self.cand_base.position
+        box.pose.position = pose.position
         box.pose.orientation.w = 1.0
         self.target_pub.publish(box)
 
@@ -363,6 +369,28 @@ def main():
         check("gripper told to open", opened,
               next((d for t, k, d in n.grip if k == "set_position" and t >= t2), "no set_gripper_position_cmd"))
         if CANDIDATES:
+            # A grasp that never holds still never locks. EXECUTING must give up, not wait in
+            # silence (86 s on the real arm, 2026-10-26, T1.48)
+            try:
+                eef = n.tf.lookup_transform("base_link", "grasp_frame", Time()).transform
+            except Exception as e:
+                return check("gripper pose for the jumping candidate", False, f"no base_link -> grasp_frame: {e}")
+            n.cand_base = Pose()
+            n.cand_base.position.x, n.cand_base.position.y = eef.translation.x, eef.translation.y
+            n.cand_base.position.z = eef.translation.z
+            n.cand_base.orientation = eef.rotation
+            n.jitter = 0.05
+            t_jit = time.time()
+            gave_up = n.spin_until(lambda: n.seen("IDLE", t_jit) and log_has(r"no grasp locked"), 40)
+            n.cand_base, n.jitter = None, 0.0
+            if not check("a grasp that never locks -> EXECUTING gives up, back to IDLE", gave_up,
+                         f"'no grasp locked' logged, IDLE after {time.time() - t_jit:.0f} s" if gave_up else
+                         "no 'no grasp locked' line and IDLE in 40 s (lock_timeout_s is 15)"):
+                return
+            t_again = time.time()
+            n.request()
+            if not n.spin_until(lambda: n.seen("EXECUTING", t_again), 120):
+                return check("new request after the give-up -> EXECUTING", False, "no EXECUTING in 120 s")
             try:
                 # approachGrasp aims grasp_frame, not Link6, at the candidate (mtc_planner.cpp setIKFrame)
                 eef = n.tf.lookup_transform("base_link", "grasp_frame", Time()).transform

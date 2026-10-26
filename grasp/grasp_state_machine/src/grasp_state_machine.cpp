@@ -147,6 +147,7 @@ private:
     STABILITY_TRANS_MM = param("stability_trans_mm").as_double();
     STABILITY_ROT_DEG = param("stability_rot_deg").as_double();
     MAX_GRASP_ATTEMPTS = static_cast<int>(param("max_grasp_attempts").as_int());
+    LOCK_TIMEOUT_S = param("lock_timeout_s").as_double();
 
     camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
         topic("wrist_camera_info"), 1,
@@ -650,6 +651,16 @@ private:
   // =========================================================================
   bool executingStep(bool &pose_locked, geometry_msgs::msg::Pose &stable_pose_base)
   {
+    // Lower-ranked grasps can jump between frames and never pass the stability check. That waited
+    // 86 s in silence on 2026-10-26 (T1.48)
+    double waited_s = std::chrono::duration<double>(std::chrono::steady_clock::now() - lock_wait_start_).count();
+    if (!pose_locked && waited_s > LOCK_TIMEOUT_S)
+    {
+      RCLCPP_WARN(this->get_logger(), "EXECUTING: no grasp locked in %.0f s (%zu failed to plan), back to IDLE",
+                  LOCK_TIMEOUT_S, failed_poses_.size());
+      return true;
+    }
+
     // --- Wait for a detection candidate (3s timeout) ---
     grasp_interfaces::msg::GraspCandidateArray::SharedPtr msg;
     {
@@ -788,6 +799,7 @@ private:
                   failed_poses_.size(), MAX_GRASP_ATTEMPTS);
       resetStability();
       pose_locked = false;
+      lock_wait_start_ = std::chrono::steady_clock::now();
       return false; // next candidate
     }
 
@@ -995,6 +1007,12 @@ private:
         geometry_msgs::msg::Pose stable_pose_base;
         resetStability();
         failed_poses_.clear();
+        lock_wait_start_ = std::chrono::steady_clock::now();
+        {
+          // Only a box measured this cycle: last cycle's may be where the object used to be
+          std::lock_guard<std::mutex> lock(target_mutex_);
+          latest_target_.reset();
+        }
 
         bool executing_done = false;
         while (!executing_done && !stopped_)
@@ -1078,6 +1096,8 @@ private:
   std::deque<geometry_msgs::msg::Pose> stability_window_;
   // Grasps that failed to plan this cycle, skipped from then on (worker thread only, T1.48)
   std::vector<geometry_msgs::msg::Pose> failed_poses_;
+  // When the wait for the current grasp to lock began (worker thread only)
+  std::chrono::steady_clock::time_point lock_wait_start_;
 
   // The newest target box from the detector (T1.48)
   moveit_msgs::msg::CollisionObject::SharedPtr latest_target_;
@@ -1108,6 +1128,7 @@ private:
   double STABILITY_TRANS_MM;
   double STABILITY_ROT_DEG;
   int MAX_GRASP_ATTEMPTS; // grasps tried per cycle before giving up (T1.48)
+  double LOCK_TIMEOUT_S;  // longest wait for a grasp to lock (T1.48)
 };
 
 // ===========================================================================

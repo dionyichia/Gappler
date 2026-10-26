@@ -78,9 +78,9 @@ anygrasp_detection_node:
     max_gripper_width_m: 0.10
     # Keep grasps whose approach is within this angle of the wrist camera's view axis. anygrasp3
     # is steered to it (approach_steering), anygrasp2 drops the rest afterwards. A first-run safety
-    # limit (Dion, 2026-10-14), not a measured one: the candidate path moves to the grasp's full
-    # pose, so larger angles may work. Raise it once RViz and a few real grasps
-    # show they do. Without it, most grasps came from the side or across the top face.
+    # limit (Dion, 2026-10-14). Without it, most grasps came from the side or across the top face.
+    # Kept at 10 (Dion, 2026-10-26): at 30 and 20, 4 of 5 grasps failed to plan (no IK for the
+    # pre-grasp, or the straight-in move stopped partway), and 10 grasped with no push.
     max_approach_deg: 10
     # T1.32: does the object fit the REAL gripper? AnyGrasp cannot tell (it is told 0.10 m above),
     # so the node measures each grasp from the masked points and drops it if any limit fails.
@@ -139,12 +139,19 @@ grasp_state_machine:
     # T1.48: grasps tried per cycle. One that fails to plan is skipped, then the next is tried.
     # Matches num_grasp_candidates. After this many, back to IDLE.
     max_grasp_attempts: 5
-    # Refuse a move to AnyGrasp's grasp if joint 4, 5 or 6 would turn further than this (T1.45)
+    # T1.48: back to IDLE if no grasp locks within this time. Restarts after each failed plan.
+    # The lower-ranked grasps can jump between frames and never lock: 86 s of silence on 2026-10-26.
+    # Locks seen that day took 3 to 6 s, once 17 s, so 25 leaves room.
+    lock_timeout_s: 25.0
+    # Refuse a move to AnyGrasp's grasp if joint 4, 5 or 6 would turn further than this (T1.45).
+    # A permanent safety limit, not a temporary guard (Dion, 2026-10-26).
     max_wrist_turn_deg: 90.0
     # End the approach if the newest centroid is older than this. Age counts from the camera
     # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
-    # frame (measured 2026-10-12, T1.24 3b)
-    centroid_max_age_s: 2.0
+    # frame (measured 2026-10-12, T1.24 3b). Raised to 3.0, then 7.0 (Dion, 2026-10-26): SAM 3
+    # suddenly slowed, stalls of 2 to 4 s ended most approaches on the first step. Lower it once
+    # SAM 3 is fast again: during a stall the arm steps on a centroid up to this old.
+    centroid_max_age_s: 7.0
     # After a /manipulator/grasp_request, the first centroid must arrive within this time or the
     # request lapses (T1.25). SAM 3 gives the first one in about 1 s when the object is in view
     # (0.27 to 0.53 s per frame, 0.5 s warm-up, measured 2026-10-08 and 2026-10-12)
@@ -156,7 +163,7 @@ grasp_state_machine:
     final_exec_thresh_m: 0.25
     centroid_target_offset_x_px: 55.0   # where the object should sit in the image, from centre
     centroid_target_offset_y_px: 0.0
-    min_approach_angle_deg: 20.0     # reject grasps steeper than this
+    min_approach_angle_deg: 20.0     # reject grasps flatter than this, in degrees above horizontal
     max_orient_step_deg: 5.0         # slerp step size, used when use_slerp_execute is true
     use_simple_execute: true         # grasp from the centroid, not AnyGrasp (CHANNEL_CONTRACT B-1, T1.17)
     use_slerp_execute: false

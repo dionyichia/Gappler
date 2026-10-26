@@ -224,9 +224,8 @@ class AnyGraspDetectionNode(Node):
         # MoveIt needs one pose per shape, relative to obj.pose
         obj.primitive_poses.append(Pose(orientation=Quaternion(w=1.0)))
         obj.pose.position.x, obj.pose.position.y, obj.pose.position.z = centre.tolist()
-        qz = Rotation.from_euler("z", yaw).as_quat()
-        obj.pose.orientation.x, obj.pose.orientation.y = float(qz[0]), float(qz[1])
-        obj.pose.orientation.z, obj.pose.orientation.w = float(qz[2]), float(qz[3])
+        x, y, z, w = Rotation.from_euler("z", yaw).as_quat().tolist()
+        obj.pose.orientation = Quaternion(x=x, y=y, z=z, w=w)
         self.target_pub.publish(obj)
 
     def build_grasp_msg(self, gg) -> GraspCandidateArray:

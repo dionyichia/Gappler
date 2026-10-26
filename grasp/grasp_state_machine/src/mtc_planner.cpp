@@ -112,7 +112,8 @@ bool MtcPlanner::approachGrasp(const geometry_msgs::msg::Pose &grasp_pose)
     }
     // The planner takes any IK solution. A flipped wrist reaches the same pose with joint 4 and
     // joint 6 turned about 180 degrees, and swung the gripper through the object before the
-    // target was in the scene (T1.45, 2026-10-26). Kept as a guard until T1.48 works at the arm.
+    // target was in the scene (T1.45, 2026-10-26). Kept for good (Dion, 2026-10-26): no grasp here
+    // needs a turn that large. If refusals become common, look at why before raising the limit.
     const auto &solution = *task.solutions().front();
     const auto &start = solution.start()->scene()->getCurrentState();
     const auto &end = solution.end()->scene()->getCurrentState();
