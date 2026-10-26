@@ -83,9 +83,11 @@ looked at, drives to it, confirms it with the wrist camera and grasps it.
    exploring.
 5. **Grasp.** Grasp candidates on the wrist point cloud, plan, execute.
 
-**Exploration is core, M9 is not.** Exploration with the memory graph is how the robot searches.
-M9 is the paper's smarter exploration order (frontier scoring and visit ordering). It is the first
-thing we cut, because a simple nearest-first order still finds the object, only more slowly.
+**Exploration is core, and HiCo-Nav steers it.** Exploration with the memory graph is how the robot
+searches, and since 2026-10-27 the graph's semantics decide where it looks next (T7.8): the paper's
+frontier scoring, plus the user's position and any lead. M9 only measures how much this beats plain
+nearest-first (`w = 0`), with the paper's visit ordering (WTRP) as an optional extra. M9 is the first
+thing we cut.
 
 **Gaze is the base case.** The gaze target is a pipeline component, the switch from exploring to
 approaching, not a separate research claim. A without-gaze version (voice only, the sentence query)
@@ -403,7 +405,7 @@ guard for the lab box `full` job, until the repository goes private.
 
 Thirteen milestones. M0 is a tax. M1 to M4 make the system we already have work. M5 to M7 are the
 integration, with exploration (M7) as the robot's search behaviour. M8 is the gaze target that ends
-exploration. M9 is optional. M10 is the write-up. M11 and M12, added 2026-10-26, connect the phases end to end:
+exploration. M9 is optional, an assessment of the semantic exploration in M7. M10 is the write-up. M11 and M12, added 2026-10-26, connect the phases end to end:
 M11 is the orchestrator that runs every phase and recovers from failures, M12 is parking where the
 arm can grasp.
 
@@ -416,9 +418,9 @@ arm can grasp.
 | **M4** | The current system, closed loop | One run: speak, look, the base drives, the arm grasps. Per-stage timing recorded | Forecast 11–31 Jan 2027 | Dion | P1 |
 | **M5** | The base has a calibrated forward camera | A RealSense D455 is mounted on the base, its position relative to the LiDAR is calibrated, LiDAR points project onto the right pixels in its image, and the camera-pose error is written down as a number | Started 16 Sep. Forecast end 24 Jan 2027 | Sherman mount, Dion calibration | P0 |
 | **M6** | The memory graph is built offline | From recorded data, the system produces a set of object entries with a 3D position and an image feature each, merged so the same physical object appears once. Querying it with a sentence returns sensible objects | Started 21 Sep. Forecast end 31 Jan 2027 | Zongzhe | P1 |
-| **M7** | The graph drives the robot | With the object out of view, the robot explores, finds the user, builds the graph as it drives, and drives to the object the gaze target matched. Close-range perception takes over | Forecast 18 Jan – 28 Feb 2027 | Dion | P1 |
+| **M7** | HiCo-Nav steers the search | With the object out of view, HiCo-Nav's semantics decide where the robot explores: frontiers are scored by graph objects related to the task, the user's position and any lead (T7.8), and `w = 0` is plain nearest-first. The robot finds the user, builds the graph as it drives, and drives to the object the gaze target matched. Close-range perception takes over | Forecast 18 Jan – 28 Feb 2027 | Dion | P1 |
 | **M8** | Gaze picks the instance | The CLIP feature of the glasses crop is matched against graph objects while exploring, and a good enough match triggers the approach. N end-to-end trials of the base case, success per phase. Without gaze is a stretch (T8.11) | Started 19 Oct. Forecast end 14 Mar 2027 | Dion | P1 |
-| **M9** | Frontier scoring and visit ordering | The robot chooses where to explore next using the paper's scoring, measured against our simple nearest-first exploration (T7.5) | Optional, likely cut. 18 Jan – 21 Feb 2027 if kept | Zongzhe | P2, optional |
+| **M9** | Semantic exploration, assessed | Semantic exploration (`w > 0`, T7.8) beats nearest-first (`w = 0`) on the lab on a measured metric (T9.2). Optional extras: WTRP visit ordering (T9.3), the upstream simulator baseline (T9.1) | Optional, likely cut. 18 Jan – 21 Feb 2027 if kept | Zongzhe | P2, optional |
 | **M10** | Demonstration and paper | A recorded end-to-end run and a paper draft whose central table is the end-to-end trials | Forecast 1–21 Mar 2027 | All | P1 |
 | **M11** | The orchestrator runs every phase | Each phase (explore, approach, verify at the wrist, grasp, clarify) is a ROS 2 action that returns an outcome, a confidence and a reason. The orchestrator runs them in order, and every row of its failure table has been triggered once on the simulated arm and got the listed response. The clarification node turns an unclear request into one object or a lead within three questions, tested with scripted users. One hardware run per planted failure | Forecast 21 Dec 2026 – 21 Feb 2027 `[inferred]`, first estimate | Dion, Zongzhe the clarification node | P1 |
 | **M12** | The base parks where the arm can grasp | From N start poses, the base parks at a pose chosen inside the arm's measured reach, the wrist camera re-finds the object from above, and the arm grasps from there. Parking error and grasp success after parking recorded | Forecast 11 Jan – 28 Feb 2027 `[inferred]`, first estimate | Sherman, Dion the wrist look | P1 |
@@ -546,8 +548,9 @@ merge two entries `[inferred]`, so the duplication rate becomes a pure function 
 unless T6.4 changes them. That document's §4 lists three cheaper options than a better pose
 source, to decide on the recorded data from T6.2.
 
-**M7. The graph drives the robot.** Accept when a spoken instruction with no object in view causes
-the robot to drive to the right place and then grasp. Risk: the graph's object position is at
+**M7. HiCo-Nav steers the search.** Accept when a spoken instruction with no object in view causes
+the robot to explore where the graph's semantics point (T7.9 shows it on hardware), drive to the
+right place and then grasp. Risk: the graph's object position is at
 navigation precision, not grasping precision. This is expected and is why close-range perception
 takes over on arrival.
 
@@ -558,9 +561,9 @@ confirms or rejects it, and on a reject the robot goes back to exploring. Risk: 
 fix the trial procedure and the object placement before running anything, which is why Sherman builds
 a fixture in M5. The without-gaze comparison is a stretch (T8.11).
 
-**M9. Frontier scoring and visit ordering.** Accept when the paper's exploration order beats our
-simple nearest-first exploration on a measured metric. Risk: it is a reimplementation of someone
-else's contribution, and the base case explores without it. **This is the first thing we cut.**
+**M9. Semantic exploration, assessed.** Accept when semantic exploration (`w > 0`) beats
+nearest-first (`w = 0`) on the lab on a measured metric. The scoring itself is core, in M7 (T7.8).
+Risk: in a single room the gain may be small. **This is the first thing we cut.**
 
 **M10. Demonstration and paper.** Accept when a recorded run exists and a draft exists whose
 central table is the end-to-end trials.
@@ -672,7 +675,7 @@ The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 
 
 The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
-### 6.9 M7. The graph drives the robot (1–28 Feb 2027)
+### 6.9 M7. HiCo-Nav steers the search (1–28 Feb 2027)
 
 The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
@@ -680,7 +683,7 @@ The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 
 
 The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
-### 6.11 M9. Frontier scoring and visit ordering (2 Nov 2026 – 21 Feb 2027). Optional
+### 6.11 M9. Semantic exploration, assessed (2 Nov 2026 – 21 Feb 2027). Optional
 
 The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
@@ -771,8 +774,8 @@ were briefly moved here and then kept with Dion, who wrote the bench.
 
 Owns the one part of this project that does not already exist in some form: object entries built
 from images, depth and camera pose; the merge rule that stops one physical object being registered
-twice; the sentence query that returns a place to drive to; and, if the schedule allows, the frontier
-scoring and visit ordering in M9.
+twice; the sentence query that returns a place to drive to; the semantic frontier scoring that steers
+exploration (T7.8, core since 2026-10-27); and, if the schedule allows, the visit ordering in M9.
 
 *Takeaway.* A published method taken from the paper to working, evaluated code, with the design
 decisions owned rather than inherited. This is the most paper-shaped work on the board and the part a
@@ -860,14 +863,14 @@ March, with the final report due.
 
 | Order | What we cut | What we lose | What survives |
 |---|---|---|---|
-| 1 | **M9 entirely**, the paper's frontier scoring and visit ordering | The paper's largest reported benefit, and faster exploration | Exploration itself. The robot explores nearest-first (T7.5) |
+| 1 | **M9 entirely**, the lab comparison and WTRP visit ordering | A measured number for how much semantic steering helps, and the paper's visit ordering | Semantic exploration itself (T7.8), with nearest-first as its `w = 0` setting |
 | 2 | The without-gaze comparison, T8.11 | A number for how much gaze helps | The base case with gaze, end to end |
 | 3 | The reasoning layer, T6.7 | Instruction expansion into related objects | The target word goes straight into the graph's vocabulary |
 | 4 | Graph pruning and the solver work | The graph grows without bound over a long run | Correctness over a lab-sized run |
 | 5 | The two-stage trigger, T6.5 | Speed | Correctness, provided the age limit from T2.4 stays |
 | 6 | Reduce N in the end-to-end trials, T8.3 | Statistical strength | A number, which is better than no number |
 
-**Not on the cut list:** exploration and live graph building (T7.2, T7.5), finding the user (T7.6)
+**Not on the cut list:** exploration and live graph building (T7.2, T7.5), semantic exploration (T7.8), finding the user (T7.6)
 and the gaze-target match (T8.2). Without them the base case does not run. If one of them cannot
 run, tell the supervisor early rather than late.
 
@@ -979,7 +982,7 @@ take from the top of this list, and say so in the weekly note so the others know
 | S3 | **Graph pruning with a real solver** | Zongzhe | Cut item 3. Bounded graph growth over a long run. A weighted set multicover problem with mature open solvers, so it is a known quantity rather than a research question. [`MEMORY_GRAPH_DESIGN.md`](MEMORY_GRAPH_DESIGN.md) §6 makes this a drop-in: an exact solver replaces the greedy body without changing the interface, and greedy becomes the baseline it is measured against | T6.4, and a licence check on the solver |
 | S4 | **A second pose source, measured against the first** | Sherman | If T5.7 says 2D localisation is the limiting factor, this stops being a stretch goal and becomes required work. Either way the comparison is a paper section. The LiDAR's inertial sensor already publishes on `livox/imu` with no subscriber `[code]`, so the input exists | T5.7, and the duplicate-object rate measured on the existing source first |
 | S5 | **The return-to-user leg** | Dion | Out of scope in section 4.2, but `goto_glasses.py` has to be corrected regardless, because its outbound half fires on the same spoken command as the forward leg and competes for the same Nav2 action server `[code]`. Once that is fixed the return leg is closer than the scope decision assumes | The frame defect fixed, and the pose fusion node reconciled with its own documentation |
-| S6 | **Frontier scoring and visit ordering, if M9 was cut** | Zongzhe | Cut item 1. The largest reported benefit in the paper. The base case explores nearest-first without it, which is why it was cut, but it makes exploration faster and is the most complete second result available | M6 done, and the upstream evaluation running as a baseline |
+| S6 | **The lab comparison and WTRP visit ordering, if M9 was cut** | Zongzhe | Cut item 1. The semantic frontier scoring moved into M7 on 2026-10-27 (T7.8). What is left is measuring it against nearest-first, and the paper's visit ordering, its largest reported contributor | T7.8 done; the upstream evaluation running only if comparing with the paper's numbers |
 | S7 | **Replay a recording as a regression test** | Dion | The bench catches renamed channels but nothing catches a perception regression. A recorded drive replayed through the graph would. It is also the cheapest way to make the results reproducible by someone else | A recorded run from T6.2 |
 | S9 | **Pick the gazed object by geometry** | Dion | Two identical objects defeat appearance matching. Casting the gaze ray in the robot's frame does not care what the objects look like. Three methods, cheapest first: map the gaze point by the whole-scene matches, then solve the glasses pose from the shared scene against robot depth, then full pose fusion. Could strengthen M8 for look-alikes, per D9 | An identical pair included in T2.5, so the failure of today's method is measured first. `NEXT_STEPS` §2.13 |
 | S8 | **One configuration tree** | anyone with a spare week | Channel names declared as parameters rather than constants, so they stay overridable at launch. Today 38 of 54 owned channel names are declared outside `shared/global_config.yaml` `[code]` `CODE_AUDIT` K1 | The naming pass, and `TESTBENCH_PLAN` C1 fixed so the bench can still read them |
@@ -1046,3 +1049,4 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-10-24 | Claude (Opus 5.5) + Dion | **T10.5 framing fix (Dion).** Exploration with the memory graph is the core search behaviour. The gaze target (CLIP feature of the glasses crop) is the trigger from exploring to approaching, not a research claim, and M8 is no longer protected. Finding the user is in scope, to speed up exploration. Gaze is the base case, without gaze is a stretch (T8.11). New main objective and five-phase base case in §1. §4 scope, §5.1, §5.2, §5.4, §6.10, §6.13, §7.1, §8.1 cut list and §12 updated. Trigger rule decided: cutoff, wrist confirms, reject goes back to exploring. |
 | 2026-10-26 | Claude (Opus 5.5) + Dion | **M11 and M12 added** from the supervisor's agentic-layer idea. M11: outcome contract, phase wrappers, `phase_orchestrator_node`, recovery skills, phone speaker page and the agentic clarification node (Zongzhe). M12: parking where the arm can grasp (Sherman), with the wrist look (Dion). T7.7 added (live depth from FAST-LIVO2). T7.1 moved to Sherman as the ApproachObject action. S11 added. §5.1, §5.3, §6.12a, §6.12b, §6.13 and §12 updated. About 126 hours of new work, named work now about 530 of about 620 hours. Design record in `NEXT_STEPS` §2.16. |
 | 2026-10-26 | Claude (Opus 5.5) + Sherman | **T7.5 split** into T7.5a (build or adopt `m-explore-ros2`), T7.5b (Nav2 on a growing map), T7.5c (nearest-first explorer with pause, cancel, skip list and the M9 baseline metrics), with T7.5 itself as the attended hardware run. T7.5 no longer waits on T7.2. T11.3 now after T7.5c. Hours 12 to 18. Owners and hours to confirm with Zongzhe and Dion. |
+| 2026-10-27 | Claude (Opus 5.5) + Sherman | **Semantic exploration made core (T7.8).** HiCo-Nav's frontier scoring moved from optional M9 into M7 as T7.8 (T7.8a to T7.8e) plus T7.9, the attended `w > 0` run. M7 renamed "HiCo-Nav steers the search", M9 renamed "Semantic exploration, assessed" (T9.2 now the lab comparison, T9.4 dropped). §1 paragraph, §5.1 milestone table, §5.4 M7 and M9 acceptance, §6.9 and §6.11 headings, §7.1 Zongzhe's ownership, §8.1 cut list and §12 S6 updated. Dependency fixes in the task tree (T7.2, T7.5, T7.5c, T7.6, T8.2, T8.3). Owners and hours to confirm with Zongzhe and Dion. |

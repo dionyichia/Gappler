@@ -82,7 +82,8 @@ Answer by reading the paper. Plugin table in ORIENTATION §10.
 
 > ✅ **Answered for the contract topics, 2026-09-20 (`T0.7`).** The graph answers queries, it does
 > not drive. Dion's `T7.1` node reads the graph and writes `/manipulation/goal_pose`, keeping that
-> channel's meaning unchanged. The frontier layer, if M9 happens, writes `/goal_pose`. The graph is
+> channel's meaning unchanged. The explorer (T7.5c, core since 2026-10-27) sends exploration goals,
+> through `/goal_pose` or the NavigateToPose action (decided in T7.5a). The graph is
 > reached through a ROS service. See [`CHANNEL_CONTRACT.md`](CHANNEL_CONTRACT.md) §4 P2 and §6 N-2,
 > N-3. What is still open is the research-scope half of this question: full memory graph, or
 > navigate-to-named-object. That one decides the YOLO-World line in §2.14.
