@@ -72,7 +72,7 @@ anygrasp_detection_node:
     # limit (Dion, 2026-10-14), not a measured one: the candidate path moves to the grasp's full
     # pose, so larger angles may work. Raise it once RViz and a few real grasps
     # show they do. Without it, most grasps came from the side or across the top face.
-    max_approach_deg: 30
+    max_approach_deg: 10
     # T1.32: does the object fit the REAL gripper? AnyGrasp cannot tell (it is told 0.10 m above),
     # so the node measures each grasp from the masked points and drops it if any limit fails.
     # Gripper (Dion, 2026-10-14): a U 50 mm deep inside, opens 71 mm, rubber pads 16 mm long.
@@ -118,7 +118,11 @@ grasp_state_machine:
     # the camera's view of the object. The 3c grasp (T1.24, 2026-10-13) ended at 0.077 m
     approach_step_final_m: 0.12
     max_approach_steps: 50           # 50 x 0.02 m = 1 m of approach, the object starts about 0.46 m away
-    execute_depth_thresh_m: 0.21     # stop approaching when the object is this close
+    # Was 0.21. AnyGrasp's grasp is one joint-space move from here, so it needs room to turn the
+    # wrist away from the object (T1.45, 2026-10-26). The camera sees down to 0.182 m.
+    execute_depth_thresh_m: 0.30     # stop approaching when the object is this close
+    # Refuse a move to AnyGrasp's grasp if joint 4, 5 or 6 would turn further than this (T1.45)
+    max_wrist_turn_deg: 90.0
     # End the approach if the newest centroid is older than this. Age counts from the camera
     # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
     # frame (measured 2026-10-12, T1.24 3b)

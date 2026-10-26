@@ -1,12 +1,16 @@
 #include "grasp_state_machine/mtc_planner.hpp"
+#include <moveit/planning_scene/planning_scene.h>
 #include <moveit/robot_trajectory/robot_trajectory.h>
 #include <moveit/trajectory_processing/time_optimal_trajectory_generation.h>
+#include <cmath>
+#include <sstream>
 
 // Stores pointer to state machine node from which it originated
 MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr &node, const std::atomic<bool> &stopped)
     : node_(node), stopped_(stopped)
 {
   step_settle_s_ = node_->get_parameter("step_settle_s").as_double();
+  max_wrist_turn_deg_ = node_->get_parameter("max_wrist_turn_deg").as_double();
   mtc_node_ = std::make_shared<rclcpp::Node>(
       "mtc_planner_node",
       rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true));
@@ -54,8 +58,29 @@ bool MtcPlanner::moveToPose(const geometry_msgs::msg::Pose &target_pose)
                 target_pose.position.x, target_pose.position.y, target_pose.position.z);
     if (!task.plan(5))
     {
-      RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] moveToPose: planning failed");
+      std::ostringstream why;
+      task.explainFailure(why);
+      const auto &q = target_pose.orientation;
+      RCLCPP_ERROR(node_->get_logger(),
+                   "[MtcPlanner] moveToPose: planning failed, target q=(%.3f %.3f %.3f %.3f): %s",
+                   q.x, q.y, q.z, q.w, why.str().c_str());
       return false;
+    }
+    // The planner takes any IK solution. A flipped wrist reaches the same pose with joint 4 and
+    // joint 6 turned about 180 degrees, and the straight joint path swings the gripper through
+    // the object (T1.45, 2026-10-26). Refuse those and wait for the next grasp.
+    const auto &solution = *task.solutions().front();
+    const auto &start = solution.start()->scene()->getCurrentState();
+    const auto &end = solution.end()->scene()->getCurrentState();
+    for (const char *joint : {"joint4", "joint5", "joint6"})
+    {
+      double turn_deg = std::abs(end.getVariablePosition(joint) - start.getVariablePosition(joint)) * 180.0 / M_PI;
+      if (turn_deg > max_wrist_turn_deg_)
+      {
+        RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] moveToPose: refused, %s would turn %.0f deg (limit %.0f)",
+                    joint, turn_deg, max_wrist_turn_deg_);
+        return false;
+      }
     }
     if (refuseIfStopped("moveToPose"))
       return false;

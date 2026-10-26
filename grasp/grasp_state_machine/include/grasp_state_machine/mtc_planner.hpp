@@ -45,6 +45,7 @@ private:
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_;
   std::thread mtc_spin_thread_;
   double step_settle_s_; // step_settle_s in grasp/grasp_config.yaml
+  double max_wrist_turn_deg_; // max_wrist_turn_deg in grasp/grasp_config.yaml
   const std::atomic<bool> &stopped_;
 
   bool refuseIfStopped(const char *what);
