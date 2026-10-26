@@ -1,5 +1,6 @@
 // Gappler interim deck, 28 Oct 2026. Style: 2WO boxes and colour + full-width underline tracker.
 // Content from Gappler/docs/INTERIM_PRESENTATION_SLIDE_CONTENT_2026-10.md and the appendix of the 24 Oct deck.
+const fs = require("fs");
 const pptxgen = require("pptxgenjs");
 const React = require("react");
 const { renderToStaticMarkup } = require("react-dom/server");
@@ -7,7 +8,9 @@ const sharp = require("sharp");
 const MD = require("react-icons/md");
 
 const LOCAL_MEDIA = __dirname + "/media/";
-const SHERMAN = __dirname + "/../../sherman_docs/local/report_media/";
+// SHERMAN_MEDIA overrides the folder when his local media is not on this machine
+const SHERMAN = process.env.SHERMAN_MEDIA || __dirname + "/../../sherman_docs/local/report_media/";
+const DION = __dirname + "/../../dion_docs/local/report_media/";
 const MAP_ISO = SHERMAN + "nav_fastlivo_map_iso_clean_handdriven1_2026-10-24.png";
 const OUT = process.argv[2];
 
@@ -103,7 +106,7 @@ function kit(s) {
     },
     caption(text, x, y, w) { T(text, { x, y, w, h: 0.25, fontSize: 11, color: MUTED }); },
     photo(path, box, cap, alt) {
-      s.addImage({ path, ...box, sizing: { type: "cover", w: box.w, h: box.h }, altText: alt || cap || "photo" });
+      if (path) s.addImage({ path, ...box, sizing: { type: "cover", w: box.w, h: box.h }, altText: alt || cap || "photo" });
       if (cap) {
         s.addShape(pres.shapes.RECTANGLE, { x: box.x, y: box.y + box.h - 0.36, w: box.w, h: 0.36, fill: { color: NAVY, transparency: 20 }, line: { type: "none" } });
         T(cap, { x: box.x + 0.15, y: box.y + box.h - 0.36, w: box.w - 0.3, h: 0.36, fontSize: 11, bold: true, color: WHITE, charSpacing: 1, valign: "middle" });
@@ -133,6 +136,27 @@ function slide(section) {
   const s = pres.addSlide({ sectionTitle: section });
   s.background = { color: WHITE };
   return s;
+}
+
+// newest file in dir whose name starts with prefix (dated names sort by date), or null
+function latest(dir, prefix) {
+  const hits = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.startsWith(prefix)).sort() : [];
+  return hits.length ? dir + hits[hits.length - 1] : null;
+}
+
+// image or GIF fitted whole inside box. A missing file becomes a labelled placeholder (STYLE principle 7)
+async function media(s, k, path, box, missing, alt) {
+  if (!path) {
+    k.RR({ ...box, fill: { color: TINT }, line: { color: "9CA3AF", width: 1, dashType: "dash" } });
+    k.label("ARTEFACT TO ADD", box.x + 0.3, box.y + box.h / 2 - 0.5, box.w - 0.6, EMBER);
+    k.T(missing, { x: box.x + 0.3, y: box.y + box.h / 2 - 0.2, w: box.w - 0.6, h: 1.0, fontSize: 13, color: SLATE, valign: "top" });
+    return;
+  }
+  const m = await sharp(path).metadata();
+  const ar = m.width / (m.pageHeight || m.height), w = Math.min(box.w, box.h * ar), h = w / ar;
+  const x = box.x + (box.w - w) / 2, y = box.y + (box.h - h) / 2;
+  s.addImage({ path, x, y, w, h, altText: alt });
+  s.addShape(pres.shapes.RECTANGLE, { x, y, w, h, fill: { type: "none" }, line: { color: RULE, width: 0.75 } });
 }
 
 // ---------- dark slides: cover, part dividers, Q&A ----------
@@ -254,7 +278,10 @@ function appendix(id, title, answers, source) {
     const s = slide("1 Problem and plan"), k = kit(s);
     k.header("DION", "THE PROBLEM", "The user sees the object. The robot does not", "Same box, three viewpoints, almost nothing in common pixel for pixel");
     const iw = (W - 0.4) / 3, ih = 2.55;
-    [[LOCAL_MEDIA + "image-2-1.jpg", "USER'S GLASSES  ·  1 TO 3 M, FRONT ON"],
+    // the glasses frame is a square fisheye: shown whole and centred, the caption bar keeps the full width
+    const gx = L + (iw - ih) / 2;
+    s.addImage({ path: LOCAL_MEDIA + "aria_glasses_lab_view_fisheye.jpg", x: gx, y: 2.05, w: ih, h: ih, altText: "Aria glasses view of the lab" });
+    [[null, "USER'S GLASSES  ·  1 TO 3 M, FRONT ON"],
      [LOCAL_MEDIA + "base_cam_frame.jpg", "ROBOT BASE CAMERA  ·  KNEE HEIGHT"],
      [LOCAL_MEDIA + "image-2-2.jpg", "ROBOT WRIST CAMERA  ·  0.2 TO 0.5 M"]].forEach(([p, cap], i) =>
       k.photo(p, { x: L + i * (iw + 0.2), y: 2.05, w: iw, h: ih }, cap));
@@ -639,7 +666,7 @@ function appendix(id, title, answers, source) {
       s.addShape(pres.shapes.RECTANGLE, { x: R.x + 1.25, y: yy + 0.07, w: Math.max(0.03, 1.2 * v), h: 0.13, fill: { color: col }, line: { type: "none" } });
       k.T(txt, { x: R.x + 1.3 + 1.2 * v, y: yy, w: 0.95, h: 0.26, fontSize: 11, bold: true, color: NAVY, valign: "middle" });
     });
-    k.limitCard(R.x, 5.25, R.w, 0.95, "Same-colour boxes: 6 of 12. Needs the gaze ray in the robot's frame (T8.8)");
+    k.limitCard(R.x, 5.25, R.w, 0.95, "Same-colour boxes lands 6 of 12. Needs the gaze ray in the robot's frame (T8.8)");
     k.caption("Replayed recordings, arm not moved. Below 0.56, or a tie, the arm waits.", L, 6.28, W);
     k.tracker(5);
     s.addNotes("This is the central perception problem. We have the glasses crop from the intent slide, and the wrist camera sees several objects. Which one is it?\n\nThe obvious approach is keypoint matching: find distinctive points in both images and pair them. We measured that first. It ranked the box first in none of 15 pairs. The viewpoints differ too much. So we compared whole-object features, and CLIP ranked the right box first in all 25.\n\nThis week we put it where it matters, inside the grasp client. The arm now goes for the box you looked at, not the box SAM 3 is most confident about. On a scene with two cardboard boxes, the old pick took the wrong box in every one of 114 frames. With the glasses crop, 266 of 268 targets were the right box. With three boxes, 334 of 334. If nothing matches well enough, the arm waits.\n\nThe two misses are instructive. They came at 1.5 metres, where gaze landed on the mat. The crop was wrong before the matcher ever saw it. So the next step is to refuse weak gaze picks at the glasses (T2.24).\n\nThe real limit is identical objects: two boxes of the same colour, 6 of 12. Appearance cannot separate them. That needs the gaze ray in the robot's frame, the glasses calibration from the camera-frames slide.\n\nAll of this is on replayed recordings. The real arm run comes next.\n\nTransition: \"Once the target mask is chosen, the arm has to pick it up.\"");
@@ -678,44 +705,60 @@ function appendix(id, title, answers, source) {
     await k.stat({ y: 4.1, h: 0.9, ic: "MdBlock", num: "< 1 ms", label: "software stop cancels motion" });
     k.limitCard(R.x, 5.15, R.w, 1.3, "Narrow band of positions. Two people and a hand on the power button");
     k.tracker(6);
-    s.addNotes("Grasping is a state machine. A grasp request opens a short gate. The arm then steps the wrist camera towards the target mask, two centimetres at a time, re-checking at each step, until it is 21 centimetres away. This is a simple form of visual servoing: small corrections absorb calibration and depth errors. Then it grasps, lifts, returns home, and holds the object until the user says 'release'.\n\nOur first real grasp was on 13 October. Started from a recorded spoken command, the arm made 5 of 8 grasps. Both failures at 54.5 centimetres were out of reach, so within reach it was 5 of 6. In one run it grasped, held, refused two requests while busy, released, and grasped again.\n\nSafety came first. The arm's hardware stop is rejected by its controller, so we wrote a software stop. On the real arm it cancels motion within a millisecond. Every motion test still has two people and a hand on the power button.\n\nThese grasps used a simple path, one blind step and close. The learned grasp model is the harder part.\n\nTransition: \"The learned grasp model, AnyGrasp, is where the current blocker sits.\"");
+    s.addNotes("Grasping is a state machine. The arm only accepts a target after a grasp request, and only when idle. It then steps the wrist camera towards the target mask, two centimetres at a time, re-checking at each step, until it is 21 centimetres away. This is a simple form of visual servoing: small corrections absorb calibration and depth errors. Then it grasps, lifts, returns home, and holds the object until the user says 'release'.\n\nOur first real grasp was on 13 October. Started from a recorded spoken command, the arm made 5 of 8 grasps. Both failures at 54.5 centimetres were out of reach, so within reach it was 5 of 6. In one run it grasped, held, refused two requests while busy, released, and grasped again.\n\nSafety came first. The arm's hardware stop is rejected by its controller, so we wrote a software stop. On the real arm it cancels motion within a millisecond. Every motion test still has two people and a hand on the power button.\n\nThese grasps used a simple path, one blind step and close. Next we will look at the learned grasp model we used to propose more complicated grasps.\n\nTransition: \"The learned grasp model, AnyGrasp, is what we use for harder grasps.\"");
   }
 
-  // ---- 14: AnyGrasp ----
+  // ---- 14a: what AnyGrasp does and what works ----
   {
     const s = slide("2 Results"), k = kit(s);
-    k.header("DION", "PHASE 5  ·  GRASP", "AnyGrasp works at only one ideal spot", "Up close, the wrist camera sees only one face of the box");
-    const iw = 3.85, ih = 3.05;
-    s.addImage({ path: LOCAL_MEDIA + "image-14-1.png", x: L, y: 2.05, w: iw, h: ih, sizing: { type: "contain", w: iw, h: ih }, altText: "Fit check: an edge grasp on the 75 mm face measured as 56 mm passes wrongly" });
-    s.addShape(pres.shapes.RECTANGLE, { x: L, y: 2.05, w: iw, h: ih, fill: { type: "none" }, line: { color: RULE, width: 0.75 } });
-    const dx = L + iw + 0.25, dw = R.x - 0.25 - dx;
-    k.RR({ x: dx, y: 2.05, w: dw, h: ih, fill: { color: TINT } });
-    k.label("WHY IT FAILS UP CLOSE", dx + 0.2, 2.2, dw - 0.3, BLUE);
-    const sc = 0.028, gx = dx + 1.2;
-    for (const [i, [face, mm, ok]] of [["Side face", 75, false], ["Top", 60, true]].entries()) {
-      const y = 2.65 + i * 0.85;
-      k.T(face, { x: dx + 0.2, y, w: 0.95, h: 0.45, fontSize: 13, bold: true, color: NAVY, valign: "middle" });
-      s.addShape(pres.shapes.RECTANGLE, { x: gx, y: y + 0.05, w: mm * sc, h: 0.35, fill: { color: ok ? BLUE : GREY }, line: { type: "none" } });
-      k.T(`${mm} mm`, { x: gx, y: y + 0.05, w: mm * sc, h: 0.35, fontSize: 12, bold: true, color: ok ? WHITE : NAVY, align: "center", valign: "middle" });
-      s.addShape(pres.shapes.RECTANGLE, { x: gx, y: y - 0.02, w: 71 * sc, h: 0.49, fill: { type: "none" }, line: { color: NAVY, width: 1.25, dashType: "dash" } });
-      await k.circleIcon(gx + 75 * sc + 0.15, y + 0.05, 0.36, ok ? "MdCheck" : "MdClose", ok ? ST.tested.dot : "DC2626");
-    }
-    k.T("Dashed: gripper opens to 71 mm", { x: gx, y: 4.15, w: dw - 1.3, h: 0.25, fontSize: 11, color: MUTED });
-    k.T("Top grasp: proposed in 49 of 75 frames, but scores ≤ 0.25, under the 0.3 floor", { x: dx + 0.2, y: 4.45, w: dw - 0.35, h: 0.6, fontSize: 12, color: NAVY, valign: "top" });
-    k.hero({ label: "AT THE IDEAL SPOT", big: "2", unit: " of 3", sub: "grasps at 44.5 cm, centred and square" });
-    await k.stat({ y: 4.1, h: 1.0, ic: "MdBlock", num: "0 of 4", label: "live, with the OK-Robot recipe" });
-    k.caption("Fit check reads the 75 mm face as 56 mm, so it passes (369 of 369 on replay)", L, 5.13, 8.4);
-    const oy = 5.45, oh = 1.0;
-    k.T("NEXT, CHEAPEST FIRST", { x: L, y: oy, w: 1.6, h: oh, fontSize: 11, bold: true, color: MUTED, charSpacing: 1.5, valign: "middle" });
-    const ow = (W - 1.7 - 0.4) / 3;
-    [["A", "Grasp from 0.4 to 0.5 m, whole box in view"], ["B", "Fused views: built, retest owed"], ["C", "New SDK: licence pending"]].forEach(([n, t], i) => {
-      const x = L + 1.7 + i * (ow + 0.2);
-      k.RR({ x, y: oy, w: ow, h: oh, fill: { color: i === 0 ? NAVY : TINT } });
-      k.num(x + 0.15, oy + 0.19, 0.38, n, i === 0 ? WHITE : BLUE, i === 0 ? NAVY : WHITE, 13);
-      k.T(t, { x: x + 0.65, y: oy, w: ow - 0.75, h: oh, fontSize: 13, color: i === 0 ? WHITE : NAVY, valign: "middle" });
+    k.header("DION", "PHASE 5  ·  GRASP", "AnyGrasp proposes grasps from one point cloud", "One depth view in, hundreds of ranked grasps out, with no training on our box");
+    await media(s, k, latest(DION, "rviz_anygrasp_proposals_21cm_"), { x: L, y: 2.05, w: 6.6, h: 4.1 },
+      "RViz GIF at the 21 cm stop point: arm model, live wrist camera cloud, AnyGrasp's proposed grippers. Save as rviz_anygrasp_proposals_21cm_<date>.gif in dion_docs/local/report_media and rebuild",
+      "RViz: AnyGrasp's proposed grippers on the live wrist camera cloud");
+    k.caption("RViz at the 21 cm stop point: AnyGrasp's proposals on the live wrist camera cloud", L, 6.28, 6.6);
+    const rx = L + 6.85, rw = L + W - rx;
+    k.hero({ x: rx, w: rw, label: "AT THE IDEAL SPOT  ·  REAL ARM", big: "2", unit: " of 3", sub: "grasps at 44.5 cm, centred, box square to the arm" });
+    const fy = 4.15;
+    k.RR({ x: rx, y: fy, w: rw, h: 6.45 - fy, fill: { color: TINT } });
+    k.label("FOUR FIXES BEFORE ANY MOTION", rx + 0.2, fy + 0.17, rw - 0.4, BLUE);
+    ["Gripper axis turned 90° to match our arm", "Grasp point moved forward to the fingertips",
+     "Wrist turn cut from 180° to 11 to 29°", "RViz redrawn to the real gripper"].forEach((t, i) => {
+      const y = fy + 0.52 + i * 0.44;
+      k.num(rx + 0.2, y + 0.03, 0.32, i + 1);
+      k.T(t, { x: rx + 0.65, y, w: rw - 0.8, h: 0.38, fontSize: 13, color: NAVY, valign: "middle" });
     });
     k.tracker(6);
-    s.addNotes("AnyGrasp is a learned model that looks at a point cloud and proposes grasps: where to put the gripper and at what angle. At the ideal spot it worked twice in three tries. Anywhere else it failed.\n\nWe traced why. The arm runs AnyGrasp when the camera is 21 centimetres from the box, and from there it sees mostly one face. AnyGrasp's most confident grasps go across the 75-millimetre face, but our gripper opens to 71. Our own fit check should catch that, but it measures width from the points it can see, so a grasp on an edge looks narrow enough and passes. On replay every one of 369 grasps passed it. The grasp we want, from the top across 60 millimetres, is proposed in most frames, but scores 0.25, under our floor.\n\nSo the problem is not the model. It is where we ask it. The cheapest fix is to run AnyGrasp once from further back, 40 to 50 centimetres, with the whole box in view, then make one planned move. The second is to fuse several views into one cloud, which is built and needs a retest. This decides when M1 closes.\n\nHandover: \"Sherman will now step back from the parts and show what is connected today.\"");
+    s.addNotes("AnyGrasp is a learned grasp model. It looks at the 3D points from the depth camera and proposes hundreds of grasps: where to put the gripper, at what angle, how wide to open, and how confident it is. It was never trained on our box.\n\nThis is it running on the robot. The arm stops 21 centimetres from the box, the camera takes one view, and the grippers you see are AnyGrasp's proposals.\n\nIts output does not drop straight into our arm. We found and fixed four mismatches before any motion: the gripper axis, the fingertip offset, a 180 degree wrist spin, and how RViz drew the grasps. With those fixed, it grasped 2 of 3 at the ideal spot. And it does propose the grasp we want, straight down across the top, in most frames.\n\nTransition: \"Two of three is at one spot. Moving the box is where the challenges start.\"");
+  }
+
+  // ---- 14b: AnyGrasp challenges ----
+  {
+    const s = slide("2 Results"), k = kit(s);
+    k.header("DION", "PHASE 5  ·  GRASP", "Off the ideal spot, the camera sees one face", "0 of 4 live grasps away from the ideal spot. The cause is the view, not the model");
+    await media(s, k, latest(DION, "anygrasp_point_cloud_one_face_"), { x: L, y: 2.05, w: 6.3, h: 4.05 },
+      "Point cloud GIF from point-cloud-anygrasp.mov", "Wrist camera point cloud at 21 cm, turning to show one face of the box");
+    k.caption("Wrist camera cloud at 21 cm: the front face and the top, nothing behind", L, 6.28, 6.3);
+    const rx = L + 6.55, rw = L + W - rx, cy = 2.05, ch = 2.85;
+    k.RR({ x: rx, y: cy, w: rw, h: ch, fill: { color: TINT } });
+    k.label("THREE CHALLENGES, ALL FROM THE CLOSE-UP VIEW", rx + 0.2, cy + 0.17, rw - 0.4, BLUE);
+    [["One face visible. ", "Confident grasps cross the 75 mm face. The gripper opens to 71 mm"],
+     ["Fit check fooled. ", "It measures the visible width, so edge grasps pass: 369 of 369"],
+     ["Right grasp scores low. ", "Top-down grasp in 49 of 75 frames, but at most 0.25, under the 0.3 floor"]].forEach(([h, t], i) => {
+      const y = cy + 0.5 + i * 0.77;
+      k.num(rx + 0.2, y + 0.05, 0.34, i + 1);
+      k.T([{ text: h, options: { bold: true } }, { text: t }], { x: rx + 0.7, y, w: rw - 0.85, h: 0.7, fontSize: 13, color: NAVY, valign: "top" });
+    });
+    const oy = cy + ch + 0.2;
+    k.label("NEXT, CHEAPEST FIRST", rx, oy, rw);
+    const ow = (rw - 0.4) / 3, otop = oy + 0.32, oh = 6.45 - otop;
+    [["A", "Grasp once from 0.4 to 0.5 m"], ["B", "Fused views: built, retest owed"], ["C", "New SDK: licence pending"]].forEach(([n, t], i) => {
+      const x = rx + i * (ow + 0.2);
+      k.RR({ x, y: otop, w: ow, h: oh, fill: { color: i === 0 ? NAVY : TINT } });
+      k.num(x + 0.15, otop + 0.13, 0.34, n, i === 0 ? WHITE : BLUE, i === 0 ? NAVY : WHITE, 13);
+      k.T(t, { x: x + 0.15, y: otop + 0.52, w: ow - 0.3, h: oh - 0.6, fontSize: 12, color: i === 0 ? WHITE : NAVY, valign: "top" });
+    });
+    k.tracker(6);
+    s.addNotes("When we moved the box, the grasps stopped working. We traced it to the view, not the model.\n\nHere is what the camera sees at 21 centimetres. As the cloud turns, you can see it is mostly one face of the box. From that, AnyGrasp's most confident grasps go across the 75 millimetre face, and our gripper opens to 71. Our fit check should catch that, but it measures width from the visible points, so an edge looks narrow enough. On replay all 369 grasps passed it. The grasp we want, from the top, is there in most frames but scores just under our floor.\n\nSo the challenge is where we ask AnyGrasp, not AnyGrasp itself. The cheapest fix is to ask once from 40 to 50 centimetres, with the whole box in view. The second is to fuse several views, which is built and needs a retest. This decides when M1 closes.\n\nHandover: \"Sherman will now step back from the parts and show what is connected today.\"");
   }
 
   // ================= PART 3 =================

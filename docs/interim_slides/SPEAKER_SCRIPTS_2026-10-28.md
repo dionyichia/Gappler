@@ -176,17 +176,29 @@ Safety came first. The arm's hardware stop is rejected by its controller, so we 
 
 These grasps used a simple grasping method, one blind step and close. Next we will look at the learned grasp model we used to propose more complicated grasps.
 
-*Transition:* "The learned grasp model, AnyGrasp, is where the current blocker sits."
+*Transition:* "The learned grasp model, AnyGrasp, is what we use for harder grasps."
 
-## Slide 14: AnyGrasp works at one ideal spot because, up close, the camera sees only one face
+## Slide 14a: AnyGrasp proposes full grasps from one point cloud, and grasped 2 of 3 at the ideal spot
 
-**Dion** | slot 1:00 | elapsed at end 16:00
+**Dion** | slot 0:40 | elapsed at end 15:40
 
-AnyGrasp is a learned model that looks at a point cloud and proposes grasps: where to put the gripper and at what angle. At the ideal spot it worked twice in three tries. Anywhere else it failed.
+AnyGrasp is a learned grasp model. It looks at the 3D points from the depth camera and proposes hundreds of grasps: where to put the gripper, at what angle, how wide to open, and how confident it is. It was never trained on our box.
 
-We traced why. The arm runs AnyGrasp when the camera is 21 centimetres from the box, and from there it sees mostly one face. AnyGrasp's most confident grasps go across the 75-millimetre face, but our gripper opens to 71. Our own fit check should catch that, but it measures width from the points it can see, so a grasp on an edge looks narrow enough and passes. On replay every one of 369 grasps passed it. The grasp we want, from the top across 60 millimetres, is proposed in most frames, but scores 0.25, under our floor.
+This is it running on the robot. The arm stops 21 centimetres from the box, the camera takes one view, and the grippers you see are AnyGrasp's proposals.
 
-So the problem is not the model. It is where we ask it. The cheapest fix is to run AnyGrasp once from further back, 40 to 50 centimetres, with the whole box in view, then make one planned move. The second is to fuse several views into one cloud, which is built and needs a retest. This decides when M1 closes.
+Its output does not drop straight into our arm. We found and fixed four mismatches before any motion: the gripper axis, the fingertip offset, a 180 degree wrist spin, and how RViz drew the grasps. With those fixed, it grasped 2 of 3 at the ideal spot. And it does propose the grasp we want, straight down across the top, in most frames.
+
+*Transition:* "Two of three is at one spot. Moving the box is where the challenges start."
+
+## Slide 14b: Off the ideal spot, the challenge is the close-up view: the camera sees one face
+
+**Dion** | slot 0:45 | elapsed at end 16:25
+
+When we moved the box, the grasps stopped working. We traced it to the view, not the model.
+
+Here is what the camera sees at 21 centimetres. As the cloud turns, you can see it is mostly one face of the box. From that, AnyGrasp's most confident grasps go across the 75 millimetre face, and our gripper opens to 71. Our fit check should catch that, but it measures width from the visible points, so an edge looks narrow enough. On replay all 369 grasps passed it. The grasp we want, from the top, is there in most frames but scores just under our floor.
+
+So the challenge is where we ask AnyGrasp, not AnyGrasp itself. The cheapest fix is to ask once from 40 to 50 centimetres, with the whole box in view. The second is to fuse several views, which is built and needs a retest. This decides when M1 closes.
 
 *Transition:* (Handover) "Sherman will now step back from the parts and show what is connected today."
 
