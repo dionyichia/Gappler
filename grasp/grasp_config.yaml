@@ -41,7 +41,8 @@ grasp_segmentation_client:
     # stall the client for good. A normal call takes about 0.25 s.
     segment_timeout_s: 5.0
     # Sent with every request. The service's defaults are looser, for the glasses (T2.9). The grasp
-    # client takes the best score, so it keeps the values it was tested with.
+    # client keeps the values it was tested with. Only masks above min_score reach the CLIP match
+    # against the glasses reference (T8.9a), so a looser cutoff gives CLIP more to choose from.
     min_score: 0.5
     max_detections: 5
 

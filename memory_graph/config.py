@@ -151,10 +151,12 @@ class MemoryGraphConfig:
     denoise_min_points: int = 4
 
     # ---- Reasoning layer: instruction -> target and related classes (T6.7b)
-    # A local text model, decided in T6.6. The 0.5B model is the one the voice
-    # path already loads (aria/aria_app/services/prompt_extractor.py). T6.7's hand
-    # check decides whether to step up to Qwen/Qwen2.5-1.5B-Instruct.
-    reasoning_model: str = "Qwen/Qwen2.5-0.5B-Instruct"
+    # A local text model, decided in T6.6. 1.5B (Zongzhe, 2026-10-23, T6.7): on the
+    # 22 written instructions it named the right class 20 times by hand, 0.5B 12
+    # times as scored (docs/bench-runs/2026-10-23-labbox-t6.7-reasoning-check.txt).
+    # About 3 GB of GPU memory in float16 and 0.3 s per reply, once per task. The
+    # voice path still loads 0.5B (aria/aria_app/services/prompt_extractor.py).
+    reasoning_model: str = "Qwen/Qwen2.5-1.5B-Instruct"
     # "auto" is cuda if torch sees a GPU, else cpu.
     reasoning_device: str = "auto"
     # How long to wait for the reply before falling back to CLIP. Upstream waits
@@ -167,9 +169,24 @@ class MemoryGraphConfig:
     # lists the whole vocabulary must not be taken as it is.
     reasoning_max_targets: int = 3
     reasoning_max_related: int = 5
-    # The fall-back when the reply is unusable, upstream's rule (map/map.py:193):
+    # A name the model gives that means a class already in the list is read as that
+    # class, so one kind of object keeps one name (T6.7: 1.5B added couch and bin as
+    # new classes). name -> list class. The class must be in base_vocabulary, so a
+    # typo is an error, not a silent new class. A name may not be a list class itself.
+    # A config that changes base_vocabulary sets this to match, () for none.
+    class_synonyms: Tuple[Tuple[str, str], ...] = (
+        ("couch", "sofa"), ("settee", "sofa"),
+        ("bin", "trash can"), ("trash bin", "trash can"), ("rubbish bin", "trash can"),
+        ("garbage can", "trash can"), ("wastebasket", "trash can"),
+        ("tv", "tv_monitor"), ("television", "tv_monitor"), ("monitor", "tv_monitor"),
+        ("screen", "tv_monitor"), ("pc", "computer tower"),
+    )
+    # The fall-back when the reply is unusable, after upstream's rule (map/map.py:193):
     # the vocabulary classes within this fraction of the best text similarity to
-    # the instruction, at most top_k of them, become the targets.
+    # the instruction, at most top_k of them, best first. Upstream makes them all
+    # targets. Here only the best is the target and the rest are related (Zongzhe,
+    # 2026-10-23, T6.7): "take me to the door" gave door and window as targets, so
+    # the robot would have searched for windows too.
     fallback_ratio: float = 0.95
     fallback_top_k: int = 5
 
@@ -184,12 +201,15 @@ class MemoryGraphConfig:
             raise ValueError("cleanup_every_photos and prune_kappa must be at least 1")
         if self.anchor_height < 0 or self.anchor_width < 0:
             raise ValueError("anchor_height and anchor_width must be 0 or more")
-        from memory_graph.vocabulary import normalise   # the spelling Vocabulary compares under
+        from memory_graph.vocabulary import name_key, normalise   # the spellings Vocabulary compares under
 
         phrases = [normalise(p) for p in self.base_vocabulary]
         if any(not p for p in phrases):
             raise ValueError("base_vocabulary has an empty phrase")
-        repeated = sorted({p for p in phrases if phrases.count(p) > 1})
+        # Compared with "_" read as a space, as a model's reply is: "tv monitor" and
+        # "tv_monitor" in one list would leave a reply unable to tell them apart.
+        keys = [name_key(p) for p in phrases]
+        repeated = sorted({k for k in keys if keys.count(k) > 1})
         if repeated:
             raise ValueError(f"base_vocabulary repeats {repeated}")
         background = sorted(set(phrases) & {normalise(b) for b in self.bg_classes})
@@ -202,6 +222,17 @@ class MemoryGraphConfig:
                              "reasoning_max_related at least 0")
         if not 0.0 < self.fallback_ratio <= 1.0:
             raise ValueError("fallback_ratio must be in (0, 1]")
+        base_keys = set(keys)
+        names = [name_key(name) for name, _ in self.class_synonyms]
+        if any(not n for n in names) or len(set(names)) != len(names):
+            raise ValueError("class_synonyms has an empty or repeated name")
+        missing = sorted({cls for _, cls in self.class_synonyms if name_key(cls) not in base_keys})
+        if missing:
+            raise ValueError(f"class_synonyms points at classes not in base_vocabulary: {missing}. "
+                             "A config that changes base_vocabulary must set class_synonyms to match")
+        shadowed = sorted(set(names) & base_keys)
+        if shadowed:
+            raise ValueError(f"class_synonyms renames classes that are in base_vocabulary: {shadowed}")
         for name in ("voxel_size_m", "dbscan_eps_m", "match_radius_m", "gate_translation_m"):
             if getattr(self, name) <= 0:
                 raise ValueError(f"{name} must be positive")
@@ -216,6 +247,10 @@ class MemoryGraphConfig:
         for name in ("bg_classes", "base_vocabulary"):
             if name in values:
                 values[name] = tuple(values[name])
+        if "class_synonyms" in values:  # a mapping or a list of pairs, as YAML gives either
+            pairs = values["class_synonyms"]
+            pairs = pairs.items() if isinstance(pairs, Mapping) else pairs
+            values["class_synonyms"] = tuple((str(a), str(b)) for a, b in pairs)
         return replace(cls(), **values)
 
     @classmethod

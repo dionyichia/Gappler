@@ -20,9 +20,8 @@ demonstration run **2027-04-05 to 2027-04-16**. Section 5.2 has the detail and w
 Mapped onto the same 20 weeks of work the first version of this plan estimated, and with the
 end-of-September recess, the November exam period plus the first days of December, and half the
 winter break removed as non-working time, that work now spans **31 calendar weeks**: week 1 starting
-Monday 2026-09-14, week 31 ending Sunday 2027-04-18. The goal of the whole effort is a published
-result, so the plan protects the one milestone that carries a research claim and treats several other
-milestones as droppable.
+Monday 2026-09-14, week 31 ending Sunday 2027-04-18. The goal of the whole effort is the five-phase
+base case working end to end (section 1), and the plan treats several milestones as droppable.
 
 **Effort available.** Dion about 12 hours a week, Sherman 8 to 10, Zongzhe 8 to 10. Call it 30
 person-hours a week. Of the 31 calendar weeks, 22 are full working weeks and 2 (the back half of the
@@ -41,7 +40,7 @@ whom. Republish it to the same link after any change here.
 **Reading order.** Section 1 for the answer. Section 3 if you doubt the split. Section 5 for the
 milestones. Section 6 for your own tasks. Section 8 before you panic about the schedule.
 
-**Priority labels used here.** `P0` blocks other people. `P1` on the path to the research claim.
+**Priority labels used here.** `P0` blocks other people. `P1` on the path to the end-to-end base case.
 `P2` useful, droppable. These replace the coloured markers used in `NEXT_STEPS`.
 
 **Provenance tags** are the same as everywhere else in these docs: `[code]` read from source,
@@ -65,17 +64,32 @@ algorithms stream (Zongzhe), and the hardware and experiment stream (Sherman).
 | 1 | Nothing in this repository runs from a fresh clone. Every absolute path points at a user and a repository name that no longer exist. `[code]` `NEXT_STEPS` 2.5 | Only the one machine that already holds working state can run anything, so only one person can do real work at a time | About 12 hours | Zongzhe |
 | 2 | The arm and the LiDAR both need the workstation's only wired network port, at two different addresses. `[unverified]` `ORIENTATION` 8.13 | The arm and the navigation base cannot be powered on together, so arm work and navigation work cannot happen in the same session | About 5 hours plus a network switch | Sherman |
 
-**The critical path to a publishable result** runs M0, then M1 arm, then M2 gaze and voice, then M5
-camera mounted and calibrated, then M6 memory graph, then M8 the contribution. Navigation (M3) and
-goal ordering (M9) are **not** on that path. That is worth saying plainly, because M9 is the part of
-the HiCo-Nav paper with the largest reported benefit, and it is still the first thing we cut.
+**Main objective (Dion, 2026-10-24).** A mobile manipulator that takes a spoken command and the
+user's gaze, explores a room it cannot see at the start to find the user and then the object they
+looked at, drives to it, confirms it with the wrist camera and grasps it.
 
-**The research claim this plan is built to support.** The memory graph in HiCo-Nav is queried with a
-sentence, which finds an object *class*. The Aria glasses give us something the paper does not have,
-which is where the wearer was looking. Carrying a gaze-cropped image feature into that query should
-resolve a specific *instance*, "that mug", not "a mug". That is one ablation with a number attached,
-and it needs the graph, the gaze and the arm all working. Everything before M8 exists to make M8
-measurable.
+**The base case, in five phases.**
+
+1. **Intent capture.** Speech gives the word, gaze picks the object in the glasses frame, the object
+   is cropped and turned into a CLIP feature, the gaze target.
+2. **Exploration and finding the user.** The robot explores with its base camera and builds the
+   memory graph as it goes. It looks for the user first, because the object the user looked at is
+   somewhere the user can see, so this speeds up the search.
+3. **Search for the object.** Each object the robot sees is compared with the gaze target. A good
+   enough match is the trigger to stop exploring and drive to it. Without this check the robot has
+   no reason to stop exploring.
+4. **Approach and confirm.** The robot drives to a pose where the arm can reach the object, and the
+   wrist camera confirms it is the object the user looked at. On a reject, the robot goes back to
+   exploring.
+5. **Grasp.** Grasp candidates on the wrist point cloud, plan, execute.
+
+**Exploration is core, M9 is not.** Exploration with the memory graph is how the robot searches.
+M9 is the paper's smarter exploration order (frontier scoring and visit ordering). It is the first
+thing we cut, because a simple nearest-first order still finds the object, only more slowly.
+
+**Gaze is the base case.** The gaze target is a pipeline component, the switch from exploring to
+approaching, not a separate research claim. A without-gaze version (voice only, the sentence query)
+is a stretch extension (T8.11).
 
 **What we are explicitly not building.** The return-to-user leg of the original demonstration, the
 pose fusion node, the ArUco marker path, and cross-camera feature matching as a requirement. Reasons
@@ -332,7 +346,7 @@ arrived signal.
 ## 4. Scope: what is in and what is out
 
 Dion's instruction was that we are not reproducing the whole original demonstration. We are building
-what the HiCo-Nav integration and the research claim need. This section writes that down so it is
+what the five-phase base case in section 1 needs. This section writes that down so it is
 not relitigated later, and so a supervisor cannot reasonably expect both.
 
 ### 4.1 In scope
@@ -340,23 +354,27 @@ not relitigated later, and so a supervisor cannot reasonably expect both.
 | Capability | Why it is needed |
 |---|---|
 | Speech to an object word | The instruction input for the memory graph. Already works |
-| Gaze published from the glasses | The contribution depends on it. Currently switched off |
+| Gaze published from the glasses | Gaze picks the target object. Gaze is the base case |
 | Glasses RGB image published | The gaze crop comes from this frame. Currently switched off |
 | One segmentation service, close range, on the wrist camera | Feeds the grasp predictor |
 | Grasp prediction and execution on the real arm | Without it there is no task to navigate for |
 | Navigation: map, localise, drive to a goal, report arrival | The graph produces a place, something has to drive there |
 | A forward-facing camera on the base, mounted and calibrated | The memory graph is built from its images and depth |
 | The memory graph and the reasoning layer | This is the integration |
-| The gaze-conditioned instance query and its ablation | This is the claim |
+| Exploration with the base camera, building the memory graph live | The robot's core search behaviour (T7.2, T7.5) |
+| Finding the user while exploring | Speeds up exploration: the target is somewhere the user can see (T7.6) |
+| The gaze-target match against graph objects | The trigger to stop exploring and drive to the object (T8.2) |
+| Wrist-camera confirmation before the grasp | Checks the object is the one the user looked at (T8.9) |
 
 ### 4.2 Out of scope, with reasons
 
 | Capability | Why it is out | Source |
 |---|---|---|
-| Return to the user after grasping | Needs the pose fusion node, the ArUco path and the glasses localised in the map. Three separate broken things for a leg the research claim does not use | `ORIENTATION` 6.1, 6.3, 6.4 |
+| Return to the user after grasping | Needs the pose fusion node, the ArUco path and the glasses localised in the map. Three separate broken things for a leg the base case does not use | `ORIENTATION` 6.1, 6.3, 6.4 |
 | The pose fusion node as documented | Its code and its documentation describe different programs. Fixing it only matters for the return leg | `ORIENTATION` 6.4 |
-| Cross-camera feature matching as a requirement | The contribution proposes replacing it. It stays as the comparison baseline, not as a dependency | `ORIENTATION` 5 |
-| The HiCo-Nav motion layer, meaning its own planner and controller | Nav2 already does this and is tuned for this chassis. Adopting it means retuning the part that can drive a robot into a wall, for no benefit to the claim | Paper review 5.1 tier C |
+| Keypoint matching between cameras | Replaced by CLIP matching (T8.7, 2026-10-20). It stays as the measured baseline (T8.4), not as a dependency | `ORIENTATION` 5 |
+| A without-gaze comparison (voice only) | Stretch extension (T8.11). Gaze is the base case | Dion, 2026-10-24 |
+| The HiCo-Nav motion layer, meaning its own planner and controller | Nav2 already does this and is tuned for this chassis. Adopting it means retuning the part that can drive a robot into a wall, for no benefit to the task | Paper review 5.1 tier C |
 | FAST-LIVO2 localisation | A bring-up project of its own. Start with the existing 2D localisation and measure whether it is good enough | Paper review 6.2 |
 | ~~The full repository reorganisation into one folder per node~~ **In scope since 2026-09-21 (Dion).** Specified in `NEXT_STEPS` §2.15, done on the T0.10/T0.11 branch alongside T0.11's per-subsystem suites | ~~Referenced in four documents and specified in none. Do the vendor separation only, as part of M0, and leave the rest~~ | `NEXT_STEPS` 2.11, 2.15 |
 | The Habitat simulator baseline | Only needed to evaluate goal ordering, which is the optional milestone | Paper review 5.6 |
@@ -383,22 +401,27 @@ guard for the lab box `full` job, until the repository goes private.
 
 ### 5.1 The spine
 
-Eleven milestones. M0 is a tax. M1 to M4 make the system we already have work. M5 to M7 are the
-integration. M8 is the claim. M9 is optional. M10 is the write-up.
+Thirteen milestones. M0 is a tax. M1 to M4 make the system we already have work. M5 to M7 are the
+integration, with exploration (M7) as the robot's search behaviour. M8 is the gaze target that ends
+exploration. M9 is optional. M10 is the write-up. M11 and M12, added 2026-10-26, connect the phases end to end:
+M11 is the orchestrator that runs every phase and recovers from failures, M12 is parking where the
+arm can grasp.
 
-| # | Milestone | Done means | Dates | Lead | Priority |
+| # | Milestone | Done means | Actual and forecast (24 Oct 2026) | Lead | Priority |
 |---|---|---|---|---|---|
-| **M0** | Everyone can build and run | Two people who are not Dion have cloned the repository on their own machine, built it, run the bench and got the same result. The arm and the LiDAR answer on the network at the same time | 14–27 Sep 2026 | Zongzhe | P0 |
-| **M1** | The arm picks something up | With the emergency stop verified and a validated home pose, the arm grasps a box from a table using a mask from its own camera. Five attempts, success rate recorded | 5 Oct – 1 Nov 2026 | Dion | P0 |
-| **M2** | Voice and gaze reach the arm | You say "grab the box", you look at one of two boxes, and the arm picks the one you looked at | 26 Oct 2026 – 3 Jan 2027 | Dion | P1 |
-| **M3** | The base navigates | A map of the lab exists, the robot localises in it, and it drives to a commanded point and reports arrival. Ten runs, repeatability recorded | 12 Oct – 27 Dec 2026 | Zongzhe | P1 |
-| **M4** | The current system, closed loop | One run: speak, look, the base drives, the arm grasps. Per-stage timing recorded | 28 Dec 2026 – 17 Jan 2027 | Dion | P1 |
-| **M5** | The base has a calibrated forward camera | A RealSense D455 is mounted on the base, its position relative to the LiDAR is calibrated, LiDAR points project onto the right pixels in its image, and the camera-pose error is written down as a number | 5 Oct 2026 – 17 Jan 2027 | Sherman mount, Dion calibration | P0 |
-| **M6** | The memory graph is built offline | From recorded data, the system produces a set of object entries with a 3D position and an image feature each, merged so the same physical object appears once. Querying it with a sentence returns sensible objects | 28 Dec 2026 – 7 Feb 2027 | Zongzhe | P1 |
-| **M7** | The graph drives the robot | A spoken instruction produces an approach goal read out of the graph rather than from live perception, the base drives there, and close-range perception takes over | 1–28 Feb 2027 | Dion | P1 |
-| **M8** | Gaze picks the instance | The gaze-cropped image feature is carried into the graph query. Ablation with and without, N trials each, success rate reported | 8 Feb – 14 Mar 2027 | Dion | **P1, protected** |
-| **M9** | Frontier scoring and visit ordering | The robot chooses where to explore next using the paper's scoring, measured against a baseline | 2 Nov 2026 – 21 Feb 2027 | Zongzhe | P2, optional |
-| **M10** | Demonstration and paper | A recorded end-to-end run and a paper draft whose claim is M8's number | 1–21 Mar 2027 | All | P1 |
+| **M0** | Everyone can build and run | Two people who are not Dion have cloned the repository on their own machine, built it, run the bench and got the same result. The arm and the LiDAR answer on the network at the same time | Done 14–24 Sep 2026 | Zongzhe | P0 |
+| **M1** | The arm picks something up | With the emergency stop verified and a validated home pose, the arm grasps a box from a table using a mask from its own camera. Five attempts, success rate recorded | Started 21 Sep. Forecast end 8 Nov 2026 | Dion | P0 |
+| **M2** | Voice and gaze reach the arm | You say "grab the box", you look at one of two boxes, and the arm picks the one you looked at | Started 8 Oct. Forecast end 10 Jan 2027 | Dion | P1 |
+| **M3** | The base navigates | A map of the lab exists, the robot localises in it, and it drives to a commanded point and reports arrival. Ten runs, repeatability recorded | Started 14 Sep. Forecast end 10 Jan 2027 | Sherman | P1 |
+| **M4** | The current system, closed loop | One run: speak, look, the base drives, the arm grasps. Per-stage timing recorded | Forecast 11–31 Jan 2027 | Dion | P1 |
+| **M5** | The base has a calibrated forward camera | A RealSense D455 is mounted on the base, its position relative to the LiDAR is calibrated, LiDAR points project onto the right pixels in its image, and the camera-pose error is written down as a number | Started 16 Sep. Forecast end 24 Jan 2027 | Sherman mount, Dion calibration | P0 |
+| **M6** | The memory graph is built offline | From recorded data, the system produces a set of object entries with a 3D position and an image feature each, merged so the same physical object appears once. Querying it with a sentence returns sensible objects | Started 21 Sep. Forecast end 31 Jan 2027 | Zongzhe | P1 |
+| **M7** | The graph drives the robot | With the object out of view, the robot explores, finds the user, builds the graph as it drives, and drives to the object the gaze target matched. Close-range perception takes over | Forecast 18 Jan – 28 Feb 2027 | Dion | P1 |
+| **M8** | Gaze picks the instance | The CLIP feature of the glasses crop is matched against graph objects while exploring, and a good enough match triggers the approach. N end-to-end trials of the base case, success per phase. Without gaze is a stretch (T8.11) | Started 19 Oct. Forecast end 14 Mar 2027 | Dion | P1 |
+| **M9** | Frontier scoring and visit ordering | The robot chooses where to explore next using the paper's scoring, measured against our simple nearest-first exploration (T7.5) | Optional, likely cut. 18 Jan – 21 Feb 2027 if kept | Zongzhe | P2, optional |
+| **M10** | Demonstration and paper | A recorded end-to-end run and a paper draft whose central table is the end-to-end trials | Forecast 1–21 Mar 2027 | All | P1 |
+| **M11** | The orchestrator runs every phase | Each phase (explore, approach, verify at the wrist, grasp, clarify) is a ROS 2 action that returns an outcome, a confidence and a reason. The orchestrator runs them in order, and every row of its failure table has been triggered once on the simulated arm and got the listed response. The clarification node turns an unclear request into one object or a lead within three questions, tested with scripted users. One hardware run per planted failure | Forecast 21 Dec 2026 – 21 Feb 2027 `[inferred]`, first estimate | Dion, Zongzhe the clarification node | P1 |
+| **M12** | The base parks where the arm can grasp | From N start poses, the base parks at a pose chosen inside the arm's measured reach, the wrist camera re-finds the object from above, and the arm grasps from there. Parking error and grasp success after parking recorded | Forecast 11 Jan – 28 Feb 2027 `[inferred]`, first estimate | Sherman, Dion the wrist look | P1 |
 
 Several milestones (M2, M3, M5, M9) run calendar-long because the exam period and the winter break
 sit inside their span, not because the work itself takes that long — see 5.3 for how many of those
@@ -412,7 +435,7 @@ this section is built to protect them.
 | Deliverable | Due | Goes to |
 |---|---|---|
 | Project plan, Gantt chart and budget | **Monday 2026-10-05** | Supervisor |
-| Interim presentation | **2026-11-10 to 2026-11-13** (university window: 2026-10-26 to 2026-11-13) | Panel |
+| Interim presentation | **2026-10-28** (university window: 2026-10-26 to 2026-11-13). Was planned for 2026-11-10 to 2026-11-13 | Panel |
 | Final report, softcopy plus similarity report | **Sunday 2027-03-28** | Main supervisor and the REP Office (Ms Yang Huixin) |
 | Oral presentation and demonstration | **2027-04-05 to 2027-04-16** | Panel |
 
@@ -427,45 +450,48 @@ table below keeps the original December checkpoint concept, moved to fit the rea
 
 | Date | What should exist |
 |---|---|
-| **2026-11-10 to 2026-11-13**, interim presentation | M0 done. M1 and M3 under way. A progress report, not a working demo |
-| **2027-01-17**, internal checkpoint | M0 to M5 done. A recorded run of the current system: speak, look, drive, grasp. A camera on the base with a calibration you can show a picture of |
-| **2027-03-28**, final report due | M6 to M8 and M10 done. A recorded run driven by the memory graph, and an ablation table, written up |
+| **2026-10-28**, interim presentation | M0 done. M1 and M3 under way. A progress report, not a working demo |
+| **2027-01-31**, internal checkpoint (moved from 2027-01-17 with the 24 Oct forecast) | M0 to M5 done. A recorded run of the current system: speak, look, drive, grasp. A camera on the base with a calibration you can show a picture of |
+| **2027-03-28**, final report due | M6 to M8 and M10 done. A recorded run where the robot explores, finds the object and grasps it, and the end-to-end trials, written up |
 | **2027-04-05 to 2027-04-16**, oral presentation | The same result, presented and demonstrated live |
 
-### 5.3 Calendar
+### 5.3 Calendar: actual progress and forecast
 
-Week 1 is Monday 2026-09-14. Four spans of calendar time are not working time and nobody should plan
-to touch this project in them: the recess in the last week of September (2026-09-28 to 2026-10-04),
-the November exam period plus the first days of December (2026-11-09 to 2026-12-06), and the front
-half of the winter break (2026-12-07 to 2026-12-20). The back half of the winter break (2026-12-21 to
-2027-01-03) is kept as working buffer at half speed, the same treatment the original plan gave those
-two weeks. Stretched over those gaps, the original 20 weeks of work now spans 31 calendar weeks,
-ending Sunday 2027-04-18.
+**Replaced 2026-10-24.** This section used to hold the September plan. It now shows what actually
+happened to 24 October 2026 and a forecast after it. The September version is in git
+(`1cde0ec:docs/PROJECT_PLAN.md`). The reasons behind each forecast are in
+[`COMBINED_PROGRESS_REPORT_2026-10.md`](COMBINED_PROGRESS_REPORT_2026-10.md) §0.6.
+
+Week 1 is Monday 2026-09-14. Not working time: the recess (week 3, 2026-09-28 to 2026-10-04), the
+November exam period plus the first days of December (weeks 9 to 12), and the front half of the
+winter break (weeks 13 and 14). Weeks 15 and 16 run at half speed as buffer.
 
 ```
 wk    1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-M0    #  #
-M1             #  #  #  #
-M2                      #  #  #  #  #  #  #  #  #  #
-M3                #  #  #  #  #  #  #  #  #  #  #
-M4                                                 #  #  #
-M5             #  #  #  #  #  #  #  #  #  #  #  #  #  #  #
-M6                                                 #  #  #  #  #  #
-M7                                                                #  #  #  #
-M8                                                                   #  #  #  #  #
-M9                         .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-M10                                                                           #  #  #
-key         R                 E  E  E  E  O  O  B  B
-               ^              ^                                                        ^     ^  ^
-            plan due       interim pres.                                          report due  oral pres.
+M0    *  *
+M1       =  =  =  =  =  -  -
+M2             =  =  =  -  -  -  -  -  -  -  -  -  -  -
+M3    =  =  =  =  =  =  -  -  -  -  -  -  -  -  -  -  -
+M4                                                       -  -  -
+M5    =  =  =  =  =  =  -  -  -  -  -  -  -  -  -  -  -  -  -
+M6       =  =  =  =  =  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+M7                                                          -  -  -  -  -  -
+M8                   =  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
+M9                                                          ?  ?  ?  ?  ?
+M10                                                                           -  -  -
+M11                                             -  -  -  -  -  -  -  -  -
+M12                                                      -  -  -  -  -  -  -
+key         R           P     E  E  E  E  O  O  B  B                                   F     A  A
 ```
 
-`R` recess, no work · `E` exam period including the first days of December, no work · `O` winter
-break, off, no work · `B` winter break kept as buffer, half speed · `#` a milestone with a lead
-already named · `.` M9, optional and the first thing cut. The four carets are the dates in 5.2: the
-plan and Gantt chart due at the start of week 4 (2026-10-05), the interim presentation in week 9
-(2026-11-10 to 2026-11-13), the final report due at the end of week 28 (2027-03-28), and the oral
-presentation across weeks 30 to 31 (2027-04-05 to 2027-04-16).
+`*` done, `=` actual work to 24 Oct, `-` forecast, `?` optional and likely cut. Key row: `R`
+recess, `P` interim presentation (2026-10-28), `E` exams, `O` winter break off, `B` half-speed
+buffer, `F` final report due (2027-03-28), `A` oral presentation (2027-04-05 to 2027-04-16). A
+forecast bar that crosses `E` or `O` weeks is calendar time, not working time.
+
+Against the September plan: M2, M6 and M8 started early. M1 ends one week late (AnyGrasp, 8 Nov).
+M3, M4 and M5 slip one to two weeks into January. M6 ends a week early. M8, M10 and the fixed
+dates hold. M11 and M12 were added on 2026-10-26 with first-estimate forecasts.
 
 ### 5.4 Milestone detail
 
@@ -525,18 +551,19 @@ the robot to drive to the right place and then grasp. Risk: the graph's object p
 navigation precision, not grasping precision. This is expected and is why close-range perception
 takes over on arrival.
 
-**M8. Gaze picks the instance.** Accept on N trials with the feature and N without, with the
-success rates reported side by side. Risk: N is small and the effect may be small. Mitigation: fix
-the trial procedure and the object placement before running anything, which is why Sherman builds a
-fixture in M5. **This milestone is protected. It is the only one that produces a claim rather than a
-system.**
+**M8. Gaze picks the instance.** Accept on N end-to-end trials of the base case, with two or more
+objects of the target's class, success recorded per phase. The trigger rule (Dion, 2026-10-24): a
+score cutoff tuned for base-camera views. Above it the robot drives to the object, the wrist camera
+confirms or rejects it, and on a reject the robot goes back to exploring. Risk: N is small. Mitigation:
+fix the trial procedure and the object placement before running anything, which is why Sherman builds
+a fixture in M5. The without-gaze comparison is a stretch (T8.11).
 
-**M9. Frontier scoring and visit ordering.** Accept when the robot's chosen exploration order beats
-a nearest-first baseline on a measured metric. Risk: it is a reimplementation of someone else's
-contribution and it is not on the path to M8. **This is the first thing we cut.**
+**M9. Frontier scoring and visit ordering.** Accept when the paper's exploration order beats our
+simple nearest-first exploration on a measured metric. Risk: it is a reimplementation of someone
+else's contribution, and the base case explores without it. **This is the first thing we cut.**
 
 **M10. Demonstration and paper.** Accept when a recorded run exists and a draft exists whose
-central table is M8's ablation.
+central table is the end-to-end trials.
 
 ---
 
@@ -649,7 +676,7 @@ The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 
 
 The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
-### 6.10 M8. Gaze picks the instance (8 Feb – 14 Mar 2027). Protected
+### 6.10 M8. Gaze picks the instance (8 Feb – 14 Mar 2027)
 
 The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
@@ -661,9 +688,19 @@ The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 
 
 The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
+### 6.12a M11. The orchestrator runs every phase (21 Dec 2026 – 21 Feb 2027)
+
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4 (T11.1 to T11.10).
+The design is in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.16.
+
+### 6.12b M12. The base parks where the arm can grasp (11 Jan – 28 Feb 2027)
+
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4 (T12.1 to T12.5).
+T7.1, the ApproachObject action, sits in M7 but is Sherman's and feeds this milestone.
+
 ### 6.13 The critical path
 
-The longest chain of dependent tasks from today to the claim:
+The longest chain of dependent tasks from today to the end-to-end trials:
 
 ```
 T0.3 -> T0.4 -> T3.1 -> T3.2 -> T3.5 -> T5.7 -> T7.2 -> T7.3 -> T8.3 -> T10.2
@@ -678,8 +715,10 @@ T1.1 -> T1.8 -> T1.9 -> T1.11 -> T1.12 -> T2.1 -> T2.4 -> T2.5 -> T3.7 -> T7.1 -
 Twelve tasks, almost all of them Dion's, now that T0.7 is done. That is the schedule risk in one
 line. Anything that can be moved off that chain should be, which is why T6.5 and T6.6 moved earlier
 and why T4.2 moved on 2026-09-20. T0.10 and T0.11 stay with Dion by his own call: he wrote the
-bench, so they go faster with him even though they sit beside the chain. T7.1 stays on the chain and is written in C++ on
-purpose.
+bench, so they go faster with him even though they sit beside the chain. T7.1 is written in C++ on
+purpose. On 2026-10-26 it moved to Sherman as the ApproachObject action, which takes it off
+Dion's chain. The end-to-end trials (T8.3) now also wait on the orchestrator chain
+`T11.1 -> T11.4 -> T8.3`.
 
 **Load after the 2026-09-20 rebalance**, counting open hours against the weekly hours in the
 "Effort available" note at the top and roughly 21 working weeks left:
@@ -703,15 +742,16 @@ they can learn them.
 Each entry says what the person is accountable for, what they get out of it, why the work suits
 them, and what is open enough to be worth digging into. Task-level ownership is in section 6.
 
-**Dion. Perception, the arm, and the research claim.**
+**Dion. Perception, the arm, and the gaze target.**
 
-Owns everything between a camera frame and the arm closing on an object, plus the contribution
-itself. That means arm bring-up through to a working grasp, one segmentation service instead of two
+Owns everything between a camera frame and the arm closing on an object, plus the gaze target.
+That means arm bring-up through to a working grasp, one segmentation service instead of two
 competing ones, the glasses stream reaching the arm, the calibration of the base camera and what its
-accuracy costs, and the gaze-conditioned query that M8 measures.
+accuracy costs, finding the user (T7.6), and the gaze-target match that tells the exploring robot to
+approach (M8).
 
 *Takeaway.* An end-to-end perception system on real hardware, from raw frames to an executed motion,
-and a measured result with an ablation table behind it. Production ROS 2 in both Python and C++,
+and measured end-to-end trials behind it. Production ROS 2 in both Python and C++,
 since T7.1 is written with rclcpp against a working Python reference.
 
 *Why it fits.* This is the most vision-heavy and the most systems-heavy stream in the project. Most
@@ -820,15 +860,16 @@ March, with the final report due.
 
 | Order | What we cut | What we lose | What survives |
 |---|---|---|---|
-| 1 | **M9 entirely**, frontier scoring and visit ordering | The paper's largest reported benefit, which is not ours anyway | Everything. M9 is not on the path to the claim |
-| 2 | The reasoning layer, T6.7 | Instruction expansion into related objects | Direct sentence query of the graph, which is what M8 needs |
-| 3 | Graph pruning and the solver work | The graph grows without bound over a long run | Correctness over a lab-sized run |
-| 4 | The two-stage trigger, T6.5 | Speed | Correctness, provided the age limit from T2.4 stays |
-| 5 | Live graph building, T7.2 | The robot builds its map of objects as it goes | A graph built from a recorded drive of the same room, which still supports the ablation |
-| 6 | Reduce N in the ablation, T8.3 | Statistical strength | A number, which is better than no number |
+| 1 | **M9 entirely**, the paper's frontier scoring and visit ordering | The paper's largest reported benefit, and faster exploration | Exploration itself. The robot explores nearest-first (T7.5) |
+| 2 | The without-gaze comparison, T8.11 | A number for how much gaze helps | The base case with gaze, end to end |
+| 3 | The reasoning layer, T6.7 | Instruction expansion into related objects | The target word goes straight into the graph's vocabulary |
+| 4 | Graph pruning and the solver work | The graph grows without bound over a long run | Correctness over a lab-sized run |
+| 5 | The two-stage trigger, T6.5 | Speed | Correctness, provided the age limit from T2.4 stays |
+| 6 | Reduce N in the end-to-end trials, T8.3 | Statistical strength | A number, which is better than no number |
 
-**M8 is never cut.** If M8 cannot run, the project has no result, and at that point the right move is
-to tell the supervisor early rather than late.
+**Not on the cut list:** exploration and live graph building (T7.2, T7.5), finding the user (T7.6)
+and the gaze-target match (T8.2). Without them the base case does not run. If one of them cannot
+run, tell the supervisor early rather than late.
 
 ### 8.2 Named risks
 
@@ -928,7 +969,7 @@ Section 8 says what we cut if we run late. This says what we pick up if we run e
 answer is decided in advance either way. These are ordered by how much they add to the result, not by
 how hard they are.
 
-Nothing here is promised to anyone. None of it is a dependency of M8. If you find yourself ahead,
+Nothing here is promised to anyone. None of it is a dependency of the base case. If you find yourself ahead,
 take from the top of this list, and say so in the weekly note so the others know where you went.
 
 | # | Stretch goal | Owner | Why it is worth doing | What it needs first |
@@ -938,10 +979,11 @@ take from the top of this list, and say so in the weekly note so the others know
 | S3 | **Graph pruning with a real solver** | Zongzhe | Cut item 3. Bounded graph growth over a long run. A weighted set multicover problem with mature open solvers, so it is a known quantity rather than a research question. [`MEMORY_GRAPH_DESIGN.md`](MEMORY_GRAPH_DESIGN.md) §6 makes this a drop-in: an exact solver replaces the greedy body without changing the interface, and greedy becomes the baseline it is measured against | T6.4, and a licence check on the solver |
 | S4 | **A second pose source, measured against the first** | Sherman | If T5.7 says 2D localisation is the limiting factor, this stops being a stretch goal and becomes required work. Either way the comparison is a paper section. The LiDAR's inertial sensor already publishes on `livox/imu` with no subscriber `[code]`, so the input exists | T5.7, and the duplicate-object rate measured on the existing source first |
 | S5 | **The return-to-user leg** | Dion | Out of scope in section 4.2, but `goto_glasses.py` has to be corrected regardless, because its outbound half fires on the same spoken command as the forward leg and competes for the same Nav2 action server `[code]`. Once that is fixed the return leg is closer than the scope decision assumes | The frame defect fixed, and the pose fusion node reconciled with its own documentation |
-| S6 | **Frontier scoring and visit ordering, if M9 was cut** | Zongzhe | Cut item 1. The largest reported benefit in the paper. It is not ours and it is not on the path to our claim, which is why it was cut, but it is the most complete second result available | M6 done, and the upstream evaluation running as a baseline |
+| S6 | **Frontier scoring and visit ordering, if M9 was cut** | Zongzhe | Cut item 1. The largest reported benefit in the paper. The base case explores nearest-first without it, which is why it was cut, but it makes exploration faster and is the most complete second result available | M6 done, and the upstream evaluation running as a baseline |
 | S7 | **Replay a recording as a regression test** | Dion | The bench catches renamed channels but nothing catches a perception regression. A recorded drive replayed through the graph would. It is also the cheapest way to make the results reproducible by someone else | A recorded run from T6.2 |
-| S9 | **Pick the gazed object by geometry** | Dion | Two identical objects defeat appearance matching. Casting the gaze ray in the robot's frame does not care what the objects look like. Three methods, cheapest first: map the gaze point by the whole-scene matches, then solve the glasses pose from the shared scene against robot depth, then full pose fusion. Could become part of M8's claim, per D9 | An identical pair included in T2.5, so the failure of today's method is measured first. `NEXT_STEPS` §2.13 |
+| S9 | **Pick the gazed object by geometry** | Dion | Two identical objects defeat appearance matching. Casting the gaze ray in the robot's frame does not care what the objects look like. Three methods, cheapest first: map the gaze point by the whole-scene matches, then solve the glasses pose from the shared scene against robot depth, then full pose fusion. Could strengthen M8 for look-alikes, per D9 | An identical pair included in T2.5, so the failure of today's method is measured first. `NEXT_STEPS` §2.13 |
 | S8 | **One configuration tree** | anyone with a spare week | Channel names declared as parameters rather than constants, so they stay overridable at launch. Today 38 of 54 owned channel names are declared outside `shared/global_config.yaml` `[code]` `CODE_AUDIT` K1 | The naming pass, and `TESTBENCH_PLAN` C1 fixed so the bench can still read them |
+| S11 | **An LLM chooses the recovery, measured against the table** | Dion | Swap the failure table in the orchestrator's `decide` function (T11.4) for an LLM that picks among the same recovery skills from the outcome and evidence, with the table as the fallback when it answers badly or too slowly. Run the planted failures of T11.10 with both and compare. The most agentic version of M11. Optional: Dion thinks the base case does not need it | M11 done, with at least three recovery skills (T11.5, T11.6, T12.4) |
 
 **How to use this list.** If a milestone lands early, the default is not to start the next one early.
 It is to take the top item here that your own stream unblocks. That keeps the slack where the
@@ -999,3 +1041,7 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-09-22 | Claude (Opus 5) + Dion | **T1.1 done.** All six code audit questions were already answered or parked on 2026-09-20. Two follow-ups raised with Dion, not yet decided: whether M1 grasps on the simple path or with AnyGrasp (T1.11 currently waits on T1.8 and T1.10), and who builds the `/manipulation/done` and `/manipulator/release` publishers. Parked on T1.8 (the first), T1.9 and T1.11 (the second). Map republished. |
 | 2026-09-22 | Claude (Opus 5) + Dion | **T0.12 done**: wrist camera recovered after the replug, recording and L4 replay added, A1 reproduced on real frames. The two camera risk rows marked resolved. New **T1.13** (start the wrist camera by serial). `task-tree.html` updated. |
 | 2026-09-22 | OpenCode (Muse Spark) + Sherman | **T1.2 done** (owner aware). B1 launcher wording corrected (2 lines, no phantom `q` key); I1 orchestrator double-launch copy deleted behind a new failing-first L0 check (`arm-bringup-single-launch`: RED with 2 sites, GREEN with 1). Full L0/L1/bench green. `task-tree.html` T1.2 entry flipped to DONE. Evidence: `docs/sherman_docs/setup/T1.2_SAFETY_FIXES.md`. |
+| 2026-10-24 | Claude (Opus 5.5) + Dion | Interim presentation set to 2026-10-28 (Dion) in §5.2 and the §5.3 text. The Gantt caret in §5.3 still marks week 9. |
+| 2026-10-24 | Claude (Opus 5.5) + Dion | §5.1 dates and §5.3 calendar replaced with actual progress to 24 Oct plus a forecast (Dion: M1 by 8 Nov, the rest estimated). The September plan stays in git at `1cde0ec`. Supersedes the earlier note in this changelog about the week-9 caret. M3 lead shown as Sherman (CHANNEL_CONTRACT T-1). Internal checkpoint moved to 2027-01-31. |
+| 2026-10-24 | Claude (Opus 5.5) + Dion | **T10.5 framing fix (Dion).** Exploration with the memory graph is the core search behaviour. The gaze target (CLIP feature of the glasses crop) is the trigger from exploring to approaching, not a research claim, and M8 is no longer protected. Finding the user is in scope, to speed up exploration. Gaze is the base case, without gaze is a stretch (T8.11). New main objective and five-phase base case in §1. §4 scope, §5.1, §5.2, §5.4, §6.10, §6.13, §7.1, §8.1 cut list and §12 updated. Trigger rule decided: cutoff, wrist confirms, reject goes back to exploring. |
+| 2026-10-26 | Claude (Opus 5.5) + Dion | **M11 and M12 added** from the supervisor's agentic-layer idea. M11: outcome contract, phase wrappers, `phase_orchestrator_node`, recovery skills, phone speaker page and the agentic clarification node (Zongzhe). M12: parking where the arm can grasp (Sherman), with the wrist look (Dion). T7.7 added (live depth from FAST-LIVO2). T7.1 moved to Sherman as the ApproachObject action. S11 added. §5.1, §5.3, §6.12a, §6.12b, §6.13 and §12 updated. About 126 hours of new work, named work now about 530 of about 620 hours. Design record in `NEXT_STEPS` §2.16. |

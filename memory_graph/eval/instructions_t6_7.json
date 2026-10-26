@@ -1,0 +1,29 @@
+{
+ "what": "T6.7: instructions for the reasoning layer, each with the targets a person would accept",
+ "status": "frozen 2026-10-23 by Zongzhe, before the first run. Do not edit: a changed set is a new file",
+ "rule": "a row passes if the first target is in accept. related_expected is reported, not scored: related classes are judged by hand",
+ "instructions": [
+  {"instruction": "find a chair", "kind": "in the list", "accept": ["chair"]},
+  {"instruction": "where is the sofa", "kind": "in the list", "accept": ["sofa"]},
+  {"instruction": "go to the whiteboard", "kind": "in the list", "accept": ["whiteboard"]},
+  {"instruction": "take me to the door", "kind": "in the list", "accept": ["door"]},
+  {"instruction": "find a laptop", "kind": "in the list", "accept": ["laptop"]},
+  {"instruction": "find the couch", "kind": "synonym", "accept": ["sofa"]},
+  {"instruction": "where's the bin", "kind": "synonym", "accept": ["trash can"]},
+  {"instruction": "find the TV", "kind": "synonym", "accept": ["tv_monitor"]},
+  {"instruction": "find the PC", "kind": "synonym", "accept": ["computer tower"]},
+  {"instruction": "grab the red bottle", "kind": "attribute", "accept": ["bottle"]},
+  {"instruction": "find the small wooden chair", "kind": "attribute", "accept": ["chair"]},
+  {"instruction": "find the rolling office chair", "kind": "attribute", "accept": ["chair"]},
+  {"instruction": "I want to sit down", "kind": "indirect", "accept": ["chair", "sofa", "stool", "bench"]},
+  {"instruction": "get me a cup of water", "kind": "indirect", "accept": ["cup", "bottle"]},
+  {"instruction": "I need to throw this away", "kind": "indirect", "accept": ["trash can"]},
+  {"instruction": "I need somewhere to write", "kind": "indirect", "accept": ["desk", "table", "whiteboard"]},
+  {"instruction": "find the cup on the desk", "kind": "relation", "accept": ["cup"], "related_expected": ["desk"]},
+  {"instruction": "find the keyboard next to the monitor", "kind": "relation", "accept": ["keyboard"], "related_expected": ["tv_monitor"]},
+  {"instruction": "find a plant", "kind": "not in the list", "accept": ["plant", "potted plant"]},
+  {"instruction": "find the printer", "kind": "not in the list", "accept": ["printer"]},
+  {"instruction": "find my phone", "kind": "not in the list", "accept": ["phone", "cell phone", "mobile phone"]},
+  {"instruction": "find the fire extinguisher", "kind": "not in the list", "accept": ["fire extinguisher"]}
+ ]
+}

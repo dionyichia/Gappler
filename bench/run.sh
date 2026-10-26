@@ -87,6 +87,8 @@ s=$(step "L0  T3.4 command ownership" python3 bench/test_command_ownership.py)
 row L0 "T3.4 command ownership" "$s" ""
 s=$(step "L0  Bench suite coverage" python3 bench/test_bench_coverage.py)
 row L0 "Bench suite coverage" "$s" ""
+s=$(step "L0  pre-commit hook" python3 bench/test_pre_commit_hook.py)
+row L0 "pre-commit hook" "$s" ""
 s=$(step "L0  Navigation launch wiring" python3 bench/test_navigation_launches.py)
 row L0 "Navigation launch wiring" "$s" ""
 s=$(step "L0  Synthetic cloud fixtures" python3 bench/test_cloud_scan.py)

@@ -3,12 +3,16 @@
 
 Turns what you say and what you look at into what the arm looks for.
 
-1. A word on /aria/audio/prompt becomes a Target on /grasp/target at once, which the grasp
-   segmentation client reads. The stop word clears it.
-   Each word also sends /manipulator/grasp_request, which opens the state machine's trigger gate
-   (T1.25), so every time you ask is one grasp (T2.6). The stop word sends none.
-2. If the glasses image and gaze are coming in, the glasses image from when you spoke is
-   segmented with the same word, and the mask you look at is picked by a vote (T2.19, T2.20):
+1. Each word on /aria/audio/prompt first sends an empty Target on /grasp/target, which clears
+   the old target in the grasp segmentation client at once. After the gaze pick (2) comes one
+   Target with the word, the crop of the object you looked at and its mask (the reference).
+   Right after it comes /manipulator/grasp_request, which opens the state machine's trigger gate
+   (T1.25), so every time you ask is one grasp (T2.6). The clear comes 1 to 3 s before the
+   request, so the gate never opens while the old object is still being published.
+   If nothing is picked, no Target follows and the arm does nothing: the grasp client waits for
+   a reference (T8.9a, Dion 2026-10-24). The stop word sends only the empty Target.
+2. The glasses image from when you spoke is segmented with the same word, and the mask you look
+   at is picked by a vote (T2.19, T2.20):
    a. The gaze samples that arrived in the gaze_window_s ending speech_latency_s before the
       word came are the ones from when you spoke.
    b. Their glasses capture times pick the image: the one taken nearest the middle of them. If
@@ -16,11 +20,9 @@ Turns what you say and what you look at into what the arm looks for.
       matching_image_wait_s for one (images arrive 1 to 3 s late on the box).
    c. Every gaze sample taken within gaze_to_image_max_s of that image votes for the mask under
       it, else the nearest within pick_radius_px. The mask with at least vote_min_share of the
-      votes wins (gaze_pick.py). A second Target with the same word follows,
-   carrying that object's crop and mask as its reference. If nothing is near the gaze, the word
-   alone stands.
+      votes wins (gaze_pick.py). That mask's crop is the Target's reference.
 
-Every word is sent, even a repeat, and /grasp/target is not latched. So if the grasp client
+Every picked word is sent, even a repeat, and /grasp/target is not latched. So if the grasp client
 restarts, it looks for nothing until you say the word again: a restart never resumes an old
 command on its own (Dion, 2026-10-13). A reply that comes back after any newer word, even the
 same one, or the stop word is dropped, so it never brings an old target back.
@@ -127,12 +129,14 @@ class AriaSegmentationClient(Node):
         self.words += 1
         self.word_at = time.monotonic()
         self.wait_until = -np.inf   # a new word or the stop word replaces any wait
-        target = Target(prompt=self.prompt)
-        target.header.stamp = self.get_clock().now().to_msg()
-        self.target_pub.publish(target)
+        # Clear the old target at once, for a word and the stop word alike. The grasp client then
+        # stops publishing the old object, so the grasp request sent after the pick cannot catch
+        # one last centroid of it (T8.9a)
+        clear = Target(prompt="")
+        clear.header.stamp = self.get_clock().now().to_msg()
+        self.target_pub.publish(clear)
         if self.prompt:
-            self.request_pub.publish(Empty())
-            self.get_logger().info(f"Target: {self.prompt!r}, grasp requested")
+            self.get_logger().info(f"Heard {self.prompt!r}: old target cleared, picking what you look at")
             self.segment(self.prompt)
         else:
             self.get_logger().info("Target cleared")
@@ -146,7 +150,7 @@ class AriaSegmentationClient(Node):
         taken = [t for at, t, _, _ in self.gaze if spoke - window < at <= spoke]
         if not taken:
             self.wait_until = -np.inf
-            self.get_logger().info("No gaze from when you spoke: the word alone is sent")
+            self.get_logger().info("No gaze from when you spoke: no Target sent")
             return
         if not last_try and not any(t >= min(taken) for _, t, _ in self.images):
             if self.wait_until == -np.inf:
@@ -159,10 +163,10 @@ class AriaSegmentationClient(Node):
         gaze = [(x, y) for _, t, x, y in self.gaze if abs(t - image_t) <= CFG["gaze_to_image_max_s"]]
         if not gaze:
             self.get_logger().info(f"No gaze within gaze_to_image_max_s of the nearest image, taken "
-                                   f"{image_t - middle:+.1f} s from it: the word alone stands")
+                                   f"{image_t - middle:+.1f} s from it: no Target sent")
             return
         if not self.service.service_is_ready():
-            self.get_logger().warn(f"{SERVICE_NAME} not up: the word alone is sent")
+            self.get_logger().warn(f"{SERVICE_NAME} not up: no Target sent")
             return
         self.get_logger().info(f"Image taken {image_t - middle:+.2f} s from the gaze while you "
                                f"spoke, {len(gaze)} gaze samples vote")
@@ -180,26 +184,32 @@ class AriaSegmentationClient(Node):
         response = future.result()
         if response is None or not response.success:
             reason = response.message if response is not None else "no reply"
-            self.get_logger().warn(f"Segment failed ({reason}): the word alone stands")
+            self.get_logger().warn(f"Segment failed ({reason}): no Target sent")
             return
         masks = [mask_array(d.mask) for d in response.detections]
         i, share, dist = vote(masks, gaze, CFG["pick_radius_px"], CFG["vote_min_share"])
         if i is None:
-            # ponytail: the word alone stands. T2.18 is to ask the user, T7.4 to go back to
+            # ponytail: nothing is sent. T2.18 is to ask the user, T7.4 to go back to
             # navigation along the gaze ray
             self.get_logger().info(f"{len(masks)} found, no clear vote from {len(gaze)} gaze samples "
                                    f"(best share {share:.2f}, distance {dist:.0f} px): "
-                                   "the word alone stands")
+                                   "no Target sent")
             return
         det = response.detections[i]
-        x, y, w, h = det.bbox.x_offset, det.bbox.y_offset, det.bbox.width, det.bbox.height
+        # The box plus crop_margin_px (shared/global_config.yaml). The grasp client crops each
+        # wrist mask the same way (cross_camera_mask_match_rule.crop_to_mask), so CLIP compares
+        # like with like
+        m = CFG["crop_margin_px"]
+        x0, y0 = max(det.bbox.x_offset - m, 0), max(det.bbox.y_offset - m, 0)
+        x1, y1 = det.bbox.x_offset + det.bbox.width + m, det.bbox.y_offset + det.bbox.height + m
         target = Target(prompt=prompt, header=header,
-                        reference=image_msg(rgb[y:y + h, x:x + w], "rgb8", header),
-                        reference_mask=image_msg(masks[i][y:y + h, x:x + w], "mono8", header))
+                        reference=image_msg(rgb[y0:y1, x0:x1], "rgb8", header),
+                        reference_mask=image_msg(masks[i][y0:y1, x0:x1], "mono8", header))
         self.target_pub.publish(target)
-        self.get_logger().info(f"Looked at: {prompt!r} #{i + 1} of {len(masks)}, score "
+        self.request_pub.publish(Empty())
+        self.get_logger().info(f"Target: {prompt!r} #{i + 1} of {len(masks)}, score "
                                f"{det.score:.2f}, {share:.0%} of {len(gaze)} gaze samples, "
-                               f"{dist:.0f} px from them, reference sent")
+                               f"{dist:.0f} px from them, reference sent, grasp requested")
 
 
 def main():

@@ -1,4 +1,4 @@
-"""Checks the aria segmentation client: voice and gaze in, Target and grasp request out.
+"""Checks the aria segmentation client: voice and gaze in, one Target and grasp request out.
 Real ROS messages, no glasses, a stand-in for the segmentation service.
 
 Needs ROS 2 Humble and the built segmentation_interfaces, so it runs on the lab box:
@@ -125,15 +125,21 @@ class AriaClientTest(unittest.TestCase):
     def requests(self):
         return len(self.node.request_pub.sent)
 
-    def test_a_word_becomes_a_target(self):
-        self.assertEqual(self.say("  Red Cup "), ["red cup"])
-        target = self.node.target_pub.sent[0]
-        self.assertEqual((target.reference.width, target.reference_mask.width), (0, 0))
-        self.assertGreater(target.header.stamp.sec, 0)
+    def pick(self, words="box"):
+        """Say the words while looking at (30, 20), where the service then finds a box."""
+        self.look(30, 20)
+        self.say(words)
+        self.reply(box(25, 15, 34, 24, 0.5))
+
+    def test_a_word_alone_only_clears_the_old_target(self):
+        # T8.9a: the grasp client waits for a reference, so only the clear and no grasp request
+        self.assertEqual(self.say("  Red Cup "), [""])
+        self.assertEqual(self.requests(), 0)
 
     def test_without_glasses_image_the_service_is_not_asked(self):
         self.say("box")
         self.assertEqual(self.node.service.requests, [])
+        self.assertEqual([m.prompt for m in self.node.target_pub.sent], [""])
 
     def test_the_looked_at_mask_is_sent_as_reference(self):
         self.look(30, 20)
@@ -142,25 +148,29 @@ class AriaClientTest(unittest.TestCase):
         self.assertEqual(self.node.service.requests[0].image.encoding, "rgb8")
         # the higher score is elsewhere, the gaze is on the second
         self.reply(box(0, 0, 9, 9, 0.9), box(25, 15, 34, 24, 0.5))
-        first, second = self.node.target_pub.sent
-        self.assertEqual((first.prompt, first.reference.width), ("box", 0))
-        self.assertEqual((second.prompt, second.reference.width, second.reference.height), ("box", 10, 10))
-        self.assertEqual(second.reference_mask.encoding, "mono8")
-        self.assertEqual(second.header.stamp.sec, 10)  # the glasses frame it came from
-        self.assertEqual(self.requests(), 1)            # one grasp request per word
+        clear, target = self.node.target_pub.sent   # the clear at once, then one with the reference
+        self.assertEqual((clear.prompt, clear.reference.width), ("", 0))
+        # the 10 x 10 box plus crop_margin_px (20), cut at the 60 x 40 image's edges
+        self.assertEqual((target.prompt, target.reference.width, target.reference.height), ("box", 50, 40))
+        self.assertEqual(target.reference_mask.width, 50)
+        self.assertEqual(target.reference_mask.encoding, "mono8")
+        self.assertEqual(target.header.stamp.sec, 10)  # the glasses frame it came from
+        self.assertEqual(self.requests(), 1)            # one grasp request per word, after the Target
 
     def test_nothing_near_the_gaze_sends_no_reference(self):
         self.look(300, 300)   # beyond pick_radius_px (80) from the only mask
         self.say("box")
         self.reply(box(0, 0, 9, 9, 0.9))
-        self.assertEqual(len(self.node.target_pub.sent), 1)
+        self.assertEqual([m.prompt for m in self.node.target_pub.sent], [""])
+        self.assertEqual(self.requests(), 0)
 
     def test_a_late_reply_after_stop_is_dropped(self):
         self.look(30, 20)
         self.say("box")
         self.say(STOP_KEYWORD)
         self.reply(box(25, 15, 34, 24, 0.5))
-        self.assertEqual([m.prompt for m in self.node.target_pub.sent], ["box", ""])
+        self.assertEqual([m.prompt for m in self.node.target_pub.sent], ["", ""])
+        self.assertEqual(self.requests(), 0)
 
     def test_a_late_reply_after_the_same_word_again_is_dropped(self):
         # "box", stop, "box" inside one service call: only the newest call's reply counts
@@ -170,9 +180,10 @@ class AriaClientTest(unittest.TestCase):
         self.say("box")
         old, new = self.node.service.futures
         old.finish(Segment.Response(success=True, detections=[box(25, 15, 34, 24, 0.5)]))
-        self.assertEqual(len(self.node.target_pub.sent), 3)   # box, stop, box: no reference
+        self.assertEqual([m.prompt for m in self.node.target_pub.sent], ["", "", ""])   # clears only
         new.finish(Segment.Response(success=True, detections=[box(25, 15, 34, 24, 0.5)]))
-        self.assertEqual(self.node.target_pub.sent[-1].reference.width, 10)
+        self.assertEqual(self.node.target_pub.sent[-1].reference.width, 50)
+        self.assertEqual(self.requests(), 1)
 
     def test_old_gaze_is_not_used(self):
         self.image()
@@ -236,14 +247,16 @@ class AriaClientTest(unittest.TestCase):
         self.assertEqual([t for _, t, _ in self.node.images], [11.0])
 
     def test_the_stop_word_clears(self):
-        self.say("box")
-        self.assertEqual(self.say(STOP_KEYWORD.upper()), ["box", ""])
+        self.pick()
+        self.assertEqual(self.say(STOP_KEYWORD.upper()), ["", "box", ""])
+        self.assertEqual(self.requests(), 1)
 
     def test_the_same_word_again_is_resent_and_requested(self):
         # a restarted grasp client gets the word back only when you say it again,
         # and each time you ask is a new grasp (T1.25 gate, T2.6)
-        self.say("box")
-        self.assertEqual(self.say("Box"), ["box", "box"])
+        self.pick()
+        self.pick("Box")
+        self.assertEqual([m.prompt for m in self.node.target_pub.sent], ["", "box", "", "box"])
         self.assertEqual(self.requests(), 2)
 
     def test_silence_is_ignored(self):
@@ -251,6 +264,7 @@ class AriaClientTest(unittest.TestCase):
 
     def test_stop_is_always_sent(self):
         self.assertEqual(self.say(STOP_KEYWORD), [""])
+        self.assertEqual(self.node.target_pub.sent[0].reference.width, 0)
 
     def test_stop_and_silence_send_no_request(self):
         self.say(STOP_KEYWORD)

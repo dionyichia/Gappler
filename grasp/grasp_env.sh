@@ -12,6 +12,8 @@ if [ ! -f "$GAPPLER_REPO/install/local_setup.bash" ]; then
 fi
 source "$GAPPLER_REPO/install/local_setup.bash"
 source "$GAPPLER_REPO/shared/base_envs/uv_venv.sh" || return 1
+# The repo root on PYTHONPATH, so the grasp segmentation client can import memory_graph (CLIP, T8.9a).
+case ":$PYTHONPATH:" in *":$GAPPLER_REPO:"*) ;; *) export PYTHONPATH="$PYTHONPATH:$GAPPLER_REPO" ;; esac
 # AnyGrasp's venv needs a CUDA compile (MinkowskiEngine, pointnet2), about 20 min. Built the first
 # time it is missing, and only where it can be: a machine with nvcc and the project .venv. Elsewhere
 # (a laptop without CUDA) it is skipped quietly. A failed build only warns, so the rest still sets up.
