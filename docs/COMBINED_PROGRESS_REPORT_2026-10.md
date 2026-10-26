@@ -85,9 +85,10 @@ drives to it, confirms it with the wrist camera and grasps it.
 - **Gaze is the base case.** A without-gaze version (voice only, the sentence query) is a stretch
   extension (T8.11). The evaluation is end-to-end trials of the base case, success per phase (T8.3).
 
-**Milestones.** Eleven, from the task tree's milestone list (`docs/task-tree.html`, `MS`) and
+**Milestones.** Thirteen, from the task tree's milestone list (`docs/task-tree.html`, `MS`) and
 PP §5.1. Row counts are from the task tree on `dev` at `1cde0ec` on 2026-10-24. The rows T1.44 to
-T1.46 exist only on PR #99's branch and are not counted.
+T1.46 exist only on PR #99's branch and are not counted. M11 and M12 were added on 2026-10-26 (T10.6),
+with T7.7 in M7 and T10.6 in M10, so their rows are counted on top (17 new rows, none done).
 
 | # | Milestone | Done means | Actual and forecast (24 Oct) | Lead | Task rows done | State on 2026-10-23 |
 |---|---|---|---|---|---|---|
@@ -98,11 +99,13 @@ T1.46 exist only on PR #99's branch and are not counted.
 | M4 | The current system, closed loop | One recorded run: speak, look, drive, grasp, per-stage timing | Forecast 11 to 31 Jan 2027 | Dion | 0 of 3 | Not started, as scheduled |
 | M5 | A calibrated camera on the base | LiDAR points land on the right objects in the camera image, pose error as a number | Started 16 Sep. Forecast end 24 Jan 2027 | Sherman mount, Dion calibration | 4 of 9 | Mount fitted and geometry done. Calibration (T5.5) not built |
 | M6 | The memory graph, offline | Objects from a recorded drive, no duplicates, a sentence query returns the right one | Started 21 Sep. Forecast end 31 Jan 2027 | Zongzhe | 25 of 32 | Ahead of the September plan, which started it on 28 Dec. Graph built and tuned. Query acceptance run (T6.8) left |
-| M7 | The graph drives the robot | Spoken instruction, object out of view: the robot explores, finds the user, builds the graph live and drives to the object. Close-range perception takes over | Forecast 18 Jan to 28 Feb 2027 | Dion | 0 of 4 | Not started, as scheduled |
+| M7 | The graph drives the robot | Spoken instruction, object out of view: the robot explores, finds the user, builds the graph live and drives to the object. Close-range perception takes over | Forecast 18 Jan to 28 Feb 2027 | Dion | 0 of 5 | Not started, as scheduled |
 | M8 | Gaze picks the instance | The gaze target matched against what the robot sees triggers the approach. N end-to-end trials, success per phase | Started 19 Oct. Forecast end 14 Mar 2027 | Dion | 3 of 9 | Groundwork done early: CLIP matcher (T8.7), matcher uses the gaze pick (T8.5), baseline (T8.4) |
 | M9 | Frontier scoring, visit ordering | The paper's exploration order beats our nearest-first exploration | Optional. Forecast 18 Jan to 21 Feb 2027 if kept | Zongzhe | 0 of 4 | Optional, first on the cut list. Exploration itself is core (M7) |
-| M10 | Demonstration and paper | Recorded end-to-end run, paper draft whose central table is the end-to-end trials | Forecast 1 to 21 Mar 2027 | All | 0 of 4 | Not started, as scheduled. T10.4 is this report |
-| | **Total** | | | | **97 of 171** | |
+| M10 | Demonstration and paper | Recorded end-to-end run, paper draft whose central table is the end-to-end trials | Forecast 1 to 21 Mar 2027 | All | 0 of 5 | Not started, as scheduled. T10.4 is this report |
+| M11 | The orchestrator runs every phase | Each phase (explore, approach, verify at the wrist, grasp, clarify) is a ROS 2 action that returns an outcome, a confidence and a reason. The orchestrator runs them in order and answers every failure in its table, tested once each on the simulated arm. The clarification node turns an unclear request into one object or a lead within three questions | Forecast 21 Dec 2026 to 21 Feb 2027, first estimate | Dion, Zongzhe the clarification node | 0 of 10 | Added 2026-10-26 from the supervisor's idea. Design in `NEXT_STEPS` §2.16 |
+| M12 | The base parks where the arm can grasp | From N start poses, the base parks inside the arm's measured reach, the wrist camera re-finds the object from above, and the arm grasps from there. Parking error and grasp success recorded | Forecast 11 Jan to 28 Feb 2027, first estimate | Sherman, Dion the wrist look | 0 of 5 | Added 2026-10-26. Today the approach stops 0.6 m from the object with no reach check |
+| | **Total** | | | | **97 of 188** | |
 
 ### 0.3 Background
 
@@ -170,9 +173,9 @@ Jetson Orin as backup.
 
 | Person | Owns | Planned hours a week | Output to 2026-10-23 |
 |---|---|---|---|
-| Dion | Glasses, cross camera, arm and grasp, test bench, CI, docs, refactor. Leads M1, M2, M4, M7, M8 | 12 | 204 commits, 61 merged PRs |
-| Sherman | Base, LiDAR, camera mount, mapping and localisation, Nav2 hand-off, calibration rig, arm runbook and safety fixes. Leads M3, M5 mount | 8 to 10 | 217 commits, 19 merged PRs |
-| Zongzhe | Memory graph, reasoning layer, query, nav bridge fixes, fresh-clone groundwork. Leads M0, M6, M9 | 8 to 10 | 89 commits on `dev`, 35 merged PRs |
+| Dion | Glasses, cross camera, arm and grasp, test bench, CI, docs, refactor. Leads M1, M2, M4, M7, M8, M11 | 12 | 204 commits, 61 merged PRs |
+| Sherman | Base, LiDAR, camera mount, mapping and localisation, Nav2 hand-off, calibration rig, arm runbook and safety fixes, the approach action (T7.1). Leads M3, M5 mount, M12 | 8 to 10 | 217 commits, 19 merged PRs |
+| Zongzhe | Memory graph, reasoning layer, query, nav bridge fixes, fresh-clone groundwork, the clarification node in M11. Leads M0, M6, M9 | 8 to 10 | 89 commits on `dev`, 35 merged PRs |
 
 Commit counts use different bases (section 8.6) and are not a comparison of effort. The plan's
 critical path runs almost entirely through Dion (PP §6.13).
@@ -202,6 +205,8 @@ M7                                                          -  -  -  -  -  -
 M8                   =  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 M9                                                          ?  ?  ?  ?  ?
 M10                                                                           -  -  -
+M11                                             -  -  -  -  -  -  -  -  -
+M12                                                      -  -  -  -  -  -  -
 key         R           P     E  E  E  E  O  O  B  B                                   F     A  A
 ```
 
@@ -247,6 +252,10 @@ gantt
   Forecast, likely cut                :2027-01-18, 2027-02-21
   section M10 Demo and paper
   Forecast                            :2027-03-01, 2027-03-21
+  section M11 Orchestrator runs every phase
+  Forecast, first estimate            :2026-12-21, 2027-02-21
+  section M12 Park where the arm can grasp
+  Forecast, first estimate            :2027-01-11, 2027-02-28
   section Fixed dates
   Interim presentation                :milestone, 2026-10-28, 0d
   Final report due                    :milestone, 2027-03-28, 0d
@@ -268,6 +277,8 @@ gantt
 | M8 | 14 Mar 2027 | Groundwork done early (T8.4, T8.5, T8.7). Glasses-to-robot calibration (T8.8) in January, the gaze-target trigger (T8.1, T8.2) and the end-to-end trials (T8.3) in Feb and March. End unchanged |
 | M9 | 21 Feb 2027, if kept | Not started. First on the cut list (PP §8.1). Likely cut. The core exploration (T7.5) stays |
 | M10 | 21 Mar 2027 | Unchanged. One week of margin before the report is due |
+| M11 | 21 Feb 2027 | Added 2026-10-26, first estimate. The outcome contract and the grasp outcome (T11.1, T11.2) can start in the buffer weeks. The phase wrappers need exploration and the trigger (T7.5, T8.2). Hardware runs with planted failures (T11.10) last |
+| M12 | 28 Feb 2027 | Added 2026-10-26, first estimate. Needs the reach region from the grasp trials (T12.1) and the approach action (T7.1). Parking choice, wrist look and trials (T12.2, T12.3, T12.5) in February |
 
 **What happened, week by week** (DONE dates from the task tree and the reports).
 
@@ -299,6 +310,8 @@ weeks, M6 finishes a week early, and M8 and the final dates hold.
 | Weeks 15 to 17 | Ten drives finish (M3), two-box gaze grasp on hardware (M2), calibration rig built | T3.6, T2.5, T5.5 |
 | Weeks 18 to 20 | Calibration verified (M5), closed loop (M4), D455 depth recording (M6), glasses-to-robot calibration | T5.6, M4, T6.2, T8.8 |
 | Weeks 19 to 24 | Exploration with a live graph, finding the user, graph-driven goal, gaze-target trigger (M7, M8) | T7.2, T7.5, T7.6, T7.1, T8.2 |
+| Weeks 15 to 23 | Orchestrator: outcome contract, phase wrappers, the deciding node, recovery, phone speaker page, clarification node (M11) | T11.1 to T11.10 |
+| Weeks 18 to 24 | Park where the arm can grasp, then the wrist re-finds the object from above (M12) | T12.1 to T12.5 |
 | Weeks 22 to 26 | End-to-end trials (M8), then demonstration run and paper (M10) | T8.3, M10 |
 
 ### 0.7 Critical path and risk management
@@ -306,6 +319,8 @@ weeks, M6 finishes a week early, and M8 and the final dates hold.
 **Critical path** (PP §6.13). The chain through Dion: grasp working (M1), segmentation and gaze
 (M2), navigation-to-arm handover (T3.7), graph-driven goal (T7.1), gaze-target trigger (T8.2),
 end-to-end trials (T8.3). Almost every task on it is Dion's, which is the schedule risk in one line.
+On 2026-10-26 T7.1 moved to Sherman as the ApproachObject action, which takes it off Dion's chain.
+The end-to-end trials now also wait on the orchestrator chain `T11.1 -> T11.4 -> T8.3`.
 
 **Cut list, decided in advance** (PP §8.1). If the schedule slips, cut in this order: M9 entirely
 (exploration stays, nearest-first), the without-gaze comparison (T8.11), the reasoning layer, graph
@@ -389,6 +404,9 @@ target in the plan is "M0 done, M1 and M3 under way, a progress report, not a wo
 5. No calibration between any two cameras yet: base camera to LiDAR (T5.5, M5) and glasses to robot
    (T8.8). Look-alike objects need the second.
 6. Exploration, finding the user and the gaze-target trigger are planned (T7.5, T7.6, T8.2) but not built (section 5.2).
+7. Nothing runs the phases in order or recovers when one fails. A phase reports success or says
+   nothing. The base stops 0.6 m from the object with no check that the arm can reach it. The
+   orchestrator (M11) and parking inside the arm's reach (M12) were added on 2026-10-26 for this.
 
 ---
 
@@ -953,6 +971,16 @@ measured together.
 - **Nav bridge.** Every goal answered once with "failed" on any failure, 180 s result timeout, 3 s
   back-off after a failed approach (T3.8). No retry limit. `goto_glasses` does not cancel a live goal
   on Ctrl+C.
+- **Planned fix: one node decides what happens next (M11, decided 2026-10-26).** Today no phase
+  reports why it failed. The grasp state machine sends an empty `/manipulation/done` on success only
+  (`grasp_state_machine.cpp:532`) `[code]`, and the approach node chains the steps itself. The plan:
+  every phase becomes a ROS 2 action (a request that returns a result, sends progress and can be
+  cancelled) with an outcome code, a confidence and a reason. One `phase_orchestrator_node` reads
+  the outcome and picks the next step from a table: next candidate, a second wrist view, move the
+  base, or ask the user. A subsystem retries on its own only when its own sensors and motors can
+  fix the problem. Anything else goes to the orchestrator. The only agentic part is the
+  clarification node (T11.8): an LLM loop that asks the user through a phone web page until there is
+  one target or a lead, and never moves anything. Full design in `NEXT_STEPS` §2.16.
 
 ---
 
@@ -1194,10 +1222,11 @@ These are recommendations, not existing functionality. Each names the finding be
 |---|---|---|
 | 6 | Pass a confidence with each handover (vote share, CLIP score, graph task score) and set a refusal rule at each | 9.3 risk 1 |
 | 7 | One crop rule for CLIP across glasses, wrist and graph before P3 | 6.4 |
-| 8 | Measure standoff against reach at the first nav-to-object test, set the approach distance from it | 5.4, T3.7 |
+| 8 | Measure standoff against reach at the first nav-to-object test, set the approach distance from it. Now planned as M12: reach region from the grasp trials (T12.1), parking pose chosen inside it (T12.2) | 5.4, T3.7 |
 | 9 | Done 2026-10-24: `goto_glasses` commented out of the launch as CC N-1 decided | 6.9 |
 | 10 | Add a grasp success check (gripper width after close, or a wrist look after lift) | 9.1 |
 | 11 | Timeouts in EXECUTING with a logged reason | T1.39, T1.44 |
+| 21 | Every phase returns an outcome and a reason, and one orchestrator node decides the next step (M11, T11.1 to T11.4). Recovery: next candidate, second wrist view, move the base, ask the user (T11.5, T11.6, T12.4, T11.8) | 6.9, 9.1 |
 
 ### P2: robustness and evaluation
 
@@ -1291,7 +1320,8 @@ other (0.4), what gets cut if time runs out (0.7).
 7. **What has been demonstrated.** Per-stage results, section 8. State that no end-to-end run exists.
 8. **What remains.** Section 9.1, as a short list: Nav2 must drive, the graph must answer a query
    and feed a goal, the cameras must be calibrated, and AnyGrasp must work off the ideal spot.
-9. **Next.** Section 10 P0, then exploration with the gaze-target trigger (M7, M8).
+9. **Next.** Section 10 P0, then exploration with the gaze-target trigger (M7, M8), the orchestrator
+   that runs every phase (M11) and parking where the arm can grasp (M12).
 
 A single architecture diagram (section 3.3, with greyed future parts from 3.2) should appear early
 and be reused as a progress map.
@@ -1401,3 +1431,4 @@ All of section 9.4, plus:
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Schedule in 0.2 and 0.6 replaced with actual progress plus a forecast (Dion: M1 by 8 Nov, the rest estimated). The September plan stays in git. Same change in `PROJECT_PLAN` §5.1, §5.3 and `task-tree.html`. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | T8.9a results written in (PR #129, 600 of 602 on replay, T2.24 next). Wrist camera to arm is calibrated (Dion). Sections 1, 3.3, 4, 5.1, 5.4, 6.2, 6.6, 7, 9.1, 9.4, 10, 12, 13.2 and the week 7 schedule rows updated to match. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | **Framing fix (T10.5, Dion).** No more "research claim". Exploration is core, finding the user speeds it up, the gaze target is the trigger from exploring to approaching, gaze is the base case and without gaze is a stretch (T8.11). New main objective in 0.2. Sections 0.2, 0.6, 0.7, 1, 2.3, 3.2, 4, 5.2, 5.3, 7, 9.1, 9.4, 10, 11.2 and 12 updated. |
+| 2026-10-26 | Claude (Opus 5.5) + Dion | **M11 and M12 added (T10.6).** 0.2 milestone table (13 milestones, 97 of 188 rows), 0.5 owners, 0.6 Gantt, forecast and schedule rows, 0.7 critical path, 1 remaining-work item 7, 6.9 planned orchestrator, 10 rows 8 and 21, 12 point 9. Source: `PROJECT_PLAN` §5.1 and `NEXT_STEPS` §2.16. |
