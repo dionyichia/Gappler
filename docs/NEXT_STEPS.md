@@ -1385,6 +1385,68 @@ Checked 2026-09-22 `[code]`.
 
 ---
 
+### 2.16 🟠 The orchestrator: phases report outcomes, one node decides what happens next
+
+**Decided 2026-10-26 (Dion, from the supervisor's idea). Tasks: M11 (T11.1 to T11.10) and M12
+(T12.1 to T12.5) in [`task-tree.html`](task-tree.html). Nothing is built yet.**
+
+**The problem.** The subsystems are built separately and nothing connects them end to end. A phase
+says it finished, or says nothing when it fails. The grasp state machine sends an empty
+`/manipulation/done` on success only (`grasp/grasp_state_machine/src/grasp_state_machine.cpp:532`)
+`[code]`. The approach node chains the steps itself: it listens to voice, sends the drive goal,
+fires `/manipulation/start` and waits for done and release (`nav/object_approach/object_approach_node.py`)
+`[code]`. So nobody can say "the wrist did not confirm the object, try the next one".
+
+**The design.**
+
+1. **Every phase is a ROS 2 action.** An action is a request that returns a result, sends progress
+   while it runs and can be cancelled. Five of them, in `orchestrator/orchestrator_interfaces`:
+   `ExploreForTarget`, `ApproachObject`, `VerifyTargetAtWrist`, `GraspObject`, `ClarifyWithUser`.
+   Every result has an outcome code, a confidence, a reason and the number of attempts (T11.1).
+2. **Thin wrappers, unchanged subsystems.** Each wrapper sits next to the node it wraps and turns
+   its topics into one action (T11.3). `ApproachObject` is T7.1 and calls Nav2 directly, which
+   retires the `goal_reached` bridge.
+3. **One `phase_orchestrator_node` decides** (T11.4). A table maps each outcome to the next step.
+   One `decide(state, evidence)` function holds the table, so an LLM can replace it later (S11).
+   A timeout and a retry limit per phase, cancellation on stop. It is the only node that starts
+   motion or sends a grasp request. A failed perception result never counts as permission to grasp.
+4. **Voice stops starting grasps** (T11.2). Since T2.6 the aria client sends
+   `/manipulator/grasp_request` on every object word. It will publish the intent only.
+
+**Who retries what.** A subsystem retries on its own only when its own sensors and motors can fix
+the problem. Anything that needs another subsystem goes to the orchestrator.
+
+| Failure | Handled by |
+|---|---|
+| Nav2 path blocked | Navigation, with Nav2's own recovery moves |
+| No grasp fits, a second wrist view may fix it (T11.6) | Grasp state machine, with a retry limit (T1.39) |
+| Still no grasp after the wrist views | Orchestrator: move the base (T12.4), then tell the user |
+| Wrist rejects the object, or confidence too low | Orchestrator: next candidate (T11.5) |
+| Two identical objects, nothing matches, gaze missing | Orchestrator: ask the user (T11.8) |
+
+The orchestrator never repeats an arm retry. The reason field tells it which kind of recovery is
+left: "cloud too thin after 2 wrist views" means the base has to move.
+
+**Where the agentic part is.** The table, the wrappers and the recovery skills are plain code. The
+agentic part is `user_clarification_node` (T11.8, Zongzhe): an LLM loop with tools (search the
+graph, list and describe candidates, ask the user) that runs until there is one target (`CHOSEN`)
+or a lead (`LEAD`, where to look next). It never moves anything. For a spatial answer such as "next
+to the chair, closer to the lamp", Qwen parses the anchor and the relation and code picks the object
+from graph positions, because small models are weak at spatial reasoning `[inferred]`. Questions go
+to the user's phone through a web page (T11.7), since the Aria Gen 1 glasses have no speaker. An
+LLM choosing the recovery itself is stretch S11.
+
+**Parking where the arm can grasp (M12).** Today the approach stops 0.6 m from the object, facing
+it, with no reach check `[code]`. Sherman's method: try base poses on a ring around the object and
+keep those inside the arm's measured reach, free in the costmap and at a good angle (T12.2). The
+reach comes from the grasp trials (T12.1). After parking, the wrist camera looks down from above
+and re-measures the object (T12.3), because the LiDAR and the base camera sit too low to see a table
+top well.
+
+**Open threads.** Where the Qwen models run, and whether we need both 0.5B and 1.5B (T11.9, with
+§2.14). Whether the graph's live depth comes from FAST-LIVO2 or the D455 (T7.7). The question limit
+(3 for now). The forecasts for M11 and M12 are first estimates.
+
 ## 3. Bring-up (needs the lab machine)
 
 ### 3.1 ✅ Find `xpkg_demo` — **in the repo since 2026-09-21 (T0.4)**, at `nav/vendor/demo/demo_general_chassis/`
@@ -1602,3 +1664,4 @@ tidiness item, and it does not need the lab machine. See §2.5.
 | 2026-10-20 | Claude Opus 5.5 + Dion | §2.13: T8.7 built (CLIP matcher, gaze within pick_radius_px) and replayed on the box: 27 of 27 matches on the brown box. Open: two or more wrist objects, gaze at capture time. `pick_radius_px` moved to aria's shared config section. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | §2.13: T8.7 with several wrist boxes: three colours 29 of 29, two same-colour cardboard boxes 6 of 12. Gaze fix moved to T8.5. |
 | 2026-10-21 | Claude Opus 5.5 + Dion | §2.2: the grasp side using the reference is now `T8.9`. §2.13: the matcher's gaze fixed by `T8.5` (PR #100), with the box replay results. |
+| 2026-10-26 | Claude Opus 5.5 + Dion | §2.16 added: the orchestrator design (phases as actions with outcomes, who retries what, the agentic clarification node, parking where the arm can grasp). Tasks in M11 and M12. |

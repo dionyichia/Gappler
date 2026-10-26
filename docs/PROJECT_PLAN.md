@@ -401,9 +401,11 @@ guard for the lab box `full` job, until the repository goes private.
 
 ### 5.1 The spine
 
-Eleven milestones. M0 is a tax. M1 to M4 make the system we already have work. M5 to M7 are the
+Thirteen milestones. M0 is a tax. M1 to M4 make the system we already have work. M5 to M7 are the
 integration, with exploration (M7) as the robot's search behaviour. M8 is the gaze target that ends
-exploration. M9 is optional. M10 is the write-up.
+exploration. M9 is optional. M10 is the write-up. M11 and M12, added 2026-10-26, connect the phases end to end:
+M11 is the orchestrator that runs every phase and recovers from failures, M12 is parking where the
+arm can grasp.
 
 | # | Milestone | Done means | Actual and forecast (24 Oct 2026) | Lead | Priority |
 |---|---|---|---|---|---|
@@ -418,6 +420,8 @@ exploration. M9 is optional. M10 is the write-up.
 | **M8** | Gaze picks the instance | The CLIP feature of the glasses crop is matched against graph objects while exploring, and a good enough match triggers the approach. N end-to-end trials of the base case, success per phase. Without gaze is a stretch (T8.11) | Started 19 Oct. Forecast end 14 Mar 2027 | Dion | P1 |
 | **M9** | Frontier scoring and visit ordering | The robot chooses where to explore next using the paper's scoring, measured against our simple nearest-first exploration (T7.5) | Optional, likely cut. 18 Jan – 21 Feb 2027 if kept | Zongzhe | P2, optional |
 | **M10** | Demonstration and paper | A recorded end-to-end run and a paper draft whose central table is the end-to-end trials | Forecast 1–21 Mar 2027 | All | P1 |
+| **M11** | The orchestrator runs every phase | Each phase (explore, approach, verify at the wrist, grasp, clarify) is a ROS 2 action that returns an outcome, a confidence and a reason. The orchestrator runs them in order, and every row of its failure table has been triggered once on the simulated arm and got the listed response. The clarification node turns an unclear request into one object or a lead within three questions, tested with scripted users. One hardware run per planted failure | Forecast 21 Dec 2026 – 21 Feb 2027 `[inferred]`, first estimate | Dion, Zongzhe the clarification node | P1 |
+| **M12** | The base parks where the arm can grasp | From N start poses, the base parks at a pose chosen inside the arm's measured reach, the wrist camera re-finds the object from above, and the arm grasps from there. Parking error and grasp success after parking recorded | Forecast 11 Jan – 28 Feb 2027 `[inferred]`, first estimate | Sherman, Dion the wrist look | P1 |
 
 Several milestones (M2, M3, M5, M9) run calendar-long because the exam period and the winter break
 sit inside their span, not because the work itself takes that long — see 5.3 for how many of those
@@ -475,6 +479,8 @@ M7                                                          -  -  -  -  -  -
 M8                   =  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 M9                                                          ?  ?  ?  ?  ?
 M10                                                                           -  -  -
+M11                                             -  -  -  -  -  -  -  -  -
+M12                                                      -  -  -  -  -  -  -
 key         R           P     E  E  E  E  O  O  B  B                                   F     A  A
 ```
 
@@ -485,7 +491,7 @@ forecast bar that crosses `E` or `O` weeks is calendar time, not working time.
 
 Against the September plan: M2, M6 and M8 started early. M1 ends one week late (AnyGrasp, 8 Nov).
 M3, M4 and M5 slip one to two weeks into January. M6 ends a week early. M8, M10 and the fixed
-dates hold.
+dates hold. M11 and M12 were added on 2026-10-26 with first-estimate forecasts.
 
 ### 5.4 Milestone detail
 
@@ -682,6 +688,16 @@ The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 
 
 The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4. Click a task there for its full notes.
 
+### 6.12a M11. The orchestrator runs every phase (21 Dec 2026 – 21 Feb 2027)
+
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4 (T11.1 to T11.10).
+The design is in [`NEXT_STEPS.md`](NEXT_STEPS.md) §2.16.
+
+### 6.12b M12. The base parks where the arm can grasp (11 Jan – 28 Feb 2027)
+
+The tasks for this milestone are in [`task-tree.html`](task-tree.html), section 4 (T12.1 to T12.5).
+T7.1, the ApproachObject action, sits in M7 but is Sherman's and feeds this milestone.
+
 ### 6.13 The critical path
 
 The longest chain of dependent tasks from today to the end-to-end trials:
@@ -699,8 +715,10 @@ T1.1 -> T1.8 -> T1.9 -> T1.11 -> T1.12 -> T2.1 -> T2.4 -> T2.5 -> T3.7 -> T7.1 -
 Twelve tasks, almost all of them Dion's, now that T0.7 is done. That is the schedule risk in one
 line. Anything that can be moved off that chain should be, which is why T6.5 and T6.6 moved earlier
 and why T4.2 moved on 2026-09-20. T0.10 and T0.11 stay with Dion by his own call: he wrote the
-bench, so they go faster with him even though they sit beside the chain. T7.1 stays on the chain and is written in C++ on
-purpose.
+bench, so they go faster with him even though they sit beside the chain. T7.1 is written in C++ on
+purpose. On 2026-10-26 it moved to Sherman as the ApproachObject action, which takes it off
+Dion's chain. The end-to-end trials (T8.3) now also wait on the orchestrator chain
+`T11.1 -> T11.4 -> T8.3`.
 
 **Load after the 2026-09-20 rebalance**, counting open hours against the weekly hours in the
 "Effort available" note at the top and roughly 21 working weeks left:
@@ -965,6 +983,7 @@ take from the top of this list, and say so in the weekly note so the others know
 | S7 | **Replay a recording as a regression test** | Dion | The bench catches renamed channels but nothing catches a perception regression. A recorded drive replayed through the graph would. It is also the cheapest way to make the results reproducible by someone else | A recorded run from T6.2 |
 | S9 | **Pick the gazed object by geometry** | Dion | Two identical objects defeat appearance matching. Casting the gaze ray in the robot's frame does not care what the objects look like. Three methods, cheapest first: map the gaze point by the whole-scene matches, then solve the glasses pose from the shared scene against robot depth, then full pose fusion. Could strengthen M8 for look-alikes, per D9 | An identical pair included in T2.5, so the failure of today's method is measured first. `NEXT_STEPS` §2.13 |
 | S8 | **One configuration tree** | anyone with a spare week | Channel names declared as parameters rather than constants, so they stay overridable at launch. Today 38 of 54 owned channel names are declared outside `shared/global_config.yaml` `[code]` `CODE_AUDIT` K1 | The naming pass, and `TESTBENCH_PLAN` C1 fixed so the bench can still read them |
+| S11 | **An LLM chooses the recovery, measured against the table** | Dion | Swap the failure table in the orchestrator's `decide` function (T11.4) for an LLM that picks among the same recovery skills from the outcome and evidence, with the table as the fallback when it answers badly or too slowly. Run the planted failures of T11.10 with both and compare. The most agentic version of M11. Optional: Dion thinks the base case does not need it | M11 done, with at least three recovery skills (T11.5, T11.6, T12.4) |
 
 **How to use this list.** If a milestone lands early, the default is not to start the next one early.
 It is to take the top item here that your own stream unblocks. That keeps the slack where the
@@ -1025,3 +1044,4 @@ schedule can still absorb it, and it means an early finish produces something ra
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Interim presentation set to 2026-10-28 (Dion) in §5.2 and the §5.3 text. The Gantt caret in §5.3 still marks week 9. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | §5.1 dates and §5.3 calendar replaced with actual progress to 24 Oct plus a forecast (Dion: M1 by 8 Nov, the rest estimated). The September plan stays in git at `1cde0ec`. Supersedes the earlier note in this changelog about the week-9 caret. M3 lead shown as Sherman (CHANNEL_CONTRACT T-1). Internal checkpoint moved to 2027-01-31. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | **T10.5 framing fix (Dion).** Exploration with the memory graph is the core search behaviour. The gaze target (CLIP feature of the glasses crop) is the trigger from exploring to approaching, not a research claim, and M8 is no longer protected. Finding the user is in scope, to speed up exploration. Gaze is the base case, without gaze is a stretch (T8.11). New main objective and five-phase base case in §1. §4 scope, §5.1, §5.2, §5.4, §6.10, §6.13, §7.1, §8.1 cut list and §12 updated. Trigger rule decided: cutoff, wrist confirms, reject goes back to exploring. |
+| 2026-10-26 | Claude (Opus 5.5) + Dion | **M11 and M12 added** from the supervisor's agentic-layer idea. M11: outcome contract, phase wrappers, `phase_orchestrator_node`, recovery skills, phone speaker page and the agentic clarification node (Zongzhe). M12: parking where the arm can grasp (Sherman), with the wrist look (Dion). T7.7 added (live depth from FAST-LIVO2). T7.1 moved to Sherman as the ApproachObject action. S11 added. §5.1, §5.3, §6.12a, §6.12b, §6.13 and §12 updated. About 126 hours of new work, named work now about 530 of about 620 hours. Design record in `NEXT_STEPS` §2.16. |

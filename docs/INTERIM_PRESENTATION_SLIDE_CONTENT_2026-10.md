@@ -1254,7 +1254,7 @@ dates hold.
   - **Behind:** base camera calibration (M5) and drive-to-point (M3), one to two weeks
 - Each milestone has a written test, for example **M2: two boxes, the arm picks the one you looked
   at, 3 times in 4**. Full list in appendix A10
-- Progress: 97 of 171 task rows done
+- Progress: 97 of 188 task rows done (17 rows added on 26 Oct for M11 and M12)
 - Key dates: interim 28 Oct (week 7), final report 28 Mar 2027 (week 28), oral presentation weeks 30
   and 31
 - Footer: forecasts re-estimated on 24 Oct. Estimates, not commitments
@@ -1279,6 +1279,8 @@ drawn hatched as "optional, likely cut". Data:
 | M8 Gaze picks the instance | 6 | 7 to 26 | 14 Mar 2027 |
 | M9 Frontier scoring (optional) | | 19 to 23 | 21 Feb 2027, if kept |
 | M10 Demo and paper | | 25 to 27 | 21 Mar 2027 |
+| M11 Orchestrator runs every phase | | 15 to 23 | 21 Feb 2027, first estimate |
+| M12 Park where the arm can grasp | | 18 to 24 | 28 Feb 2027, first estimate |
 
 Week spans are read from the ASCII chart in CR§0.6, which already counts calendar weeks (bars that
 cross exam and break weeks are calendar time, not working time). Say this in a footnote on the chart.
@@ -1380,54 +1382,60 @@ critical-path risk was dropped on 2026-10-24 (Dion: mostly resolved).
 
 ---
 
-## Slide 18: Next: close the grasp, drive the base, query the graph. Then explore with gaze
+## Slide 18: Next: four steps join the parts into one robot, then the end-to-end trials
 
-**Purpose.** Give the concrete next steps and the three takeaways, and end on the full pipeline.
+**Purpose.** Show the big pieces of work left, in the order they build on each other, and close the
+talk. No dates or week numbers here: slide 16 already has the schedule.
 
-**Key takeaway.** The next two weeks close specific, named gaps, and the path to end-to-end trials
-runs to March.
+**Key takeaway.** Each part works on its own. Four steps turn them into one robot that recovers
+when a step fails, and the end-to-end trials measure the result.
 
 **On-slide content**
 
-- Title: *Next: close the grasp, drive the base, query the graph. Then explore with gaze*
-- **Weeks 7 to 8 (before exams):**
-  - Refuse weak gaze picks at the glasses (T2.24), then the gaze-matched grasp on the real arm
-  - New AnyGrasp SDK, fused-view retest, then a 12-trial grasp validation. M1 closes (target 8 Nov)
-  - Nav2 prerequisites and the first drives to a point (T3.6)
-  - Memory graph query acceptance run on the recorded drive (T6.8)
-- **After the break:** two-box gaze grasp on hardware (M2), camera calibration (M5), closed loop
-  (M4, January), the robot explores and finds the user (M7, February), **a gaze match ends
-  exploration, end-to-end trials (M8, March)**
-- **Three takeaways:**
-  1. The hard part is identity across viewpoints. CLIP does it for different objects and now steers
-     the grasp. Gaze geometry is needed for look-alikes
+- Title: *Next: four steps join the parts into one robot, then the end-to-end trials*
+- Four numbered steps, left to right, each with its milestone IDs in small grey text:
+  1. **Reliable grasp** (M1, M2). The grasp works away from the one ideal spot, and the arm picks
+     the box the user looked at
+  2. **Drive to the object and park within reach** (M3, M5, M12). Nav2 drives the base, the base
+     camera is calibrated, the base parks where the arm can reach, and the wrist camera re-finds the
+     object from above
+  3. **Explore until the gaze match** (M6, M7, M8). The robot builds the memory graph as it drives,
+     finds the user, and stops when an object matches what the user looked at
+  4. **One layer runs every phase** (M11). Each phase reports an outcome and a reason. One node
+     decides what happens next: try the next candidate, take a second wrist view, move the base, or
+     ask the user
+- End state, under the four steps: **End-to-end trials and a recorded demonstration** (M8, M10)
+- Takeaway strip at the bottom, one line each:
+  1. The hard part is keeping the object's identity across viewpoints
   2. Every subsystem has measured results on real hardware or real recordings
-  3. The links are scheduled, with a cut list fixed in advance
+  3. The remaining work is four steps, with a cut list fixed in advance
 
-**Recommended visualisation.** Left two thirds: a short timeline with two blocks (weeks 7 to 8, then
-January to March), each item with its task ID in small grey text. Right third: the three takeaways
-as numbered cards. End on a small version of slide 4's five-phase strip, all boxes outlined, with
-"March 2027: end-to-end demonstration" under it.
+**Recommended visualisation.** Four boxes in a row with arrows between them, numbered 1 to 4. Each
+box: a short bold name, one line of what "done" looks like, and the milestone IDs in small grey
+text. Steps 1 to 3 sit above slide 4's five-phase strip, aligned with the phases they complete (1
+over phase 5, 2 over phase 4, 3 over phases 2 and 3). Step 4 is a wide bar under the strip, spanning
+all five phases, labelled "orchestrator". On the right, one box: "End-to-end trials". Inside step
+4, a small loop icon with the four recoveries as tiny labels. No dates, no week numbers.
 
 **Proposed speaker script.**
-"In the next two weeks, before exams, we close four specific gaps. The glasses learn to refuse a
-weak gaze pick, and the gaze-matched grasp runs on the real arm. The new AnyGrasp version and the fused views are tested, then a twelve-trial
-validation closes the grasp milestone. Sherman starts driving the base with Nav2. And I run the full
-memory graph query on the recorded drive, checked against the answer key.
+"Four steps are left, and each builds on the one before. First, a reliable grasp: away from the one
+ideal spot, and on the box the user looked at. Second, the base drives to the object and parks
+where the arm can reach it, then the wrist camera finds the object again from above. Third, the
+robot explores, builds its memory as it drives, finds the user, and stops when it sees the object
+the user looked at.
 
-After the break, the pieces join: the two-box gaze test on the real arm, the camera calibrations,
-the first closed-loop run in January, and the robot exploring on its own in February, with a gaze
-match telling it when to stop. In March we run the end-to-end trials.
+Fourth, one layer runs all of it. Today a phase says it finished, or says nothing when it fails.
+Each phase will report what happened and why, and one node decides the next step: the next
+candidate, a second look with the wrist camera, moving the base, or asking the user a question.
 
-Three things to take away. The hard part of this problem is keeping the object's identity across
-very different viewpoints. Every subsystem now has measured results on real hardware or real data.
-And the remaining links are scheduled, with a cut list fixed in advance. Thank you. We are happy to
-take questions."
+Then we run the end-to-end trials. To close: the hard part is identity across viewpoints, every
+subsystem has measured results, and what is left is four steps. Thank you."
 
 **Estimated duration.** 0:50
 
-**Evidence and source notes.** CR§0.6 "Next on the schedule", CR§10 P0 items 1 to 5, CR§0.6 forecast
-table (M1 8 Nov, M4 31 Jan, M7 28 Feb, M8 14 Mar).
+**Evidence and source notes.** CR§0.2 (milestones M1 to M12), CR§6.9 (planned orchestrator), CR§10
+rows 8 and 21, `PROJECT_PLAN` §5.1, `NEXT_STEPS` §2.16 (orchestrator design, who retries what,
+parking within reach).
 
 **Placeholders.** None.
 
@@ -1554,6 +1562,8 @@ the two slips he can explain first-hand.
 | M8 | Gaze picks the instance | A gaze match ends exploration. N end-to-end trials, success per phase |
 | M9 | Smarter exploration order (optional) | The paper's exploration order beats our nearest-first exploration |
 | M10 | Demonstration and paper | Recorded end-to-end run, paper whose central table is the end-to-end trials |
+| M11 | The orchestrator runs every phase | Each phase returns an outcome and a reason. The orchestrator answers every failure in its table, and the clarification node turns an unclear request into one object or a lead |
+| M12 | The base parks where the arm can grasp | The base parks inside the arm's measured reach, the wrist re-finds the object from above, the arm grasps from there |
 
 ---
 
@@ -1613,3 +1623,4 @@ do not exist yet.
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Slide 3 is now the overview of the two papers: what FAM-HRI and HiCo-Nav each do, what we take, what we leave out, and the link we add. The gaze paragraph and the milestone table are gone from it. Milestones moved later because they name subsystems not yet introduced: one example test on slide 16 (on slide and in the script), the full "done means" table in new appendix A10. Slide 17: critical-path risk row removed (mostly resolved), script and visual now four risks. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Slide 2 now shows only the problem (three viewpoints). FAM-HRI and HiCo-Nav moved to slide 3, which gains a "what it cannot do for us" row. Slide 2 to 0:50, slide 3 to 1:20, section total unchanged. |
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Final pass before slide generation: "gate" wording removed (slides 7, 9, 10, 13), slide 12 script grammar fixed. |
+| 2026-10-26 | Claude (Opus 5.5) + Dion | Slide 18 rewritten (Dion): four steps in order (reliable grasp, drive and park within reach, explore until the gaze match, one orchestration layer), then the end-to-end trials. No dates, no two-week list. Slide 16 data gains M11 and M12, row count 97 of 188. Appendix A10 gains M11 and M12. |
