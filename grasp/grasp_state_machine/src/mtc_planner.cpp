@@ -14,6 +14,11 @@ MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr &node, const std::atomic<bo
   step_settle_s_ = node_->get_parameter("step_settle_s").as_double();
   max_wrist_turn_deg_ = node_->get_parameter("max_wrist_turn_deg").as_double();
   pregrasp_distance_m_ = node_->get_parameter("pregrasp_distance_m").as_double();
+  plan_only_ = node_->get_parameter("plan_only").as_bool();
+  if (plan_only_)
+    RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] plan_only is on: grasps are planned and recorded, never executed");
+  solution_pub_ = node_->create_publisher<moveit_task_constructor_msgs::msg::Solution>(
+      "/grasp/planned_solution", rclcpp::QoS(10).transient_local());
   mtc_node_ = std::make_shared<rclcpp::Node>(
       "mtc_planner_node",
       rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true));
@@ -29,6 +34,12 @@ MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr &node, const std::atomic<bo
 // The old single joint-space move bent the gripper's path into the box (CODE_AUDIT A4, T1.48).
 bool MtcPlanner::approachGrasp(const geometry_msgs::msg::Pose &grasp_pose)
 {
+  // The full target, logged before any check can fail, so a run can be replayed offline (T1.51).
+  // The other logs give the position only after IK succeeds and the orientation only on failure.
+  const auto &p = grasp_pose.position;
+  const auto &o = grasp_pose.orientation;
+  RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] approachGrasp target (base_link): x=%.4f y=%.4f z=%.4f q=(%.4f %.4f %.4f %.4f)",
+              p.x, p.y, p.z, o.x, o.y, o.z, o.w);
   Task task;
   task.stages()->setName("approach_grasp");
   task.loadRobotModel(mtc_node_);
@@ -110,6 +121,11 @@ bool MtcPlanner::approachGrasp(const geometry_msgs::msg::Pose &grasp_pose)
                    q.x, q.y, q.z, q.w, why.str().c_str());
       return false;
     }
+    // The plan the wrist check judges and the arm would run, recorded before the check so refused
+    // plans are kept too (T1.51)
+    moveit_task_constructor_msgs::msg::Solution plan_msg;
+    task.solutions().front()->toMsg(plan_msg, &task.introspection());
+    solution_pub_->publish(plan_msg);
     // The planner takes any IK solution. A flipped wrist reaches the same pose with joint 4 and
     // joint 6 turned about 180 degrees, and swung the gripper through the object before the
     // target was in the scene (T1.45, 2026-10-26). Kept for good (Dion, 2026-10-26): no grasp here
@@ -129,6 +145,12 @@ bool MtcPlanner::approachGrasp(const geometry_msgs::msg::Pose &grasp_pose)
     }
     if (refuseIfStopped("approachGrasp"))
       return false;
+    if (plan_only_)
+    {
+      // Reported as a failed plan, so the state machine tries the next grasp and never closes
+      RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] approachGrasp: plan_only, planned and recorded, not executed");
+      return false;
+    }
     RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] approachGrasp: executing...");
     auto result = task.execute(solution);
     if (result != moveit::core::MoveItErrorCode::SUCCESS)

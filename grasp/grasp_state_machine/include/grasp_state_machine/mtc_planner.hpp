@@ -9,6 +9,7 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/msg/collision_object.hpp>
+#include <moveit_task_constructor_msgs/msg/solution.hpp>
 
 using namespace moveit::task_constructor;
 
@@ -56,6 +57,10 @@ private:
   double step_settle_s_; // step_settle_s in grasp/grasp_config.yaml
   double max_wrist_turn_deg_; // max_wrist_turn_deg in grasp/grasp_config.yaml
   double pregrasp_distance_m_; // pregrasp_distance_m in grasp/grasp_config.yaml
+  bool plan_only_; // plan_only in grasp/grasp_config.yaml
+  // Made once, so a recorder that subscribed at start-up gets every plan. MTC's own /solution
+  // publisher is made per Task and gone when approachGrasp returns, maybe before it is heard (T1.51)
+  rclcpp::Publisher<moveit_task_constructor_msgs::msg::Solution>::SharedPtr solution_pub_;
   moveit::planning_interface::PlanningSceneInterface psi_;
   const std::atomic<bool> &stopped_;
 

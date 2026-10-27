@@ -146,6 +146,9 @@ grasp_state_machine:
     # Refuse a move to AnyGrasp's grasp if joint 4, 5 or 6 would turn further than this (T1.45).
     # A permanent safety limit, not a temporary guard (Dion, 2026-10-26).
     max_wrist_turn_deg: 90.0
+    # true: AnyGrasp grasps are planned and published on /grasp/planned_solution, never executed.
+    # Homing, the SELECTING steps and the gripper opening still move the arm (T1.51)
+    plan_only: false
     # End the approach if the newest centroid is older than this. Age counts from the camera
     # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
     # frame (measured 2026-10-12, T1.24 3b). Raised to 3.0, then 7.0 (Dion, 2026-10-26): SAM 3

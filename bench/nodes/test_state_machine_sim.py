@@ -69,6 +69,8 @@ FAR = float(os.environ.get("SM_FAR", "0.30"))   # start depth (m); keep at or ab
 OPT = "camera_color_optical_frame"
 GRASP_AHEAD = 0.12  # m; the fake grasp's distance ahead of the gripper (candidates mode)
 CANDIDATES = os.environ.get("BENCH_SM_PATH") == "candidates"  # use_simple_execute false (T1.17)
+# plan_only true: AnyGrasp grasps are planned and published, never executed (T1.51)
+PLAN_ONLY = bool(re.search(r"^\s*plan_only:\s*true\b", (REPO / "grasp/grasp_config.yaml").read_text(), re.M))
 TOL = 0.02  # rad
 
 
@@ -421,6 +423,14 @@ def main():
                   f"no lock in 30 s; approach angle {angle:.1f} deg (min_approach_angle_deg rejects below 20)")
             if not log_has(r"EXECUTING: pose stable"):
                 return
+        if CANDIDATES and PLAN_ONLY:
+            # No close is the intended outcome here, so the close check below would fail on purpose
+            n.spin_until(lambda: log_has(r"plan_only, planned and recorded")
+                         or log_has(r"EXECUTING: (grasps failed to plan|no target box|no candidates)"), 90)
+            ok = (log_has(r"plan_only, planned and recorded") and not log_has(r"approachGrasp: executing")
+                  and not any(k == "pick_on" for t, k, _ in n.grip))
+            return check("plan_only: grasp planned, not executed, gripper not closed", ok,
+                         "plan_only line logged, no 'executing...', no pick_on" if ok else "see the launch log")
         fail_re = (r"EXECUTING: (approach failed|grasps failed to plan|no target box|no candidates)" if CANDIDATES
                    else r"EXECUTING: final Cartesian step failed")
         closed = n.spin_until(lambda: any(k == "pick_on" for t, k, _ in n.grip) or log_has(fail_re), 90)
