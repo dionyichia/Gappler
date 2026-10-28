@@ -63,10 +63,12 @@ fi
 
 echo "Build [$target]: ${paths[*]} -> $bdir/ $idir/   (log: $out)"
 start=$(date +%s)
-# MAKEFLAGS caps compile jobs so a shared machine stays usable.
+# MAKEFLAGS caps compile jobs so a shared machine stays usable. build_moveit_exports_fix.cmake
+# works around MoveIt 2.5.10's broken exports (see that file).
 MAKEFLAGS="-j${BENCH_JOBS:-8}" colcon build \
   --base-paths "${paths[@]}" --build-base "$bdir" --install-base "$idir" --symlink-install \
-  --cmake-args -DCMAKE_BUILD_TYPE=Release ${extra[@]+"${extra[@]}"} \
+  --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_PROJECT_INCLUDE="$REPO/build_moveit_exports_fix.cmake" \
+  ${extra[@]+"${extra[@]}"} \
   --event-handlers console_direct- console_cohesion+ 2>&1 | tee "$out" >/dev/null
 rc=${PIPESTATUS[0]}
 secs=$(( $(date +%s) - start ))
