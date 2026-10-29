@@ -28,6 +28,7 @@ from std_msgs.msg import String
 from gappler_common import config
 from anygrasp_to_grasp_frame import fingertip_position, fits_gripper, nearer_twin, to_grasp_frame
 from target_box import target_box
+from denoise_point_cloud import drop_table_and_stray_pixels
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -83,6 +84,10 @@ FIT = dict(max_width=CFG["max_object_width_m"], max_depth=CFG["max_grasp_depth_m
 # The target as a box for MoveIt's planning scene (T1.48, target_box.py)
 TABLE_TOP_Z = float(CFG["table_top_z_m"])
 TARGET_PAD = float(CFG["target_box_pad_m"])
+BOX = dict(top_percentile=CFG["target_box_top_percentile"], edge_percentile=CFG["target_box_edge_percentile"],
+           table_gap_m=CFG["target_box_table_gap_m"], angle_step_deg=CFG["target_box_angle_step_deg"])
+# Removing table and stray pixels from the mask (T1.60, denoise_point_cloud.py): the denoise_* values
+DENOISE = {k.removeprefix("denoise_"): v for k, v in CFG.items() if k.startswith("denoise_")}
 
 
 class AnyGraspDetectionNode(Node):
@@ -199,17 +204,9 @@ class AnyGraspDetectionNode(Node):
     def rotation_to_quaternion(self, rot_matrix: np.ndarray):
         return Rotation.from_matrix(rot_matrix).as_quat()
 
-    def publish_target_box(self, points, header):
+    def publish_target_box(self, points, header, rot, t):
         """Measure the object as a box standing on the table and publish it in base_link."""
-        try:
-            # Latest, not the frame's stamp: the arm holds still while EXECUTING
-            tf = self.tf_buffer.lookup_transform("base_link", header.frame_id, rclpy.time.Time())
-        except tf2_ros.TransformException as e:
-            self.get_logger().warn(f"No transform for the target box: {e}", throttle_duration_sec=5.0)
-            return
-        t, q = tf.transform.translation, tf.transform.rotation
-        rot = Rotation.from_quat([q.x, q.y, q.z, q.w])
-        box = target_box(rot.apply(points) + [t.x, t.y, t.z], TABLE_TOP_Z, TARGET_PAD)
+        box = target_box(rot.apply(points) + t, TABLE_TOP_Z, TARGET_PAD, **BOX)
         if box is None:
             self.get_logger().warn("Target box: no object point above the table",
                                    throttle_duration_sec=5.0)
@@ -285,25 +282,39 @@ class AnyGraspDetectionNode(Node):
             self.get_logger().warn("Combined mask empty, skipping frame")
             return
 
+        try:
+            # Latest, not the frame's stamp: the arm holds still while EXECUTING
+            tf = self.tf_buffer.lookup_transform("base_link", depth_msg.header.frame_id, rclpy.time.Time())
+        except tf2_ros.TransformException as e:
+            self.get_logger().warn(f"No camera transform, skipping frame: {e}", throttle_duration_sec=5.0)
+            return
+        q, tr = tf.transform.rotation, tf.transform.translation
+        rot = Rotation.from_quat([q.x, q.y, q.z, q.w])
+        # Drop table and stray pixels from the mask (T1.60). object_mask is the object from here on
+        object_mask, why = drop_table_and_stray_pixels(points_full, combined_mask, rot.inv().apply([0.0, 0.0, 1.0]), DENOISE)
+        if object_mask is None:
+            self.get_logger().warn(f"Point cloud denoise refused, skipping frame: {why}", throttle_duration_sec=5.0)
+            return
+
         # The object's points: fits_gripper and RViz use them with either SDK
-        points = points_full[combined_mask].astype(np.float32)
+        points = points_full[object_mask].astype(np.float32)
         # Stamped now, like the candidates (build_grasp_msg), so RViz can place a replayed bag's frames
         header = depth_msg.header
         header.stamp = self.get_clock().now().to_msg()
         self.points_pub.publish(point_cloud2.create_cloud_xyz32(header, points))
-        self.publish_target_box(points, header)
+        self.publish_target_box(points, header, rot, [tr.x, tr.y, tr.z])
 
         # Per-frame stateless detection
         try:
             if SDK == "anygrasp3":
                 # The scene near the object, so the collision check sees the table and neighbours.
                 # Points further than the margin cannot touch a gripper on the object, and the whole
-                # scene took 2.3 s a frame (T1.45). Grasps only on the SAM mask, approaching along
+                # scene took 2.3 s a frame (T1.45). Grasps only on the object mask, approaching along
                 # the camera's view.
                 lo, hi = points.min(axis=0) - SCENE_MARGIN, points.max(axis=0) + SCENE_MARGIN
                 near = depth_mask & np.all((points_full >= lo) & (points_full <= hi), axis=2)
                 gg = self.detector.get_grasp(points_full[near].astype(np.float32), {
-                    "region_steering": sam_mask[near],
+                    "region_steering": object_mask[near],
                     "approach_steering": [0.0, 0.0, 1.0],
                     "approach_thresh": MAX_APPROACH_RAD,
                     "dense_grasp": False,
@@ -312,7 +323,7 @@ class AnyGraspDetectionNode(Node):
             else:
                 gg, _ = self.detector.get_grasp(
                     points,
-                    colors[combined_mask].astype(np.float32),
+                    colors[object_mask].astype(np.float32),
                     lims=LIMS,
                     apply_object_mask=True,
                     dense_grasp=False,

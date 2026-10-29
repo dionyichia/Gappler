@@ -103,6 +103,64 @@ anygrasp_detection_node:
     # T1.48: added to every side of the target box (and its top) for MoveIt's planning scene, metres.
     # Depth noise must never make the box smaller than the object. Raise if the arm still brushes it.
     target_box_pad_m: 0.01
+    # T1.48: the target box's footprint ignores this percent of points at each side, so a few stray
+    # points beside the object cannot widen it. 0.5 since T1.60: mask spill is removed first
+    # (denoise_*), and 2 shaved real edges (the 7.4 cm side read 6.9). Raise if strays widen the box.
+    target_box_edge_percentile: 0.5
+    # T1.48: the box top is this percentile of the object points' heights, so flying pixels far above
+    # the object cannot raise it.
+    target_box_top_percentile: 99.0
+    # T1.48: the box starts this far above the table, metres. MoveIt counts touching as a collision,
+    # so a box on the table slab would start every move in collision. Grasps sit far above 5 mm.
+    target_box_table_gap_m: 0.005
+    # T1.48: the footprint's turn is searched in steps of this many degrees. The 1 cm pad is far
+    # larger than the error half a step gives on a 15 cm box (about 1 mm).
+    target_box_angle_step_deg: 1.0
+
+    # T1.60: remove table and stray pixels from SAM's mask before AnyGrasp, the fit check and the
+    # target box use it (grasp/anygrasp_node/denoise_point_cloud.py). The mask spills onto the table
+    # behind the object, and the camera reads that table 1.5 to 2.5 cm high, so table_top_z does not
+    # catch it. Tuned on captures A, B, C and a synthetic test set (T1.60 notes in the task tree).
+    # The table's facing may differ from TF's up by at most this, degrees. A wall or a box side
+    # (about 90) is never taken as the table. Captures A, B, C measured 1.0 to 2.0.
+    denoise_max_tilt_deg: 20.0
+    # Wrist camera depth noise at 0.5 m, metres. Grows with depth squared (D4xx class camera).
+    denoise_depth_noise_at_half_metre_m: 0.0015
+    # A point within this many noise widths of the plane counts as table when fitting it.
+    denoise_table_band_sigmas: 3.0
+    # Least and most that band may be, metres. The cap stops far points (noise about 4 cm at 1.5 m)
+    # from pulling the floor into the table fit.
+    denoise_table_band_min_m: 0.006
+    denoise_table_band_max_m: 0.015
+    # The table is fitted only on points within this depth of the object, metres (not the floor).
+    denoise_region_depth_m: 0.3
+    # The table is looked for in the mask's bounding box widened by its own size plus this, pixels.
+    denoise_region_margin_px: 20
+    # The mask is grown by this many pixels and left out of the table fit (its edge is unreliable).
+    denoise_mask_grow_px: 10
+    # Plane fit: random 3-point tries, points sampled per try, least-squares refinements.
+    denoise_ransac_iterations: 300
+    denoise_ransac_sample_points: 6000
+    denoise_refine_passes: 2
+    # The table needs at least this many points, and at most this rms distance (m), to be trusted.
+    denoise_min_table_points: 800
+    denoise_max_table_rms_m: 0.006
+    # Mask points within this many noise widths of the table (at least table_band_min_m) are dropped.
+    denoise_remove_band_sigmas: 4.0
+    # Neighbouring pixels are one surface while their depth differs by less than this fraction.
+    # The spill sits 15 to 20 cm behind the object, so it ends up a separate surface.
+    denoise_depth_step_rel: 0.03
+    # Surfaces smaller than this many pixels are ignored when deciding what else to keep.
+    denoise_min_surface_pixels: 20
+    # Another surface within this distance of the biggest one is kept too, metres: one object cut in
+    # two by something thin in front of it.
+    denoise_merge_gap_m: 0.03
+    # The frame is refused (skipped) below this many object pixels.
+    denoise_min_object_points: 300
+    # Refused if the object is less than this share of the mask: SAM mostly missed the object.
+    denoise_min_kept_frac: 0.4
+    # Refused if the kept surfaces are less than this share of what lies above the table.
+    denoise_min_main_frac: 0.7
 
 # grasp/grasp_viz/grasp_viz.py. Size of the gripper drawn in RViz, metres.
 grasp_visualizer:
