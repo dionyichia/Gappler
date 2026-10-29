@@ -103,6 +103,13 @@ def main():
         start(["ros2", "run", "tf2_ros", "static_transform_publisher", "--y", "0.015",
                "--roll", "-1.5708", "--yaw", "-1.5708",
                "--frame-id", "camera_link", "--child-frame-id", "camera_color_optical_frame"])
+        # The camera's pose with the arm at HOME, where the bag was recorded. The node needs base_link's up
+        # to find the table (target_cloud.py, T1.60) and skips every frame without it. From the
+        # simulated arm's TF at HOME, 2026-10-28 (T1.51 replay, home.npz).
+        start(["ros2", "run", "tf2_ros", "static_transform_publisher",
+               "--x", "-0.31013", "--y", "-0.00497", "--z", "0.56847",
+               "--qx", "-0.383717", "--qy", "0.007619", "--qz", "0.923419", "--qw", "-0.000305",
+               "--frame-id", "base_link", "--child-frame-id", "camera_link"])
 
         t0 = time.time()
         hold("EXECUTING", PHASE_SEC)
