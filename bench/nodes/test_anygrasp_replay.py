@@ -133,7 +133,9 @@ def main():
             return len(ms), (max(top) if top else None)
 
         n_exec, top_exec = phase(t0, t1)
-        n_idle, top_idle = phase(t1, t2)
+        # A frame that started while EXECUTING can finish just after the switch. The node checks the
+        # state when a frame starts, so skip one frame's worth (about 0.4 s) before counting IDLE sets
+        n_idle, top_idle = phase(t1 + 1.0, t2)
         tops = [s for s in (top_exec, top_idle) if s is not None]
         det_ok = n_exec + n_idle > 0
         results.append(("PASS " if det_ok else "FAIL ", "grasp detection",
