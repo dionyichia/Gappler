@@ -28,7 +28,7 @@ from std_msgs.msg import String
 from gappler_common import config
 from anygrasp_to_grasp_frame import fingertip_position, fits_gripper, nearer_twin, to_grasp_frame
 from target_box import target_box
-from target_cloud import clean_target
+from denoise_point_cloud import drop_table_and_stray_pixels
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -84,7 +84,7 @@ FIT = dict(max_width=CFG["max_object_width_m"], max_depth=CFG["max_grasp_depth_m
 # The target as a box for MoveIt's planning scene (T1.48, target_box.py)
 TABLE_TOP_Z = float(CFG["table_top_z_m"])
 TARGET_PAD = float(CFG["target_box_pad_m"])
-# The points are cleaned of mask spill first (T1.60), so the box's edge trim only has to drop noise
+# Table and stray pixels are dropped first (denoise_point_cloud.py, T1.60), so the edge trim only drops noise
 TARGET_EDGE_PERCENTILE = 0.5
 
 
@@ -288,10 +288,10 @@ class AnyGraspDetectionNode(Node):
             return
         q, tr = tf.transform.rotation, tf.transform.translation
         rot = Rotation.from_quat([q.x, q.y, q.z, q.w])
-        # Drop the mask's spill onto the table (T1.60). The cleaned mask is the object everywhere below
-        object_mask, why = clean_target(points_full, combined_mask, rot.inv().apply([0.0, 0.0, 1.0]))
+        # Drop table and stray pixels from the mask (T1.60). object_mask is the object from here on
+        object_mask, why = drop_table_and_stray_pixels(points_full, combined_mask, rot.inv().apply([0.0, 0.0, 1.0]))
         if object_mask is None:
-            self.get_logger().warn(f"Target cloud refused, skipping frame: {why}", throttle_duration_sec=5.0)
+            self.get_logger().warn(f"Point cloud denoise refused, skipping frame: {why}", throttle_duration_sec=5.0)
             return
 
         # The object's points: fits_gripper and RViz use them with either SDK
@@ -307,7 +307,7 @@ class AnyGraspDetectionNode(Node):
             if SDK == "anygrasp3":
                 # The scene near the object, so the collision check sees the table and neighbours.
                 # Points further than the margin cannot touch a gripper on the object, and the whole
-                # scene took 2.3 s a frame (T1.45). Grasps only on the cleaned mask, approaching along
+                # scene took 2.3 s a frame (T1.45). Grasps only on the object mask, approaching along
                 # the camera's view.
                 lo, hi = points.min(axis=0) - SCENE_MARGIN, points.max(axis=0) + SCENE_MARGIN
                 near = depth_mask & np.all((points_full >= lo) & (points_full <= hi), axis=2)

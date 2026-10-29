@@ -1,5 +1,5 @@
 T1.60 lab box bench, 2026-10-29. bench/anygrasp_replay.sh on assets/recordings/wrist_camera (arm at HOME),
-domain 77, localhost only. Code: ~/rcp-Gappler with the T1.60 files copied in (target_cloud.py, detection
+domain 77, localhost only. Code: ~/rcp-Gappler with the T1.60 files copied in (denoise_point_cloud.py, then named target_cloud.py, detection
 node, bench file) next to the uncommitted T1.51 node changes. The cleaning path is the same as on this branch.
 
 Run 1 (before the bench grace fix):
@@ -13,7 +13,7 @@ Run 2 (log/bench_anygrasp_replay_2026-10-29_2123.txt):
   [PASS ] grasp detection    83 candidate sets, 1.38/s, top score 0.357
   [PASS ] gate (A1)          EXECUTING 83 sets, IDLE 0 sets
   RESULT: PASS
-  Node log: every frame "Target cloud ok", dropped 53 to 74 of about 16300 mask pixels, table tilt 1.0 deg.
+  Node log: every frame "Target cloud ok" (now "Point cloud denoise"), dropped 53 to 74 of about 16300 mask pixels, table tilt 1.0 deg.
 
 Offline replay through the real node and the simulated arm (captures A, B, C, 200 grasp attempts each):
   padded target box long side A 21.9 -> 8.8 cm, B 8.9 -> 9.3, C 9.1 -> 9.1. 0 frames refused.

@@ -1,7 +1,7 @@
-"""Clean the target's pixels before they reach AnyGrasp and the target box (T1.60).
+"""Remove table and stray pixels from the object mask before AnyGrasp and the MoveIt box see it (T1.60).
 
 SAM's mask can spill past the object's edge onto the table behind it. Those table points then
-count as object: on capture A they stretched the target box from about 8.6 to 22 cm, because the
+count as object: on capture A they stretched the MoveIt box from about 8.6 to 22 cm, because the
 camera reads the table 1.5 to 2.5 cm high and the fixed table_top_z cut let them through.
 
 This works in the camera frame, so a calibration error cannot move a cutoff:
@@ -16,10 +16,10 @@ This works in the camera frame, so a calibration error cannot move a cutoff:
   4. reject  return None when the table or the object cannot be trusted. The node skips the
              frame and waits for the next one.
 
-Known limit: a mask that spills onto an object touching the target, at the same depth, is not
-caught (no depth jump to split on). Evidence: docs/dion_docs/local/experiments/T1.51_target_cloud.
+Known limit: a mask that spills onto another object touching this one, at the same depth, is not
+caught (no depth jump to split on). Evidence: docs/dion_docs/local/experiments/T1.51_denoise_point_cloud.
 
-Run this file to check it: python3 target_cloud.py
+Run this file to check it: python3 denoise_point_cloud.py
 """
 
 import numpy as np
@@ -32,13 +32,13 @@ MAX_TILT_DEG = 20.0      # table normal vs TF up. Captures A, B, C measured 1.9-
 SIGMA_REF = 0.0015       # depth noise (m) at 0.5 m. Grows with depth squared (D4xx class camera).
 MIN_BAND = 0.006         # table band floor (m)
 MAX_BAND = 0.015         # inlier cap: at 1.5 m the z^2 noise would reach 4 cm and take in the floor
-REGION_DEPTH = 0.3       # table fitted only on points within this depth (m) of the target
+REGION_DEPTH = 0.3       # table fitted only on points within this depth (m) of the object
 STEP_REL = 0.03          # neighbour depth step that is still the same surface, relative to depth
 GAP_M = 0.03             # another surface this close (3D) to the biggest one is kept
 MIN_TABLE_POINTS = 800
 MAX_TABLE_RMS = 0.006    # m
-MIN_TARGET_POINTS = 300
-MIN_KEPT_FRAC = 0.4      # target / valid mask pixels. Lower: the mask is mostly not the object.
+MIN_OBJECT_POINTS = 300
+MIN_KEPT_FRAC = 0.4      # object / valid mask pixels. Lower: the mask is mostly not the object.
 MIN_MAIN_FRAC = 0.7      # kept surfaces / pixels above the table
 
 
@@ -92,18 +92,18 @@ def _surfaces(valid, z):
     return connected_components(coo_matrix((np.ones(len(r)), (r, c)), shape=(n, n)), directed=False)[1]
 
 
-def clean_target(points, mask, up, rng=None):
-    """Clean a SAM mask with the depth behind it.
+def drop_table_and_stray_pixels(points, mask, up, rng=None):
+    """Keep only the object's pixels of a SAM mask, using the depth behind it.
 
     points  HxWx3 camera-frame points in metres (z = 0 where depth is missing)
     mask    HxW bool, SAM's mask
     up      unit vector, base_link's up in the camera frame (from TF)
-    Returns (cleaned HxW bool mask or None, reason string)."""
+    Returns (object HxW bool mask or None, reason string)."""
     rng = rng or np.random.default_rng(0)
     z = points[..., 2]
     valid = z > 0
     mvalid = mask & valid
-    if mvalid.sum() < MIN_TARGET_POINTS:
+    if mvalid.sum() < MIN_OBJECT_POINTS:
         return None, "mask has too few depth points"
     # 1. Table: a window around the mask's bounding box, the mask grown 10 px left out
     ys, xs = np.nonzero(mask)
@@ -123,7 +123,7 @@ def clean_target(points, mask, up, rng=None):
         return None, f"table not trustworthy ({inl.sum()} points, rms {rms * 1000:.1f} mm)"
     # 2. Remove what lies on or below the table
     above = mvalid & (points @ n + d > np.maximum(4 * _sigma(z), max(4 * rms, MIN_BAND)))
-    if above.sum() < MIN_TARGET_POINTS:
+    if above.sum() < MIN_OBJECT_POINTS:
         return None, "nothing above the table in the mask"
     # 3. Split by depth jumps, keep the biggest surface and any close to it
     lab = _surfaces(above, z)
@@ -137,8 +137,8 @@ def clean_target(points, mask, up, rng=None):
     out = np.zeros_like(mask)
     out[above] = keep
     # 4. Can the result be trusted
-    if out.sum() < MIN_TARGET_POINTS:
-        return None, "object too small after cleaning"
+    if out.sum() < MIN_OBJECT_POINTS:
+        return None, "too few object pixels left"
     if out.sum() < MIN_KEPT_FRAC * mvalid.sum():
         return None, f"mask is mostly not the object (kept {out.sum() / mvalid.sum():.0%})"
     if keep.sum() < MIN_MAIN_FRAC * len(keep):
@@ -174,19 +174,19 @@ if __name__ == "__main__":
     rows = np.nonzero(is_box.any(1))[0]
     spill = ndimage.binary_dilation(is_box, iterations=15) & ~is_box & (v < rows.min() + 15)
     assert spill.sum() > 0.05 * is_box.sum(), ("spill too small to test", spill.sum(), is_box.sum())
-    out, why = clean_target(pts, is_box | spill, up_cam)
+    out, why = drop_table_and_stray_pixels(pts, is_box | spill, up_cam)
     assert out is not None, why
     assert not (out & spill).any(), ("table spill kept", (out & spill).sum())
     assert (out & is_box).sum() > 0.95 * is_box.sum(), ("box pixels lost", (out & is_box).sum(), is_box.sum())
 
     # A mask on the table only has nothing above the table
-    assert clean_target(pts, spill | (ndimage.binary_dilation(spill, iterations=20) & ~is_box), up_cam)[0] is None
+    assert drop_table_and_stray_pixels(pts, spill | (ndimage.binary_dilation(spill, iterations=20) & ~is_box), up_cam)[0] is None
 
     # TF 30 deg wrong: no table where TF says up is, so the frame is refused
     c, s = np.cos(np.radians(30)), np.sin(np.radians(30))
     bad_up = np.array([[1, 0, 0], [0, c, -s], [0, s, c]]) @ up_cam
-    assert clean_target(pts, is_box | spill, bad_up)[0] is None, "a 30 deg TF error was accepted"
+    assert drop_table_and_stray_pixels(pts, is_box | spill, bad_up)[0] is None, "a 30 deg TF error was accepted"
 
     # A mask with no depth behind it
-    assert clean_target(np.zeros_like(pts), is_box, up_cam)[0] is None
-    print("target_cloud: all checks pass")
+    assert drop_table_and_stray_pixels(np.zeros_like(pts), is_box, up_cam)[0] is None
+    print("denoise_point_cloud: all checks pass")

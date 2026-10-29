@@ -104,7 +104,7 @@ def main():
                "--roll", "-1.5708", "--yaw", "-1.5708",
                "--frame-id", "camera_link", "--child-frame-id", "camera_color_optical_frame"])
         # The camera's pose with the arm at HOME, where the bag was recorded. The node needs base_link's up
-        # to find the table (target_cloud.py, T1.60) and skips every frame without it. From the
+        # to find the table (denoise_point_cloud.py, T1.60) and skips every frame without it. From the
         # simulated arm's TF at HOME, 2026-10-28 (T1.51 replay, home.npz).
         start(["ros2", "run", "tf2_ros", "static_transform_publisher",
                "--x", "-0.31013", "--y", "-0.00497", "--z", "0.56847",
