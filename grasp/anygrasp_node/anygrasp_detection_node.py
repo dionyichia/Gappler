@@ -84,8 +84,10 @@ FIT = dict(max_width=CFG["max_object_width_m"], max_depth=CFG["max_grasp_depth_m
 # The target as a box for MoveIt's planning scene (T1.48, target_box.py)
 TABLE_TOP_Z = float(CFG["table_top_z_m"])
 TARGET_PAD = float(CFG["target_box_pad_m"])
-# Table and stray pixels are dropped first (denoise_point_cloud.py, T1.60), so the edge trim only drops noise
-TARGET_EDGE_PERCENTILE = 0.5
+BOX = dict(top_percentile=CFG["target_box_top_percentile"], edge_percentile=CFG["target_box_edge_percentile"],
+           table_gap_m=CFG["target_box_table_gap_m"], angle_step_deg=CFG["target_box_angle_step_deg"])
+# Removing table and stray pixels from the mask (T1.60, denoise_point_cloud.py): the denoise_* values
+DENOISE = {k.removeprefix("denoise_"): v for k, v in CFG.items() if k.startswith("denoise_")}
 
 
 class AnyGraspDetectionNode(Node):
@@ -204,7 +206,7 @@ class AnyGraspDetectionNode(Node):
 
     def publish_target_box(self, points, header, rot, t):
         """Measure the object as a box standing on the table and publish it in base_link."""
-        box = target_box(rot.apply(points) + t, TABLE_TOP_Z, TARGET_PAD, edge_percentile=TARGET_EDGE_PERCENTILE)
+        box = target_box(rot.apply(points) + t, TABLE_TOP_Z, TARGET_PAD, **BOX)
         if box is None:
             self.get_logger().warn("Target box: no object point above the table",
                                    throttle_duration_sec=5.0)
@@ -289,7 +291,7 @@ class AnyGraspDetectionNode(Node):
         q, tr = tf.transform.rotation, tf.transform.translation
         rot = Rotation.from_quat([q.x, q.y, q.z, q.w])
         # Drop table and stray pixels from the mask (T1.60). object_mask is the object from here on
-        object_mask, why = drop_table_and_stray_pixels(points_full, combined_mask, rot.inv().apply([0.0, 0.0, 1.0]))
+        object_mask, why = drop_table_and_stray_pixels(points_full, combined_mask, rot.inv().apply([0.0, 0.0, 1.0]), DENOISE)
         if object_mask is None:
             self.get_logger().warn(f"Point cloud denoise refused, skipping frame: {why}", throttle_duration_sec=5.0)
             return
