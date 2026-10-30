@@ -116,6 +116,14 @@ pre-grasp IK starts from the current joints, because unseeded IK chose a 360° j
 simulated arm. A grasp that fails to plan is skipped, up to 5, and the 2 cm back-off is gone.
 Simulated arm: `state_machine_sim.sh candidates` PASS. Kept as permanent limits (Dion):
 `max_wrist_turn_deg: 90` and `max_approach_deg: 10` (20° and 30° failed to plan most grasps).
+
+**Follow-up, `T1.60`.** The target box itself was wrong in one wrist capture: SAM's mask spilled
+onto the table behind the box, the camera reads that table 1.5 to 2.5 cm high, so the spill passed
+the fixed `table_top_z` cut and stretched the box from about 8.6 to 22 cm. `denoise_point_cloud.py`
+now removes table and stray pixels from the mask before the box, the fit check and AnyGrasp use it.
+`[observed]` in an offline replay with the simulated arm (capture A's box 21.9 to 8.8 cm, 0 frames
+refused, [`bench-runs/2026-10-29-labbox-t1.60-anygrasp-replay.txt`](bench-runs/2026-10-29-labbox-t1.60-anygrasp-replay.txt)).
+Not yet run on the real arm.
 New: `lock_timeout_s: 25` ends EXECUTING when no grasp locks.
 
 ---
@@ -1061,3 +1069,4 @@ publishers racing on the same three topics.
 | 2026-10-14 | Claude Opus 5.5 + Dion | A1, C7 now `[observed]` fixed, C4 checked in sim (box runs, [`bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt`](bench-runs/2026-10-14-labbox-t1.14-t1.17-sim-and-replay.txt)). New finding E6: a late TF ends a request in SELECTING, seen once in sim, task `T1.28`. |
 | 2026-10-26 | Claude Opus 5.5 + Dion | New finding A4, `[observed]` on the real arm: the AnyGrasp move ignores the target (not in the planning scene) and curves into it (joint interpolation), plus the retry loop on an unreachable grasp. Fix planned as `T1.48`. |
 | 2026-10-26 | Claude Opus 5.5 + Dion | A4 fixed by `T1.48`, `[observed]` on the real arm (three grasps at the 10° cone, no push) and in sim. Wrist and cone limits kept for good. |
+| 2026-10-29 | Claude Opus 5.5 + Dion | A4 follow-up: the target box was stretched by mask spill onto the table, fixed by `T1.60` (`denoise_point_cloud.py`), `[observed]` in offline replay, not on the real arm. |
