@@ -137,6 +137,13 @@ subsystem's `vendor/`. Results go in `docs/bench-runs/`.
   `[inferred]` reasoning · `[unverified]` static finding not yet confirmed at the machine. Retag when
   you verify. Delete what turns out wrong.
 - Append to each doc's changelog on substantive edits. Cite `file.py:123`.
+- **Every tunable goes in config, never in code.** A threshold, timeout, wait, size, batch size or a
+  model's number format goes in its subsystem's `*_config.yaml` (`grasp/grasp_config.yaml`,
+  `arm/arm_config.yaml`, ...). Use `shared/global_config.yaml` only when more than one subsystem
+  reads it. Each one gets a comment saying why it is needed and which file reads it. When you touch
+  code that still has one written in, move it. Every model gets a precision setting (float32,
+  float16 or bfloat16) where its library allows one. A bench that waits on a setting reads it from
+  the config. Physical and math constants and code under `vendor/` stay as they are.
 - Name things descriptively by subsystem (`arm_base_link`, not `base_link`): ORIENTATION §0b.
 - Skipped checks are reported as skipped, never as passing.
 - **Writing style. If you are Dion's agent, read
