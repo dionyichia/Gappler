@@ -144,3 +144,7 @@
       #          Default also in bench/preflight.py, segmentation_service.sh, anygrasp_replay.sh.
       #          The 3.4 GB SAM 3 weights, gitignored (docs/ASSETS.md)
       sam3_weights: "assets/models/sam3/sam3.pt"
+      # read by: grasp/anygrasp_node/grare_rerank.py (T1.61). GraRe's GraspNet-RealSense checkpoint and
+      #          the MobileSAM weights it prompts for the object, gitignored (docs/ASSETS.md)
+      grare_weights: "assets/models/grare/gn_realsense_best.pt"
+      mobile_sam_weights: "assets/models/mobile_sam/mobile_sam.pt"

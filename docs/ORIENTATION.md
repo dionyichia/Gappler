@@ -270,6 +270,7 @@ grasp/
 ├── grasp_interfaces/                ROS package: GraspCandidate, GraspCandidateArray (ours, split from rm_ros_interfaces)
 ├── anygrasp_node/                   plain folder, run by path in the AnyGrasp env
 │   ├── anygrasp_detection_node.py   ★ RGB+depth+mask → /grasp_candidates
+│   ├── grare_rerank.py              GraRe re-ranker, scores AnyGrasp's grasps before NMS. grasp_config.yaml grare: (off by default, T1.61)
 │   ├── anygrasp_node.py             older tracking-based variant
 │   ├── anygrasp2/                   old SDK: gsnet, lib_cxx, tracker .so + license/, MACHINE-LOCKED (§9)
 │   ├── anygrasp3/                   July 2026 SDK: gsnet .so + license/. grasp_config.yaml anygrasp_sdk picks
@@ -277,7 +278,7 @@ grasp/
 ├── segmentation/sam3_ros_node.py    SAM3 on RealSense only, HARDCODED prompt "box"  (see §6)
 ├── grasp_viz/                       grasp_viz.py (RViz markers) + rviz_config.rviz
 ├── tools/dummy_mask_publisher.py    CONSIDER DELETING: broken since the topic rename (NEXT_STEPS §2.3, T2.1)
-└── vendor/                          AnyGrasp SDK, MinkowskiEngine, MoveIt Task Constructor
+└── vendor/                          AnyGrasp SDK, MinkowskiEngine, MoveIt Task Constructor, GraRe, MobileSAM
 
 arm/arm_bringup/launch/arm_bringup.launch.py   driver + URDF + control + move_group. NEEDS REAL ARM.
                                                (was rm_mtc/launch/background.launch.py)
@@ -1279,3 +1280,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-10-20 | Claude Opus 5.5 + Dion | Topic table: the state machine now listens to both stop topics and publishes `STOPPED` (T1.38, branch `t1.38-estop-state-machine`). |
 | 2026-10-22 | Claude Opus 5.5 + Dion | Tree: `license` is now a link to `anygrasp2_license/` or `anygrasp3_license/` (T1.45). |
 | 2026-10-26 | Claude Opus 5.5 + Dion | Tree: one folder per AnyGrasp SDK, `anygrasp2/` and `anygrasp3/`, picked by `anygrasp_sdk` (T1.45). |
+| 2026-10-31 | Claude Opus 5.5 + Dion | Tree: `grare_rerank.py` and the vendored GraRe and MobileSAM (T1.61). |
