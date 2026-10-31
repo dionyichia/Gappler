@@ -20,6 +20,86 @@ file. Nothing here goes beyond those two sources. Where a fact is missing, a pla
 
 ---
 
+## 0. As delivered, 28 Oct 2026
+
+The talk was given on 28 Oct 2026. What was shown and said is in two files, and they win over this
+spec wherever the two differ:
+
+- Deck: `docs/interim_presentation/Gappler_Interim_2026-10-28_final.pptx` (54 slides, edited by hand
+  in PowerPoint after the `build/deck.js` v2 build, so a rebuild does not reproduce it).
+- Script: `docs/interim_presentation/Gappler_Interim_2026-10-28_final_script.docx` (spoken words per
+  slide and presenter).
+
+Sections A to F below are the pre-talk spec, kept as the design record. Their slide numbers are the
+spec's, not the deck's. The table maps one to the other.
+
+**Delivered structure.** 28 slides in the talk (27 content and section slides, then a thank-you
+slide), an appendix divider, then backup slides A1 to A23 (A6 over 3 slides). The spec had 18 core
+slides and A1 to A10. Part dividers sit at deck slides 2, 7 and 23.
+
+| Deck slide | Delivered headline | Presenter | Spec slide |
+|---|---|---|---|
+| 1 | Title: Gappler | Dion | 1 |
+| 2 | Why it matters: for older people, the hard part is getting there (1 in 4 aged 65+ by 2030, 1 in 5 fall each year) | Dion | new |
+| 3 | The big picture: robot starts in another room, finds the user, searches, checks the match, grasps, brings it back | Dion | 2 |
+| 4 | The objective: find, reach and grasp the object the user looked at (FAM-HRI and HiCo-Nav) | Dion | 3 |
+| 5 | The target system works in five phases | Zongzhe | 4 |
+| 6 | Our approach: open-source parts, plus what was missing | Sherman | 5 (reframed) |
+| 7 | Part 2 divider: results, phase by phase | | |
+| 8 to 11 | Phase 1: speech gives the word, gaze picks the object (one slide in four builds) | Dion | 6 |
+| 12 | Phase 2: a 3D map that closes within 12 mm | Sherman | 7 |
+| 13 | Phase 2: one link left to calibrate, and the graph depends on it | Sherman | 8 |
+| 14 | Phase 3: as the robot drives, it builds a memory of objects (five build steps) | Zongzhe | 9 |
+| 15 | Phase 3: built once from the drive, then asked for every new prompt (anchors, objects, links) | Zongzhe | new (script "9.5") |
+| 16 | Phase 3: three changes keep the graph accurate | Zongzhe | 10 |
+| 17 | Phase 3: the robot then asks its memory where to go | Zongzhe | 11 |
+| 18 | Phase 4: keypoints fail across cameras, CLIP picks the right box | Dion | 12 (first half) |
+| 19 | Phase 4: in the grasp loop, the arm goes for the box you looked at | Dion | 12 (second half) |
+| 20 | Phase 5: the real arm grasps on a spoken command | Dion | 13 |
+| 21 | Phase 5: AnyGrasp proposes grasps from one point cloud | Dion | 14a |
+| 22 | Phase 5: the grasps work at one spot, four problems limit the rest | Dion | 14b |
+| 23 | Part 3 divider: where we stand | | |
+| 24 | What was built: each of us built a working piece, four joins remain | Sherman | 15 |
+| 25 | Schedule: ahead on memory and gaze, behind on driving | Sherman | 16 |
+| 26 | Budget and compute: SGD 1,500 for compute | Zongzhe | 17 |
+| 27 | Next steps: drive to the object, orchestration layer, reclarification node, end-to-end testing | Zongzhe | 18 |
+| 28 | Thank you, questions | Zongzhe | |
+| 29 to 54 | Appendix divider, A1 to A23 | on demand | E (A1 to A10), A11 to A23 new |
+
+**What changed from the spec, in content.**
+
+- Opening (deck 2 to 4): an ageing-population motivation slide was added, and the big-picture story
+  is the robot coming from another room, finding the user, searching near them and checking the match
+  before grasping and returning the object.
+- Deck 6 replaced the spec's "inherited code that did not run" slide: each phase card shows the
+  open-source tools the papers used and what we added, and a band below names what no paper gives
+  (the gaze match, clear ownership, hardware tested one step at a time with two people present).
+- Phase 1 numbers spoken: right box in 60 of 61 frames at 1.4 to 2.4 m; 3 of 4 commands gave a
+  correct crop in the full replay, the miss from gaze accuracy (the mats at 1.5 m).
+- Phase 2: link 4 (base camera to LiDAR) was presented as measured but not calibrated, with the
+  calibration on a target and the LiDAR-over-image check as the next step.
+- Phase 3: the graph got a second slide on its structure (anchors, objects, the links between them,
+  built offline). The match radius result is unchanged (2.5 cm to 10 cm, duplicates 8 to 3, false
+  merges from 15 cm). Search reasoning: 20 of 22 test sentences.
+- Phase 4: split over two slides. Keypoints 0 of 15, CLIP 25 of 25. In the grasp loop: 266 of 268
+  with two boxes, 334 of 334 with three, keypoints wrong in all 114 frames. Identical boxes 6 of 12,
+  which motivates the glasses-to-robot link.
+- Phase 5: AnyGrasp at the ideal spot was quoted as 3 of 4 on the real arm (the miss closed just
+  short of the box), not the spec's 2 of 3. The four problems (one-sided view, reach at steep angles,
+  2 to 4 s late box pose, grasps near the edge) and the next steps (check reach first, more views,
+  fuse views, test 12 positions) are as on deck 22.
+- Schedule headline dropped "behind on calibration": it reads "behind on driving".
+- Budget was spoken as a "tentative submitted budget" of SGD 1,500 while the slide says approved
+  5 Oct 2026. The RTX 3090 (24 GB) used costs 1,100 to 1,500, new GPUs about 2,800, both over the
+  1,000 GPU line.
+- Next steps were spoken as four areas: navigate to the object and park within reach, one
+  orchestration layer, the reclarification node (at most three questions, never moves the robot),
+  end-to-end testing counted phase by phase.
+
+Section D's timings and section E's appendix list describe the plan, not the delivered talk.
+
+---
+
 ## A. Presentation overview
 
 | Item | Content |
@@ -1680,3 +1760,4 @@ do not exist yet.
 | 2026-10-24 | Claude (Opus 5.5) + Dion | Final pass before slide generation: "gate" wording removed (slides 7, 9, 10, 13), slide 12 script grammar fixed. |
 | 2026-10-26 | Claude (Opus 5.5) + Dion | Slide 18 rewritten (Dion): four steps in order (reliable grasp, drive and park within reach, explore until the gaze match, one orchestration layer), then the end-to-end trials. No dates, no two-week list. Slide 16 data gains M11 and M12, row count 97 of 188. Appendix A10 gains M11 and M12. |
 | 2026-10-26 | Claude (Opus 5.5) + Dion | Slide 14 split in two and reframed (Dion): 14a shows what AnyGrasp does and what works (2 of 3, the four fixes, the top grasp proposed in 49 of 75 frames) with the RViz GIF at the 21 cm stop point. 14b states the close-up view as three diagnosed challenges with options A to C, with the point cloud GIF. Slides 15 to 18 keep their numbers. Total now 20:25, Dion 8:00. |
+| 2026-10-28 | Claude (Opus 5.5) + Sherman | Talk delivered. New section 0 maps the 54-slide final deck (`interim_presentation/Gappler_Interim_2026-10-28_final.pptx`) and its script (`..._final_script.docx`) to this spec's slides, lists presenters and the content that changed (motivation slide, approach slide, Phase 3 structure slide, Phase 4 split, AnyGrasp 3 of 4, A11 to A23). Sections A to F kept as the pre-talk record. |

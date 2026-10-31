@@ -103,6 +103,13 @@ def main():
         start(["ros2", "run", "tf2_ros", "static_transform_publisher", "--y", "0.015",
                "--roll", "-1.5708", "--yaw", "-1.5708",
                "--frame-id", "camera_link", "--child-frame-id", "camera_color_optical_frame"])
+        # The camera's pose with the arm at HOME, where the bag was recorded. The node needs base_link's up
+        # to find the table (denoise_point_cloud.py, T1.60) and skips every frame without it. From the
+        # simulated arm's TF at HOME, 2026-10-28 (T1.51 replay, home.npz).
+        start(["ros2", "run", "tf2_ros", "static_transform_publisher",
+               "--x", "-0.31013", "--y", "-0.00497", "--z", "0.56847",
+               "--qx", "-0.383717", "--qy", "0.007619", "--qz", "0.923419", "--qw", "-0.000305",
+               "--frame-id", "base_link", "--child-frame-id", "camera_link"])
 
         t0 = time.time()
         hold("EXECUTING", PHASE_SEC)
@@ -126,7 +133,9 @@ def main():
             return len(ms), (max(top) if top else None)
 
         n_exec, top_exec = phase(t0, t1)
-        n_idle, top_idle = phase(t1, t2)
+        # A frame that started while EXECUTING can finish just after the switch. The node checks the
+        # state when a frame starts, so skip one frame's worth (about 0.4 s) before counting IDLE sets
+        n_idle, top_idle = phase(t1 + 1.0, t2)
         tops = [s for s in (top_exec, top_idle) if s is not None]
         det_ok = n_exec + n_idle > 0
         results.append(("PASS " if det_ok else "FAIL ", "grasp detection",

@@ -9,6 +9,9 @@ script and rebuilding (see "Build and check" at the end), never by hand in Power
 lost on the next rebuild. Slide content comes from
 `docs/INTERIM_PRESENTATION_SLIDE_CONTENT_2026-10.md`. This file covers only how slides look.
 
+**Delivered deck (2026-10-28):** `Gappler_Interim_2026-10-28_final.pptx` is what was presented. It was
+edited by hand after the v2 build, so `build/deck.js` no longer reproduces it.
+
 **How the style was chosen (2026-10-25):** Sherman compared five previews. He chose the 2WO deck's
 boxes and colours to split up the content, the Mary Barra deck's thin full-width tracker, and Apple
 keynote restraint on words. He rejected these:
