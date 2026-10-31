@@ -29,9 +29,6 @@
       # anygrasp_detection_node -> grasp_state_machine: the target as a box in base_link, for
       # MoveIt's planning scene (T1.48). moveit_msgs/CollisionObject, id grasp_target
       grasp_target_object: "/grasp/target_object"
-    # How many grasp candidates AnyGrasp publishes per frame.
-    # read by: anygrasp_node, anygrasp_detection_node
-    num_grasp_candidates: 5
     # Top of the table, in metres above the arm's base_link. The planner's "table" collision box
     # sits just under it, and the target box stands on it (T1.48). Measured 2026-10-13 (T1.24 3c):
     # 0.68 m from the floor, 0.12 m above the arm base. Was hard-coded at 0.195 m, 7.5 cm too high,
@@ -137,12 +134,14 @@ grasp_state_machine:
     # far back along the approach, then straight in. The MTC pick-and-place tutorial uses 0.10.
     pregrasp_distance_m: 0.10
     # T1.48: grasps tried per cycle. One that fails to plan is skipped, then the next is tried.
-    # Matches num_grasp_candidates. After this many, back to IDLE.
+    # After this many, back to IDLE. Set on its own since T1.51: AnyGrasp now sends every grasp
+    # that fits (about 28 a frame with the cone off), not the top 5.
     max_grasp_attempts: 5
     # T1.48: back to IDLE if no grasp locks within this time. Restarts after each failed plan.
     # The lower-ranked grasps can jump between frames and never lock: 86 s of silence on 2026-10-26.
-    # Locks seen that day took 3 to 6 s, once 17 s, so 25 leaves room.
-    lock_timeout_s: 25.0
+    # Locks seen that day took 3 to 6 s, once 17 s, so 25 left room. 60 while T1.51 is tested (Dion,
+    # 2026-10-29): the weaker grasps shuffle every frame and S4 may lock late. Back to 25 after.
+    lock_timeout_s: 60.0
     # Refuse a move to AnyGrasp's grasp if joint 4, 5 or 6 would turn further than this (T1.45).
     # A permanent safety limit, not a temporary guard (Dion, 2026-10-26).
     max_wrist_turn_deg: 90.0

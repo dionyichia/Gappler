@@ -26,8 +26,9 @@ from sensor_msgs.msg import CameraInfo, Image
 from sensor_msgs_py import point_cloud2
 from std_msgs.msg import String
 from gappler_common import config
-from anygrasp_to_grasp_frame import fingertip_position, fits_gripper, nearer_twin, to_grasp_frame
+from anygrasp_to_grasp_frame import fingertip_position, fits_gripper, to_grasp_frame
 from target_box import target_box
+from target_cloud import clean_target
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -68,7 +69,6 @@ TOPIC_MASK = TOPICS["wrist_camera_object_mask"]
 TOPIC_CAMERA_INFO = TOPICS["wrist_camera_info"]
 
 DEPTH_SCALE = CFG["wrist_camera"]["depth_scale_m"]  # metres per depth unit
-NUM_CANDIDATES = CFG["num_grasp_candidates"]
 
 # Wide lims (anygrasp2 only), SAM mask handles spatial filtering
 LIMS = CFG["workspace_limits_m"]
@@ -83,6 +83,8 @@ FIT = dict(max_width=CFG["max_object_width_m"], max_depth=CFG["max_grasp_depth_m
 # The target as a box for MoveIt's planning scene (T1.48, target_box.py)
 TABLE_TOP_Z = float(CFG["table_top_z_m"])
 TARGET_PAD = float(CFG["target_box_pad_m"])
+# The points are cleaned of mask spill first (T1.60), so the box's edge trim only has to drop noise
+TARGET_EDGE_PERCENTILE = 0.5
 
 
 class AnyGraspDetectionNode(Node):
@@ -199,17 +201,9 @@ class AnyGraspDetectionNode(Node):
     def rotation_to_quaternion(self, rot_matrix: np.ndarray):
         return Rotation.from_matrix(rot_matrix).as_quat()
 
-    def publish_target_box(self, points, header):
+    def publish_target_box(self, points, header, rot, t):
         """Measure the object as a box standing on the table and publish it in base_link."""
-        try:
-            # Latest, not the frame's stamp: the arm holds still while EXECUTING
-            tf = self.tf_buffer.lookup_transform("base_link", header.frame_id, rclpy.time.Time())
-        except tf2_ros.TransformException as e:
-            self.get_logger().warn(f"No transform for the target box: {e}", throttle_duration_sec=5.0)
-            return
-        t, q = tf.transform.translation, tf.transform.rotation
-        rot = Rotation.from_quat([q.x, q.y, q.z, q.w])
-        box = target_box(rot.apply(points) + [t.x, t.y, t.z], TABLE_TOP_Z, TARGET_PAD)
+        box = target_box(rot.apply(points) + t, TABLE_TOP_Z, TARGET_PAD, edge_percentile=TARGET_EDGE_PERCENTILE)
         if box is None:
             self.get_logger().warn("Target box: no object point above the table",
                                    throttle_duration_sec=5.0)
@@ -233,7 +227,8 @@ class AnyGraspDetectionNode(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = "camera_color_optical_frame"
 
-        for i in range(min(NUM_CANDIDATES, len(gg))):
+        # Every grasp that fits, best first. The state machine skips the ones that failed (T1.51)
+        for i in range(len(gg)):
             g = GraspCandidate()
             g.score = float(gg[i].score)
             g.width = float(gg[i].width)
@@ -245,9 +240,9 @@ class AnyGraspDetectionNode(Node):
             g.pose.position.y = float(t[1])
             g.pose.position.z = float(t[2])
 
-            # AnyGrasp's axes -> grasp_frame's, which moveToPose aims, then the twin that turns the
-            # wrist least (anygrasp_to_grasp_frame.py)
-            q = self.rotation_to_quaternion(nearer_twin(to_grasp_frame(gg[i].rotation_matrix)))
+            # AnyGrasp's axes -> grasp_frame's, which moveToPose aims. Either twin: the planner
+            # tries both and keeps the cheaper plan (mtc_planner.cpp approachGrasp, T1.51)
+            q = self.rotation_to_quaternion(to_grasp_frame(gg[i].rotation_matrix))
             g.pose.orientation.x = float(q[0])
             g.pose.orientation.y = float(q[1])
             g.pose.orientation.z = float(q[2])
@@ -285,25 +280,39 @@ class AnyGraspDetectionNode(Node):
             self.get_logger().warn("Combined mask empty, skipping frame")
             return
 
+        try:
+            # Latest, not the frame's stamp: the arm holds still while EXECUTING
+            tf = self.tf_buffer.lookup_transform("base_link", depth_msg.header.frame_id, rclpy.time.Time())
+        except tf2_ros.TransformException as e:
+            self.get_logger().warn(f"No camera transform, skipping frame: {e}", throttle_duration_sec=5.0)
+            return
+        q, tr = tf.transform.rotation, tf.transform.translation
+        rot = Rotation.from_quat([q.x, q.y, q.z, q.w])
+        # Drop the mask's spill onto the table (T1.60). The cleaned mask is the object everywhere below
+        object_mask, why = clean_target(points_full, combined_mask, rot.inv().apply([0.0, 0.0, 1.0]))
+        if object_mask is None:
+            self.get_logger().warn(f"Target cloud refused, skipping frame: {why}", throttle_duration_sec=5.0)
+            return
+
         # The object's points: fits_gripper and RViz use them with either SDK
-        points = points_full[combined_mask].astype(np.float32)
+        points = points_full[object_mask].astype(np.float32)
         # Stamped now, like the candidates (build_grasp_msg), so RViz can place a replayed bag's frames
         header = depth_msg.header
         header.stamp = self.get_clock().now().to_msg()
         self.points_pub.publish(point_cloud2.create_cloud_xyz32(header, points))
-        self.publish_target_box(points, header)
+        self.publish_target_box(points, header, rot, [tr.x, tr.y, tr.z])
 
         # Per-frame stateless detection
         try:
             if SDK == "anygrasp3":
                 # The scene near the object, so the collision check sees the table and neighbours.
                 # Points further than the margin cannot touch a gripper on the object, and the whole
-                # scene took 2.3 s a frame (T1.45). Grasps only on the SAM mask, approaching along
+                # scene took 2.3 s a frame (T1.45). Grasps only on the cleaned mask, approaching along
                 # the camera's view.
                 lo, hi = points.min(axis=0) - SCENE_MARGIN, points.max(axis=0) + SCENE_MARGIN
                 near = depth_mask & np.all((points_full >= lo) & (points_full <= hi), axis=2)
                 gg = self.detector.get_grasp(points_full[near].astype(np.float32), {
-                    "region_steering": sam_mask[near],
+                    "region_steering": object_mask[near],
                     "approach_steering": [0.0, 0.0, 1.0],
                     "approach_thresh": MAX_APPROACH_RAD,
                     "dense_grasp": False,
@@ -312,7 +321,7 @@ class AnyGraspDetectionNode(Node):
             else:
                 gg, _ = self.detector.get_grasp(
                     points,
-                    colors[combined_mask].astype(np.float32),
+                    colors[object_mask].astype(np.float32),
                     lims=LIMS,
                     apply_object_mask=True,
                     dense_grasp=False,
@@ -327,6 +336,7 @@ class AnyGraspDetectionNode(Node):
             return
 
         gg = gg.nms().sort_by_score()
+        found = len(gg)
         if SDK == "anygrasp2":  # anygrasp3 was steered to this cone already
             gg = gg[gg.rotation_matrices[:, 2, 0] >= MIN_APPROACH_COS]
             if len(gg) == 0:
@@ -347,7 +357,11 @@ class AnyGraspDetectionNode(Node):
 
         msg = self.build_grasp_msg(gg)
         self.grasp_pub.publish(msg)
-        self.get_logger().debug(f"Published {len(msg.grasps)} detection candidates")
+        # Each guard's drops, by stage tag (T1.51). A4 and A5 run inside the SDK on anygrasp3, so
+        # what they drop is never seen here: `found` is what is left after them
+        cone = "" if SDK == "anygrasp3" else f", [A4 cone] dropped {found - len(fit)}"
+        self.get_logger().info(f"{found} grasps after NMS{cone}, [A7 fit] dropped {len(fit) - len(gg)}, "
+                               f"published {len(msg.grasps)}. Target cloud {why}")
 
 
 # ---------------------------------------------------------------------------

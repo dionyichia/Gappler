@@ -1,4 +1,5 @@
 #include <atomic>
+#include <memory>
 #include <thread>
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose.hpp>
@@ -25,8 +26,9 @@ public:
     if (mtc_spin_thread_.joinable())
       mtc_spin_thread_.join();
   }
-  // Moves the gripper to grasp_pose (base_link): a collision-free path to pregrasp_distance_m
-  // back along the approach, then straight in (T1.48). Only the gripper may touch TARGET_ID.
+  // Moves the gripper to grasp_pose (base_link) or its 180 degree twin, whichever plans with less
+  // joint travel (T1.51): a collision-free path to pregrasp_distance_m back along the approach,
+  // then straight in (T1.48). Only the gripper may touch TARGET_ID.
   // Returns true on success, false on planning or execution failure.
   bool approachGrasp(const geometry_msgs::msg::Pose &grasp_pose);
 
@@ -65,6 +67,9 @@ private:
   const std::atomic<bool> &stopped_;
 
   bool refuseIfStopped(const char *what);
+  // One pose's plan: IK at the pre-grasp (P2), path and straight in (P3-P4), wrist turn (P6).
+  // Null if any fails. travel is the plan's joint change, summed over every joint and step, radians.
+  std::unique_ptr<Task> planApproach(const geometry_msgs::msg::Pose &grasp_pose, const char *name, double &travel);
 
   const std::string ARM_GROUP = "rm_group";
   // The target's id in the planning scene. The detector publishes it under this id too.
