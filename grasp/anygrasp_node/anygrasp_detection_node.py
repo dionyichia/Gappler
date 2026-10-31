@@ -10,6 +10,7 @@ Publishes top 5 grasp candidates to /grasp_candidates as GraspCandidateArray.
 import argparse
 import os
 import sys
+import time
 
 import numpy as np
 import rclpy
@@ -87,6 +88,8 @@ BOX = dict(top_percentile=CFG["target_box_top_percentile"], edge_percentile=CFG[
            table_gap_m=CFG["target_box_table_gap_m"], angle_step_deg=CFG["target_box_angle_step_deg"])
 # Removing table and stray pixels from the mask (T1.60, denoise_point_cloud.py): the denoise_* values
 DENOISE = {k.removeprefix("denoise_"): v for k, v in CFG.items() if k.startswith("denoise_")}
+# GraRe re-ranks the raw grasps before NMS (T1.61, grare_rerank.py)
+GRARE = CFG["grare"]
 
 
 class AnyGraspDetectionNode(Node):
@@ -116,6 +119,14 @@ class AnyGraspDetectionNode(Node):
             self.detector = AnyGrasp(cfgs)
             self.detector.load_net()
         self.get_logger().info(f"AnyGrasp detection model loaded ({SDK})")
+
+        # GraRe re-ranker (T1.61). Imported only when on: it needs torch and the GPU
+        self.reranker = None
+        if GRARE["enabled"]:
+            from grare_rerank import GraspReranker, demo_scene
+            self.reranker = GraspReranker(GRARE)
+            self.reranker.score(*demo_scene())  # warm-up: MobileSAM and CUDA load on the first call
+            self.get_logger().info("GraRe re-ranker loaded")
 
         # Latest mask cache — decoupled from RGB/depth sync
         self.latest_mask = None
@@ -337,6 +348,21 @@ class AnyGraspDetectionNode(Node):
             self.get_logger().warn("No grasps detected")
             return
 
+        # [A5b GraRe] its score replaces AnyGrasp's, so NMS keeps GraRe's best grasp in each patch (T1.61).
+        # A failure skips the frame: falling back to AnyGrasp's order would change the arm's choice unseen
+        grare = ""
+        if self.reranker is not None:
+            t0 = time.time()
+            K = np.array([[self.fx, 0, self.cx], [0, self.fy, self.cy], [0, 0, 1]], np.float32)
+            try:
+                q = self.reranker.score(gg.grasp_group_array, self.image_to_numpy(rgb_msg), points_full, depth_mask, K)
+            except Exception as e:
+                self.get_logger().warn(f"GraRe failed, skipping frame: {e}")
+                return
+            rank = int(np.sum(gg.scores > gg.scores[np.argmax(q)])) + 1
+            gg.grasp_group_array[:, 0] = q
+            grare = f" [A5b GraRe] {time.time() - t0:.2f} s, its first pick was AnyGrasp's number {rank}."
+
         gg = gg.nms().sort_by_score()
         found = len(gg)
         if SDK == "anygrasp2":  # anygrasp3 was steered to this cone already
@@ -363,7 +389,7 @@ class AnyGraspDetectionNode(Node):
         # what they drop is never seen here: `found` is what is left after them
         cone = "" if SDK == "anygrasp3" else f", [A4 cone] dropped {found - len(fit)}"
         self.get_logger().info(f"{found} grasps after NMS{cone}, [A7 fit] dropped {len(fit) - len(gg)}, "
-                               f"published {len(msg.grasps)}. Target cloud {why}")
+                               f"published {len(msg.grasps)}.{grare} Target cloud {why}")
 
 
 # ---------------------------------------------------------------------------

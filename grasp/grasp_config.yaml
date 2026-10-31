@@ -159,6 +159,35 @@ anygrasp_detection_node:
     # Refused if the kept surfaces are less than this share of what lies above the table.
     denoise_min_main_frac: 0.7
 
+    # T1.61: GraRe re-ranker (arXiv 2608.00946, grare_rerank.py). Scores every raw AnyGrasp grasp before
+    # NMS, and its score replaces AnyGrasp's. Offline its first pick held in 60 of 60 real frames, at about
+    # 1.2 s a frame (docs/dion_docs/local/experiments/T1.47_ideal_cloud/FINDINGS.md). Off until the
+    # plan-only arm session. Weights: grare_weights and mobile_sam_weights in shared/global_config.yaml.
+    # When on, /grasp_candidates carries GraRe's fused z-scores (about -3 to 5), not AnyGrasp's 0 to 1.
+    # Nothing reads the value as 0 to 1: the state machine ignores it, grasp_viz.py scales per frame.
+    grare:
+      enabled: false
+      # Weight of GraRe's score against AnyGrasp's, 0 to 1, fused as z-scores. 1 = GraRe's order only
+      # (the tested setting). 0 = AnyGrasp's order, with GraRe still loaded and run.
+      score_weight: 1.0
+      # Speedups. Each can be turned off alone to debug. All off = GraRe's own code, about 18 s a frame.
+      # Score only the first copy of each exact duplicate grasp (about half are copies). Exact.
+      skip_duplicates: true
+      # Give GraRe only the points that can sit near some grasp. Exact, saves little.
+      crop_cloud: true
+      # Neighbourhoods and their sampling on the GPU instead of a Python loop per grasp. 5 s to 1.2 s.
+      gpu_neighbourhoods: true
+      # Grasps scored per model batch. Lower it if the GPU runs out of memory.
+      batch_size: 512
+      # Grasps per GPU step when finding each grasp's neighbourhood (gpu_neighbourhoods). Higher is
+      # fewer steps but more GPU memory: each step holds chunk x scene points distances in float64.
+      neighbourhood_chunk: 128
+      # Number format each model runs in: float32, float16 or bfloat16. Lower is faster and uses less
+      # GPU memory, but changes the scores. float32 is the tested setting (T1 check). float16 and
+      # bfloat16 are untested here: rerun grasp/anygrasp_node/grare_rerank.py and the T1 check first.
+      model_precision: float32        # GraRe's scoring model
+      mobile_sam_precision: float32   # MobileSAM, the object mask under each grasp
+
 # grasp/grasp_viz/grasp_viz.py. Size of the gripper drawn in RViz, metres.
 grasp_visualizer:
   ros__parameters:
@@ -196,10 +225,17 @@ grasp_state_machine:
     # that fits (about 28 a frame with the cone off), not the top 5.
     max_grasp_attempts: 5
     # T1.48: back to IDLE if no grasp locks within this time. Restarts after each failed plan.
+    # Read by grasp_state_machine.cpp, and by bench/nodes/test_state_machine_sim.py, whose "never
+    # locks" check waits this long plus 15 s.
     # The lower-ranked grasps can jump between frames and never lock: 86 s of silence on 2026-10-26.
     # Locks seen that day took 3 to 6 s, once 17 s, so 25 left room. 60 while T1.51 is tested (Dion,
     # 2026-10-29): the weaker grasps shuffle every frame and S4 may lock late. Back to 25 after.
     lock_timeout_s: 60.0
+    # EXECUTING: back to IDLE if no grasp candidates arrive for this long (T1.37). Read by
+    # grasp_state_machine.cpp. Must be longer than one AnyGrasp frame: about 0.4 s alone, 2 to 3.5 s
+    # with GraRe on in the node (T1.61, 2026-10-31). 6 gives GraRe on room (Dion, 2026-10-31). With
+    # GraRe off it only waits longer before giving up on an empty stream.
+    candidate_timeout_s: 6.0
     # Refuse a move to AnyGrasp's grasp if joint 4, 5 or 6 would turn further than this (T1.45).
     # A permanent safety limit, not a temporary guard (Dion, 2026-10-26).
     max_wrist_turn_deg: 90.0

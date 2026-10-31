@@ -148,6 +148,7 @@ private:
     STABILITY_ROT_DEG = param("stability_rot_deg").as_double();
     MAX_GRASP_ATTEMPTS = static_cast<int>(param("max_grasp_attempts").as_int());
     LOCK_TIMEOUT_S = param("lock_timeout_s").as_double();
+    CANDIDATE_TIMEOUT_S = param("candidate_timeout_s").as_double();
 
     camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
         topic("wrist_camera_info"), 1,
@@ -661,18 +662,19 @@ private:
       return true;
     }
 
-    // --- Wait for a detection candidate (3s timeout) ---
+    // --- Wait for a detection candidate (candidate_timeout_s) ---
     grasp_interfaces::msg::GraspCandidateArray::SharedPtr msg;
     {
       std::unique_lock<std::mutex> lock(queue_mutex_);
-      bool got = queue_cv_.wait_for(lock, std::chrono::seconds(3),
+      bool got = queue_cv_.wait_for(lock, std::chrono::duration<double>(CANDIDATE_TIMEOUT_S),
                                     [this]
                                     { return !candidate_queue_.empty() || shutdown_ || stopped_; });
       if (shutdown_ || stopped_)
         return true;
       if (!got || candidate_queue_.empty())
       {
-        RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidates in 3 s, back to IDLE. The AnyGrasp node log says why (T1.37)");
+        RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidates in %.1f s, back to IDLE. The AnyGrasp node log says why (T1.37)",
+                    CANDIDATE_TIMEOUT_S);
         return true; // signal done, return to IDLE
       }
       // Drain stale candidates, keep latest
@@ -1140,6 +1142,7 @@ private:
   double STABILITY_ROT_DEG;
   int MAX_GRASP_ATTEMPTS; // grasps tried per cycle before giving up (T1.48)
   double LOCK_TIMEOUT_S;  // longest wait for a grasp to lock (T1.48)
+  double CANDIDATE_TIMEOUT_S; // longest wait for the next candidate list while EXECUTING (T1.37, T1.61)
 };
 
 // ===========================================================================

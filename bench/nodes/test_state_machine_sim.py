@@ -54,8 +54,12 @@ except ImportError as e:
     sys.exit(3)
 
 REPO = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO / "grasp/anygrasp_node"))
+sys.path[:0] = [str(REPO / "grasp/anygrasp_node"), str(REPO / "shared")]
 from anygrasp_to_grasp_frame import to_grasp_frame  # noqa: E402
+from gappler_common import config  # noqa: E402
+# The "never locks" check waits this long plus a margin, so it follows the config (grasp_config.yaml)
+LOCK_TIMEOUT_S = float(config("grasp", "grasp_state_machine")["lock_timeout_s"])
+LOCK_WAIT_S = LOCK_TIMEOUT_S + 15
 LOG = REPO / os.environ.get("BENCH_SM_LOG", "log/bench_state_machine.txt")
 JOINTS = [f"joint{i}" for i in range(1, 7)]
 HOME_MAIN = [0.0, 0.0, 0.7854, 0.0, 1.5708, 1.5708]      # mtc_planner.hpp HOME_JOINTS on main (CODE_AUDIT B4)
@@ -383,11 +387,11 @@ def main():
             n.cand_base.orientation = eef.rotation
             n.jitter = 0.05
             t_jit = time.time()
-            gave_up = n.spin_until(lambda: n.seen("IDLE", t_jit) and log_has(r"no grasp locked"), 40)
+            gave_up = n.spin_until(lambda: n.seen("IDLE", t_jit) and log_has(r"no grasp locked"), LOCK_WAIT_S)
             n.cand_base, n.jitter = None, 0.0
             if not check("a grasp that never locks -> EXECUTING gives up, back to IDLE", gave_up,
                          f"'no grasp locked' logged, IDLE after {time.time() - t_jit:.0f} s" if gave_up else
-                         "no 'no grasp locked' line and IDLE in 40 s (lock_timeout_s is 15)"):
+                         f"no 'no grasp locked' line and IDLE in {LOCK_WAIT_S:.0f} s (lock_timeout_s is {LOCK_TIMEOUT_S:.0f})"):
                 return
             t_again = time.time()
             n.request()
