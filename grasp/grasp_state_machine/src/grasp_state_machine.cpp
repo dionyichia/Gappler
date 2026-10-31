@@ -687,15 +687,19 @@ private:
     geometry_msgs::msg::Pose best_pose_cam;
     geometry_msgs::msg::Pose best_pose_base;
     bool found_valid = false;
+    // Each guard's drops this frame, logged by stage tag (T1.51)
+    int no_tf = 0, too_flat = 0, failed_before = 0;
     for (const auto &candidate : msg->grasps)
     {
       geometry_msgs::msg::Pose pose_base;
       if (!transformToBase(candidate.pose, pose_base))
+      {
+        ++no_tf;
         continue;
+      }
       if (approachAngleDeg(pose_base.orientation) < MIN_APPROACH_ANGLE_DEG)
       {
-        RCLCPP_DEBUG(this->get_logger(), "Candidate rejected: angle %.1f° < %.1f°",
-                     approachAngleDeg(pose_base.orientation), MIN_APPROACH_ANGLE_DEG);
+        ++too_flat;
         continue;
       }
       // A grasp that already failed to plan fails again: take the next one (T1.48). It used to
@@ -703,15 +707,22 @@ private:
       if (std::any_of(failed_poses_.begin(), failed_poses_.end(), [&](const geometry_msgs::msg::Pose &f)
                       { return transDist(f.position, pose_base.position) <= STABILITY_TRANS_MM &&
                                angleBetweenQuats(f.orientation, pose_base.orientation) <= STABILITY_ROT_DEG; }))
+      {
+        ++failed_before;
         continue;
+      }
       found_valid = true;
       best_pose_base = pose_base;
       break;
     }
+    if (no_tf + too_flat + failed_before > 0)
+      RCLCPP_INFO(this->get_logger(), "EXECUTING: of %zu candidates, [S1 TF] dropped %d, [S2 angle] %d (under %.0f deg), "
+                                      "[S3 failed before] %d",
+                  msg->grasps.size(), no_tf, too_flat, MIN_APPROACH_ANGLE_DEG, failed_before);
 
     if (!found_valid)
     {
-      RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidate passed approach angle check");
+      RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidate left after S1 to S3");
       resetStability();
       return false; // keep looping
     }

@@ -14,6 +14,11 @@ MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr &node, const std::atomic<bo
   step_settle_s_ = node_->get_parameter("step_settle_s").as_double();
   max_wrist_turn_deg_ = node_->get_parameter("max_wrist_turn_deg").as_double();
   pregrasp_distance_m_ = node_->get_parameter("pregrasp_distance_m").as_double();
+  plan_only_ = node_->get_parameter("plan_only").as_bool();
+  if (plan_only_)
+    RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] plan_only is on: grasps are planned and recorded, never executed");
+  solution_pub_ = node_->create_publisher<moveit_task_constructor_msgs::msg::Solution>(
+      "/grasp/planned_solution", rclcpp::QoS(10).transient_local());
   mtc_node_ = std::make_shared<rclcpp::Node>(
       "mtc_planner_node",
       rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true));
@@ -24,14 +29,68 @@ MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr &node, const std::atomic<bo
   move_group_ = std::make_shared<moveit::planning_interface::MoveGroupInterface>(mtc_node_, "rm_group");
 }
 
+// AnyGrasp's grasp and its twin, turned 180 deg about the approach, are the same grasp: the gripper
+// is symmetric (T1.33). Plans both and runs the one with less joint travel (T1.51, Dion 2026-10-28).
+// It replaced AnyGrasp's guess by closing direction (nearer_twin, 86c1026:grasp/anygrasp_node/anygrasp_to_grasp_frame.py).
+bool MtcPlanner::approachGrasp(const geometry_msgs::msg::Pose &grasp_pose)
+{
+  // The full target, logged before any check can fail, so a run can be replayed offline (T1.51).
+  // The other logs give the position only after IK succeeds and the orientation only on failure.
+  const auto &p = grasp_pose.position;
+  const auto &o = grasp_pose.orientation;
+  RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] approachGrasp target (base_link): x=%.4f y=%.4f z=%.4f q=(%.4f %.4f %.4f %.4f)",
+              p.x, p.y, p.z, o.x, o.y, o.z, o.w);
+  Eigen::Isometry3d grasp;
+  tf2::fromMsg(grasp_pose, grasp);
+  // grasp_frame's z is the approach (anygrasp_to_grasp_frame.py)
+  const auto twin_pose = tf2::toMsg(Eigen::Isometry3d(grasp * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ())));
+
+  std::unique_ptr<Task> best;
+  double best_travel = 0.0;
+  const char *best_name = "";
+  const std::pair<const char *, geometry_msgs::msg::Pose> twins[] = {{"as given", grasp_pose}, {"twin", twin_pose}};
+  for (const auto &[name, pose] : twins)
+  {
+    double travel;
+    auto task = planApproach(pose, name, travel);
+    if (task && (!best || travel < best_travel))
+    {
+      best = std::move(task);
+      best_travel = travel;
+      best_name = name;
+    }
+  }
+  if (!best)
+    return false;
+  RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] approachGrasp: running the %s grasp, joint travel %.2f rad",
+              best_name, best_travel);
+  if (refuseIfStopped("approachGrasp"))
+    return false;
+  if (plan_only_)
+  {
+    // Reported as a failed plan, so the state machine tries the next grasp and never closes
+    RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] approachGrasp: plan_only, planned and recorded, not executed");
+    return false;
+  }
+  RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] approachGrasp: executing...");
+  auto result = best->execute(*best->solutions().front());
+  if (result != moveit::core::MoveItErrorCode::SUCCESS)
+  {
+    RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] approachGrasp: execution failed, code %d", result.val);
+    return false;
+  }
+  return true;
+}
+
 // The standard MoveIt pick order (MTC pick-and-place tutorial), without the gripper stages: the
 // gripper is driven by rm_driver topics from the state machine, not by MoveIt.
 // The old single joint-space move bent the gripper's path into the box (CODE_AUDIT A4, T1.48).
-bool MtcPlanner::approachGrasp(const geometry_msgs::msg::Pose &grasp_pose)
+std::unique_ptr<Task> MtcPlanner::planApproach(const geometry_msgs::msg::Pose &grasp_pose, const char *name,
+                                               double &travel)
 {
-  Task task;
-  task.stages()->setName("approach_grasp");
-  task.loadRobotModel(mtc_node_);
+  auto task = std::make_unique<Task>();
+  task->stages()->setName("approach_grasp");
+  task->loadRobotModel(mtc_node_);
 
   // Searches for a path around everything in the planning scene, the target included
   auto path_planner = std::make_shared<solvers::PipelinePlanner>(mtc_node_, "ompl");
@@ -57,31 +116,31 @@ bool MtcPlanner::approachGrasp(const geometry_msgs::msg::Pose &grasp_pose)
   if (!pregrasp_state)
   {
     RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] approachGrasp: no current joint state");
-    return false;
+    return nullptr;
   }
   const auto *arm = pregrasp_state->getJointModelGroup(ARM_GROUP);
   if (!pregrasp_state->setFromIK(arm, pregrasp, "grasp_frame", 0.1))
   {
-    RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] approachGrasp: no IK for the pre-grasp %.2f m back",
-                 pregrasp_distance_m_);
-    return false;
+    RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] [P2 IK] %s: no IK for the pre-grasp %.2f m back",
+                 name, pregrasp_distance_m_);
+    return nullptr;
   }
   std::map<std::string, double> pregrasp_joints;
   for (const auto *joint : arm->getActiveJointModels())
     pregrasp_joints[joint->getName()] = pregrasp_state->getVariablePosition(joint->getFirstVariableIndex());
 
-  task.add(std::make_unique<stages::CurrentState>("current state"));
+  task->add(std::make_unique<stages::CurrentState>("current state"));
   {
     auto stage = std::make_unique<stages::MoveTo>("to pre-grasp", path_planner);
     stage->setGroup(ARM_GROUP);
     stage->setGoal(pregrasp_joints);
-    task.add(std::move(stage));
+    task->add(std::move(stage));
   }
   {
     // Only for the straight move: the arm links and the camera still may not touch the target
     auto stage = std::make_unique<stages::ModifyPlanningScene>("allow gripper contact");
     stage->allowCollisions(TARGET_ID, GRIPPER_LINKS, true);
-    task.add(std::move(stage));
+    task->add(std::move(stage));
   }
   {
     auto stage = std::make_unique<stages::MoveTo>("straight in", straight_planner);
@@ -91,58 +150,62 @@ bool MtcPlanner::approachGrasp(const geometry_msgs::msg::Pose &grasp_pose)
     goal.header.frame_id = "base_link";
     goal.pose = grasp_pose;
     stage->setGoal(goal);
-    task.add(std::move(stage));
+    task->add(std::move(stage));
   }
 
   try
   {
-    task.enableIntrospection(true);
-    task.init();
-    RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] Planning to grasp: x=%.3f y=%.3f z=%.3f, pre-grasp %.2f m back",
-                grasp_pose.position.x, grasp_pose.position.y, grasp_pose.position.z, pregrasp_distance_m_);
-    if (!task.plan(5))
+    task->enableIntrospection(true);
+    task->init();
+    RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] Planning to the %s grasp: x=%.3f y=%.3f z=%.3f, pre-grasp %.2f m back",
+                name, grasp_pose.position.x, grasp_pose.position.y, grasp_pose.position.z, pregrasp_distance_m_);
+    if (!task->plan(5))
     {
       std::ostringstream why;
-      task.explainFailure(why);
+      task->explainFailure(why);
       const auto &q = grasp_pose.orientation;
       RCLCPP_ERROR(node_->get_logger(),
-                   "[MtcPlanner] approachGrasp: planning failed, target q=(%.3f %.3f %.3f %.3f): %s",
-                   q.x, q.y, q.z, q.w, why.str().c_str());
-      return false;
+                   "[MtcPlanner] [P3-P4 plan] %s: planning failed, target q=(%.3f %.3f %.3f %.3f): %s",
+                   name, q.x, q.y, q.z, q.w, why.str().c_str());
+      return nullptr;
     }
-    // The planner takes any IK solution. A flipped wrist reaches the same pose with joint 4 and
-    // joint 6 turned about 180 degrees, and swung the gripper through the object before the
-    // target was in the scene (T1.45, 2026-10-26). Kept for good (Dion, 2026-10-26): no grasp here
-    // needs a turn that large. If refusals become common, look at why before raising the limit.
-    const auto &solution = *task.solutions().front();
-    const auto &start = solution.start()->scene()->getCurrentState();
-    const auto &end = solution.end()->scene()->getCurrentState();
-    for (const char *joint : {"joint4", "joint5", "joint6"})
-    {
-      double turn_deg = std::abs(end.getVariablePosition(joint) - start.getVariablePosition(joint)) * 180.0 / M_PI;
-      if (turn_deg > max_wrist_turn_deg_)
-      {
-        RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] approachGrasp: refused, %s would turn %.0f deg (limit %.0f)",
-                    joint, turn_deg, max_wrist_turn_deg_);
-        return false;
-      }
-    }
-    if (refuseIfStopped("approachGrasp"))
-      return false;
-    RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] approachGrasp: executing...");
-    auto result = task.execute(solution);
-    if (result != moveit::core::MoveItErrorCode::SUCCESS)
-    {
-      RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] approachGrasp: execution failed, code %d", result.val);
-      return false;
-    }
-    return true;
   }
   catch (const InitStageException &e)
   {
     RCLCPP_ERROR_STREAM(node_->get_logger(), "[MtcPlanner] approachGrasp: stage init failed: " << e);
-    return false;
+    return nullptr;
   }
+  // The plan the wrist check judges and the arm would run, recorded before the check so refused
+  // plans are kept too (T1.51). Both twins are published.
+  const auto &solution = *task->solutions().front();
+  moveit_task_constructor_msgs::msg::Solution plan_msg;
+  solution.toMsg(plan_msg, &task->introspection());
+  solution_pub_->publish(plan_msg);
+  travel = 0.0;
+  for (const auto &sub : plan_msg.sub_trajectory)
+  {
+    const auto &points = sub.trajectory.joint_trajectory.points;
+    for (size_t i = 1; i < points.size(); ++i)
+      for (size_t j = 0; j < points[i].positions.size(); ++j)
+        travel += std::abs(points[i].positions[j] - points[i - 1].positions[j]);
+  }
+  // The planner takes any IK solution. A flipped wrist reaches the same pose with joint 4 and
+  // joint 6 turned about 180 degrees, and swung the gripper through the object before the
+  // target was in the scene (T1.45, 2026-10-26). Kept for good (Dion, 2026-10-26): no grasp here
+  // needs a turn that large. If refusals become common, look at why before raising the limit.
+  const auto &start = solution.start()->scene()->getCurrentState();
+  const auto &end = solution.end()->scene()->getCurrentState();
+  for (const char *joint : {"joint4", "joint5", "joint6"})
+  {
+    double turn_deg = std::abs(end.getVariablePosition(joint) - start.getVariablePosition(joint)) * 180.0 / M_PI;
+    if (turn_deg > max_wrist_turn_deg_)
+    {
+      RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] [P6 wrist] %s: refused, %s would turn %.0f deg (limit %.0f)",
+                  name, joint, turn_deg, max_wrist_turn_deg_);
+      return nullptr;
+    }
+  }
+  return task;
 }
 
 bool MtcPlanner::addTarget(moveit_msgs::msg::CollisionObject target)

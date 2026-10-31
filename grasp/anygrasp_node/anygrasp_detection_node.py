@@ -26,7 +26,7 @@ from sensor_msgs.msg import CameraInfo, Image
 from sensor_msgs_py import point_cloud2
 from std_msgs.msg import String
 from gappler_common import config
-from anygrasp_to_grasp_frame import fingertip_position, fits_gripper, nearer_twin, to_grasp_frame
+from anygrasp_to_grasp_frame import fingertip_position, fits_gripper, to_grasp_frame
 from target_box import target_box
 from denoise_point_cloud import drop_table_and_stray_pixels
 
@@ -69,7 +69,6 @@ TOPIC_MASK = TOPICS["wrist_camera_object_mask"]
 TOPIC_CAMERA_INFO = TOPICS["wrist_camera_info"]
 
 DEPTH_SCALE = CFG["wrist_camera"]["depth_scale_m"]  # metres per depth unit
-NUM_CANDIDATES = CFG["num_grasp_candidates"]
 
 # Wide lims (anygrasp2 only), SAM mask handles spatial filtering
 LIMS = CFG["workspace_limits_m"]
@@ -230,7 +229,8 @@ class AnyGraspDetectionNode(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = "camera_color_optical_frame"
 
-        for i in range(min(NUM_CANDIDATES, len(gg))):
+        # Every grasp that fits, best first. The state machine skips the ones that failed (T1.51)
+        for i in range(len(gg)):
             g = GraspCandidate()
             g.score = float(gg[i].score)
             g.width = float(gg[i].width)
@@ -242,9 +242,9 @@ class AnyGraspDetectionNode(Node):
             g.pose.position.y = float(t[1])
             g.pose.position.z = float(t[2])
 
-            # AnyGrasp's axes -> grasp_frame's, which moveToPose aims, then the twin that turns the
-            # wrist least (anygrasp_to_grasp_frame.py)
-            q = self.rotation_to_quaternion(nearer_twin(to_grasp_frame(gg[i].rotation_matrix)))
+            # AnyGrasp's axes -> grasp_frame's, which moveToPose aims. Either twin: the planner
+            # tries both and keeps the cheaper plan (mtc_planner.cpp approachGrasp, T1.51)
+            q = self.rotation_to_quaternion(to_grasp_frame(gg[i].rotation_matrix))
             g.pose.orientation.x = float(q[0])
             g.pose.orientation.y = float(q[1])
             g.pose.orientation.z = float(q[2])
@@ -338,6 +338,7 @@ class AnyGraspDetectionNode(Node):
             return
 
         gg = gg.nms().sort_by_score()
+        found = len(gg)
         if SDK == "anygrasp2":  # anygrasp3 was steered to this cone already
             gg = gg[gg.rotation_matrices[:, 2, 0] >= MIN_APPROACH_COS]
             if len(gg) == 0:
@@ -358,7 +359,11 @@ class AnyGraspDetectionNode(Node):
 
         msg = self.build_grasp_msg(gg)
         self.grasp_pub.publish(msg)
-        self.get_logger().debug(f"Published {len(msg.grasps)} detection candidates")
+        # Each guard's drops, by stage tag (T1.51). A4 and A5 run inside the SDK on anygrasp3, so
+        # what they drop is never seen here: `found` is what is left after them
+        cone = "" if SDK == "anygrasp3" else f", [A4 cone] dropped {found - len(fit)}"
+        self.get_logger().info(f"{found} grasps after NMS{cone}, [A7 fit] dropped {len(fit) - len(gg)}, "
+                               f"published {len(msg.grasps)}. Target cloud {why}")
 
 
 # ---------------------------------------------------------------------------

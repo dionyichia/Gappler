@@ -40,7 +40,7 @@
     },
     "DEPTH_SCALE": {
       "CFG[\"wrist_camera\"][\"depth_scale_m\"]": [
-        "grasp/anygrasp_node/anygrasp_detection_node.py:69",
+        "grasp/anygrasp_node/anygrasp_detection_node.py:71",
         "grasp/tools/dummy_mask_publisher.py:37",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:42"
       ],
@@ -110,7 +110,7 @@
     "TOPICS": {
       "CFG[\"topics\"]": [
         "arm/estop/estop.py:37",
-        "grasp/anygrasp_node/anygrasp_detection_node.py:63",
+        "grasp/anygrasp_node/anygrasp_detection_node.py:65",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:61",
         "grasp/grasp_viz/grasp_viz.py:33",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:36",
@@ -138,7 +138,7 @@
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:41"
       ],
       "TOPICS[\"wrist_camera_info\"]": [
-        "grasp/anygrasp_node/anygrasp_detection_node.py:67",
+        "grasp/anygrasp_node/anygrasp_detection_node.py:69",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:40"
       ]
     },
@@ -158,7 +158,7 @@
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:40"
       ],
       "TOPICS[\"wrist_camera_aligned_depth\"]": [
-        "grasp/anygrasp_node/anygrasp_detection_node.py:65",
+        "grasp/anygrasp_node/anygrasp_detection_node.py:67",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:38"
       ]
     },
@@ -170,7 +170,7 @@
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:42"
       ],
       "TOPICS[\"wrist_camera_object_mask\"]": [
-        "grasp/anygrasp_node/anygrasp_detection_node.py:66",
+        "grasp/anygrasp_node/anygrasp_detection_node.py:68",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:39"
       ]
     },
@@ -179,7 +179,7 @@
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:39"
       ],
       "TOPICS[\"wrist_camera_color\"]": [
-        "grasp/anygrasp_node/anygrasp_detection_node.py:64",
+        "grasp/anygrasp_node/anygrasp_detection_node.py:66",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:37"
       ]
     }
@@ -354,10 +354,10 @@
       "arm/vendor/rm_gazebo/config/gazebo_65_6fb_description.urdf.xacro(urdf)",
       "arm/vendor/rm_gazebo/config/gazebo_65_description.urdf.xacro(urdf)",
       "arm/vendor/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)",
-      "grasp/anygrasp_node/anygrasp_detection_node.py:205",
-      "grasp/anygrasp_node/anygrasp_detection_node.py:218",
-      "grasp/grasp_state_machine/src/grasp_state_machine.cpp:476",
-      "grasp/grasp_state_machine/src/mtc_planner.cpp:54",
+      "grasp/anygrasp_node/anygrasp_detection_node.py:215",
+      "grasp/anygrasp_node/anygrasp_detection_node.py:287",
+      "grasp/grasp_state_machine/src/grasp_state_machine.cpp:477",
+      "grasp/grasp_state_machine/src/mtc_planner.cpp:150",
       "grasp/grasp_viz/grasp_viz.py:120",
       "grasp/grasp_viz/grasp_viz.py:152",
       "grasp/grasp_viz/grasp_viz.py:182",
@@ -388,10 +388,10 @@
     "camera_color_optical_frame": [
       "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:458",
       "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:467",
-      "grasp/anygrasp_node/anygrasp_detection_node.py:232",
+      "grasp/anygrasp_node/anygrasp_detection_node.py:230",
       "grasp/grasp_segmentation_client/test_grasp_segmentation_client.py:107",
       "grasp/grasp_segmentation_client/test_grasp_segmentation_client.py:83",
-      "grasp/grasp_state_machine/src/grasp_state_machine.cpp:409",
+      "grasp/grasp_state_machine/src/grasp_state_machine.cpp:410",
       "grasp/tools/dummy_mask_publisher.py:79",
       "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:168"
     ],
@@ -578,7 +578,7 @@
       "arm/vendor/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "03e63cf-dirty",
+  "git": "ff655ad-dirty",
   "launch_includes": [
     {
       "from": "arm/arm_bringup/launch/arm_bringup.launch.py",
@@ -1510,16 +1510,16 @@
       "nav/robot_slam/config/nav2_params.yaml:129"
     ],
     "anygrasp_sdk": [
-      "grasp/grasp_config.yaml:65"
+      "grasp/grasp_config.yaml:62"
     ],
     "approach_distance_m": [
       "nav/nav_config.yaml:39"
     ],
     "approach_step_final_m": [
-      "grasp/grasp_config.yaml:131"
+      "grasp/grasp_config.yaml:186"
     ],
     "approach_step_m": [
-      "grasp/grasp_config.yaml:128"
+      "grasp/grasp_config.yaml:183"
     ],
     "approach_velocity_scaling_dist": [
       "nav/robot_slam/config/nav2_params.yaml:53"
@@ -1586,13 +1586,13 @@
       "nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:126"
     ],
     "centroid_max_age_s": [
-      "grasp/grasp_config.yaml:147"
+      "grasp/grasp_config.yaml:214"
     ],
     "centroid_target_offset_x_px": [
-      "grasp/grasp_config.yaml:157"
+      "grasp/grasp_config.yaml:224"
     ],
     "centroid_target_offset_y_px": [
-      "grasp/grasp_config.yaml:158"
+      "grasp/grasp_config.yaml:225"
     ],
     "ceres_dogleg_type": [
       "nav/robot_slam/config/slam_toolbox.yaml:7",
@@ -1708,10 +1708,70 @@
       "aria/aria_config.yaml:108"
     ],
     "default_prompt": [
-      "grasp/grasp_config.yaml:48"
+      "grasp/grasp_config.yaml:45"
     ],
     "default_server_timeout": [
       "nav/robot_slam/config/nav2_params.yaml:16"
+    ],
+    "denoise_depth_noise_at_half_metre_m": [
+      "grasp/grasp_config.yaml:125"
+    ],
+    "denoise_depth_step_rel": [
+      "grasp/grasp_config.yaml:149"
+    ],
+    "denoise_mask_grow_px": [
+      "grasp/grasp_config.yaml:137"
+    ],
+    "denoise_max_table_rms_m": [
+      "grasp/grasp_config.yaml:144"
+    ],
+    "denoise_max_tilt_deg": [
+      "grasp/grasp_config.yaml:123"
+    ],
+    "denoise_merge_gap_m": [
+      "grasp/grasp_config.yaml:154"
+    ],
+    "denoise_min_kept_frac": [
+      "grasp/grasp_config.yaml:158"
+    ],
+    "denoise_min_main_frac": [
+      "grasp/grasp_config.yaml:160"
+    ],
+    "denoise_min_object_points": [
+      "grasp/grasp_config.yaml:156"
+    ],
+    "denoise_min_surface_pixels": [
+      "grasp/grasp_config.yaml:151"
+    ],
+    "denoise_min_table_points": [
+      "grasp/grasp_config.yaml:143"
+    ],
+    "denoise_ransac_iterations": [
+      "grasp/grasp_config.yaml:139"
+    ],
+    "denoise_ransac_sample_points": [
+      "grasp/grasp_config.yaml:140"
+    ],
+    "denoise_refine_passes": [
+      "grasp/grasp_config.yaml:141"
+    ],
+    "denoise_region_depth_m": [
+      "grasp/grasp_config.yaml:133"
+    ],
+    "denoise_region_margin_px": [
+      "grasp/grasp_config.yaml:135"
+    ],
+    "denoise_remove_band_sigmas": [
+      "grasp/grasp_config.yaml:146"
+    ],
+    "denoise_table_band_max_m": [
+      "grasp/grasp_config.yaml:131"
+    ],
+    "denoise_table_band_min_m": [
+      "grasp/grasp_config.yaml:130"
+    ],
+    "denoise_table_band_sigmas": [
+      "grasp/grasp_config.yaml:127"
     ],
     "depth": [
       "aria/aria_config.yaml:52"
@@ -1741,7 +1801,7 @@
       "aria/aria_config.yaml:93"
     ],
     "execute_depth_thresh_m": [
-      "grasp/grasp_config.yaml:135"
+      "grasp/grasp_config.yaml:190"
     ],
     "expected_planner_frequency": [
       "nav/robot_slam/config/nav2_params.yaml:133"
@@ -1759,19 +1819,19 @@
       "nav/robot_slam/config/nav2_params.yaml:195"
     ],
     "final_exec_thresh_m": [
-      "grasp/grasp_config.yaml:156"
+      "grasp/grasp_config.yaml:223"
     ],
     "finger_height_m": [
-      "grasp/grasp_config.yaml:98"
+      "grasp/grasp_config.yaml:95"
     ],
     "finger_length_m": [
-      "grasp/grasp_config.yaml:113"
+      "grasp/grasp_config.yaml:168"
     ],
     "finger_radius_m": [
-      "grasp/grasp_config.yaml:114"
+      "grasp/grasp_config.yaml:169"
     ],
     "fit_percentile": [
-      "grasp/grasp_config.yaml:102"
+      "grasp/grasp_config.yaml:99"
     ],
     "follow": [
       "arm/vendor/rm_control/src/rm_control.cpp:261"
@@ -1833,7 +1893,7 @@
       "grasp/grasp_config.yaml:19"
     ],
     "grasp_request_timeout_s": [
-      "grasp/grasp_config.yaml:151"
+      "grasp/grasp_config.yaml:218"
     ],
     "grasp_target": [
       "shared/global_config.yaml:47"
@@ -1891,6 +1951,9 @@
     ],
     "llm_model": [
       "aria/aria_config.yaml:81"
+    ],
+    "lock_timeout_s": [
+      "grasp/grasp_config.yaml:202"
     ],
     "lookahead_dist": [
       "nav/robot_slam/config/nav2_params.yaml:46"
@@ -2027,10 +2090,10 @@
       "nav/robot_slam/config/nav2_params.yaml:64"
     ],
     "max_approach_deg": [
-      "grasp/grasp_config.yaml:84"
+      "grasp/grasp_config.yaml:81"
     ],
     "max_approach_steps": [
-      "grasp/grasp_config.yaml:132"
+      "grasp/grasp_config.yaml:187"
     ],
     "max_buffer_s": [
       "aria/aria_config.yaml:88"
@@ -2039,17 +2102,17 @@
       "nav/robot_slam/config/nav2_params.yaml:199"
     ],
     "max_detections": [
-      "grasp/grasp_config.yaml:56",
+      "grasp/grasp_config.yaml:53",
       "shared_services/shared_services_config.yaml:13"
     ],
     "max_grasp_attempts": [
-      "grasp/grasp_config.yaml:141"
+      "grasp/grasp_config.yaml:197"
     ],
     "max_grasp_depth_m": [
-      "grasp/grasp_config.yaml:95"
+      "grasp/grasp_config.yaml:92"
     ],
     "max_gripper_width_m": [
-      "grasp/grasp_config.yaml:78"
+      "grasp/grasp_config.yaml:75"
     ],
     "max_its": [
       "nav/robot_slam/config/nav2_params.yaml:149"
@@ -2067,14 +2130,14 @@
       "nav/robot_slam/config/nav2_params.yaml:48"
     ],
     "max_object_width_m": [
-      "grasp/grasp_config.yaml:92"
+      "grasp/grasp_config.yaml:89"
     ],
     "max_obstacle_height": [
       "nav/robot_slam/config/nav2_params.yaml:92",
       "nav/robot_slam/config/nav2_params.yaml:97"
     ],
     "max_orient_step_deg": [
-      "grasp/grasp_config.yaml:160"
+      "grasp/grasp_config.yaml:227"
     ],
     "max_robot_pose_search_dist": [
       "nav/robot_slam/config/nav2_params.yaml:65"
@@ -2096,10 +2159,10 @@
       "nav/robot_slam/config/nav2_params.yaml:196"
     ],
     "max_wrist_turn_deg": [
-      "grasp/grasp_config.yaml:143"
+      "grasp/grasp_config.yaml:205"
     ],
     "min_approach_angle_deg": [
-      "grasp/grasp_config.yaml:159"
+      "grasp/grasp_config.yaml:226"
     ],
     "min_approach_linear_velocity": [
       "nav/robot_slam/config/nav2_params.yaml:52"
@@ -2119,7 +2182,7 @@
       "nav/robot_slam/config/nav2_params.yaml:172"
     ],
     "min_score": [
-      "grasp/grasp_config.yaml:55",
+      "grasp/grasp_config.yaml:52",
       "shared_services/shared_services_config.yaml:12"
     ],
     "min_theta_velocity_threshold": [
@@ -2173,9 +2236,6 @@
     "navigators": [
       "nav/robot_slam/config/nav2_params.yaml:17"
     ],
-    "num_grasp_candidates": [
-      "grasp/grasp_config.yaml:34"
-    ],
     "object_centroid_2d": [
       "shared/global_config.yaml:42"
     ],
@@ -2219,7 +2279,7 @@
       "nav/robot_slam/scripts/fastlivo_odom_bridge.py:230"
     ],
     "open_width_m": [
-      "grasp/grasp_config.yaml:115"
+      "grasp/grasp_config.yaml:170"
     ],
     "openvins_ws": [
       "shared/global_config.yaml:139"
@@ -2240,16 +2300,19 @@
       "nav/robot_slam/scripts/fastlivo_odom_bridge.py:232"
     ],
     "palm_length_m": [
-      "grasp/grasp_config.yaml:110"
+      "grasp/grasp_config.yaml:165"
     ],
     "palm_radius_m": [
-      "grasp/grasp_config.yaml:111"
+      "grasp/grasp_config.yaml:166"
     ],
     "pick_radius_px": [
       "aria/aria_config.yaml:59"
     ],
     "pipeline_state": [
       "grasp/grasp_config.yaml:21"
+    ],
+    "plan_only": [
+      "grasp/grasp_config.yaml:208"
     ],
     "planner_plugins": [
       "nav/robot_navigation/config/nav2_params.yaml:82",
@@ -2299,7 +2362,7 @@
       "aria/aria_config.yaml:44"
     ],
     "pregrasp_distance_m": [
-      "grasp/grasp_config.yaml:138"
+      "grasp/grasp_config.yaml:193"
     ],
     "progress_checker_plugin": [
       "nav/robot_navigation/config/nav2_params.yaml:14"
@@ -2465,10 +2528,10 @@
       "nav/robot_slam/config/slam_toolbox_localization.yaml:12"
     ],
     "scene_margin_m": [
-      "grasp/grasp_config.yaml:69"
+      "grasp/grasp_config.yaml:66"
     ],
     "segment_timeout_s": [
-      "grasp/grasp_config.yaml:51"
+      "grasp/grasp_config.yaml:48"
     ],
     "segmentation_segment": [
       "shared/global_config.yaml:90"
@@ -2517,13 +2580,13 @@
       "nav/simple_teleop/simple_teleop/teleop_node.py:40"
     ],
     "stability_n_frames": [
-      "grasp/grasp_config.yaml:164"
+      "grasp/grasp_config.yaml:231"
     ],
     "stability_rot_deg": [
-      "grasp/grasp_config.yaml:166"
+      "grasp/grasp_config.yaml:233"
     ],
     "stability_trans_mm": [
-      "grasp/grasp_config.yaml:165"
+      "grasp/grasp_config.yaml:232"
     ],
     "stack_size_to_use": [
       "nav/robot_slam/config/slam_toolbox.yaml:26",
@@ -2538,7 +2601,7 @@
       "nav/robot_slam/config/nav2_params.yaml:42"
     ],
     "step_settle_s": [
-      "grasp/grasp_config.yaml:155"
+      "grasp/grasp_config.yaml:222"
     ],
     "stop_keyword": [
       "aria/aria_config.yaml:94"
@@ -2551,10 +2614,22 @@
       "aria/aria_config.yaml:69"
     ],
     "table_top_z_m": [
-      "grasp/grasp_config.yaml:40"
+      "grasp/grasp_config.yaml:37"
+    ],
+    "target_box_angle_step_deg": [
+      "grasp/grasp_config.yaml:115"
+    ],
+    "target_box_edge_percentile": [
+      "grasp/grasp_config.yaml:106"
     ],
     "target_box_pad_m": [
-      "grasp/grasp_config.yaml:105"
+      "grasp/grasp_config.yaml:102"
+    ],
+    "target_box_table_gap_m": [
+      "grasp/grasp_config.yaml:112"
+    ],
+    "target_box_top_percentile": [
+      "grasp/grasp_config.yaml:109"
     ],
     "tcp_addr": [
       "nav/vendor/base/xpkg_comm/src/ROS_INF/ros2_interface.cpp:121"
@@ -2738,10 +2813,10 @@
       "nav/robot_slam/config/nav2_params.yaml:74"
     ],
     "use_simple_execute": [
-      "grasp/grasp_config.yaml:161"
+      "grasp/grasp_config.yaml:228"
     ],
     "use_slerp_execute": [
-      "grasp/grasp_config.yaml:162"
+      "grasp/grasp_config.yaml:229"
     ],
     "use_velocity_scaled_lookahead_dist": [
       "nav/robot_slam/config/nav2_params.yaml:51"
@@ -2769,7 +2844,7 @@
       "nav/robot_slam/config/nav2_params.yaml:76"
     ],
     "workspace_limits_m": [
-      "grasp/grasp_config.yaml:72"
+      "grasp/grasp_config.yaml:69"
     ],
     "wrist_camera_aligned_depth": [
       "shared/global_config.yaml:30"
@@ -3170,7 +3245,7 @@
       "publishers": [],
       "subscribers": [
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:165",
-        "grasp/anygrasp_node/anygrasp_detection_node.py:138",
+        "grasp/anygrasp_node/anygrasp_detection_node.py:143",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:108",
         "grasp/tools/dummy_mask_publisher.py:48",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:86"
@@ -3189,9 +3264,9 @@
       "publishers": [],
       "subscribers": [
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:143",
-        "grasp/anygrasp_node/anygrasp_detection_node.py:94",
+        "grasp/anygrasp_node/anygrasp_detection_node.py:99",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:104",
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:151",
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:152",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:53"
       ],
       "types": [
@@ -3208,7 +3283,7 @@
       "publishers": [],
       "subscribers": [
         "aria/aria_app/services/object_recognition/object_recognition_pipeline.py:164",
-        "grasp/anygrasp_node/anygrasp_detection_node.py:137",
+        "grasp/anygrasp_node/anygrasp_detection_node.py:142",
         "grasp/grasp_segmentation_client/grasp_segmentation_client.py:107",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:85"
       ],
@@ -3229,7 +3304,7 @@
         "grasp/tools/dummy_mask_publisher.py:45"
       ],
       "subscribers": [
-        "grasp/anygrasp_node/anygrasp_detection_node.py:117",
+        "grasp/anygrasp_node/anygrasp_detection_node.py:122",
         "grasp/grasp_viz/grasp_viz.py:59",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:80"
       ],
@@ -3306,7 +3381,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "grasp/anygrasp_node/anygrasp_detection_node.py:126"
+        "grasp/anygrasp_node/anygrasp_detection_node.py:131"
       ],
       "subscribers": [],
       "types": [
@@ -3425,6 +3500,19 @@
         "nav/nav_config.yaml:27"
       ]
     },
+    "/grasp/planned_solution": {
+      "n_publishers": 1,
+      "n_subscribers": 0,
+      "owned": true,
+      "publishers": [
+        "grasp/grasp_state_machine/src/mtc_planner.cpp:20"
+      ],
+      "subscribers": [],
+      "types": [
+        "moveit_task_constructor_msgs/Solution"
+      ],
+      "yaml_refs": []
+    },
     "/grasp/target": {
       "n_publishers": 1,
       "n_subscribers": 2,
@@ -3448,10 +3536,10 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "grasp/anygrasp_node/anygrasp_detection_node.py:130"
+        "grasp/anygrasp_node/anygrasp_detection_node.py:135"
       ],
       "subscribers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:160"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:161"
       ],
       "types": [
         "moveit_msgs/CollisionObject"
@@ -3480,11 +3568,11 @@
       "n_subscribers": 2,
       "owned": true,
       "publishers": [
-        "grasp/anygrasp_node/anygrasp_detection_node.py:122",
+        "grasp/anygrasp_node/anygrasp_detection_node.py:127",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:75"
       ],
       "subscribers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:155",
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:156",
         "grasp/grasp_viz/grasp_viz.py:53"
       ],
       "types": [
@@ -3531,7 +3619,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:202"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:203"
       ],
       "subscribers": [
         "nav/object_approach/object_approach_node.py:93"
@@ -3585,7 +3673,7 @@
         "aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py:98"
       ],
       "subscribers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:172"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:173"
       ],
       "types": [
         "std_msgs/Empty"
@@ -3602,7 +3690,7 @@
         "aria/aria_app/services/aria_device/stream/audio_streaming_pipeline.py:83"
       ],
       "subscribers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:176",
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:177",
         "launchers/grasp_orchestrator.py:68",
         "nav/object_approach/object_approach_node.py:96"
       ],
@@ -3618,7 +3706,7 @@
       "n_subscribers": 1,
       "owned": true,
       "publishers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:200"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:201"
       ],
       "subscribers": [
         "nav/goto_glasses/goto_glasses.py:73"
@@ -3658,7 +3746,7 @@
         "grasp/tools/dummy_mask_publisher.py:46"
       ],
       "subscribers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:168"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:169"
       ],
       "types": [
         "geometry_msgs/PointStamped"
@@ -3718,10 +3806,10 @@
       "n_subscribers": 3,
       "owned": true,
       "publishers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:197"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:198"
       ],
       "subscribers": [
-        "grasp/anygrasp_node/anygrasp_detection_node.py:100",
+        "grasp/anygrasp_node/anygrasp_detection_node.py:105",
         "grasp/grasp_viz/grasp_viz.py:71",
         "grasp/tools/to-delete-after-anygrasp-is-up/anygrasp_node.py:59"
       ],
@@ -3798,7 +3886,7 @@
         "arm/estop/estop.py:45"
       ],
       "subscribers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:182"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:183"
       ],
       "types": [
         "rm_ros_interfaces/Stop"
@@ -3947,7 +4035,7 @@
         "arm/estop/estop.py:46"
       ],
       "subscribers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:187"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:188"
       ],
       "types": [
         "std_msgs/Empty"
@@ -4122,7 +4210,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:194"
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:195"
       ],
       "subscribers": [],
       "types": [
@@ -4137,7 +4225,7 @@
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:191",
+        "grasp/grasp_state_machine/src/grasp_state_machine.cpp:192",
         "launchers/grasp_orchestrator.py:54"
       ],
       "subscribers": [],
