@@ -93,7 +93,7 @@ def audio_worker(
     whisper_model = WhisperModel(
         AudioStreamingPipelineConfig.TRANSCRIPTION_MODEL,
         device=Settings.DEVICE,
-        compute_type="int8",
+        compute_type=AudioStreamingPipelineConfig.WHISPER_PRECISION,
     )
     llm_extractor = LLMPromptExtractor(AudioStreamingPipelineConfig.LLM_MODEL)
     sample_rate = AudioStreamingPipelineConfig.WHISPER_SAMPLE_RATE
@@ -134,7 +134,7 @@ def audio_worker(
             language="en",
             word_timestamps=True,
             vad_filter=True,
-            beam_size=5,
+            beam_size=AudioStreamingPipelineConfig.WHISPER_BEAM_SIZE,
             condition_on_previous_text=False,
         )
         # Materialise the generator so segments can be reused.

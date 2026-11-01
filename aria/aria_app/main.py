@@ -97,12 +97,14 @@ class ProcessPipelineBuilder:
         self._process_manager.add_process(target=generate_mask)
         return self
 
-    def add_feature_matching(self) -> "ProcessPipelineBuilder":
-        """Add feature matching process to the pipeline."""
-        from services.feature_matching import feature_matching
-
-        self._process_manager.add_process(target=feature_matching)
-        return self
+    # Parked (T0.22): SuperPoint + LightGlue, replaced by CLIP embeddings in T8.7. The code is in
+    # archive/feature_matching.py, see its header to bring it back.
+    # def add_feature_matching(self) -> "ProcessPipelineBuilder":
+    #     """Add feature matching process to the pipeline."""
+    #     from services.feature_matching import feature_matching
+    #
+    #     self._process_manager.add_process(target=feature_matching)
+    #     return self
 
     def build_common_pipeline(self) -> "ProcessPipelineBuilder":
         """Build the common processing pipeline used by both modes."""

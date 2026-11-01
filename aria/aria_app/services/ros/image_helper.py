@@ -3,15 +3,18 @@ from typing import Optional
 
 import cv2
 import numpy as np
+from gappler_common import config
 
 logger = logging.getLogger(__name__)
+
+JPEG_QUALITY = config("aria")["jpeg_quality"]  # aria/aria_config.yaml
 
 
 class ImageHelper:
     @staticmethod
     def compress_image(image: np.ndarray) -> tuple[bool, bytes]:
         success, compressed = cv2.imencode(
-            ".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, 80]
+            ".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY]
         )
         return success, compressed.tobytes()
 

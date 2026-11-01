@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from cv2 import aruco
 from cv2.typing import MatLike
+from gappler_common import config
 
 # dictionary = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
 
@@ -13,7 +14,7 @@ dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
 detector_params = cv2.aruco.DetectorParameters()
 detector = cv2.aruco.ArucoDetector(dictionary, detector_params)
 
-TAG_SIZE = 0.1325  # your marker's physical size in metres
+TAG_SIZE = config("aria", "aruco")["marker_side_m"]  # aria/aria_config.yaml
 
 # 3D corners of the tag in the tag's own coordinate frame
 # Order: top-left, top-right, bottom-right, bottom-left

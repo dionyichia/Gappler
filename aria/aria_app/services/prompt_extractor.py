@@ -30,7 +30,7 @@ class LLMPromptExtractor:
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(
-            model_name, dtype=torch.float16
+            model_name, dtype=getattr(torch, AudioStreamingPipelineConfig.LLM_PRECISION)
         )
         self.model.to(self.device)
         self.model.eval()
@@ -86,7 +86,7 @@ Examples:
             outputs = self.model.generate(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
-                max_new_tokens=20,
+                max_new_tokens=AudioStreamingPipelineConfig.LLM_MAX_NEW_TOKENS,
                 do_sample=False,
                 pad_token_id=self.tokenizer.eos_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
@@ -132,7 +132,7 @@ Examples:
 
 # Usage
 if __name__ == "__main__":
-    extractor = LLMPromptExtractor("Qwen/Qwen2.5-0.5B-Instruct")
+    extractor = LLMPromptExtractor(AudioStreamingPipelineConfig.LLM_MODEL)
 
     test_phrases = [
         "Grab that apple for me",

@@ -246,7 +246,6 @@ aria/aria_app/
     │       ├── audio_streaming_pipeline.py   mic → Whisper → LLM → /aria/audio/prompt
     │       └── pose_streaming_pipeline.py    stereo SLAM cams + IMU → ROS (for OpenVINS)
     ├── object_recognition/    ← SAM3 wrapper + the big cross-camera pipeline
-    ├── feature_matching.py    ← SuperPoint + LightGlue, Aria view ↔ RealSense view
     ├── pose_fusion/           ← OpenVINS VIO + ArUco corrections → /aria/fused_pose
     ├── arcuo.py               ← ArUco marker detection (note: filename is misspelled)
     ├── prompt_extractor.py    ← the LLM. Qwen2.5-0.5B, phrase → object noun
@@ -1279,3 +1278,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-10-20 | Claude Opus 5.5 + Dion | Topic table: the state machine now listens to both stop topics and publishes `STOPPED` (T1.38, branch `t1.38-estop-state-machine`). |
 | 2026-10-22 | Claude Opus 5.5 + Dion | Tree: `license` is now a link to `anygrasp2_license/` or `anygrasp3_license/` (T1.45). |
 | 2026-10-26 | Claude Opus 5.5 + Dion | Tree: one folder per AnyGrasp SDK, `anygrasp2/` and `anygrasp3/`, picked by `anygrasp_sdk` (T1.45). |
+| 2026-11-01 | Claude Opus 5.5 + Dion | Tree: `feature_matching.py` (SuperPoint + LightGlue) parked in `aria_app/archive/` (T0.22). |
