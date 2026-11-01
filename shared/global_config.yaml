@@ -47,8 +47,8 @@
       grasp_target: "/grasp/target"
 
       # ---- From the glasses (aria)
-      # aria: image_streaming_pipeline -> aria: feature_matching, object_recognition_pipeline,
-      #   visualizer. nav: aria_image_relay
+      # aria: image_streaming_pipeline -> aria: object_recognition_pipeline, visualizer.
+      #   nav: aria_image_relay
       rgb_camera_undistorted: "/aria/rgb_camera/undistorted"
       # aria: audio_streaming_pipeline -> aria: object_recognition_pipeline.
       #   nav: object_approach_node, goto_glasses
@@ -95,6 +95,15 @@
     # read by: aria: aria_segmentation_client (reference crop). grasp: grasp_segmentation_client
     #   (wrist crops, cross_camera_mask_match_rule.py). aria: object_recognition_pipeline (replay view)
     crop_margin_px: 20
+    # Picking which wrist mask is the glasses' object, from CLIP cosine scores (T8.7, T8.9a,
+    # grasp/grasp_segmentation_client/cross_camera_mask_match_rule.py). Pairs below min_cosine are
+    # never a match. Pairs within tie_cosine of the best one count as a tie (gaze decides between
+    # glasses masks, a wrist tie gives no match). From the T8.7 offline tests: box pairs scored 0.60
+    # to 0.64, background 0.45 to 0.52 (bench-runs/2026-10-20-labbox-t8.7-mask-embedding-offline.txt).
+    # Raise min_cosine if other objects match, lower it if the box is missed. Tune on the box.
+    # read by: grasp: grasp_segmentation_client. aria: object_recognition_pipeline (replay view)
+    mask_match_min_cosine: 0.56
+    mask_match_tie_cosine: 0.01
 
     # ---- Cameras. Two RealSense cameras are plugged into the box, so every launch names the one
     # ---- it wants by serial (T1.13). Without a serial the driver opens whichever it finds first.
@@ -108,6 +117,17 @@
       # read by: grasp: anygrasp_node, anygrasp_detection_node, dummy_mask_publisher.
       #          aria: object_recognition_pipeline
       depth_scale_m: 0.001
+      # A colour frame and a depth frame count as one pair if their stamps differ by less than
+      # this, seconds. The driver gives each aligned depth frame its colour frame's own stamp:
+      # 598 of 598 pairs 0.0 ms apart live (2026-10-13) and 147 of 147 in the wrist bag
+      # (2026-11-01). Frames come every 66.7 ms (15 fps, quickstart_terminals.sh). Any value
+      # well under half a frame (33 ms) pairs the same frames. Small, so a colour frame whose depth
+      # was dropped is skipped instead of paired with a neighbour's depth. If the fps goes up,
+      # keep it under half the new frame period. Was 0.05 in anygrasp_detection_node and
+      # object_recognition_pipeline, 0.01 in grasp_segmentation_client: same pairs at 15 fps.
+      # read by: grasp: anygrasp_detection_node, grasp_segmentation_client.
+      #          aria: object_recognition_pipeline
+      rgb_depth_sync_slop_s: 0.01
     mobile_base_camera:
       # read by: nav/robot_slam/launch/base_camera.launch.py
       serial: "146222253541"   # D455, driver discovery + Sherman confirmation 2026-10-06
@@ -130,6 +150,12 @@
       d455_bottom_screw: {"parent": "robot_base_link", "child": "base_d455_bottom_screw_frame", "xyz_m": [0.208, 0.0, 0.528], "rpy_rad": [0.0, 0.0, 0.0]}
       # Both approach and return clearances reference the D455 depth origin,
       # looked up from TF. No independent camera-offset scalar is maintained.
+
+    # quickstart_terminals.sh waits this long after sourcing each pane's env file before typing
+    # the commands you send yourself, so they land on a fresh prompt and not in the middle of the
+    # env's output. Raise it if a typed command shows up garbled or half-run.
+    # read by: quickstart_terminals.sh
+    quickstart_typed_command_delay_s: 3
 
     # ---- Paths outside the repo. Read through gappler_common.path(). Each can be overridden per
     # ---- machine with GAPPLER_<NAME>, for example GAPPLER_MAP_DIR for map_dir.

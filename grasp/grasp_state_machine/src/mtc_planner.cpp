@@ -6,6 +6,8 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <cmath>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 
 // Stores pointer to state machine node from which it originated
 MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr &node, const std::atomic<bool> &stopped)
@@ -14,6 +16,21 @@ MtcPlanner::MtcPlanner(const rclcpp::Node::SharedPtr &node, const std::atomic<bo
   step_settle_s_ = node_->get_parameter("step_settle_s").as_double();
   max_wrist_turn_deg_ = node_->get_parameter("max_wrist_turn_deg").as_double();
   pregrasp_distance_m_ = node_->get_parameter("pregrasp_distance_m").as_double();
+  max_velocity_scale_ = node_->get_parameter("arm_max_velocity_scale").as_double();
+  max_acceleration_scale_ = node_->get_parameter("arm_max_acceleration_scale").as_double();
+  straight_in_step_m_ = node_->get_parameter("straight_in_step_m").as_double();
+  approach_plan_solutions_ = static_cast<int>(node_->get_parameter("approach_plan_solutions").as_int());
+  pregrasp_ik_timeout_s_ = node_->get_parameter("pregrasp_ik_timeout_s").as_double();
+  joint_state_wait_s_ = node_->get_parameter("joint_state_wait_s").as_double();
+  cartesian_step_eef_step_m_ = node_->get_parameter("cartesian_step_eef_step_m").as_double();
+  cartesian_step_jump_threshold_ = node_->get_parameter("cartesian_step_jump_threshold").as_double();
+  cartesian_step_min_fraction_ = node_->get_parameter("cartesian_step_min_fraction").as_double();
+  const auto home = node_->get_parameter("home_joints_rad").as_double_array();
+  if (home.size() != 6)
+    throw std::runtime_error("home_joints_rad needs 6 values, joint1 to joint6");
+  for (size_t i = 0; i < home.size(); ++i)
+    HOME_JOINTS["joint" + std::to_string(i + 1)] = home[i];
+  RETURN_JOINTS = HOME_JOINTS;
   mtc_node_ = std::make_shared<rclcpp::Node>(
       "mtc_planner_node",
       rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true));
@@ -35,13 +52,13 @@ bool MtcPlanner::approachGrasp(const geometry_msgs::msg::Pose &grasp_pose)
 
   // Searches for a path around everything in the planning scene, the target included
   auto path_planner = std::make_shared<solvers::PipelinePlanner>(mtc_node_, "ompl");
-  path_planner->setMaxVelocityScalingFactor(0.1);
-  path_planner->setMaxAccelerationScalingFactor(0.1);
+  path_planner->setMaxVelocityScalingFactor(max_velocity_scale_);
+  path_planner->setMaxAccelerationScalingFactor(max_acceleration_scale_);
   // Moves grasp_frame in a straight line, keeping its orientation
   auto straight_planner = std::make_shared<solvers::CartesianPath>();
-  straight_planner->setMaxVelocityScalingFactor(0.1);
-  straight_planner->setMaxAccelerationScalingFactor(0.1);
-  straight_planner->setStepSize(0.005);
+  straight_planner->setMaxVelocityScalingFactor(max_velocity_scale_);
+  straight_planner->setMaxAccelerationScalingFactor(max_acceleration_scale_);
+  straight_planner->setStepSize(straight_in_step_m_);
   straight_planner->setMinFraction(1.0); // all of the straight line, or no move
 
   // Pre-grasp: back from the grasp along its approach. grasp_frame's -z is the approach
@@ -53,14 +70,14 @@ bool MtcPlanner::approachGrasp(const geometry_msgs::msg::Pose &grasp_pose)
   // IK for the pre-grasp, starting from the current joints, so it lands on the nearest solution.
   // Given the pose, OMPL samples IK from random seeds and chose joint6 a full 360 deg turn away
   // in the simulated arm, the same as the flipped wrist on the real arm (2026-10-26)
-  auto pregrasp_state = move_group_->getCurrentState(1.0);
+  auto pregrasp_state = move_group_->getCurrentState(joint_state_wait_s_);
   if (!pregrasp_state)
   {
     RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] approachGrasp: no current joint state");
     return false;
   }
   const auto *arm = pregrasp_state->getJointModelGroup(ARM_GROUP);
-  if (!pregrasp_state->setFromIK(arm, pregrasp, "grasp_frame", 0.1))
+  if (!pregrasp_state->setFromIK(arm, pregrasp, "grasp_frame", pregrasp_ik_timeout_s_))
   {
     RCLCPP_ERROR(node_->get_logger(), "[MtcPlanner] approachGrasp: no IK for the pre-grasp %.2f m back",
                  pregrasp_distance_m_);
@@ -100,7 +117,7 @@ bool MtcPlanner::approachGrasp(const geometry_msgs::msg::Pose &grasp_pose)
     task.init();
     RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] Planning to grasp: x=%.3f y=%.3f z=%.3f, pre-grasp %.2f m back",
                 grasp_pose.position.x, grasp_pose.position.y, grasp_pose.position.z, pregrasp_distance_m_);
-    if (!task.plan(5))
+    if (!task.plan(approach_plan_solutions_))
     {
       std::ostringstream why;
       task.explainFailure(why);
@@ -189,8 +206,8 @@ void MtcPlanner::removeTarget()
 bool MtcPlanner::moveToHome()
 {
   move_group_->setJointValueTarget(HOME_JOINTS);
-  move_group_->setMaxVelocityScalingFactor(0.1);
-  move_group_->setMaxAccelerationScalingFactor(0.1);
+  move_group_->setMaxVelocityScalingFactor(max_velocity_scale_);
+  move_group_->setMaxAccelerationScalingFactor(max_acceleration_scale_);
   moveit::planning_interface::MoveGroupInterface::Plan plan;
   if (move_group_->plan(plan) != moveit::core::MoveItErrorCode::SUCCESS)
   {
@@ -206,8 +223,8 @@ bool MtcPlanner::moveToHome()
 bool MtcPlanner::moveToReturn()
 {
   move_group_->setJointValueTarget(RETURN_JOINTS);
-  move_group_->setMaxVelocityScalingFactor(0.1);
-  move_group_->setMaxAccelerationScalingFactor(0.1);
+  move_group_->setMaxVelocityScalingFactor(max_velocity_scale_);
+  move_group_->setMaxAccelerationScalingFactor(max_acceleration_scale_);
   moveit::planning_interface::MoveGroupInterface::Plan plan;
   if (move_group_->plan(plan) != moveit::core::MoveItErrorCode::SUCCESS)
   {
@@ -227,16 +244,17 @@ geometry_msgs::msg::PoseStamped MtcPlanner::getCurrentPose()
 
 bool MtcPlanner::moveCartesianStep(const geometry_msgs::msg::Pose &goal_pose_base)
 {
-  move_group_->setMaxVelocityScalingFactor(0.1);
-  move_group_->setMaxAccelerationScalingFactor(0.1);
+  move_group_->setMaxVelocityScalingFactor(max_velocity_scale_);
+  move_group_->setMaxAccelerationScalingFactor(max_acceleration_scale_);
   // The real arm is still settling just after the last step reports done, so a step planned from
   // that moment starts off where the arm really is and MoveIt rejects it (T1.24 3c, 2026-10-13)
   std::this_thread::sleep_for(std::chrono::duration<double>(step_settle_s_));
   move_group_->setStartStateToCurrentState();
   std::vector<geometry_msgs::msg::Pose> waypoints = {goal_pose_base};
   moveit_msgs::msg::RobotTrajectory trajectory;
-  double fraction = move_group_->computeCartesianPath(waypoints, 0.01, 5.0, trajectory);
-  if (fraction < 0.8)
+  double fraction = move_group_->computeCartesianPath(waypoints, cartesian_step_eef_step_m_,
+                                                     cartesian_step_jump_threshold_, trajectory);
+  if (fraction < cartesian_step_min_fraction_)
   {
     RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] Cartesian path only %.0f%% complete", fraction * 100);
     return false;
@@ -245,7 +263,7 @@ bool MtcPlanner::moveCartesianStep(const geometry_msgs::msg::Pose &goal_pose_bas
   rt.setRobotTrajectoryMsg(*move_group_->getCurrentState(), trajectory);
 
   trajectory_processing::TimeOptimalTrajectoryGeneration totg;
-  if (!totg.computeTimeStamps(rt, 0.1, 0.1))
+  if (!totg.computeTimeStamps(rt, max_velocity_scale_, max_acceleration_scale_))
   {
     RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] Time parameterization failed");
     return false;

@@ -105,7 +105,7 @@ class Sam3:
     which goes once aria calls this service. Imported inside, so tests with a stand-in need
     neither torch nor SAM 3."""
 
-    def __init__(self, weights: str, min_score: float):
+    def __init__(self, weights: str, min_score: float, precision: str):
         import os
 
         import sam3
@@ -116,13 +116,14 @@ class Sam3:
         if torch.cuda.is_available():
             torch.backends.cuda.matmul.allow_tf32 = True
             torch.backends.cudnn.allow_tf32 = True
-            # bfloat16 to reduce GPU memory, switched on once and never off. A `with` block per
-            # call was tried (2026-10-13) and cost ~30% throughput: leaving the block clears
+            # model_precision (shared_services_config.yaml), switched on once and never off. A
+            # `with` block per call was tried (2026-10-13) and cost ~30% throughput: leaving it clears
             # autocast's cache of bfloat16 weights, so every call re-casts all of SAM 3.
             # ponytail: autocast is per thread. It covers the main thread, where rclpy.spin runs
             # every callback. With a MultiThreadedExecutor, enter it in each worker thread too.
             # It also applies to anything else this process runs on the GPU.
-            torch.autocast("cuda", dtype=torch.bfloat16).__enter__()
+            if precision != "float32":
+                torch.autocast("cuda", dtype=getattr(torch, precision)).__enter__()
         bpe = os.path.join(os.path.dirname(sam3.__file__), "assets/bpe_simple_vocab_16e6.txt.gz")
         model = build_sam3_image_model(bpe_path=bpe, load_from_HF=False, checkpoint_path=weights)
         # SAM 3 drops results below its own threshold, so a request can raise min_score above this
@@ -161,7 +162,7 @@ class SegmentationService(Node):
         self.max_detections = CFG["max_detections"] if max_detections is None else max_detections
         if model is None:
             self.get_logger().info("Loading SAM 3...")
-            model = Sam3(str(path("sam3_weights")), self.min_score)
+            model = Sam3(str(path("sam3_weights")), self.min_score, CFG["model_precision"])
         self.model = model
         self.create_service(Segment, SERVICE_NAME, self.segment)
         self.get_logger().info(f"Segmentation service ready on {SERVICE_NAME}")

@@ -281,7 +281,9 @@ The `CameraFeed` / `RealSenseFrame` pattern at the top is worth internalising: a
 latest-value holder returning a defensive `.copy()` plus a monotonic ID; callers compare IDs to
 detect new data. Same latest-wins philosophy as `_put_latest`, but in-process.
 
-### 2.6 `feature_matching.py`
+### 2.6 `feature_matching.py` (parked in `aria_app/archive/` since T0.22)
+
+Parked 2026-11-01 (T0.22): CLIP embeddings replaced it in T8.7. Skip this section unless it comes back.
 
 SuperPoint extracts keypoints, LightGlue matches them. `match_frames` returns `keypoints0`,
 `keypoints1`, `matches`.
@@ -436,7 +438,7 @@ consumer's gate are mutually exclusive, so no candidate can ever be used. CODE_A
 
 The arm-motion API: `approachGrasp` (was `moveToPose` until T1.48: OMPL to a pre-grasp 0.10 m
 back, then straight in), `moveToHome`, `moveToReturn`, `getCurrentPose`, `moveCartesianStep`, and the
-target box in MoveIt's scene: `addTarget`, `attachTarget`, `removeTarget` (T1.48, CODE_AUDIT A4). Plus `HOME_JOINTS` (`:46-53`) and `RETURN_JOINTS` (`:56-63`).
+target box in MoveIt's scene: `addTarget`, `attachTarget`, `removeTarget` (T1.48, CODE_AUDIT A4). Plus `HOME_JOINTS` and `RETURN_JOINTS`, filled from `home_joints_rad` in `grasp/grasp_config.yaml` since T0.22.
 Home is joint3 45°, joint5 and joint6 90°, the rest zero — the pose the arm swings to unprompted at
 launch, never validated on hardware (§8.1).
 
@@ -448,8 +450,8 @@ helpers on the first pass.
 | Part | Line | What to notice |
 |---|---|---|
 | Constructor | 130-162 | ROS wiring only, no motion |
-| `workerLoop` start | 590-596 | sleep 2 s, `addSafetyWalls()`, `homeWithRetry()`, *then* IDLE. Motion before any input |
-| `homeWithRetry` | 342-351 | retries every second, forever |
+| `workerLoop` start | 590-596 | sleep `startup_wait_s` (5 s, `grasp_config.yaml`, T0.22), `addSafetyWalls()`, `homeWithRetry()`, *then* IDLE. Motion before any input |
+| `homeWithRetry` | 342-351 | retries every `move_retry_s` (1 s), forever |
 | IDLE wait | 613-620 | waits on `has_centroid_` alone; the staleness check is commented out at `:634-639` |
 | `selectingStep` | 367-421 | pixel error → lateral offset → 4 cm step. **Both TF calls guarded** |
 | Transition | 643-648 | when depth < `EXECUTE_DEPTH_THRESH_M` (0.18 m) |
@@ -513,3 +515,4 @@ might that `return` at `:721` have been put there deliberately? ⬜ **open**
 | 2026-10-13 | Claude Opus 5.5 + Dion | Audio paragraph: note that `T2.10` replaced the once-a-second loop with one publish per finished sentence. |
 | 2026-10-20 | Claude Opus 5.5 + Dion | §3.1: the state machine also listens to E, S and R (T1.38). |
 | 2026-10-26 | Claude Opus 5.5 + Dion | §3.4: `moveToPose` is now `approachGrasp`, plus the target box functions (T1.48). |
+| 2026-11-01 | Claude Opus 5.5 + Dion | §2.6 marked parked. §3.4 home pose, start-up wait and retry gap now come from `grasp_config.yaml` (T0.22). |

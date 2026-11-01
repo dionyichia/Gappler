@@ -52,6 +52,7 @@ grasp_segmentation_client:
     # Sent with every request. The service's defaults are looser, for the glasses (T2.9). The grasp
     # client keeps the values it was tested with. Only masks above min_score reach the CLIP match
     # against the glasses reference (T8.9a), so a looser cutoff gives CLIP more to choose from.
+    # min_score: SAM 3's own score, 0 to 1. max_detections: the most masks per reply, best first.
     min_score: 0.5
     max_detections: 5
 
@@ -76,6 +77,14 @@ anygrasp_detection_node:
     # (T1.17, bench-runs/2026-10-14-labbox-t1.17-anygrasp-live.txt). It does not check the
     # object fits in 71 mm (T1.32).
     max_gripper_width_m: 0.10
+    # AnyGrasp's gripper model height, metres (the SDK's gripper_height). The SDK demo uses 0.03.
+    # 0.04 since the node was written (2026-04-07, f24c6d5), reason not recorded. [unverified]
+    # what the SDK does with it. Every AnyGrasp result so far used 0.04.
+    anygrasp_gripper_height_m: 0.04
+    # Depth readings beyond this are dropped before AnyGrasp sees the cloud, metres. The object
+    # sits about 0.2 to 0.5 m from the wrist camera, and D4xx noise grows with depth squared.
+    # grasp/tools/wrist_camera_bag_to_point_cloud_page.py shows the same cut.
+    max_point_depth_m: 1.5
     # Keep grasps whose approach is within this angle of the wrist camera's view axis. anygrasp3
     # is steered to it (approach_steering), anygrasp2 drops the rest afterwards. A first-run safety
     # limit (Dion, 2026-10-14). Without it, most grasps came from the side or across the top face.
@@ -165,12 +174,17 @@ anygrasp_detection_node:
 # grasp/grasp_viz/grasp_viz.py. Size of the gripper drawn in RViz, metres.
 grasp_visualizer:
   ros__parameters:
-    palm_length_m: 0.04     # cylinder along the approach axis
+    # Drawing only: nothing here changes a grasp. Make the drawing match the real gripper so you
+    # can judge in RViz whether the fingers would sit on the object.
+    # Palm: a cylinder along the approach axis, behind the fingers. Length and radius.
+    palm_length_m: 0.04
     palm_radius_m: 0.006
     # Measured gripper (Dion, 2026-10-14): a U 50 mm deep inside, opens 71 mm (T1.34).
-    finger_length_m: 0.05   # finger bar length along the approach axis, back from the tips
+    # Fingers: bars along the approach axis, back from the tips. Length and radius.
+    finger_length_m: 0.05
     finger_radius_m: 0.005
-    open_width_m: 0.071     # distance between the fingers, gripper open
+    # Distance between the fingers, gripper open.
+    open_width_m: 0.071
 
 # grasp/grasp_state_machine/src/grasp_state_machine.cpp. These move the real arm: change them
 # only with a plan to test on the simulated arm first (./bench/state_machine_sim.sh).
@@ -218,14 +232,119 @@ grasp_state_machine:
     # With no wait the second approach step was rejected, "start point deviates from current
     # robot state more than 0.01" (T1.24 3c, 2026-10-13)
     step_settle_s: 0.5
+    # Read at start-up but used nowhere (T0.22, 2026-11-01). Consider deleting it and its line in
+    # grasp_state_machine.cpp. Changing it does nothing.
     final_exec_thresh_m: 0.25
-    centroid_target_offset_x_px: 55.0   # where the object should sit in the image, from centre
+    # Each approach step steers so the object's centroid lands this many pixels right (x) and
+    # down (y) of the image centre, not on it. The wrist camera sits beside the gripper, so the
+    # gripper is centred on the object when the object is off the image centre. 55 since
+    # 2026-04-08, [unverified] by measurement. If the gripper ends left or right of the object,
+    # change x. If it ends high or low, change y. Simple path only (use_simple_execute true).
+    centroid_target_offset_x_px: 55.0
     centroid_target_offset_y_px: 0.0
-    min_approach_angle_deg: 20.0     # reject grasps flatter than this, in degrees above horizontal
-    max_orient_step_deg: 5.0         # slerp step size, used when use_slerp_execute is true
-    use_simple_execute: true         # grasp from the centroid, not AnyGrasp (CHANNEL_CONTRACT B-1, T1.17)
+    # Which grasp the arm goes for. true: the simple path, straight at the SAM centroid, AnyGrasp
+    # not used (CHANNEL_CONTRACT B-1, T1.17). false: the AnyGrasp path, the candidates from
+    # anygrasp_detection_node, checked with the values from min_approach_angle_deg down.
+    use_simple_execute: true
+    # AnyGrasp path only. Grasps that approach flatter than this angle above horizontal are
+    # skipped, degrees. 90 is straight down, 0 is from the side. Lower it to allow side grasps.
+    min_approach_angle_deg: 20.0
+    # AnyGrasp path only. true turns the gripper toward the grasp's orientation by at most
+    # max_orient_step_deg per move instead of going straight to it. Off since it was written,
+    # [unverified] on the real arm.
     use_slerp_execute: false
-    # A grasp is stable when the last N candidates agree within these limits
+    max_orient_step_deg: 5.0
+    # AnyGrasp path only. A grasp locks (the arm commits to it) once the last stability_n_frames
+    # candidates all sit within stability_trans_mm and stability_rot_deg of the first of them.
+    # The same two limits decide whether a new grasp is one that already failed to plan (T1.48).
+    # More frames or tighter limits: a surer grasp, but it locks later or never (lock_timeout_s).
     stability_n_frames: 5
     stability_trans_mm: 15.0
     stability_rot_deg: 10.0
+
+    # ---- Arm motion (T0.22). read by: grasp_state_machine/src/mtc_planner.cpp
+    # Share of the arm's top joint speed and acceleration (0 to 1) that every move may use: the
+    # path to the pre-grasp, the straight-in move, each approach step, home and return. 0.1 since
+    # the first real-arm moves (T1.7, 2026-09-23). Raise in small steps, simulated arm first, with
+    # someone at the e-stop: a faster arm has less time to be stopped before it hits something.
+    arm_max_velocity_scale: 0.1
+    arm_max_acceleration_scale: 0.1
+    # Home pose, joint1 to joint6, radians (0, 0, 45, 0, 90, 90 degrees). Also the return pose
+    # for now. Validated on the real arm 2026-09-23 (T1.7): every joint reached within 0.02 deg,
+    # tool in front of the arm's base (adb5466:docs/dion_docs/T1.7_FIRST_COMMANDED_MOTION.md).
+    # Every move starts and ends here. Change only with a plan to check it at the robot.
+    home_joints_rad: [0.0, 0.0, 0.7854, 0.0, 1.5708, 1.5708]
+    # Longest wait for the arm's joint state when planning the pre-grasp, seconds. The joint
+    # state comes many times a second, so this only runs out if rm_driver is down.
+    joint_state_wait_s: 1.0
+    # Time the IK solver gets to find the pre-grasp joints, seconds. It starts from the current
+    # joints, so it lands on the nearest solution (T1.48). Raise it if "no IK for the pre-grasp"
+    # shows up for a grasp that looks reachable.
+    pregrasp_ik_timeout_s: 0.1
+    # The approach plan (MTC) stops after finding this many complete plans and runs the best.
+    # More gives a better path, but planning takes longer.
+    approach_plan_solutions: 5
+    # The straight-in move from the pre-grasp to the grasp is checked every this many metres
+    # along its line. Smaller catches thinner collisions, slower to plan.
+    straight_in_step_m: 0.005
+    # Each approach step (moveCartesianStep) is planned as a straight line, checked every
+    # cartesian_step_eef_step_m metres. cartesian_step_jump_threshold stops a plan where a joint
+    # jumps much more than the average step (MoveIt's check, 0 turns it off). The step runs only
+    # if at least cartesian_step_min_fraction of the line could be planned. Values from before
+    # the 2026-09-21 reorg, [unverified] why. With 0.8 a step can stop at 80 % of its 2 cm.
+    cartesian_step_eef_step_m: 0.01
+    cartesian_step_jump_threshold: 5.0
+    cartesian_step_min_fraction: 0.8
+
+    # ---- Waits (T0.22). read by: grasp_state_machine/src/grasp_state_machine.cpp
+    # EXECUTING: back to IDLE if no grasp candidates arrive for this long (T1.37). Must be longer
+    # than one AnyGrasp frame: about 0.4 s. T1.61 raises it for GraRe (2 to 3.5 s a frame).
+    candidate_timeout_s: 3.0
+    # At start-up, wait this long before adding the safety walls and homing, so move_group and
+    # its planning scene are up. Was 2 s, then 3 s more inside the wall code: one wait now, same
+    # total. If the log shows "Waiting for planning scene to accept safety walls" many times,
+    # raise it.
+    startup_wait_s: 5.0
+    # Retry gap while the planning scene has not taken the safety walls yet.
+    safety_wall_retry_s: 0.5
+    # Retry gap after homing or the return move fails to plan. The arm does not move while it
+    # waits, so the gap only sets how often the log repeats.
+    move_retry_s: 1.0
+    # Longest wait for a TF transform (camera to arm) during each approach step, seconds. Short,
+    # because TF is up to date by then and a stale step is worse than a skipped one.
+    tf_wait_step_s: 0.1
+    # Longest wait for the TF transform of an AnyGrasp grasp into base_link, seconds. Longer than
+    # the step wait: it runs once per grasp.
+    tf_wait_grasp_s: 1.0
+
+    # ---- Gripper (T0.22). read by: grasp_state_machine.cpp (openGripper, closeGripper)
+    # The commands are sent without waiting for the gripper (block false), then the node waits
+    # this long so the gripper has finished before the arm moves on, seconds.
+    gripper_move_wait_s: 1.5
+    # Open position, 1 to 1000 for 0 to 70 mm (rm_ros_interfaces Gripperset.msg). 1000 = fully
+    # open, which the 6 cm side of the test box needs.
+    gripper_open_position: 1000
+    # Closing: speed 1 to 1000 (no unit), force 1 to 1000 for up to 1.5 kg of grip
+    # (Gripperpick.msg). The gripper stops when it feels this force. 150 is about 0.23 kg: enough
+    # for the cardboard test box, raise for heavier objects, lower if it crushes soft ones.
+    gripper_close_speed: 200
+    gripper_close_force: 150
+
+    # ---- Safety walls (T0.22). read by: grasp_state_machine.cpp (addSafetyWalls)
+    # Boxes added to MoveIt's planning scene at start-up so no plan leaves the safe space. In
+    # base_link (the arm's base), metres. Each wall stands on z = 0.
+    # Thickness of every wall and of the table box.
+    safety_wall_thickness_m: 0.03
+    # The front wall's inner face: no plan goes past this x.
+    safety_wall_front_x_m: 0.15
+    # The two side walls' inner faces sit at +y and -y of this: no plan goes wider.
+    safety_wall_side_y_m: 0.30
+    # Length of each side wall along x, centred on the arm's base.
+    safety_wall_side_length_m: 2.0
+    # Height of all three walls.
+    safety_wall_height_m: 1.0
+    # The table box: a slab whose top is table_top_z_m (above), centred at this x, this wide in
+    # x and y. It spans x from -0.80 to -0.05. CODE_AUDIT J6: these numbers want measuring at the
+    # robot [unverified]. Values from before the 2026-09-21 reorg.
+    table_box_centre_x_m: -0.425
+    table_box_size_m: 0.75

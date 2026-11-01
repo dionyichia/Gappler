@@ -31,9 +31,9 @@ from gappler_common import config
 
 logger = logging.getLogger(__name__)
 
-# From the T8.7 offline tests: box pairs scored 0.60 to 0.64, background 0.45 to 0.52. Tune on the box.
-TAU = 0.56
-DELTA = 0.01
+# shared/global_config.yaml mask_match_*: why each value, and how to tune them
+TAU = config()["mask_match_min_cosine"]
+DELTA = config()["mask_match_tie_cosine"]
 CROP_MARGIN_PX = config()["crop_margin_px"]
 
 
@@ -73,24 +73,26 @@ def pick_mask_pair(
 
 
 if __name__ == "__main__":
+    # Scores are set around the configured TAU and DELTA, so the checks hold after a retune
+    t, d = TAU, DELTA
     first = lambda gs: gs[0]
     last = lambda gs: gs[-1]
     # Clear winner.
-    assert pick_mask_pair(np.array([[0.62, 0.50], [0.48, 0.51]]), first) == (0, 0)
+    assert pick_mask_pair(np.array([[t + 0.06, t - 0.06], [t - 0.08, t - 0.05]]), first) == (0, 0)
     # Nothing reaches tau.
-    assert pick_mask_pair(np.array([[0.55, 0.40]]), first) is None
+    assert pick_mask_pair(np.array([[t - 0.01, t - 0.16]]), first) is None
     # Two glasses masks tie with different wrist masks: gaze decides.
-    tie = np.array([[0.620, 0.40], [0.40, 0.615]])
+    tie = np.array([[t + 0.06, t - 0.16], [t - 0.16, t + 0.06 - d / 2]])
     assert pick_mask_pair(tie, first) == (0, 0)
     assert pick_mask_pair(tie, last) == (1, 1)
     # Just outside delta: gaze is not asked to choose between them.
-    assert pick_mask_pair(np.array([[0.63, 0.40], [0.40, 0.61]]), last) == (0, 0)
+    assert pick_mask_pair(np.array([[t + 0.07, t - 0.16], [t - 0.16, t + 0.07 - 2 * d]]), last) == (0, 0)
     # One glasses mask matches two wrist masks equally: wrist tie.
-    assert pick_mask_pair(np.array([[0.60, 0.605]]), first) is None
+    assert pick_mask_pair(np.array([[t + 0.04, t + 0.04 + d / 2]]), first) is None
     # Gaze far from every candidate: no match, even with a clear winner.
-    assert pick_mask_pair(np.array([[0.62, 0.50]]), lambda gs: None) is None
+    assert pick_mask_pair(np.array([[t + 0.06, t - 0.06]]), lambda gs: None) is None
     # Exactly tau passes.
-    assert pick_mask_pair(np.array([[0.56]]), first) == (0, 0)
+    assert pick_mask_pair(np.array([[t]]), first) == (0, 0)
     # Crop: box plus margin, cut at the image edge. Empty mask: None.
     img = np.arange(60 * 40).reshape(40, 60)
     m = np.zeros((40, 60), bool)

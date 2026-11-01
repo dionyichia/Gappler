@@ -56,6 +56,16 @@ private:
   double step_settle_s_; // step_settle_s in grasp/grasp_config.yaml
   double max_wrist_turn_deg_; // max_wrist_turn_deg in grasp/grasp_config.yaml
   double pregrasp_distance_m_; // pregrasp_distance_m in grasp/grasp_config.yaml
+  // The rest are the keys of the same name in grasp/grasp_config.yaml, section grasp_state_machine
+  double max_velocity_scale_;           // arm_max_velocity_scale, every move
+  double max_acceleration_scale_;       // arm_max_acceleration_scale, every move
+  double straight_in_step_m_;           // straight_in_step_m
+  int approach_plan_solutions_;         // approach_plan_solutions
+  double pregrasp_ik_timeout_s_;        // pregrasp_ik_timeout_s
+  double joint_state_wait_s_;           // joint_state_wait_s
+  double cartesian_step_eef_step_m_;    // cartesian_step_eef_step_m
+  double cartesian_step_jump_threshold_; // cartesian_step_jump_threshold
+  double cartesian_step_min_fraction_;  // cartesian_step_min_fraction
   moveit::planning_interface::PlanningSceneInterface psi_;
   const std::atomic<bool> &stopped_;
 
@@ -69,23 +79,11 @@ private:
   const std::vector<std::string> GRIPPER_LINKS = {
       "gripper_base_link", "gripper_Link1", "gripper_Link2", "gripper_Link3", "gripper_Link4"};
 
-  // Home pose joint values (radians)
-  // Validated on the real arm 2026-09-23 (T1.7): commanded one joint at a time through
-  // /rm_driver/movej_cmd, the arm reached every joint within 0.0004 rad (0.02 deg) of
-  // these values, so they stand unchanged. The tool ends up in front of the arm's base,
-  // which was checked and accepted at the robot. Evidence:
-  // adb5466:docs/dion_docs/T1.7_FIRST_COMMANDED_MOTION.md
-  const std::map<std::string, double> HOME_JOINTS = {
-      {"joint1", 0.0},    // 0 degrees
-      {"joint2", 0.0},    // 0 degrees
-      {"joint3", 0.7854}, // 45 degrees
-      {"joint4", 0.0},    // 0 degrees
-      {"joint5", 1.5708}, // 90 degrees
-      {"joint6", 1.5708}, // 90 degrees
-  };
+  // Home pose, home_joints_rad in grasp/grasp_config.yaml (validated on the real arm, T1.7)
+  std::map<std::string, double> HOME_JOINTS;
 
   // Return pose: the home pose for now (Dion, 2026-10-05). HOME is the only pose
   // validated on the real arm (T1.7), and a real hand-to-user pose is future work.
   // The old row (joint3 2.3000, never run on the real arm) is in git history.
-  const std::map<std::string, double> RETURN_JOINTS = HOME_JOINTS;
+  std::map<std::string, double> RETURN_JOINTS;
 };
