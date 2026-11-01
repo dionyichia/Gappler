@@ -106,6 +106,7 @@ class ObjectRecognitionPipeline:
 
         self.model = SAM3Model(
             checkpoint_path=ModelPaths.SAM3_PATH,
+            precision=CFG["sam_precision"],
             confidence_threshold=CFG["sam_confidence_threshold"],
         )
 
