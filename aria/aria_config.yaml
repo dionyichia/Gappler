@@ -167,6 +167,12 @@ object_recognition_pipeline:
     # SAM 3 masks scoring below this are dropped. T8.7: 0.5 missed the box, as T2.9 found for
     # the glasses, so 0.3.
     sam_confidence_threshold: 0.3
+    # SAM 3's number precision on the GPU: bfloat16 or float32 (a torch dtype). bfloat16 since it
+    # was written, to use less GPU memory, as the segmentation service does
+    # (shared_services_config.yaml model_precision). float32 turns autocast off: more memory.
+    # On a CPU it is float32 whatever this says.
+    # read by: services/object_recognition/sam3_model.py, through object_recognition_pipeline.py
+    sam_precision: "bfloat16"
 
 # read by: aria/aria_app/services/aria_segmentation_client/ (and aria/tools/replay_recording_gaze_pick.py)
 aria_segmentation_client:
