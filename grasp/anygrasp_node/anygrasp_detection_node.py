@@ -79,7 +79,8 @@ MIN_APPROACH_COS = float(np.cos(MAX_APPROACH_RAD))
 SCENE_MARGIN = float(CFG["scene_margin_m"])  # anygrasp3: scene kept around the object's box
 # Does the object fit the real gripper (T1.32, anygrasp_to_grasp_frame.py fits_gripper)
 FIT = dict(max_width=CFG["max_object_width_m"], max_depth=CFG["max_grasp_depth_m"],
-           finger_height=CFG["finger_height_m"], percentile=CFG["fit_percentile"])
+           finger_height=CFG["finger_height_m"], percentile=CFG["fit_percentile"],
+           max_side=CFG["max_object_side_m"])
 # The target as a box for MoveIt's planning scene (T1.48, target_box.py)
 TABLE_TOP_Z = float(CFG["table_top_z_m"])
 TARGET_PAD = float(CFG["target_box_pad_m"])
@@ -350,7 +351,8 @@ class AnyGraspDetectionNode(Node):
             _, w, d = min(fit, key=lambda f: np.nan_to_num(f[1], nan=np.inf))
             self.get_logger().warn(
                 f"No grasp fits the gripper: narrowest {w:.3f} m wide "
-                f"(limit {FIT['max_width']}), tips {d:.3f} m in (limit {FIT['max_depth']}). "
+                f"(limit {FIT['max_width']}, side limit {FIT['max_side']}), "
+                f"tips {d:.3f} m in (limit {FIT['max_depth']}). "
                 f"{len(fit)} grasps checked (T1.32)", throttle_duration_sec=5.0)
             return
         gg = gg[keep]

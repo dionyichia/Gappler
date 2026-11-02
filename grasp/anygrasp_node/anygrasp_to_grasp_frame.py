@@ -23,7 +23,9 @@ Fit (T1.32): AnyGrasp is told the gripper opens 0.10 m (grasp_config.yaml), so i
 the object fits the real one. fits_gripper measures it from the masked points: the slice the pads
 sweep (finger_height tall, through the grasp centre), from the tips back max_depth along the
 approach. Width is that slice's spread along the closing axis. Depth is how far the tips go past
-its nearest point. Percentiles, not min and max, so stray edge points (flying pixels) are ignored.
+its nearest point. Side room (T1.54): each side of that spread must also stay within max_side of the
+grasp centre, so a narrow object sitting off-centre, where one finger lands on it, is dropped too.
+Percentiles, not min and max, so stray edge points (flying pixels) are ignored.
 The camera sees only the faces turned to it, but the node keeps grasps within 30 deg of its view,
 so the closing axis runs across the image, where the full width is visible [inferred].
 
@@ -58,8 +60,9 @@ def fingertip_position(translation, rotation_matrix, depth):
 
 
 def fits_gripper(points, translation, rotation_matrix, depth, max_width, max_depth, finger_height,
-                 percentile):
-    """(fits, width, depth_in) for one AnyGrasp grasp against the real gripper, in metres."""
+                 percentile, max_side=None):  # ponytail: None default keeps offline scripts working
+    """(fits, width, depth_in) for one AnyGrasp grasp against the real gripper, in metres.
+    max_side None skips the side room check (offline scripts written before T1.54)."""
     tips = fingertip_position(translation, rotation_matrix, depth)
     p = (points - tips) @ rotation_matrix  # columns: along approach, closing, finger height
     slab = p[np.abs(p[:, 2]) <= finger_height / 2]
@@ -69,8 +72,10 @@ def fits_gripper(points, translation, rotation_matrix, depth, max_width, max_dep
     between = slab[(slab[:, 0] <= 0) & (slab[:, 0] >= -max_depth), 1]
     if len(between) == 0:
         return False, float("nan"), depth_in
-    width = np.percentile(between, 100 - percentile) - np.percentile(between, percentile)
-    return bool(width <= max_width and depth_in <= max_depth), width, depth_in
+    lo, hi = np.percentile(between, [percentile, 100 - percentile])
+    width = hi - lo
+    sides_ok = max_side is None or max(-lo, hi) <= max_side
+    return bool(width <= max_width and sides_ok and depth_in <= max_depth), width, depth_in
 
 
 if __name__ == "__main__":
@@ -101,7 +106,7 @@ if __name__ == "__main__":
                                rng.uniform(0.40, 0.46, n)])
         return np.vstack([front, top])
     r_a = np.column_stack([[0, 0, 1], [1, 0, 0], [0, 1, 0]]).astype(float)
-    LIMITS = dict(max_width=0.068, max_depth=0.045, finger_height=0.02, percentile=2)
+    LIMITS = dict(max_width=0.068, max_depth=0.045, finger_height=0.02, percentile=2, max_side=0.0355)
     point = lambda tips_in: np.array([0.0, 0.0, 0.40 + tips_in - 0.02])  # AnyGrasp's point, depth 0.02
     ok, w, d = fits_gripper(box(0.06), point(0.03), r_a, 0.02, **LIMITS)
     assert ok and abs(w - 0.06) < 0.003 and abs(d - 0.03) < 0.002, ("6 cm box, tips 3 cm in", w, d)
@@ -115,4 +120,9 @@ if __name__ == "__main__":
     assert ok and w < 0.065, ("stray edge points must not widen the box", w)
     ok, _, _ = fits_gripper(box(0.06) + [0, 0.5, 0], point(0.03), r_a, 0.02, **LIMITS)
     assert not ok, "no points between the fingers: cannot judge, drop it"
-    print("PASS: fits_gripper keeps a 6 cm box, drops 8 cm, drops tips 6 cm in, ignores stray points")
+    ok, w, _ = fits_gripper(box(0.06) + [0.01, 0, 0], point(0.03), r_a, 0.02, **LIMITS)
+    assert not ok and w < 0.065, ("6 cm box 1 cm off-centre: one finger lands on it", w)
+    ok, _, _ = fits_gripper(box(0.06) + [0.004, 0, 0], point(0.03), r_a, 0.02, **LIMITS)
+    assert ok, "6 cm box 4 mm off-centre still clears both fingers"
+    print("PASS: fits_gripper keeps a 6 cm box, drops 8 cm, drops tips 6 cm in, ignores stray points, "
+          "drops a box 1 cm off-centre")
