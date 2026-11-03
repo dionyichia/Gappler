@@ -10,7 +10,7 @@ AnyGrasp gets, before the SAM 3 mask. Open the page in a browser, drag to rotate
       /tmp/wrist_camera_point_cloud.html [FRAME]        FRAME default: the middle one
 
 The bag needs colour, aligned depth and colour camera info, as record_wrist_camera.sh records.
-Every 2nd pixel each way is kept, points 0 to 1.5 m (the node's depth range), about 3 MB a page.
+Every 2nd pixel each way is kept, points 0 to max_point_depth_m (the node's depth range), about 3 MB a page.
 """
 import json
 import os
@@ -21,11 +21,16 @@ import rosbag2_py
 from rclpy.serialization import deserialize_message
 from sensor_msgs.msg import CameraInfo, Image
 
-COLOUR = "/camera/camera/color/image_raw"
-DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
-INFO = "/camera/camera/color/camera_info"
-DEPTH_SCALE_M = 0.001  # shared/global_config.yaml wrist_camera.depth_scale_m
-MAX_Z_M = 1.5          # anygrasp_detection_node.py keeps depth under 1.5 m
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "shared"))
+from gappler_common import config  # noqa: E402
+
+# The node's own values, so the page shows what AnyGrasp gets
+CFG = config("grasp", "anygrasp_detection_node")
+COLOUR = CFG["topics"]["wrist_camera_color"]
+DEPTH = CFG["topics"]["wrist_camera_aligned_depth"]
+INFO = CFG["topics"]["wrist_camera_info"]
+DEPTH_SCALE_M = CFG["wrist_camera"]["depth_scale_m"]
+MAX_Z_M = CFG["max_point_depth_m"]
 
 
 def stamp(m):

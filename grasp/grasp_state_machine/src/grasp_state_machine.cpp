@@ -148,6 +148,23 @@ private:
     STABILITY_ROT_DEG = param("stability_rot_deg").as_double();
     MAX_GRASP_ATTEMPTS = static_cast<int>(param("max_grasp_attempts").as_int());
     LOCK_TIMEOUT_S = param("lock_timeout_s").as_double();
+    CANDIDATE_TIMEOUT_S = param("candidate_timeout_s").as_double();
+    STARTUP_WAIT_S = param("startup_wait_s").as_double();
+    SAFETY_WALL_RETRY_S = param("safety_wall_retry_s").as_double();
+    MOVE_RETRY_S = param("move_retry_s").as_double();
+    TF_WAIT_STEP_S = param("tf_wait_step_s").as_double();
+    TF_WAIT_GRASP_S = param("tf_wait_grasp_s").as_double();
+    GRIPPER_MOVE_WAIT_S = param("gripper_move_wait_s").as_double();
+    GRIPPER_OPEN_POSITION = static_cast<int>(param("gripper_open_position").as_int());
+    GRIPPER_CLOSE_SPEED = static_cast<int>(param("gripper_close_speed").as_int());
+    GRIPPER_CLOSE_FORCE = static_cast<int>(param("gripper_close_force").as_int());
+    WALL_THICKNESS_M = param("safety_wall_thickness_m").as_double();
+    WALL_FRONT_X_M = param("safety_wall_front_x_m").as_double();
+    WALL_SIDE_Y_M = param("safety_wall_side_y_m").as_double();
+    WALL_SIDE_LENGTH_M = param("safety_wall_side_length_m").as_double();
+    WALL_HEIGHT_M = param("safety_wall_height_m").as_double();
+    TABLE_BOX_CENTRE_X_M = param("table_box_centre_x_m").as_double();
+    TABLE_BOX_SIZE_M = param("table_box_size_m").as_double();
 
     camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
         topic("wrist_camera_info"), 1,
@@ -366,10 +383,10 @@ private:
     if (gripperRefused("open"))
       return;
     rm_ros_interfaces::msg::Gripperset msg;
-    msg.position = 1000;
+    msg.position = GRIPPER_OPEN_POSITION;
     msg.block = false;
     gripper_position_pub_->publish(msg);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    std::this_thread::sleep_for(std::chrono::duration<double>(GRIPPER_MOVE_WAIT_S));
     RCLCPP_INFO(this->get_logger(), "Gripper opened");
   }
 
@@ -387,8 +404,8 @@ private:
     if (gripperRefused("close"))
       return;
     rm_ros_interfaces::msg::Gripperpick msg;
-    msg.speed = 200;
-    msg.force = 150;
+    msg.speed = GRIPPER_CLOSE_SPEED;
+    msg.force = GRIPPER_CLOSE_FORCE;
     msg.block = false;
     gripper_pick_on_pub_->publish(msg);
     {
@@ -396,7 +413,7 @@ private:
       std::lock_guard<std::mutex> lock(centroid_mutex_);
       accepting_release_ = true;
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    std::this_thread::sleep_for(std::chrono::duration<double>(GRIPPER_MOVE_WAIT_S));
     RCLCPP_INFO(this->get_logger(), "Gripper closed");
   }
 
@@ -412,7 +429,7 @@ private:
     stamped_in.pose = pose_in;
     try
     {
-      tf_buffer_.transform(stamped_in, stamped_out, "base_link", tf2::durationFromSec(1.0));
+      tf_buffer_.transform(stamped_in, stamped_out, "base_link", tf2::durationFromSec(TF_WAIT_GRASP_S));
       pose_out = stamped_out.pose;
       return true;
     }
@@ -454,7 +471,6 @@ private:
   // =========================================================================
   void addSafetyWalls()
   {
-    std::this_thread::sleep_for(std::chrono::seconds(3));
     moveit::planning_interface::PlanningSceneInterface psi;
 
     struct Wall
@@ -462,12 +478,16 @@ private:
       std::string id;
       double cx, cy, cz, sx, sy, sz;
     };
-    const double T = 0.03;
+    // In base_link, from the safety_wall_* and table_box_* values in grasp/grasp_config.yaml.
+    // Each wall's inner face sits at the configured x or y, so the wall's centre is half a
+    // thickness further out. The walls stand on z = 0 and the +x wall spans the gap between
+    // the two side walls.
+    const double T = WALL_THICKNESS_M, H = WALL_HEIGHT_M;
     const std::vector<Wall> walls = {
-        {"+x_wall", 0.15 + T / 2, 0.0, 0.5, T, 0.60 + T, 1.0},
-        {"+y_wall", 0.0, 0.30 + T / 2, 0.5, 2.0, T, 1.0},
-        {"-y_wall", 0.0, -0.30 - T / 2, 0.5, 2.0, T, 1.0},
-        {"table", -0.425, 0.0, TABLE_TOP_Z_M - T / 2, 0.75, 0.75, T},
+        {"+x_wall", WALL_FRONT_X_M + T / 2, 0.0, H / 2, T, 2 * WALL_SIDE_Y_M + T, H},
+        {"+y_wall", 0.0, WALL_SIDE_Y_M + T / 2, H / 2, WALL_SIDE_LENGTH_M, T, H},
+        {"-y_wall", 0.0, -WALL_SIDE_Y_M - T / 2, H / 2, WALL_SIDE_LENGTH_M, T, H},
+        {"table", TABLE_BOX_CENTRE_X_M, 0.0, TABLE_TOP_Z_M - T / 2, TABLE_BOX_SIZE_M, TABLE_BOX_SIZE_M, T},
     };
 
     std::vector<moveit_msgs::msg::CollisionObject> objs;
@@ -502,7 +522,7 @@ private:
         break;
       }
       RCLCPP_WARN(this->get_logger(), "Waiting for planning scene to accept safety walls...");
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+      std::this_thread::sleep_for(std::chrono::duration<double>(SAFETY_WALL_RETRY_S));
     }
   }
 
@@ -513,7 +533,7 @@ private:
       if (shutdown_ || stopped_)
         return;
       RCLCPP_WARN(this->get_logger(), "Homing failed, retrying...");
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+      std::this_thread::sleep_for(std::chrono::duration<double>(MOVE_RETRY_S));
     }
   }
 
@@ -524,7 +544,7 @@ private:
       if (shutdown_ || stopped_)
         return;
       RCLCPP_WARN(this->get_logger(), "Return failed, retrying...");
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+      std::this_thread::sleep_for(std::chrono::duration<double>(MOVE_RETRY_S));
     }
   }
 
@@ -567,7 +587,7 @@ private:
     try
     {
       tf_buffer_.transform(current_pose_stamped, current_pose_cam,
-                           "camera_color_optical_frame", tf2::durationFromSec(0.1));
+                           "camera_color_optical_frame", tf2::durationFromSec(TF_WAIT_STEP_S));
     }
     catch (const tf2::TransformException &ex)
     {
@@ -597,7 +617,7 @@ private:
     geometry_msgs::msg::PoseStamped goal_pose_base;
     try
     {
-      tf_buffer_.transform(goal_pose_cam, goal_pose_base, "base_link", tf2::durationFromSec(0.1));
+      tf_buffer_.transform(goal_pose_cam, goal_pose_base, "base_link", tf2::durationFromSec(TF_WAIT_STEP_S));
     }
     catch (const tf2::TransformException &ex)
     {
@@ -661,18 +681,19 @@ private:
       return true;
     }
 
-    // --- Wait for a detection candidate (3s timeout) ---
+    // --- Wait for a detection candidate (candidate_timeout_s) ---
     grasp_interfaces::msg::GraspCandidateArray::SharedPtr msg;
     {
       std::unique_lock<std::mutex> lock(queue_mutex_);
-      bool got = queue_cv_.wait_for(lock, std::chrono::seconds(3),
+      bool got = queue_cv_.wait_for(lock, std::chrono::duration<double>(CANDIDATE_TIMEOUT_S),
                                     [this]
                                     { return !candidate_queue_.empty() || shutdown_ || stopped_; });
       if (shutdown_ || stopped_)
         return true;
       if (!got || candidate_queue_.empty())
       {
-        RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidates in 3 s, back to IDLE. The AnyGrasp node log says why (T1.37)");
+        RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidates in %.1f s, back to IDLE. The AnyGrasp node log says why (T1.37)",
+                    CANDIDATE_TIMEOUT_S);
         return true; // signal done, return to IDLE
       }
       // Drain stale candidates, keep latest
@@ -833,7 +854,7 @@ private:
   void workerLoop()
   {
     // --- Startup ---
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::duration<double>(STARTUP_WAIT_S));
     addSafetyWalls();
     homeWithRetry();
     publishState(State::IDLE);
@@ -973,7 +994,7 @@ private:
         // tf2::TransformException but is unguarded here, unlike selectingStep()
         // which wraps the same call in try/catch
         tf_buffer_.transform(current_pose_stamped, current_pose_cam,
-                             "camera_color_optical_frame", tf2::durationFromSec(0.1));
+                             "camera_color_optical_frame", tf2::durationFromSec(TF_WAIT_STEP_S));
 
         double px_err_x = centroid_snapshot_.point.x - (image_cx_ + CENTROID_TARGET_OFFSET_X);
         double px_err_y = centroid_snapshot_.point.y - (image_cy_ + CENTROID_TARGET_OFFSET_Y);
@@ -992,7 +1013,7 @@ private:
         geometry_msgs::msg::PoseStamped goal_pose_base;
 
         // LOGICAL ERROR: same issue — unguarded transform, should be try/catch
-        tf_buffer_.transform(goal_pose_cam, goal_pose_base, "base_link", tf2::durationFromSec(0.1));
+        tf_buffer_.transform(goal_pose_cam, goal_pose_base, "base_link", tf2::durationFromSec(TF_WAIT_STEP_S));
 
         // HARDCODING BRITTLE FIX: overwrite goal pose z value with current z value
         // to prevent the planner from trying to move down into the table
@@ -1140,6 +1161,24 @@ private:
   double STABILITY_ROT_DEG;
   int MAX_GRASP_ATTEMPTS; // grasps tried per cycle before giving up (T1.48)
   double LOCK_TIMEOUT_S;  // longest wait for a grasp to lock (T1.48)
+  double CANDIDATE_TIMEOUT_S; // longest wait for the next candidate list while EXECUTING (T1.37, T1.61)
+  // Waits, gripper commands and the safety walls (T0.22): the keys of the same name, lower case
+  double STARTUP_WAIT_S;
+  double SAFETY_WALL_RETRY_S;
+  double MOVE_RETRY_S;
+  double TF_WAIT_STEP_S;
+  double TF_WAIT_GRASP_S;
+  double GRIPPER_MOVE_WAIT_S;
+  int GRIPPER_OPEN_POSITION;
+  int GRIPPER_CLOSE_SPEED;
+  int GRIPPER_CLOSE_FORCE;
+  double WALL_THICKNESS_M;
+  double WALL_FRONT_X_M;
+  double WALL_SIDE_Y_M;
+  double WALL_SIDE_LENGTH_M;
+  double WALL_HEIGHT_M;
+  double TABLE_BOX_CENTRE_X_M;
+  double TABLE_BOX_SIZE_M;
 };
 
 // ===========================================================================

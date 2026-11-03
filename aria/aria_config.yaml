@@ -28,7 +28,8 @@
       ros_camera_with_object_masks: "/realman/rgb_camera/object_masks"
       # object_recognition_pipeline -> visualizer
       combined_visualization: "/combined/object_masks"
-      # feature_matching, object_recognition_pipeline -> visualizer
+      # nobody -> visualizer. Was feature_matching (parked in archive/, T0.22) and
+      # object_recognition_pipeline (stopped in T8.7)
       feature_match_results: "/aria/rgb_camera/feature_match"
       # pose_streaming_pipeline -> OpenVINS (parked). Must match calibration/kalibr_imu_chain.yaml
       imu: "/aria/imu"
@@ -43,13 +44,21 @@
       # pose_fusion_node -> nobody yet
       pose_initialized: "/aria/pose_initialized"
 
-    # QoS for the image streams. read by: feature_matching, object_recognition_pipeline,
+    # QoS (ROS delivery rules) for the image streams. read by: object_recognition_pipeline,
     # visualizer, ros_publisher, realsense_helper (all through config.VIDEO_QOS)
+    # BEST_EFFORT: a lost image is not sent again, so a slow reader gets the newest image, not a
+    # backlog. A subscriber must ask for BEST_EFFORT too or it gets nothing. KEEP_LAST with depth
+    # 10: at most 10 images wait per reader. Lower depth means less delay, more dropped images.
     qos:
       video:
         reliability: "BEST_EFFORT"
         history: "KEEP_LAST"
         depth: 10
+
+    # JPEG quality (0 to 100) of the images aria publishes compressed. Higher is sharper and
+    # bigger. 80 since the app was written.
+    # read by: services/ros/image_helper.py (ImageHelper.compress_image, used by ros_publisher)
+    jpeg_quality: 80
 
     # How far the gaze may be from a mask and still count as looking at it: the mask under the
     # gaze, else the nearest within this many pixels of the published 1408 px image. Recording
@@ -61,12 +70,20 @@
 # read by: aria/aria_app/config/base.py (Settings)
 app:
   ros__parameters:
-    realsense_init_delay_s: 3   # seconds to wait for the RealSense node to start
+    # Read into Settings.REALSENSE_INIT_DELAY but used nowhere (T0.22, 2026-11-01). Changing it
+    # does nothing. Consider deleting.
+    realsense_init_delay_s: 3
 
 # read by: aria/aria_app/config/aria.py (AriaConfig)
 aria_device:
   ros__parameters:
-    streaming_profile_name: "profile18"   # profile18 is for USB
+    # The Aria SDK's streaming profile: which cameras and sensors stream, at what rate.
+    # profile18 is for USB. Pick another from the Aria docs for Wi-Fi.
+    # read by: schemas/application.py, then aria_device_controller.py
+    streaming_profile_name: "profile18"
+    # The glasses make a new security certificate for each streaming session, so none needs
+    # installing first. The Aria SDK's own option.
+    # read by: aria_device/aria_device_controller.py, aria_device/aria_stream_client.py
     use_ephemeral_certs: true
     # Size and focal length of the undistorted RGB image the app publishes.
     undistorted_image_size_px: 1408
@@ -77,8 +94,26 @@ aria_device:
 # read by: aria/aria_app/config/audio_streaming_pipeline_config.py
 audio_streaming_pipeline:
   ros__parameters:
-    transcription_model: "small.en"           # Whisper model
-    llm_model: "Qwen/Qwen2.5-0.5B-Instruct"   # turns the transcript into an object name
+    # Whisper model that turns speech into text (faster-whisper name). small.en is English only.
+    # A bigger model (medium.en) hears better and is slower. read by: audio_streaming_pipeline.py
+    transcription_model: "small.en"
+    # LLM that turns the transcript into an object name ("grab that apple" -> "apple"), a Hugging
+    # Face name. read by: services/prompt_extractor.py
+    llm_model: "Qwen/Qwen2.5-0.5B-Instruct"
+    # Whisper's number precision (faster-whisper compute_type): int8, int8_float16, float16 or
+    # float32. int8 since the app was written: smallest and fast enough on the box CPU and GPU.
+    # [unverified] whether float16 hears words better on the GPU.
+    # read by: aria_device/stream/audio_streaming_pipeline.py
+    whisper_precision: "int8"
+    # Whisper's beam search width. Wider tries more readings of each word, slower. 5 is
+    # faster-whisper's default. read by: audio_streaming_pipeline.py
+    whisper_beam_size: 5
+    # The LLM's number precision: float32, float16 or bfloat16 (a torch dtype). float16 since the
+    # app was written. read by: services/prompt_extractor.py
+    llm_precision: "float16"
+    # Longest reply the LLM may give, in tokens. The reply is one object name, a few tokens.
+    # read by: services/prompt_extractor.py
+    llm_max_new_tokens: 20
     # How often the newest audio goes to the voice detector. Cheap: Whisper and the LLM run
     # only once a sentence has finished (T2.10). Was 1 s.
     iteration_interval_s: 0.25
@@ -96,9 +131,28 @@ audio_streaming_pipeline:
     # of a word on /aria/audio/prompt, where goto_glasses would drive to you on it (T2.6).
     release_phrases: ["release", "let go"]
 
+# read by: aria/aria_app/services/arcuo.py (detect_aruco, in image_streaming_pipeline.py)
+aruco:
+  ros__parameters:
+    # Side of the printed ArUco marker (DICT_6X6_250), metres, black border to black border.
+    # Measure the print: the marker's distance scales with it. Value from before the 2026-09-21
+    # reorg, [unverified] against the marker in the lab.
+    marker_side_m: 0.1325
+
+# read by: aria/aria_app/services/pose_fusion/pose_fusion_node.py (parked with OpenVINS)
+aria_pose_fusion:
+  ros__parameters:
+    # Where the ArUco marker sits relative to the robot's SLAM origin, in the robot frame.
+    # Position in metres [x, y, z] and rotation as a quaternion [x, y, z, w]. Values from before
+    # the 2026-09-21 reorg, [unverified]: measure the marker before the node is unparked.
+    marker_offset_m: [-0.20, -0.25, 1.20]
+    marker_offset_quat_xyzw: [-0.5, 0.5, -0.5, 0.5]
+
 # read by: aria/aria_app/config/playback_controller_config.py
 playback_controller:
   ros__parameters:
+    # Replay speed of a recording: 1.0 is real time, 2.0 twice as fast.
+    # read by: services/playback_controller.py
     playback_speed: 1.0
 
 # read by: aria/aria_app/config/eye_tracking.py
@@ -107,9 +161,26 @@ eye_tracking:
     # Gaze has no depth, so the gaze ray is cut at this distance (NEXT_STEPS 2.13, T2.3)
     default_depth_m: 1.5
 
+# read by: aria/aria_app/services/object_recognition/object_recognition_pipeline.py
+object_recognition_pipeline:
+  ros__parameters:
+    # SAM 3 masks scoring below this are dropped. T8.7: 0.5 missed the box, as T2.9 found for
+    # the glasses, so 0.3.
+    sam_confidence_threshold: 0.3
+    # SAM 3's number precision on the GPU: bfloat16 or float32 (a torch dtype). bfloat16 since it
+    # was written, to use less GPU memory, as the segmentation service does
+    # (shared_services_config.yaml model_precision). float32 turns autocast off: more memory.
+    # On a CPU it is float32 whatever this says.
+    # read by: services/object_recognition/sam3_model.py, through object_recognition_pipeline.py
+    sam_precision: "bfloat16"
+
 # read by: aria/aria_app/services/aria_segmentation_client/ (and aria/tools/replay_recording_gaze_pick.py)
 aria_segmentation_client:
   ros__parameters:
+    # Images and gaze older than this (by arrival time) are dropped. Must cover the gaze window
+    # plus speech_latency_s plus the images' 1 to 3 s delay (below), or the word finds nothing
+    # to pick from. 20 s since T2.19: a long margin, the cost is memory only.
+    history_s: 20.0
     # Gaze from this long votes on the mask: nobody holds their eyes on one point
     # (Dion, 2026-10-13). 1 s is 10 eye frames at the recorded 10 fps, about 4 on the box (4.5 a second).
     gaze_window_s: 1.0

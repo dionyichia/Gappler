@@ -60,6 +60,7 @@ from gappler_common import config
 
 # shared/global_config.yaml + aria/aria_config.yaml
 TOPICS = config("aria")["topics"]
+CFG = config("aria", "aria_pose_fusion")
 
 logger = logging.getLogger(__name__)
 
@@ -124,17 +125,6 @@ class PoseFusionNode(Node):
     def __init__(self) -> None:
         super().__init__("aria_pose_fusion")
 
-        # ── parameters ────────────────────────────────────────────────────────
-        # Fixed offset from robot SLAM origin to ArUco marker (robot frame).
-
-        self.declare_parameter("marker_offset_x", -0.20)
-        self.declare_parameter("marker_offset_y", -0.25)
-        self.declare_parameter("marker_offset_z", 1.20)
-        self.declare_parameter("marker_offset_quat_x", -0.5)
-        self.declare_parameter("marker_offset_quat_y", 0.5)
-        self.declare_parameter("marker_offset_quat_z", -0.5)
-        self.declare_parameter("marker_offset_quat_w", 0.5)
-
         # ── subscribers ───────────────────────────────────────────────────────
         # self.create_subscription(
         #     PoseWithCovarianceStamped,
@@ -181,17 +171,9 @@ class PoseFusionNode(Node):
 
     def _T_robot_marker(self) -> np.ndarray:
         """Fixed transform from robot SLAM origin to ArUco marker (robot frame)."""
-        ox = self.get_parameter("marker_offset_x").value
-        oy = self.get_parameter("marker_offset_y").value
-        oz = self.get_parameter("marker_offset_z").value
-        qx = self.get_parameter("marker_offset_quat_x").value
-        qy = self.get_parameter("marker_offset_quat_y").value
-        qz = self.get_parameter("marker_offset_quat_z").value
-        qw = self.get_parameter("marker_offset_quat_w").value
-
         T = np.eye(4, dtype=np.float64)
-        T[:3, :3] = Rotation.from_quat([qx, qy, qz, qw]).as_matrix()
-        T[:3, 3] = [ox, oy, oz]
+        T[:3, :3] = Rotation.from_quat(CFG["marker_offset_quat_xyzw"]).as_matrix()
+        T[:3, 3] = CFG["marker_offset_m"]
         return T
 
     def _on_robot_pose(self, msg: PoseStamped) -> None:

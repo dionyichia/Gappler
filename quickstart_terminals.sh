@@ -162,7 +162,7 @@ if ! tmux has-session -t "=$LAYOUT" 2>/dev/null; then
     fi
   done
   # Type the waiting commands once the env has loaded, so they land on a fresh prompt.
-  sleep 3
+  sleep "$(PYTHONPATH="$R/shared" python3 -c 'from gappler_common import config; print(config()["quickstart_typed_command_delay_s"])')"
   for t in "${TYPED[@]}"; do
     IFS=$'\t' read -r id cmd <<<"$t"
     tmux send-keys -t "$id" -l "$cmd"

@@ -23,7 +23,7 @@ from config import VIDEO_QOS, AudioStreamingPipelineConfig, ModelPaths, ROS2Topi
 from gappler_common import config as gappler_config
 from memory_graph.clip_encoder import OpenClipEncoder
 from memory_graph.image_feature import l2_normalise
-# T8.7: LightGlue no longer runs (the CLIP rule replaced it). Kept in case it comes back.
+# T8.7: LightGlue no longer runs (the CLIP rule replaced it). Parked in archive/feature_matching.py.
 # from services.feature_matching import FeatureMatcher
 from services.object_recognition import SAM3Model
 # T8.9a: the matcher moved to grasp, which uses it. This pipeline keeps it for its replay view.
@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 # Wrist camera values from shared/global_config.yaml
 DEPTH_SCALE = gappler_config()["wrist_camera"]["depth_scale_m"]  # metres per depth unit
+CFG = gappler_config("aria", "object_recognition_pipeline")  # aria/aria_config.yaml
 
 TOPIC_RGB = ROS2Topics.WRIST_CAMERA_COLOR.value
 TOPIC_DEPTH = ROS2Topics.WRIST_CAMERA_ALIGNED_DEPTH.value
@@ -105,7 +106,8 @@ class ObjectRecognitionPipeline:
 
         self.model = SAM3Model(
             checkpoint_path=ModelPaths.SAM3_PATH,
-            confidence_threshold=0.3,  # T8.7: 0.5 missed the box, as T2.9 found for the glasses
+            precision=CFG["sam_precision"],
+            confidence_threshold=CFG["sam_confidence_threshold"],
         )
 
         self._aria_inference_state: Optional[Dict[str, Any]] = None
@@ -164,7 +166,7 @@ class ObjectRecognitionPipeline:
         self._rgb_sub = Subscriber(self._object_recognition_node, Image, TOPIC_RGB)
         self._depth_sub = Subscriber(self._object_recognition_node, Image, TOPIC_DEPTH)
         self._sync = ApproximateTimeSynchronizer(
-            [self._rgb_sub, self._depth_sub], queue_size=10, slop=0.05
+            [self._rgb_sub, self._depth_sub], queue_size=10, slop=gappler_config()["wrist_camera"]["rgb_depth_sync_slop_s"]
         )
         self._sync.registerCallback(self._on_realsense_image)
 
