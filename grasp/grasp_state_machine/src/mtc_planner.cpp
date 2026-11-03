@@ -57,10 +57,7 @@ bool MtcPlanner::approachGrasp(const geometry_msgs::msg::Pose &grasp_pose)
   const auto &o = grasp_pose.orientation;
   RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] approachGrasp target (base_link): x=%.4f y=%.4f z=%.4f q=(%.4f %.4f %.4f %.4f)",
               p.x, p.y, p.z, o.x, o.y, o.z, o.w);
-  Eigen::Isometry3d grasp;
-  tf2::fromMsg(grasp_pose, grasp);
-  // grasp_frame's z is the approach (anygrasp_to_grasp_frame.py)
-  const auto twin_pose = tf2::toMsg(Eigen::Isometry3d(grasp * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ())));
+  const auto twin_pose = twinPose(grasp_pose);
 
   std::unique_ptr<Task> best;
   double best_travel = 0.0;
