@@ -99,6 +99,11 @@ anygrasp_detection_node:
     # good grasps are dropped, lower if grasps close on objects that do not fit.
     # [unverified] whether 71 mm is between the pads or outside them (pads about 2 mm a side).
     max_object_width_m: 0.068
+    # T1.54: furthest the object may reach from the grasp centre on either side, metres. Half the
+    # 71 mm opening, no margin: the width check alone passes a narrow object sitting off-centre,
+    # where one finger lands on it. Above 0.0355 a finger can land on the object. Lower it if a
+    # finger still does. Read by anygrasp_detection_node (fits_gripper). Offline numbers: task tree T1.54.
+    max_object_side_m: 0.0355
     # Furthest the fingertips may go past the object's near face, metres. Past 0.050 the base of
     # the U pushes the object. 5 mm kept as margin. In step 7c tips went up to 0.133 m in.
     max_grasp_depth_m: 0.045
