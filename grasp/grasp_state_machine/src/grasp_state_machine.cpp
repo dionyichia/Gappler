@@ -2,6 +2,7 @@
 #include <atomic>
 #include <chrono>
 #include <climits>
+#include <limits>
 #include <condition_variable>
 #include <deque>
 #include <future>
@@ -168,10 +169,27 @@ private:
     WALL_HEIGHT_M = param("safety_wall_height_m").as_double();
     TABLE_BOX_CENTRE_X_M = param("table_box_centre_x_m").as_double();
     TABLE_BOX_SIZE_M = param("table_box_size_m").as_double();
+    VIEW_POSE_ENABLED = param("view_pose_enabled").as_bool();
+    VIEW_TILT_DEG = param("view_tilt_deg").as_double();
+    VIEW_STANDOFF_START_M = param("view_standoff_start_m").as_double();
+    VIEW_STANDOFF_STEP_M = param("view_standoff_step_m").as_double();
+    VIEW_STANDOFF_MAX_M = param("view_standoff_max_m").as_double();
+    VIEW_SWING_DEG = param("view_swing_deg").as_double_array();
+    VIEW_MIN_NEAREST_DEPTH_M = param("view_min_nearest_depth_m").as_double();
+    VIEW_DISTANCE_TOLERANCE_M = param("view_distance_tolerance_m").as_double();
+    DEPTH_SCALE_M = param("wrist_camera.depth_scale_m").as_double();
 
     camera_info_sub_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
         topic("wrist_camera_info"), 1,
         std::bind(&GraspStateMachine::cameraInfoCallback, this, std::placeholders::_1));
+
+    // The viewing pose reads the object's points from these (T1.63). Latest only.
+    mask_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
+        topic("wrist_camera_object_mask"), 1, [this](const sensor_msgs::msg::Image::SharedPtr m)
+        { std::lock_guard<std::mutex> lock(view_images_mutex_); latest_mask_ = m; });
+    depth_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
+        topic("wrist_camera_aligned_depth"), 1, [this](const sensor_msgs::msg::Image::SharedPtr m)
+        { std::lock_guard<std::mutex> lock(view_images_mutex_); latest_depth_ = m; });
 
     grasp_sub_ = this->create_subscription<grasp_interfaces::msg::GraspCandidateArray>(
         topic("grasp_candidates"), 10,
@@ -662,6 +680,173 @@ private:
   }
 
   // =========================================================================
+  // SELECTING, viewing pose (T1.63, design by Dion 2026-11-03). Replaces the 2 cm creep:
+  //   1. At home, the object's 3D centroid = mean of SAM's masked depth points, in base_link.
+  //   2. The camera looks at the centroid view_tilt_deg down, image level. Distances from
+  //      view_standoff_start_m out to view_standoff_max_m, at each one the directions in
+  //      view_swing_deg (0 = from the arm base). The first pose MoveIt plans to wins.
+  //   3. At the pose, a new mask and depth. Nearest surface = min masked depth.
+  //   4. One straight move along the camera axis puts it at view_min_nearest_depth_m.
+  // Returns false if no pose planned: the creep runs instead.
+  // =========================================================================
+  bool viewingPoseMove()
+  {
+    if (!intrinsics_received_)
+      return false;
+    std::vector<tf2::Vector3> pts;
+    if (!waitForMaskedPoints(this->now(), pts))
+      return false;
+    geometry_msgs::msg::TransformStamped base_cam;
+    try
+    {
+      // Latest transform: the arm holds still at home
+      base_cam = tf_buffer_.lookupTransform("base_link", "camera_color_optical_frame", tf2::TimePointZero,
+                                            tf2::durationFromSec(TF_WAIT_STEP_S));
+    }
+    catch (const tf2::TransformException &ex)
+    {
+      RCLCPP_WARN(this->get_logger(), "SELECTING: camera transform failed: %s", ex.what());
+      return false;
+    }
+    tf2::Transform T_base_cam, T_base_eef;
+    tf2::fromMsg(base_cam.transform, T_base_cam);
+    tf2::fromMsg(mtc_planner_->getCurrentPose().pose, T_base_eef);
+    const tf2::Transform T_cam_eef = T_base_cam.inverse() * T_base_eef; // fixed on the wrist
+
+    tf2::Vector3 c(0.0, 0.0, 0.0);
+    for (const auto &p : pts)
+      c += p;
+    c = T_base_cam * (c / static_cast<double>(pts.size()));
+    tf2::Vector3 h0(c.x(), c.y(), 0.0); // from the arm base (base_link's origin) to the object
+    if (h0.length() < 1e-3)
+      return false;
+    h0.normalize();
+    RCLCPP_INFO(this->get_logger(), "SELECTING: object centroid (%.3f, %.3f, %.3f) m in base_link from %zu points",
+                c.x(), c.y(), c.z(), pts.size());
+
+    const double t = VIEW_TILT_DEG * M_PI / 180.0;
+    const tf2::Vector3 up(0.0, 0.0, 1.0);
+    for (double d = VIEW_STANDOFF_START_M; d <= VIEW_STANDOFF_MAX_M + 1e-6 && !stopped_; d += VIEW_STANDOFF_STEP_M)
+      for (double swing : VIEW_SWING_DEG)
+      {
+        if (stopped_)
+          return false;
+        const tf2::Vector3 h = h0.rotate(up, swing * M_PI / 180.0);
+        const tf2::Vector3 z_cam = h * std::cos(t) - up * std::sin(t); // optical axis
+        const tf2::Vector3 x_cam = z_cam.cross(up).normalized();       // horizontal: level image
+        const tf2::Vector3 y_cam = z_cam.cross(x_cam);
+        const tf2::Matrix3x3 R(x_cam.x(), y_cam.x(), z_cam.x(),
+                               x_cam.y(), y_cam.y(), z_cam.y(),
+                               x_cam.z(), y_cam.z(), z_cam.z());
+        geometry_msgs::msg::Pose goal;
+        tf2::toMsg(tf2::Transform(R, c - z_cam * d) * T_cam_eef, goal);
+        if (!mtc_planner_->moveToPose(goal))
+        {
+          RCLCPP_INFO(this->get_logger(), "SELECTING: no plan to the viewing pose at %.2f m, swing %.0f deg", d, swing);
+          continue;
+        }
+        RCLCPP_INFO(this->get_logger(), "SELECTING: at the viewing pose, %.2f m from the centroid, swing %.0f deg", d, swing);
+        correctViewDistance(z_cam);
+        return true;
+      }
+    return false;
+  }
+
+  // Step 4 of the viewing pose: one straight move along the camera axis so the nearest masked
+  // surface is view_min_nearest_depth_m deep. If it can't, the view is kept as it is.
+  void correctViewDistance(const tf2::Vector3 &z_cam)
+  {
+    std::vector<tf2::Vector3> pts;
+    if (!waitForMaskedPoints(this->now(), pts))
+    {
+      RCLCPP_WARN(this->get_logger(), "SELECTING: no mask and depth at the viewing pose, distance not corrected");
+      return;
+    }
+    // ponytail: a plain min, so one stray pixel nearer the camera leaves the view farther out (safe side)
+    double nearest = std::numeric_limits<double>::infinity();
+    for (const auto &p : pts)
+      nearest = std::min(nearest, p.z());
+    const double move = nearest - VIEW_MIN_NEAREST_DEPTH_M; // + = toward the object
+    RCLCPP_INFO(this->get_logger(), "SELECTING: nearest surface %.3f m, moving %.3f m along the camera axis", nearest,
+                std::abs(move) > VIEW_DISTANCE_TOLERANCE_M ? move : 0.0);
+    if (std::abs(move) <= VIEW_DISTANCE_TOLERANCE_M || stopped_)
+      return;
+    geometry_msgs::msg::Pose goal = mtc_planner_->getCurrentPose().pose;
+    goal.position.x += z_cam.x() * move;
+    goal.position.y += z_cam.y() * move;
+    goal.position.z += z_cam.z() * move;
+    if (!mtc_planner_->moveCartesianStep(goal))
+      RCLCPP_WARN(this->get_logger(), "SELECTING: straight move to %.2f m failed, keeping this view",
+                  VIEW_MIN_NEAREST_DEPTH_M);
+  }
+
+  // Waits up to centroid_max_age_s for a SAM mask and an aligned depth both stamped after `since`,
+  // then returns the masked pixels with depth as points in the camera optical frame.
+  // ponytail: mask and depth are not paired by stamp. Fine while the arm holds still, which it
+  // does at home and at the viewing pose. Pair by stamp if this is ever used while moving.
+  bool waitForMaskedPoints(const rclcpp::Time &since, std::vector<tf2::Vector3> &pts)
+  {
+    const auto deadline = this->now() + rclcpp::Duration::from_seconds(CENTROID_MAX_AGE_S);
+    sensor_msgs::msg::Image::SharedPtr mask, depth;
+    while (!stopped_ && !shutdown_)
+    {
+      {
+        std::lock_guard<std::mutex> lock(view_images_mutex_);
+        mask = latest_mask_;
+        depth = latest_depth_;
+      }
+      if (mask && depth && rclcpp::Time(mask->header.stamp) > since && rclcpp::Time(depth->header.stamp) > since)
+        break;
+      if (this->now() > deadline)
+      {
+        RCLCPP_WARN(this->get_logger(), "SELECTING: no new mask and depth within %.1fs", CENTROID_MAX_AGE_S);
+        return false;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    if (stopped_ || shutdown_)
+      return false;
+    if (mask->width != depth->width || mask->height != depth->height ||
+        mask->encoding != "mono8" || depth->encoding != "16UC1")
+    {
+      RCLCPP_WARN(this->get_logger(), "SELECTING: mask (%s %ux%u) and depth (%s %ux%u) don't match",
+                  mask->encoding.c_str(), mask->width, mask->height, depth->encoding.c_str(), depth->width, depth->height);
+      return false;
+    }
+    pts.clear();
+    for (uint32_t v = 0; v < mask->height; ++v)
+    {
+      const auto *row = reinterpret_cast<const uint16_t *>(&depth->data[v * depth->step]);
+      for (uint32_t u = 0; u < mask->width; ++u)
+      {
+        if (!mask->data[v * mask->step + u] || row[u] == 0)
+          continue;
+        const double z = row[u] * DEPTH_SCALE_M;
+        pts.emplace_back((u - image_cx_) / fx_ * z, (v - image_cy_) / fy_ * z, z);
+      }
+    }
+    if (pts.empty())
+      RCLCPP_WARN(this->get_logger(), "SELECTING: the mask has no depth");
+    return !pts.empty();
+  }
+
+  // After the viewing move, waits up to centroid_max_age_s for a centroid seen from the new pose
+  bool waitForCentroidAfter(const rclcpp::Time &since)
+  {
+    const auto deadline = this->now() + rclcpp::Duration::from_seconds(CENTROID_MAX_AGE_S);
+    while (!stopped_ && !shutdown_ && this->now() < deadline)
+    {
+      {
+        std::lock_guard<std::mutex> lock(centroid_mutex_);
+        if (rclcpp::Time(latest_centroid_.header.stamp) > since)
+          return true;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    return false;
+  }
+
+  // =========================================================================
   // Slerp helper (used by executingStep when USE_SLERP_EXECUTE = true)
   // =========================================================================
   static geometry_msgs::msg::Quaternion slerpQuat(
@@ -953,7 +1138,18 @@ private:
       publishState(State::SELECTING);
 
       bool transition_to_executing = false;
-      for (int steps = 0; steps < MAX_APPROACH_STEPS && !stopped_; ++steps)
+      const bool viewed = VIEW_POSE_ENABLED && viewingPoseMove();
+      if (viewed)
+      {
+        transition_to_executing = waitForCentroidAfter(this->now());
+        if (!transition_to_executing && !stopped_)
+          RCLCPP_WARN(this->get_logger(), "SELECTING: no centroid from the viewing pose within %.1fs — returning to IDLE",
+                      CENTROID_MAX_AGE_S);
+      }
+      else if (VIEW_POSE_ENABLED && !stopped_)
+        RCLCPP_WARN(this->get_logger(), "SELECTING: no viewing pose planned, creeping instead");
+      // The creep (before T1.63): 2 cm steps until the centroid is execute_depth_thresh_m deep
+      for (int steps = 0; !viewed && steps < MAX_APPROACH_STEPS && !stopped_; ++steps)
       {
         double object_depth;
         double age_s;
@@ -1205,6 +1401,20 @@ private:
   double WALL_HEIGHT_M;
   double TABLE_BOX_CENTRE_X_M;
   double TABLE_BOX_SIZE_M;
+  // Viewing pose (T1.63): the view_* keys of the same name
+  bool VIEW_POSE_ENABLED;
+  double VIEW_TILT_DEG;
+  double VIEW_STANDOFF_START_M;
+  double VIEW_STANDOFF_STEP_M;
+  double VIEW_STANDOFF_MAX_M;
+  std::vector<double> VIEW_SWING_DEG;
+  double VIEW_MIN_NEAREST_DEPTH_M;
+  double VIEW_DISTANCE_TOLERANCE_M;
+  double DEPTH_SCALE_M; // wrist_camera.depth_scale_m, metres per depth unit
+  // Latest SAM mask and aligned depth, for the viewing pose (T1.63)
+  std::mutex view_images_mutex_;
+  sensor_msgs::msg::Image::SharedPtr latest_mask_, latest_depth_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr mask_sub_, depth_sub_;
 };
 
 // ===========================================================================

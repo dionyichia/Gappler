@@ -297,6 +297,20 @@ bool MtcPlanner::moveToReturn()
   return true;
 }
 
+bool MtcPlanner::moveToPose(const geometry_msgs::msg::Pose &eef_pose_base)
+{
+  move_group_->setStartStateToCurrentState();
+  move_group_->setPoseTarget(eef_pose_base);
+  move_group_->setMaxVelocityScalingFactor(max_velocity_scale_);
+  move_group_->setMaxAccelerationScalingFactor(max_acceleration_scale_);
+  moveit::planning_interface::MoveGroupInterface::Plan plan;
+  bool planned = move_group_->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+  move_group_->clearPoseTargets();
+  if (!planned || refuseIfStopped("moveToPose"))
+    return false;
+  return move_group_->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
+}
+
 geometry_msgs::msg::PoseStamped MtcPlanner::getCurrentPose()
 {
   return move_group_->getCurrentPose();
