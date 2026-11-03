@@ -6,6 +6,10 @@ private, no rm_driver exists and the real arm is unreachable. This test plays ev
   camera TF   camera_link -> ... -> camera_color_optical_frame, only if the model lacks it (the
               RealSense driver publishes these on the robot)
   detector    /object_centroid_2d: an object straight ahead, far, lost for a while, far, then near
+  SAM + depth /camera/sam/mask and the aligned depth: a 20 px square at the centroid pixel, at the
+              centroid's depth. Sent only for the approach that ends in EXECUTING, so that one
+              runs the viewing pose (T1.63). Every other approach falls back to the creep.
+              SM_VIEW=0 sends none, so that approach creeps to EXECUTING as before T1.63
   operator    /manipulator/grasp_request: centroids only count after one (T1.25)
               /manipulator/release: lets go of the held object (T1.14)
   gripper     records /rm_driver/set_gripper_{position,pick_on}_cmd -- nothing acts on them
@@ -41,7 +45,7 @@ try:
     from rclpy.node import Node
     from rclpy.time import Time
     from geometry_msgs.msg import PointStamped, Pose, TransformStamped
-    from sensor_msgs.msg import CameraInfo, JointState
+    from sensor_msgs.msg import CameraInfo, Image, JointState
     from std_msgs.msg import Bool, Empty, String
     from tf2_ros import Buffer, StaticTransformBroadcaster, TransformListener
     from tf2_geometry_msgs import do_transform_pose
@@ -60,8 +64,12 @@ sys.path[:0] = [str(REPO / "grasp/anygrasp_node"), str(REPO / "shared")]
 from anygrasp_to_grasp_frame import to_grasp_frame  # noqa: E402
 from gappler_common import config  # noqa: E402
 # The "never locks" check waits this long plus a margin, so it follows the config (grasp_config.yaml)
-LOCK_TIMEOUT_S = float(config("grasp", "grasp_state_machine")["lock_timeout_s"])
+CFG = config("grasp", "grasp_state_machine")
+LOCK_TIMEOUT_S = float(CFG["lock_timeout_s"])
 LOCK_WAIT_S = LOCK_TIMEOUT_S + 15
+TOPICS = CFG["topics"]
+DEPTH_SCALE_M = float(CFG["wrist_camera"]["depth_scale_m"])
+VIEW = os.environ.get("SM_VIEW", "1") != "0"  # 0: no fake mask, the EXECUTING approach creeps
 LOG = REPO / os.environ.get("BENCH_SM_LOG", "log/bench_state_machine.txt")
 JOINTS = [f"joint{i}" for i in range(1, 7)]
 HOME_MAIN = [0.0, 0.0, 0.7854, 0.0, 1.5708, 1.5708]      # mtc_planner.hpp HOME_JOINTS on main (CODE_AUDIT B4)
@@ -111,6 +119,9 @@ class Actors(Node):
         self.decoy = None
         self.n_lists = 0
         self.depth = None
+        self.mask_on = False  # send the fake mask and depth with each centroid (T1.63)
+        self.mask_pub = self.create_publisher(Image, TOPICS["wrist_camera_object_mask"], 1)
+        self.depth_pub = self.create_publisher(Image, TOPICS["wrist_camera_aligned_depth"], 1)
         self.create_timer(0.2, self._camera)
         self.create_timer(0.1, self._centroid)
         self.create_timer(0.2, self._candidate)
@@ -154,6 +165,15 @@ class Actors(Node):
         m.header.frame_id, m.header.stamp = OPT, self.get_clock().now().to_msg()
         m.point.x, m.point.y, m.point.z = CX + OFFSET_X + CY_OFF, CY, self.depth
         self.cen_pub.publish(m)
+        if self.mask_on:
+            u, v = int(m.point.x), int(m.point.y)
+            mask = np.zeros((H, W), np.uint8)
+            mask[v - 10:v + 10, u - 10:u + 10] = 255
+            depth = np.full((H, W), round(self.depth / DEPTH_SCALE_M), np.uint16)
+            for img, enc in ((mask, "mono8"), (depth, "16UC1")):
+                im = Image(header=m.header, height=H, width=W, encoding=enc, step=W * img.itemsize,
+                           data=img.tobytes())
+                (self.mask_pub if enc == "mono8" else self.depth_pub).publish(im)
 
     def _candidate(self):
         if self.cand_base is None:
@@ -371,6 +391,8 @@ def main():
         if n.seen("SELECTING", t_back):
             return check("gate closed again after the failed approach", False,
                          "SELECTING with no new request")
+        n.mask_on = VIEW
+        crept_before = log_count(r"creeping instead")  # the approaches above crept: no mask
         n.request()
         ignored_before = log_count(r"Centroid ignored")
         back = n.spin_until(lambda: n.seen("SELECTING", t_back), 120)
@@ -381,8 +403,21 @@ def main():
         # ---- EXECUTING: object now within reach --------------------------------
         t2 = time.time()
         n.depth = NEAR
+        if VIEW:
+            # Up to 42 planning attempts (6 distances x 7 swings, grasp_config.yaml view_*)
+            crept = lambda: log_count(r"creeping instead") > crept_before
+            n.spin_until(lambda: log_has(r"at the viewing pose") or crept() or n.seen("IDLE", t2), 300)
+            viewed = log_has(r"SELECTING: at the viewing pose")
+            check("mask + depth -> SELECTING moves to the viewing pose (T1.63)", viewed,
+                  "'at the viewing pose' logged" if viewed else
+                  "'creeping instead' logged: no viewing pose planned" if crept()
+                  else "neither 'at the viewing pose' nor 'creeping instead' in 300 s, see the launch log")
+            if not viewed:
+                return
         ex = n.spin_until(lambda: n.seen("EXECUTING", t2), 90)
-        check("object near -> EXECUTING", ex, "seen" if ex else "no EXECUTING in 90 s")
+        n.mask_on = False  # later approaches creep, so the fallback stays tested
+        check("object near -> EXECUTING" + (" from the viewing pose" if VIEW else ""), ex,
+              "seen" if ex else "no EXECUTING in 90 s")
         if not ex:
             return
         # Centroids keep coming at NEAR. Once the snapshot is taken they must be dropped
