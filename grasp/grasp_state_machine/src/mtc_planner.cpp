@@ -191,8 +191,8 @@ std::unique_ptr<Task> MtcPlanner::planApproach(const geometry_msgs::msg::Pose &g
   }
   // The planner takes any IK solution. A flipped wrist reaches the same pose with joint 4 and
   // joint 6 turned about 180 degrees, and swung the gripper through the object before the
-  // target was in the scene (T1.45, 2026-10-26). Kept for good (Dion, 2026-10-26): no grasp here
-  // needs a turn that large. If refusals become common, look at why before raising the limit.
+  // target was in the scene (T1.45, 2026-10-26). The target is in the scene now (T1.48), so the
+  // limit is 360 since T1.51 (cable check, Dion 2026-11-03): it only stops a turn past one full revolution.
   const auto &start = solution.start()->scene()->getCurrentState();
   const auto &end = solution.end()->scene()->getCurrentState();
   for (const char *joint : {"joint4", "joint5", "joint6"})
