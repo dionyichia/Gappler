@@ -129,7 +129,9 @@ now removes table and stray pixels from the mask before the box, the fit check a
 `[observed]` in an offline replay with the simulated arm (capture A's box 21.9 to 8.8 cm, 0 frames
 refused, [`bench-runs/2026-10-29-labbox-t1.60-anygrasp-replay.txt`](bench-runs/2026-10-29-labbox-t1.60-anygrasp-replay.txt)).
 Not yet run on the real arm.
-New: `lock_timeout_s: 25` ends EXECUTING when no grasp locks (60 while `T1.51` was tested, back to 25).
+New: `lock_timeout_s` ends EXECUTING when no grasp locks: 25 until `T1.62`, 90 since, because GraRe frames take 6 to 7 s
+and a lock needs 5. Since `T1.62` the lock is the rank-sum lock over each frame's top 5 grasps, not the top grasp alone
+(`checkStability`, `[observed]` on the real arm, plan-only, 5 locks at each of three box poses).
 
 ---
 
@@ -1076,3 +1078,4 @@ publishers racing on the same three topics.
 | 2026-10-26 | Claude Opus 5.5 + Dion | A4 fixed by `T1.48`, `[observed]` on the real arm (three grasps at the 10° cone, no push) and in sim. Wrist and cone limits kept for good. |
 | 2026-10-29 | Claude Opus 5.5 + Dion | A4 follow-up: the target box was stretched by mask spill onto the table, fixed by `T1.60` (`denoise_point_cloud.py`), `[observed]` in offline replay, not on the real arm. |
 | 2026-11-03 | Claude Sonnet 5.5 + Dion | A4: guards off by default since `T1.51` (cone 90, flat check 0, wrist 360), `[observed]` on the real arm in plan-only mode, plus a joint 6 cable check. |
+| 2026-11-03 | Claude Sonnet 5.5 + Dion | A4 follow-up: `lock_timeout_s` 25 to 90 and the rank-sum lock (`T1.62`), `[observed]` on the real arm in plan-only mode. |
