@@ -55,6 +55,10 @@ public:
 
   geometry_msgs::msg::PoseStamped getCurrentPose();
 
+  // Plans a collision-free path (OMPL) to put the end effector at eef_pose_base (base_link), then
+  // moves there (T1.63 viewing pose). False if no plan is found, so the caller can try another pose.
+  bool moveToPose(const geometry_msgs::msg::Pose &eef_pose_base);
+
   bool moveCartesianStep(const geometry_msgs::msg::Pose &goal_pose_base);
 
   // Cancels the move in progress. Safe from another thread: it only publishes MoveIt's "stop" event.

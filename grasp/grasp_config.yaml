@@ -239,6 +239,28 @@ grasp_state_machine:
     # Was 0.21. Raised so the wrist could turn away from the object (T1.45, 2026-10-26). It also
     # leaves room for the pre-grasp below. The camera sees down to 0.182 m.
     execute_depth_thresh_m: 0.30     # stop approaching when the object is this close
+    # T1.63 viewing pose, all view_* keys read by grasp_state_machine.cpp (viewingPoseMove). Instead
+    # of the 2 cm creep: the camera looks at the object's centroid from a planned pose, then one
+    # straight move sets the nearest surface's depth. If no pose plans, the creep above runs.
+    # false: the creep only.
+    view_pose_enabled: true
+    # Look-down angle of the camera at the viewing pose, degrees below horizontal (Dion, 2026-11-03).
+    view_tilt_deg: 45.0
+    # Camera to centroid distances tried, closest first. Start 0.30 (Dion, 2026-11-03): the test box's
+    # half depth plus 0.22 is about 0.25 to 0.30, so the straight move after is short. The arm never
+    # reached a pose at 0.60 m or more offline (T1.63 stage 1), so the search stops at 0.55.
+    view_standoff_start_m: 0.30
+    view_standoff_step_m: 0.05
+    view_standoff_max_m: 0.55
+    # Directions around the object tried at each distance, degrees about the vertical. 0 = looking
+    # from the arm base. Worst case 6 distances x 7 directions = 42 plans (Dion, 2026-11-03).
+    view_swing_deg: [0.0, 15.0, -15.0, 30.0, -30.0, 45.0, -45.0]
+    # At the pose, the nearest masked surface is moved to this depth. The camera gives no depth below
+    # about 0.182 m (T1.11), plus 4 cm margin (Dion, 2026-11-03).
+    view_min_nearest_depth_m: 0.22
+    # Skip the straight move if the nearest surface is already this close to 0.22. Depth noise at
+    # 0.22 m is a few mm (Dion, 2026-11-03).
+    view_distance_tolerance_m: 0.01
     # T1.48: AnyGrasp's grasp is reached in two moves. A path search around the target box to this
     # far back along the approach, then straight in. The MTC pick-and-place tutorial uses 0.10.
     pregrasp_distance_m: 0.10

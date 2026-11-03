@@ -185,8 +185,9 @@ that way; any change that makes B import project code will break it.
    ├─ Nav2 drives the base to within 0.6 m → publishes /manipulation/start
    │
    ├─ grasp_state_machine (C++):
-   │    IDLE ──► SELECTING   visual-servo the wrist toward the 2D centroid,
-   │    │                    stepping 4 cm at a time until the object is < 0.18 m away
+   │    IDLE ──► SELECTING   one move to a viewing pose: the wrist camera looks at the
+   │    │                    object 45 deg down, then moves straight to 0.22 m (T1.63).
+   │    │                    If no pose plans, it creeps in 2 cm steps as before
    │    └──►    EXECUTING    AnyGrasp proposes 5 grasp poses; wait for one that is
    │                         stable across 5 frames; move there; close gripper
    │
@@ -1281,3 +1282,4 @@ recheck it after the camera mount is fabricated and installed.
 | 2026-10-26 | Claude Opus 5.5 + Dion | Tree: one folder per AnyGrasp SDK, `anygrasp2/` and `anygrasp3/`, picked by `anygrasp_sdk` (T1.45). |
 | 2026-10-31 | Claude Opus 5.5 + Dion | Tree: `grare_rerank.py` and the vendored GraRe and MobileSAM (T1.61). |
 | 2026-11-01 | Claude Opus 5.5 + Dion | Tree: `feature_matching.py` (SuperPoint + LightGlue) parked in `aria_app/archive/` (T0.22). |
+| 2026-11-04 | Claude Opus 5.5 + Dion | Walkthrough: SELECTING is the T1.63 viewing pose, the creep is the fallback. |

@@ -475,10 +475,9 @@ stateDiagram-v2
     IDLE: wait on /object_centroid_2d
     IDLE --> SELECTING: centroid received<br/>(re-homes first)
 
-    SELECTING: visual servo, 4 cm Cartesian steps
-    SELECTING --> SELECTING: depth ≥ 0.18 m<br/>and step succeeded
-    SELECTING --> EXECUTING: depth < 0.18 m
-    SELECTING --> IDLE: step failed, or<br/>50 steps exhausted
+    SELECTING: viewing pose (T1.63): one planned move,<br/>camera 45 deg down at the object,<br/>then a straight move to 0.22 m.<br/>Fallback: the creep, 2 cm steps
+    SELECTING --> EXECUTING: at the viewing pose,<br/>or creep depth < 0.30 m
+    SELECTING --> IDLE: no new centroid, step failed,<br/>or 50 steps exhausted
 
     EXECUTING: openGripper, snapshot centroid,<br/>10 cm final move, closeGripper
     EXECUTING --> IDLE: cycle complete<br/>publishes /manipulator/return_to_user
@@ -513,3 +512,4 @@ See ORIENTATION §8.2 for the three self-annotated bugs in the EXECUTING branch.
 | 2026-09-13 | Claude (Opus 5) + Dion | Cuts table: seam #2 citation `object_recognition_pipeline.py:384`→`:389`, shifted by uncommitted comments in that file. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
 | 2026-10-31 | Claude Opus 5.5 + Dion | L0: the AnyGrasp node can re-rank its grasps with GraRe (`grasp/anygrasp_node/grare_rerank.py`, off by default, T1.61). |
+| 2026-11-04 | Claude Opus 5.5 + Dion | State diagram: SELECTING is the T1.63 viewing pose with the creep as fallback (`viewingPoseMove` in `grasp_state_machine.cpp`). The tuning line under the diagram is older than this and still lists the 2026-09 values: the current ones are in `grasp/grasp_config.yaml`. |
