@@ -2,10 +2,10 @@
 #include <atomic>
 #include <chrono>
 #include <climits>
-#include <limits>
 #include <condition_variable>
 #include <deque>
 #include <future>
+#include <limits>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -1143,7 +1143,7 @@ private:
       {
         transition_to_executing = waitForCentroidAfter(this->now());
         if (!transition_to_executing && !stopped_)
-          RCLCPP_WARN(this->get_logger(), "SELECTING: no centroid from the viewing pose within %.1fs — returning to IDLE",
+          RCLCPP_WARN(this->get_logger(), "SELECTING: no centroid from the viewing pose within %.1fs, returning to IDLE",
                       CENTROID_MAX_AGE_S);
       }
       else if (VIEW_POSE_ENABLED && !stopped_)

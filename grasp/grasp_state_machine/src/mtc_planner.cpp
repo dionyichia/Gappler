@@ -299,13 +299,30 @@ bool MtcPlanner::moveToReturn()
 
 bool MtcPlanner::moveToPose(const geometry_msgs::msg::Pose &eef_pose_base)
 {
+  // A pose target lets the planner take any joint solution. Joint 6 has a full turn of range each
+  // way, so it once turned 360 deg for nothing (T1.63 arm session, 2026-11-03). Instead: IK seeded
+  // from the current joints, then joint 6 moved by whole turns to within half a turn of now.
   move_group_->setStartStateToCurrentState();
-  move_group_->setPoseTarget(eef_pose_base);
+  const auto current = move_group_->getCurrentState();
+  move_group_->setJointValueTarget(*current);
+  if (!move_group_->setJointValueTarget(eef_pose_base))
+  {
+    RCLCPP_WARN(node_->get_logger(), "[MtcPlanner] moveToPose: no IK solution for the pose");
+    return false;
+  }
+  moveit::core::RobotState target(move_group_->getJointValueTarget());
+  const double j6_now = current->getVariablePosition("joint6");
+  double j6 = target.getVariablePosition("joint6");
+  j6 -= 2.0 * M_PI * std::round((j6 - j6_now) / (2.0 * M_PI));
+  target.setVariablePosition("joint6", j6);
+  if (target.satisfiesBounds())
+    move_group_->setJointValueTarget(target);
+  RCLCPP_INFO(node_->get_logger(), "[MtcPlanner] moveToPose: joint 6 turns %.0f deg",
+              (target.getVariablePosition("joint6") - j6_now) * 180.0 / M_PI);
   move_group_->setMaxVelocityScalingFactor(max_velocity_scale_);
   move_group_->setMaxAccelerationScalingFactor(max_acceleration_scale_);
   moveit::planning_interface::MoveGroupInterface::Plan plan;
   bool planned = move_group_->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS;
-  move_group_->clearPoseTargets();
   if (!planned || refuseIfStopped("moveToPose"))
     return false;
   return move_group_->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS;
