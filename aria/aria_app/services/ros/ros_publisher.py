@@ -1,6 +1,5 @@
 import logging
 
-import cv2
 import numpy as np
 import rclpy
 from builtin_interfaces.msg import Time
@@ -8,6 +7,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import CompressedImage
 
 from config import VIDEO_QOS
+from .image_helper import ImageHelper
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +41,6 @@ class ROSPublisher(Node):
                             else stamp_from_ns(stamp_ns))
         msg.format = "jpeg"
 
-        # Encode to JPEG — quality 80 is a good balance
-        _, compressed = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, 80])
-        msg.data = compressed.tobytes()
+        msg.data = ImageHelper.compress_image(image)[1]
 
         self.publisher.publish(msg)

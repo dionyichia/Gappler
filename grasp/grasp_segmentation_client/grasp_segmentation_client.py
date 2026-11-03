@@ -106,10 +106,7 @@ class GraspSegmentationClient(Node):
         self.sync = ApproximateTimeSynchronizer(
             [Subscriber(self, Image, TOPICS["wrist_camera_color"]),
              Subscriber(self, Image, TOPICS["wrist_camera_aligned_depth"])],
-            # The driver gives aligned depth the colour frame's own stamp: 598 of 598 pairs were
-            # 0.0 ms apart on the lab box (2026-10-13). A small slop skips a colour frame whose
-            # depth was dropped, instead of pairing it with a neighbour 33 ms off.
-            queue_size=10, slop=0.01)
+            queue_size=10, slop=CFG["wrist_camera"]["rgb_depth_sync_slop_s"])
         self.sync.registerCallback(self.on_frames)
 
         self.service = self.create_client(Segment, SERVICE_NAME)

@@ -14,3 +14,9 @@ segmentation_service:
     # No depth for a mask unless at least this share of its pixels has a reading. Too close to
     # the camera, the few readings left are background: a box at 0.15 m read 1.26 m (T1.24 3b).
     min_valid_depth_fraction: 0.5
+    # SAM 3's number precision on the GPU: bfloat16 or float32 (a torch dtype). bfloat16 since the
+    # service was written, to use less GPU memory. float32 turns autocast off: more memory,
+    # [unverified] how much slower. float16 [unverified] with SAM 3. On a CPU it is float32
+    # whatever this says.
+    # read by: shared_services/segmentation/segmentation_service.py (Sam3)
+    model_precision: "bfloat16"

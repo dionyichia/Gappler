@@ -14,6 +14,7 @@ class SAM3Model:
     def __init__(
         self,
         checkpoint_path: str,
+        precision: str,
         bpe_path: Optional[str] = None,
         confidence_threshold: float = 0.5,
         load_from_hf: bool = False,
@@ -24,12 +25,14 @@ class SAM3Model:
 
         Args:
             checkpoint_path: Path to model checkpoint
+            precision: GPU number precision, bfloat16 or float32 (sam_precision in aria_config.yaml)
             bpe_path: Path to BPE vocabulary file (defaults to assets folder)
             confidence_threshold: Confidence threshold for predictions
             load_from_hf: Whether to load from HuggingFace
             device: Device to run model on
         """
         self.device = device
+        self.precision = precision
         self.confidence_threshold = confidence_threshold
 
         # Setup paths
@@ -59,8 +62,9 @@ class SAM3Model:
             # Enable tfloat32 for Ampere GPUs
             torch.backends.cuda.matmul.allow_tf32 = True
             torch.backends.cudnn.allow_tf32 = True
-            # Enable bfloat16 autocast
-            torch.autocast("cuda", dtype=torch.bfloat16).__enter__()
+            # Autocast to the configured precision, switched on once. float32 leaves it off
+            if self.precision != "float32":
+                torch.autocast("cuda", dtype=getattr(torch, self.precision)).__enter__()
 
     def process_text_prompt(self, image: np.ndarray, prompt: str) -> dict:
         """

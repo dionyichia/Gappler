@@ -56,7 +56,7 @@ from gaze_pick import vote
 STOP_KEYWORD = AudioStreamingPipelineConfig.STOP_KEYWORD
 CFG = config("aria", "aria_segmentation_client")
 SERVICE_NAME = CFG["services"]["segmentation_segment"]
-HISTORY_S = 20.0   # how long images and gaze are kept, by arrival time
+HISTORY_S = CFG["history_s"]   # how long images and gaze are kept, by arrival time
 
 
 def seconds(stamp) -> float:

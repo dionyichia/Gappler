@@ -1,6 +1,15 @@
 """
 Dual Stream Feature Matcher
 Matches features between Aria glasses and ROS2 camera streams using LightGlue.
+
+PARKED (T0.22, 2026-11-01). Consider deleting. Not started by anything: the cross-camera match
+uses CLIP embeddings since T8.7 (grasp/grasp_segmentation_client/cross_camera_mask_match_rule.py).
+SuperPoint + LightGlue did not find the box from the wrist camera
+(docs/bench-runs/2026-10-19-labbox-t8.4-old-matcher-baseline.txt). Moved from services/. To bring it
+back: move it to aria/aria_app/services/ and uncomment add_feature_matching in main.py. Its
+settings (2048 keypoints, no precision setting) are not in aria_config.yaml.
+Left in place with it: the lightglue dependency in pyproject.toml, the visualizer's
+FeatureMatchVisualizer and the feature_match_results topic (nothing publishes on it).
 """
 
 import logging

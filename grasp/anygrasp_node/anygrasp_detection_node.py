@@ -36,12 +36,9 @@ from denoise_point_cloud import drop_table_and_stray_pixels
 # ---------------------------------------------------------------------------
 parser = argparse.ArgumentParser()
 parser.add_argument("--checkpoint_path", required=True)
-parser.add_argument("--max_gripper_width", type=float, default=0.1)
-parser.add_argument("--gripper_height", type=float, default=0.03)
 parser.add_argument("--top_down_grasp", action="store_true")
 parser.add_argument("--debug", action="store_true")
 cfgs, _ = parser.parse_known_args()
-cfgs.gripper_height = 0.04
 cfgs.top_down_grasp = False
 
 # shared/global_config.yaml and grasp/grasp_config.yaml
@@ -74,6 +71,8 @@ DEPTH_SCALE = CFG["wrist_camera"]["depth_scale_m"]  # metres per depth unit
 # Wide lims (anygrasp2 only), SAM mask handles spatial filtering
 LIMS = CFG["workspace_limits_m"]
 cfgs.max_gripper_width = CFG["max_gripper_width_m"]
+cfgs.gripper_height = CFG["anygrasp_gripper_height_m"]
+MAX_POINT_DEPTH = float(CFG["max_point_depth_m"])
 # A grasp's approach is its rotation's x column. Kept if within max_approach_deg of the camera's z.
 MAX_APPROACH_RAD = float(np.radians(CFG["max_approach_deg"]))
 MIN_APPROACH_COS = float(np.cos(MAX_APPROACH_RAD))
@@ -153,7 +152,7 @@ class AnyGraspDetectionNode(Node):
         self.rgb_sub = Subscriber(self, Image, TOPIC_RGB)
         self.depth_sub = Subscriber(self, Image, TOPIC_DEPTH)
         self.sync = ApproximateTimeSynchronizer(
-            [self.rgb_sub, self.depth_sub], queue_size=10, slop=0.05
+            [self.rgb_sub, self.depth_sub], queue_size=10, slop=CFG["wrist_camera"]["rgb_depth_sync_slop_s"]
         )
         self.sync.registerCallback(self.synced_callback)
 
@@ -285,7 +284,7 @@ class AnyGraspDetectionNode(Node):
         points_full = self.build_point_cloud(depth)
 
         # Combined SAM mask + depth validity
-        depth_mask = (points_full[:, :, 2] > 0) & (points_full[:, :, 2] < 1.5)
+        depth_mask = (points_full[:, :, 2] > 0) & (points_full[:, :, 2] < MAX_POINT_DEPTH)
         sam_mask = self.image_to_numpy(self.latest_mask).astype(bool)
         combined_mask = depth_mask & sam_mask
 
