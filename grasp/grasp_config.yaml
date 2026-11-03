@@ -29,9 +29,6 @@
       # anygrasp_detection_node -> grasp_state_machine: the target as a box in base_link, for
       # MoveIt's planning scene (T1.48). moveit_msgs/CollisionObject, id grasp_target
       grasp_target_object: "/grasp/target_object"
-    # How many grasp candidates AnyGrasp publishes per frame.
-    # read by: anygrasp_node, anygrasp_detection_node
-    num_grasp_candidates: 5
     # Top of the table, in metres above the arm's base_link. The planner's "table" collision box
     # sits just under it, and the target box stands on it (T1.48). Measured 2026-10-13 (T1.24 3c):
     # 0.68 m from the floor, 0.12 m above the arm base. Was hard-coded at 0.195 m, 7.5 cm too high,
@@ -90,7 +87,10 @@ anygrasp_detection_node:
     # limit (Dion, 2026-10-14). Without it, most grasps came from the side or across the top face.
     # Kept at 10 (Dion, 2026-10-26): at 30 and 20, 4 of 5 grasps failed to plan (no IK for the
     # pre-grasp, or the straight-in move stopped partway), and 10 grasped with no push.
-    max_approach_deg: 10
+    # 90 = off since T1.51 (Dion, 2026-11-03): each stage does its own job, and with it off the real
+    # arm locked a good top-down grasp the 10 deg cone never gave. Narrow it again only if a face
+    # steering rule is needed later.
+    max_approach_deg: 90
     # T1.32: does the object fit the REAL gripper? AnyGrasp cannot tell (it is told 0.10 m above),
     # so the node measures each grasp from the masked points and drops it if any limit fails.
     # Gripper (Dion, 2026-10-14): a U 50 mm deep inside, opens 71 mm, rubber pads 16 mm long.
@@ -176,6 +176,35 @@ anygrasp_detection_node:
     # Refused if the kept surfaces are less than this share of what lies above the table.
     denoise_min_main_frac: 0.7
 
+    # T1.61: GraRe re-ranker (arXiv 2608.00946, grare_rerank.py). Scores every raw AnyGrasp grasp before
+    # NMS, and its score replaces AnyGrasp's. Offline its first pick held in 60 of 60 real frames, at about
+    # 1.2 s a frame (docs/dion_docs/local/experiments/T1.47_ideal_cloud/FINDINGS.md). Off until the
+    # plan-only arm session. Weights: grare_weights and mobile_sam_weights in shared/global_config.yaml.
+    # When on, /grasp_candidates carries GraRe's fused z-scores (about -3 to 5), not AnyGrasp's 0 to 1.
+    # Nothing reads the value as 0 to 1: the state machine ignores it, grasp_viz.py scales per frame.
+    grare:
+      enabled: false
+      # Weight of GraRe's score against AnyGrasp's, 0 to 1, fused as z-scores. 1 = GraRe's order only
+      # (the tested setting). 0 = AnyGrasp's order, with GraRe still loaded and run.
+      score_weight: 1.0
+      # Speedups. Each can be turned off alone to debug. All off = GraRe's own code, about 18 s a frame.
+      # Score only the first copy of each exact duplicate grasp (about half are copies). Exact.
+      skip_duplicates: true
+      # Give GraRe only the points that can sit near some grasp. Exact, saves little.
+      crop_cloud: true
+      # Neighbourhoods and their sampling on the GPU instead of a Python loop per grasp. 5 s to 1.2 s.
+      gpu_neighbourhoods: true
+      # Grasps scored per model batch. Lower it if the GPU runs out of memory.
+      batch_size: 512
+      # Grasps per GPU step when finding each grasp's neighbourhood (gpu_neighbourhoods). Higher is
+      # fewer steps but more GPU memory: each step holds chunk x scene points distances in float64.
+      neighbourhood_chunk: 128
+      # Number format each model runs in: float32, float16 or bfloat16. Lower is faster and uses less
+      # GPU memory, but changes the scores. float32 is the tested setting (T1 check). float16 and
+      # bfloat16 are untested here: rerun grasp/anygrasp_node/grare_rerank.py and the T1 check first.
+      model_precision: float32        # GraRe's scoring model
+      mobile_sam_precision: float32   # MobileSAM, the object mask under each grasp
+
 # grasp/grasp_viz/grasp_viz.py. Size of the gripper drawn in RViz, metres.
 grasp_visualizer:
   ros__parameters:
@@ -214,15 +243,26 @@ grasp_state_machine:
     # far back along the approach, then straight in. The MTC pick-and-place tutorial uses 0.10.
     pregrasp_distance_m: 0.10
     # T1.48: grasps tried per cycle. One that fails to plan is skipped, then the next is tried.
-    # Matches num_grasp_candidates. After this many, back to IDLE.
+    # After this many, back to IDLE. Set on its own since T1.51: AnyGrasp now sends every grasp
+    # that fits (about 28 a frame with the cone off), not the top 5.
     max_grasp_attempts: 5
     # T1.48: back to IDLE if no grasp locks within this time. Restarts after each failed plan.
+    # Read by grasp_state_machine.cpp, and by bench/nodes/test_state_machine_sim.py, whose "never
+    # locks" check waits this long plus 15 s.
     # The lower-ranked grasps can jump between frames and never lock: 86 s of silence on 2026-10-26.
-    # Locks seen that day took 3 to 6 s, once 17 s, so 25 leaves room.
-    lock_timeout_s: 25.0
+    # Locks seen that day took 3 to 6 s, once 17 s. It was 25 until T1.62. With GraRe on a frame
+    # takes 6 to 7 s (T1.61 arm session, 2026-11-03), so stability_n_frames 5 alone needs 30 to
+    # 35 s. 90 is the value used on the arm that day (Dion, 2026-11-03): time is not the problem
+    # yet, and it leaves room for a few frames that do not match.
+    lock_timeout_s: 90.0
     # Refuse a move to AnyGrasp's grasp if joint 4, 5 or 6 would turn further than this (T1.45).
-    # A permanent safety limit, not a temporary guard (Dion, 2026-10-26).
-    max_wrist_turn_deg: 90.0
+    # 360 = off since T1.51 (Dion, 2026-11-03): cable check on the real arm, joint 6 turned -340 to
+    # +360 deg at 5 % with no snag (the camera wire coils past about 240, fine). Joints 4 and 5 cannot
+    # pass about 180 (URDF limits), and MoveIt holds joint 6 to its own +-360 limit.
+    max_wrist_turn_deg: 360.0
+    # true: AnyGrasp grasps are planned and published on /grasp/planned_solution, never executed.
+    # Homing, the SELECTING steps and the gripper opening still move the arm (T1.51)
+    plan_only: false
     # End the approach if the newest centroid is older than this. Age counts from the camera
     # frame, so it includes segmentation: about 1.05 s normally, 1.6 s after one dropped
     # frame (measured 2026-10-12, T1.24 3b). Raised to 3.0, then 7.0 (Dion, 2026-10-26): SAM 3
@@ -253,19 +293,32 @@ grasp_state_machine:
     use_simple_execute: true
     # AnyGrasp path only. Grasps that approach flatter than this angle above horizontal are
     # skipped, degrees. 90 is straight down, 0 is from the side. Lower it to allow side grasps.
-    min_approach_angle_deg: 20.0
+    # 0 = off since T1.51 (Dion, 2026-11-03): MoveIt's table collision check owns it.
+    min_approach_angle_deg: 0.0
     # AnyGrasp path only. true turns the gripper toward the grasp's orientation by at most
     # max_orient_step_deg per move instead of going straight to it. Off since it was written,
     # [unverified] on the real arm.
     use_slerp_execute: false
     max_orient_step_deg: 5.0
-    # AnyGrasp path only. A grasp locks (the arm commits to it) once the last stability_n_frames
-    # candidates all sit within stability_trans_mm and stability_rot_deg of the first of them.
-    # The same two limits decide whether a new grasp is one that already failed to plan (T1.48).
+    # AnyGrasp path only. The rank-sum lock (T1.62): each frame keeps its first stability_top_k
+    # grasps that pass S1 to S3. A grasp of the newest frame counts if the same grasp (within
+    # stability_trans_mm and stability_rot_deg, its 180 deg twin included) is in each of the last
+    # stability_n_frames frames. The one with the lowest sum of ranks locks (the arm commits to
+    # it), a tie goes to the better rank now. Before T1.62 only each frame's top grasp counted, and
+    # one swap of the top two delayed the lock: no lock in 90 s with GraRe on (2026-11-03). The
+    # same two limits decide whether a new grasp is one that already failed to plan (T1.48).
     # More frames or tighter limits: a surer grasp, but it locks later or never (lock_timeout_s).
+    # A bigger stability_top_k locks sooner but can lock a grasp that is never near the top.
+    # Read by grasp_state_machine.cpp.
     stability_n_frames: 5
+    stability_top_k: 5
+    # 20 deg since T1.62 (Dion, 2026-11-03, pose 2 at 45 deg): AnyGrasp's best grasp steps 13 to
+    # 19 deg between frames while it stays within 15 mm, so at 10 nothing locked in 90 s. Dion
+    # judged pairs 13 to 19 deg apart, side by side at one height, as one grasp. Pairs that
+    # differ in height or need a sideways shift are different grasps by eye, but sit at the same
+    # distance and angle, so no limit tells them apart. At 20 every earlier bag locks the same grasp.
     stability_trans_mm: 15.0
-    stability_rot_deg: 10.0
+    stability_rot_deg: 20.0
 
     # ---- Arm motion (T0.22). read by: grasp_state_machine/src/mtc_planner.cpp
     # Share of the arm's top joint speed and acceleration (0 to 1) that every move may use: the
@@ -303,8 +356,11 @@ grasp_state_machine:
 
     # ---- Waits (T0.22). read by: grasp_state_machine/src/grasp_state_machine.cpp
     # EXECUTING: back to IDLE if no grasp candidates arrive for this long (T1.37). Must be longer
-    # than one AnyGrasp frame: about 0.4 s. T1.61 raises it for GraRe (2 to 3.5 s a frame).
-    candidate_timeout_s: 3.0
+    # than one AnyGrasp frame: about 0.4 s alone, 2 to 3.5 s with GraRe on in the node (T1.61,
+    # 2026-10-31). 6 gave GraRe on room (Dion, 2026-10-31), but frames took 6 to 7 s on the arm
+    # on 2026-11-03, so 15, the value used that day (T1.62). With GraRe off it only waits longer
+    # before giving up on an empty stream.
+    candidate_timeout_s: 15.0
     # At start-up, wait this long before adding the safety walls and homing, so move_group and
     # its planning scene are up. Was 2 s, then 3 s more inside the wall code: one wait now, same
     # total. If the log shows "Waiting for planning scene to accept safety walls" many times,

@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <climits>
 #include <condition_variable>
 #include <deque>
 #include <future>
@@ -144,6 +146,7 @@ private:
     USE_SIMPLE_EXECUTE = param("use_simple_execute").as_bool();
     USE_SLERP_EXECUTE = param("use_slerp_execute").as_bool();
     STABILITY_N_FRAMES = static_cast<int>(param("stability_n_frames").as_int());
+    STABILITY_TOP_K = static_cast<int>(param("stability_top_k").as_int());
     STABILITY_TRANS_MM = param("stability_trans_mm").as_double();
     STABILITY_ROT_DEG = param("stability_rot_deg").as_double();
     MAX_GRASP_ATTEMPTS = static_cast<int>(param("max_grasp_attempts").as_int());
@@ -445,24 +448,49 @@ private:
   // =========================================================================
   void resetStability() { stability_window_.clear(); }
 
-  bool checkStability(const geometry_msgs::msg::Pose &candidate,
+  // Within the lock limits of each other. A grasp and its twin count as one grasp (T1.61)
+  bool sameGrasp(const geometry_msgs::msg::Pose &a, const geometry_msgs::msg::Pose &b) const
+  {
+    return transDist(a.position, b.position) <= STABILITY_TRANS_MM &&
+           std::min(angleBetweenQuats(a.orientation, b.orientation),
+                    angleBetweenQuats(twinPose(a).orientation, b.orientation)) <= STABILITY_ROT_DEG;
+  }
+
+  // Rank-sum lock (T1.62, Dion 2026-11-03). top: this frame's best grasps, best first. A grasp in
+  // the newest frame counts only if the same grasp is in each older frame's list. Lock the one with
+  // the lowest sum of ranks: 1,2,1,1,1 (6) beats 2,1,2,2,2 (9). A tie goes to the better rank now.
+  bool checkStability(const std::vector<geometry_msgs::msg::Pose> &top,
                       geometry_msgs::msg::Pose &stable_pose)
   {
-    stability_window_.push_back(candidate);
+    stability_window_.push_back(top);
     if ((int)stability_window_.size() > STABILITY_N_FRAMES)
       stability_window_.pop_front();
     if ((int)stability_window_.size() < STABILITY_N_FRAMES)
       return false;
 
-    const auto &ref = stability_window_.front();
-    for (int i = 1; i < STABILITY_N_FRAMES; ++i)
+    int best_sum = INT_MAX;
+    size_t best_rank = 0;
+    for (size_t r = 0; r < top.size(); ++r)
     {
-      if (transDist(stability_window_[i].position, ref.position) > STABILITY_TRANS_MM)
-        return false;
-      if (angleBetweenQuats(stability_window_[i].orientation, ref.orientation) > STABILITY_ROT_DEG)
-        return false;
+      int sum = static_cast<int>(r) + 1;
+      for (int f = 0; f + 1 < STABILITY_N_FRAMES && sum; ++f)
+      {
+        const auto &frame = stability_window_[f];
+        auto it = std::find_if(frame.begin(), frame.end(), [&](const geometry_msgs::msg::Pose &g)
+                               { return sameGrasp(g, top[r]); });
+        sum = it == frame.end() ? 0 : sum + static_cast<int>(it - frame.begin()) + 1;
+      }
+      if (sum && sum < best_sum) // strict: a tie keeps the better rank now
+      {
+        best_sum = sum;
+        best_rank = r;
+      }
     }
-    stable_pose = stability_window_.back();
+    if (best_sum == INT_MAX)
+      return false;
+    stable_pose = top[best_rank];
+    RCLCPP_INFO(this->get_logger(), "EXECUTING: rank sum %d over %d frames, rank %zu now",
+                best_sum, STABILITY_N_FRAMES, best_rank + 1);
     return true;
   }
 
@@ -704,35 +732,43 @@ private:
       }
     }
 
-    // --- Pick best candidate passing approach angle check ---
-    geometry_msgs::msg::Pose best_pose_cam;
-    geometry_msgs::msg::Pose best_pose_base;
-    bool found_valid = false;
+    // --- This frame's best grasps that pass S1 to S3, best first (the lock ranks them, T1.62) ---
+    std::vector<geometry_msgs::msg::Pose> top;
+    // Each guard's drops this frame, logged by stage tag (T1.51)
+    int no_tf = 0, too_flat = 0, failed_before = 0;
     for (const auto &candidate : msg->grasps)
     {
       geometry_msgs::msg::Pose pose_base;
       if (!transformToBase(candidate.pose, pose_base))
+      {
+        ++no_tf;
         continue;
+      }
       if (approachAngleDeg(pose_base.orientation) < MIN_APPROACH_ANGLE_DEG)
       {
-        RCLCPP_DEBUG(this->get_logger(), "Candidate rejected: angle %.1f° < %.1f°",
-                     approachAngleDeg(pose_base.orientation), MIN_APPROACH_ANGLE_DEG);
+        ++too_flat;
         continue;
       }
       // A grasp that already failed to plan fails again: take the next one (T1.48). It used to
       // retry the same grasp forever (2026-10-26)
       if (std::any_of(failed_poses_.begin(), failed_poses_.end(), [&](const geometry_msgs::msg::Pose &f)
-                      { return transDist(f.position, pose_base.position) <= STABILITY_TRANS_MM &&
-                               angleBetweenQuats(f.orientation, pose_base.orientation) <= STABILITY_ROT_DEG; }))
+                      { return sameGrasp(f, pose_base); }))
+      {
+        ++failed_before;
         continue;
-      found_valid = true;
-      best_pose_base = pose_base;
-      break;
+      }
+      top.push_back(pose_base);
+      if ((int)top.size() >= STABILITY_TOP_K)
+        break;
     }
+    if (no_tf + too_flat + failed_before > 0)
+      RCLCPP_INFO(this->get_logger(), "EXECUTING: of %zu candidates, [S1 TF] dropped %d, [S2 angle] %d (under %.0f deg), "
+                                      "[S3 failed before] %d",
+                  msg->grasps.size(), no_tf, too_flat, MIN_APPROACH_ANGLE_DEG, failed_before);
 
-    if (!found_valid)
+    if (top.empty())
     {
-      RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidate passed approach angle check");
+      RCLCPP_WARN(this->get_logger(), "EXECUTING: no candidate left after S1 to S3");
       resetStability();
       return false; // keep looping
     }
@@ -746,7 +782,7 @@ private:
     // }
 
     // --- Stability check ---
-    if (!pose_locked && checkStability(best_pose_base, stable_pose_base))
+    if (!pose_locked && checkStability(top, stable_pose_base))
     {
       RCLCPP_INFO(this->get_logger(), "EXECUTING: pose stable — locking target");
       pose_locked = true;
@@ -1114,7 +1150,7 @@ private:
   std::atomic<bool> stopped_{false};
 
   // Stability window
-  std::deque<geometry_msgs::msg::Pose> stability_window_;
+  std::deque<std::vector<geometry_msgs::msg::Pose>> stability_window_;
   // Grasps that failed to plan this cycle, skipped from then on (worker thread only, T1.48)
   std::vector<geometry_msgs::msg::Pose> failed_poses_;
   // When the wait for the current grasp to lock began (worker thread only)
@@ -1146,6 +1182,7 @@ private:
   bool USE_SLERP_EXECUTE;
   // Stability criterion
   int STABILITY_N_FRAMES;
+  int STABILITY_TOP_K;
   double STABILITY_TRANS_MM;
   double STABILITY_ROT_DEG;
   int MAX_GRASP_ATTEMPTS; // grasps tried per cycle before giving up (T1.48)

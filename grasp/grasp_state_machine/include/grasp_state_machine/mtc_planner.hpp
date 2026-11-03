@@ -1,4 +1,5 @@
 #include <atomic>
+#include <memory>
 #include <thread>
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/pose.hpp>
@@ -9,8 +10,19 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/msg/collision_object.hpp>
+#include <moveit_task_constructor_msgs/msg/solution.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 
 using namespace moveit::task_constructor;
+
+// A grasp's twin: the same pose turned 180 deg about its approach (grasp_frame z). The gripper is
+// symmetric, so both are the same grasp.
+inline geometry_msgs::msg::Pose twinPose(const geometry_msgs::msg::Pose &pose)
+{
+  Eigen::Isometry3d grasp;
+  tf2::fromMsg(pose, grasp);
+  return tf2::toMsg(Eigen::Isometry3d(grasp * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ())));
+}
 
 class MtcPlanner
 {
@@ -24,8 +36,9 @@ public:
     if (mtc_spin_thread_.joinable())
       mtc_spin_thread_.join();
   }
-  // Moves the gripper to grasp_pose (base_link): a collision-free path to pregrasp_distance_m
-  // back along the approach, then straight in (T1.48). Only the gripper may touch TARGET_ID.
+  // Moves the gripper to grasp_pose (base_link) or its 180 degree twin, whichever plans with less
+  // joint travel (T1.51): a collision-free path to pregrasp_distance_m back along the approach,
+  // then straight in (T1.48). Only the gripper may touch TARGET_ID.
   // Returns true on success, false on planning or execution failure.
   bool approachGrasp(const geometry_msgs::msg::Pose &grasp_pose);
 
@@ -56,6 +69,10 @@ private:
   double step_settle_s_; // step_settle_s in grasp/grasp_config.yaml
   double max_wrist_turn_deg_; // max_wrist_turn_deg in grasp/grasp_config.yaml
   double pregrasp_distance_m_; // pregrasp_distance_m in grasp/grasp_config.yaml
+  bool plan_only_; // plan_only in grasp/grasp_config.yaml
+  // Made once, so a recorder that subscribed at start-up gets every plan. MTC's own /solution
+  // publisher is made per Task and gone when approachGrasp returns, maybe before it is heard (T1.51)
+  rclcpp::Publisher<moveit_task_constructor_msgs::msg::Solution>::SharedPtr solution_pub_;
   // The rest are the keys of the same name in grasp/grasp_config.yaml, section grasp_state_machine
   double max_velocity_scale_;           // arm_max_velocity_scale, every move
   double max_acceleration_scale_;       // arm_max_acceleration_scale, every move
@@ -70,6 +87,9 @@ private:
   const std::atomic<bool> &stopped_;
 
   bool refuseIfStopped(const char *what);
+  // One pose's plan: IK at the pre-grasp (P2), path and straight in (P3-P4), wrist turn (P6).
+  // Null if any fails. travel is the plan's joint change, summed over every joint and step, radians.
+  std::unique_ptr<Task> planApproach(const geometry_msgs::msg::Pose &grasp_pose, const char *name, double &travel);
 
   const std::string ARM_GROUP = "rm_group";
   // The target's id in the planning scene. The detector publishes it under this id too.
