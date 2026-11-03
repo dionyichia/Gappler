@@ -245,9 +245,11 @@ grasp_state_machine:
     # Read by grasp_state_machine.cpp, and by bench/nodes/test_state_machine_sim.py, whose "never
     # locks" check waits this long plus 15 s.
     # The lower-ranked grasps can jump between frames and never lock: 86 s of silence on 2026-10-26.
-    # Locks seen that day took 3 to 6 s, once 17 s, so 25 leaves room. It was 60 while T1.51 was
-    # tested (2026-10-29 to 11-03). On the real arm a second lock never came in 60 s either.
-    lock_timeout_s: 25.0
+    # Locks seen that day took 3 to 6 s, once 17 s. It was 25 until T1.62. With GraRe on a frame
+    # takes 6 to 7 s (T1.61 arm session, 2026-11-03), so stability_n_frames 5 alone needs 30 to
+    # 35 s. 90 is the value used on the arm that day (Dion, 2026-11-03): time is not the problem
+    # yet, and it leaves room for a few frames that do not match.
+    lock_timeout_s: 90.0
     # Refuse a move to AnyGrasp's grasp if joint 4, 5 or 6 would turn further than this (T1.45).
     # 360 = off since T1.51 (Dion, 2026-11-03): cable check on the real arm, joint 6 turned -340 to
     # +360 deg at 5 % with no snag (the camera wire coils past about 240, fine). Joints 4 and 5 cannot
@@ -293,13 +295,25 @@ grasp_state_machine:
     # [unverified] on the real arm.
     use_slerp_execute: false
     max_orient_step_deg: 5.0
-    # AnyGrasp path only. A grasp locks (the arm commits to it) once the last stability_n_frames
-    # candidates all sit within stability_trans_mm and stability_rot_deg of the first of them.
-    # The same two limits decide whether a new grasp is one that already failed to plan (T1.48).
+    # AnyGrasp path only. The rank-sum lock (T1.62): each frame keeps its first stability_top_k
+    # grasps that pass S1 to S3. A grasp of the newest frame counts if the same grasp (within
+    # stability_trans_mm and stability_rot_deg, its 180 deg twin included) is in each of the last
+    # stability_n_frames frames. The one with the lowest sum of ranks locks (the arm commits to
+    # it), a tie goes to the better rank now. Before T1.62 only each frame's top grasp counted, and
+    # one swap of the top two delayed the lock: no lock in 90 s with GraRe on (2026-11-03). The
+    # same two limits decide whether a new grasp is one that already failed to plan (T1.48).
     # More frames or tighter limits: a surer grasp, but it locks later or never (lock_timeout_s).
+    # A bigger stability_top_k locks sooner but can lock a grasp that is never near the top.
+    # Read by grasp_state_machine.cpp.
     stability_n_frames: 5
+    stability_top_k: 5
+    # 20 deg since T1.62 (Dion, 2026-11-03, pose 2 at 45 deg): AnyGrasp's best grasp steps 13 to
+    # 19 deg between frames while it stays within 15 mm, so at 10 nothing locked in 90 s. Dion
+    # judged pairs 13 to 19 deg apart, side by side at one height, as one grasp. Pairs that
+    # differ in height or need a sideways shift are different grasps by eye, but sit at the same
+    # distance and angle, so no limit tells them apart. At 20 every earlier bag locks the same grasp.
     stability_trans_mm: 15.0
-    stability_rot_deg: 10.0
+    stability_rot_deg: 20.0
 
     # ---- Arm motion (T0.22). read by: grasp_state_machine/src/mtc_planner.cpp
     # Share of the arm's top joint speed and acceleration (0 to 1) that every move may use: the
@@ -338,9 +352,10 @@ grasp_state_machine:
     # ---- Waits (T0.22). read by: grasp_state_machine/src/grasp_state_machine.cpp
     # EXECUTING: back to IDLE if no grasp candidates arrive for this long (T1.37). Must be longer
     # than one AnyGrasp frame: about 0.4 s alone, 2 to 3.5 s with GraRe on in the node (T1.61,
-    # 2026-10-31). 6 gives GraRe on room (Dion, 2026-10-31). With GraRe off it only waits longer
+    # 2026-10-31). 6 gave GraRe on room (Dion, 2026-10-31), but frames took 6 to 7 s on the arm
+    # on 2026-11-03, so 15, the value used that day (T1.62). With GraRe off it only waits longer
     # before giving up on an empty stream.
-    candidate_timeout_s: 6.0
+    candidate_timeout_s: 15.0
     # At start-up, wait this long before adding the safety walls and homing, so move_group and
     # its planning scene are up. Was 2 s, then 3 s more inside the wall code: one wait now, same
     # total. If the log shows "Waiting for planning scene to accept safety walls" many times,

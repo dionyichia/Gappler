@@ -18,6 +18,8 @@ private, no rm_driver exists and the real arm is unreachable. This test plays ev
               cube at the grasp point, as the node measures the object (T1.48). The state
               machine does not move to a grasp without one. First the grasp jumps 5 cm
               between frames, so nothing locks and EXECUTING must give up (lock_timeout_s, T1.48).
+              Then a second grasp 3 cm back is listed first in every third frame: the rank-sum
+              lock must still take the first grasp (T1.62).
 and watches /pipeline_state, /joint_states, /manipulator/return_to_user, /manipulation/done and
 the launch log.
 
@@ -104,6 +106,10 @@ class Actors(Node):
         self.cand_base = None  # Pose in base_link; published in the camera frame while set
         self.jitter = 0.0      # m; random offset added to each published grasp, so it never locks
         self.twin_next = False  # every other list sends the grasp's twin: it must still lock (T1.61)
+        # m, base_link: a second grasp this far from the first, listed first in every third list.
+        # The top grasp swaps, the rank-sum lock must still lock the first grasp (T1.62)
+        self.decoy = None
+        self.n_lists = 0
         self.depth = None
         self.create_timer(0.2, self._camera)
         self.create_timer(0.1, self._centroid)
@@ -167,7 +173,13 @@ class Actors(Node):
             q = (Rotation.from_quat([o.x, o.y, o.z, o.w]) * Rotation.from_euler("z", 180, degrees=True)).as_quat()
             pose.orientation = type(o)(x=float(q[0]), y=float(q[1]), z=float(q[2]), w=float(q[3]))
         self.twin_next = not self.twin_next
-        m.grasps = [GraspCandidate(score=0.9, width=0.05, depth=0.02, pose=do_transform_pose(pose, to_opt))]
+        poses = [pose]
+        if self.decoy is not None:
+            d = Pose(position=type(pose.position)(**{k: getattr(pose.position, k) + float(v)
+                                                     for k, v in zip("xyz", self.decoy)}), orientation=pose.orientation)
+            poses = [d, pose] if self.n_lists % 3 == 1 else [pose, d]
+        self.n_lists += 1
+        m.grasps = [GraspCandidate(score=0.9, width=0.05, depth=0.02, pose=do_transform_pose(p, to_opt)) for p in poses]
         self.cand_pub.publish(m)
         # The object between the open fingers, centred on the grasp point (T1.48)
         box = CollisionObject(id="grasp_target", operation=CollisionObject.ADD)
@@ -425,12 +437,19 @@ def main():
             q.x, q.y, q.z, q.w = (float(v) for v in
                                   Rotation.from_matrix(to_grasp_frame(want)).as_quat())
             angle = math.degrees(math.asin(min(1.0, abs(1 - 2 * (q.x * q.x + q.y * q.y)))))  # approachAngleDeg()
+            # 3 cm back along the approach: as easy to reach, and the fingers stay clear of the cube
+            n.decoy = -0.03 * a
             locked = n.spin_until(lambda: log_has(r"EXECUTING: pose stable") or log_has(r"no candidate"), 30)
+            n.decoy = None
             check("candidates -> stability lock", locked and log_has(r"EXECUTING: pose stable"),
                   f"locked; candidate approach angle {angle:.1f} deg" if log_has(r"EXECUTING: pose stable") else
                   f"no lock in 30 s; approach angle {angle:.1f} deg (min_approach_angle_deg rejects below 20)")
             if not log_has(r"EXECUTING: pose stable"):
                 return
+            # The decoy is first in 1 or 2 of any 5 lists: the grasp sums 6 or 7, the decoy 8 or 9
+            ok = log_has(r"rank sum [67] over 5 frames")  # 5 = stability_n_frames
+            check("top two swap -> rank-sum lock takes the better grasp (T1.62)", ok,
+                  "rank sum 6 or 7 logged" if ok else "no 'rank sum 6' or '7' line: the decoy locked, or nothing did")
         if CANDIDATES and PLAN_ONLY:
             # No close is the intended outcome here, so the close check below would fail on purpose
             n.spin_until(lambda: log_has(r"plan_only, planned and recorded")
@@ -465,11 +484,13 @@ def main():
             if not check("fingertips reach the published grasp point", off < 5,
                          f"grasp_frame {off:.1f} mm from it (limit 5)"):
                 return
+            # Every other list is the twin (T1.61), so the lock takes either copy. Given the twin it
+            # must run the other, given the gripper's own line it runs it as given (T1.62, 2026-11-03)
             turn = abs(math.degrees(n.wrist_at_close - wrist_start))
-            if not check("given the 180 degree twin, the planner runs the other: wrist turns 90 or less (T1.51)",
-                         turn <= 90 and log_has(r"running the twin grasp"),
-                         f"joint6 turned {turn:.1f} deg, 'running the twin grasp' "
-                         f"{'logged' if log_has(r'running the twin grasp') else 'not logged'}"):
+            ran = re.search(r"running the (twin|as given) grasp", LOG.read_text(errors="replace"))
+            if not check("given either twin, the planner runs the nearer: wrist turns 90 or less (T1.51)",
+                         turn <= 90 and ran is not None,
+                         f"joint6 turned {turn:.1f} deg, ran the {ran.group(1) if ran else '(not logged)'} grasp"):
                 return
         n.depth = None
         ret = n.spin_until(lambda: any(v for _, v in n.returned), 120)
