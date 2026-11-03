@@ -55,7 +55,7 @@ flowchart TB
     end
 
     subgraph B["B · GRASP PREDICTION — conda env 'anygrasp'"]
-        AG["anygrasp_detection_node<br/>compiled .so · licensed"]
+        AG["anygrasp_detection_node<br/>compiled .so · licensed<br/>+ GraRe re-ranker, off by default"]
     end
 
     subgraph C["C · ARM — ros2_robot_ws/ · C++"]
@@ -512,3 +512,4 @@ See ORIENTATION §8.2 for the three self-annotated bugs in the EXECUTING branch.
 | 2026-09-09 | Claude (Opus 5) | Added L1a (arm end-to-end + rm_driver surface + TF chain), L1b (nav node graph, mapping-vs-localization, TF tree), L2 (process/thread model, latest-wins handoff), L2b (state machine transitions). Corrected `/aria/fused_pose` frame in L0c. |
 | 2026-09-13 | Claude (Opus 5) + Dion | Cuts table: seam #2 citation `object_recognition_pipeline.py:384`→`:389`, shifted by uncommitted comments in that file. |
 | 2026-09-21 | Claude (Opus 5) + Dion | Pointer at the top to the old-to-new path table in `NEXT_STEPS` §2.15, after the reorg moved our code. |
+| 2026-10-31 | Claude Opus 5.5 + Dion | L0: the AnyGrasp node can re-rank its grasps with GraRe (`grasp/anygrasp_node/grare_rerank.py`, off by default, T1.61). |

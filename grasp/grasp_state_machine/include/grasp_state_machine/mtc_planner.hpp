@@ -11,8 +11,18 @@
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/msg/collision_object.hpp>
 #include <moveit_task_constructor_msgs/msg/solution.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 
 using namespace moveit::task_constructor;
+
+// A grasp's twin: the same pose turned 180 deg about its approach (grasp_frame z). The gripper is
+// symmetric, so both are the same grasp.
+inline geometry_msgs::msg::Pose twinPose(const geometry_msgs::msg::Pose &pose)
+{
+  Eigen::Isometry3d grasp;
+  tf2::fromMsg(pose, grasp);
+  return tf2::toMsg(Eigen::Isometry3d(grasp * Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ())));
+}
 
 class MtcPlanner
 {

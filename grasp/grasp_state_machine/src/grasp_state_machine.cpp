@@ -455,11 +455,14 @@ private:
       return false;
 
     const auto &ref = stability_window_.front();
+    const auto ref_twin = twinPose(ref);
     for (int i = 1; i < STABILITY_N_FRAMES; ++i)
     {
       if (transDist(stability_window_[i].position, ref.position) > STABILITY_TRANS_MM)
         return false;
-      if (angleBetweenQuats(stability_window_[i].orientation, ref.orientation) > STABILITY_ROT_DEG)
+      // A flip to the twin is the same grasp
+      if (std::min(angleBetweenQuats(stability_window_[i].orientation, ref.orientation),
+                   angleBetweenQuats(stability_window_[i].orientation, ref_twin.orientation)) > STABILITY_ROT_DEG)
         return false;
     }
     stable_pose = stability_window_.back();
@@ -727,7 +730,8 @@ private:
       // retry the same grasp forever (2026-10-26)
       if (std::any_of(failed_poses_.begin(), failed_poses_.end(), [&](const geometry_msgs::msg::Pose &f)
                       { return transDist(f.position, pose_base.position) <= STABILITY_TRANS_MM &&
-                               angleBetweenQuats(f.orientation, pose_base.orientation) <= STABILITY_ROT_DEG; }))
+                               std::min(angleBetweenQuats(f.orientation, pose_base.orientation),
+                                        angleBetweenQuats(twinPose(f).orientation, pose_base.orientation)) <= STABILITY_ROT_DEG; }))
       {
         ++failed_before;
         continue;
