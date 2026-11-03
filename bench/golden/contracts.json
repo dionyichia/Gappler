@@ -358,8 +358,6 @@
       "grasp/anygrasp_node/anygrasp_detection_node.py:286",
       "grasp/grasp_state_machine/src/grasp_state_machine.cpp:497",
       "grasp/grasp_state_machine/src/mtc_planner.cpp:167",
-      "grasp/grasp_state_machine/src/mtc_planner.cpp:167",
-      "grasp/grasp_state_machine/src/mtc_planner.cpp:167",
       "grasp/grasp_viz/grasp_viz.py:120",
       "grasp/grasp_viz/grasp_viz.py:152",
       "grasp/grasp_viz/grasp_viz.py:182",
@@ -580,7 +578,7 @@
       "arm/vendor/rm_gazebo/config/gazebo_65_w_gripper_description.urdf.xacro(urdf)"
     ]
   },
-  "git": "470aeeb-dirty",
+  "git": "fb02b60",
   "launch_includes": [
     {
       "from": "arm/arm_bringup/launch/arm_bringup.launch.py",
@@ -1512,31 +1510,21 @@
       "nav/robot_slam/config/nav2_params.yaml:129"
     ],
     "anygrasp_gripper_height_m": [
-      "grasp/grasp_config.yaml:80",
-      "grasp/grasp_config.yaml:80",
       "grasp/grasp_config.yaml:80"
     ],
     "anygrasp_sdk": [
-      "grasp/grasp_config.yaml:63",
-      "grasp/grasp_config.yaml:63",
       "grasp/grasp_config.yaml:63"
     ],
     "approach_distance_m": [
       "nav/nav_config.yaml:39"
     ],
     "approach_plan_solutions": [
-      "grasp/grasp_config.yaml:294",
-      "grasp/grasp_config.yaml:294",
       "grasp/grasp_config.yaml:294"
     ],
     "approach_step_final_m": [
-      "grasp/grasp_config.yaml:203",
-      "grasp/grasp_config.yaml:203",
       "grasp/grasp_config.yaml:203"
     ],
     "approach_step_m": [
-      "grasp/grasp_config.yaml:200",
-      "grasp/grasp_config.yaml:200",
       "grasp/grasp_config.yaml:200"
     ],
     "approach_velocity_scaling_dist": [
@@ -1560,13 +1548,9 @@
       "arm/vendor/rm_driver/src/rm_driver.cpp:4148"
     ],
     "arm_max_acceleration_scale": [
-      "grasp/grasp_config.yaml:279",
-      "grasp/grasp_config.yaml:279",
       "grasp/grasp_config.yaml:279"
     ],
     "arm_max_velocity_scale": [
-      "grasp/grasp_config.yaml:278",
-      "grasp/grasp_config.yaml:278",
       "grasp/grasp_config.yaml:278"
     ],
     "arm_mount": [
@@ -1614,38 +1598,24 @@
       "nav/vendor/drivers/xpkg_vehicle/src/ROS_INF/ros2_interface.cpp:126"
     ],
     "candidate_timeout_s": [
-      "grasp/grasp_config.yaml:310",
-      "grasp/grasp_config.yaml:310",
       "grasp/grasp_config.yaml:310"
     ],
     "cartesian_step_eef_step_m": [
-      "grasp/grasp_config.yaml:303",
-      "grasp/grasp_config.yaml:303",
       "grasp/grasp_config.yaml:303"
     ],
     "cartesian_step_jump_threshold": [
-      "grasp/grasp_config.yaml:304",
-      "grasp/grasp_config.yaml:304",
       "grasp/grasp_config.yaml:304"
     ],
     "cartesian_step_min_fraction": [
-      "grasp/grasp_config.yaml:305",
-      "grasp/grasp_config.yaml:305",
       "grasp/grasp_config.yaml:305"
     ],
     "centroid_max_age_s": [
-      "grasp/grasp_config.yaml:233",
-      "grasp/grasp_config.yaml:233",
       "grasp/grasp_config.yaml:233"
     ],
     "centroid_target_offset_x_px": [
-      "grasp/grasp_config.yaml:250",
-      "grasp/grasp_config.yaml:250",
       "grasp/grasp_config.yaml:250"
     ],
     "centroid_target_offset_y_px": [
-      "grasp/grasp_config.yaml:251",
-      "grasp/grasp_config.yaml:251",
       "grasp/grasp_config.yaml:251"
     ],
     "ceres_dogleg_type": [
@@ -1742,13 +1712,9 @@
       "nav/robot_slam/config/nav2_params.yaml:202"
     ],
     "debug_anygrasp_points": [
-      "grasp/grasp_config.yaml:28",
-      "grasp/grasp_config.yaml:28",
       "grasp/grasp_config.yaml:28"
     ],
     "debug_centroid_marker": [
-      "grasp/grasp_config.yaml:25",
-      "grasp/grasp_config.yaml:25",
       "grasp/grasp_config.yaml:25"
     ],
     "debug_logging": [
@@ -1757,124 +1723,78 @@
       "nav/robot_slam/config/slam_toolbox_localization.yaml:20"
     ],
     "debug_sam_mask": [
-      "grasp/grasp_config.yaml:24",
-      "grasp/grasp_config.yaml:24",
       "grasp/grasp_config.yaml:24"
     ],
     "debug_state_marker": [
-      "grasp/grasp_config.yaml:26",
-      "grasp/grasp_config.yaml:26",
       "grasp/grasp_config.yaml:26"
     ],
     "default_depth_m": [
       "aria/aria_config.yaml:162"
     ],
     "default_prompt": [
-      "grasp/grasp_config.yaml:45",
-      "grasp/grasp_config.yaml:45",
       "grasp/grasp_config.yaml:45"
     ],
     "default_server_timeout": [
       "nav/robot_slam/config/nav2_params.yaml:16"
     ],
     "denoise_depth_noise_at_half_metre_m": [
-      "grasp/grasp_config.yaml:137",
-      "grasp/grasp_config.yaml:137",
       "grasp/grasp_config.yaml:137"
     ],
     "denoise_depth_step_rel": [
-      "grasp/grasp_config.yaml:161",
-      "grasp/grasp_config.yaml:161",
       "grasp/grasp_config.yaml:161"
     ],
     "denoise_mask_grow_px": [
-      "grasp/grasp_config.yaml:149",
-      "grasp/grasp_config.yaml:149",
       "grasp/grasp_config.yaml:149"
     ],
     "denoise_max_table_rms_m": [
-      "grasp/grasp_config.yaml:156",
-      "grasp/grasp_config.yaml:156",
       "grasp/grasp_config.yaml:156"
     ],
     "denoise_max_tilt_deg": [
-      "grasp/grasp_config.yaml:135",
-      "grasp/grasp_config.yaml:135",
       "grasp/grasp_config.yaml:135"
     ],
     "denoise_merge_gap_m": [
-      "grasp/grasp_config.yaml:166",
-      "grasp/grasp_config.yaml:166",
       "grasp/grasp_config.yaml:166"
     ],
     "denoise_min_kept_frac": [
-      "grasp/grasp_config.yaml:170",
-      "grasp/grasp_config.yaml:170",
       "grasp/grasp_config.yaml:170"
     ],
     "denoise_min_main_frac": [
-      "grasp/grasp_config.yaml:172",
-      "grasp/grasp_config.yaml:172",
       "grasp/grasp_config.yaml:172"
     ],
     "denoise_min_object_points": [
-      "grasp/grasp_config.yaml:168",
-      "grasp/grasp_config.yaml:168",
       "grasp/grasp_config.yaml:168"
     ],
     "denoise_min_surface_pixels": [
-      "grasp/grasp_config.yaml:163",
-      "grasp/grasp_config.yaml:163",
       "grasp/grasp_config.yaml:163"
     ],
     "denoise_min_table_points": [
-      "grasp/grasp_config.yaml:155",
-      "grasp/grasp_config.yaml:155",
       "grasp/grasp_config.yaml:155"
     ],
     "denoise_ransac_iterations": [
-      "grasp/grasp_config.yaml:151",
-      "grasp/grasp_config.yaml:151",
       "grasp/grasp_config.yaml:151"
     ],
     "denoise_ransac_sample_points": [
-      "grasp/grasp_config.yaml:152",
-      "grasp/grasp_config.yaml:152",
       "grasp/grasp_config.yaml:152"
     ],
     "denoise_refine_passes": [
-      "grasp/grasp_config.yaml:153",
-      "grasp/grasp_config.yaml:153",
       "grasp/grasp_config.yaml:153"
     ],
     "denoise_region_depth_m": [
-      "grasp/grasp_config.yaml:145",
-      "grasp/grasp_config.yaml:145",
       "grasp/grasp_config.yaml:145"
     ],
     "denoise_region_margin_px": [
-      "grasp/grasp_config.yaml:147",
-      "grasp/grasp_config.yaml:147",
       "grasp/grasp_config.yaml:147"
     ],
     "denoise_remove_band_sigmas": [
-      "grasp/grasp_config.yaml:158",
-      "grasp/grasp_config.yaml:158",
       "grasp/grasp_config.yaml:158"
     ],
     "denoise_table_band_max_m": [
-      "grasp/grasp_config.yaml:143",
-      "grasp/grasp_config.yaml:143",
       "grasp/grasp_config.yaml:143"
     ],
     "denoise_table_band_min_m": [
-      "grasp/grasp_config.yaml:142",
-      "grasp/grasp_config.yaml:142",
       "grasp/grasp_config.yaml:142"
     ],
     "denoise_table_band_sigmas": [
-      "grasp/grasp_config.yaml:139",
-      "grasp/grasp_config.yaml:139",
       "grasp/grasp_config.yaml:139"
     ],
     "depth": [
@@ -1905,8 +1825,6 @@
       "aria/aria_config.yaml:128"
     ],
     "execute_depth_thresh_m": [
-      "grasp/grasp_config.yaml:207",
-      "grasp/grasp_config.yaml:207",
       "grasp/grasp_config.yaml:207"
     ],
     "expected_planner_frequency": [
@@ -1925,28 +1843,18 @@
       "nav/robot_slam/config/nav2_params.yaml:195"
     ],
     "final_exec_thresh_m": [
-      "grasp/grasp_config.yaml:244",
-      "grasp/grasp_config.yaml:244",
       "grasp/grasp_config.yaml:244"
     ],
     "finger_height_m": [
-      "grasp/grasp_config.yaml:107",
-      "grasp/grasp_config.yaml:107",
       "grasp/grasp_config.yaml:107"
     ],
     "finger_length_m": [
-      "grasp/grasp_config.yaml:184",
-      "grasp/grasp_config.yaml:184",
       "grasp/grasp_config.yaml:184"
     ],
     "finger_radius_m": [
-      "grasp/grasp_config.yaml:185",
-      "grasp/grasp_config.yaml:185",
       "grasp/grasp_config.yaml:185"
     ],
     "fit_percentile": [
-      "grasp/grasp_config.yaml:111",
-      "grasp/grasp_config.yaml:111",
       "grasp/grasp_config.yaml:111"
     ],
     "follow": [
@@ -2003,46 +1911,30 @@
       "nav/nav_config.yaml:27"
     ],
     "grasp_candidate_markers": [
-      "grasp/grasp_config.yaml:23",
-      "grasp/grasp_config.yaml:23",
       "grasp/grasp_config.yaml:23"
     ],
     "grasp_candidates": [
-      "grasp/grasp_config.yaml:19",
-      "grasp/grasp_config.yaml:19",
       "grasp/grasp_config.yaml:19"
     ],
     "grasp_request_timeout_s": [
-      "grasp/grasp_config.yaml:237",
-      "grasp/grasp_config.yaml:237",
       "grasp/grasp_config.yaml:237"
     ],
     "grasp_target": [
       "shared/global_config.yaml:47"
     ],
     "grasp_target_object": [
-      "grasp/grasp_config.yaml:31",
-      "grasp/grasp_config.yaml:31",
       "grasp/grasp_config.yaml:31"
     ],
     "gripper_close_force": [
-      "grasp/grasp_config.yaml:339",
-      "grasp/grasp_config.yaml:339",
       "grasp/grasp_config.yaml:339"
     ],
     "gripper_close_speed": [
-      "grasp/grasp_config.yaml:338",
-      "grasp/grasp_config.yaml:338",
       "grasp/grasp_config.yaml:338"
     ],
     "gripper_move_wait_s": [
-      "grasp/grasp_config.yaml:331",
-      "grasp/grasp_config.yaml:331",
       "grasp/grasp_config.yaml:331"
     ],
     "gripper_open_position": [
-      "grasp/grasp_config.yaml:334",
-      "grasp/grasp_config.yaml:334",
       "grasp/grasp_config.yaml:334"
     ],
     "height": [
@@ -2056,8 +1948,6 @@
       "aria/aria_config.yaml:183"
     ],
     "home_joints_rad": [
-      "grasp/grasp_config.yaml:284",
-      "grasp/grasp_config.yaml:284",
       "grasp/grasp_config.yaml:284"
     ],
     "imu": [
@@ -2085,8 +1975,6 @@
       "aria/aria_config.yaml:119"
     ],
     "joint_state_wait_s": [
-      "grasp/grasp_config.yaml:287",
-      "grasp/grasp_config.yaml:287",
       "grasp/grasp_config.yaml:287"
     ],
     "jpeg_quality": [
@@ -2119,8 +2007,6 @@
       "aria/aria_config.yaml:113"
     ],
     "lock_timeout_s": [
-      "grasp/grasp_config.yaml:219",
-      "grasp/grasp_config.yaml:219",
       "grasp/grasp_config.yaml:219"
     ],
     "lookahead_dist": [
@@ -2245,13 +2131,9 @@
       "nav/robot_slam/config/nav2_params.yaml:64"
     ],
     "max_approach_deg": [
-      "grasp/grasp_config.yaml:93",
-      "grasp/grasp_config.yaml:93",
       "grasp/grasp_config.yaml:93"
     ],
     "max_approach_steps": [
-      "grasp/grasp_config.yaml:204",
-      "grasp/grasp_config.yaml:204",
       "grasp/grasp_config.yaml:204"
     ],
     "max_buffer_s": [
@@ -2262,23 +2144,15 @@
     ],
     "max_detections": [
       "grasp/grasp_config.yaml:54",
-      "grasp/grasp_config.yaml:54",
-      "grasp/grasp_config.yaml:54",
       "shared_services/shared_services_config.yaml:13"
     ],
     "max_grasp_attempts": [
-      "grasp/grasp_config.yaml:214",
-      "grasp/grasp_config.yaml:214",
       "grasp/grasp_config.yaml:214"
     ],
     "max_grasp_depth_m": [
-      "grasp/grasp_config.yaml:104",
-      "grasp/grasp_config.yaml:104",
       "grasp/grasp_config.yaml:104"
     ],
     "max_gripper_width_m": [
-      "grasp/grasp_config.yaml:76",
-      "grasp/grasp_config.yaml:76",
       "grasp/grasp_config.yaml:76"
     ],
     "max_its": [
@@ -2297,8 +2171,6 @@
       "nav/robot_slam/config/nav2_params.yaml:48"
     ],
     "max_object_width_m": [
-      "grasp/grasp_config.yaml:101",
-      "grasp/grasp_config.yaml:101",
       "grasp/grasp_config.yaml:101"
     ],
     "max_obstacle_height": [
@@ -2306,13 +2178,9 @@
       "nav/robot_slam/config/nav2_params.yaml:97"
     ],
     "max_orient_step_deg": [
-      "grasp/grasp_config.yaml:264",
-      "grasp/grasp_config.yaml:264",
       "grasp/grasp_config.yaml:264"
     ],
     "max_point_depth_m": [
-      "grasp/grasp_config.yaml:84",
-      "grasp/grasp_config.yaml:84",
       "grasp/grasp_config.yaml:84"
     ],
     "max_robot_pose_search_dist": [
@@ -2335,13 +2203,9 @@
       "nav/robot_slam/config/nav2_params.yaml:196"
     ],
     "max_wrist_turn_deg": [
-      "grasp/grasp_config.yaml:224",
-      "grasp/grasp_config.yaml:224",
       "grasp/grasp_config.yaml:224"
     ],
     "min_approach_angle_deg": [
-      "grasp/grasp_config.yaml:259",
-      "grasp/grasp_config.yaml:259",
       "grasp/grasp_config.yaml:259"
     ],
     "min_approach_linear_velocity": [
@@ -2362,8 +2226,6 @@
       "nav/robot_slam/config/nav2_params.yaml:172"
     ],
     "min_score": [
-      "grasp/grasp_config.yaml:53",
-      "grasp/grasp_config.yaml:53",
       "grasp/grasp_config.yaml:53",
       "shared_services/shared_services_config.yaml:12"
     ],
@@ -2412,8 +2274,6 @@
       "shared_services/shared_services_config.yaml:22"
     ],
     "move_retry_s": [
-      "grasp/grasp_config.yaml:320",
-      "grasp/grasp_config.yaml:320",
       "grasp/grasp_config.yaml:320"
     ],
     "movement_time_allowance": [
@@ -2469,8 +2329,6 @@
       "nav/robot_slam/scripts/fastlivo_odom_bridge.py:230"
     ],
     "open_width_m": [
-      "grasp/grasp_config.yaml:187",
-      "grasp/grasp_config.yaml:187",
       "grasp/grasp_config.yaml:187"
     ],
     "openvins_ws": [
@@ -2492,26 +2350,18 @@
       "nav/robot_slam/scripts/fastlivo_odom_bridge.py:232"
     ],
     "palm_length_m": [
-      "grasp/grasp_config.yaml:180",
-      "grasp/grasp_config.yaml:180",
       "grasp/grasp_config.yaml:180"
     ],
     "palm_radius_m": [
-      "grasp/grasp_config.yaml:181",
-      "grasp/grasp_config.yaml:181",
       "grasp/grasp_config.yaml:181"
     ],
     "pick_radius_px": [
       "aria/aria_config.yaml:68"
     ],
     "pipeline_state": [
-      "grasp/grasp_config.yaml:21",
-      "grasp/grasp_config.yaml:21",
       "grasp/grasp_config.yaml:21"
     ],
     "plan_only": [
-      "grasp/grasp_config.yaml:227",
-      "grasp/grasp_config.yaml:227",
       "grasp/grasp_config.yaml:227"
     ],
     "planner_plugins": [
@@ -2562,13 +2412,9 @@
       "aria/aria_config.yaml:45"
     ],
     "pregrasp_distance_m": [
-      "grasp/grasp_config.yaml:210",
-      "grasp/grasp_config.yaml:210",
       "grasp/grasp_config.yaml:210"
     ],
     "pregrasp_ik_timeout_s": [
-      "grasp/grasp_config.yaml:291",
-      "grasp/grasp_config.yaml:291",
       "grasp/grasp_config.yaml:291"
     ],
     "progress_checker_plugin": [
@@ -2729,33 +2575,21 @@
       "nav/robot_slam/config/nav2_params.yaml:173"
     ],
     "safety_wall_front_x_m": [
-      "grasp/grasp_config.yaml:347",
-      "grasp/grasp_config.yaml:347",
       "grasp/grasp_config.yaml:347"
     ],
     "safety_wall_height_m": [
-      "grasp/grasp_config.yaml:353",
-      "grasp/grasp_config.yaml:353",
       "grasp/grasp_config.yaml:353"
     ],
     "safety_wall_retry_s": [
-      "grasp/grasp_config.yaml:317",
-      "grasp/grasp_config.yaml:317",
       "grasp/grasp_config.yaml:317"
     ],
     "safety_wall_side_length_m": [
-      "grasp/grasp_config.yaml:351",
-      "grasp/grasp_config.yaml:351",
       "grasp/grasp_config.yaml:351"
     ],
     "safety_wall_side_y_m": [
-      "grasp/grasp_config.yaml:349",
-      "grasp/grasp_config.yaml:349",
       "grasp/grasp_config.yaml:349"
     ],
     "safety_wall_thickness_m": [
-      "grasp/grasp_config.yaml:345",
-      "grasp/grasp_config.yaml:345",
       "grasp/grasp_config.yaml:345"
     ],
     "sam3_weights": [
@@ -2777,13 +2611,9 @@
       "nav/robot_slam/config/slam_toolbox_localization.yaml:12"
     ],
     "scene_margin_m": [
-      "grasp/grasp_config.yaml:67",
-      "grasp/grasp_config.yaml:67",
       "grasp/grasp_config.yaml:67"
     ],
     "segment_timeout_s": [
-      "grasp/grasp_config.yaml:48",
-      "grasp/grasp_config.yaml:48",
       "grasp/grasp_config.yaml:48"
     ],
     "segmentation_segment": [
@@ -2833,18 +2663,12 @@
       "nav/simple_teleop/simple_teleop/teleop_node.py:40"
     ],
     "stability_n_frames": [
-      "grasp/grasp_config.yaml:269",
-      "grasp/grasp_config.yaml:269",
       "grasp/grasp_config.yaml:269"
     ],
     "stability_rot_deg": [
-      "grasp/grasp_config.yaml:271",
-      "grasp/grasp_config.yaml:271",
       "grasp/grasp_config.yaml:271"
     ],
     "stability_trans_mm": [
-      "grasp/grasp_config.yaml:270",
-      "grasp/grasp_config.yaml:270",
       "grasp/grasp_config.yaml:270"
     ],
     "stack_size_to_use": [
@@ -2857,16 +2681,12 @@
       "nav/robot_slam/scripts/fastlivo_odom_bridge.py:233"
     ],
     "startup_wait_s": [
-      "grasp/grasp_config.yaml:315",
-      "grasp/grasp_config.yaml:315",
       "grasp/grasp_config.yaml:315"
     ],
     "stateful": [
       "nav/robot_slam/config/nav2_params.yaml:42"
     ],
     "step_settle_s": [
-      "grasp/grasp_config.yaml:241",
-      "grasp/grasp_config.yaml:241",
       "grasp/grasp_config.yaml:241"
     ],
     "stop_keyword": [
@@ -2877,51 +2697,33 @@
       "nav/robot_slam/config/nav2_params.yaml:183"
     ],
     "straight_in_step_m": [
-      "grasp/grasp_config.yaml:297",
-      "grasp/grasp_config.yaml:297",
       "grasp/grasp_config.yaml:297"
     ],
     "streaming_profile_name": [
       "aria/aria_config.yaml:83"
     ],
     "table_box_centre_x_m": [
-      "grasp/grasp_config.yaml:357",
-      "grasp/grasp_config.yaml:357",
       "grasp/grasp_config.yaml:357"
     ],
     "table_box_size_m": [
-      "grasp/grasp_config.yaml:358",
-      "grasp/grasp_config.yaml:358",
       "grasp/grasp_config.yaml:358"
     ],
     "table_top_z_m": [
-      "grasp/grasp_config.yaml:37",
-      "grasp/grasp_config.yaml:37",
       "grasp/grasp_config.yaml:37"
     ],
     "target_box_angle_step_deg": [
-      "grasp/grasp_config.yaml:127",
-      "grasp/grasp_config.yaml:127",
       "grasp/grasp_config.yaml:127"
     ],
     "target_box_edge_percentile": [
-      "grasp/grasp_config.yaml:118",
-      "grasp/grasp_config.yaml:118",
       "grasp/grasp_config.yaml:118"
     ],
     "target_box_pad_m": [
-      "grasp/grasp_config.yaml:114",
-      "grasp/grasp_config.yaml:114",
       "grasp/grasp_config.yaml:114"
     ],
     "target_box_table_gap_m": [
-      "grasp/grasp_config.yaml:124",
-      "grasp/grasp_config.yaml:124",
       "grasp/grasp_config.yaml:124"
     ],
     "target_box_top_percentile": [
-      "grasp/grasp_config.yaml:121",
-      "grasp/grasp_config.yaml:121",
       "grasp/grasp_config.yaml:121"
     ],
     "tcp_addr": [
@@ -2950,13 +2752,9 @@
       "nav/robot_slam/config/slam_toolbox_localization.yaml:29"
     ],
     "tf_wait_grasp_s": [
-      "grasp/grasp_config.yaml:326",
-      "grasp/grasp_config.yaml:326",
       "grasp/grasp_config.yaml:326"
     ],
     "tf_wait_step_s": [
-      "grasp/grasp_config.yaml:323",
-      "grasp/grasp_config.yaml:323",
       "grasp/grasp_config.yaml:323"
     ],
     "throttle_scans": [
@@ -3116,13 +2914,9 @@
       "nav/robot_slam/config/nav2_params.yaml:74"
     ],
     "use_simple_execute": [
-      "grasp/grasp_config.yaml:255",
-      "grasp/grasp_config.yaml:255",
       "grasp/grasp_config.yaml:255"
     ],
     "use_slerp_execute": [
-      "grasp/grasp_config.yaml:263",
-      "grasp/grasp_config.yaml:263",
       "grasp/grasp_config.yaml:263"
     ],
     "use_velocity_scaled_lookahead_dist": [
@@ -3157,8 +2951,6 @@
       "nav/robot_slam/config/nav2_params.yaml:76"
     ],
     "workspace_limits_m": [
-      "grasp/grasp_config.yaml:70",
-      "grasp/grasp_config.yaml:70",
       "grasp/grasp_config.yaml:70"
     ],
     "wrist_camera_aligned_depth": [
@@ -3701,8 +3493,6 @@
         "point_cloud2.PointCloud2"
       ],
       "yaml_refs": [
-        "grasp/grasp_config.yaml:28",
-        "grasp/grasp_config.yaml:28",
         "grasp/grasp_config.yaml:28"
       ]
     },
@@ -3718,8 +3508,6 @@
         "visualization_msgs/Marker"
       ],
       "yaml_refs": [
-        "grasp/grasp_config.yaml:25",
-        "grasp/grasp_config.yaml:25",
         "grasp/grasp_config.yaml:25"
       ]
     },
@@ -3735,8 +3523,6 @@
         "sensor_msgs/Image"
       ],
       "yaml_refs": [
-        "grasp/grasp_config.yaml:24",
-        "grasp/grasp_config.yaml:24",
         "grasp/grasp_config.yaml:24"
       ]
     },
@@ -3752,8 +3538,6 @@
         "visualization_msgs/Marker"
       ],
       "yaml_refs": [
-        "grasp/grasp_config.yaml:26",
-        "grasp/grasp_config.yaml:26",
         "grasp/grasp_config.yaml:26"
       ]
     },
@@ -3822,12 +3606,10 @@
       ]
     },
     "/grasp/planned_solution": {
-      "n_publishers": 3,
+      "n_publishers": 1,
       "n_subscribers": 0,
       "owned": true,
       "publishers": [
-        "grasp/grasp_state_machine/src/mtc_planner.cpp:22",
-        "grasp/grasp_state_machine/src/mtc_planner.cpp:22",
         "grasp/grasp_state_machine/src/mtc_planner.cpp:22"
       ],
       "subscribers": [],
@@ -3868,8 +3650,6 @@
         "moveit_msgs/CollisionObject"
       ],
       "yaml_refs": [
-        "grasp/grasp_config.yaml:31",
-        "grasp/grasp_config.yaml:31",
         "grasp/grasp_config.yaml:31"
       ]
     },
@@ -3885,8 +3665,6 @@
         "visualization_msgs/MarkerArray"
       ],
       "yaml_refs": [
-        "grasp/grasp_config.yaml:23",
-        "grasp/grasp_config.yaml:23",
         "grasp/grasp_config.yaml:23"
       ]
     },
@@ -3906,8 +3684,6 @@
         "grasp_interfaces/GraspCandidateArray"
       ],
       "yaml_refs": [
-        "grasp/grasp_config.yaml:19",
-        "grasp/grasp_config.yaml:19",
         "grasp/grasp_config.yaml:19"
       ]
     },
@@ -4146,8 +3922,6 @@
         "std_msgs/String"
       ],
       "yaml_refs": [
-        "grasp/grasp_config.yaml:21",
-        "grasp/grasp_config.yaml:21",
         "grasp/grasp_config.yaml:21"
       ]
     },
