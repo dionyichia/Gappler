@@ -55,7 +55,7 @@ except ImportError as e:
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "grasp/anygrasp_node"))
-from anygrasp_to_grasp_frame import nearer_twin, to_grasp_frame  # noqa: E402
+from anygrasp_to_grasp_frame import to_grasp_frame  # noqa: E402
 LOG = REPO / os.environ.get("BENCH_SM_LOG", "log/bench_state_machine.txt")
 JOINTS = [f"joint{i}" for i in range(1, 7)]
 HOME_MAIN = [0.0, 0.0, 0.7854, 0.0, 1.5708, 1.5708]      # mtc_planner.hpp HOME_JOINTS on main (CODE_AUDIT B4)
@@ -69,6 +69,8 @@ FAR = float(os.environ.get("SM_FAR", "0.30"))   # start depth (m); keep at or ab
 OPT = "camera_color_optical_frame"
 GRASP_AHEAD = 0.12  # m; the fake grasp's distance ahead of the gripper (candidates mode)
 CANDIDATES = os.environ.get("BENCH_SM_PATH") == "candidates"  # use_simple_execute false (T1.17)
+# plan_only true: AnyGrasp grasps are planned and published, never executed (T1.51)
+PLAN_ONLY = bool(re.search(r"^\s*plan_only:\s*true\b", (REPO / "grasp/grasp_config.yaml").read_text(), re.M))
 TOL = 0.02  # rad
 
 
@@ -398,8 +400,8 @@ def main():
                 return check("gripper pose for the fake candidate", False, f"no base_link -> grasp_frame: {e}")
             # The grasp in AnyGrasp's axes (x approach, y closing), then the node's conversion.
             # Closing is the gripper's own line turned 180 degrees, the twin that made the wrist
-            # flip in step 7d (T1.33). nearer_twin gets the gripper's live y, as the node's camera
-            # frame constant stands for it on the robot
+            # flip in step 7d (T1.33). Sent as it is: the planner must plan both twins and run the
+            # one with less joint travel (T1.51)
             a, c = n.gripper_axes()
             # GRASP_AHEAD along the approach, as on the robot, where the grasp lies ahead of the
             # stopped gripper. The pre-grasp then sits 2 cm ahead of it. At 1 cm (before T1.48)
@@ -408,12 +410,10 @@ def main():
             p = np.array([eef.translation.x, eef.translation.y, eef.translation.z]) + GRASP_AHEAD * a
             n.cand_base.position.x, n.cand_base.position.y, n.cand_base.position.z = (float(v) for v in p)
             want = np.column_stack([a, -c, np.cross(a, -c)])
-            r = eef.rotation
-            gripper_y = Rotation.from_quat([r.x, r.y, r.z, r.w]).as_matrix()[:, 1]
             wrist_start = n.js.get("joint6")
             q = n.cand_base.orientation
             q.x, q.y, q.z, q.w = (float(v) for v in
-                                  Rotation.from_matrix(nearer_twin(to_grasp_frame(want), gripper_y)).as_quat())
+                                  Rotation.from_matrix(to_grasp_frame(want)).as_quat())
             angle = math.degrees(math.asin(min(1.0, abs(1 - 2 * (q.x * q.x + q.y * q.y)))))  # approachAngleDeg()
             locked = n.spin_until(lambda: log_has(r"EXECUTING: pose stable") or log_has(r"no candidate"), 30)
             check("candidates -> stability lock", locked and log_has(r"EXECUTING: pose stable"),
@@ -421,6 +421,14 @@ def main():
                   f"no lock in 30 s; approach angle {angle:.1f} deg (min_approach_angle_deg rejects below 20)")
             if not log_has(r"EXECUTING: pose stable"):
                 return
+        if CANDIDATES and PLAN_ONLY:
+            # No close is the intended outcome here, so the close check below would fail on purpose
+            n.spin_until(lambda: log_has(r"plan_only, planned and recorded")
+                         or log_has(r"EXECUTING: (grasps failed to plan|no target box|no candidates)"), 90)
+            ok = (log_has(r"plan_only, planned and recorded") and not log_has(r"approachGrasp: executing")
+                  and not any(k == "pick_on" for t, k, _ in n.grip))
+            return check("plan_only: grasp planned, not executed, gripper not closed", ok,
+                         "plan_only line logged, no 'executing...', no pick_on" if ok else "see the launch log")
         fail_re = (r"EXECUTING: (approach failed|grasps failed to plan|no target box|no candidates)" if CANDIDATES
                    else r"EXECUTING: final Cartesian step failed")
         closed = n.spin_until(lambda: any(k == "pick_on" for t, k, _ in n.grip) or log_has(fail_re), 90)
@@ -448,8 +456,10 @@ def main():
                          f"grasp_frame {off:.1f} mm from it (limit 5)"):
                 return
             turn = abs(math.degrees(n.wrist_at_close - wrist_start))
-            if not check("given the 180 degree twin, the wrist turns 90 or less (T1.33)", turn <= 90,
-                         f"joint6 turned {turn:.1f} deg"):
+            if not check("given the 180 degree twin, the planner runs the other: wrist turns 90 or less (T1.51)",
+                         turn <= 90 and log_has(r"running the twin grasp"),
+                         f"joint6 turned {turn:.1f} deg, 'running the twin grasp' "
+                         f"{'logged' if log_has(r'running the twin grasp') else 'not logged'}"):
                 return
         n.depth = None
         ret = n.spin_until(lambda: any(v for _, v in n.returned), 120)
