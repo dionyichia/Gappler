@@ -25,8 +25,9 @@ approach. Width is that slice's spread along the closing axis. Depth is how far 
 its nearest point. Side room (T1.54): each side of that spread must also stay within max_side of the
 grasp centre, so a narrow object sitting off-centre, where one finger lands on it, is dropped too.
 Percentiles, not min and max, so stray edge points (flying pixels) are ignored.
-The camera sees only the faces turned to it, but the node keeps grasps within 30 deg of its view,
-so the closing axis runs across the image, where the full width is visible [inferred].
+The camera sees only the faces turned to it, and not all of those: a face seen 62 deg off
+straight-on had depth points on only half of it, so the width read short and grasps where a finger
+lands on the object got through (T1.54 arm session, 2026-11-03, followed up in T1.63).
 
 Run this file to check the conversion: python3 anygrasp_to_grasp_frame.py
 """
