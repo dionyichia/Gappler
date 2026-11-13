@@ -1,0 +1,14 @@
+T0.24 lab box bench, 2026-11-13. foxglove_bridge smoke test, no hardware. Domain 124, localhost only, port 8799 (file says 8765, overridden so real sessions keep it). Config: origin/t0.24-foxglove-live-view:shared/foxglove/foxglove_bridge_config.yaml.
+
+Run 1: the probe offered the WebSocket subprotocol foxglove.websocket.v1. The bridge (3.6.0, built on the Foxglove SDK) answered 400 Bad Request, "handshake failed". The bridge only offers foxglove.sdk.v1 (strings in libfoxglove.so). Probe bug, not a bridge fault. Both processes stopped, port free.
+
+Run 2 (probe offering foxglove.sdk.v1):
+  [PASS ] bridge starts                    "Started server on 127.0.0.1:8799", settings read from the file
+  [PASS ] listens on 127.0.0.1 only        ss: LISTEN 127.0.0.1:8799
+  [PASS ] capabilities read-only           ['assets', 'connectionGraph']
+  [PASS ] serves topics                    ['/foxglove_bridge/sysinfo', '/parameter_events', '/pipeline_state', '/rosout']
+  [PASS ] client publish refused           {"op": "status", "level": 2, "message": "Server does not support clientPublish capability"}. /t024_smoke_in absent from ros2 topic list
+  RESULT: PASS
+  Both processes stopped by process group, port 8799 free afterwards.
+
+Not covered: the Foxglove app loading gappler_full_layout.json, and live robot topics. A person checks both later.
