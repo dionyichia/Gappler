@@ -2,10 +2,11 @@
 # read by: quickstart_terminals.sh (the "view" window), bench/test_foxglove_view.py
 foxglove_bridge:
   ros__parameters:
-    # Each person reaches this port through their own SSH tunnel to the box.
+    # Teammates connect to ws://<this address>:8765 over Tailscale, no tunnel needed.
     port: 8765
-    # Only processes on the box itself, or an SSH tunnel into it, can connect.
-    address: "127.0.0.1"
+    # The box's Tailscale IP (`tailscale ip -4` on the box), never 0.0.0.0: only tailnet members
+    # can connect, and the lab network and campus Wi-Fi cannot. Update it if the box's IP changes.
+    address: "100.87.133.60"
     # Read-only on purpose: the app can see topics and load robot meshes, but cannot publish,
     # call services or set parameters, so it can never send /cmd_vel or /rm_driver/*_cmd.
     # Do not add clientPublish, services or parameters (CLAUDE.md safety rules).

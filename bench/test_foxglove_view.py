@@ -1,4 +1,5 @@
-"""Guard the Foxglove live view: layout topics exist in the contract, and the bridge stays read-only."""
+"""Guard the Foxglove live view: layout topics exist in the contract, and the bridge stays read-only and off the LAN."""
+import ipaddress
 import json
 import re
 import unittest
@@ -66,7 +67,9 @@ class FoxgloveViewTests(unittest.TestCase):
             self.assertNotIn(bad, code, bad)
         addr = re.search(r"^\s*address:\s*\"?([^\"\s]+)\"?", text, re.M)
         self.assertIsNotNone(addr, "no address: line")
-        self.assertEqual(addr.group(1), "127.0.0.1")
+        # Tailscale addresses (100.64.0.0/10) or loopback only: never 0.0.0.0, never a LAN address.
+        ip = ipaddress.ip_address(addr.group(1))
+        self.assertTrue(ip.is_loopback or ip in ipaddress.ip_network("100.64.0.0/10"), str(ip))
 
     def test_quickstart_starts_bridge_only_through_the_config(self) -> None:
         text = QUICKSTART.read_text()

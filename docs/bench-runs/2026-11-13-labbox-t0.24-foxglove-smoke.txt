@@ -11,4 +11,9 @@ Run 2 (probe offering foxglove.sdk.v1):
   RESULT: PASS
   Both processes stopped by process group, port 8799 free afterwards.
 
+Run 3 (config changed to address 100.87.133.60, the box's Tailscale IP, port 8765, domain 124): probe run from the Mac straight to
+100.87.133.60:8765 with no tunnel. Same result as run 2: 101, capabilities ['assets', 'connectionGraph'], /pipeline_state served,
+client publish refused. Loopback on the box (127.0.0.1:8765) refused, so the bridge answers on Tailscale only.
+  RESULT: PASS
+
 Not covered: the Foxglove app loading gappler_full_layout.json, and live robot topics. A person checks both later.
