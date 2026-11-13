@@ -144,6 +144,8 @@ row L0 "D455 model" "$s" "requires installed ROS/xacro camera description"
 # The extractor self-test first: a broken extractor would make every check below pass.
 s=$(step "L1  Contracts" sh -c "python3 bench/test_contracts.py && python3 bench/contracts.py check")
 row L1 "Contracts" "$s" ""
+s=$(step "L1  Foxglove view" python3 bench/test_foxglove_view.py)
+row L1 "Foxglove view" "$s" ""
 
 s=$(step "L2  Lab box check (preflight)" python3 bench/preflight.py)
 # ponytail: "lab box" = ROS 2 Humble installed, the same test every L3-L4 script makes.
