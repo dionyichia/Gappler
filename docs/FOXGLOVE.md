@@ -18,12 +18,12 @@ set parameters. It can never send `/cmd_vel` or `/rm_driver/*_cmd`. Settings:
 1. Install the Foxglove desktop app from foxglove.dev/download. It needs a free account.
 2. Turn Tailscale on. The bridge listens on the box's Tailscale IP only (set in the config file), so
    only tailnet members can connect. The lab network and campus Wi-Fi cannot.
-3. In Foxglove: Open connection, Foxglove WebSocket, `ws://<box Tailscale IP>:8765`. `[unverified]`
-4. From the Layouts menu, import `shared/foxglove/gappler_full_layout.json`. `[unverified]`
+3. In Foxglove: Open connection, Foxglove WebSocket, `ws://<box Tailscale IP>:8765`. Checked 2026-11-13 with a test publisher: connects and shows data.
+4. From the Layouts menu, import `shared/foxglove/gappler_full_layout.json`. Checked 2026-11-13: it imports and the State Transitions panel shows `/pipeline_state`.
 
 ## What you see
 
-All `[unverified]` until the live check on the box.
+Only the state panel is checked so far (test publisher). The rest are `[unverified]` until an attended robot session.
 
 - 3D: the robot model (`/robot_description`), `/map`, `/scan`, `/robot_pose`, `/aria/fused_pose`,
   `/goal_pose`, and the object and grasp markers.
