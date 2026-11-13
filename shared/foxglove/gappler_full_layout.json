@@ -6,6 +6,7 @@
         "/robot_description": {"visible": true},
         "/map": {"visible": true},
         "/scan": {"visible": true},
+        "/livox/lidar": {"visible": true},
         "/robot_pose": {"visible": true},
         "/aria/fused_pose": {"visible": true},
         "/goal_pose": {"visible": true},

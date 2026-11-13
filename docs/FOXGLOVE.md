@@ -23,9 +23,9 @@ set parameters. It can never send `/cmd_vel` or `/rm_driver/*_cmd`. Settings:
 
 ## What you see
 
-Only the state panel is checked so far (test publisher). The rest are `[unverified]` until an attended robot session.
+Checked 2026-11-13 on the box: the state panel (test publisher), the wrist image and the lidar cloud (real sensors, no arm or base). The rest are `[unverified]` until a fuller robot session.
 
-- 3D: the robot model (`/robot_description`), `/map`, `/scan`, `/robot_pose`, `/aria/fused_pose`,
+- 3D: the robot model (`/robot_description`), `/map`, `/scan`, the raw lidar cloud `/livox/lidar`, `/robot_pose`, `/aria/fused_pose`,
   `/goal_pose`, and the object and grasp markers.
 - Wrist image: `/camera/camera/color/image_raw`.
 - Mask image: `/camera/sam/mask`.
@@ -47,6 +47,14 @@ decode: `/aria/rgb_camera/object_masks`, `/realman/rgb_camera/object_masks`,
 
 Raw camera images and point clouds are heavy over Tailscale. Close panels you do not need. The
 bridge only sends topics that an open panel uses.
+Measured 2026-11-13: the wrist image is about 14 MB/s and the lidar cloud about 5 MB/s. Together they
+overflowed one client's connection and the lidar did not show until the image panel was closed.
+
+## Lidar cloud shows nothing
+
+The cloud is in the frame `livox_frame`. The 3D panel can only draw it if there is a transform from
+its display frame. The SLAM launch publishes those transforms. With only the lidar driver running
+there are none, so set the 3D panel's Frame to `livox_frame`.
 
 ## Changing the layout
 
@@ -55,4 +63,4 @@ Export the layout from Foxglove over `shared/foxglove/gappler_full_layout.json` 
 (`bench/golden/contracts.json`) does not know. Add a topic to `STANDARD_TOPICS` in that test only
 if it really comes from ROS or a vendor package, not from our code.
 
-Changelog 2026-11-13 (T0.24, Sherman): created. Switched from an SSH tunnel to the box's Tailscale IP (tailnet is team only).
+Changelog 2026-11-13 (T0.24, Sherman): created. Switched from an SSH tunnel to the box's Tailscale IP (tailnet is team only). Added `/livox/lidar` to the layout, checked the wrist image and lidar live.
