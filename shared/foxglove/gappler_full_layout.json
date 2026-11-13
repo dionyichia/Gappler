@@ -1,0 +1,47 @@
+{
+  "configById": {
+    "3D!world": {
+      "layers": {"grid": {"layerId": "foxglove.Grid", "visible": true}},
+      "topics": {
+        "/robot_description": {"visible": true},
+        "/map": {"visible": true},
+        "/scan": {"visible": true},
+        "/robot_pose": {"visible": true},
+        "/aria/fused_pose": {"visible": true},
+        "/goal_pose": {"visible": true},
+        "/object_marker": {"visible": true},
+        "/aria/glasses_marker": {"visible": true},
+        "/object_centroid": {"visible": true},
+        "/debug/anygrasp_points": {"visible": true},
+        "/grasp_candidate_markers": {"visible": true},
+        "/debug/centroid_marker": {"visible": true},
+        "/debug/state_marker": {"visible": true}
+      }
+    },
+    "Image!wrist": {"imageMode": {"imageTopic": "/camera/camera/color/image_raw"}},
+    "Image!mask": {"imageMode": {"imageTopic": "/camera/sam/mask"}},
+    "Image!aria": {"imageMode": {"imageTopic": "/aria/rgb_camera/raw"}},
+    "StateTransitions!state": {"paths": [{"value": "/pipeline_state.data", "timestampMethod": "receiveTime"}]},
+    "Plot!gaze": {"paths": [
+      {"value": "/aria/eye_tracking/gaze_estimate.point.x", "enabled": true, "timestampMethod": "receiveTime"},
+      {"value": "/aria/eye_tracking/gaze_estimate.point.y", "enabled": true, "timestampMethod": "receiveTime"}
+    ]},
+    "RawMessages!voice": {"topicPath": "/aria/audio/prompt"},
+    "TopicGraph!graph": {}
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {"speed": 1},
+  "layout": {
+    "direction": "row", "splitPercentage": 40,
+    "first": "3D!world",
+    "second": {
+      "direction": "row", "splitPercentage": 50,
+      "first": {"direction": "column", "first": "Image!wrist",
+                "second": {"direction": "column", "first": "Image!mask", "second": "Image!aria"}},
+      "second": {"direction": "column",
+                 "first": {"direction": "column", "first": "StateTransitions!state", "second": "Plot!gaze"},
+                 "second": {"direction": "column", "first": "RawMessages!voice", "second": "TopicGraph!graph"}}
+    }
+  }
+}

@@ -1,0 +1,12 @@
+# foxglove_bridge settings for the team's live view (T0.24). Passed with --params-file.
+# read by: quickstart_terminals.sh (the "view" window), bench/test_foxglove_view.py
+foxglove_bridge:
+  ros__parameters:
+    # Each person reaches this port through their own SSH tunnel to the box.
+    port: 8765
+    # Only processes on the box itself, or an SSH tunnel into it, can connect.
+    address: "127.0.0.1"
+    # Read-only on purpose: the app can see topics and load robot meshes, but cannot publish,
+    # call services or set parameters, so it can never send /cmd_vel or /rm_driver/*_cmd.
+    # Do not add clientPublish, services or parameters (CLAUDE.md safety rules).
+    capabilities: [connectionGraph, assets]

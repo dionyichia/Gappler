@@ -10,6 +10,7 @@
 #   --print  list the panes and exit, no tmux
 #   --anygrasp  grasp and full: also start the AnyGrasp detector (step 7, T1.17). Off by default:
 #               it takes the GPU, and nothing reads it while use_simple_execute is true
+# Every layout also opens a "view" window running the read-only Foxglove bridge (T0.24).
 # Refuses to start (except --dry) if what it would start, or a bench run, is already up on the box.
 # The session is named after the layout. Detach: Ctrl-b d. Run again to reattach.
 # Close: tmux kill-session -t <layout>.
@@ -89,6 +90,13 @@ lay_aria() {
   pane auto aria "python $R/aria/aria_app/services/aria_segmentation_client/aria_segmentation_client.py"
 }
 
+# T0.24 Foxglove live view: read-only, one bridge per box (a second one would fight for the port).
+# Settings are in shared/foxglove/foxglove_bridge_config.yaml.
+lay_view() {
+  win view
+  pane auto global "if pgrep -af foxglove_bridge; then echo \"foxglove_bridge already runs on this box (above). Not starting a second one.\"; else ros2 run foxglove_bridge foxglove_bridge --ros-args --params-file $R/shared/foxglove/foxglove_bridge_config.yaml; fi"
+}
+
 lay_full() {
   ENV_OVERRIDE=global
   lay_grasp
@@ -108,9 +116,10 @@ case "$LAYOUT" in
   nav)         BUSY="$NAV_BUSY" ;;
   aria)        BUSY="$ARIA_BUSY" ;;
   full)        BUSY="$ARM_BUSY|$CAMERA_BUSY|$ARIA_BUSY" ;;
-  *) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  *) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac
 "lay_$LAYOUT"
+lay_view
 
 if ((PRINT)); then
   for p in "${PANES[@]}"; do
