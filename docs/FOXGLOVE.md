@@ -32,8 +32,8 @@ stay empty.
 | Main | Leave open during any session: is everything alive, where is the pipeline | Timeline of the handover channels on one time axis: voice prompt, `/grasp/target` prompt, `/goal_reached`, `/manipulation/start`, `/pipeline_state`, `/manipulator/return_to_user`, `/manipulator/release`. Warnings and errors from every node (`/rosout`). Small wrist and Aria images |
 | Grasp | Arm and grasp debugging | Wrist image with the grasp candidates, AnyGrasp's points and the centroid drawn on it. Depth to the object (`/object_centroid_2d` z), which should step down to 0.18 m in SELECTING. The mask (`/debug/sam_mask`). 3D arm with the same markers |
 | Glasses | Voice and gaze | Aria image, the prompt sent on `/grasp/target`, raw gaze values |
-| Nav | Base driving | 3D: base model, `/map`, global costmap, `/plan`, `/scan`, robot pose, goal, user pose, object and glasses markers. The raw lidar cloud is there but off, tick it when needed |
-| Wiring | Why is X not receiving anything | Topic graph full size, plus the warnings and errors list |
+| Nav | Base driving | 3D: base model, `/map`, global costmap, `/plan`, `/scan`, robot pose, goal, user pose, object and glasses markers. The raw lidar cloud is there but off, tick it when needed. Beside it, a plot of `/cmd_vel` (forward and turn speed Nav2 sends the base: flat at zero means Nav2 sends nothing, values with a still base means the base driver) and a timeline of `/goal_reached` and `/manipulation/start` (did it arrive, did the handover fire). Reading `/cmd_vel` is safe, the bridge cannot publish |
+| Wiring | Why is X not receiving anything | Topic graph full size |
 
 The Topic Graph shows which nodes run and who publishes and subscribes to each topic. A topic with
 no publisher, or with two, is a broken link. It does not show whether data flows or how fast.
@@ -76,4 +76,4 @@ Keep your own changes in a copy inside Foxglove. Export over the repo file only 
 if it really comes from ROS, Nav2 or a vendor package, not from our code. A `/compressed` topic passes
 when the topic it compresses is known. The check also fails if a panel is in no tab, or the tabs change.
 
-Changelog 2026-11-13 (T0.24, Sherman): created. Switched from an SSH tunnel to the box's Tailscale IP (tailnet is team only). Added `/livox/lidar` to the layout, checked the wrist image and lidar live. 2026-11-14: five tabs (Main, Grasp, Glasses, Nav, Wiring), compressed wrist image, mask from `/debug/sam_mask`, layout file renamed `gappler_layout.json`.
+Changelog 2026-11-13 (T0.24, Sherman): created. Switched from an SSH tunnel to the box's Tailscale IP (tailnet is team only). Added `/livox/lidar` to the layout, checked the wrist image and lidar live. 2026-11-14: five tabs (Main, Grasp, Glasses, Nav, Wiring), compressed wrist image, mask from `/debug/sam_mask`, layout file renamed `gappler_layout.json`. Nav gains a `/cmd_vel` plot and a nav timeline, Wiring is the topic graph alone.

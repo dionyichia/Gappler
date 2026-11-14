@@ -31,14 +31,15 @@
         },
         {
           "title": "Nav",
-          "layout": "3D!nav"
+          "layout": {
+            "direction": "row", "splitPercentage": 70,
+            "first": "3D!nav",
+            "second": {"direction": "column", "first": "Plot!cmdvel", "second": "StateTransitions!navevents"}
+          }
         },
         {
           "title": "Wiring",
-          "layout": {
-            "direction": "row", "splitPercentage": 65,
-            "first": "TopicGraph!graph", "second": "RosOut!wiringlog"
-          }
+          "layout": "TopicGraph!graph"
         }
       ]
     },
@@ -104,8 +105,19 @@
         "/aria/glasses_marker": {"visible": true}
       }
     },
-    "TopicGraph!graph": {},
-    "RosOut!wiringlog": {"minLogLevel": 3, "searchTerms": []}
+    "Plot!cmdvel": {
+      "paths": [
+        {"value": "/cmd_vel.linear.x", "enabled": true, "timestampMethod": "receiveTime", "label": "forward (m/s)"},
+        {"value": "/cmd_vel.angular.z", "enabled": true, "timestampMethod": "receiveTime", "label": "turn (rad/s)"}
+      ]
+    },
+    "StateTransitions!navevents": {
+      "paths": [
+        {"value": "/goal_reached.data", "timestampMethod": "receiveTime"},
+        {"value": "/manipulation/start.data", "timestampMethod": "receiveTime"}
+      ]
+    },
+    "TopicGraph!graph": {}
   },
   "globalVariables": {},
   "userNodes": {},
