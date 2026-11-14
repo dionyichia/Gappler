@@ -1,0 +1,30 @@
+T0.24 lab box bench, 2026-11-14. The five-tab Foxglove layout (shared/foxglove/gappler_layout.json) loaded live in the
+Foxglove desktop app. Domain 124, localhost only. Running: the wrist camera (rs_launch.py, 640x480x15, aligned depth),
+a fake pipeline on domain 124 (a scratch rclpy script replaying one grasp run every 15 s on the handover channels,
+/object_centroid_2d and the gaze), and foxglove_bridge from origin/t0.24-foxglove-live-view:shared/foxglove/foxglove_bridge_config.yaml
+on 100.87.133.60:8765. No arm, base or glasses. Nothing on domain 91.
+
+Measured on the box:
+  [PASS ] compressed wrist image     /camera/camera/color/image_raw/compressed exists, 1.34 MB/s (0.09 MB a frame)
+                                     against about 14 MB/s raw (2026-11-13). The compression plugin is installed.
+
+Seen in the app, first load (commit a0018f9):
+  [PASS ] layout imports             all five tabs appear
+  [PASS ] Main                       timeline draws, compressed wrist image live, Aria image "Image topic does not exist" (expected)
+  [PASS ] Grasp                      wrist image live, depth plot steps down from 0.60 m, mask empty (expected)
+  [PASS ] Glasses                    gaze values update, target prompt arrives once a cycle
+  [FAIL ] 3D panels                  Grasp and Nav both centred on camera_depth_optical_frame, no fixed frame set
+  [FAIL ] Topic Graph                unreadable in either orientation, about 40 camera topics
+  Found: opening a tab starts its panels from empty (the Main timeline restarted after switching tabs).
+  Found: the same value sent again stays one block on a timeline, so repeats are not visible.
+
+Fixed in commit db1e177, second load:
+  [PASS ] timeline labels            rows read "state machine", "voice word" ..., state machine on top
+  [PASS ] Topics tab                 Data Source Info lists the topics with rates
+  3D frames now set to map (Nav) and base_link (Grasp). Not seen live with those frames present (no SLAM, no arm).
+
+RESULT: PASS for what this setup can show.
+All three processes stopped by process group afterwards. Port 8765 free, no camera held.
+
+Not covered: markers drawn on the wrist image, the mask, the 3D arm and nav views, the Aria image and /cmd_vel. They
+need an attended session with the arm, base and glasses running.
