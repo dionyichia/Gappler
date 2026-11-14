@@ -68,7 +68,7 @@ class FoxgloveViewTests(unittest.TestCase):
     def test_layout_has_the_five_tabs(self) -> None:
         layout = json.loads(LAYOUT.read_text())
         tabs = layout["configById"][layout["layout"]]["tabs"]
-        self.assertEqual([t["title"] for t in tabs], ["Main", "Grasp", "Glasses", "Nav", "Wiring"])
+        self.assertEqual([t["title"] for t in tabs], ["Main", "Grasp", "Glasses", "Nav", "Topics"])
 
     def test_layout_topics_are_in_the_contract(self) -> None:
         layout = json.loads(LAYOUT.read_text())

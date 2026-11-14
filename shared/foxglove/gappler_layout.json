@@ -7,7 +7,7 @@
           "title": "Main",
           "layout": {
             "direction": "row", "splitPercentage": 55,
-            "first": {"direction": "column", "splitPercentage": 45,
+            "first": {"direction": "column", "splitPercentage": 70,
                       "first": "StateTransitions!timeline", "second": "RosOut!mainlog"},
             "second": {"direction": "column", "first": "Image!mainwrist", "second": "Image!mainaria"}
           }
@@ -16,9 +16,12 @@
           "title": "Grasp",
           "layout": {
             "direction": "row", "splitPercentage": 55,
-            "first": {"direction": "column", "splitPercentage": 65,
-                      "first": "Image!graspwrist", "second": "Plot!depth"},
-            "second": {"direction": "column", "first": "Image!mask", "second": "3D!arm"}
+            "first": {"direction": "column", "splitPercentage": 60,
+                      "first": "Image!graspwrist",
+                      "second": {"direction": "row", "first": "Plot!depth", "second": "Plot!score"}},
+            "second": {"direction": "column", "splitPercentage": 25,
+                       "first": "StateTransitions!grasptimeline",
+                       "second": {"direction": "column", "first": "Image!mask", "second": "3D!arm"}}
           }
         },
         {
@@ -38,20 +41,20 @@
           }
         },
         {
-          "title": "Wiring",
-          "layout": "TopicGraph!graph"
+          "title": "Topics",
+          "layout": "SourceInfo!topics"
         }
       ]
     },
     "StateTransitions!timeline": {
       "paths": [
-        {"value": "/aria/audio/prompt.data", "timestampMethod": "receiveTime"},
-        {"value": "/grasp/target.prompt", "timestampMethod": "receiveTime"},
-        {"value": "/goal_reached.data", "timestampMethod": "receiveTime"},
-        {"value": "/manipulation/start.data", "timestampMethod": "receiveTime"},
-        {"value": "/pipeline_state.data", "timestampMethod": "receiveTime"},
-        {"value": "/manipulator/return_to_user.data", "timestampMethod": "receiveTime"},
-        {"value": "/manipulator/release.data", "timestampMethod": "receiveTime"}
+        {"value": "/pipeline_state.data", "label": "state machine", "timestampMethod": "receiveTime"},
+        {"value": "/aria/audio/prompt.data", "label": "voice word", "timestampMethod": "receiveTime"},
+        {"value": "/grasp/target.prompt", "label": "target sent", "timestampMethod": "receiveTime"},
+        {"value": "/goal_reached.data", "label": "nav arrived", "timestampMethod": "receiveTime"},
+        {"value": "/manipulation/start.data", "label": "handover start", "timestampMethod": "receiveTime"},
+        {"value": "/manipulator/return_to_user.data", "label": "return to user", "timestampMethod": "receiveTime"},
+        {"value": "/manipulator/release.data", "label": "release", "timestampMethod": "receiveTime"}
       ]
     },
     "RosOut!mainlog": {"minLogLevel": 3, "searchTerms": []},
@@ -69,12 +72,30 @@
       }
     },
     "Plot!depth": {
+      "minYValue": 0,
+      "maxYValue": 0.7,
       "paths": [
-        {"value": "/object_centroid_2d.point.z", "enabled": true, "timestampMethod": "receiveTime", "label": "depth to object (m)"}
+        {"value": "/object_centroid_2d.point.z", "enabled": true, "timestampMethod": "receiveTime",
+         "label": "depth to object (m), SELECTING stops at 0.18"}
+      ]
+    },
+    "Plot!score": {
+      "minYValue": 0,
+      "maxYValue": 1,
+      "paths": [
+        {"value": "/grasp_candidates.grasps[0].score", "enabled": true, "timestampMethod": "receiveTime",
+         "label": "best grasp score"}
+      ]
+    },
+    "StateTransitions!grasptimeline": {
+      "paths": [
+        {"value": "/pipeline_state.data", "label": "state machine", "timestampMethod": "receiveTime"},
+        {"value": "/grasp/target.prompt", "label": "target sent", "timestampMethod": "receiveTime"}
       ]
     },
     "Image!mask": {"imageMode": {"imageTopic": "/debug/sam_mask"}},
     "3D!arm": {
+      "followTf": "base_link",
       "layers": {"grid": {"layerId": "foxglove.Grid", "visible": true}},
       "topics": {
         "/robot_description": {"visible": true},
@@ -90,6 +111,7 @@
     "RawMessages!target": {"topicPath": "/grasp/target.prompt"},
     "RawMessages!gaze": {"topicPath": "/aria/eye_tracking/gaze_estimate"},
     "3D!nav": {
+      "followTf": "map",
       "layers": {"grid": {"layerId": "foxglove.Grid", "visible": true}},
       "topics": {
         "/base/robot_description": {"visible": true},
@@ -113,11 +135,11 @@
     },
     "StateTransitions!navevents": {
       "paths": [
-        {"value": "/goal_reached.data", "timestampMethod": "receiveTime"},
-        {"value": "/manipulation/start.data", "timestampMethod": "receiveTime"}
+        {"value": "/goal_reached.data", "label": "nav arrived", "timestampMethod": "receiveTime"},
+        {"value": "/manipulation/start.data", "label": "handover start", "timestampMethod": "receiveTime"}
       ]
     },
-    "TopicGraph!graph": {}
+    "SourceInfo!topics": {}
   },
   "globalVariables": {},
   "userNodes": {},
